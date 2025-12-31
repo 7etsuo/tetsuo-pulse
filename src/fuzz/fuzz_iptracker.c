@@ -54,8 +54,16 @@ make_ipv4 (char *buf, const uint8_t *bytes)
 static void
 make_ipv6 (char *buf, const uint8_t *bytes)
 {
-  snprintf (buf, 40, "%02x%02x:%02x%02x:%02x%02x:%02x%02x::", bytes[0],
-            bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+  snprintf (buf,
+            40,
+            "%02x%02x:%02x%02x:%02x%02x:%02x%02x::",
+            bytes[0],
+            bytes[1],
+            bytes[2],
+            bytes[3],
+            bytes[4],
+            bytes[5],
+            bytes[6],
             bytes[7]);
 }
 
@@ -63,7 +71,9 @@ make_ipv6 (char *buf, const uint8_t *bytes)
  * execute_op - Execute a single IP tracker operation
  */
 static void
-execute_op (SocketIPTracker_T tracker, uint8_t op, const uint8_t *args,
+execute_op (SocketIPTracker_T tracker,
+            uint8_t op,
+            const uint8_t *args,
             size_t args_len)
 {
   char ip_buf[48];
@@ -259,8 +269,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     SocketIPTracker_free (&tracker);
   }
-  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
-  EXCEPT (SocketIPTracker_Failed) { /* IP tracker operation failure */ }
+  EXCEPT (Arena_Failed)
+  { /* Memory allocation failure */
+  }
+  EXCEPT (SocketIPTracker_Failed)
+  { /* IP tracker operation failure */
+  }
   END_TRY;
 
   return 0;

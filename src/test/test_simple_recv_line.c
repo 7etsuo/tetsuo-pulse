@@ -36,8 +36,10 @@ server_thread (void *arg)
   if (client)
     {
       /* Send multiple lines */
-      const char *lines[] = { "First line\n", "Second line\n",
-                              "Third line with more data\n", "Final line\n" };
+      const char *lines[] = { "First line\n",
+                              "Second line\n",
+                              "Third line with more data\n",
+                              "Final line\n" };
 
       for (size_t i = 0; i < sizeof (lines) / sizeof (lines[0]); i++)
         {

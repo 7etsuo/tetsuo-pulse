@@ -92,7 +92,10 @@ TEST (timer_add_one_shot)
     timer = SocketTimer_add (poll, 100, timer_callback, NULL);
     ASSERT_NOT_NULL (timer);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -107,7 +110,10 @@ TEST (timer_add_repeating)
     timer = SocketTimer_add_repeating (poll, 50, timer_callback, NULL);
     ASSERT_NOT_NULL (timer);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -134,7 +140,10 @@ TEST (timer_add_multiple)
     ASSERT_NE (timer2, timer3);
     ASSERT_NE (timer1, timer3);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -158,7 +167,10 @@ TEST (timer_cancel_pending)
     result = SocketTimer_cancel (poll, timer);
     ASSERT_EQ (0, result);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -177,7 +189,10 @@ TEST (timer_cancel_repeating)
     result = SocketTimer_cancel (poll, timer);
     ASSERT_EQ (0, result);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -199,7 +214,10 @@ TEST (timer_cancel_already_cancelled)
     int result2 = SocketTimer_cancel (poll, timer);
     ASSERT_EQ (-1, result2);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -229,7 +247,10 @@ TEST (timer_remaining_query)
     ASSERT (remaining >= 0);
     ASSERT (remaining <= 510);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -249,7 +270,10 @@ TEST (timer_remaining_on_cancelled)
     int64_t remaining = SocketTimer_remaining (poll, timer);
     ASSERT_EQ (-1, remaining);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -282,7 +306,10 @@ TEST (timer_reschedule)
     ASSERT (remaining >= 400);
     ASSERT (remaining <= 510);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -302,7 +329,10 @@ TEST (timer_reschedule_cancelled)
     int result = SocketTimer_reschedule (poll, timer, 500);
     ASSERT_EQ (-1, result);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -335,7 +365,10 @@ TEST (timer_pause_resume)
     int resume_result = SocketTimer_resume (poll, timer);
     ASSERT_EQ (0, resume_result);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -359,7 +392,10 @@ TEST (timer_pause_already_paused)
 
     SocketTimer_resume (poll, timer);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -378,7 +414,10 @@ TEST (timer_resume_not_paused)
     int resume_result = SocketTimer_resume (poll, timer);
     ASSERT_EQ (-1, resume_result);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -398,7 +437,10 @@ TEST (timer_pause_cancelled)
     int pause_result = SocketTimer_pause (poll, timer);
     ASSERT_EQ (-1, pause_result);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -427,7 +469,10 @@ TEST (timer_callback_invoked)
     /* Callback should have been invoked */
     ASSERT_EQ (1, ctx.call_count);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -449,7 +494,10 @@ TEST (timer_callback_userdata_passed)
     /* Callback was invoked with correct userdata */
     ASSERT_EQ (1, ctx.call_count);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -463,7 +511,8 @@ TEST (timer_repeating_fires_multiple_times)
   TRY
   {
     /* Create a 30ms repeating timer */
-    timer = SocketTimer_add_repeating (poll, 30, timer_callback_with_check, &ctx);
+    timer
+        = SocketTimer_add_repeating (poll, 30, timer_callback_with_check, &ctx);
     ASSERT_NOT_NULL (timer);
 
     /* Wait long enough for multiple fires (200ms for ~6-7 fires) */
@@ -476,7 +525,10 @@ TEST (timer_repeating_fires_multiple_times)
     /* Cancel the repeating timer */
     SocketTimer_cancel (poll, timer);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -503,7 +555,10 @@ TEST (timer_cancelled_not_invoked)
     /* Callback should NOT have been invoked */
     ASSERT_EQ (0, ctx.call_count);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -530,7 +585,10 @@ TEST (timer_zero_delay)
 
     ASSERT_EQ (1, ctx.call_count);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -559,7 +617,10 @@ TEST (timer_fires_during_poll_wait)
     ASSERT (elapsed >= 25);
     ASSERT (elapsed < 80);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -592,7 +653,10 @@ TEST (timer_multiple_timers_added)
     SocketTimer_cancel (poll, timer2);
     SocketTimer_cancel (poll, timer3);
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 }
 
@@ -619,12 +683,24 @@ TEST (timer_add_negative_delay)
 
   TRY
   {
-    TRY { SocketTimer_add (poll, -100, timer_callback, NULL); }
-    EXCEPT (Test_Failed) { RERAISE; }
-    ELSE { caught = 1; }
+    TRY
+    {
+      SocketTimer_add (poll, -100, timer_callback, NULL);
+    }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
+    ELSE
+    {
+      caught = 1;
+    }
     END_TRY;
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 
   ASSERT (caught);
@@ -639,12 +715,24 @@ TEST (timer_repeating_zero_interval)
   TRY
   {
     /* Repeating timer with 0 interval should fail (min is 1ms) */
-    TRY { SocketTimer_add_repeating (poll, 0, timer_callback, NULL); }
-    EXCEPT (Test_Failed) { RERAISE; }
-    ELSE { caught = 1; }
+    TRY
+    {
+      SocketTimer_add_repeating (poll, 0, timer_callback, NULL);
+    }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
+    ELSE
+    {
+      caught = 1;
+    }
     END_TRY;
   }
-  FINALLY { SocketPoll_free (&poll); }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
   END_TRY;
 
   ASSERT (caught);
@@ -661,4 +749,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures ();
 }
-

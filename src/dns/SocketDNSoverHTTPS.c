@@ -57,13 +57,12 @@ static const struct
 {
   const char *name;
   const char *url;
-} well_known_servers[] = {
-  { "google", "https://dns.google/dns-query" },
-  { "cloudflare", "https://cloudflare-dns.com/dns-query" },
-  { "quad9", "https://dns.quad9.net/dns-query" },
-  { "nextdns", "https://dns.nextdns.io" },
-  { NULL, NULL }
-};
+} well_known_servers[]
+    = { { "google", "https://dns.google/dns-query" },
+        { "cloudflare", "https://cloudflare-dns.com/dns-query" },
+        { "quad9", "https://dns.quad9.net/dns-query" },
+        { "nextdns", "https://dns.nextdns.io" },
+        { NULL, NULL } };
 
 /* Server configuration entry */
 struct ServerConfig
@@ -125,7 +124,9 @@ const Except_T SocketDNSoverHTTPS_Failed
  * Replaces + with -, / with _, and removes padding.
  */
 static size_t
-base64url_encode (const unsigned char *input, size_t input_len, char *output,
+base64url_encode (const unsigned char *input,
+                  size_t input_len,
+                  char *output,
                   size_t output_size)
 {
   ssize_t len
@@ -257,8 +258,11 @@ SocketDNSoverHTTPS_free (T *transport)
       struct SocketDNSoverHTTPS_Query *next = q->next;
       if (!q->completed && q->callback)
         {
-          q->callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0,
-                       DOH_ERROR_CANCELLED, q->userdata);
+          q->callback ((SocketDNSoverHTTPS_Query_T)q,
+                       NULL,
+                       0,
+                       DOH_ERROR_CANCELLED,
+                       q->userdata);
         }
       q = next;
     }
@@ -301,7 +305,8 @@ SocketDNSoverHTTPS_configure (T transport,
 
   memcpy (s->url, config->url, url_len + 1); /* Include null terminator */
   s->method = config->method;
-  s->prefer_http2 = config->prefer_http2 ? 1 : 0; /* Respect HTTP/2 preference */
+  s->prefer_http2
+      = config->prefer_http2 ? 1 : 0; /* Respect HTTP/2 preference */
   s->timeout_ms
       = config->timeout_ms > 0 ? config->timeout_ms : DOH_QUERY_TIMEOUT_MS;
 
@@ -319,11 +324,11 @@ SocketDNSoverHTTPS_add_server (T transport, const char *server_name)
     {
       if (strcasecmp (server_name, well_known_servers[i].name) == 0)
         {
-          SocketDNSoverHTTPS_Config cfg = { .url = well_known_servers[i].url,
-                                            .method = DOH_METHOD_POST,
-                                            .prefer_http2 = 1,
-                                            .timeout_ms
-                                            = DOH_QUERY_TIMEOUT_MS };
+          SocketDNSoverHTTPS_Config cfg
+              = { .url = well_known_servers[i].url,
+                  .method = DOH_METHOD_POST,
+                  .prefer_http2 = 1,
+                  .timeout_ms = DOH_QUERY_TIMEOUT_MS };
           return SocketDNSoverHTTPS_configure (transport, &cfg);
         }
     }
@@ -358,8 +363,11 @@ SocketDNSoverHTTPS_server_count (T transport)
  * @return 0 on success, -1 on failure.
  */
 static int
-doh_build_get_request (T transport, const unsigned char *query, size_t len,
-                       struct ServerConfig *server, char **url_out,
+doh_build_get_request (T transport,
+                       const unsigned char *query,
+                       size_t len,
+                       struct ServerConfig *server,
+                       char **url_out,
                        int *error_out)
 {
   assert (transport);
@@ -407,14 +415,13 @@ static const struct
 {
   const Except_T *exception;
   int error_code;
-} http_exception_map[] = {
-  { &SocketHTTPClient_Failed, DOH_ERROR_HTTP },
-  { &SocketHTTPClient_DNSFailed, DOH_ERROR_NETWORK },
-  { &SocketHTTPClient_ConnectFailed, DOH_ERROR_NETWORK },
-  { &SocketHTTPClient_TLSFailed, DOH_ERROR_TLS },
-  { &SocketHTTPClient_Timeout, DOH_ERROR_TIMEOUT },
-  { NULL, 0 }
-};
+} http_exception_map[]
+    = { { &SocketHTTPClient_Failed, DOH_ERROR_HTTP },
+        { &SocketHTTPClient_DNSFailed, DOH_ERROR_NETWORK },
+        { &SocketHTTPClient_ConnectFailed, DOH_ERROR_NETWORK },
+        { &SocketHTTPClient_TLSFailed, DOH_ERROR_TLS },
+        { &SocketHTTPClient_Timeout, DOH_ERROR_TIMEOUT },
+        { NULL, 0 } };
 
 /**
  * Map HTTP client exception to DoH error code.
@@ -445,9 +452,12 @@ map_http_exception_to_error (volatile const Except_Frame *frame)
  * @return 0 on success, -1 on failure.
  */
 static int
-doh_execute_request (T transport, struct ServerConfig *server,
-                     const unsigned char *query, size_t len,
-                     SocketHTTPClient_Response *response, int *error_out)
+doh_execute_request (T transport,
+                     struct ServerConfig *server,
+                     const unsigned char *query,
+                     size_t len,
+                     SocketHTTPClient_Response *response,
+                     int *error_out)
 {
   assert (transport);
   assert (server);
@@ -467,8 +477,8 @@ doh_execute_request (T transport, struct ServerConfig *server,
         char *url = NULL;
         int build_err = DOH_ERROR_SUCCESS;
 
-        if (doh_build_get_request (transport, query, len, server, &url,
-                                   &build_err)
+        if (doh_build_get_request (
+                transport, query, len, server, &url, &build_err)
             != 0)
           {
             http_error = build_err;
@@ -484,8 +494,11 @@ doh_execute_request (T transport, struct ServerConfig *server,
     else
       {
         /* Execute POST request */
-        ret = SocketHTTPClient_post (transport->http_client, server->url,
-                                     "application/dns-message", query, len,
+        ret = SocketHTTPClient_post (transport->http_client,
+                                     server->url,
+                                     "application/dns-message",
+                                     query,
+                                     len,
                                      response);
         request_ok = (ret == 0) ? 1 : 0;
       }
@@ -516,7 +529,8 @@ doh_execute_request (T transport, struct ServerConfig *server,
  */
 static int
 doh_validate_response (const SocketHTTPClient_Response *response,
-                       uint16_t expected_id, int *error_out)
+                       uint16_t expected_id,
+                       int *error_out)
 {
   assert (response);
   assert (error_out);
@@ -598,8 +612,11 @@ validate_query_request (T transport, SocketDNSoverHTTPS_Callback callback)
  * @return Allocated and initialized query structure.
  */
 static struct SocketDNSoverHTTPS_Query *
-allocate_query_structure (T transport, const unsigned char *query, size_t len,
-                          SocketDNSoverHTTPS_Callback callback, void *userdata)
+allocate_query_structure (T transport,
+                          const unsigned char *query,
+                          size_t len,
+                          SocketDNSoverHTTPS_Callback callback,
+                          void *userdata)
 {
   assert (transport);
   assert (query);
@@ -633,8 +650,10 @@ allocate_query_structure (T transport, const unsigned char *query, size_t len,
  * @param error Error code from validation.
  */
 static void
-copy_response_data (T transport, struct SocketDNSoverHTTPS_Query *q,
-                    const SocketHTTPClient_Response *response, int error)
+copy_response_data (T transport,
+                    struct SocketDNSoverHTTPS_Query *q,
+                    const SocketHTTPClient_Response *response,
+                    int error)
 {
   assert (transport);
   assert (q);
@@ -656,7 +675,9 @@ copy_response_data (T transport, struct SocketDNSoverHTTPS_Query *q,
  * @param error Error code from query (DOH_ERROR_SUCCESS or error).
  */
 static void
-update_query_stats (T transport, size_t query_len, size_t response_len,
+update_query_stats (T transport,
+                    size_t query_len,
+                    size_t response_len,
                     int error)
 {
   assert (transport);
@@ -672,8 +693,11 @@ update_query_stats (T transport, size_t query_len, size_t response_len,
 }
 
 SocketDNSoverHTTPS_Query_T
-SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
-                          SocketDNSoverHTTPS_Callback callback, void *userdata)
+SocketDNSoverHTTPS_query (T transport,
+                          const unsigned char *query,
+                          size_t len,
+                          SocketDNSoverHTTPS_Callback callback,
+                          void *userdata)
 {
   assert (transport);
   assert (query);
@@ -707,8 +731,8 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
   SocketHTTPClient_Response response = { 0 };
   int exec_error = DOH_ERROR_SUCCESS;
 
-  if (doh_execute_request (transport, server, query, len, &response,
-                           &exec_error)
+  if (doh_execute_request (
+          transport, server, query, len, &response, &exec_error)
       != 0)
     {
       callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, exec_error, userdata);
@@ -721,8 +745,8 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
 
   if (doh_validate_response (&response, q->id, &validate_error) != 0)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, validate_error,
-                userdata);
+      callback (
+          (SocketDNSoverHTTPS_Query_T)q, NULL, 0, validate_error, userdata);
       SocketHTTPClient_Response_free (&response);
       transport->stats.queries_sent++;
       transport->stats.queries_failed++;
@@ -736,8 +760,11 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
   update_query_stats (transport, len, response.body_len, validate_error);
 
   /* Invoke callback immediately (synchronous operation) */
-  callback ((SocketDNSoverHTTPS_Query_T)q, q->response, q->response_len,
-            q->error, userdata);
+  callback ((SocketDNSoverHTTPS_Query_T)q,
+            q->response,
+            q->response_len,
+            q->error,
+            userdata);
 
   SocketHTTPClient_Response_free (&response);
 

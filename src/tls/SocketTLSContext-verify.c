@@ -35,14 +35,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 #define T SocketTLSContext_T
 
 
-
 /**
  * Default cipher list for legacy TLS (< 1.3) when user doesn't specify.
  * Excludes weak ciphers while maintaining compatibility.
  * For TLS 1.3+, use SOCKET_TLS13_CIPHERSUITES from SocketTLSConfig.h.
  */
 #ifndef SOCKET_TLS_LEGACY_CIPHER_LIST
-#define SOCKET_TLS_LEGACY_CIPHER_LIST                                         \
+#define SOCKET_TLS_LEGACY_CIPHER_LIST \
   "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA"
 #endif
 
@@ -258,15 +257,17 @@ check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
  * exceptions propagating through OpenSSL's callback mechanism.
  */
 static int
-invoke_user_callback (T ctx, int pre_ok, X509_STORE_CTX *x509_ctx,
+invoke_user_callback (T ctx,
+                      int pre_ok,
+                      X509_STORE_CTX *x509_ctx,
                       Socket_T sock)
 {
   volatile int result = pre_ok;
 
   TRY
   {
-    result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock,
-                                   ctx->verify_user_data);
+    result = ctx->verify_callback (
+        pre_ok, x509_ctx, ctx, sock, ctx->verify_user_data);
   }
   EXCEPT (SocketTLS_Failed)
   {
@@ -295,8 +296,8 @@ invoke_user_callback (T ctx, int pre_ok, X509_STORE_CTX *x509_ctx,
 static int
 get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
 {
-  SSL *ssl = X509_STORE_CTX_get_ex_data (
-      x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx ());
+  SSL *ssl = X509_STORE_CTX_get_ex_data (x509_ctx,
+                                         SSL_get_ex_data_X509_STORE_CTX_idx ());
 
   if (!ssl)
     return 0;
@@ -333,8 +334,10 @@ typedef enum
  * Raises: SocketTLS_Failed (RAISE mode only)
  */
 static int
-validate_ocsp_response (const unsigned char *response, size_t len,
-                        int check_basic, OcspValidateMode mode,
+validate_ocsp_response (const unsigned char *response,
+                        size_t len,
+                        int check_basic,
+                        OcspValidateMode mode,
                         const char *context)
 {
   const unsigned char *p = response;
@@ -356,9 +359,10 @@ validate_ocsp_response (const unsigned char *response, size_t len,
       OCSP_RESPONSE_free (resp);
       if (mode == OCSP_VALIDATE_RAISE)
         RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                             "OCSP response status not successful: %d", status);
-      SOCKET_LOG_ERROR_MSG ("%s: OCSP response status not successful: %d",
-                            context, status);
+                             "OCSP response status not successful: %d",
+                             status);
+      SOCKET_LOG_ERROR_MSG (
+          "%s: OCSP response status not successful: %d", context, status);
       return 0;
     }
 
@@ -369,8 +373,9 @@ validate_ocsp_response (const unsigned char *response, size_t len,
         {
           OCSP_RESPONSE_free (resp);
           if (mode == OCSP_VALIDATE_RAISE)
-            RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                                 "OCSP response missing basic response structure");
+            RAISE_CTX_ERROR_MSG (
+                SocketTLS_Failed,
+                "OCSP response missing basic response structure");
           SOCKET_LOG_ERROR_MSG ("%s: OCSP response missing basic response",
                                 context);
           return 0;
@@ -439,8 +444,11 @@ check_ocsp_must_staple (T ctx, Socket_T sock, X509 *cert)
     }
 
   /* Validate the OCSP response */
-  if (!validate_ocsp_response (ocsp_resp, ocsp_len, 0,
-                               OCSP_VALIDATE_RETURN_CODE, "OCSP Must-Staple"))
+  if (!validate_ocsp_response (ocsp_resp,
+                               ocsp_len,
+                               0,
+                               OCSP_VALIDATE_RETURN_CODE,
+                               "OCSP Must-Staple"))
     return 0;
 
   SOCKET_LOG_DEBUG_MSG ("OCSP Must-Staple: Valid OCSP response present");
@@ -513,7 +521,8 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
 }
 
 void
-SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
+SocketTLSContext_set_verify_callback (T ctx,
+                                      SocketTLSVerifyCallback callback,
                                       void *user_data)
 {
   assert (ctx);
@@ -538,16 +547,18 @@ validate_crl_file_size (const char *path, const struct stat *st)
 
   if (st->st_size < 0)
     RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "CRL file '%s' has invalid size: %ld bytes", path,
+                         "CRL file '%s' has invalid size: %ld bytes",
+                         path,
                          (long)st->st_size);
 
   file_size = (size_t)st->st_size;
   if (file_size > SOCKET_TLS_MAX_CRL_SIZE
       || !SocketSecurity_check_size (file_size))
-    RAISE_CTX_ERROR_FMT (
-        SocketTLS_Failed,
-        "CRL file '%s' too large: %ld bytes (max %u)", path,
-        (long)st->st_size, SOCKET_TLS_MAX_CRL_SIZE);
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "CRL file '%s' too large: %ld bytes (max %u)",
+                         path,
+                         (long)st->st_size,
+                         SOCKET_TLS_MAX_CRL_SIZE);
 }
 
 /**
@@ -566,7 +577,8 @@ validate_crl_directory (const char *path)
   dirp = opendir (path);
   if (!dirp)
     RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "Cannot open CRL directory '%s': %s", path,
+                         "Cannot open CRL directory '%s': %s",
+                         path,
                          Socket_safe_strerror (errno));
 
   while ((de = readdir (dirp)) != NULL)
@@ -580,7 +592,8 @@ validate_crl_directory (const char *path)
               RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
                                    "CRL directory '%s' has too many "
                                    "files (%d > max %d): potential DoS",
-                                   path, file_count,
+                                   path,
+                                   file_count,
                                    SOCKET_TLS_MAX_CRL_FILES_IN_DIR);
             }
         }
@@ -601,15 +614,18 @@ validate_crl_directory (const char *path)
  * Raises SocketTLS_Failed on error.
  */
 static void
-load_and_validate_crl (X509_STORE *store, const char *crl_path,
+load_and_validate_crl (X509_STORE *store,
+                       const char *crl_path,
                        int *is_directory)
 {
   struct stat st;
   int ret;
 
   if (stat (crl_path, &st) != 0)
-    RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
-                         crl_path, Socket_safe_strerror (errno));
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "Invalid CRL path '%s': %s",
+                         crl_path,
+                         Socket_safe_strerror (errno));
 
   *is_directory = S_ISDIR (st.st_mode);
 
@@ -649,7 +665,10 @@ SocketTLSContext_load_crl (T ctx, const char *crl_path)
     X509_STORE_set_flags (store,
                           X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
   }
-  FINALLY { CRL_UNLOCK (ctx); }
+  FINALLY
+  {
+    CRL_UNLOCK (ctx);
+  }
   END_TRY;
 }
 
@@ -741,7 +760,9 @@ SocketTLSContext_set_min_protocol (T ctx, int version)
           "(0x%04X) - versions below TLS 1.3 have known vulnerabilities "
           "(POODLE, BEAST, Lucky13). Consider using TLS 1.3 (0x%04X) for "
           "production environments.",
-          version_name (version), version, TLS1_3_VERSION);
+          version_name (version),
+          version,
+          TLS1_3_VERSION);
     }
 
   if (SSL_CTX_set_min_proto_version (ctx->ssl_ctx, version) != 1)
@@ -771,7 +792,8 @@ SocketTLSContext_set_max_protocol (T ctx, int version)
           "SECURITY WARNING: Setting maximum TLS version to %s "
           "(0x%04X) - this limits connections to older protocols with known "
           "vulnerabilities. Ensure this is intentional.",
-          version_name (version), version);
+          version_name (version),
+          version);
     }
 
   if (SSL_CTX_set_max_proto_version (ctx->ssl_ctx, version) != 1)
@@ -946,12 +968,14 @@ validate_ocsp_response_size (size_t len)
 {
   if (len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
     RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "OCSP response too large (%zu bytes, max %d)", len,
+                         "OCSP response too large (%zu bytes, max %d)",
+                         len,
                          SOCKET_TLS_MAX_OCSP_RESPONSE_LEN);
 }
 
 void
-SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
+SocketTLSContext_set_ocsp_response (T ctx,
+                                    const unsigned char *response,
                                     size_t len)
 {
   unsigned char *copy;
@@ -964,8 +988,8 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
                          "Invalid OCSP response (null or zero length)");
 
   validate_ocsp_response_size (len);
-  validate_ocsp_response (response, len, 1, OCSP_VALIDATE_RAISE,
-                          "OCSP response validation");
+  validate_ocsp_response (
+      response, len, 1, OCSP_VALIDATE_RAISE, "OCSP response validation");
 
   copy = ctx_arena_alloc (ctx, len, "Failed to allocate OCSP response buffer");
   memcpy (copy, response, len);
@@ -974,7 +998,8 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
 }
 
 void
-SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
+SocketTLSContext_set_ocsp_gen_callback (T ctx,
+                                        SocketTLSOcspGenCallback cb,
                                         void *arg)
 {
   assert (ctx);
@@ -1112,7 +1137,8 @@ find_tlsfeature_extension (const X509 *cert)
 }
 
 /**
- * parse_tlsfeature_extension_for_status_request - Parse TLS Feature extension for status_request
+ * parse_tlsfeature_extension_for_status_request - Parse TLS Feature extension
+ * for status_request
  * @p: Pointer to extension data
  * @ext_len: Length of extension data
  *
@@ -1122,7 +1148,7 @@ find_tlsfeature_extension (const X509 *cert)
  */
 static int
 parse_tlsfeature_extension_for_status_request (const unsigned char *p,
-                                                 long ext_len)
+                                               long ext_len)
 {
   const unsigned char *end = p + ext_len;
   long seq_len;
@@ -1168,7 +1194,8 @@ parse_tlsfeature_extension_for_status_request (const unsigned char *p,
 }
 
 /**
- * SocketTLSContext_cert_has_must_staple - Check certificate for OCSP Must-Staple extension
+ * SocketTLSContext_cert_has_must_staple - Check certificate for OCSP
+ * Must-Staple extension
  * @cert: X509 certificate to examine
  *
  * Checks for id-pe-tlsfeature extension containing status_request (5).
@@ -1221,8 +1248,8 @@ SocketTLSContext_set_ocsp_must_staple (T ctx, OCSPMustStapleMode mode)
                          "OCSP Must-Staple is for client contexts only");
 
   if (mode < OCSP_MUST_STAPLE_DISABLED || mode > OCSP_MUST_STAPLE_ALWAYS)
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                         "Invalid OCSP Must-Staple mode: %d", mode);
+    RAISE_CTX_ERROR_MSG (
+        SocketTLS_Failed, "Invalid OCSP Must-Staple mode: %d", mode);
 
   ctx->ocsp_must_staple_mode = mode;
 
@@ -1317,8 +1344,8 @@ get_x509_store_exdata_index (void)
  *
  * Thread-safe: Yes, if user callback is thread-safe
  */
-static STACK_OF (X509) *
-    cert_lookup_wrapper (X509_STORE_CTX *store_ctx, const X509_NAME *name)
+static STACK_OF (X509)
+    * cert_lookup_wrapper (X509_STORE_CTX *store_ctx, const X509_NAME *name)
 {
   STACK_OF (X509) *result = NULL;
 
@@ -1328,7 +1355,8 @@ static STACK_OF (X509) *
     return NULL;
 
   /* Retrieve our SocketTLSContext_T from the X509_STORE ex_data.
-   * Uses dynamically allocated index to avoid conflicts with other libraries. */
+   * Uses dynamically allocated index to avoid conflicts with other libraries.
+   */
   int idx = get_x509_store_exdata_index ();
   if (idx < 0)
     return NULL;
@@ -1369,8 +1397,9 @@ static STACK_OF (X509) *
 #endif /* OPENSSL_VERSION_NUMBER >= 0x30000000L */
 
 void
-SocketTLSContext_set_cert_lookup_callback (
-    T ctx, SocketTLSCertLookupCallback callback, void *user_data)
+SocketTLSContext_set_cert_lookup_callback (T ctx,
+                                           SocketTLSCertLookupCallback callback,
+                                           void *user_data)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);
@@ -1379,12 +1408,14 @@ SocketTLSContext_set_cert_lookup_callback (
   ctx->cert_lookup_user_data = user_data;
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-  /* OpenSSL 3.0+: Use X509_STORE_set_lookup_certs_cb for automatic integration */
+  /* OpenSSL 3.0+: Use X509_STORE_set_lookup_certs_cb for automatic integration
+   */
   X509_STORE *store = SSL_CTX_get_cert_store (ctx->ssl_ctx);
   if (!store)
     {
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Failed to get certificate store for lookup callback");
+      RAISE_CTX_ERROR_MSG (
+          SocketTLS_Failed,
+          "Failed to get certificate store for lookup callback");
     }
 
   /* Get dynamically allocated ex_data index */
@@ -1424,8 +1455,9 @@ SocketTLSContext_set_cert_lookup_callback (
    * Users can invoke the callback manually from SocketTLSVerifyCallback. */
   if (callback)
     {
-      SOCKET_LOG_INFO_MSG ("Certificate lookup callback registered. On OpenSSL < 3.0, "
-                           "callback must be invoked from custom verify callbacks.");
+      SOCKET_LOG_INFO_MSG (
+          "Certificate lookup callback registered. On OpenSSL < 3.0, "
+          "callback must be invoked from custom verify callbacks.");
     }
 #endif
 }

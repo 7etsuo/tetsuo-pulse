@@ -130,8 +130,7 @@ TEST (quic_wire_pn_decode_8bit_simple)
 {
   /* largest_pn=100, truncated=101 (8-bit) -> 101 */
   uint64_t full_pn;
-  SocketQUICWire_Result res
-      = SocketQUICWire_pn_decode (100, 101, 8, &full_pn);
+  SocketQUICWire_Result res = SocketQUICWire_pn_decode (100, 101, 8, &full_pn);
 
   ASSERT_EQ (res, QUIC_PN_OK);
   ASSERT_EQ (full_pn, 101);
@@ -491,8 +490,8 @@ TEST (quic_wire_pn_roundtrip_simple)
 
   /* Decode back to full PN */
   uint64_t decoded;
-  res = SocketQUICWire_pn_decode (largest_acked, truncated, (unsigned)len * 8,
-                                  &decoded);
+  res = SocketQUICWire_pn_decode (
+      largest_acked, truncated, (unsigned)len * 8, &decoded);
   ASSERT_EQ (res, QUIC_PN_OK);
   ASSERT_EQ (decoded, original);
 }
@@ -516,8 +515,8 @@ TEST (quic_wire_pn_roundtrip_rfc_example)
 
   /* Decode back to full PN */
   uint64_t decoded;
-  res = SocketQUICWire_pn_decode (largest_acked, truncated, (unsigned)len * 8,
-                                  &decoded);
+  res = SocketQUICWire_pn_decode (
+      largest_acked, truncated, (unsigned)len * 8, &decoded);
   ASSERT_EQ (res, QUIC_PN_OK);
   ASSERT_EQ (decoded, original);
 }
@@ -541,8 +540,8 @@ TEST (quic_wire_pn_roundtrip_large)
 
   /* Decode back to full PN */
   uint64_t decoded;
-  res = SocketQUICWire_pn_decode (largest_acked, truncated, (unsigned)len * 8,
-                                  &decoded);
+  res = SocketQUICWire_pn_decode (
+      largest_acked, truncated, (unsigned)len * 8, &decoded);
   ASSERT_EQ (res, QUIC_PN_OK);
   ASSERT_EQ (decoded, original);
 }
@@ -565,8 +564,8 @@ TEST (quic_wire_pn_roundtrip_first_packet)
 
   /* Decode back to full PN */
   uint64_t decoded;
-  res = SocketQUICWire_pn_decode (QUIC_PN_NONE, truncated, (unsigned)len * 8,
-                                  &decoded);
+  res = SocketQUICWire_pn_decode (
+      QUIC_PN_NONE, truncated, (unsigned)len * 8, &decoded);
   ASSERT_EQ (res, QUIC_PN_OK);
   ASSERT_EQ (decoded, original);
 }

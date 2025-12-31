@@ -67,8 +67,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argc;
   (void)argv;
 
-  TRY { g_client_ctx = SocketDTLSContext_new_client (NULL); }
-  EXCEPT (SocketDTLS_Failed) { g_client_ctx = NULL; }
+  TRY
+  {
+    g_client_ctx = SocketDTLSContext_new_client (NULL);
+  }
+  EXCEPT (SocketDTLS_Failed)
+  {
+    g_client_ctx = NULL;
+  }
   END_TRY;
 
   return 0;
@@ -79,16 +85,16 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
  */
 typedef enum
 {
-  OP_SEQUENCE_IN_ORDER = 0,     /* Normal sequential packets */
-  OP_SEQUENCE_OUT_OF_ORDER,     /* Reordered packets */
-  OP_SEQUENCE_DUPLICATE,        /* Exact duplicates */
-  OP_SEQUENCE_WINDOW_EDGE,      /* Window boundary conditions */
-  OP_SEQUENCE_ROLLOVER,         /* Sequence number wraparound */
-  OP_EPOCH_TRANSITION,          /* Epoch change scenarios */
-  OP_LATE_ARRIVAL,              /* Very delayed packets */
-  OP_REPLAY_ATTACK_SIM,         /* Simulate replay attack */
-  OP_MTU_FRAGMENTATION,         /* Fragment reassembly with replay */
-  OP_MIXED_OPERATIONS,          /* Combined scenarios */
+  OP_SEQUENCE_IN_ORDER = 0, /* Normal sequential packets */
+  OP_SEQUENCE_OUT_OF_ORDER, /* Reordered packets */
+  OP_SEQUENCE_DUPLICATE,    /* Exact duplicates */
+  OP_SEQUENCE_WINDOW_EDGE,  /* Window boundary conditions */
+  OP_SEQUENCE_ROLLOVER,     /* Sequence number wraparound */
+  OP_EPOCH_TRANSITION,      /* Epoch change scenarios */
+  OP_LATE_ARRIVAL,          /* Very delayed packets */
+  OP_REPLAY_ATTACK_SIM,     /* Simulate replay attack */
+  OP_MTU_FRAGMENTATION,     /* Fragment reassembly with replay */
+  OP_MIXED_OPERATIONS,      /* Combined scenarios */
   OP_COUNT
 } ReplayOp;
 
@@ -135,7 +141,8 @@ test_sequence_in_order (SocketDgram_T socket, const uint8_t *data, size_t size)
  * Test out-of-order packet delivery
  */
 static void
-test_sequence_out_of_order (SocketDgram_T socket, const uint8_t *data,
+test_sequence_out_of_order (SocketDgram_T socket,
+                            const uint8_t *data,
                             size_t size)
 {
   if (size < 20)

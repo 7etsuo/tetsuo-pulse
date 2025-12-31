@@ -93,7 +93,8 @@ extern void SocketTLSContext_free (T *ctx_p);
  * @param key_file Private key (PEM)
  * @throws SocketTLS_Failed on error
  */
-extern void SocketTLSContext_load_certificate (T ctx, const char *cert_file,
+extern void SocketTLSContext_load_certificate (T ctx,
+                                               const char *cert_file,
                                                const char *key_file);
 
 /**
@@ -104,7 +105,8 @@ extern void SocketTLSContext_load_certificate (T ctx, const char *cert_file,
  * @param key_file Private key (PEM)
  * @throws SocketTLS_Failed on error
  */
-extern void SocketTLSContext_add_certificate (T ctx, const char *hostname,
+extern void SocketTLSContext_add_certificate (T ctx,
+                                              const char *hostname,
                                               const char *cert_file,
                                               const char *key_file);
 
@@ -140,8 +142,10 @@ extern void SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
  * @note Callback MUST be thread-safe if context is shared across threads.
  */
 typedef int (*SocketTLSVerifyCallback) (int preverify_ok,
-                                        X509_STORE_CTX *x509_ctx, T tls_ctx,
-                                        Socket_T socket, void *user_data);
+                                        X509_STORE_CTX *x509_ctx,
+                                        T tls_ctx,
+                                        Socket_T socket,
+                                        void *user_data);
 
 /**
  * @brief Register custom verification callback.
@@ -151,7 +155,8 @@ typedef int (*SocketTLSVerifyCallback) (int preverify_ok,
  * @throws SocketTLS_Failed on error
  */
 extern void
-SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
+SocketTLSContext_set_verify_callback (T ctx,
+                                      SocketTLSVerifyCallback callback,
                                       void *user_data);
 
 /* ============================================================================
@@ -174,7 +179,9 @@ extern void SocketTLSContext_refresh_crl (T ctx, const char *crl_path);
 extern void SocketTLSContext_reload_crl (T ctx, const char *crl_path);
 
 /** @brief CRL refresh callback. */
-typedef void (*SocketTLSCrlCallback) (T ctx, const char *path, int success,
+typedef void (*SocketTLSCrlCallback) (T ctx,
+                                      const char *path,
+                                      int success,
                                       void *user_data);
 
 /**
@@ -185,9 +192,12 @@ typedef void (*SocketTLSCrlCallback) (T ctx, const char *path, int success,
  * @param callback Optional notification callback
  * @param user_data User data for callback
  */
-extern void SocketTLSContext_set_crl_auto_refresh (
-    T ctx, const char *crl_path, long interval_seconds,
-    SocketTLSCrlCallback callback, void *user_data);
+extern void
+SocketTLSContext_set_crl_auto_refresh (T ctx,
+                                       const char *crl_path,
+                                       long interval_seconds,
+                                       SocketTLSCrlCallback callback,
+                                       void *user_data);
 
 /** @brief Disable automatic CRL refresh. */
 extern void SocketTLSContext_cancel_crl_auto_refresh (T ctx);
@@ -228,9 +238,9 @@ typedef OCSP_RESPONSE *(*SocketTLSOcspGenCallback) (SSL *ssl, void *arg);
  * @param cb Generator callback
  * @param arg User data
  */
-extern void
-SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
-                                        void *arg);
+extern void SocketTLSContext_set_ocsp_gen_callback (T ctx,
+                                                    SocketTLSOcspGenCallback cb,
+                                                    void *arg);
 
 /**
  * @brief Get OCSP status after handshake (client).
@@ -254,8 +264,8 @@ typedef enum
 } OCSPMustStapleMode;
 
 /** @brief Set OCSP Must-Staple mode (client). */
-extern void SocketTLSContext_set_ocsp_must_staple (T ctx,
-                                                   OCSPMustStapleMode mode);
+extern void
+SocketTLSContext_set_ocsp_must_staple (T ctx, OCSPMustStapleMode mode);
 
 /** @brief Get OCSP Must-Staple mode. */
 extern OCSPMustStapleMode SocketTLSContext_get_ocsp_must_staple (T ctx);
@@ -287,8 +297,10 @@ typedef X509 *(*SocketTLSCertLookupCallback) (X509_STORE_CTX *store_ctx,
  * @param user_data User data
  * @note OpenSSL 3.0+ uses this automatically; <3.0 requires manual invocation.
  */
-extern void SocketTLSContext_set_cert_lookup_callback (
-    T ctx, SocketTLSCertLookupCallback callback, void *user_data);
+extern void
+SocketTLSContext_set_cert_lookup_callback (T ctx,
+                                           SocketTLSCertLookupCallback callback,
+                                           void *user_data);
 
 /* ============================================================================
  * Protocol Configuration
@@ -324,8 +336,8 @@ extern int SocketTLSContext_validate_ciphersuites (const char *ciphersuites);
  * @param protos Protocol strings (e.g., "h2", "http/1.1")
  * @param count Number of protocols
  */
-extern void SocketTLSContext_set_alpn_protos (T ctx, const char **protos,
-                                              size_t count);
+extern void
+SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count);
 
 /** @brief ALPN selection callback. */
 typedef const char *(*SocketTLSAlpnCallback) (const char **client_protos,
@@ -348,8 +360,10 @@ extern void SocketTLSContext_set_alpn_callback (T ctx,
  * @param context Context bytes
  * @param context_len Length (1-32 bytes)
  */
-extern void SocketTLSContext_set_session_id_context (
-    T ctx, const unsigned char *context, size_t context_len);
+extern void
+SocketTLSContext_set_session_id_context (T ctx,
+                                         const unsigned char *context,
+                                         size_t context_len);
 
 /**
  * @brief Enable session caching.
@@ -357,15 +371,18 @@ extern void SocketTLSContext_set_session_id_context (
  * @param max_sessions Max sessions (0 for default)
  * @param timeout_seconds Timeout (0 for default 300s)
  */
-extern void SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
+extern void SocketTLSContext_enable_session_cache (T ctx,
+                                                   size_t max_sessions,
                                                    long timeout_seconds);
 
 /** @brief Set session cache size. */
 extern void SocketTLSContext_set_session_cache_size (T ctx, size_t size);
 
 /** @brief Get session cache statistics. */
-extern void SocketTLSContext_get_cache_stats (T ctx, size_t *hits,
-                                              size_t *misses, size_t *stores);
+extern void SocketTLSContext_get_cache_stats (T ctx,
+                                              size_t *hits,
+                                              size_t *misses,
+                                              size_t *stores);
 
 /**
  * @brief Enable session tickets.
@@ -378,8 +395,10 @@ extern void SocketTLSContext_enable_session_tickets (T ctx,
                                                      size_t key_len);
 
 /** @brief Rotate session ticket key. */
-extern void SocketTLSContext_rotate_session_ticket_key (
-    T ctx, const unsigned char *new_key, size_t new_key_len);
+extern void
+SocketTLSContext_rotate_session_ticket_key (T ctx,
+                                            const unsigned char *new_key,
+                                            size_t new_key_len);
 
 /** @brief Check if session tickets enabled. */
 extern int SocketTLSContext_session_tickets_enabled (T ctx);
@@ -420,8 +439,8 @@ extern size_t SocketTLSContext_get_pin_count (T ctx);
 extern int SocketTLSContext_has_pins (T ctx);
 
 /** @brief Verify hash against pins. Returns 1 if match. */
-extern int SocketTLSContext_verify_pin (T ctx,
-                                        const unsigned char *sha256_hash);
+extern int
+SocketTLSContext_verify_pin (T ctx, const unsigned char *sha256_hash);
 
 /** @brief Verify certificate against pins. Returns 1 if match. */
 extern int SocketTLSContext_verify_cert_pin (T ctx, const X509 *cert);
@@ -467,10 +486,11 @@ extern void SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file);
  * @return 1 to accept, 0 to reject (replay detected)
  * @note Callback MUST be thread-safe if context is shared.
  */
-typedef int (*SocketTLSEarlyDataReplayCallback) (T ctx,
-                                                  const unsigned char *session_id,
-                                                  size_t session_id_len,
-                                                  void *user_data);
+typedef int (*SocketTLSEarlyDataReplayCallback) (
+    T ctx,
+    const unsigned char *session_id,
+    size_t session_id_len,
+    void *user_data);
 
 /** @brief Register replay protection callback (server). */
 extern void SocketTLSContext_set_early_data_replay_callback (
@@ -483,8 +503,10 @@ extern void SocketTLSContext_require_early_data_replay (T ctx, int require);
 extern int SocketTLSContext_has_early_data_replay_callback (T ctx);
 
 /** @brief Invoke replay callback. Returns 1 if accepted. */
-extern int SocketTLSContext_check_early_data_replay (
-    T ctx, const unsigned char *session_id, size_t session_id_len);
+extern int
+SocketTLSContext_check_early_data_replay (T ctx,
+                                          const unsigned char *session_id,
+                                          size_t session_id_len);
 
 /* ============================================================================
  * Internal Functions

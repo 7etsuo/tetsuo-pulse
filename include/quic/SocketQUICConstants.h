@@ -139,8 +139,8 @@
 /**
  * @brief Initial congestion window in datagrams (RFC 9002 Section 7.2).
  *
- * initial_window = min(10 * max_datagram_size, max(14720, 2 * max_datagram_size))
- * For 1200-byte datagrams: 10 * 1200 = 12000 bytes
+ * initial_window = min(10 * max_datagram_size, max(14720, 2 *
+ * max_datagram_size)) For 1200-byte datagrams: 10 * 1200 = 12000 bytes
  */
 #define QUIC_INITIAL_CWND_PACKETS 10
 
@@ -189,7 +189,8 @@
  * - rtt_var = (1 - 1/4) * rtt_var + 1/4 * |smoothed_rtt - rtt_sample|
  *           = (3 * rtt_var + |smoothed_rtt - rtt_sample|) / 4
  *
- * These constants map to floating-point equivalents QUIC_RTT_ALPHA and QUIC_RTT_BETA.
+ * These constants map to floating-point equivalents QUIC_RTT_ALPHA and
+ * QUIC_RTT_BETA.
  */
 
 /**
@@ -234,8 +235,8 @@
 /**
  * @brief Time reordering threshold numerator (RFC 9002 Section 6.1.2).
  *
- * time_threshold = max(kTimeThreshold * max(smoothed_rtt, latest_rtt), kGranularity)
- * kTimeThreshold = 9/8 = 1.125
+ * time_threshold = max(kTimeThreshold * max(smoothed_rtt, latest_rtt),
+ * kGranularity) kTimeThreshold = 9/8 = 1.125
  */
 #define QUIC_TIME_THRESHOLD_NUM 9
 #define QUIC_TIME_THRESHOLD_DEN 8
@@ -493,12 +494,12 @@
  * @param prefix   Module prefix (e.g., SocketQUICAck)
  * @param max_val  Maximum valid result enum value
  */
-#define DEFINE_RESULT_STRING_FUNC(prefix, max_val)                            \
-  const char *prefix##_result_string (prefix##_Result result)                 \
-  {                                                                           \
-    if (result < 0 || result > (max_val))                                     \
-      return "Unknown error";                                                 \
-    return result_strings[result];                                            \
+#define DEFINE_RESULT_STRING_FUNC(prefix, max_val)            \
+  const char *prefix##_result_string (prefix##_Result result) \
+  {                                                           \
+    if (result < 0 || result > (max_val))                     \
+      return "Unknown error";                                 \
+    return result_strings[result];                            \
   }
 
 /** @} */

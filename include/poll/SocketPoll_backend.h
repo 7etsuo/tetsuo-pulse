@@ -269,21 +269,21 @@ typedef struct PollBackend_T *PollBackend_T;
  * @see SocketPoll_new() public API that indirectly uses this validation
  */
 #ifndef VALIDATE_MAXEVENTS
-#define VALIDATE_MAXEVENTS(maxevents, event_type)                             \
-  do                                                                          \
-    {                                                                         \
-      /* Check before cast to detect negative values correctly */             \
-      if ((maxevents) <= 0)                                                   \
-        {                                                                     \
-          errno = EINVAL;                                                     \
-          return NULL;                                                        \
-        }                                                                     \
-      if ((size_t)(maxevents) > SIZE_MAX / sizeof (event_type))               \
-        {                                                                     \
-          errno = EOVERFLOW;                                                  \
-          return NULL;                                                        \
-        }                                                                     \
-    }                                                                         \
+#define VALIDATE_MAXEVENTS(maxevents, event_type)                 \
+  do                                                              \
+    {                                                             \
+      /* Check before cast to detect negative values correctly */ \
+      if ((maxevents) <= 0)                                       \
+        {                                                         \
+          errno = EINVAL;                                         \
+          return NULL;                                            \
+        }                                                         \
+      if ((size_t)(maxevents) > SIZE_MAX / sizeof (event_type))   \
+        {                                                         \
+          errno = EOVERFLOW;                                      \
+          return NULL;                                            \
+        }                                                         \
+    }                                                             \
   while (0)
 #endif
 
@@ -307,13 +307,13 @@ typedef struct PollBackend_T *PollBackend_T;
  * @see SOCKET_MS_PER_SECOND time conversion constant.
  * @see SOCKET_NS_PER_MS nanosecond conversion constant.
  */
-#define TIMEOUT_MS_TO_TIMESPEC(timeout_ms, ts)                                \
-  do                                                                          \
-    {                                                                         \
-      (ts)->tv_sec = (timeout_ms) / SOCKET_MS_PER_SECOND;                     \
-      (ts)->tv_nsec                                                           \
-          = ((timeout_ms) % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;         \
-    }                                                                         \
+#define TIMEOUT_MS_TO_TIMESPEC(timeout_ms, ts)                        \
+  do                                                                  \
+    {                                                                 \
+      (ts)->tv_sec = (timeout_ms) / SOCKET_MS_PER_SECOND;             \
+      (ts)->tv_nsec                                                   \
+          = ((timeout_ms) % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS; \
+    }                                                                 \
   while (0)
 
 /**
@@ -339,7 +339,7 @@ typedef struct PollBackend_T *PollBackend_T;
  *
  * @see backend_wait() in all backend implementations.
  */
-#define HANDLE_POLL_ERROR(backend)                                            \
+#define HANDLE_POLL_ERROR(backend) \
   ((backend)->last_nev = 0, (errno == EINTR) ? 0 : -1)
 
 /**
@@ -401,15 +401,15 @@ typedef struct PollBackend_T *PollBackend_T;
  * @see errno(3) for EBADF details
  * @see SocketPoll_add() public method invoking backend_add indirectly
  */
-#define VALIDATE_FD(fd)                                                       \
-  do                                                                          \
-    {                                                                         \
-      if ((fd) < 0)                                                           \
-        {                                                                     \
-          errno = EBADF;                                                      \
-          return -1;                                                          \
-        }                                                                     \
-    }                                                                         \
+#define VALIDATE_FD(fd)  \
+  do                     \
+    {                    \
+      if ((fd) < 0)      \
+        {                \
+          errno = EBADF; \
+          return -1;     \
+        }                \
+    }                    \
   while (0)
 
 /**
@@ -554,8 +554,7 @@ typedef struct PollBackend_T *PollBackend_T;
  * @see SocketPoll_new() typical consumer in public API
  * @see Arena_T docs/foundation for allocation details
  */
-extern PollBackend_T
-backend_new (Arena_T arena, int maxevents);
+extern PollBackend_T backend_new (Arena_T arena, int maxevents);
 
 /**
  * @brief Perform backend cleanup: close platform resources but retain arena
@@ -622,8 +621,7 @@ backend_new (Arena_T arena, int maxevents);
  * @see SocketPoll_free() typical invocation site
  * @see backend_name() for logging freed backend type
  */
-extern void
-backend_free (PollBackend_T backend);
+extern void backend_free (PollBackend_T backend);
 
 /**
  * @brief Register file descriptor for I/O event notifications.
@@ -697,8 +695,7 @@ backend_free (PollBackend_T backend);
  * @see SocketPoll_add() / SocketPoll_mod() public wrappers
  * @see Socket_setnonblocking() ensures compatibility
  */
-extern int
-backend_add (PollBackend_T backend, int fd, unsigned events);
+extern int backend_add (PollBackend_T backend, int fd, unsigned events);
 
 /**
  * @brief Update event monitoring configuration for existing file descriptor.
@@ -763,8 +760,7 @@ backend_add (PollBackend_T backend, int fd, unsigned events);
  * @see SocketPoll_mod() public equivalent
  * @see backend_wait() observes updated events
  */
-extern int
-backend_mod (PollBackend_T backend, int fd, unsigned events);
+extern int backend_mod (PollBackend_T backend, int fd, unsigned events);
 
 /**
  * @brief Remove socket from poll set.
@@ -778,8 +774,7 @@ backend_mod (PollBackend_T backend, int fd, unsigned events);
  * @see backend_add() for registration.
  * @see backend_mod() for modification.
  */
-extern int
-backend_del (PollBackend_T backend, int fd);
+extern int backend_del (PollBackend_T backend, int fd);
 
 /**
  * @brief Wait for events.
@@ -795,8 +790,7 @@ backend_del (PollBackend_T backend, int fd);
  * @see backend_add() for socket registration.
  * @see SocketPoll_wait() for public interface that calls this.
  */
-extern int
-backend_wait (PollBackend_T backend, int timeout_ms);
+extern int backend_wait (PollBackend_T backend, int timeout_ms);
 
 /**
  * @brief Get event details for index.
@@ -816,9 +810,10 @@ backend_wait (PollBackend_T backend, int timeout_ms);
  * @see SocketEvent_T for translated event structure.
  * @see SocketPoll_wait() for complete event processing pipeline.
  */
-extern int
-backend_get_event (const PollBackend_T backend, int index, int *fd_out,
-                   unsigned *events_out);
+extern int backend_get_event (const PollBackend_T backend,
+                              int index,
+                              int *fd_out,
+                              unsigned *events_out);
 
 /**
  * @brief Get human-readable backend name for debugging and logging.
@@ -833,8 +828,7 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
  * @see backend_new() for compile-time backend selection logic.
  * @see SocketPoll_new() for backend initialization during poll creation.
  */
-extern const char *
-backend_name (void);
+extern const char *backend_name (void);
 
 /** @} */
 

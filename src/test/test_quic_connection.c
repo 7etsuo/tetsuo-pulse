@@ -5,7 +5,8 @@
  */
 
 /**
- * test_quic_connection.c - QUIC Connection Table unit tests (RFC 9000 Section 5.2-5.3)
+ * test_quic_connection.c - QUIC Connection Table unit tests (RFC 9000
+ * Section 5.2-5.3)
  *
  * Tests connection table operations, packet demultiplexing by DCID,
  * zero-length DCID (address-based) routing, and CID lifecycle management.
@@ -180,8 +181,8 @@ TEST (quic_connection_zero_length_dcid)
   const uint8_t local_addr[] = { 127, 0, 0, 1 };
   const uint8_t peer_addr[] = { 192, 168, 1, 1 };
 
-  SocketQUICConnection_set_addresses (conn, local_addr, peer_addr, 12345, 443,
-                                      0);
+  SocketQUICConnection_set_addresses (
+      conn, local_addr, peer_addr, 12345, 443, 0);
 
   ASSERT (SocketQUICConnection_uses_zero_dcid (conn));
 
@@ -245,12 +246,12 @@ TEST (quic_connection_result_strings)
   ASSERT (strcmp (SocketQUICConnection_result_string (QUIC_CONN_ERROR_NULL),
                   "NULL pointer argument")
           == 0);
-  ASSERT (
-      strcmp (SocketQUICConnection_role_string (QUIC_CONN_ROLE_CLIENT), "CLIENT")
-      == 0);
-  ASSERT (
-      strcmp (SocketQUICConnection_role_string (QUIC_CONN_ROLE_SERVER), "SERVER")
-      == 0);
+  ASSERT (strcmp (SocketQUICConnection_role_string (QUIC_CONN_ROLE_CLIENT),
+                  "CLIENT")
+          == 0);
+  ASSERT (strcmp (SocketQUICConnection_role_string (QUIC_CONN_ROLE_SERVER),
+                  "SERVER")
+          == 0);
 }
 
 /* ============================================================================
@@ -264,10 +265,10 @@ TEST (quic_conntable_multiple_cids)
   SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
   SocketQUICConnection_T conn
       = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
-  const uint8_t cid1_data[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                                0x08 };
-  const uint8_t cid2_data[] = { 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-                                0x18 };
+  const uint8_t cid1_data[]
+      = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  const uint8_t cid2_data[]
+      = { 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18 };
   SocketQUICConnectionID_T cid1, cid2;
 
   SocketQUICConnectionID_set (&cid1, cid1_data, sizeof (cid1_data));
@@ -352,7 +353,8 @@ TEST (quic_connection_update_dcid)
   ASSERT_EQ (result, QUIC_CONN_OK);
   ASSERT_EQ (conn->peer_cid_count, 1);
 
-  const SocketQUICConnectionID_T *peer = SocketQUICConnection_get_peer_cid (conn);
+  const SocketQUICConnectionID_T *peer
+      = SocketQUICConnection_get_peer_cid (conn);
   ASSERT_NOT_NULL (peer);
   ASSERT (SocketQUICConnectionID_equal_raw (peer, data, sizeof (data)));
 
@@ -574,8 +576,8 @@ TEST (quic_conntable_stats_initial)
   uint64_t cid_hits = 1, addr_hits = 1, max_chain = 1;
   size_t count = 1;
 
-  SocketQUICConnTable_get_stats (table, &cid_hits, &addr_hits, &max_chain,
-                                 &count);
+  SocketQUICConnTable_get_stats (
+      table, &cid_hits, &addr_hits, &max_chain, &count);
 
   ASSERT_EQ (cid_hits, 0);
   ASSERT_EQ (addr_hits, 0);
@@ -598,15 +600,15 @@ TEST (quic_conntable_chain_limit_cid)
       SocketQUICConnectionID_T cid;
       uint8_t data[8];
       for (int j = 0; j < 8; j++)
-        data[j] = (uint8_t) (i * 10 + j);
+        data[j] = (uint8_t)(i * 10 + j);
 
       SocketQUICConnectionID_set (&cid, data, sizeof (data));
       SocketQUICConnection_add_local_cid (conn, &cid);
       SocketQUICConnTable_add (table, conn);
     }
 
-  const uint8_t lookup_data[] = { 0xFF, 0xFF, 0xFF, 0xFF,
-                                  0xFF, 0xFF, 0xFF, 0xFF };
+  const uint8_t lookup_data[]
+      = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
   SocketQUICConnection_T found
       = SocketQUICConnTable_lookup (table, lookup_data, sizeof (lookup_data));
 
@@ -614,8 +616,8 @@ TEST (quic_conntable_chain_limit_cid)
 
   uint64_t cid_hits = 0, addr_hits = 0, max_chain = 0;
   size_t count = 0;
-  SocketQUICConnTable_get_stats (table, &cid_hits, &addr_hits, &max_chain,
-                                 &count);
+  SocketQUICConnTable_get_stats (
+      table, &cid_hits, &addr_hits, &max_chain, &count);
 
   ASSERT (cid_hits > 0);
   ASSERT_EQ (addr_hits, 0);
@@ -636,10 +638,10 @@ TEST (quic_conntable_chain_limit_addr)
     {
       SocketQUICConnection_T conn
           = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
-      uint8_t peer_addr[] = { 192, 168, 1, (uint8_t) (i + 1) };
+      uint8_t peer_addr[] = { 192, 168, 1, (uint8_t)(i + 1) };
 
-      SocketQUICConnection_set_addresses (conn, local_addr, peer_addr, 443,
-                                          (uint16_t) (5000 + i), 0);
+      SocketQUICConnection_set_addresses (
+          conn, local_addr, peer_addr, 443, (uint16_t)(5000 + i), 0);
       SocketQUICConnTable_add (table, conn);
     }
 
@@ -651,8 +653,8 @@ TEST (quic_conntable_chain_limit_addr)
 
   uint64_t cid_hits = 0, addr_hits = 0, max_chain = 0;
   size_t count = 0;
-  SocketQUICConnTable_get_stats (table, &cid_hits, &addr_hits, &max_chain,
-                                 &count);
+  SocketQUICConnTable_get_stats (
+      table, &cid_hits, &addr_hits, &max_chain, &count);
 
   ASSERT_EQ (cid_hits, 0);
   ASSERT (addr_hits > 0);

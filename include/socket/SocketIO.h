@@ -60,8 +60,8 @@
  * @see @ref SocketTLS_Failed "SocketTLS_Failed" exception for TLS-specific
  * errors.
  */
-extern ssize_t socket_send_internal (T socket, const void *buf, size_t len,
-                                     int flags);
+extern ssize_t
+socket_send_internal (T socket, const void *buf, size_t len, int flags);
 
 /**
  * @brief Internal receive operation (TLS-aware)
@@ -88,8 +88,8 @@ extern ssize_t socket_send_internal (T socket, const void *buf, size_t len,
  * @see SocketTLS_Failed exception for TLS-specific errors.
  * @see @ref Socket_Closed "Socket_Closed" on EOF detection.
  */
-extern ssize_t socket_recv_internal (T socket, void *buf, size_t len,
-                                     int flags);
+extern ssize_t
+socket_recv_internal (T socket, void *buf, size_t len, int flags);
 
 /**
  * @brief Internal scatter/gather send (TLS-aware)
@@ -112,8 +112,10 @@ extern ssize_t socket_recv_internal (T socket, void *buf, size_t len,
  * @see Arena_T for memory allocation details.
  * @see @ref SocketTLS_Failed "SocketTLS_Failed" for TLS errors.
  */
-extern ssize_t socket_sendv_internal (T socket, const struct iovec *iov,
-                                      int iovcnt, int flags);
+extern ssize_t socket_sendv_internal (T socket,
+                                      const struct iovec *iov,
+                                      int iovcnt,
+                                      int flags);
 
 /**
  * @brief Internal scatter/gather receive (TLS-aware)
@@ -137,8 +139,8 @@ extern ssize_t socket_sendv_internal (T socket, const struct iovec *iov,
  * @see @ref Socket_Closed "Socket_Closed" on connection EOF.
  * @see @ref SocketTLS_Failed "SocketTLS_Failed" for TLS errors.
  */
-extern ssize_t socket_recvv_internal (T socket, struct iovec *iov, int iovcnt,
-                                      int flags);
+extern ssize_t
+socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags);
 
 /**
  * @brief Check if socket has TLS enabled.

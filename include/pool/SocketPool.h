@@ -171,8 +171,10 @@ typedef int (*SocketPool_ValidationCallback) (Connection_T conn, void *data);
  * @see SocketPool_set_resize_callback() for registration.
  * @see SocketPool_resize() for resize operations.
  */
-typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
-                                           size_t new_size, void *data);
+typedef void (*SocketPool_ResizeCallback) (T pool,
+                                           size_t old_size,
+                                           size_t new_size,
+                                           void *data);
 
 /**
  * @brief Callback invoked BEFORE pool resize for pointer invalidation.
@@ -204,8 +206,10 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
  * @see SocketPool_resize() for resize operations.
  * @see SocketPool_ResizeCallback for post-resize notification.
  */
-typedef void (*SocketPool_PreResizeCallback) (T pool, size_t old_size,
-                                              size_t new_size, void *data);
+typedef void (*SocketPool_PreResizeCallback) (T pool,
+                                              size_t old_size,
+                                              size_t new_size,
+                                              void *data);
 
 /**
  * @brief Callback invoked when a connection becomes idle.
@@ -275,7 +279,8 @@ typedef int (*SocketPool_Predicate) (Connection_T conn, void *data);
  * @see @ref async_dns for async DNS patterns.
  * @see SocketPool_ConnectCallback for callback requirements.
  */
-typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error,
+typedef void (*SocketPool_ConnectCallback) (Connection_T conn,
+                                            int error,
                                             void *data);
 
 /* ============================================================================
@@ -372,8 +377,10 @@ extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
  * @see Socket_connect_with_addrinfo() for completing the connection.
  * @see Socket_free() for cleanup on error.
  */
-extern int SocketPool_prepare_connection (T pool, SocketDNS_T dns,
-                                          const char *host, int port,
+extern int SocketPool_prepare_connection (T pool,
+                                          SocketDNS_T dns,
+                                          const char *host,
+                                          int port,
                                           Socket_T *out_socket,
                                           Request_T *out_req);
 
@@ -427,7 +434,9 @@ extern void SocketPool_free (T *pool);
  * @see @ref SocketDNS_T for DNS resolution details.
  * @see SocketPool_add() for adding completed connections to pool.
  */
-extern Request_T SocketPool_connect_async (T pool, const char *host, int port,
+extern Request_T SocketPool_connect_async (T pool,
+                                           const char *host,
+                                           int port,
                                            SocketPool_ConnectCallback callback,
                                            void *data);
 
@@ -571,7 +580,9 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  * @see SocketPool_accept_limited() for rate-limited single accept.
  * @see SocketPool_accept_protected() for SYN protection.
  */
-extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+extern int SocketPool_accept_batch (T pool,
+                                    Socket_T server,
+                                    int max_accepts,
                                     size_t accepted_capacity,
                                     Socket_T *accepted);
 
@@ -641,8 +652,8 @@ extern void SocketPool_resize (T pool, size_t new_maxconns);
  * @see SocketPool_resize() for resize operations.
  */
 extern void SocketPool_set_pre_resize_callback (T pool,
-                                                 SocketPool_PreResizeCallback cb,
-                                                 void *data);
+                                                SocketPool_PreResizeCallback cb,
+                                                void *data);
 
 /**
  * @brief Pre-allocate buffers for percentage of free slots.
@@ -677,8 +688,8 @@ extern void SocketPool_set_bufsize (T pool, size_t new_bufsize);
  * @note O(n) scan; callback must not modify pool structure.
  * @see SocketPool_count() for getting connection count.
  */
-extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
-                                void *arg);
+extern void
+SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg);
 
 /**
  * @brief Find first connection matching a predicate.
@@ -713,8 +724,8 @@ extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
  * @see SocketPool_filter() for finding all matching connections.
  * @see SocketPool_foreach() for iterating all connections.
  */
-extern Connection_T SocketPool_find (T pool, SocketPool_Predicate predicate,
-                                     void *userdata);
+extern Connection_T
+SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata);
 
 /**
  * @brief Find all connections matching a predicate.
@@ -752,8 +763,10 @@ extern Connection_T SocketPool_find (T pool, SocketPool_Predicate predicate,
  * @see SocketPool_find() for finding first matching connection.
  * @see SocketPool_foreach() for iterating all connections.
  */
-extern size_t SocketPool_filter (T pool, SocketPool_Predicate predicate,
-                                 void *userdata, Connection_T *results,
+extern size_t SocketPool_filter (T pool,
+                                 SocketPool_Predicate predicate,
+                                 void *userdata,
+                                 Connection_T *results,
                                  size_t max_results);
 
 /* Connection accessors */
@@ -884,8 +897,10 @@ SocketPool_set_reconnect_policy (T pool,
  * @see SocketPool_disable_reconnect() for disabling reconnection.
  * @see @ref reconnection for reconnection patterns.
  */
-extern void SocketPool_enable_reconnect (T pool, Connection_T conn,
-                                         const char *host, int port);
+extern void SocketPool_enable_reconnect (T pool,
+                                         Connection_T conn,
+                                         const char *host,
+                                         int port);
 
 /**
  * @brief Disable auto-reconnect for a connection.
@@ -1156,7 +1171,8 @@ extern SocketSYNProtect_T SocketPool_get_syn_protection (T pool);
  * Reports success/failure to SYN protection module automatically based on
  * whether connection completes or fails.
  */
-extern Socket_T SocketPool_accept_protected (T pool, Socket_T server,
+extern Socket_T SocketPool_accept_protected (T pool,
+                                             Socket_T server,
                                              SocketSYN_Action *action_out);
 
 /* ============================================================================
@@ -1395,8 +1411,8 @@ extern int SocketPool_drain_wait (T pool, int timeout_ms);
  * @see SocketPool_DrainCallback for callback signature.
  * @see SocketPool_drain() for initiating drain.
  */
-extern void SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb,
-                                           void *data);
+extern void
+SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb, void *data);
 
 /* ============================================================================
  * Idle Connection Cleanup
@@ -1493,8 +1509,8 @@ typedef enum
  * @see SocketPool_ConnHealth for health status values.
  * @see SocketPool_set_validation_callback() for custom validation.
  */
-extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
-                                                          Connection_T conn);
+extern SocketPool_ConnHealth
+SocketPool_check_connection (T pool, Connection_T conn);
 
 /* ============================================================================
  * Connection Validation Callback
@@ -1520,7 +1536,8 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
  * @see SocketPool_get() for when validation occurs.
  */
 extern void
-SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
+SocketPool_set_validation_callback (T pool,
+                                    SocketPool_ValidationCallback cb,
                                     void *data);
 
 /* ============================================================================
@@ -1570,10 +1587,9 @@ typedef struct SocketPool_Stats
   uint64_t total_added;   /**< Total connections added to pool */
   uint64_t total_removed; /**< Total connections removed from pool */
   uint64_t total_reused;  /**< Total connections reused (returned via get) */
-  uint64_t total_health_checks;   /**< Total health checks performed */
-  uint64_t total_health_failures; /**< Total health check failures */
-  uint64_t
-      total_validation_failures; /**< Total validation callback failures */
+  uint64_t total_health_checks;       /**< Total health checks performed */
+  uint64_t total_health_failures;     /**< Total health check failures */
+  uint64_t total_validation_failures; /**< Total validation callback failures */
   uint64_t total_idle_cleanups; /**< Connections removed due to idle timeout */
 
   /* Current state snapshot */
@@ -1724,8 +1740,8 @@ extern size_t SocketPool_shrink (T pool);
  * @see SocketPool_IdleCallback for callback requirements.
  * @see SocketPool_set_idle_timeout() for automatic idle cleanup.
  */
-extern void SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb,
-                                          void *data);
+extern void
+SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb, void *data);
 
 /**
  * @brief Get connection creation timestamp.
@@ -1739,7 +1755,8 @@ extern time_t Connection_created_at (const Connection_T conn);
 
 /* ============================================================================
  * Health Checking API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Full API documentation in SocketPoolHealth.h */
 #include "pool/SocketPoolHealth.h"

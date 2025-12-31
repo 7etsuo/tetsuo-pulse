@@ -51,8 +51,7 @@
 
 #define T SocketTLS_T
 
-const Except_T SocketTLS_Failed
-    = { &SocketTLS_Failed, "TLS operation failed" };
+const Except_T SocketTLS_Failed = { &SocketTLS_Failed, "TLS operation failed" };
 const Except_T SocketTLS_HandshakeFailed
     = { &SocketTLS_HandshakeFailed, "TLS handshake failed" };
 const Except_T SocketTLS_VerifyFailed
@@ -82,8 +81,8 @@ tls_alloc_buf (Socket_T socket, const char *purpose)
   Arena_T arena = SocketBase_arena (socket->base);
   void *buf = Arena_alloc (arena, SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
   if (!buf)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate TLS %s buffer",
-                         purpose);
+    RAISE_TLS_ERROR_MSG (
+        SocketTLS_Failed, "Failed to allocate TLS %s buffer", purpose);
   return buf;
 }
 
@@ -170,8 +169,7 @@ validate_tls_enable_preconditions (Socket_T socket)
 
   int fd = SocketBase_fd (socket->base);
   if (fd < 0)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
-                         "Socket not connected (invalid fd)");
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Socket not connected (invalid fd)");
 }
 
 /**
@@ -195,10 +193,11 @@ create_ssl_object (SocketTLSContext_T ctx)
 
   /* Enable non-blocking modes for proper partial write handling */
   long mode = SSL_get_mode (ssl);
-  SSL_set_mode (ssl, mode | SSL_MODE_ENABLE_PARTIAL_WRITE
-                         | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
+  SSL_set_mode (ssl,
+                mode | SSL_MODE_ENABLE_PARTIAL_WRITE
+                    | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
 #ifdef SSL_MODE_AUTO_RETRY
-                         SSL_MODE_AUTO_RETRY
+                    SSL_MODE_AUTO_RETRY
 #endif
   );
 
@@ -220,8 +219,7 @@ associate_ssl_with_fd (SSL *ssl, int fd)
       tls_cleanup_alpn_temp (
           ssl); /* Cleanup any ex_data before free on error */
       SSL_free (ssl);
-      RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
-                           "Failed to associate SSL with fd");
+      RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to associate SSL with fd");
     }
 }
 
@@ -288,8 +286,8 @@ validate_hostname_nonempty (const char *hostname, size_t len)
 static void
 copy_hostname_to_socket (Socket_T socket, const char *hostname, size_t len)
 {
-  socket->tls_sni_hostname = Arena_alloc (SocketBase_arena (socket->base),
-                                          len + 1, __FILE__, __LINE__);
+  socket->tls_sni_hostname = Arena_alloc (
+      SocketBase_arena (socket->base), len + 1, __FILE__, __LINE__);
   if (!socket->tls_sni_hostname)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
                          "Failed to allocate hostname buffer");
@@ -334,7 +332,8 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
   /* Explicit SNI length check (RFC 6066 limit) before format validation */
   if (hostname_len > SOCKET_TLS_MAX_SNI_LEN)
     {
-      TLS_ERROR_FMT ("Hostname too long for SNI (%zu > %d max)", hostname_len,
+      TLS_ERROR_FMT ("Hostname too long for SNI (%zu > %d max)",
+                     hostname_len,
                      SOCKET_TLS_MAX_SNI_LEN);
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
@@ -430,7 +429,9 @@ state_to_poll_events (TLSHandshakeState state)
  * Thread-safe: No
  */
 static int
-do_handshake_poll_safe (Socket_T socket, unsigned events, int timeout_ms,
+do_handshake_poll_safe (Socket_T socket,
+                        unsigned events,
+                        int timeout_ms,
                         const char **error_out)
 {
   SocketPoll_T poll = NULL;
@@ -556,8 +557,9 @@ disable_compute_shutdown_timeout (void)
  * Thread-safe: No
  */
 static int
-disable_handle_shutdown_result (Socket_T socket, int result,
-                                 int *clean_shutdown_out)
+disable_handle_shutdown_result (Socket_T socket,
+                                int result,
+                                int *clean_shutdown_out)
 {
   SSL *ssl = tls_socket_get_ssl (socket);
 
@@ -681,7 +683,8 @@ SocketTLS_disable (Socket_T socket)
       if (ssl)
         {
           int timeout_ms = disable_compute_shutdown_timeout ();
-          clean_shutdown = disable_perform_shutdown_loop (socket, ssl, timeout_ms);
+          clean_shutdown
+              = disable_perform_shutdown_loop (socket, ssl, timeout_ms);
         }
     }
 
@@ -724,7 +727,7 @@ handshake_record_duration (int64_t start_time_ms)
     {
       int64_t elapsed_ms = SocketTimeout_elapsed_ms (start_time_ms);
       SocketMetrics_histogram_observe (SOCKET_HIST_TLS_HANDSHAKE_TIME_MS,
-                                        (double)elapsed_ms);
+                                       (double)elapsed_ms);
     }
 }
 
@@ -738,7 +741,8 @@ handshake_record_duration (int64_t start_time_ms)
  * Thread-safe: No
  */
 static void
-handshake_check_timeout (int64_t deadline, int timeout_ms,
+handshake_check_timeout (int64_t deadline,
+                         int timeout_ms,
                          int64_t start_time_ms)
 {
   if (!SocketTimeout_expired (deadline))
@@ -753,7 +757,8 @@ handshake_check_timeout (int64_t deadline, int timeout_ms,
   tls_format_openssl_error ("TLS handshake timeout");
   RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
                        "TLS handshake timeout after %lld ms (timeout: %d ms)",
-                       (long long)elapsed_ms, timeout_ms);
+                       (long long)elapsed_ms,
+                       timeout_ms);
 }
 
 /**
@@ -770,8 +775,10 @@ handshake_check_timeout (int64_t deadline, int timeout_ms,
  * Thread-safe: No
  */
 static int
-handshake_wait_for_io (Socket_T socket, TLSHandshakeState state,
-                       int poll_interval_ms, int64_t deadline)
+handshake_wait_for_io (Socket_T socket,
+                       TLSHandshakeState state,
+                       int poll_interval_ms,
+                       int64_t deadline)
 {
   unsigned events = state_to_poll_events (state);
   int poll_timeout = SocketTimeout_poll_timeout (poll_interval_ms, deadline);
@@ -809,7 +816,9 @@ handshake_wait_for_io (Socket_T socket, TLSHandshakeState state,
  * Raises: SocketTLS_HandshakeFailed on timeout or error
  */
 static TLSHandshakeState
-handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
+handshake_loop_internal (Socket_T socket,
+                         int timeout_ms,
+                         int poll_interval_ms,
                          int64_t start_time_ms)
 {
   volatile int64_t deadline
@@ -877,12 +886,13 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
   validate_handshake_preconditions (socket);
 
   int64_t start_time_ms = Socket_get_monotonic_ms ();
-  return handshake_loop_internal (socket, timeout_ms,
-                                  SOCKET_TLS_POLL_INTERVAL_MS, start_time_ms);
+  return handshake_loop_internal (
+      socket, timeout_ms, SOCKET_TLS_POLL_INTERVAL_MS, start_time_ms);
 }
 
 TLSHandshakeState
-SocketTLS_handshake_loop_ex (Socket_T socket, int timeout_ms,
+SocketTLS_handshake_loop_ex (Socket_T socket,
+                             int timeout_ms,
                              int poll_interval_ms)
 {
   assert (socket);
@@ -897,8 +907,8 @@ SocketTLS_handshake_loop_ex (Socket_T socket, int timeout_ms,
     poll_interval_ms = SOCKET_TLS_POLL_INTERVAL_MS;
 
   int64_t start_time_ms = Socket_get_monotonic_ms ();
-  return handshake_loop_internal (socket, timeout_ms, poll_interval_ms,
-                                  start_time_ms);
+  return handshake_loop_internal (
+      socket, timeout_ms, poll_interval_ms, start_time_ms);
 }
 
 TLSHandshakeState
@@ -930,7 +940,9 @@ SocketTLS_handshake_auto (Socket_T socket)
  * non-fatal - we continue polling. Only protocol errors are fatal.
  */
 static int
-shutdown_handle_ssl_error (Socket_T socket, SSL *ssl, int result,
+shutdown_handle_ssl_error (Socket_T socket,
+                           SSL *ssl,
+                           int result,
                            unsigned *want_events_out)
 {
   int ssl_error = SSL_get_error (ssl, result);
@@ -964,7 +976,7 @@ shutdown_handle_ssl_error (Socket_T socket, SSL *ssl, int result,
         errno = ECONNRESET;
       /* Connection lost during shutdown - mark as done (partial) */
       socket->tls_shutdown_done = 0; /* Partial/failed shutdown */
-      return 0;                       /* Stop, but don't raise exception */
+      return 0;                      /* Stop, but don't raise exception */
 
     case SSL_ERROR_ZERO_RETURN:
       /* Peer already sent close_notify - we're done */
@@ -1117,8 +1129,7 @@ SocketTLS_shutdown (Socket_T socket)
       SSL *ssl = tls_socket_get_ssl (socket);
       if (!ssl)
         {
-          tls_format_openssl_error (
-              "SSL object not available during shutdown");
+          tls_format_openssl_error ("SSL object not available during shutdown");
           free_tls_resources (socket);
           RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed,
                                "SSL object lost during shutdown");
@@ -1317,7 +1328,8 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
  *
  * Error handling:
  * - SSL_ERROR_ZERO_RETURN: Clean shutdown (raises Socket_Closed)
- * - SSL_ERROR_WANT_READ/WRITE: Non-blocking would-block (returns 0, errno=EAGAIN)
+ * - SSL_ERROR_WANT_READ/WRITE: Non-blocking would-block (returns 0,
+ * errno=EAGAIN)
  * - SSL_ERROR_SYSCALL: System error or abrupt close (raises exception)
  * - SSL_ERROR_SSL: Protocol error (raises SocketTLS_Failed)
  * - Default: Unknown error (raises SocketTLS_Failed)
@@ -1538,7 +1550,8 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
       return buf;
     }
 
-  (void)socket_util_safe_strncpy (buf, "TLS verification failed (unknown error)", size);
+  (void)socket_util_safe_strncpy (
+      buf, "TLS verification failed (unknown error)", size);
   return buf;
 }
 
@@ -1579,8 +1592,8 @@ SocketTLS_get_alpn_selected (Socket_T socket)
   if (!alpn_data || alpn_len == 0 || alpn_len > SOCKET_TLS_MAX_ALPN_LEN)
     return NULL;
 
-  char *proto_copy = Arena_alloc (SocketBase_arena (socket->base),
-                                  alpn_len + 1, __FILE__, __LINE__);
+  char *proto_copy = Arena_alloc (
+      SocketBase_arena (socket->base), alpn_len + 1, __FILE__, __LINE__);
   if (!proto_copy)
     return NULL;
 
@@ -1735,7 +1748,8 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
  * @note Server may still reject resumption; always check is_session_reused()
  */
 int
-SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
+SocketTLS_session_restore (Socket_T socket,
+                           const unsigned char *buffer,
                            size_t len)
 {
   assert (socket);
@@ -1992,7 +2006,8 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
           char *hex = BN_bn2hex (bn);
           if (hex)
             {
-              (void)socket_util_safe_strncpy (info->serial, hex, sizeof (info->serial));
+              (void)socket_util_safe_strncpy (
+                  info->serial, hex, sizeof (info->serial));
               OPENSSL_free (hex);
             }
           BN_free (bn);
@@ -2008,8 +2023,8 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
       int expected_size = EVP_MD_size (EVP_sha256 ());
       size_t hash_len
           = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
-      SocketCrypto_hex_encode (md, hash_len, info->fingerprint,
-                               sizeof (info->fingerprint));
+      SocketCrypto_hex_encode (
+          md, hash_len, info->fingerprint, sizeof (info->fingerprint));
     }
 
   X509_free (cert);
@@ -2068,7 +2083,8 @@ SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len)
 }
 
 int
-SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
+SocketTLS_get_peer_cert_chain (Socket_T socket,
+                               X509 ***chain_out,
                                int *chain_len)
 {
   assert (socket);
@@ -2093,8 +2109,8 @@ SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
 
   /* Allocate array from socket's arena */
   Arena_T arena = SocketBase_arena (socket->base);
-  X509 **certs = Arena_alloc (arena, (size_t)num * sizeof (X509 *), __FILE__,
-                              __LINE__);
+  X509 **certs
+      = Arena_alloc (arena, (size_t)num * sizeof (X509 *), __FILE__, __LINE__);
   if (!certs)
     return -1;
 
@@ -2212,12 +2228,12 @@ ocsp_check_cert_status (OCSP_BASICRESP *basic)
       ASN1_GENERALIZEDTIME *nextupd = NULL;
       ASN1_GENERALIZEDTIME *revtime = NULL;
 
-      int status = OCSP_single_get0_status (single, &reason, &revtime,
-                                            &thisupd, &nextupd);
+      int status = OCSP_single_get0_status (
+          single, &reason, &revtime, &thisupd, &nextupd);
 
       /* Validate response freshness */
-      if (!OCSP_check_validity (thisupd, nextupd,
-                                SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1))
+      if (!OCSP_check_validity (
+              thisupd, nextupd, SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1))
         continue; /* Response is stale or not yet valid */
 
       /* Map OCSP status to return value */
@@ -2247,7 +2263,7 @@ ocsp_check_cert_status (OCSP_BASICRESP *basic)
 #endif /* !defined(OPENSSL_NO_OCSP) */
 
 int
- SocketTLS_get_ocsp_response_status (Socket_T socket)
+SocketTLS_get_ocsp_response_status (Socket_T socket)
 {
   assert (socket);
 

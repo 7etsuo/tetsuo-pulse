@@ -81,8 +81,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (largest_acked != QUIC_PN_NONE)
           largest_acked &= QUIC_PN_MAX;
 
-        size_t len
-            = SocketQUICWire_pn_encode (full_pn, largest_acked, buf, sizeof (buf));
+        size_t len = SocketQUICWire_pn_encode (
+            full_pn, largest_acked, buf, sizeof (buf));
         assert (len >= 1 && len <= 4);
       }
       break;
@@ -174,8 +174,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         uint8_t buf[4];
-        size_t len = SocketQUICWire_pn_encode (full_pn, largest_acked, buf,
-                                               sizeof (buf));
+        size_t len = SocketQUICWire_pn_encode (
+            full_pn, largest_acked, buf, sizeof (buf));
         assert (len >= 1 && len <= 4);
 
         /* Read truncated value */
@@ -186,8 +186,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Decode back */
         uint64_t decoded;
-        res = SocketQUICWire_pn_decode (largest_acked, truncated,
-                                        (unsigned)len * 8, &decoded);
+        res = SocketQUICWire_pn_decode (
+            largest_acked, truncated, (unsigned)len * 8, &decoded);
         assert (res == QUIC_PN_OK);
         assert (decoded == full_pn);
       }

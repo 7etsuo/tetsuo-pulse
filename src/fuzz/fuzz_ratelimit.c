@@ -56,7 +56,9 @@ read_u32 (const uint8_t *p)
  * execute_op - Execute a single rate limiter operation
  */
 static void
-execute_op (SocketRateLimit_T limiter, uint8_t op, const uint8_t *args,
+execute_op (SocketRateLimit_T limiter,
+            uint8_t op,
+            const uint8_t *args,
             size_t args_len)
 {
   switch (op % RL_OP_COUNT)
@@ -175,8 +177,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     (void)SocketRateLimit_get_rate (limiter);
     (void)SocketRateLimit_get_bucket_size (limiter);
   }
-  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
-  EXCEPT (SocketRateLimit_Failed) { /* Rate limiter operation failure */ }
+  EXCEPT (Arena_Failed)
+  { /* Memory allocation failure */
+  }
+  EXCEPT (SocketRateLimit_Failed)
+  { /* Rate limiter operation failure */
+  }
   FINALLY
   {
     if (limiter)

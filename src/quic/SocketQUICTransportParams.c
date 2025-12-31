@@ -123,8 +123,10 @@ SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
   /* Set reasonable defaults for a typical connection */
   params->max_idle_timeout = QUIC_TP_TYPICAL_IDLE_TIMEOUT_MS;
   params->initial_max_data = QUIC_TP_TYPICAL_INITIAL_MAX_DATA;
-  params->initial_max_stream_data_bidi_local = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
-  params->initial_max_stream_data_bidi_remote = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
+  params->initial_max_stream_data_bidi_local
+      = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
+  params->initial_max_stream_data_bidi_remote
+      = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
   params->initial_max_stream_data_uni = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
   params->initial_max_streams_bidi = QUIC_TP_TYPICAL_INITIAL_MAX_STREAMS;
   params->initial_max_streams_uni = QUIC_TP_TYPICAL_INITIAL_MAX_STREAMS;
@@ -152,12 +154,12 @@ SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
  * @return Total content size in bytes
  */
 static inline size_t
-quic_preferred_addr_content_size(uint8_t cid_len)
+quic_preferred_addr_content_size (uint8_t cid_len)
 {
-  return 4 + 2 +      /* IPv4 address + port */
-         16 + 2 +     /* IPv6 address + port */
-         1 +          /* Connection ID length byte */
-         cid_len +    /* Connection ID data */
+  return 4 + 2 +   /* IPv4 address + port */
+         16 + 2 +  /* IPv6 address + port */
+         1 +       /* Connection ID length byte */
+         cid_len + /* Connection ID data */
          QUIC_STATELESS_RESET_TOKEN_LEN;
 }
 
@@ -194,7 +196,9 @@ encode_varint_param (uint8_t *buf, size_t buf_size, uint64_t id, uint64_t value)
 }
 
 static size_t
-encode_connid_param (uint8_t *buf, size_t buf_size, uint64_t id,
+encode_connid_param (uint8_t *buf,
+                     size_t buf_size,
+                     uint64_t id,
                      const SocketQUICConnectionID_T *cid)
 {
   size_t pos = 0;
@@ -229,8 +233,11 @@ encode_connid_param (uint8_t *buf, size_t buf_size, uint64_t id,
 }
 
 static size_t
-encode_token_param (uint8_t *buf, size_t buf_size, uint64_t id,
-                    const uint8_t *token, size_t token_len)
+encode_token_param (uint8_t *buf,
+                    size_t buf_size,
+                    uint64_t id,
+                    const uint8_t *token,
+                    size_t token_len)
 {
   size_t pos = 0;
   size_t len;
@@ -285,18 +292,20 @@ encode_empty_param (uint8_t *buf, size_t buf_size, uint64_t id)
 }
 
 static size_t
-encode_preferred_address (uint8_t *buf, size_t buf_size,
+encode_preferred_address (uint8_t *buf,
+                          size_t buf_size,
                           const SocketQUICPreferredAddress_T *paddr)
 {
   size_t pos = 0;
   size_t len;
 
   /* Calculate content size */
-  size_t content_size = quic_preferred_addr_content_size(paddr->connection_id.len);
+  size_t content_size
+      = quic_preferred_addr_content_size (paddr->connection_id.len);
 
   /* Encode parameter ID */
-  len = SocketQUICVarInt_encode (QUIC_TP_PREFERRED_ADDRESS, buf + pos,
-                                 buf_size - pos);
+  len = SocketQUICVarInt_encode (
+      QUIC_TP_PREFERRED_ADDRESS, buf + pos, buf_size - pos);
   if (len == 0)
     return 0;
   pos += len;
@@ -332,7 +341,8 @@ encode_preferred_address (uint8_t *buf, size_t buf_size,
     }
 
   /* Stateless reset token */
-  memcpy (buf + pos, paddr->stateless_reset_token, QUIC_STATELESS_RESET_TOKEN_LEN);
+  memcpy (
+      buf + pos, paddr->stateless_reset_token, QUIC_STATELESS_RESET_TOKEN_LEN);
   pos += QUIC_STATELESS_RESET_TOKEN_LEN;
 
   return pos;
@@ -377,7 +387,8 @@ empty_param_size (uint64_t id)
 static size_t
 preferred_address_size (const SocketQUICPreferredAddress_T *paddr)
 {
-  size_t content_size = quic_preferred_addr_content_size(paddr->connection_id.len);
+  size_t content_size
+      = quic_preferred_addr_content_size (paddr->connection_id.len);
   size_t id_size = SocketQUICVarInt_size (QUIC_TP_PREFERRED_ADDRESS);
   size_t len_size = SocketQUICVarInt_size (content_size);
   return id_size + len_size + content_size;
@@ -448,8 +459,8 @@ static const VarIntParamMetadata varint_params[] = {
 /**
  * @brief Get value of a uint64_t field by offset.
  *
- * Performs bounds checking to ensure the offset is valid and within struct bounds.
- * The assertions verify:
+ * Performs bounds checking to ensure the offset is valid and within struct
+ * bounds. The assertions verify:
  *   - params pointer is non-NULL
  *   - offset is within the struct
  *   - offset + sizeof(uint64_t) does not exceed struct bounds
@@ -466,8 +477,8 @@ get_param_value (const SocketQUICTransportParams_T *params, size_t offset)
 }
 
 size_t
-SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *params,
-                                        SocketQUICRole role)
+SocketQUICTransportParams_encoded_size (
+    const SocketQUICTransportParams_T *params, SocketQUICRole role)
 {
   size_t size = 0;
 
@@ -520,7 +531,8 @@ SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *param
 
 size_t
 SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
-                                  SocketQUICRole role, uint8_t *output,
+                                  SocketQUICRole role,
+                                  uint8_t *output,
                                   size_t output_size)
 {
   size_t pos = 0;
@@ -532,8 +544,10 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
   /* Connection IDs */
   if (role == QUIC_ROLE_SERVER && params->has_original_dcid)
     {
-      len = encode_connid_param (output + pos, output_size - pos,
-                                 QUIC_TP_ORIGINAL_DCID, &params->original_dcid);
+      len = encode_connid_param (output + pos,
+                                 output_size - pos,
+                                 QUIC_TP_ORIGINAL_DCID,
+                                 &params->original_dcid);
       if (len == 0)
         return 0;
       pos += len;
@@ -541,8 +555,10 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
 
   if (params->has_initial_scid)
     {
-      len = encode_connid_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_SCID, &params->initial_scid);
+      len = encode_connid_param (output + pos,
+                                 output_size - pos,
+                                 QUIC_TP_INITIAL_SCID,
+                                 &params->initial_scid);
       if (len == 0)
         return 0;
       pos += len;
@@ -550,8 +566,10 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
 
   if (role == QUIC_ROLE_SERVER && params->has_retry_scid)
     {
-      len = encode_connid_param (output + pos, output_size - pos,
-                                 QUIC_TP_RETRY_SCID, &params->retry_scid);
+      len = encode_connid_param (output + pos,
+                                 output_size - pos,
+                                 QUIC_TP_RETRY_SCID,
+                                 &params->retry_scid);
       if (len == 0)
         return 0;
       pos += len;
@@ -560,7 +578,8 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
   /* Stateless reset token (server only) */
   if (role == QUIC_ROLE_SERVER && params->has_stateless_reset_token)
     {
-      len = encode_token_param (output + pos, output_size - pos,
+      len = encode_token_param (output + pos,
+                                output_size - pos,
                                 QUIC_TP_STATELESS_RESET_TOKEN,
                                 params->stateless_reset_token,
                                 QUIC_STATELESS_RESET_TOKEN_LEN);
@@ -575,8 +594,10 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
       uint64_t value = get_param_value (params, varint_params[i].offset);
       if (value != varint_params[i].default_value)
         {
-          len = encode_varint_param (output + pos, output_size - pos,
-                                     varint_params[i].param_id, value);
+          len = encode_varint_param (output + pos,
+                                     output_size - pos,
+                                     varint_params[i].param_id,
+                                     value);
           if (len == 0)
             return 0;
           pos += len;
@@ -586,8 +607,8 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
   /* Boolean parameter */
   if (params->disable_active_migration)
     {
-      len = encode_empty_param (output + pos, output_size - pos,
-                                QUIC_TP_DISABLE_ACTIVE_MIGRATION);
+      len = encode_empty_param (
+          output + pos, output_size - pos, QUIC_TP_DISABLE_ACTIVE_MIGRATION);
       if (len == 0)
         return 0;
       pos += len;
@@ -596,8 +617,8 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
   /* Preferred address (server only) */
   if (role == QUIC_ROLE_SERVER && params->preferred_address.present)
     {
-      len = encode_preferred_address (output + pos, output_size - pos,
-                                      &params->preferred_address);
+      len = encode_preferred_address (
+          output + pos, output_size - pos, &params->preferred_address);
       if (len == 0)
         return 0;
       pos += len;
@@ -606,7 +627,8 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
   /* Extension: DATAGRAM */
   if (params->has_max_datagram_frame_size)
     {
-      len = encode_varint_param (output + pos, output_size - pos,
+      len = encode_varint_param (output + pos,
+                                 output_size - pos,
                                  QUIC_TP_MAX_DATAGRAM_FRAME_SIZE,
                                  params->max_datagram_frame_size);
       if (len == 0)
@@ -623,7 +645,9 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
  */
 
 static SocketQUICTransportParams_Result
-decode_varint_value (const uint8_t *data, size_t len, uint64_t *value,
+decode_varint_value (const uint8_t *data,
+                     size_t len,
+                     uint64_t *value,
                      size_t *consumed)
 {
   SocketQUICVarInt_Result res;
@@ -650,19 +674,21 @@ decode_varint_value (const uint8_t *data, size_t len, uint64_t *value,
  *
  * On error, returns early from enclosing function with QUIC_TP_ERROR_*.
  */
-#define DECODE_VARINT_AT_POS(data, len, pos, out_var) \
-  do { \
-    size_t __consumed; \
-    SocketQUICTransportParams_Result __res = \
-        decode_varint_value((data) + *(pos), (len) - *(pos), \
-                           &(out_var), &__consumed); \
-    if (__res != QUIC_TP_OK) \
-      return __res; \
-    *(pos) += __consumed; \
-  } while(0)
+#define DECODE_VARINT_AT_POS(data, len, pos, out_var)                \
+  do                                                                 \
+    {                                                                \
+      size_t __consumed;                                             \
+      SocketQUICTransportParams_Result __res = decode_varint_value ( \
+          (data) + *(pos), (len) - *(pos), &(out_var), &__consumed); \
+      if (__res != QUIC_TP_OK)                                       \
+        return __res;                                                \
+      *(pos) += __consumed;                                          \
+    }                                                                \
+  while (0)
 
 static SocketQUICTransportParams_Result
-decode_connid_value (const uint8_t *data, size_t len,
+decode_connid_value (const uint8_t *data,
+                     size_t len,
                      SocketQUICConnectionID_T *cid)
 {
   SocketQUICConnectionID_Result res;
@@ -678,7 +704,8 @@ decode_connid_value (const uint8_t *data, size_t len,
 }
 
 static SocketQUICTransportParams_Result
-decode_preferred_address (const uint8_t *data, size_t len,
+decode_preferred_address (const uint8_t *data,
+                          size_t len,
                           SocketQUICPreferredAddress_T *paddr)
 {
   size_t pos = 0;
@@ -711,14 +738,15 @@ decode_preferred_address (const uint8_t *data, size_t len,
     return QUIC_TP_ERROR_INCOMPLETE;
 
   /* Connection ID */
-  SocketQUICConnectionID_Result res =
-      SocketQUICConnectionID_set (&paddr->connection_id, data + pos, cid_len);
+  SocketQUICConnectionID_Result res
+      = SocketQUICConnectionID_set (&paddr->connection_id, data + pos, cid_len);
   if (res != QUIC_CONNID_OK)
     return QUIC_TP_ERROR_INVALID_VALUE;
   pos += cid_len;
 
   /* Stateless reset token */
-  memcpy (paddr->stateless_reset_token, data + pos, QUIC_STATELESS_RESET_TOKEN_LEN);
+  memcpy (
+      paddr->stateless_reset_token, data + pos, QUIC_STATELESS_RESET_TOKEN_LEN);
   pos += QUIC_STATELESS_RESET_TOKEN_LEN;
 
   paddr->present = 1;
@@ -735,7 +763,9 @@ decode_preferred_address (const uint8_t *data, size_t len,
  * @brief Handler function type for transport parameter decoding.
  */
 typedef SocketQUICTransportParams_Result (*ParamDecodeHandler) (
-    const uint8_t *data, size_t param_len, SocketQUICRole peer_role,
+    const uint8_t *data,
+    size_t param_len,
+    SocketQUICRole peer_role,
     SocketQUICTransportParams_T *params);
 
 /**
@@ -771,12 +801,15 @@ check_server_only (SocketQUICRole peer_role)
  *
  * Thread-safe: Yes (stateless check)
  */
-#define CHECK_SERVER_ONLY(peer_role) \
-  do { \
-    SocketQUICTransportParams_Result __result = check_server_only (peer_role); \
-    if (__result != QUIC_TP_OK) \
-      return __result; \
-  } while (0)
+#define CHECK_SERVER_ONLY(peer_role)            \
+  do                                            \
+    {                                           \
+      SocketQUICTransportParams_Result __result \
+          = check_server_only (peer_role);      \
+      if (__result != QUIC_TP_OK)               \
+        return __result;                        \
+    }                                           \
+  while (0)
 
 /**
  * @brief Decode a varint parameter value into a uint64_t field.
@@ -799,7 +832,8 @@ decode_varint_to_field (const uint8_t *data, size_t param_len, uint64_t *field)
 /* Individual parameter handlers */
 
 static SocketQUICTransportParams_Result
-decode_param_original_dcid (const uint8_t *data, size_t param_len,
+decode_param_original_dcid (const uint8_t *data,
+                            size_t param_len,
                             SocketQUICRole peer_role,
                             SocketQUICTransportParams_T *params)
 {
@@ -815,7 +849,8 @@ decode_param_original_dcid (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_max_idle_timeout (const uint8_t *data, size_t param_len,
+decode_param_max_idle_timeout (const uint8_t *data,
+                               size_t param_len,
                                SocketQUICRole peer_role,
                                SocketQUICTransportParams_T *params)
 {
@@ -824,7 +859,8 @@ decode_param_max_idle_timeout (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_stateless_reset_token (const uint8_t *data, size_t param_len,
+decode_param_stateless_reset_token (const uint8_t *data,
+                                    size_t param_len,
                                     SocketQUICRole peer_role,
                                     SocketQUICTransportParams_T *params)
 {
@@ -839,16 +875,19 @@ decode_param_stateless_reset_token (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_max_udp_payload_size (const uint8_t *data, size_t param_len,
+decode_param_max_udp_payload_size (const uint8_t *data,
+                                   size_t param_len,
                                    SocketQUICRole peer_role,
                                    SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len, &params->max_udp_payload_size);
+  return decode_varint_to_field (
+      data, param_len, &params->max_udp_payload_size);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_max_data (const uint8_t *data, size_t param_len,
+decode_param_initial_max_data (const uint8_t *data,
+                               size_t param_len,
                                SocketQUICRole peer_role,
                                SocketQUICTransportParams_T *params)
 {
@@ -857,59 +896,65 @@ decode_param_initial_max_data (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_max_stream_data_bidi_local (const uint8_t *data,
-                                                  size_t param_len,
-                                                  SocketQUICRole peer_role,
-                                                  SocketQUICTransportParams_T *params)
+decode_param_initial_max_stream_data_bidi_local (
+    const uint8_t *data,
+    size_t param_len,
+    SocketQUICRole peer_role,
+    SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len,
-                                 &params->initial_max_stream_data_bidi_local);
+  return decode_varint_to_field (
+      data, param_len, &params->initial_max_stream_data_bidi_local);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_max_stream_data_bidi_remote (const uint8_t *data,
-                                                   size_t param_len,
-                                                   SocketQUICRole peer_role,
-                                                   SocketQUICTransportParams_T *params)
+decode_param_initial_max_stream_data_bidi_remote (
+    const uint8_t *data,
+    size_t param_len,
+    SocketQUICRole peer_role,
+    SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len,
-                                 &params->initial_max_stream_data_bidi_remote);
+  return decode_varint_to_field (
+      data, param_len, &params->initial_max_stream_data_bidi_remote);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_max_stream_data_uni (const uint8_t *data, size_t param_len,
+decode_param_initial_max_stream_data_uni (const uint8_t *data,
+                                          size_t param_len,
                                           SocketQUICRole peer_role,
                                           SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len,
-                                 &params->initial_max_stream_data_uni);
+  return decode_varint_to_field (
+      data, param_len, &params->initial_max_stream_data_uni);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_max_streams_bidi (const uint8_t *data, size_t param_len,
+decode_param_initial_max_streams_bidi (const uint8_t *data,
+                                       size_t param_len,
                                        SocketQUICRole peer_role,
                                        SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len,
-                                 &params->initial_max_streams_bidi);
+  return decode_varint_to_field (
+      data, param_len, &params->initial_max_streams_bidi);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_max_streams_uni (const uint8_t *data, size_t param_len,
+decode_param_initial_max_streams_uni (const uint8_t *data,
+                                      size_t param_len,
                                       SocketQUICRole peer_role,
                                       SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len,
-                                 &params->initial_max_streams_uni);
+  return decode_varint_to_field (
+      data, param_len, &params->initial_max_streams_uni);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_ack_delay_exponent (const uint8_t *data, size_t param_len,
+decode_param_ack_delay_exponent (const uint8_t *data,
+                                 size_t param_len,
                                  SocketQUICRole peer_role,
                                  SocketQUICTransportParams_T *params)
 {
@@ -918,7 +963,8 @@ decode_param_ack_delay_exponent (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_max_ack_delay (const uint8_t *data, size_t param_len,
+decode_param_max_ack_delay (const uint8_t *data,
+                            size_t param_len,
                             SocketQUICRole peer_role,
                             SocketQUICTransportParams_T *params)
 {
@@ -927,7 +973,8 @@ decode_param_max_ack_delay (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_disable_active_migration (const uint8_t *data, size_t param_len,
+decode_param_disable_active_migration (const uint8_t *data,
+                                       size_t param_len,
                                        SocketQUICRole peer_role,
                                        SocketQUICTransportParams_T *params)
 {
@@ -942,7 +989,8 @@ decode_param_disable_active_migration (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_preferred_address (const uint8_t *data, size_t param_len,
+decode_param_preferred_address (const uint8_t *data,
+                                size_t param_len,
                                 SocketQUICRole peer_role,
                                 SocketQUICTransportParams_T *params)
 {
@@ -952,17 +1000,19 @@ decode_param_preferred_address (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_active_connid_limit (const uint8_t *data, size_t param_len,
+decode_param_active_connid_limit (const uint8_t *data,
+                                  size_t param_len,
                                   SocketQUICRole peer_role,
                                   SocketQUICTransportParams_T *params)
 {
   (void)peer_role;
-  return decode_varint_to_field (data, param_len,
-                                 &params->active_connection_id_limit);
+  return decode_varint_to_field (
+      data, param_len, &params->active_connection_id_limit);
 }
 
 static SocketQUICTransportParams_Result
-decode_param_initial_scid (const uint8_t *data, size_t param_len,
+decode_param_initial_scid (const uint8_t *data,
+                           size_t param_len,
                            SocketQUICRole peer_role,
                            SocketQUICTransportParams_T *params)
 {
@@ -978,7 +1028,8 @@ decode_param_initial_scid (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_retry_scid (const uint8_t *data, size_t param_len,
+decode_param_retry_scid (const uint8_t *data,
+                         size_t param_len,
                          SocketQUICRole peer_role,
                          SocketQUICTransportParams_T *params)
 {
@@ -994,15 +1045,16 @@ decode_param_retry_scid (const uint8_t *data, size_t param_len,
 }
 
 static SocketQUICTransportParams_Result
-decode_param_max_datagram_frame_size (const uint8_t *data, size_t param_len,
+decode_param_max_datagram_frame_size (const uint8_t *data,
+                                      size_t param_len,
                                       SocketQUICRole peer_role,
                                       SocketQUICTransportParams_T *params)
 {
   SocketQUICTransportParams_Result result;
   (void)peer_role;
 
-  result = decode_varint_to_field (data, param_len,
-                                   &params->max_datagram_frame_size);
+  result = decode_varint_to_field (
+      data, param_len, &params->max_datagram_frame_size);
   if (result != QUIC_TP_OK)
     return result;
 
@@ -1021,7 +1073,8 @@ static const ParamHandlerEntry param_handlers[] = {
     decode_param_initial_max_stream_data_bidi_local },
   { QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
     decode_param_initial_max_stream_data_bidi_remote },
-  { QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI, decode_param_initial_max_stream_data_uni },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
+    decode_param_initial_max_stream_data_uni },
   { QUIC_TP_INITIAL_MAX_STREAMS_BIDI, decode_param_initial_max_streams_bidi },
   { QUIC_TP_INITIAL_MAX_STREAMS_UNI, decode_param_initial_max_streams_uni },
   { QUIC_TP_ACK_DELAY_EXPONENT, decode_param_ack_delay_exponent },
@@ -1034,7 +1087,8 @@ static const ParamHandlerEntry param_handlers[] = {
   { QUIC_TP_MAX_DATAGRAM_FRAME_SIZE, decode_param_max_datagram_frame_size },
 };
 
-#define PARAM_HANDLER_COUNT (sizeof (param_handlers) / sizeof (param_handlers[0]))
+#define PARAM_HANDLER_COUNT \
+  (sizeof (param_handlers) / sizeof (param_handlers[0]))
 
 /* Compile-time assertions to ensure param_handlers remains sorted.
  * Binary search requires the array to be sorted by param_id. */
@@ -1046,18 +1100,20 @@ _Static_assert (QUIC_TP_STATELESS_RESET_TOKEN < QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
                 "param_handlers must be sorted by param_id");
 _Static_assert (QUIC_TP_MAX_UDP_PAYLOAD_SIZE < QUIC_TP_INITIAL_MAX_DATA,
                 "param_handlers must be sorted by param_id");
-_Static_assert (QUIC_TP_INITIAL_MAX_DATA < QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
+_Static_assert (QUIC_TP_INITIAL_MAX_DATA
+                    < QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
                 "param_handlers must be sorted by param_id");
 _Static_assert (QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL
-                  < QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
+                    < QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
                 "param_handlers must be sorted by param_id");
 _Static_assert (QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE
-                  < QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
+                    < QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
                 "param_handlers must be sorted by param_id");
 _Static_assert (QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI
-                  < QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
+                    < QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
                 "param_handlers must be sorted by param_id");
-_Static_assert (QUIC_TP_INITIAL_MAX_STREAMS_BIDI < QUIC_TP_INITIAL_MAX_STREAMS_UNI,
+_Static_assert (QUIC_TP_INITIAL_MAX_STREAMS_BIDI
+                    < QUIC_TP_INITIAL_MAX_STREAMS_UNI,
                 "param_handlers must be sorted by param_id");
 _Static_assert (QUIC_TP_INITIAL_MAX_STREAMS_UNI < QUIC_TP_ACK_DELAY_EXPONENT,
                 "param_handlers must be sorted by param_id");
@@ -1128,19 +1184,22 @@ find_param_handler (uint64_t param_id)
  * @return QUIC_TP_OK on success, error code otherwise
  */
 static SocketQUICTransportParams_Result
-decode_single_param (const uint8_t *data, size_t len, size_t *pos,
+decode_single_param (const uint8_t *data,
+                     size_t len,
+                     size_t *pos,
                      SocketQUICRole peer_role,
-                     SocketQUICTransportParams_T *params, uint64_t *seen_params)
+                     SocketQUICTransportParams_T *params,
+                     uint64_t *seen_params)
 {
   uint64_t param_id;
   uint64_t param_len;
   SocketQUICTransportParams_Result result;
 
   /* Decode parameter ID */
-  DECODE_VARINT_AT_POS(data, len, pos, param_id);
+  DECODE_VARINT_AT_POS (data, len, pos, param_id);
 
   /* Decode parameter length */
-  DECODE_VARINT_AT_POS(data, len, pos, param_len);
+  DECODE_VARINT_AT_POS (data, len, pos, param_len);
 
   /* Check we have enough data for the parameter value */
   if (*pos + param_len > len)
@@ -1173,7 +1232,8 @@ decode_single_param (const uint8_t *data, size_t len, size_t *pos,
 }
 
 SocketQUICTransportParams_Result
-SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
+SocketQUICTransportParams_decode (const uint8_t *data,
+                                  size_t len,
                                   SocketQUICRole peer_role,
                                   SocketQUICTransportParams_T *params,
                                   size_t *consumed)
@@ -1199,8 +1259,8 @@ SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
 
   while (pos < len)
     {
-      result =
-          decode_single_param (data, len, &pos, peer_role, params, &seen_params);
+      result = decode_single_param (
+          data, len, &pos, peer_role, params, &seen_params);
       if (result != QUIC_TP_OK)
         return result;
     }

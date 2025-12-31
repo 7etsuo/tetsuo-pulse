@@ -238,8 +238,7 @@ TEST (integration_dns_cancellation_signal)
   SocketDNS_T dns = SocketDNS_new ();
   ASSERT_NOT_NULL (dns);
 
-  Request_T req
-      = SocketDNS_resolve (dns, "localhost", 0, NULL, NULL);
+  Request_T req = SocketDNS_resolve (dns, "localhost", 0, NULL, NULL);
   ASSERT_NOT_NULL (req);
 
   SocketDNS_cancel (dns, req);
@@ -273,8 +272,7 @@ TEST (integration_poll_default_timeout_microbenchmark)
   for (int i = 0; i < iterations; i++)
     {
       SocketEvent_T *events = NULL;
-      int rc
-          = SocketPoll_wait (poll, &events, SOCKET_POLL_TIMEOUT_USE_DEFAULT);
+      int rc = SocketPoll_wait (poll, &events, SOCKET_POLL_TIMEOUT_USE_DEFAULT);
       ASSERT_EQ (rc, 0);
     }
 
@@ -402,9 +400,8 @@ TEST (integration_udp_echo_server)
   char recv_host[256] = { 0 };
   int recv_port = 0;
   char buf[TEST_BUFFER_SIZE] = { 0 };
-  ssize_t received
-      = SocketDgram_recvfrom (server, buf, sizeof (buf) - 1, recv_host,
-                              sizeof (recv_host), &recv_port);
+  ssize_t received = SocketDgram_recvfrom (
+      server, buf, sizeof (buf) - 1, recv_host, sizeof (recv_host), &recv_port);
 
   if (received > 0)
     {
@@ -420,7 +417,8 @@ TEST (integration_udp_echo_server)
   END_TRY;
 }
 
-/* ==================== Convenience Functions Integration Tests ==================== */
+/* ==================== Convenience Functions Integration Tests
+ * ==================== */
 
 TEST (integration_convenience_tcp_server)
 {
@@ -531,7 +529,8 @@ TEST (integration_convenience_nonblocking_connect)
   /* Test non-blocking connect
    * Returns 0 if connected immediately, 1 if in progress */
   int connect_result = Socket_connect_nonblocking (client, "127.0.0.1", port);
-  ASSERT (connect_result == 0 || connect_result == 1); /* Either connected or in progress */
+  ASSERT (connect_result == 0
+          || connect_result == 1); /* Either connected or in progress */
 
   /* Wait a bit for connection to complete */
   usleep (100000);
@@ -621,7 +620,8 @@ TEST (integration_convenience_unix_domain)
   assert_no_socket_leaks ();
 }
 
-/* ==================== Socket Statistics Integration Tests ==================== */
+/* ==================== Socket Statistics Integration Tests ====================
+ */
 
 TEST (integration_socket_stats_tcp_communication)
 {
@@ -678,23 +678,33 @@ TEST (integration_socket_stats_tcp_communication)
   SocketStats_T client_stats_after;
   Socket_getstats (client, &client_stats_after);
 
-  ASSERT_EQ (client_stats_after.bytes_sent, client_stats_before.bytes_sent + sent1);
-  ASSERT_EQ (client_stats_after.bytes_received, client_stats_before.bytes_received + received2);
-  ASSERT_EQ (client_stats_after.packets_sent, client_stats_before.packets_sent + 1);
-  ASSERT_EQ (client_stats_after.packets_received, client_stats_before.packets_received + 1);
-  ASSERT (client_stats_after.last_send_time_ms >= client_stats_before.last_send_time_ms);
+  ASSERT_EQ (client_stats_after.bytes_sent,
+             client_stats_before.bytes_sent + sent1);
+  ASSERT_EQ (client_stats_after.bytes_received,
+             client_stats_before.bytes_received + received2);
+  ASSERT_EQ (client_stats_after.packets_sent,
+             client_stats_before.packets_sent + 1);
+  ASSERT_EQ (client_stats_after.packets_received,
+             client_stats_before.packets_received + 1);
+  ASSERT (client_stats_after.last_send_time_ms
+          >= client_stats_before.last_send_time_ms);
   ASSERT (client_stats_after.last_recv_time_ms >= 0);
 
   /* Check server stats after communication */
   SocketStats_T server_stats_after;
   Socket_getstats (accepted, &server_stats_after);
 
-  ASSERT_EQ (server_stats_after.bytes_sent, server_stats_before.bytes_sent + sent2);
-  ASSERT_EQ (server_stats_after.bytes_received, server_stats_before.bytes_received + received1);
-  ASSERT_EQ (server_stats_after.packets_sent, server_stats_before.packets_sent + 1);
-  ASSERT_EQ (server_stats_after.packets_received, server_stats_before.packets_received + 1);
+  ASSERT_EQ (server_stats_after.bytes_sent,
+             server_stats_before.bytes_sent + sent2);
+  ASSERT_EQ (server_stats_after.bytes_received,
+             server_stats_before.bytes_received + received1);
+  ASSERT_EQ (server_stats_after.packets_sent,
+             server_stats_before.packets_sent + 1);
+  ASSERT_EQ (server_stats_after.packets_received,
+             server_stats_before.packets_received + 1);
   ASSERT (server_stats_after.last_send_time_ms >= 0);
-  ASSERT (server_stats_after.last_recv_time_ms >= server_stats_before.last_recv_time_ms);
+  ASSERT (server_stats_after.last_recv_time_ms
+          >= server_stats_before.last_recv_time_ms);
 
   /* Test reset functionality */
   Socket_resetstats (client);
@@ -709,7 +719,8 @@ TEST (integration_socket_stats_tcp_communication)
   ASSERT_EQ (client_stats_reset.recv_errors, 0);
 
   /* Create time should be preserved */
-  ASSERT_EQ (client_stats_reset.create_time_ms, client_stats_after.create_time_ms);
+  ASSERT_EQ (client_stats_reset.create_time_ms,
+             client_stats_after.create_time_ms);
 
   untrack_socket (accepted);
   Socket_free (&accepted);
@@ -742,7 +753,8 @@ TEST (integration_socket_stats_udp_communication)
 
   /* Send message */
   const char *msg = "UDP communication test";
-  ssize_t sent = SocketDgram_sendto (client, msg, strlen (msg), "127.0.0.1", port);
+  ssize_t sent
+      = SocketDgram_sendto (client, msg, strlen (msg), "127.0.0.1", port);
   ASSERT_EQ (sent, (ssize_t)strlen (msg));
 
   /* Receive message */
@@ -925,7 +937,8 @@ TEST (integration_pool_iterator_and_statistics)
 
   /* Test SocketPool_filter */
   Connection_T filtered[10];
-  size_t filtered_count = SocketPool_filter (pool, pool_test_filter_cb, NULL, filtered, 10);
+  size_t filtered_count
+      = SocketPool_filter (pool, pool_test_filter_cb, NULL, filtered, 10);
   ASSERT_EQ (filtered_count, 5);
 
   /* Test shrink functionality - with 5 connections added to pool of 10,
@@ -967,8 +980,9 @@ TEST (integration_pool_hit_rate_tracking)
   Socket_T test_socket = NULL;
 
   TRY
-  /* Initially should have 0.0 hit rate */
-  double initial_rate = SocketPool_get_hit_rate (pool);
+      /* Initially should have 0.0 hit rate */
+      double initial_rate
+      = SocketPool_get_hit_rate (pool);
   ASSERT_EQ (initial_rate, 0.0);
 
   /* Add a connection */
@@ -1061,7 +1075,8 @@ TEST (integration_dns_configuration)
   /* Test nameserver configuration */
   const char *test_nameservers[] = { "8.8.8.8", "1.1.1.1" };
   int ns_result = SocketDNS_set_nameservers (dns, test_nameservers, 2);
-  /* Note: May fail on some systems without proper permissions, but shouldn't crash */
+  /* Note: May fail on some systems without proper permissions, but shouldn't
+   * crash */
 
   /* Test search domain configuration */
   const char *test_domains[] = { "example.com", "local" };
@@ -1081,7 +1096,8 @@ TEST (integration_dns_cache_with_resolution)
   SocketDNS_cache_set_max_entries (dns, 10);
 
   /* Perform a DNS resolution (this will populate cache) */
-  struct addrinfo *result = SocketDNS_resolve_sync (dns, "localhost", 80, NULL, 5000);
+  struct addrinfo *result
+      = SocketDNS_resolve_sync (dns, "localhost", 80, NULL, 5000);
   if (result)
     {
       /* Resolution succeeded, check that cache was populated */
@@ -1100,7 +1116,8 @@ TEST (integration_dns_cache_with_resolution)
           ASSERT (stats.hit_rate <= 1.0);
         }
 
-      /* Use SocketCommon_free_addrinfo for results from SocketDNS_resolve_sync */
+      /* Use SocketCommon_free_addrinfo for results from SocketDNS_resolve_sync
+       */
       SocketCommon_free_addrinfo (result);
     }
 
@@ -1113,7 +1130,8 @@ TEST (integration_dns_cache_with_resolution)
   SocketDNS_free (&dns);
 }
 
-/* ==================== Connection Health Integration Tests ==================== */
+/* ==================== Connection Health Integration Tests ====================
+ */
 
 TEST (integration_connection_probe_and_readiness)
 {
@@ -1198,8 +1216,9 @@ TEST (integration_connection_tcp_info)
   Socket_T server = NULL, client = NULL, accepted = NULL;
 
   TRY
-  /* Create server */
-  server = Socket_listen_tcp ("127.0.0.1", 0, 5);
+      /* Create server */
+      server
+      = Socket_listen_tcp ("127.0.0.1", 0, 5);
   ASSERT_NOT_NULL (server);
   track_socket (server);
   int port = Socket_getlocalport (server);
@@ -1268,8 +1287,9 @@ TEST (integration_connection_nonblocking_error_states)
   Socket_T socket = NULL;
 
   TRY
-  /* Create a socket but don't connect it */
-  socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Create a socket but don't connect it */
+      socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   ASSERT_NOT_NULL (socket);
   track_socket (socket);
 
@@ -1279,38 +1299,41 @@ TEST (integration_connection_nonblocking_error_states)
   /* Test operations on unconnected socket - these may raise exceptions */
   int readable = -1;
   int writable = -1;
-  (void)readable; /* Mark as intentionally unused - testing exception handling */
-  (void)writable; /* Mark as intentionally unused - testing exception handling */
+  (void)
+      readable; /* Mark as intentionally unused - testing exception handling */
+  (void)
+      writable; /* Mark as intentionally unused - testing exception handling */
   int error = -1;
   int probe = -1;
   ssize_t sent = -1;
 
-  TRY
-    readable = Socket_is_readable (socket);
+  TRY readable = Socket_is_readable (socket);
   EXCEPT (Socket_Failed)
-    readable = -1; /* Expected to fail on unconnected socket */
+  readable = -1; /* Expected to fail on unconnected socket */
+  END_TRY;
+
+  TRY writable = Socket_is_writable (socket);
+  EXCEPT (Socket_Failed)
+  writable = -1; /* Expected to fail on unconnected socket */
   END_TRY;
 
   TRY
-    writable = Socket_is_writable (socket);
+      /* Error state should be 0 (no error) or EINPROGRESS for non-blocking
+         connect */
+          error
+      = Socket_get_error (socket);
+  ASSERT (error == 0 || error == EINPROGRESS);
   EXCEPT (Socket_Failed)
-    writable = -1; /* Expected to fail on unconnected socket */
+  error = -1; /* Expected to fail */
   END_TRY;
 
   TRY
-    /* Error state should be 0 (no error) or EINPROGRESS for non-blocking connect */
-    error = Socket_get_error (socket);
-    ASSERT (error == 0 || error == EINPROGRESS);
+      /* Probe should return 0 (not connected) */
+      probe
+      = Socket_probe (socket, 0);
+  ASSERT_EQ (probe, 0);
   EXCEPT (Socket_Failed)
-    error = -1; /* Expected to fail */
-  END_TRY;
-
-  TRY
-    /* Probe should return 0 (not connected) */
-    probe = Socket_probe (socket, 0);
-    ASSERT_EQ (probe, 0);
-  EXCEPT (Socket_Failed)
-    probe = -1; /* Expected to fail */
+  probe = -1; /* Expected to fail */
   END_TRY;
 
   /* Try to send on unconnected socket */
@@ -1366,7 +1389,8 @@ TEST (integration_connection_nonblocking_error_states)
   assert_no_socket_leaks ();
 }
 
-/* ==================== I/O Enhancements Integration Tests ==================== */
+/* ==================== I/O Enhancements Integration Tests ====================
+ */
 
 TEST (integration_io_timeout_variants)
 {
@@ -1375,8 +1399,9 @@ TEST (integration_io_timeout_variants)
   Socket_T server = NULL, client = NULL, accepted = NULL;
 
   TRY
-  /* Create server */
-  server = Socket_listen_tcp ("127.0.0.1", 0, 5);
+      /* Create server */
+      server
+      = Socket_listen_tcp ("127.0.0.1", 0, 5);
   ASSERT_NOT_NULL (server);
   track_socket (server);
   int port = Socket_getlocalport (server);
@@ -1393,12 +1418,14 @@ TEST (integration_io_timeout_variants)
 
   /* Test Socket_sendall_timeout */
   const char *test_msg = "Hello from sendall_timeout";
-  ssize_t sent = Socket_sendall_timeout (client, test_msg, strlen (test_msg), 1000);
+  ssize_t sent
+      = Socket_sendall_timeout (client, test_msg, strlen (test_msg), 1000);
   ASSERT_EQ (sent, (ssize_t)strlen (test_msg));
 
   /* Test Socket_recvall_timeout */
   char buf[100] = { 0 };
-  ssize_t received = Socket_recvall_timeout (accepted, buf, strlen (test_msg), 1000);
+  ssize_t received
+      = Socket_recvall_timeout (accepted, buf, strlen (test_msg), 1000);
   ASSERT_EQ (received, sent);
   ASSERT_EQ (strcmp (buf, test_msg), 0);
 
@@ -1414,19 +1441,19 @@ TEST (integration_io_timeout_variants)
 
   /* Receive with gather */
   struct iovec recv_iov[2];
-  char recv_buf1[6] = { 0 };  /* "Hello" + null */
-  char recv_buf2[6] = { 0 };  /* "World" + null */
+  char recv_buf1[6] = { 0 }; /* "Hello" + null */
+  char recv_buf2[6] = { 0 }; /* "World" + null */
   recv_iov[0].iov_base = recv_buf1;
-  recv_iov[0].iov_len = 5;  /* Read exactly 5 bytes for "Hello" */
+  recv_iov[0].iov_len = 5; /* Read exactly 5 bytes for "Hello" */
   recv_iov[1].iov_base = recv_buf2;
-  recv_iov[1].iov_len = 5;  /* Read exactly 5 bytes for "World" */
+  recv_iov[1].iov_len = 5; /* Read exactly 5 bytes for "World" */
 
   ssize_t received_vec = Socket_recvv_timeout (client, recv_iov, 2, 1000);
   ASSERT_EQ (received_vec, sent_vec);
 
   /* Check the received data */
-  recv_buf1[5] = '\0';  /* Null terminate */
-  recv_buf2[5] = '\0';  /* Null terminate */
+  recv_buf1[5] = '\0'; /* Null terminate */
+  recv_buf2[5] = '\0'; /* Null terminate */
   ASSERT_EQ (strcmp (recv_buf1, "Hello"), 0);
   ASSERT_EQ (strcmp (recv_buf2, "World"), 0);
 
@@ -1459,8 +1486,9 @@ TEST (integration_io_peek_and_cork)
   Socket_T server = NULL, client = NULL, accepted = NULL;
 
   TRY
-  /* Create server */
-  server = Socket_listen_tcp ("127.0.0.1", 0, 5);
+      /* Create server */
+      server
+      = Socket_listen_tcp ("127.0.0.1", 0, 5);
   ASSERT_NOT_NULL (server);
   track_socket (server);
   int port = Socket_getlocalport (server);
@@ -1511,7 +1539,8 @@ TEST (integration_io_peek_and_cork)
 
       /* Should be able to receive */
       char cork_buf[10] = { 0 };
-      ssize_t cork_recv = Socket_recv (accepted, cork_buf, sizeof (cork_buf) - 1);
+      ssize_t cork_recv
+          = Socket_recv (accepted, cork_buf, sizeof (cork_buf) - 1);
       if (cork_recv > 0)
         {
           ASSERT_EQ (strcmp (cork_buf, "small"), 0);
@@ -1544,11 +1573,13 @@ TEST (integration_io_socket_duplication)
 {
   setup_signals ();
   reset_tracked_sockets ();
-  Socket_T server = NULL, client = NULL, accepted = NULL, dup_client = NULL, dup2_client = NULL;
+  Socket_T server = NULL, client = NULL, accepted = NULL, dup_client = NULL,
+           dup2_client = NULL;
 
   TRY
-  /* Create server */
-  server = Socket_listen_tcp ("127.0.0.1", 0, 5);
+      /* Create server */
+      server
+      = Socket_listen_tcp ("127.0.0.1", 0, 5);
   ASSERT_NOT_NULL (server);
   track_socket (server);
   int port = Socket_getlocalport (server);
@@ -1568,7 +1599,8 @@ TEST (integration_io_socket_duplication)
   ASSERT_NOT_NULL (dup_client);
   track_socket (dup_client);
 
-  /* Both sockets should have different fd numbers but reference same underlying socket */
+  /* Both sockets should have different fd numbers but reference same underlying
+   * socket */
   ASSERT_NE (Socket_fd (client), Socket_fd (dup_client));
   ASSERT (Socket_fd (client) >= 0 && Socket_fd (dup_client) >= 0);
 
@@ -1649,8 +1681,9 @@ TEST (integration_io_splice)
   Socket_T dest_server = NULL, dest_client = NULL, dest_accepted = NULL;
 
   TRY
-  /* Create server */
-  server = Socket_listen_tcp ("127.0.0.1", 0, 5);
+      /* Create server */
+      server
+      = Socket_listen_tcp ("127.0.0.1", 0, 5);
   ASSERT_NOT_NULL (server);
   track_socket (server);
   int port = Socket_getlocalport (server);
@@ -1689,7 +1722,8 @@ TEST (integration_io_splice)
   track_socket (dest_accepted);
 
   /* Try to splice data from accepted to dest_accepted */
-  ssize_t spliced = Socket_splice (accepted, dest_accepted, 0); /* 0 = splice all available */
+  ssize_t spliced = Socket_splice (
+      accepted, dest_accepted, 0); /* 0 = splice all available */
   if (spliced >= 0)
     {
       /* Splice succeeded (Linux with splice support) */
@@ -1697,7 +1731,8 @@ TEST (integration_io_splice)
 
       /* Receive from destination */
       char splice_buf[100] = { 0 };
-      ssize_t splice_recv = Socket_recv (dest_client, splice_buf, sizeof (splice_buf) - 1);
+      ssize_t splice_recv
+          = Socket_recv (dest_client, splice_buf, sizeof (splice_buf) - 1);
       if (splice_recv > 0)
         {
           ASSERT_EQ (splice_recv, sent);
@@ -1743,7 +1778,8 @@ TEST (integration_io_splice)
   END_TRY;
 }
 
-/* ==================== Buffer Enhancements Integration Tests ==================== */
+/* ==================== Buffer Enhancements Integration Tests
+ * ==================== */
 
 TEST (integration_buffer_compact_and_ensure)
 {
@@ -1786,7 +1822,8 @@ TEST (integration_buffer_compact_and_ensure)
 
   /* Read the remaining data */
   char remaining_buf[100];
-  size_t read_remaining = SocketBuf_read (buf, remaining_buf, sizeof (remaining_buf) - 1);
+  size_t read_remaining
+      = SocketBuf_read (buf, remaining_buf, sizeof (remaining_buf) - 1);
   ASSERT_EQ (read_remaining, available_after_compact);
   remaining_buf[read_remaining] = '\0'; /* Null-terminate for strcmp */
 
@@ -1807,7 +1844,9 @@ TEST (integration_buffer_find_and_readline)
   ASSERT_NOT_NULL (buf);
 
   /* Write HTTP-like data with multiple lines */
-  const char *http_data = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello World!";
+  const char *http_data
+      = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+        "12\r\n\r\nHello World!";
   size_t written = SocketBuf_write (buf, http_data, strlen (http_data));
   ASSERT_EQ (written, strlen (http_data));
 
@@ -1877,7 +1916,8 @@ TEST (integration_buffer_scatter_gather)
   write_iov[2].iov_len = strlen (part3);
 
   ssize_t written = SocketBuf_writev (buf, write_iov, 3);
-  ASSERT_EQ (written, (ssize_t)(strlen (part1) + strlen (part2) + strlen (part3)));
+  ASSERT_EQ (written,
+             (ssize_t)(strlen (part1) + strlen (part2) + strlen (part3)));
 
   /* Verify total available */
   size_t available = SocketBuf_available (buf);
@@ -1979,7 +2019,8 @@ TEST (integration_buffer_complex_operations)
   Arena_dispose (&arena);
 }
 
-/* ==================== Event System Enhancements Integration Tests ==================== */
+/* ==================== Event System Enhancements Integration Tests
+ * ==================== */
 
 TEST (integration_event_poll_backend_and_sockets)
 {
@@ -1990,10 +2031,10 @@ TEST (integration_event_poll_backend_and_sockets)
   const char *backend_name = SocketPoll_get_backend_name (poll);
   ASSERT_NOT_NULL (backend_name);
   /* Backend name should be one of: epoll, kqueue, poll, io_uring */
-  ASSERT (strcmp (backend_name, "epoll") == 0 ||
-          strcmp (backend_name, "kqueue") == 0 ||
-          strcmp (backend_name, "poll") == 0 ||
-          strcmp (backend_name, "io_uring") == 0);
+  ASSERT (strcmp (backend_name, "epoll") == 0
+          || strcmp (backend_name, "kqueue") == 0
+          || strcmp (backend_name, "poll") == 0
+          || strcmp (backend_name, "io_uring") == 0);
 
   /* Create some sockets to register */
   Socket_T sockets[3];
@@ -2011,7 +2052,8 @@ TEST (integration_event_poll_backend_and_sockets)
 
   /* Test SocketPoll_get_registered_sockets */
   Socket_T registered[10];
-  int registered_count = SocketPoll_get_registered_sockets (poll, registered, 10);
+  int registered_count
+      = SocketPoll_get_registered_sockets (poll, registered, 10);
   ASSERT_EQ (registered_count, 3);
 
   /* Verify all our sockets are in the list (order may vary) */
@@ -2073,7 +2115,8 @@ TEST (integration_event_timer_control)
   volatile int timer_fired = 0;
 
   /* Create a timer that fires in 100ms */
-  SocketTimer_T timer = SocketTimer_add (poll, 100, integration_timer_callback, (void *)&timer_fired);
+  SocketTimer_T timer = SocketTimer_add (
+      poll, 100, integration_timer_callback, (void *)&timer_fired);
   ASSERT_NOT_NULL (timer);
 
   /* Test reschedule - change to 50ms */
@@ -2092,7 +2135,8 @@ TEST (integration_event_timer_control)
 
   /* Test pause */
   timer_fired = 0; /* Reset */
-  SocketTimer_T timer2 = SocketTimer_add (poll, 50, integration_timer_callback, (void *)&timer_fired);
+  SocketTimer_T timer2 = SocketTimer_add (
+      poll, 50, integration_timer_callback, (void *)&timer_fired);
   ASSERT_NOT_NULL (timer2);
 
   /* Pause the timer */
@@ -2134,8 +2178,10 @@ TEST (integration_event_timer_pause_resume_workflow)
 
   volatile int callback_count = 0;
 
-  /* Create repeating timer (100 milliseconds interval) for pause/resume testing */
-  SocketTimer_T timer = SocketTimer_add_repeating (poll, 100, integration_timer_callback, (void *)&callback_count);
+  /* Create repeating timer (100 milliseconds interval) for pause/resume testing
+   */
+  SocketTimer_T timer = SocketTimer_add_repeating (
+      poll, 100, integration_timer_callback, (void *)&callback_count);
   ASSERT_NOT_NULL (timer);
 
   /* Pause immediately */
@@ -2168,12 +2214,14 @@ TEST (integration_event_timer_pause_resume_workflow)
   SocketTimer_pause (poll, timer);
   usleep (150 * 1000);
   SocketPoll_wait (poll, &events, 0);
-  ASSERT_EQ (callback_count, count_before_pause); /* Should not increase while paused */
+  ASSERT_EQ (callback_count,
+             count_before_pause); /* Should not increase while paused */
 
   SocketTimer_resume (poll, timer);
   usleep (120 * 1000);
   SocketPoll_wait (poll, &events, 0);
-  ASSERT (callback_count > count_before_pause); /* Should have fired at least once more */
+  ASSERT (callback_count
+          > count_before_pause); /* Should have fired at least once more */
 
   /* Clean up */
   SocketTimer_cancel (poll, timer);
@@ -2331,8 +2379,8 @@ TEST (integration_full_stack_tcp_server)
 
 /* ==================== Multi-threaded Server Test ==================== */
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS - threading issues with exception stack.
-       * See KNOWN_ISSUES.md for details and tracking. */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS - threading issues with exception \
+       * stack. See KNOWN_ISSUES.md for details and tracking. */
 
 static volatile int server_running;
 static int server_port;
@@ -2541,15 +2589,24 @@ TEST (integration_rapid_connect_disconnect)
   Arena_T arena = Arena_new ();
   SocketPoll_T poll = NULL;
   TRY poll = SocketPoll_new (100);
-  EXCEPT (SocketPoll_Failed) { return; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    return;
+  }
   END_TRY;
   SocketPool_T pool = NULL;
   TRY pool = SocketPool_new (arena, 50, 2048);
-  EXCEPT (SocketPool_Failed) { return; }
+  EXCEPT (SocketPool_Failed)
+  {
+    return;
+  }
   END_TRY;
   Socket_T server = NULL;
   TRY server = Socket_new (AF_INET, SOCK_STREAM, 0);
-  EXCEPT (Socket_Failed) { return; }
+  EXCEPT (Socket_Failed)
+  {
+    return;
+  }
   END_TRY;
 
   TRY Socket_setreuseaddr (server);
@@ -2608,7 +2665,7 @@ TEST (integration_rapid_connect_disconnect)
 
 /* ==================== Async I/O Integration Tests ==================== */
 
-#if 0 /* KNOWN_ISSUE: Async I/O backend not implemented for macOS.
+#if 0 /* KNOWN_ISSUE: Async I/O backend not implemented for macOS. \
        * See KNOWN_ISSUES.md for details and tracking. */
 
 TEST(integration_async_availability)

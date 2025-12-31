@@ -117,14 +117,16 @@
  * Locks pool mutex using standard SOCKET_MUTEX_LOCK_OR_RAISE pattern
  * for consistent error handling. Raises SocketPool_Failed if lock fails.
  *
- * @throws SocketPool_Failed if pthread_mutex_lock() fails (EDEADLK, EINVAL, EPERM).
+ * @throws SocketPool_Failed if pthread_mutex_lock() fails (EDEADLK, EINVAL,
+ * EPERM).
  * @threadsafe Yes - pthread_mutex_lock is thread-safe.
  *
  * @see POOL_UNLOCK for releasing the mutex.
  * @see SOCKET_MUTEX_LOCK_OR_RAISE in SocketUtil.h for underlying pattern.
  * @see pthread_mutex_lock() for POSIX operation.
  */
-#define POOL_LOCK(p) SOCKET_MUTEX_LOCK_OR_RAISE(&(p)->mutex, SocketPool, SocketPool_Failed)
+#define POOL_LOCK(p) \
+  SOCKET_MUTEX_LOCK_OR_RAISE (&(p)->mutex, SocketPool, SocketPool_Failed)
 
 /**
  * @brief Release pool mutex.
@@ -140,7 +142,7 @@
  * @see SOCKET_MUTEX_UNLOCK in SocketUtil.h for underlying pattern.
  * @see pthread_mutex_unlock() for POSIX operation.
  */
-#define POOL_UNLOCK(p) SOCKET_MUTEX_UNLOCK(&(p)->mutex)
+#define POOL_UNLOCK(p) SOCKET_MUTEX_UNLOCK (&(p)->mutex)
 
 /* ============================================================================
  * Hash Table Configuration
@@ -222,13 +224,13 @@ extern __thread Except_T SocketPool_DetailedException;
  * @see RAISE_POOL_FMT for errno-formatted messages.
  * @see SocketPool_Failed exception type.
  */
-#define RAISE_POOL_ERROR(exception)                                           \
-  do                                                                          \
-    {                                                                         \
-      SocketPool_DetailedException = (exception);                             \
-      SocketPool_DetailedException.reason = socket_error_buf;                 \
-      RAISE (SocketPool_DetailedException);                                   \
-    }                                                                         \
+#define RAISE_POOL_ERROR(exception)                           \
+  do                                                          \
+    {                                                         \
+      SocketPool_DetailedException = (exception);             \
+      SocketPool_DetailedException.reason = socket_error_buf; \
+      RAISE (SocketPool_DetailedException);                   \
+    }                                                         \
   while (0)
 
 /**
@@ -241,12 +243,12 @@ extern __thread Except_T SocketPool_DetailedException;
  * @see RAISE_POOL_FMT for errno-formatted messages.
  * @see RAISE_POOL_ERROR for direct exception raising.
  */
-#define RAISE_POOL_MSG(exception, fmt, ...)                                   \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);                                  \
-      RAISE_POOL_ERROR (exception);                                           \
-    }                                                                         \
+#define RAISE_POOL_MSG(exception, fmt, ...)  \
+  do                                         \
+    {                                        \
+      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__); \
+      RAISE_POOL_ERROR (exception);          \
+    }                                        \
   while (0)
 
 /**
@@ -259,12 +261,12 @@ extern __thread Except_T SocketPool_DetailedException;
  * @see RAISE_POOL_MSG for non-errno messages.
  * @see RAISE_POOL_ERROR for direct exception raising.
  */
-#define RAISE_POOL_FMT(exception, fmt, ...)                                   \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                  \
-      RAISE_POOL_ERROR (exception);                                           \
-    }                                                                         \
+#define RAISE_POOL_FMT(exception, fmt, ...)  \
+  do                                         \
+    {                                        \
+      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__); \
+      RAISE_POOL_ERROR (exception);          \
+    }                                        \
   while (0)
 
 /* ============================================================================
@@ -333,16 +335,15 @@ struct Connection
   SocketBuf_T outbuf;   /**< Output buffer for writing data */
   void *data;           /**< User data pointer */
   time_t last_activity; /**< Last activity timestamp for idle timeout */
-  time_t created_at; /**< Connection creation timestamp (for age tracking) */
-  int active;        /**< Non-zero if slot contains active connection */
-  struct Connection *hash_next; /**< Next in hash table collision chain */
-  struct Connection *free_next; /**< Next in free list (when inactive) */
+  time_t created_at;    /**< Connection creation timestamp (for age tracking) */
+  int active;           /**< Non-zero if slot contains active connection */
+  struct Connection *hash_next;   /**< Next in hash table collision chain */
+  struct Connection *free_next;   /**< Next in free list (when inactive) */
   struct Connection *active_next; /**< Next in active connection list */
   struct Connection *active_prev; /**< Prev in active connection list */
   SocketReconnect_T
-      reconnect; /**< Auto-reconnection context (NULL if disabled) */
-  char
-      *tracked_ip; /**< Tracked IP for per-IP limiting (NULL if not tracked) */
+      reconnect;    /**< Auto-reconnection context (NULL if disabled) */
+  char *tracked_ip; /**< Tracked IP for per-IP limiting (NULL if not tracked) */
 #if SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx; /**< TLS context for this connection */
   int tls_handshake_complete; /**< TLS handshake state */
@@ -545,9 +546,8 @@ struct T
   pthread_mutex_t mutex;          /**< Thread safety mutex */
 
   /* DNS and async operations */
-  SocketDNS_T dns; /**< Internal DNS resolver (lazy init) */
-  AsyncConnectContext_T
-      async_ctx;              /**< Linked list of pending async connects */
+  SocketDNS_T dns;                 /**< Internal DNS resolver (lazy init) */
+  AsyncConnectContext_T async_ctx; /**< Linked list of pending async connects */
   AsyncConnectContext_T
       async_ctx_freelist;     /**< Freelist of reusable async connect contexts
                                  (security: prevents unbounded arena growth) */
@@ -555,8 +555,7 @@ struct T
                                  limit) */
 
   /* Reconnection support */
-  SocketReconnect_Policy_T
-      reconnect_policy;  /**< Default reconnection policy */
+  SocketReconnect_Policy_T reconnect_policy; /**< Default reconnection policy */
   int reconnect_enabled; /**< 1 if default reconnection enabled */
 
   /* Rate limiting support */
@@ -586,9 +585,8 @@ struct T
   void *validation_cb_data; /**< User data for validation callback */
 
   /* Resize callback */
-  SocketPool_ResizeCallback
-      resize_cb;        /**< Pool resize notification callback */
-  void *resize_cb_data; /**< User data for resize callback */
+  SocketPool_ResizeCallback resize_cb; /**< Pool resize notification callback */
+  void *resize_cb_data;                /**< User data for resize callback */
 
   /* Pre-resize callback (called BEFORE realloc for pointer invalidation) */
   SocketPool_PreResizeCallback
@@ -596,24 +594,22 @@ struct T
   void *pre_resize_cb_data; /**< User data for pre-resize callback */
 
   /* Idle callback */
-  SocketPool_IdleCallback
-      idle_cb;        /**< Callback when connection becomes idle */
-  void *idle_cb_data; /**< User data for idle callback */
+  SocketPool_IdleCallback idle_cb; /**< Callback when connection becomes idle */
+  void *idle_cb_data;              /**< User data for idle callback */
 
   /* Health checking subsystem */
-  struct SocketPoolHealth_T *health; /**< Health check context (NULL if disabled) */
+  struct SocketPoolHealth_T
+      *health; /**< Health check context (NULL if disabled) */
 
   /* Statistics tracking */
-  uint64_t stats_total_added;     /**< Total connections added */
-  uint64_t stats_total_removed;   /**< Total connections removed */
-  uint64_t stats_total_reused;    /**< Total connections reused */
-  uint64_t stats_health_checks;   /**< Total health checks performed */
-  uint64_t stats_health_failures; /**< Total health check failures */
-  uint64_t
-      stats_validation_failures; /**< Total validation callback failures */
-  uint64_t
-      stats_idle_cleanups;     /**< Total connections cleaned up due to idle */
-  int64_t stats_start_time_ms; /**< Statistics window start time */
+  uint64_t stats_total_added;         /**< Total connections added */
+  uint64_t stats_total_removed;       /**< Total connections removed */
+  uint64_t stats_total_reused;        /**< Total connections reused */
+  uint64_t stats_health_checks;       /**< Total health checks performed */
+  uint64_t stats_health_failures;     /**< Total health check failures */
+  uint64_t stats_validation_failures; /**< Total validation callback failures */
+  uint64_t stats_idle_cleanups; /**< Total connections cleaned up due to idle */
+  int64_t stats_start_time_ms;  /**< Statistics window start time */
 };
 #undef T
 
@@ -767,7 +763,8 @@ extern void SocketPool_connections_initialize_slot (struct Connection *conn);
  * @see SocketPool_connections_release_buffers() for cleanup.
  * @see Connection_inbuf() and Connection_outbuf() for access.
  */
-extern int SocketPool_connections_alloc_buffers (Arena_T arena, size_t bufsize,
+extern int SocketPool_connections_alloc_buffers (Arena_T arena,
+                                                 size_t bufsize,
                                                  Connection_T conn);
 
 /**
@@ -900,8 +897,8 @@ extern void update_existing_slot (Connection_T conn, time_t now);
  * @see remove_from_hash_table() for removal.
  * @see socketpool_hash() for hash computation.
  */
-extern void insert_into_hash_table (SocketPool_T pool, Connection_T conn,
-                                    Socket_T socket);
+extern void
+insert_into_hash_table (SocketPool_T pool, Connection_T conn, Socket_T socket);
 
 /**
  * @brief Increment active connection count.
@@ -925,8 +922,8 @@ extern void increment_pool_count (SocketPool_T pool);
  *
  * @see prepare_free_slot() for buffer allocation.
  */
-extern void initialize_connection (Connection_T conn, Socket_T socket,
-                                   time_t now);
+extern void
+initialize_connection (Connection_T conn, Socket_T socket, time_t now);
 
 /**
  * @brief Find existing connection or create new slot.
@@ -941,8 +938,8 @@ extern void initialize_connection (Connection_T conn, Socket_T socket,
  * @see SocketPool_get() for lookup-only.
  * @see SocketPool_add() for add-only.
  */
-extern Connection_T find_or_create_slot (SocketPool_T pool, Socket_T socket,
-                                         time_t now);
+extern Connection_T
+find_or_create_slot (SocketPool_T pool, Socket_T socket, time_t now);
 
 /**
  * @brief Remove connection from hash table.
@@ -955,8 +952,8 @@ extern Connection_T find_or_create_slot (SocketPool_T pool, Socket_T socket,
  *
  * @see insert_into_hash_table() for insertion.
  */
-extern void remove_from_hash_table (SocketPool_T pool, Connection_T conn,
-                                    Socket_T socket);
+extern void
+remove_from_hash_table (SocketPool_T pool, Connection_T conn, Socket_T socket);
 
 /**
  * @brief Securely clear (zero) connection's input/output buffers.
@@ -1145,8 +1142,8 @@ extern unsigned socketpool_hash (const Socket_T socket);
  * @param[in,out] socket_ptr Pointer to socket pointer (Socket_T*).
  *     Socket freed and pointer set to NULL on success.
  *     Unchanged on failure (logged only).
- * @param[in] context Optional context string for debug logging (e.g., "Cleanup",
- *     "Resize"). Pass NULL to omit context in log message.
+ * @param[in] context Optional context string for debug logging (e.g.,
+ * "Cleanup", "Resize"). Pass NULL to omit context in log message.
  *
  * @threadsafe Yes - acquires pool mutex internally via SocketPool_remove().
  *
@@ -1168,29 +1165,33 @@ extern unsigned socketpool_hash (const Socket_T socket);
  * @see SocketPool_remove() for pool removal (may raise SocketPool_Failed).
  * @see Socket_free() for socket closure (may raise Socket_Failed).
  * @see SocketLog_emitf() for debug-level error logging.
- * @see close_single_socket() in SocketPool-connections.c (refactored to use this).
+ * @see close_single_socket() in SocketPool-connections.c (refactored to use
+ * this).
  * @see close_socket_safe() in SocketPool-ops.c (refactored to use this).
  */
 static inline void
-socketpool_close_socket_safe (SocketPool_T pool, Socket_T *socket_ptr,
-                               const char *context)
+socketpool_close_socket_safe (SocketPool_T pool,
+                              Socket_T *socket_ptr,
+                              const char *context)
 {
   TRY
   {
     SocketPool_remove (pool, *socket_ptr);
     Socket_free (socket_ptr);
   }
-  EXCEPT(SocketPool_Failed)
+  EXCEPT (SocketPool_Failed)
   {
     /* Expected failures during cleanup - socket may be stale */
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+    SocketLog_emitf (SOCKET_LOG_DEBUG,
+                     SOCKET_LOG_COMPONENT,
                      "%s: socket close/remove failed (may be stale)",
                      context ? context : "Cleanup");
   }
-  EXCEPT(Socket_Failed)
+  EXCEPT (Socket_Failed)
   {
     /* Expected failures during cleanup - socket may be stale */
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+    SocketLog_emitf (SOCKET_LOG_DEBUG,
+                     SOCKET_LOG_COMPONENT,
                      "%s: socket close/remove failed (may be stale)",
                      context ? context : "Cleanup");
   }
@@ -1273,8 +1274,8 @@ socketpool_enforce_max_connections (size_t maxconns)
 static inline size_t
 socketpool_enforce_buffer_size (size_t bufsize)
 {
-  return socketpool_enforce_range (bufsize, SOCKET_MIN_BUFFER_SIZE,
-                                   SOCKET_MAX_BUFFER_SIZE);
+  return socketpool_enforce_range (
+      bufsize, SOCKET_MIN_BUFFER_SIZE, SOCKET_MAX_BUFFER_SIZE);
 }
 
 /* ============================================================================

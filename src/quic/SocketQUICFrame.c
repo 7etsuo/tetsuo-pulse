@@ -23,7 +23,8 @@
  */
 
 /* All packet types */
-#define PKT_ALL (QUIC_PKT_INITIAL | QUIC_PKT_0RTT | QUIC_PKT_HANDSHAKE | QUIC_PKT_1RTT)
+#define PKT_ALL \
+  (QUIC_PKT_INITIAL | QUIC_PKT_0RTT | QUIC_PKT_HANDSHAKE | QUIC_PKT_1RTT)
 
 /* Initial, Handshake, 1-RTT (not 0-RTT) */
 #define PKT_IH1 (QUIC_PKT_INITIAL | QUIC_PKT_HANDSHAKE | QUIC_PKT_1RTT)
@@ -45,32 +46,32 @@ static const struct
   uint64_t type;
   int allowed;
 } frame_validation_table[] = {
-  { QUIC_FRAME_PADDING,               PKT_ALL },
-  { QUIC_FRAME_PING,                  PKT_ALL },
-  { QUIC_FRAME_ACK,                   PKT_IH1 },
-  { QUIC_FRAME_ACK_ECN,               PKT_IH1 },
-  { QUIC_FRAME_RESET_STREAM,          PKT_01  },
-  { QUIC_FRAME_STOP_SENDING,          PKT_01  },
-  { QUIC_FRAME_CRYPTO,                PKT_ALL & ~QUIC_PKT_0RTT },
-  { QUIC_FRAME_NEW_TOKEN,             PKT_1   },
-  { QUIC_FRAME_STREAM,                PKT_01  },
-  { QUIC_FRAME_MAX_DATA,              PKT_01  },
-  { QUIC_FRAME_MAX_STREAM_DATA,       PKT_01  },
-  { QUIC_FRAME_MAX_STREAMS_BIDI,      PKT_01  },
-  { QUIC_FRAME_MAX_STREAMS_UNI,       PKT_01  },
-  { QUIC_FRAME_DATA_BLOCKED,          PKT_01  },
-  { QUIC_FRAME_STREAM_DATA_BLOCKED,   PKT_01  },
-  { QUIC_FRAME_STREAMS_BLOCKED_BIDI,  PKT_01  },
-  { QUIC_FRAME_STREAMS_BLOCKED_UNI,   PKT_01  },
-  { QUIC_FRAME_NEW_CONNECTION_ID,     PKT_01  },
-  { QUIC_FRAME_RETIRE_CONNECTION_ID,  PKT_01  },
-  { QUIC_FRAME_PATH_CHALLENGE,        PKT_01  },
-  { QUIC_FRAME_PATH_RESPONSE,         PKT_1   },
-  { QUIC_FRAME_CONNECTION_CLOSE,      PKT_ALL },
-  { QUIC_FRAME_CONNECTION_CLOSE_APP,  PKT_01  },
-  { QUIC_FRAME_HANDSHAKE_DONE,        PKT_1   },
-  { QUIC_FRAME_DATAGRAM,              PKT_01  },
-  { QUIC_FRAME_DATAGRAM_LEN,          PKT_01  },
+  { QUIC_FRAME_PADDING, PKT_ALL },
+  { QUIC_FRAME_PING, PKT_ALL },
+  { QUIC_FRAME_ACK, PKT_IH1 },
+  { QUIC_FRAME_ACK_ECN, PKT_IH1 },
+  { QUIC_FRAME_RESET_STREAM, PKT_01 },
+  { QUIC_FRAME_STOP_SENDING, PKT_01 },
+  { QUIC_FRAME_CRYPTO, PKT_ALL & ~QUIC_PKT_0RTT },
+  { QUIC_FRAME_NEW_TOKEN, PKT_1 },
+  { QUIC_FRAME_STREAM, PKT_01 },
+  { QUIC_FRAME_MAX_DATA, PKT_01 },
+  { QUIC_FRAME_MAX_STREAM_DATA, PKT_01 },
+  { QUIC_FRAME_MAX_STREAMS_BIDI, PKT_01 },
+  { QUIC_FRAME_MAX_STREAMS_UNI, PKT_01 },
+  { QUIC_FRAME_DATA_BLOCKED, PKT_01 },
+  { QUIC_FRAME_STREAM_DATA_BLOCKED, PKT_01 },
+  { QUIC_FRAME_STREAMS_BLOCKED_BIDI, PKT_01 },
+  { QUIC_FRAME_STREAMS_BLOCKED_UNI, PKT_01 },
+  { QUIC_FRAME_NEW_CONNECTION_ID, PKT_01 },
+  { QUIC_FRAME_RETIRE_CONNECTION_ID, PKT_01 },
+  { QUIC_FRAME_PATH_CHALLENGE, PKT_01 },
+  { QUIC_FRAME_PATH_RESPONSE, PKT_1 },
+  { QUIC_FRAME_CONNECTION_CLOSE, PKT_ALL },
+  { QUIC_FRAME_CONNECTION_CLOSE_APP, PKT_01 },
+  { QUIC_FRAME_HANDSHAKE_DONE, PKT_1 },
+  { QUIC_FRAME_DATAGRAM, PKT_01 },
+  { QUIC_FRAME_DATAGRAM_LEN, PKT_01 },
   { 0, 0 } /* Sentinel */
 };
 
@@ -80,8 +81,7 @@ static const struct
  */
 
 static SocketQUICFrame_Result
-decode_varint (const uint8_t *data, size_t len, size_t *pos,
-               uint64_t *value)
+decode_varint (const uint8_t *data, size_t len, size_t *pos, uint64_t *value)
 {
   if (*pos >= len)
     return QUIC_FRAME_ERROR_TRUNCATED;
@@ -105,7 +105,9 @@ decode_varint (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_padding (const uint8_t *data, size_t len, size_t *pos,
+parse_padding (const uint8_t *data,
+               size_t len,
+               size_t *pos,
                SocketQUICFrame_T *frame)
 {
   (void)data;
@@ -123,7 +125,9 @@ parse_padding (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_ping (const uint8_t *data, size_t len, size_t *pos,
+parse_ping (const uint8_t *data,
+            size_t len,
+            size_t *pos,
             SocketQUICFrame_T *frame)
 {
   (void)data;
@@ -153,7 +157,9 @@ parse_ping (const uint8_t *data, size_t len, size_t *pos,
  * @return QUIC_FRAME_OK on success, error code otherwise
  */
 static SocketQUICFrame_Result
-parse_ack_basic_fields (const uint8_t *data, size_t len, size_t *pos,
+parse_ack_basic_fields (const uint8_t *data,
+                        size_t len,
+                        size_t *pos,
                         SocketQUICFrameAck_T *ack)
 {
   SocketQUICFrame_Result res;
@@ -199,8 +205,11 @@ parse_ack_basic_fields (const uint8_t *data, size_t len, size_t *pos,
  * @return QUIC_FRAME_OK on success, error code otherwise
  */
 static SocketQUICFrame_Result
-parse_ack_ranges (const uint8_t *data, size_t len, size_t *pos,
-                  SocketQUICFrameAck_T *ack, Arena_T arena)
+parse_ack_ranges (const uint8_t *data,
+                  size_t len,
+                  size_t *pos,
+                  SocketQUICFrameAck_T *ack,
+                  Arena_T arena)
 {
   SocketQUICFrame_Result res;
 
@@ -216,7 +225,8 @@ parse_ack_ranges (const uint8_t *data, size_t len, size_t *pos,
   if (ack->range_count > SIZE_MAX / sizeof (SocketQUICFrameAckRange_T))
     return QUIC_FRAME_ERROR_OVERFLOW;
 
-  size_t range_size = (size_t)ack->range_count * sizeof (SocketQUICFrameAckRange_T);
+  size_t range_size
+      = (size_t)ack->range_count * sizeof (SocketQUICFrameAckRange_T);
   if (arena)
     ack->ranges = Arena_alloc (arena, range_size, __FILE__, __LINE__);
   else
@@ -255,8 +265,11 @@ parse_ack_ranges (const uint8_t *data, size_t len, size_t *pos,
  * @return QUIC_FRAME_OK on success, error code otherwise
  */
 static SocketQUICFrame_Result
-parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
-                    SocketQUICFrame_T *frame, Arena_T arena)
+parse_ack_internal (const uint8_t *data,
+                    size_t len,
+                    size_t *pos,
+                    SocketQUICFrame_T *frame,
+                    Arena_T arena)
 {
   SocketQUICFrameAck_T *ack = &frame->data.ack;
   SocketQUICFrame_Result res;
@@ -288,7 +301,9 @@ parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
 }
 
 static SocketQUICFrame_Result
-parse_ack (const uint8_t *data, size_t len, size_t *pos,
+parse_ack (const uint8_t *data,
+           size_t len,
+           size_t *pos,
            SocketQUICFrame_T *frame)
 {
   return parse_ack_internal (data, len, pos, frame, NULL);
@@ -300,7 +315,9 @@ parse_ack (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_reset_stream (const uint8_t *data, size_t len, size_t *pos,
+parse_reset_stream (const uint8_t *data,
+                    size_t len,
+                    size_t *pos,
                     SocketQUICFrame_T *frame)
 {
   SocketQUICFrameResetStream_T *rs = &frame->data.reset_stream;
@@ -327,7 +344,9 @@ parse_reset_stream (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_stop_sending (const uint8_t *data, size_t len, size_t *pos,
+parse_stop_sending (const uint8_t *data,
+                    size_t len,
+                    size_t *pos,
                     SocketQUICFrame_T *frame)
 {
   SocketQUICFrameStopSending_T *ss = &frame->data.stop_sending;
@@ -350,7 +369,9 @@ parse_stop_sending (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_crypto (const uint8_t *data, size_t len, size_t *pos,
+parse_crypto (const uint8_t *data,
+              size_t len,
+              size_t *pos,
               SocketQUICFrame_T *frame)
 {
   SocketQUICFrameCrypto_T *crypto = &frame->data.crypto;
@@ -384,7 +405,9 @@ parse_crypto (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_new_token (const uint8_t *data, size_t len, size_t *pos,
+parse_new_token (const uint8_t *data,
+                 size_t len,
+                 size_t *pos,
                  SocketQUICFrame_T *frame)
 {
   SocketQUICFrameNewToken_T *nt = &frame->data.new_token;
@@ -417,7 +440,9 @@ parse_new_token (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_stream (const uint8_t *data, size_t len, size_t *pos,
+parse_stream (const uint8_t *data,
+              size_t len,
+              size_t *pos,
               SocketQUICFrame_T *frame)
 {
   SocketQUICFrameStream_T *stream = &frame->data.stream;
@@ -472,7 +497,9 @@ parse_stream (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_max_data (const uint8_t *data, size_t len, size_t *pos,
+parse_max_data (const uint8_t *data,
+                size_t len,
+                size_t *pos,
                 SocketQUICFrame_T *frame)
 {
   return decode_varint (data, len, pos, &frame->data.max_data.max_data);
@@ -484,7 +511,9 @@ parse_max_data (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_max_stream_data (const uint8_t *data, size_t len, size_t *pos,
+parse_max_stream_data (const uint8_t *data,
+                       size_t len,
+                       size_t *pos,
                        SocketQUICFrame_T *frame)
 {
   SocketQUICFrameMaxStreamData_T *msd = &frame->data.max_stream_data;
@@ -503,7 +532,9 @@ parse_max_stream_data (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_max_streams (const uint8_t *data, size_t len, size_t *pos,
+parse_max_streams (const uint8_t *data,
+                   size_t len,
+                   size_t *pos,
                    SocketQUICFrame_T *frame)
 {
   SocketQUICFrameMaxStreams_T *ms = &frame->data.max_streams;
@@ -517,7 +548,9 @@ parse_max_streams (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_data_blocked (const uint8_t *data, size_t len, size_t *pos,
+parse_data_blocked (const uint8_t *data,
+                    size_t len,
+                    size_t *pos,
                     SocketQUICFrame_T *frame)
 {
   return decode_varint (data, len, pos, &frame->data.data_blocked.limit);
@@ -529,7 +562,9 @@ parse_data_blocked (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_stream_data_blocked (const uint8_t *data, size_t len, size_t *pos,
+parse_stream_data_blocked (const uint8_t *data,
+                           size_t len,
+                           size_t *pos,
                            SocketQUICFrame_T *frame)
 {
   SocketQUICFrameStreamDataBlocked_T *sdb = &frame->data.stream_data_blocked;
@@ -548,7 +583,9 @@ parse_stream_data_blocked (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_streams_blocked (const uint8_t *data, size_t len, size_t *pos,
+parse_streams_blocked (const uint8_t *data,
+                       size_t len,
+                       size_t *pos,
                        SocketQUICFrame_T *frame)
 {
   SocketQUICFrameStreamsBlocked_T *sb = &frame->data.streams_blocked;
@@ -562,7 +599,9 @@ parse_streams_blocked (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_new_connection_id (const uint8_t *data, size_t len, size_t *pos,
+parse_new_connection_id (const uint8_t *data,
+                         size_t len,
+                         size_t *pos,
                          SocketQUICFrame_T *frame)
 {
   SocketQUICFrameNewConnectionID_T *ncid = &frame->data.new_connection_id;
@@ -602,7 +641,9 @@ parse_new_connection_id (const uint8_t *data, size_t len, size_t *pos,
   /* Stateless Reset Token */
   if (*pos + QUIC_STATELESS_RESET_TOKEN_SIZE > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
-  memcpy (ncid->stateless_reset_token, data + *pos, QUIC_STATELESS_RESET_TOKEN_SIZE);
+  memcpy (ncid->stateless_reset_token,
+          data + *pos,
+          QUIC_STATELESS_RESET_TOKEN_SIZE);
   *pos += QUIC_STATELESS_RESET_TOKEN_SIZE;
 
   return QUIC_FRAME_OK;
@@ -614,11 +655,13 @@ parse_new_connection_id (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_retire_connection_id (const uint8_t *data, size_t len, size_t *pos,
+parse_retire_connection_id (const uint8_t *data,
+                            size_t len,
+                            size_t *pos,
                             SocketQUICFrame_T *frame)
 {
-  return decode_varint (data, len, pos,
-                        &frame->data.retire_connection_id.sequence);
+  return decode_varint (
+      data, len, pos, &frame->data.retire_connection_id.sequence);
 }
 
 /* ============================================================================
@@ -627,7 +670,9 @@ parse_retire_connection_id (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_path_challenge (const uint8_t *data, size_t len, size_t *pos,
+parse_path_challenge (const uint8_t *data,
+                      size_t len,
+                      size_t *pos,
                       SocketQUICFrame_T *frame)
 {
   if (*pos + QUIC_PATH_DATA_SIZE > len)
@@ -645,7 +690,9 @@ parse_path_challenge (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_path_response (const uint8_t *data, size_t len, size_t *pos,
+parse_path_response (const uint8_t *data,
+                     size_t len,
+                     size_t *pos,
                      SocketQUICFrame_T *frame)
 {
   if (*pos + QUIC_PATH_DATA_SIZE > len)
@@ -663,7 +710,9 @@ parse_path_response (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_connection_close (const uint8_t *data, size_t len, size_t *pos,
+parse_connection_close (const uint8_t *data,
+                        size_t len,
+                        size_t *pos,
                         SocketQUICFrame_T *frame)
 {
   SocketQUICFrameConnectionClose_T *cc = &frame->data.connection_close;
@@ -708,7 +757,9 @@ parse_connection_close (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_handshake_done (const uint8_t *data, size_t len, size_t *pos,
+parse_handshake_done (const uint8_t *data,
+                      size_t len,
+                      size_t *pos,
                       SocketQUICFrame_T *frame)
 {
   (void)data;
@@ -726,7 +777,9 @@ parse_handshake_done (const uint8_t *data, size_t len, size_t *pos,
  */
 
 static SocketQUICFrame_Result
-parse_datagram (const uint8_t *data, size_t len, size_t *pos,
+parse_datagram (const uint8_t *data,
+                size_t len,
+                size_t *pos,
                 SocketQUICFrame_T *frame)
 {
   SocketQUICFrameDatagram_T *dg = &frame->data.datagram;
@@ -762,8 +815,9 @@ parse_datagram (const uint8_t *data, size_t len, size_t *pos,
  */
 
 typedef SocketQUICFrame_Result (*frame_parser_fn) (const uint8_t *data,
-                                                    size_t len, size_t *pos,
-                                                    SocketQUICFrame_T *frame);
+                                                   size_t len,
+                                                   size_t *pos,
+                                                   SocketQUICFrame_T *frame);
 
 /* Maximum frame type value (DATAGRAM_LEN = 0x31) */
 #define QUIC_FRAME_TYPE_MAX 0x32
@@ -822,7 +876,8 @@ init_parser_dispatch_array (void)
   parser_dispatch_array[QUIC_FRAME_MAX_STREAMS_UNI] = parse_max_streams;
 
   /* STREAMS_BLOCKED frames (0x16-0x17) */
-  parser_dispatch_array[QUIC_FRAME_STREAMS_BLOCKED_BIDI] = parse_streams_blocked;
+  parser_dispatch_array[QUIC_FRAME_STREAMS_BLOCKED_BIDI]
+      = parse_streams_blocked;
   parser_dispatch_array[QUIC_FRAME_STREAMS_BLOCKED_UNI] = parse_streams_blocked;
 
   /* CONNECTION_CLOSE frames (0x1c-0x1d) */
@@ -849,8 +904,11 @@ init_parser_dispatch_array (void)
  * @return       QUIC_FRAME_OK or error code
  */
 static SocketQUICFrame_Result
-dispatch_frame_parser (uint64_t type, const uint8_t *data, size_t len,
-                       size_t *pos, SocketQUICFrame_T *frame)
+dispatch_frame_parser (uint64_t type,
+                       const uint8_t *data,
+                       size_t len,
+                       size_t *pos,
+                       SocketQUICFrame_T *frame)
 {
   /* Bounds check: reject types outside dispatch array */
   if (type >= QUIC_FRAME_TYPE_MAX)
@@ -878,8 +936,10 @@ SocketQUICFrame_init (SocketQUICFrame_T *frame)
 }
 
 SocketQUICFrame_Result
-SocketQUICFrame_parse (const uint8_t *data, size_t len,
-                       SocketQUICFrame_T *frame, size_t *consumed)
+SocketQUICFrame_parse (const uint8_t *data,
+                       size_t len,
+                       SocketQUICFrame_T *frame,
+                       size_t *consumed)
 {
   if (!data || !frame || !consumed)
     return QUIC_FRAME_ERROR_NULL;
@@ -905,8 +965,11 @@ SocketQUICFrame_parse (const uint8_t *data, size_t len,
 }
 
 SocketQUICFrame_Result
-SocketQUICFrame_parse_arena (Arena_T arena, const uint8_t *data, size_t len,
-                             SocketQUICFrame_T *frame, size_t *consumed)
+SocketQUICFrame_parse_arena (Arena_T arena,
+                             const uint8_t *data,
+                             size_t len,
+                             SocketQUICFrame_T *frame,
+                             size_t *consumed)
 {
   if (!data || !frame || !consumed)
     return QUIC_FRAME_ERROR_NULL;
@@ -1030,31 +1093,31 @@ static const struct
   uint64_t type;
   const char *name;
 } frame_type_names[] = {
-  { QUIC_FRAME_PADDING,               "PADDING" },
-  { QUIC_FRAME_PING,                  "PING" },
-  { QUIC_FRAME_ACK,                   "ACK" },
-  { QUIC_FRAME_ACK_ECN,               "ACK_ECN" },
-  { QUIC_FRAME_RESET_STREAM,          "RESET_STREAM" },
-  { QUIC_FRAME_STOP_SENDING,          "STOP_SENDING" },
-  { QUIC_FRAME_CRYPTO,                "CRYPTO" },
-  { QUIC_FRAME_NEW_TOKEN,             "NEW_TOKEN" },
-  { QUIC_FRAME_MAX_DATA,              "MAX_DATA" },
-  { QUIC_FRAME_MAX_STREAM_DATA,       "MAX_STREAM_DATA" },
-  { QUIC_FRAME_MAX_STREAMS_BIDI,      "MAX_STREAMS_BIDI" },
-  { QUIC_FRAME_MAX_STREAMS_UNI,       "MAX_STREAMS_UNI" },
-  { QUIC_FRAME_DATA_BLOCKED,          "DATA_BLOCKED" },
-  { QUIC_FRAME_STREAM_DATA_BLOCKED,   "STREAM_DATA_BLOCKED" },
-  { QUIC_FRAME_STREAMS_BLOCKED_BIDI,  "STREAMS_BLOCKED_BIDI" },
-  { QUIC_FRAME_STREAMS_BLOCKED_UNI,   "STREAMS_BLOCKED_UNI" },
-  { QUIC_FRAME_NEW_CONNECTION_ID,     "NEW_CONNECTION_ID" },
-  { QUIC_FRAME_RETIRE_CONNECTION_ID,  "RETIRE_CONNECTION_ID" },
-  { QUIC_FRAME_PATH_CHALLENGE,        "PATH_CHALLENGE" },
-  { QUIC_FRAME_PATH_RESPONSE,         "PATH_RESPONSE" },
-  { QUIC_FRAME_CONNECTION_CLOSE,      "CONNECTION_CLOSE" },
-  { QUIC_FRAME_CONNECTION_CLOSE_APP,  "CONNECTION_CLOSE_APP" },
-  { QUIC_FRAME_HANDSHAKE_DONE,        "HANDSHAKE_DONE" },
-  { QUIC_FRAME_DATAGRAM,              "DATAGRAM" },
-  { QUIC_FRAME_DATAGRAM_LEN,          "DATAGRAM_LEN" },
+  { QUIC_FRAME_PADDING, "PADDING" },
+  { QUIC_FRAME_PING, "PING" },
+  { QUIC_FRAME_ACK, "ACK" },
+  { QUIC_FRAME_ACK_ECN, "ACK_ECN" },
+  { QUIC_FRAME_RESET_STREAM, "RESET_STREAM" },
+  { QUIC_FRAME_STOP_SENDING, "STOP_SENDING" },
+  { QUIC_FRAME_CRYPTO, "CRYPTO" },
+  { QUIC_FRAME_NEW_TOKEN, "NEW_TOKEN" },
+  { QUIC_FRAME_MAX_DATA, "MAX_DATA" },
+  { QUIC_FRAME_MAX_STREAM_DATA, "MAX_STREAM_DATA" },
+  { QUIC_FRAME_MAX_STREAMS_BIDI, "MAX_STREAMS_BIDI" },
+  { QUIC_FRAME_MAX_STREAMS_UNI, "MAX_STREAMS_UNI" },
+  { QUIC_FRAME_DATA_BLOCKED, "DATA_BLOCKED" },
+  { QUIC_FRAME_STREAM_DATA_BLOCKED, "STREAM_DATA_BLOCKED" },
+  { QUIC_FRAME_STREAMS_BLOCKED_BIDI, "STREAMS_BLOCKED_BIDI" },
+  { QUIC_FRAME_STREAMS_BLOCKED_UNI, "STREAMS_BLOCKED_UNI" },
+  { QUIC_FRAME_NEW_CONNECTION_ID, "NEW_CONNECTION_ID" },
+  { QUIC_FRAME_RETIRE_CONNECTION_ID, "RETIRE_CONNECTION_ID" },
+  { QUIC_FRAME_PATH_CHALLENGE, "PATH_CHALLENGE" },
+  { QUIC_FRAME_PATH_RESPONSE, "PATH_RESPONSE" },
+  { QUIC_FRAME_CONNECTION_CLOSE, "CONNECTION_CLOSE" },
+  { QUIC_FRAME_CONNECTION_CLOSE_APP, "CONNECTION_CLOSE_APP" },
+  { QUIC_FRAME_HANDSHAKE_DONE, "HANDSHAKE_DONE" },
+  { QUIC_FRAME_DATAGRAM, "DATAGRAM" },
+  { QUIC_FRAME_DATAGRAM_LEN, "DATAGRAM_LEN" },
   { 0, NULL } /* Sentinel */
 };
 

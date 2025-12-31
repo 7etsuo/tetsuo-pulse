@@ -121,8 +121,13 @@ read_u32 (const uint8_t *data)
 static void
 generate_ip (const uint8_t *data, char *ip_buf, size_t buf_size)
 {
-  snprintf (ip_buf, buf_size, "%d.%d.%d.%d", data[0] % 256, data[1] % 256,
-            data[2] % 256, data[3] % 256);
+  snprintf (ip_buf,
+            buf_size,
+            "%d.%d.%d.%d",
+            data[0] % 256,
+            data[1] % 256,
+            data[2] % 256,
+            data[3] % 256);
 }
 
 /**
@@ -157,7 +162,7 @@ test_pool_config (Arena_T arena, const uint8_t *data, size_t size)
   if (size < 8)
     return;
 
-  size_t max_conns = (read_u16 (data) % 100) + 1; /* 1-100 connections */
+  size_t max_conns = (read_u16 (data) % 100) + 1;      /* 1-100 connections */
   size_t buf_size = (read_u16 (data + 2) % 4096) + 64; /* 64-4159 bytes */
 
   TRY
@@ -185,8 +190,12 @@ test_pool_config (Arena_T arena, const uint8_t *data, size_t size)
         SocketPool_free (&pool);
       }
   }
-  EXCEPT (SocketPool_Failed) { /* Expected for invalid config */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected for invalid config */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 }
 
@@ -334,10 +343,18 @@ test_connection_lifecycle (Arena_T arena, const uint8_t *data, size_t size)
     /* Cleanup: SocketPool_free does NOT close sockets - we must free them */
     SocketPool_free (&pool);
   }
-  EXCEPT (SocketPool_Failed) { /* Expected */ }
-  EXCEPT (Socket_Failed) { /* Expected */ }
-  EXCEPT (Socket_Closed) { /* Expected */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Socket_Closed)
+  { /* Expected */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 
   /* Free any remaining sockets (SocketPool_free doesn't close them) */
@@ -390,8 +407,12 @@ test_ip_tracking (Arena_T arena, const uint8_t *data, size_t size)
 
     SocketPool_free (&pool);
   }
-  EXCEPT (SocketPool_Failed) { /* Expected */ }
-  EXCEPT (Arena_Failed) { /* Expected */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Expected */
+  }
   END_TRY;
 }
 
@@ -459,9 +480,15 @@ test_drain_operations (Arena_T arena, const uint8_t *data, size_t size)
 
     SocketPool_free (&pool);
   }
-  EXCEPT (SocketPool_Failed) { /* Expected */ }
-  EXCEPT (Socket_Failed) { /* Expected */ }
-  EXCEPT (Arena_Failed) { /* Expected */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   /* Free sockets and close peer fds (SocketPool_free doesn't close sockets) */
@@ -536,9 +563,15 @@ test_foreach (Arena_T arena, const uint8_t *data, size_t size)
 
     SocketPool_free (&pool);
   }
-  EXCEPT (SocketPool_Failed) { /* Expected */ }
-  EXCEPT (Socket_Failed) { /* Expected */ }
-  EXCEPT (Arena_Failed) { /* Expected */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   /* Free sockets and close peer fds (SocketPool_free doesn't close sockets) */
@@ -593,10 +626,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketPool_Failed) { /* Expected on limits/exhaust */ }
-  EXCEPT (Arena_Failed) { /* Expected on limits/exhaust */ }
-  EXCEPT (Socket_Failed) { /* Expected on socket errors */ }
-  EXCEPT (Socket_Closed) { /* Expected */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected on limits/exhaust */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Expected on limits/exhaust */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected on socket errors */
+  }
+  EXCEPT (Socket_Closed)
+  { /* Expected */
+  }
   END_TRY;
 
   return 0;

@@ -104,12 +104,12 @@
  * @see OpenSSL documentation for ciphersuite strings.
  */
 #ifndef SOCKET_DTLS_CIPHERSUITES
-#define SOCKET_DTLS_CIPHERSUITES                                              \
-  "ECDHE-ECDSA-AES256-GCM-SHA384:"                                            \
-  "ECDHE-RSA-AES256-GCM-SHA384:"                                              \
-  "ECDHE-ECDSA-CHACHA20-POLY1305:"                                            \
-  "ECDHE-RSA-CHACHA20-POLY1305:"                                              \
-  "ECDHE-ECDSA-AES128-GCM-SHA256:"                                            \
+#define SOCKET_DTLS_CIPHERSUITES   \
+  "ECDHE-ECDSA-AES256-GCM-SHA384:" \
+  "ECDHE-RSA-AES256-GCM-SHA384:"   \
+  "ECDHE-ECDSA-CHACHA20-POLY1305:" \
+  "ECDHE-RSA-CHACHA20-POLY1305:"   \
+  "ECDHE-ECDSA-AES128-GCM-SHA256:" \
   "ECDHE-RSA-AES128-GCM-SHA256"
 #endif
 
@@ -205,7 +205,7 @@
  * @see RFC 6347 Section 4.2.5 "Path MTU" for fragmentation avoidance.
  */
 #ifndef SOCKET_DTLS_MAX_PAYLOAD
-#define SOCKET_DTLS_MAX_PAYLOAD                                               \
+#define SOCKET_DTLS_MAX_PAYLOAD \
   (SOCKET_DTLS_DEFAULT_MTU - SOCKET_DTLS_RECORD_OVERHEAD - 28)
 #endif
 
@@ -392,9 +392,8 @@
  * @see SOCKET_DTLS_MIN_MTU
  * @see SOCKET_DTLS_MAX_MTU
  */
-#define SOCKET_DTLS_VALID_MTU(mtu)                                            \
-  ((size_t)(mtu) >= SOCKET_DTLS_MIN_MTU                                       \
-   && (size_t)(mtu) <= SOCKET_DTLS_MAX_MTU)
+#define SOCKET_DTLS_VALID_MTU(mtu) \
+  ((size_t)(mtu) >= SOCKET_DTLS_MIN_MTU && (size_t)(mtu) <= SOCKET_DTLS_MAX_MTU)
 
 /**
  * @brief Validate if given timeout value is reasonable.
@@ -403,7 +402,7 @@
  * @return 1 if valid (>=0 and <= SOCKET_DTLS_MAX_TIMEOUT_MS), 0 otherwise.
  * @see SOCKET_DTLS_MAX_TIMEOUT_MS
  */
-#define SOCKET_DTLS_VALID_TIMEOUT(ms)                                         \
+#define SOCKET_DTLS_VALID_TIMEOUT(ms) \
   ((int)(ms) >= 0 && (int)(ms) <= SOCKET_DTLS_MAX_TIMEOUT_MS)
 
 #else /* SOCKET_HAS_TLS not defined */

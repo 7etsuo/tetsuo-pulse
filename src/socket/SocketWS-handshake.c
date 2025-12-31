@@ -42,13 +42,15 @@
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS-private.h"
 
-static int ws_snprintf_checked (char *buf, size_t size, size_t *offset,
-                                const char *fmt, ...)
-    __attribute__ ((format (printf, 4, 5)));
+static int ws_snprintf_checked (char *buf,
+                                size_t size,
+                                size_t *offset,
+                                const char *fmt,
+                                ...) __attribute__ ((format (printf, 4, 5)));
 
 static int
-ws_snprintf_checked (char *buf, size_t size, size_t *offset, const char *fmt,
-                     ...)
+ws_snprintf_checked (
+    char *buf, size_t size, size_t *offset, const char *fmt, ...)
 {
   va_list ap;
   int written;
@@ -78,8 +80,7 @@ ws_generate_handshake_keys (SocketWS_T ws)
 
   if (SocketCrypto_websocket_key (ws->handshake.client_key) != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Failed to generate WebSocket key");
+      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Failed to generate WebSocket key");
       return -1;
     }
 
@@ -87,8 +88,8 @@ ws_generate_handshake_keys (SocketWS_T ws)
                                      ws->handshake.expected_accept)
       != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Failed to compute expected accept");
+      ws_set_error (
+          ws, WS_ERROR_HANDSHAKE, "Failed to compute expected accept");
       return -1;
     }
 
@@ -96,16 +97,15 @@ ws_generate_handshake_keys (SocketWS_T ws)
 }
 
 static int
-ws_write_request_line (char *buf, size_t size, size_t *offset,
-                       const char *path)
+ws_write_request_line (char *buf, size_t size, size_t *offset, const char *path)
 {
-  return ws_snprintf_checked (buf, size, offset, "GET %s HTTP/1.1\r\n",
-                              path ? path : "/");
+  return ws_snprintf_checked (
+      buf, size, offset, "GET %s HTTP/1.1\r\n", path ? path : "/");
 }
 
 static int
-ws_write_host_header (char *buf, size_t size, size_t *offset, const char *host,
-                      int port)
+ws_write_host_header (
+    char *buf, size_t size, size_t *offset, const char *host, int port)
 {
   int omit_port;
 
@@ -118,26 +118,32 @@ ws_write_host_header (char *buf, size_t size, size_t *offset, const char *host,
   if (omit_port)
     return ws_snprintf_checked (buf, size, offset, "Host: %s\r\n", host);
 
-  return ws_snprintf_checked (buf, size, offset, "Host: %s:%d\r\n", host,
-                              port);
+  return ws_snprintf_checked (buf, size, offset, "Host: %s:%d\r\n", host, port);
 }
 
 static int
-ws_write_websocket_headers (char *buf, size_t size, size_t *offset,
+ws_write_websocket_headers (char *buf,
+                            size_t size,
+                            size_t *offset,
                             const char *client_key)
 {
-  return ws_snprintf_checked (buf, size, offset,
+  return ws_snprintf_checked (buf,
+                              size,
+                              offset,
                               "Upgrade: %s\r\n"
                               "Connection: %s\r\n"
                               "Sec-WebSocket-Key: %s\r\n"
                               "Sec-WebSocket-Version: %s\r\n",
                               SOCKETWS_UPGRADE_VALUE,
-                              SOCKETWS_CONNECTION_VALUE, client_key,
+                              SOCKETWS_CONNECTION_VALUE,
+                              client_key,
                               SOCKETWS_PROTOCOL_VERSION);
 }
 
 static int
-ws_write_subprotocol_header (char *buf, size_t size, size_t *offset,
+ws_write_subprotocol_header (char *buf,
+                             size_t size,
+                             size_t *offset,
                              const char *const *subprotocols)
 {
   const char *const *proto;
@@ -164,28 +170,32 @@ ws_write_subprotocol_header (char *buf, size_t size, size_t *offset,
 }
 
 static int
-ws_write_compression_header (char *buf, size_t size, size_t *offset,
+ws_write_compression_header (char *buf,
+                             size_t size,
+                             size_t *offset,
                              const SocketWS_Config *config)
 {
   if (!config->enable_permessage_deflate)
     return 0;
 
-  if (ws_snprintf_checked (buf, size, offset,
-                           "Sec-WebSocket-Extensions: permessage-deflate")
+  if (ws_snprintf_checked (
+          buf, size, offset, "Sec-WebSocket-Extensions: permessage-deflate")
       < 0)
     return -1;
 
   if (config->deflate_no_context_takeover)
     {
-      if (ws_snprintf_checked (buf, size, offset,
-                               "; client_no_context_takeover")
+      if (ws_snprintf_checked (
+              buf, size, offset, "; client_no_context_takeover")
           < 0)
         return -1;
     }
 
   if (config->deflate_max_window_bits < SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS)
     {
-      if (ws_snprintf_checked (buf, size, offset,
+      if (ws_snprintf_checked (buf,
+                               size,
+                               offset,
                                "; client_max_window_bits=%d",
                                config->deflate_max_window_bits)
           < 0)
@@ -206,56 +216,60 @@ ws_build_client_request (SocketWS_T ws)
   buf = ALLOC (ws->arena, SOCKETWS_HANDSHAKE_REQUEST_SIZE);
   if (!buf)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Failed to allocate request buffer");
+      ws_set_error (
+          ws, WS_ERROR_HANDSHAKE, "Failed to allocate request buffer");
       return -1;
     }
 
   if (ws_generate_handshake_keys (ws) < 0)
     return -1;
 
-  if (ws_write_request_line (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset,
-                             ws->path)
+  if (ws_write_request_line (
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, ws->path)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Request line too long");
       return -1;
     }
 
-  if (ws_write_host_header (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset,
-                            ws->host, ws->port)
+  if (ws_write_host_header (
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, ws->host, ws->port)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Host header too long");
       return -1;
     }
 
-  if (ws_write_websocket_headers (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE,
-                                  &offset, ws->handshake.client_key)
+  if (ws_write_websocket_headers (buf,
+                                  SOCKETWS_HANDSHAKE_REQUEST_SIZE,
+                                  &offset,
+                                  ws->handshake.client_key)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "WebSocket headers too long");
       return -1;
     }
 
-  if (ws_write_subprotocol_header (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE,
-                                   &offset, ws->config.subprotocols)
+  if (ws_write_subprotocol_header (buf,
+                                   SOCKETWS_HANDSHAKE_REQUEST_SIZE,
+                                   &offset,
+                                   ws->config.subprotocols)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Subprotocol header too long");
       return -1;
     }
 
-  if (ws_write_compression_header (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE,
-                                   &offset, &ws->config)
+  if (ws_write_compression_header (
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, &ws->config)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Compression header too long");
       return -1;
     }
 
-  if (ws_snprintf_checked (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset,
-                           "\r\n")
+  if (ws_snprintf_checked (
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, "\r\n")
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Request too long");
@@ -274,7 +288,8 @@ ws_validate_status_101 (SocketWS_T ws, const SocketHTTP_Response *response)
 {
   if (response->status_code != 101)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
                     "Unexpected status code: %d (expected 101)",
                     response->status_code);
       return -1;
@@ -283,21 +298,24 @@ ws_validate_status_101 (SocketWS_T ws, const SocketHTTP_Response *response)
 }
 
 static int
-ws_validate_websocket_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers, bool include_value)
+ws_validate_websocket_upgrade_header (SocketWS_T ws,
+                                      SocketHTTP_Headers_T headers,
+                                      bool include_value)
 {
   const char *upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
   if (!upgrade || strcasecmp (upgrade, SOCKETWS_UPGRADE_VALUE) != 0)
     {
       if (include_value)
         {
-          ws_set_error (ws, WS_ERROR_HANDSHAKE,
+          ws_set_error (ws,
+                        WS_ERROR_HANDSHAKE,
                         "Missing or invalid Upgrade header: %s",
                         upgrade ? upgrade : "(null)");
         }
       else
         {
-          ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                        "Missing or invalid Upgrade header");
+          ws_set_error (
+              ws, WS_ERROR_HANDSHAKE, "Missing or invalid Upgrade header");
         }
       return -1;
     }
@@ -305,21 +323,24 @@ ws_validate_websocket_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T header
 }
 
 static int
-ws_validate_connection_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers, bool include_value)
+ws_validate_connection_upgrade_header (SocketWS_T ws,
+                                       SocketHTTP_Headers_T headers,
+                                       bool include_value)
 {
   const char *connection = SocketHTTP_Headers_get (headers, "Connection");
   if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     {
       if (include_value)
         {
-          ws_set_error (ws, WS_ERROR_HANDSHAKE,
+          ws_set_error (ws,
+                        WS_ERROR_HANDSHAKE,
                         "Missing or invalid Connection header: %s",
                         connection ? connection : "(null)");
         }
       else
         {
-          ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                        "Missing or invalid Connection header");
+          ws_set_error (
+              ws, WS_ERROR_HANDSHAKE, "Missing or invalid Connection header");
         }
       return -1;
     }
@@ -327,25 +348,33 @@ ws_validate_connection_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T heade
 }
 
 static int
-ws_validate_base64_decoding (SocketWS_T ws, const char *b64str, size_t b64_len,
-                             size_t expected_decoded_len, const char *field_desc)
+ws_validate_base64_decoding (SocketWS_T ws,
+                             const char *b64str,
+                             size_t b64_len,
+                             size_t expected_decoded_len,
+                             const char *field_desc)
 {
   unsigned char temp[32];
   if (expected_decoded_len > sizeof (temp))
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
                     "Internal error: %s decoded size too large (%zu)",
-                    field_desc, expected_decoded_len);
+                    field_desc,
+                    expected_decoded_len);
       return -1;
     }
-  ssize_t decoded = SocketCrypto_base64_decode (b64str, b64_len, temp,
-                                                expected_decoded_len);
+  ssize_t decoded = SocketCrypto_base64_decode (
+      b64str, b64_len, temp, expected_decoded_len);
   SocketCrypto_secure_clear (temp, expected_decoded_len);
   if (decoded != (ssize_t)expected_decoded_len)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid %s format (base64 decode failed or wrong length: %zd)",
-                    field_desc, decoded);
+      ws_set_error (
+          ws,
+          WS_ERROR_HANDSHAKE,
+          "Invalid %s format (base64 decode failed or wrong length: %zd)",
+          field_desc,
+          decoded);
       return -1;
     }
   return 0;
@@ -359,7 +388,8 @@ ws_init_compression_if_negotiated (SocketWS_T ws)
     {
       if (ws_compression_init (ws) < 0)
         {
-          SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+          SocketLog_emit (SOCKET_LOG_WARN,
+                          SOCKET_LOG_COMPONENT,
                           "Compression init failed, continuing without");
         }
       else
@@ -382,8 +412,8 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
   accept = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Accept");
   if (!accept)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing Sec-WebSocket-Accept header");
+      ws_set_error (
+          ws, WS_ERROR_HANDSHAKE, "Missing Sec-WebSocket-Accept header");
       return -1;
     }
 
@@ -392,21 +422,28 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
 
   if (accept_len != expected_len)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
                     "Invalid Sec-WebSocket-Accept length: %zu (expected %zu)",
-                    accept_len, expected_len);
+                    accept_len,
+                    expected_len);
       return -1;
     }
 
-  if (ws_validate_base64_decoding (ws, accept, accept_len, SOCKET_CRYPTO_SHA1_SIZE, "Sec-WebSocket-Accept") < 0)
+  if (ws_validate_base64_decoding (ws,
+                                   accept,
+                                   accept_len,
+                                   SOCKET_CRYPTO_SHA1_SIZE,
+                                   "Sec-WebSocket-Accept")
+      < 0)
     return -1;
 
-  if (SocketCrypto_secure_compare (accept, ws->handshake.expected_accept,
-                                   accept_len)
+  if (SocketCrypto_secure_compare (
+          accept, ws->handshake.expected_accept, accept_len)
       != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Accept value");
+      ws_set_error (
+          ws, WS_ERROR_HANDSHAKE, "Invalid Sec-WebSocket-Accept value");
       return -1;
     }
 
@@ -414,8 +451,7 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
 }
 
 static int
-ws_validate_negotiated_subprotocol (SocketWS_T ws,
-                                    SocketHTTP_Headers_T headers)
+ws_validate_negotiated_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
   const char *protocol;
   const char *const *p;
@@ -440,8 +476,10 @@ ws_validate_negotiated_subprotocol (SocketWS_T ws,
 
   if (!found)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Server selected unknown subprotocol: %s", protocol);
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
+                    "Server selected unknown subprotocol: %s",
+                    protocol);
       return -1;
     }
 
@@ -468,10 +506,11 @@ ws_parse_window_bits (const char *extensions, const char *param_name)
     char *endptr;
     long v = strtol (eq + 1, &endptr, 10);
     /* Validate endptr: must have consumed digits and hit separator or end */
-    if (endptr == eq + 1 || (*endptr != '\0' && *endptr != ';' && *endptr != ',' && *endptr != ' '))
+    if (endptr == eq + 1
+        || (*endptr != '\0' && *endptr != ';' && *endptr != ','
+            && *endptr != ' '))
       return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
-    value
-        = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
+    value = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
   }
   if (value < 8 || value > 15)
     return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
@@ -612,8 +651,8 @@ ws_read_and_parse_response (SocketWS_T ws)
     return 1;
 
   data = (const char *)SocketBuf_readptr (ws->recv_buf, &available);
-  result = SocketHTTP1_Parser_execute (ws->handshake.http_parser, data,
-                                       available, &consumed);
+  result = SocketHTTP1_Parser_execute (
+      ws->handshake.http_parser, data, available, &consumed);
   SocketBuf_consume (ws->recv_buf, consumed);
 
   if (result == HTTP1_INCOMPLETE)
@@ -621,7 +660,9 @@ ws_read_and_parse_response (SocketWS_T ws)
 
   if (result != HTTP1_OK)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE, "HTTP parse error: %s",
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
+                    "HTTP parse error: %s",
                     SocketHTTP1_result_string (result));
       return -1;
     }
@@ -696,54 +737,63 @@ ws_handshake_client_process (SocketWS_T ws)
 }
 
 static int
-ws_write_101_status_line (char *buf, size_t size, size_t *offset,
+ws_write_101_status_line (char *buf,
+                          size_t size,
+                          size_t *offset,
                           const char *accept_value)
 {
-  return ws_snprintf_checked (buf, size, offset,
+  return ws_snprintf_checked (buf,
+                              size,
+                              offset,
                               "HTTP/1.1 101 Switching Protocols\r\n"
                               "Upgrade: %s\r\n"
                               "Connection: %s\r\n"
                               "Sec-WebSocket-Accept: %s\r\n",
                               SOCKETWS_UPGRADE_VALUE,
-                              SOCKETWS_CONNECTION_VALUE, accept_value);
+                              SOCKETWS_CONNECTION_VALUE,
+                              accept_value);
 }
 
 static int
-ws_write_negotiated_subprotocol (char *buf, size_t size, size_t *offset,
+ws_write_negotiated_subprotocol (char *buf,
+                                 size_t size,
+                                 size_t *offset,
                                  const char *subprotocol)
 {
   if (!subprotocol)
     return 0;
 
-  return ws_snprintf_checked (buf, size, offset,
-                              "Sec-WebSocket-Protocol: %s\r\n", subprotocol);
+  return ws_snprintf_checked (
+      buf, size, offset, "Sec-WebSocket-Protocol: %s\r\n", subprotocol);
 }
 
 #ifdef SOCKETWS_HAS_DEFLATE
 static int
-ws_write_negotiated_compression (char *buf, size_t size, size_t *offset,
+ws_write_negotiated_compression (char *buf,
+                                 size_t size,
+                                 size_t *offset,
                                  const SocketWS_Handshake *handshake)
 {
   if (!handshake->compression_negotiated)
     return 0;
 
-  if (ws_snprintf_checked (buf, size, offset,
-                           "Sec-WebSocket-Extensions: permessage-deflate")
+  if (ws_snprintf_checked (
+          buf, size, offset, "Sec-WebSocket-Extensions: permessage-deflate")
       < 0)
     return -1;
 
   if (handshake->server_no_context_takeover)
     {
-      if (ws_snprintf_checked (buf, size, offset,
-                               "; server_no_context_takeover")
+      if (ws_snprintf_checked (
+              buf, size, offset, "; server_no_context_takeover")
           < 0)
         return -1;
     }
 
   if (handshake->client_no_context_takeover)
     {
-      if (ws_snprintf_checked (buf, size, offset,
-                               "; client_no_context_takeover")
+      if (ws_snprintf_checked (
+              buf, size, offset, "; client_no_context_takeover")
           < 0)
         return -1;
     }
@@ -770,21 +820,22 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
   buf = ALLOC (ws->arena, SOCKETWS_HANDSHAKE_RESPONSE_SIZE);
   if (!buf)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Failed to allocate response buffer");
+      ws_set_error (
+          ws, WS_ERROR_HANDSHAKE, "Failed to allocate response buffer");
       SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
       return -1;
     }
 
-  if (ws_write_101_status_line (buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset,
-                                accept_value)
+  if (ws_write_101_status_line (
+          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset, accept_value)
       < 0)
     {
       SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
       return -1;
     }
 
-  if (ws_write_negotiated_subprotocol (buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE,
+  if (ws_write_negotiated_subprotocol (buf,
+                                       SOCKETWS_HANDSHAKE_RESPONSE_SIZE,
                                        &offset,
                                        ws->handshake.selected_subprotocol)
       < 0)
@@ -794,8 +845,8 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
     }
 
 #ifdef SOCKETWS_HAS_DEFLATE
-  if (ws_write_negotiated_compression (buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE,
-                                       &offset, &ws->handshake)
+  if (ws_write_negotiated_compression (
+          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset, &ws->handshake)
       < 0)
     {
       SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
@@ -803,8 +854,8 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
     }
 #endif
 
-  if (ws_snprintf_checked (buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset,
-                           "\r\n")
+  if (ws_snprintf_checked (
+          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset, "\r\n")
       < 0)
     {
       SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
@@ -820,11 +871,9 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
 }
 
 
-
-
-
 static int
-ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
+ws_validate_client_key (SocketWS_T ws,
+                        SocketHTTP_Headers_T headers,
                         const char **key_out)
 {
   const char *key;
@@ -839,13 +888,17 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
   size_t key_len = strlen (key);
   if (key_len != SOCKETWS_KEY_BASE64_LENGTH)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
                     "Invalid Sec-WebSocket-Key length: %zu (expected %d)",
-                    key_len, SOCKETWS_KEY_BASE64_LENGTH);
+                    key_len,
+                    SOCKETWS_KEY_BASE64_LENGTH);
       return -1;
     }
 
-  if (ws_validate_base64_decoding (ws, key, key_len, SOCKETWS_KEY_RAW_SIZE, "Sec-WebSocket-Key") < 0)
+  if (ws_validate_base64_decoding (
+          ws, key, key_len, SOCKETWS_KEY_RAW_SIZE, "Sec-WebSocket-Key")
+      < 0)
     return -1;
 
   *key_out = key;
@@ -860,7 +913,8 @@ ws_validate_client_version (SocketWS_T ws, SocketHTTP_Headers_T headers)
   version = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Version");
   if (!version || strcmp (version, SOCKETWS_PROTOCOL_VERSION) != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+      ws_set_error (ws,
+                    WS_ERROR_HANDSHAKE,
                     "Unsupported WebSocket version: %s",
                     version ? version : "(null)");
       return -1;
@@ -933,8 +987,8 @@ ws_negotiate_server_compression (SocketWS_T ws, SocketHTTP_Headers_T headers)
 
   ws_parse_permessage_deflate_params (ws, extensions);
 
-  if (ws->handshake.compression_negotiated &&
-      ws->config.deflate_no_context_takeover)
+  if (ws->handshake.compression_negotiated
+      && ws->config.deflate_no_context_takeover)
     {
       ws->handshake.server_no_context_takeover = 1;
       ws->handshake.client_no_context_takeover = 1;
@@ -1014,8 +1068,8 @@ ws_handshake_validate_accept (SocketWS_T ws, const char *accept)
   if (strlen (accept) != strlen (ws->handshake.expected_accept))
     return -1;
 
-  return SocketCrypto_secure_compare (accept, ws->handshake.expected_accept,
-                                      strlen (accept));
+  return SocketCrypto_secure_compare (
+      accept, ws->handshake.expected_accept, strlen (accept));
 }
 
 char *
@@ -1050,8 +1104,7 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
     return 0;
 
   connection = SocketHTTP_Headers_get (request->headers, "Connection");
-  if (!connection
-      || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
+  if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     return 0;
 
   version = SocketHTTP_Headers_get (request->headers, "Sec-WebSocket-Version");
@@ -1062,7 +1115,9 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
 }
 
 static void
-ws_copy_status_phrase (char *dest, size_t dest_size, const char *reason,
+ws_copy_status_phrase (char *dest,
+                       size_t dest_size,
+                       const char *reason,
                        const char *default_phrase)
 {
   const char *source;
@@ -1096,8 +1151,8 @@ SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
   body_text = reason ? reason : "WebSocket upgrade rejected";
 
   /* Prepare status phrase (short version of reason or default) */
-  ws_copy_status_phrase (status_phrase, sizeof (status_phrase), reason,
-                         "WebSocket Error");
+  ws_copy_status_phrase (
+      status_phrase, sizeof (status_phrase), reason, "WebSocket Error");
 
   body_len = strlen (body_text);
   /* Cap body length to prevent oversized responses */
@@ -1105,14 +1160,18 @@ SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
     body_len = SOCKETWS_REJECT_BODY_MAX_SIZE;
 
   /* Format response with exact body length */
-  written = snprintf (buf, sizeof (buf),
+  written = snprintf (buf,
+                      sizeof (buf),
                       "HTTP/1.1 %d %s\r\n"
                       "Content-Type: text/plain\r\n"
                       "Content-Length: %zu\r\n"
                       "Connection: close\r\n"
                       "\r\n"
                       "%.*s",
-                      status_code, status_phrase, body_len, (int)body_len,
+                      status_code,
+                      status_phrase,
+                      body_len,
+                      (int)body_len,
                       body_text);
 
   if (written > 0 && (size_t)written <= sizeof (buf))

@@ -7,7 +7,8 @@
 /**
  * fuzz_hpack_encode.c - HPACK encoder fuzzer with roundtrip validation
  *
- * Tests HPACK header encoding and validates roundtrip encode-decode correctness:
+ * Tests HPACK header encoding and validates roundtrip encode-decode
+ * correctness:
  * - SocketHPACK_Encoder_new with various configurations
  * - SocketHPACK_Encoder_encode with fuzzed headers
  * - SocketHPACK_Encoder_set_table_size dynamic table management
@@ -132,17 +133,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Encode headers */
           uint8_t encoded[MAX_ENCODED_SIZE];
-          ssize_t encoded_len = SocketHPACK_Encoder_encode (encoder, headers, header_count,
-                                                           encoded, sizeof (encoded));
+          ssize_t encoded_len = SocketHPACK_Encoder_encode (
+              encoder, headers, header_count, encoded, sizeof (encoded));
 
           if (encoded_len > 0)
             {
               /* Decode and validate roundtrip */
               SocketHPACK_Header decoded_headers[MAX_TEST_HEADERS];
               size_t decoded_count = 0;
-              SocketHPACK_Result result = SocketHPACK_Decoder_decode (
-                  decoder, encoded, encoded_len, decoded_headers, MAX_TEST_HEADERS,
-                  &decoded_count, arena);
+              SocketHPACK_Result result
+                  = SocketHPACK_Decoder_decode (decoder,
+                                                encoded,
+                                                encoded_len,
+                                                decoded_headers,
+                                                MAX_TEST_HEADERS,
+                                                &decoded_count,
+                                                arena);
               (void)result;
               (void)decoded_count;
 
@@ -157,23 +163,28 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     {
       SocketHPACK_Header pseudo_headers[] = {
-          {":method", 7, "GET", 3, 0},
-          {":path", 5, "/", 1, 0},
-          {":scheme", 7, "https", 5, 0},
-          {":authority", 10, "example.com", 11, 0},
+        { ":method", 7, "GET", 3, 0 },
+        { ":path", 5, "/", 1, 0 },
+        { ":scheme", 7, "https", 5, 0 },
+        { ":authority", 10, "example.com", 11, 0 },
       };
 
       uint8_t encoded[MAX_ENCODED_SIZE];
-      ssize_t encoded_len = SocketHPACK_Encoder_encode (encoder, pseudo_headers, 4,
-                                                        encoded, sizeof (encoded));
+      ssize_t encoded_len = SocketHPACK_Encoder_encode (
+          encoder, pseudo_headers, 4, encoded, sizeof (encoded));
 
       if (encoded_len > 0)
         {
           /* Decode roundtrip */
           SocketHPACK_Header decoded[16];
           size_t decoded_count = 0;
-          SocketHPACK_Decoder_decode (decoder, encoded, encoded_len, decoded, 16,
-                                      &decoded_count, arena);
+          SocketHPACK_Decoder_decode (decoder,
+                                      encoded,
+                                      encoded_len,
+                                      decoded,
+                                      16,
+                                      &decoded_count,
+                                      arena);
         }
     }
 
@@ -182,17 +193,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     {
       /* Test table size changes during encoding */
-      uint32_t table_sizes[] = {0, 64, 256, 1024, 4096, 16384};
+      uint32_t table_sizes[] = { 0, 64, 256, 1024, 4096, 16384 };
 
-      for (size_t i = 0; i < sizeof (table_sizes) / sizeof (table_sizes[0]); i++)
+      for (size_t i = 0; i < sizeof (table_sizes) / sizeof (table_sizes[0]);
+           i++)
         {
           SocketHPACK_Encoder_set_table_size (encoder, table_sizes[i]);
 
           /* Encode after table size change */
-          SocketHPACK_Header test_header = {"test-header", 11, "test-value", 10, 0};
+          SocketHPACK_Header test_header
+              = { "test-header", 11, "test-value", 10, 0 };
           uint8_t encoded[1024];
-          ssize_t len = SocketHPACK_Encoder_encode (encoder, &test_header, 1,
-                                                    encoded, sizeof (encoded));
+          ssize_t len = SocketHPACK_Encoder_encode (
+              encoder, &test_header, 1, encoded, sizeof (encoded));
           (void)len;
         }
     }
@@ -203,23 +216,25 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
       /* Headers that match static table entries */
       SocketHPACK_Header static_headers[] = {
-          {":method", 7, "GET", 3, 0},
-          {":method", 7, "POST", 4, 0},
-          {":path", 5, "/", 1, 0},
-          {":path", 5, "/index.html", 11, 0},
-          {":status", 7, "200", 3, 0},
-          {":status", 7, "404", 3, 0},
-          {"accept-encoding", 15, "gzip, deflate", 13, 0},
-          {"content-type", 12, "text/html", 9, 0},
-          {"content-length", 14, "0", 1, 0},
-          {"cache-control", 13, "max-age=0", 9, 0},
+        { ":method", 7, "GET", 3, 0 },
+        { ":method", 7, "POST", 4, 0 },
+        { ":path", 5, "/", 1, 0 },
+        { ":path", 5, "/index.html", 11, 0 },
+        { ":status", 7, "200", 3, 0 },
+        { ":status", 7, "404", 3, 0 },
+        { "accept-encoding", 15, "gzip, deflate", 13, 0 },
+        { "content-type", 12, "text/html", 9, 0 },
+        { "content-length", 14, "0", 1, 0 },
+        { "cache-control", 13, "max-age=0", 9, 0 },
       };
 
-      for (size_t i = 0; i < sizeof (static_headers) / sizeof (static_headers[0]); i++)
+      for (size_t i = 0;
+           i < sizeof (static_headers) / sizeof (static_headers[0]);
+           i++)
         {
           uint8_t encoded[256];
-          ssize_t len = SocketHPACK_Encoder_encode (encoder, &static_headers[i], 1,
-                                                    encoded, sizeof (encoded));
+          ssize_t len = SocketHPACK_Encoder_encode (
+              encoder, &static_headers[i], 1, encoded, sizeof (encoded));
           (void)len;
         }
     }
@@ -230,18 +245,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
       /* Headers with various character patterns */
       SocketHPACK_Header special_headers[] = {
-          {"x-binary", 8, "\x00\x01\x02\x03", 4, 0},
-          {"x-unicode", 9, "\xc3\xa9\xc3\xa0\xc3\xbc", 6, 0}, /* UTF-8 */
-          {"x-long-value", 12, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 64, 0},
-          {"x-empty", 7, "", 0, 0},
-          {"x-spaces", 8, "  value with spaces  ", 21, 0},
+        { "x-binary", 8, "\x00\x01\x02\x03", 4, 0 },
+        { "x-unicode", 9, "\xc3\xa9\xc3\xa0\xc3\xbc", 6, 0 }, /* UTF-8 */
+        { "x-long-value",
+          12,
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          64,
+          0 },
+        { "x-empty", 7, "", 0, 0 },
+        { "x-spaces", 8, "  value with spaces  ", 21, 0 },
       };
 
-      for (size_t i = 0; i < sizeof (special_headers) / sizeof (special_headers[0]); i++)
+      for (size_t i = 0;
+           i < sizeof (special_headers) / sizeof (special_headers[0]);
+           i++)
         {
           uint8_t encoded[1024];
-          ssize_t len = SocketHPACK_Encoder_encode (encoder, &special_headers[i], 1,
-                                                    encoded, sizeof (encoded));
+          ssize_t len = SocketHPACK_Encoder_encode (
+              encoder, &special_headers[i], 1, encoded, sizeof (encoded));
           (void)len;
         }
     }
@@ -255,11 +276,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         char path[256];
         char authority[128];
 
-        size_t path_len = (size > 5 && size - 5 > sizeof (path) - 1) ?
-                          sizeof (path) - 1 : (size > 5 ? size - 5 : 0);
-        size_t auth_len = (size > 5 + path_len) ?
-                          ((size - 5 - path_len > sizeof (authority) - 1) ?
-                           sizeof (authority) - 1 : size - 5 - path_len) : 0;
+        size_t path_len = (size > 5 && size - 5 > sizeof (path) - 1)
+                              ? sizeof (path) - 1
+                              : (size > 5 ? size - 5 : 0);
+        size_t auth_len = (size > 5 + path_len)
+                              ? ((size - 5 - path_len > sizeof (authority) - 1)
+                                     ? sizeof (authority) - 1
+                                     : size - 5 - path_len)
+                              : 0;
 
         if (path_len > 0)
           {
@@ -284,23 +308,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         SocketHPACK_Header fuzz_pseudo[] = {
-            {":method", 7, "GET", 3, 0},
-            {":path", 5, path, path_len, 0},
-            {":scheme", 7, "https", 5, 0},
-            {":authority", 10, authority, auth_len, 0},
+          { ":method", 7, "GET", 3, 0 },
+          { ":path", 5, path, path_len, 0 },
+          { ":scheme", 7, "https", 5, 0 },
+          { ":authority", 10, authority, auth_len, 0 },
         };
 
         uint8_t encoded[MAX_ENCODED_SIZE];
-        ssize_t len = SocketHPACK_Encoder_encode (encoder, fuzz_pseudo, 4,
-                                                  encoded, sizeof (encoded));
+        ssize_t len = SocketHPACK_Encoder_encode (
+            encoder, fuzz_pseudo, 4, encoded, sizeof (encoded));
 
         if (len > 0)
           {
             /* Roundtrip */
             SocketHPACK_Header decoded[16];
             size_t decoded_count = 0;
-            SocketHPACK_Decoder_decode (decoder, encoded, len, decoded, 16,
-                                        &decoded_count, arena);
+            SocketHPACK_Decoder_decode (
+                decoder, encoded, len, decoded, 16, &decoded_count, arena);
           }
       }
 
@@ -308,14 +332,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * Test 7: Encode with minimal buffer (edge cases)
      * ==================================================================== */
     {
-      SocketHPACK_Header small_header = {"x", 1, "y", 1, 0};
+      SocketHPACK_Header small_header = { "x", 1, "y", 1, 0 };
 
       /* Test with increasingly small buffers */
       for (size_t buf_size = 0; buf_size < 32; buf_size++)
         {
           uint8_t small_buf[32];
-          ssize_t len = SocketHPACK_Encoder_encode (encoder, &small_header, 1,
-                                                    small_buf, buf_size);
+          ssize_t len = SocketHPACK_Encoder_encode (
+              encoder, &small_header, 1, small_buf, buf_size);
           (void)len;
         }
     }
@@ -329,13 +353,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       SocketHPACK_Encoder_set_table_size (encoder, 4096);
 
       /* Encode same header multiple times - should use indexing */
-      SocketHPACK_Header repeat_header = {"x-repeat", 8, "same-value", 10, 0};
+      SocketHPACK_Header repeat_header = { "x-repeat", 8, "same-value", 10, 0 };
       uint8_t encoded1[256], encoded2[256], encoded3[256];
       ssize_t len1, len2, len3;
 
-      len1 = SocketHPACK_Encoder_encode (encoder, &repeat_header, 1, encoded1, sizeof (encoded1));
-      len2 = SocketHPACK_Encoder_encode (encoder, &repeat_header, 1, encoded2, sizeof (encoded2));
-      len3 = SocketHPACK_Encoder_encode (encoder, &repeat_header, 1, encoded3, sizeof (encoded3));
+      len1 = SocketHPACK_Encoder_encode (
+          encoder, &repeat_header, 1, encoded1, sizeof (encoded1));
+      len2 = SocketHPACK_Encoder_encode (
+          encoder, &repeat_header, 1, encoded2, sizeof (encoded2));
+      len3 = SocketHPACK_Encoder_encode (
+          encoder, &repeat_header, 1, encoded3, sizeof (encoded3));
 
       /* Second and third encodes should be smaller (indexed) */
       (void)len1;

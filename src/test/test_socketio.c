@@ -267,9 +267,16 @@ TEST (socketio_send_recv_internal_basic)
     ASSERT_EQ (received, sent);
     ASSERT_EQ (strcmp (buf, msg), 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 }
 
@@ -297,13 +304,21 @@ TEST (socketio_send_internal_updates_stats)
     SocketStats_T stats_after;
     Socket_getstats (client, &stats_after);
 
-    ASSERT_EQ (stats_after.bytes_sent, stats_before.bytes_sent + (uint64_t)sent);
+    ASSERT_EQ (stats_after.bytes_sent,
+               stats_before.bytes_sent + (uint64_t)sent);
     ASSERT_EQ (stats_after.packets_sent, stats_before.packets_sent + 1);
     ASSERT (stats_after.last_send_time_ms >= stats_before.last_send_time_ms);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 }
 
@@ -341,9 +356,16 @@ TEST (socketio_recv_internal_updates_stats)
     ASSERT_EQ (stats_after.packets_received, stats_before.packets_received + 1);
     ASSERT (stats_after.last_recv_time_ms >= stats_before.last_recv_time_ms);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 }
 
@@ -401,9 +423,16 @@ TEST (socketio_sendv_recvv_internal_basic)
     ASSERT_EQ (strncmp (buf1, "Hello ", 6), 0);
     ASSERT_EQ (strncmp (buf2, "World", 5), 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 }
 
@@ -435,9 +464,16 @@ TEST (socketio_sendv_single_buffer)
     ASSERT_EQ (received, sent);
     ASSERT_EQ (strcmp (buf, msg), 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 }
 
@@ -468,9 +504,16 @@ TEST (socketio_nonblocking_recv_wouldblock)
     /* Should return 0 (would block) or data if any exists */
     ASSERT (result >= 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 }
 
@@ -499,9 +542,17 @@ TEST (socketio_recv_detects_close)
     char buf[100];
     socket_recv_internal (server, buf, sizeof (buf), 0);
   }
-  EXCEPT (Socket_Closed) { closed_raised = 1; }
-  EXCEPT (Socket_Failed) { /* Also acceptable */ }
-  FINALLY { cleanup_socket_pair (&client, &server); }
+  EXCEPT (Socket_Closed)
+  {
+    closed_raised = 1;
+  }
+  EXCEPT (Socket_Failed)
+  { /* Also acceptable */
+  }
+  FINALLY
+  {
+    cleanup_socket_pair (&client, &server);
+  }
   END_TRY;
 
   ASSERT_EQ (closed_raised, 1);
@@ -576,8 +627,12 @@ TEST (socketio_send_recv_large_data)
     /* Verify data integrity */
     ASSERT_EQ (memcmp (send_buf, recv_buf, total_received), 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (Socket_Closed) { /* May close */ }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* May close */
+  }
   FINALLY
   {
     free (send_buf);
@@ -599,10 +654,12 @@ static int
 generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[2048];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=localhost' 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   return system (cmd);
 }
 
@@ -652,8 +709,12 @@ TEST (socketio_tls_enabled_check)
     ASSERT_EQ (socket_is_tls_enabled (server_sock), 1);
     ASSERT_EQ (socket_is_tls_enabled (client_sock), 1);
   }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   FINALLY
   {
     if (client_sock)
@@ -714,8 +775,12 @@ TEST (socketio_tls_want_read_write)
     ASSERT (want_read_server >= 0 && want_read_server <= 1);
     ASSERT (want_write_server >= 0 && want_write_server <= 1);
   }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   FINALLY
   {
     if (client_sock)

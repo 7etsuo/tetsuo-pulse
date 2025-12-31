@@ -53,32 +53,34 @@
 #include <sys/types.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/*============================================================================
- * Error Codes
- *============================================================================*/
+  /*============================================================================
+   * Error Codes
+   *============================================================================*/
 
-/**
- * @brief Error codes returned by Socket_simple_code()
- */
-typedef enum {
+  /**
+   * @brief Error codes returned by Socket_simple_code()
+   */
+  typedef enum
+  {
     SOCKET_SIMPLE_OK = 0,
 
     /* Socket/Network errors */
-    SOCKET_SIMPLE_ERR_SOCKET,        /**< General socket failure */
-    SOCKET_SIMPLE_ERR_CONNECT,       /**< Connection failed */
-    SOCKET_SIMPLE_ERR_BIND,          /**< Bind failed */
-    SOCKET_SIMPLE_ERR_LISTEN,        /**< Listen failed */
-    SOCKET_SIMPLE_ERR_ACCEPT,        /**< Accept failed */
-    SOCKET_SIMPLE_ERR_SEND,          /**< Send failed */
-    SOCKET_SIMPLE_ERR_RECV,          /**< Receive failed */
-    SOCKET_SIMPLE_ERR_CLOSED,        /**< Connection closed by peer */
-    SOCKET_SIMPLE_ERR_TIMEOUT,       /**< Operation timed out */
+    SOCKET_SIMPLE_ERR_SOCKET,  /**< General socket failure */
+    SOCKET_SIMPLE_ERR_CONNECT, /**< Connection failed */
+    SOCKET_SIMPLE_ERR_BIND,    /**< Bind failed */
+    SOCKET_SIMPLE_ERR_LISTEN,  /**< Listen failed */
+    SOCKET_SIMPLE_ERR_ACCEPT,  /**< Accept failed */
+    SOCKET_SIMPLE_ERR_SEND,    /**< Send failed */
+    SOCKET_SIMPLE_ERR_RECV,    /**< Receive failed */
+    SOCKET_SIMPLE_ERR_CLOSED,  /**< Connection closed by peer */
+    SOCKET_SIMPLE_ERR_TIMEOUT, /**< Operation timed out */
 
     /* DNS errors */
-    SOCKET_SIMPLE_ERR_DNS,           /**< DNS resolution failed */
+    SOCKET_SIMPLE_ERR_DNS, /**< DNS resolution failed */
 
     /* TLS errors */
     SOCKET_SIMPLE_ERR_TLS,           /**< General TLS error */
@@ -86,19 +88,19 @@ typedef enum {
     SOCKET_SIMPLE_ERR_TLS_VERIFY,    /**< Certificate verification failed */
 
     /* HTTP errors */
-    SOCKET_SIMPLE_ERR_HTTP,          /**< HTTP protocol error */
-    SOCKET_SIMPLE_ERR_HTTP_PARSE,    /**< HTTP response parse error */
+    SOCKET_SIMPLE_ERR_HTTP,       /**< HTTP protocol error */
+    SOCKET_SIMPLE_ERR_HTTP_PARSE, /**< HTTP response parse error */
 
     /* WebSocket errors */
-    SOCKET_SIMPLE_ERR_WS,            /**< WebSocket error */
-    SOCKET_SIMPLE_ERR_WS_PROTOCOL,   /**< WebSocket protocol violation */
-    SOCKET_SIMPLE_ERR_WS_CLOSED,     /**< WebSocket closed */
+    SOCKET_SIMPLE_ERR_WS,          /**< WebSocket error */
+    SOCKET_SIMPLE_ERR_WS_PROTOCOL, /**< WebSocket protocol violation */
+    SOCKET_SIMPLE_ERR_WS_CLOSED,   /**< WebSocket closed */
 
     /* Resource errors */
-    SOCKET_SIMPLE_ERR_MEMORY,        /**< Memory allocation failed */
-    SOCKET_SIMPLE_ERR_INVALID_ARG,   /**< Invalid argument */
-    SOCKET_SIMPLE_ERR_UNSUPPORTED,   /**< Feature not supported */
-    SOCKET_SIMPLE_ERR_IO,            /**< File I/O error */
+    SOCKET_SIMPLE_ERR_MEMORY,      /**< Memory allocation failed */
+    SOCKET_SIMPLE_ERR_INVALID_ARG, /**< Invalid argument */
+    SOCKET_SIMPLE_ERR_UNSUPPORTED, /**< Feature not supported */
+    SOCKET_SIMPLE_ERR_IO,          /**< File I/O error */
 
     /* Pool/Poll errors */
     SOCKET_SIMPLE_ERR_POOL,          /**< Connection pool error */
@@ -107,55 +109,55 @@ typedef enum {
     SOCKET_SIMPLE_ERR_POOL_DRAINING, /**< Pool is draining */
 
     /* Proxy errors */
-    SOCKET_SIMPLE_ERR_PROXY,         /**< Proxy connection failed */
-    SOCKET_SIMPLE_ERR_PROXY_AUTH,    /**< Proxy authentication failed */
-    SOCKET_SIMPLE_ERR_PROXY_DENIED,  /**< Proxy denied connection */
+    SOCKET_SIMPLE_ERR_PROXY,        /**< Proxy connection failed */
+    SOCKET_SIMPLE_ERR_PROXY_AUTH,   /**< Proxy authentication failed */
+    SOCKET_SIMPLE_ERR_PROXY_DENIED, /**< Proxy denied connection */
 
     /* Server errors */
-    SOCKET_SIMPLE_ERR_SERVER,        /**< HTTP server error */
+    SOCKET_SIMPLE_ERR_SERVER, /**< HTTP server error */
 
     /* Rate limiting */
-    SOCKET_SIMPLE_ERR_RATELIMIT,     /**< Rate limit exceeded */
+    SOCKET_SIMPLE_ERR_RATELIMIT, /**< Rate limit exceeded */
 
     /* Security */
-    SOCKET_SIMPLE_ERR_SECURITY,      /**< Security/protection error */
+    SOCKET_SIMPLE_ERR_SECURITY, /**< Security/protection error */
 
     /* Async I/O */
-    SOCKET_SIMPLE_ERR_ASYNC          /**< Async I/O operation failed */
-} SocketSimple_ErrorCode;
+    SOCKET_SIMPLE_ERR_ASYNC /**< Async I/O operation failed */
+  } SocketSimple_ErrorCode;
 
-/*============================================================================
- * Error Access Functions
- *============================================================================*/
+  /*============================================================================
+   * Error Access Functions
+   *============================================================================*/
 
-/**
- * @brief Get human-readable error message for last error.
- * @return Thread-local error string, or NULL if no error.
- */
-extern const char *Socket_simple_error(void);
+  /**
+   * @brief Get human-readable error message for last error.
+   * @return Thread-local error string, or NULL if no error.
+   */
+  extern const char *Socket_simple_error (void);
 
-/**
- * @brief Get preserved errno from last error.
- * @return errno value at time of error.
- */
-extern int Socket_simple_errno(void);
+  /**
+   * @brief Get preserved errno from last error.
+   * @return errno value at time of error.
+   */
+  extern int Socket_simple_errno (void);
 
-/**
- * @brief Get error code for programmatic handling.
- * @return Error code enum value.
- */
-extern SocketSimple_ErrorCode Socket_simple_code(void);
+  /**
+   * @brief Get error code for programmatic handling.
+   * @return Error code enum value.
+   */
+  extern SocketSimple_ErrorCode Socket_simple_code (void);
 
-/**
- * @brief Check if last error is retryable.
- * @return 1 if retryable (EAGAIN, EINTR, etc.), 0 otherwise.
- */
-extern int Socket_simple_is_retryable(void);
+  /**
+   * @brief Check if last error is retryable.
+   * @return 1 if retryable (EAGAIN, EINTR, etc.), 0 otherwise.
+   */
+  extern int Socket_simple_is_retryable (void);
 
-/**
- * @brief Clear error state.
- */
-extern void Socket_simple_clear_error(void);
+  /**
+   * @brief Clear error state.
+   */
+  extern void Socket_simple_clear_error (void);
 
 /*============================================================================
  * Include Sub-modules

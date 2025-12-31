@@ -33,23 +33,26 @@
 
 /**
  * @file SocketHTTP.h
- * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and utilities.
+ * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and
+ * utilities.
  *
  * Provides protocol-agnostic HTTP types, header handling, URI parsing,
  * and date/media type utilities. Foundation for HTTP/1.1 and HTTP/2.
  *
- * Features: HTTP methods with semantic properties, status codes with reason phrases,
- * header collection with O(1) case-insensitive lookup, RFC 3986 URI parsing with
- * percent-encoding, HTTP-date parsing (all 3 RFC 9110 formats), media type parsing,
- * and content negotiation (Accept header q-value parsing).
+ * Features: HTTP methods with semantic properties, status codes with reason
+ * phrases, header collection with O(1) case-insensitive lookup, RFC 3986 URI
+ * parsing with percent-encoding, HTTP-date parsing (all 3 RFC 9110 formats),
+ * media type parsing, and content negotiation (Accept header q-value parsing).
  *
  * Thread safety: All functions are thread-safe (no global state).
- * Header collections are not thread-safe; use external synchronization if sharing.
+ * Header collections are not thread-safe; use external synchronization if
+ * sharing.
  *
- * Security notes: Rejects control characters and invalid syntax in URI components,
- * validates host as reg-name or IPv6 literal, validates media types/parameters as
- * HTTP tokens (RFC 7230), enforces per-component length limits to prevent resource
- * exhaustion, validates headers to reject injection attacks, protects against integer overflow.
+ * Security notes: Rejects control characters and invalid syntax in URI
+ * components, validates host as reg-name or IPv6 literal, validates media
+ * types/parameters as HTTP tokens (RFC 7230), enforces per-component length
+ * limits to prevent resource exhaustion, validates headers to reject injection
+ * attacks, protects against integer overflow.
  */
 
 #ifndef SOCKETHTTP_INCLUDED
@@ -66,8 +69,8 @@
 /**
  * @brief Maximum allowed length for HTTP header names, in bytes.
  *
- * Default 256 bytes protects against DoS attacks via excessively long header names.
- * Exceeding this during parsing raises SocketHTTP_Failed.
+ * Default 256 bytes protects against DoS attacks via excessively long header
+ * names. Exceeding this during parsing raises SocketHTTP_Failed.
  */
 #ifndef SOCKETHTTP_MAX_HEADER_NAME
 #define SOCKETHTTP_MAX_HEADER_NAME 256
@@ -76,8 +79,9 @@
 /**
  * @brief Maximum allowed length for individual HTTP header values, in bytes.
  *
- * Default 8 KiB prevents memory exhaustion. Accommodates large values like base64
- * Authorization or cookies. Values validated to exclude control characters (CR/LF/NUL).
+ * Default 8 KiB prevents memory exhaustion. Accommodates large values like
+ * base64 Authorization or cookies. Values validated to exclude control
+ * characters (CR/LF/NUL).
  */
 #ifndef SOCKETHTTP_MAX_HEADER_VALUE
 #define SOCKETHTTP_MAX_HEADER_VALUE (8 * 1024)
@@ -86,7 +90,8 @@
 /**
  * @brief Maximum total size for all HTTP headers combined, in bytes.
  *
- * Default 64 KiB mitigates DoS from header flooding. Enforced in header collection.
+ * Default 64 KiB mitigates DoS from header flooding. Enforced in header
+ * collection.
  */
 #ifndef SOCKETHTTP_MAX_HEADER_SIZE
 #define SOCKETHTTP_MAX_HEADER_SIZE (64 * 1024)
@@ -104,7 +109,8 @@
 /**
  * @brief Maximum length for URI strings during parsing, in bytes.
  *
- * Default 8 KiB prevents DoS from oversized URIs. Enforced in SocketHTTP_URI_parse().
+ * Default 8 KiB prevents DoS from oversized URIs. Enforced in
+ * SocketHTTP_URI_parse().
  */
 #ifndef SOCKETHTTP_MAX_URI_LEN
 #define SOCKETHTTP_MAX_URI_LEN (8 * 1024)
@@ -150,8 +156,9 @@ extern const Except_T SocketHTTP_ParseError;
 /**
  * @brief Invalid URI syntax or validation failure.
  *
- * Raised for malformed scheme, invalid host (e.g., bad IPv6 literal), out-of-range
- * port, or disallowed characters in path/query/fragment per RFC 3986.
+ * Raised for malformed scheme, invalid host (e.g., bad IPv6 literal),
+ * out-of-range port, or disallowed characters in path/query/fragment per RFC
+ * 3986.
  */
 extern const Except_T SocketHTTP_InvalidURI;
 
@@ -192,8 +199,8 @@ extern const char *SocketHTTP_version_string (SocketHTTP_Version version);
  * @param len String length (0 for strlen)
  * @return HTTP version, or HTTP_VERSION_0_9 if unrecognized
  */
-extern SocketHTTP_Version SocketHTTP_version_parse (const char *str,
-                                                    size_t len);
+extern SocketHTTP_Version
+SocketHTTP_version_parse (const char *str, size_t len);
 
 /**
  * @brief Standard HTTP request methods as defined in RFC 9110 and extensions.
@@ -205,14 +212,14 @@ typedef enum
 {
   HTTP_METHOD_GET = 0, /**< RFC 9110 Section 9.3.1 - Safe, idempotent,
                           cacheable; retrieves resource */
-  HTTP_METHOD_HEAD, /**< RFC 9110 Section 9.3.2 - Like GET but response has no
-                       body; used for metadata */
-  HTTP_METHOD_POST, /**< RFC 9110 Section 9.3.3 - Not safe or idempotent;
-                       creates/submits data */
-  HTTP_METHOD_PUT,  /**< RFC 9110 Section 9.3.4 - Idempotent; creates or
-                       replaces resource at URI */
-  HTTP_METHOD_DELETE,  /**< RFC 9110 Section 9.3.5 - Idempotent; requests
-                          deletion of resource */
+  HTTP_METHOD_HEAD,   /**< RFC 9110 Section 9.3.2 - Like GET but response has no
+                         body; used for metadata */
+  HTTP_METHOD_POST,   /**< RFC 9110 Section 9.3.3 - Not safe or idempotent;
+                         creates/submits data */
+  HTTP_METHOD_PUT,    /**< RFC 9110 Section 9.3.4 - Idempotent; creates or
+                         replaces resource at URI */
+  HTTP_METHOD_DELETE, /**< RFC 9110 Section 9.3.5 - Idempotent; requests
+                         deletion of resource */
   HTTP_METHOD_CONNECT, /**< RFC 9110 Section 9.3.6 - Establishes tunnel to
                           target host; used by proxies */
   HTTP_METHOD_OPTIONS, /**< RFC 9110 Section 9.3.7 - Safe; describes
@@ -225,10 +232,12 @@ typedef enum
 } SocketHTTP_Method;
 
 /**
- * @brief Semantic properties of an HTTP method as defined in RFC 9110 Section 9.2.
+ * @brief Semantic properties of an HTTP method as defined in RFC 9110
+ * Section 9.2.
  *
  * Bit fields indicating method safety, idempotency, cacheability, and body
- * expectations. Used for request validation, caching decisions, and protocol compliance.
+ * expectations. Used for request validation, caching decisions, and protocol
+ * compliance.
  */
 typedef struct
 {
@@ -277,9 +286,11 @@ SocketHTTP_method_properties (SocketHTTP_Method method);
 extern int SocketHTTP_method_valid (const char *str, size_t len);
 
 /**
- * @brief HTTP status codes as defined in RFC 9110 Section 15 and common extensions.
+ * @brief HTTP status codes as defined in RFC 9110 Section 15 and common
+ * extensions.
  *
- * Includes standard 1xx-5xx codes plus WebDAV (RFC 4918), HTTP/2 extensions, and others.
+ * Includes standard 1xx-5xx codes plus WebDAV (RFC 4918), HTTP/2 extensions,
+ * and others.
  */
 typedef enum
 {
@@ -299,14 +310,14 @@ typedef enum
   HTTP_STATUS_NO_CONTENT = 204,        /**< Success, no content */
   HTTP_STATUS_RESET_CONTENT = 205,   /**< Reset content (user agent refresh) */
   HTTP_STATUS_PARTIAL_CONTENT = 206, /**< Partial content (range request) */
-  HTTP_STATUS_MULTI_STATUS = 207, /**< RFC 4918 WebDAV - Multiple statuses */
+  HTTP_STATUS_MULTI_STATUS = 207,    /**< RFC 4918 WebDAV - Multiple statuses */
   HTTP_STATUS_ALREADY_REPORTED
   = 208, /**< RFC 5842 WebDAV - Avoid infinite loops */
   HTTP_STATUS_IM_USED
   = 226, /**< RFC 3229 Delta encoding - Instance manipulated */
 
   /* 3xx Redirection - Further action needed */
-  HTTP_STATUS_MULTIPLE_CHOICES = 300, /**< Multiple resource representations */
+  HTTP_STATUS_MULTIPLE_CHOICES = 300,  /**< Multiple resource representations */
   HTTP_STATUS_MOVED_PERMANENTLY = 301, /**< Permanent redirect */
   HTTP_STATUS_FOUND = 302,             /**< Temporary redirect */
   HTTP_STATUS_SEE_OTHER = 303,         /**< See other location */
@@ -318,13 +329,13 @@ typedef enum
   = 308, /**< RFC 7238 - Permanent redirect, preserve method */
 
   /* 4xx Client Error - Client error */
-  HTTP_STATUS_BAD_REQUEST = 400,        /**< Invalid request syntax */
-  HTTP_STATUS_UNAUTHORIZED = 401,       /**< Authentication required */
-  HTTP_STATUS_PAYMENT_REQUIRED = 402,   /**< Payment required (reserved) */
-  HTTP_STATUS_FORBIDDEN = 403,          /**< Forbidden */
-  HTTP_STATUS_NOT_FOUND = 404,          /**< Resource not found */
-  HTTP_STATUS_METHOD_NOT_ALLOWED = 405, /**< Method not allowed for resource */
-  HTTP_STATUS_NOT_ACCEPTABLE = 406,     /**< No acceptable representation */
+  HTTP_STATUS_BAD_REQUEST = 400,         /**< Invalid request syntax */
+  HTTP_STATUS_UNAUTHORIZED = 401,        /**< Authentication required */
+  HTTP_STATUS_PAYMENT_REQUIRED = 402,    /**< Payment required (reserved) */
+  HTTP_STATUS_FORBIDDEN = 403,           /**< Forbidden */
+  HTTP_STATUS_NOT_FOUND = 404,           /**< Resource not found */
+  HTTP_STATUS_METHOD_NOT_ALLOWED = 405,  /**< Method not allowed for resource */
+  HTTP_STATUS_NOT_ACCEPTABLE = 406,      /**< No acceptable representation */
   HTTP_STATUS_PROXY_AUTH_REQUIRED = 407, /**< Proxy authentication required */
   HTTP_STATUS_REQUEST_TIMEOUT = 408,     /**< Request timeout */
   HTTP_STATUS_CONFLICT = 409,            /**< Resource conflict */
@@ -338,8 +349,7 @@ typedef enum
   HTTP_STATUS_EXPECTATION_FAILED = 417,     /**< Expectation failed */
   HTTP_STATUS_IM_A_TEAPOT = 418, /**< RFC 2324 - I'm a teapot (humorous) */
   HTTP_STATUS_MISDIRECTED_REQUEST = 421, /**< Mis-directed request (HTTP/2+) */
-  HTTP_STATUS_UNPROCESSABLE_CONTENT
-  = 422,                    /**< Unprocessable entity (WebDAV) */
+  HTTP_STATUS_UNPROCESSABLE_CONTENT = 422, /**< Unprocessable entity (WebDAV) */
   HTTP_STATUS_LOCKED = 423, /**< RFC 4918 WebDAV - Resource locked */
   HTTP_STATUS_FAILED_DEPENDENCY
   = 424,                       /**< RFC 4918 WebDAV - Dependency failed */
@@ -348,8 +358,7 @@ typedef enum
   HTTP_STATUS_PRECONDITION_REQUIRED
   = 428,                               /**< RFC 6585 - Precondition required */
   HTTP_STATUS_TOO_MANY_REQUESTS = 429, /**< RFC 6585 - Rate limiting */
-  HTTP_STATUS_HEADER_TOO_LARGE
-  = 431, /**< RFC 6585 - Header fields too large */
+  HTTP_STATUS_HEADER_TOO_LARGE = 431, /**< RFC 6585 - Header fields too large */
   HTTP_STATUS_UNAVAILABLE_LEGAL
   = 451, /**< RFC 7725 - Unavailable for legal reasons */
 
@@ -466,7 +475,8 @@ typedef struct SocketHTTP_Headers *SocketHTTP_Headers_T;
 
 /**
  * @brief Create a new empty HTTP header collection.
- * @param arena Arena used for all internal allocations; must outlive the collection.
+ * @param arena Arena used for all internal allocations; must outlive the
+ * collection.
  * @return New header collection instance.
  * @throws Arena_Failed if memory allocation fails.
  * @throws SocketHTTP_Failed if arena is NULL or internal initialization fails.
@@ -483,12 +493,15 @@ extern void SocketHTTP_Headers_clear (SocketHTTP_Headers_T headers);
  * Adds header, allowing duplicates. Use set() to replace existing.
  */
 extern int SocketHTTP_Headers_add (SocketHTTP_Headers_T headers,
-                                   const char *name, const char *value);
+                                   const char *name,
+                                   const char *value);
 
 /** @brief Add header with explicit lengths. */
 extern int SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
-                                     const char *name, size_t name_len,
-                                     const char *value, size_t value_len);
+                                     const char *name,
+                                     size_t name_len,
+                                     const char *value,
+                                     size_t value_len);
 
 /**
  * @brief Add header as zero-copy reference (no string allocation).
@@ -499,8 +512,10 @@ extern int SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
  * Used internally by parser for performance.
  */
 extern int SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers,
-                                       const char *name, size_t name_len,
-                                       const char *value, size_t value_len);
+                                       const char *name,
+                                       size_t name_len,
+                                       const char *value,
+                                       size_t value_len);
 
 /**
  * @brief Materialize all reference headers by copying strings to arena.
@@ -518,14 +533,15 @@ extern int SocketHTTP_Headers_materialize (SocketHTTP_Headers_T headers);
  * Removes all existing headers with same name, then adds new one.
  */
 extern int SocketHTTP_Headers_set (SocketHTTP_Headers_T headers,
-                                   const char *name, const char *value);
+                                   const char *name,
+                                   const char *value);
 
 /**
  * @brief Get first header value (case-insensitive).
  * @return Header value (null-terminated), or NULL if not found
  */
-extern const char *SocketHTTP_Headers_get (SocketHTTP_Headers_T headers,
-                                           const char *name);
+extern const char *
+SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name);
 
 /**
  * @brief Get first header value with explicit name length (avoids strlen).
@@ -535,14 +551,16 @@ extern const char *SocketHTTP_Headers_get (SocketHTTP_Headers_T headers,
  * @return Header value (null-terminated), or NULL if not found
  */
 extern const char *SocketHTTP_Headers_get_n (SocketHTTP_Headers_T headers,
-                                             const char *name, size_t name_len);
+                                             const char *name,
+                                             size_t name_len);
 
 /**
  * @brief Get header value as integer.
  * @return 0 on success, -1 if not found or not a valid integer
  */
 extern int SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers,
-                                       const char *name, int64_t *value);
+                                       const char *name,
+                                       int64_t *value);
 
 /** @brief Get all values for header. */
 extern size_t SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers,
@@ -550,19 +568,22 @@ extern size_t SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers,
                                           const char **values,
                                           size_t max_values);
 
-/** @brief Get all values for header with explicit name length (avoids strlen). */
+/** @brief Get all values for header with explicit name length (avoids strlen).
+ */
 extern size_t SocketHTTP_Headers_get_all_n (SocketHTTP_Headers_T headers,
-                                            const char *name, size_t name_len,
+                                            const char *name,
+                                            size_t name_len,
                                             const char **values,
                                             size_t max_values);
 
 /** @brief Check if header exists. */
-extern int SocketHTTP_Headers_has (SocketHTTP_Headers_T headers,
-                                   const char *name);
+extern int
+SocketHTTP_Headers_has (SocketHTTP_Headers_T headers, const char *name);
 
 /** @brief Check if header exists with explicit name length (avoids strlen). */
 extern int SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers,
-                                     const char *name, size_t name_len);
+                                     const char *name,
+                                     size_t name_len);
 
 /**
  * @brief Check if header contains token.
@@ -571,7 +592,8 @@ extern int SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers,
  * Useful for headers like "Connection: keep-alive, upgrade"
  */
 extern int SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers,
-                                        const char *name, const char *token);
+                                        const char *name,
+                                        const char *token);
 
 /**
  * @brief Check if header contains token with explicit lengths (avoids strlen).
@@ -583,16 +605,18 @@ extern int SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers,
  * @return 1 if token found (case-insensitive), 0 otherwise
  */
 extern int SocketHTTP_Headers_contains_n (SocketHTTP_Headers_T headers,
-                                          const char *name, size_t name_len,
-                                          const char *token, size_t token_len);
+                                          const char *name,
+                                          size_t name_len,
+                                          const char *token,
+                                          size_t token_len);
 
 /** @brief Remove first header with name. */
-extern int SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers,
-                                      const char *name);
+extern int
+SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers, const char *name);
 
 /** @brief Remove all headers with name. */
-extern int SocketHTTP_Headers_remove_all (SocketHTTP_Headers_T headers,
-                                          const char *name);
+extern int
+SocketHTTP_Headers_remove_all (SocketHTTP_Headers_T headers, const char *name);
 
 /** @brief Get total header count. */
 extern size_t SocketHTTP_Headers_count (SocketHTTP_Headers_T headers);
@@ -610,8 +634,10 @@ SocketHTTP_Headers_at (SocketHTTP_Headers_T headers, size_t index);
  * @param userdata User data passed from SocketHTTP_Headers_iterate().
  * @return 0 to continue iteration, non-zero to stop early.
  */
-typedef int (*SocketHTTP_HeaderCallback) (const char *name, size_t name_len,
-                                          const char *value, size_t value_len,
+typedef int (*SocketHTTP_HeaderCallback) (const char *name,
+                                          size_t name_len,
+                                          const char *value,
+                                          size_t value_len,
                                           void *userdata);
 
 /** @brief Iterate over all headers with callback. */
@@ -646,23 +672,24 @@ extern int SocketHTTP_header_value_valid (const char *value, size_t len);
  *
  * Structure holding the generic syntax components of a URI or URI reference.
  * All string pointers reference substrings from the original input or
- * arena-allocated copies; valid until arena is cleared. Strings are null-terminated
- * with lengths provided. Does not perform percent-decoding; use SocketHTTP_URI_decode().
- * Supports absolute URIs, origin form, and relative references. Host may include
- * IPv6 literals in [brackets]; userinfo is parsed but deprecated per RFC 3986.
+ * arena-allocated copies; valid until arena is cleared. Strings are
+ * null-terminated with lengths provided. Does not perform percent-decoding; use
+ * SocketHTTP_URI_decode(). Supports absolute URIs, origin form, and relative
+ * references. Host may include IPv6 literals in [brackets]; userinfo is parsed
+ * but deprecated per RFC 3986.
  */
 typedef struct
 {
-  const char *scheme; /**< Scheme name (lowercase, e.g., "http", "https"; NULL
-                         for relative URI) */
-  size_t scheme_len;  /**< Length of scheme */
+  const char *scheme;   /**< Scheme name (lowercase, e.g., "http", "https"; NULL
+                           for relative URI) */
+  size_t scheme_len;    /**< Length of scheme */
   const char *userinfo; /**< Userinfo "username:password" (deprecated by RFC
                            3986, may be NULL) */
   size_t userinfo_len;  /**< Length of userinfo */
-  const char *host;  /**< Authority host (hostname, IPv4, or [IPv6]; required
-                        for absolute URI) */
-  size_t host_len;   /**< Length of host */
-  int port;          /**< Port number (0-65535) or -1 if not present */
+  const char *host;     /**< Authority host (hostname, IPv4, or [IPv6]; required
+                           for absolute URI) */
+  size_t host_len;      /**< Length of host */
+  int port;             /**< Port number (0-65535) or -1 if not present */
   const char *path;  /**< Path component (absolute or relative; never NULL, may
                         be empty "/") */
   size_t path_len;   /**< Length of path */
@@ -696,7 +723,8 @@ typedef enum
  * @param uri Input URI string (absolute or relative reference).
  * @param len Length of URI (0 to use strlen(uri)).
  * @param[out] result Pointer to SocketHTTP_URI structure to populate.
- * @param arena Arena for allocating parsed string components (must outlive result).
+ * @param arena Arena for allocating parsed string components (must outlive
+ * result).
  * @return URI_PARSE_OK on success, or specific error code on failure.
  * @throws Arena_Failed if memory allocation for components fails.
  * @throws SocketHTTP_InvalidURI on invalid URI syntax, malformed components,
@@ -707,7 +735,8 @@ typedef enum
  * path, query, fragment. Rejects overly long URIs (> SOCKETHTTP_MAX_URI_LEN)
  * and invalid characters. Does not percent-decode; use SocketHTTP_URI_decode().
  */
-extern SocketHTTP_URIResult SocketHTTP_URI_parse (const char *uri, size_t len,
+extern SocketHTTP_URIResult SocketHTTP_URI_parse (const char *uri,
+                                                  size_t len,
                                                   SocketHTTP_URI *result,
                                                   Arena_T arena);
 
@@ -715,8 +744,8 @@ extern SocketHTTP_URIResult SocketHTTP_URI_parse (const char *uri, size_t len,
 extern const char *SocketHTTP_URI_result_string (SocketHTTP_URIResult result);
 
 /** @brief Get port with default fallback (e.g., 80 for http). */
-extern int SocketHTTP_URI_get_port (const SocketHTTP_URI *uri,
-                                    int default_port);
+extern int
+SocketHTTP_URI_get_port (const SocketHTTP_URI *uri, int default_port);
 
 /** @brief Check if URI uses secure scheme ("https" or "wss"). */
 extern int SocketHTTP_URI_is_secure (const SocketHTTP_URI *uri);
@@ -728,15 +757,19 @@ extern int SocketHTTP_URI_is_secure (const SocketHTTP_URI *uri);
  * Encodes characters that are not unreserved per RFC 3986.
  * Unreserved: A-Z a-z 0-9 - . _ ~
  */
-extern ssize_t SocketHTTP_URI_encode (const char *input, size_t len,
-                                      char *output, size_t output_size);
+extern ssize_t SocketHTTP_URI_encode (const char *input,
+                                      size_t len,
+                                      char *output,
+                                      size_t output_size);
 
 /**
  * @brief Percent-decode string.
  * @return Output length, or -1 on error (invalid encoding or buffer too small)
  */
-extern ssize_t SocketHTTP_URI_decode (const char *input, size_t len,
-                                      char *output, size_t output_size);
+extern ssize_t SocketHTTP_URI_decode (const char *input,
+                                      size_t len,
+                                      char *output,
+                                      size_t output_size);
 
 /**
  * @brief Build URI string from components.
@@ -744,7 +777,8 @@ extern ssize_t SocketHTTP_URI_decode (const char *input, size_t len,
  *
  * Builds: scheme://[userinfo@]host[:port]path[?query][#fragment]
  */
-extern ssize_t SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
+extern ssize_t SocketHTTP_URI_build (const SocketHTTP_URI *uri,
+                                     char *output,
                                      size_t output_size);
 
 /**
@@ -759,8 +793,8 @@ extern ssize_t SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
  * - RFC 850: Sunday, 06-Nov-94 08:49:37 GMT (obsolete)
  * - ANSI C: Sun Nov  6 08:49:37 1994 (obsolete)
  */
-extern int SocketHTTP_date_parse (const char *date_str, size_t len,
-                                  time_t *time_out);
+extern int
+SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out);
 
 /**
  * @brief Format time as HTTP-date (IMF-fixdate).
@@ -777,7 +811,8 @@ extern int SocketHTTP_date_format (time_t t, char *output);
 #pragma GCC diagnostic ignored "-Wcomment"
 #endif
 /**
- * @brief Parsed representation of an HTTP media type (Content-Type, Accept, etc.).
+ * @brief Parsed representation of an HTTP media type (Content-Type, Accept,
+ * etc.).
  *
  * Extracts type/subtype from Content-Type header per RFC 9110 Section 8.3.
  * Also parses common parameters: charset (for text types) and boundary (for
@@ -790,7 +825,7 @@ typedef struct
                        "multipart"; token per RFC 9110) */
   size_t type_len;  /**< Length of type */
   const char
-      *subtype; /**< Subtype (e.g., "html", "json", "form-data"; token) */
+      *subtype;       /**< Subtype (e.g., "html", "json", "form-data"; token) */
   size_t subtype_len; /**< Length of subtype */
   const char
       *charset; /**< Charset parameter value (e.g., "utf-8"; NULL if absent) */
@@ -814,7 +849,8 @@ typedef struct
  *
  * Parses: type/subtype[; param=value]*
  */
-extern int SocketHTTP_MediaType_parse (const char *value, size_t len,
+extern int SocketHTTP_MediaType_parse (const char *value,
+                                       size_t len,
                                        SocketHTTP_MediaType *result,
                                        Arena_T arena);
 
@@ -856,9 +892,11 @@ typedef struct
  * Parses comma-separated values with optional q= quality parameter.
  * Results sorted by quality (highest first).
  */
-extern size_t SocketHTTP_parse_accept (const char *value, size_t len,
+extern size_t SocketHTTP_parse_accept (const char *value,
+                                       size_t len,
                                        SocketHTTP_QualityValue *results,
-                                       size_t max_results, Arena_T arena);
+                                       size_t max_results,
+                                       Arena_T arena);
 
 /**
  * @brief Common HTTP transfer encodings and content codings per RFC 9110.
@@ -870,17 +908,16 @@ extern size_t SocketHTTP_parse_accept (const char *value, size_t len,
 typedef enum
 {
   HTTP_CODING_IDENTITY = 0, /**< No encoding (identity/default) */
-  HTTP_CODING_CHUNKED,     /**< Chunked transfer encoding for unknown length */
-  HTTP_CODING_GZIP,        /**< Gzip compression (RFC 1952) */
-  HTTP_CODING_DEFLATE,     /**< Deflate compression (zlib, RFC 1950/1951) */
-  HTTP_CODING_COMPRESS,    /**< Unix compress (LZW, rarely used/obsolete) */
-  HTTP_CODING_BR,          /**< Brotli compression (RFC 7932) */
-  HTTP_CODING_UNKNOWN = -1 /**< Unrecognized or unsupported encoding */
+  HTTP_CODING_CHUNKED,      /**< Chunked transfer encoding for unknown length */
+  HTTP_CODING_GZIP,         /**< Gzip compression (RFC 1952) */
+  HTTP_CODING_DEFLATE,      /**< Deflate compression (zlib, RFC 1950/1951) */
+  HTTP_CODING_COMPRESS,     /**< Unix compress (LZW, rarely used/obsolete) */
+  HTTP_CODING_BR,           /**< Brotli compression (RFC 7932) */
+  HTTP_CODING_UNKNOWN = -1  /**< Unrecognized or unsupported encoding */
 } SocketHTTP_Coding;
 
 /** @brief Parse coding name from string. */
-extern SocketHTTP_Coding SocketHTTP_coding_parse (const char *name,
-                                                  size_t len);
+extern SocketHTTP_Coding SocketHTTP_coding_parse (const char *name, size_t len);
 
 /** @brief Get coding name string. */
 extern const char *SocketHTTP_coding_name (SocketHTTP_Coding coding);
@@ -891,7 +928,8 @@ extern const char *SocketHTTP_coding_name (SocketHTTP_Coding coding);
  * Captures the essential semantics of an HTTP request independent of transport
  * (HTTP/1.x, HTTP/2, HTTP/3). Request target can be in absolute form
  * (scheme+authority+path), origin form (authority+path), or asterisk form.
- * Body information provided for transfer decisions; actual body data handled separately.
+ * Body information provided for transfer decisions; actual body data handled
+ * separately.
  */
 typedef struct
 {

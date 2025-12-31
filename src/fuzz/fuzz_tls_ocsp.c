@@ -142,14 +142,14 @@ fuzz_extract_ocsp_status (const uint8_t *data, size_t size)
       ASN1_GENERALIZEDTIME *nextupd = NULL;
       ASN1_GENERALIZEDTIME *revtime = NULL;
 
-      int status = OCSP_single_get0_status (single, &reason, &revtime,
-                                            &thisupd, &nextupd);
+      int status = OCSP_single_get0_status (
+          single, &reason, &revtime, &thisupd, &nextupd);
 
       /* Validate freshness if timestamps present */
       if (thisupd)
         {
-          (void)OCSP_check_validity (thisupd, nextupd,
-                                     SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1);
+          (void)OCSP_check_validity (
+              thisupd, nextupd, SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1);
         }
 
       switch (status)
@@ -230,7 +230,7 @@ fuzz_check_ocsp_validity (const uint8_t *data, size_t size)
     }
 
   /* Test validity checking with various nsec/maxsec values */
-  long nsec = (data[8] % 5) * 60;                    /* 0-4 minutes */
+  long nsec = (data[8] % 5) * 60; /* 0-4 minutes */
   long maxsec = (data[9] % 10) * SOCKET_TLS_OCSP_MAX_AGE_SECONDS;
 
   int result = OCSP_check_validity (thisupd, nextupd, nsec, maxsec);

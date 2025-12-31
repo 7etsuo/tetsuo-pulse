@@ -7,7 +7,8 @@
 /**
  * fuzz_http_headers_collection.c - HTTP Headers collection operations fuzzer
  *
- * Stress-tests SocketHTTP_Headers_T operations with fuzzed header names and values:
+ * Stress-tests SocketHTTP_Headers_T operations with fuzzed header names and
+ * values:
  * - Headers_new, Headers_clear
  * - Headers_add, Headers_add_n, Headers_set
  * - Headers_get, Headers_get_all, Headers_get_int
@@ -17,7 +18,8 @@
  *
  * Tests boundary conditions, validation, and memory safety under stress.
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_http_headers_collection
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_http_headers_collection
  * ./fuzz_http_headers_collection corpus/http_headers/ -fork=16 -max_len=8192
  */
 
@@ -33,8 +35,11 @@
 
 /* Callback for header iteration */
 static int
-header_callback (const char *name, size_t name_len, const char *value,
-                 size_t value_len, void *userdata)
+header_callback (const char *name,
+                 size_t name_len,
+                 const char *value,
+                 size_t value_len,
+                 void *userdata)
 {
   size_t *count = (size_t *)userdata;
   (*count)++;
@@ -51,8 +56,11 @@ header_callback (const char *name, size_t name_len, const char *value,
 
 /* Callback that stops early */
 static int
-header_callback_stop (const char *name, size_t name_len, const char *value,
-                      size_t value_len, void *userdata)
+header_callback_stop (const char *name,
+                      size_t name_len,
+                      const char *value,
+                      size_t value_len,
+                      void *userdata)
 {
   size_t *count = (size_t *)userdata;
   (*count)++;
@@ -100,7 +108,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       for (int i = 0; i < 50 && offset + 4 < size; i++)
         {
           /* Use fuzz data to determine name and value lengths */
-          size_t name_len = (data[offset] % 64) + 1; /* 1-64 chars */
+          size_t name_len = (data[offset] % 64) + 1;       /* 1-64 chars */
           size_t value_len = (data[offset + 1] % 128) + 1; /* 1-128 chars */
 
           offset += 2;
@@ -112,8 +120,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           char name[256];
           char value[512];
 
-          size_t actual_name_len = (name_len < sizeof (name) - 1) ? name_len : sizeof (name) - 1;
-          size_t actual_value_len = (value_len < sizeof (value) - 1) ? value_len : sizeof (value) - 1;
+          size_t actual_name_len
+              = (name_len < sizeof (name) - 1) ? name_len : sizeof (name) - 1;
+          size_t actual_value_len = (value_len < sizeof (value) - 1)
+                                        ? value_len
+                                        : sizeof (value) - 1;
 
           if (offset + actual_name_len + actual_value_len > size)
             break;
@@ -131,8 +142,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)result;
 
           /* Test add_n with explicit lengths */
-          result = SocketHTTP_Headers_add_n (headers, name, actual_name_len,
-                                             value, actual_value_len);
+          result = SocketHTTP_Headers_add_n (
+              headers, name, actual_name_len, value, actual_value_len);
           (void)result;
         }
     }
@@ -147,8 +158,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Try to get headers with fuzzed names */
       char search_name[128];
-      size_t search_len = (size > sizeof (search_name) - 1) ?
-                          sizeof (search_name) - 1 : size;
+      size_t search_len
+          = (size > sizeof (search_name) - 1) ? sizeof (search_name) - 1 : size;
       memcpy (search_name, data, search_len);
       search_name[search_len] = '\0';
 
@@ -162,12 +173,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Test get_all */
       const char *values[16];
-      size_t found = SocketHTTP_Headers_get_all (headers, search_name, values, 16);
+      size_t found
+          = SocketHTTP_Headers_get_all (headers, search_name, values, 16);
       (void)found;
 
       /* Test get_int */
       int64_t int_value;
-      int int_result = SocketHTTP_Headers_get_int (headers, search_name, &int_value);
+      int int_result
+          = SocketHTTP_Headers_get_int (headers, search_name, &int_value);
       (void)int_result;
 
       /* Test contains (token search) */
@@ -179,7 +192,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               memcpy (token, data + 1, token_len);
               token[token_len] = '\0';
-              int contains = SocketHTTP_Headers_contains (headers, search_name, token);
+              int contains
+                  = SocketHTTP_Headers_contains (headers, search_name, token);
               (void)contains;
             }
         }
@@ -191,12 +205,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
       /* Iterate all headers */
       size_t callback_count = 0;
-      int iter_result = SocketHTTP_Headers_iterate (headers, header_callback, &callback_count);
+      int iter_result = SocketHTTP_Headers_iterate (
+          headers, header_callback, &callback_count);
       (void)iter_result;
 
       /* Iterate with early stop */
       callback_count = 0;
-      iter_result = SocketHTTP_Headers_iterate (headers, header_callback_stop, &callback_count);
+      iter_result = SocketHTTP_Headers_iterate (
+          headers, header_callback_stop, &callback_count);
       (void)iter_result;
 
       /* Access by index */
@@ -214,7 +230,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
 
       /* Test out-of-bounds access */
-      const SocketHTTP_Header *invalid = SocketHTTP_Headers_at (headers, count + 1);
+      const SocketHTTP_Header *invalid
+          = SocketHTTP_Headers_at (headers, count + 1);
       (void)invalid;
       invalid = SocketHTTP_Headers_at (headers, SIZE_MAX);
       (void)invalid;
@@ -232,9 +249,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       name[name_len] = '\0';
 
       size_t value_offset = name_len;
-      size_t value_len = (size > value_offset) ?
-                         ((size - value_offset > sizeof (value) - 1) ?
-                          sizeof (value) - 1 : size - value_offset) : 0;
+      size_t value_len = (size > value_offset)
+                             ? ((size - value_offset > sizeof (value) - 1)
+                                    ? sizeof (value) - 1
+                                    : size - value_offset)
+                             : 0;
       if (value_len > 0)
         {
           memcpy (value, data + value_offset, value_len);
@@ -256,8 +275,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
       /* Remove with fuzzed name */
       char remove_name[64];
-      size_t remove_len = (size > sizeof (remove_name) - 1) ?
-                          sizeof (remove_name) - 1 : size;
+      size_t remove_len
+          = (size > sizeof (remove_name) - 1) ? sizeof (remove_name) - 1 : size;
       memcpy (remove_name, data, remove_len);
       remove_name[remove_len] = '\0';
 
@@ -274,19 +293,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * Test 6: Add known headers with fuzzed values
      * ==================================================================== */
     {
-      const char *known_headers[] = {
-          "Content-Type", "Content-Length", "Accept", "Accept-Encoding",
-          "Authorization", "Cache-Control", "Connection", "Host",
-          "User-Agent", "X-Custom-Header", "Set-Cookie", "Cookie"
-      };
+      const char *known_headers[]
+          = { "Content-Type",    "Content-Length", "Accept",
+              "Accept-Encoding", "Authorization",  "Cache-Control",
+              "Connection",      "Host",           "User-Agent",
+              "X-Custom-Header", "Set-Cookie",     "Cookie" };
 
       char fuzz_value[512];
-      size_t fuzz_len = (size > sizeof (fuzz_value) - 1) ?
-                        sizeof (fuzz_value) - 1 : size;
+      size_t fuzz_len
+          = (size > sizeof (fuzz_value) - 1) ? sizeof (fuzz_value) - 1 : size;
       memcpy (fuzz_value, data, fuzz_len);
       fuzz_value[fuzz_len] = '\0';
 
-      for (size_t i = 0; i < sizeof (known_headers) / sizeof (known_headers[0]); i++)
+      for (size_t i = 0; i < sizeof (known_headers) / sizeof (known_headers[0]);
+           i++)
         {
           SocketHTTP_Headers_add (headers, known_headers[i], fuzz_value);
           SocketHTTP_Headers_get (headers, known_headers[i]);
@@ -300,8 +320,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
       /* Add Content-Length with various fuzzed values */
       char int_value[32];
-      int int_len = snprintf (int_value, sizeof (int_value), "%.*s",
-                             (int)(size > 20 ? 20 : size), (const char *)data);
+      int int_len = snprintf (int_value,
+                              sizeof (int_value),
+                              "%.*s",
+                              (int)(size > 20 ? 20 : size),
+                              (const char *)data);
       if (int_len > 0 && (size_t)int_len < sizeof (int_value))
         {
           SocketHTTP_Headers_set (headers, "Content-Length", int_value);
@@ -310,8 +333,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
 
       /* Test known integer values */
-      const char *int_values[] = {"0", "1", "100", "65535", "2147483647",
-                                  "-1", "abc", "123abc", "  456  ", ""};
+      const char *int_values[]
+          = { "0",  "1",   "100",    "65535",   "2147483647",
+              "-1", "abc", "123abc", "  456  ", "" };
       for (size_t i = 0; i < sizeof (int_values) / sizeof (int_values[0]); i++)
         {
           SocketHTTP_Headers_set (headers, "X-Int-Header", int_values[i]);
@@ -332,17 +356,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Test with fuzzed token */
       char fuzz_token[64];
-      size_t token_len = (size > sizeof (fuzz_token) - 1) ?
-                         sizeof (fuzz_token) - 1 : size;
+      size_t token_len
+          = (size > sizeof (fuzz_token) - 1) ? sizeof (fuzz_token) - 1 : size;
       memcpy (fuzz_token, data, token_len);
       fuzz_token[token_len] = '\0';
       SocketHTTP_Headers_contains (headers, "Connection", fuzz_token);
 
       /* Add Accept-Encoding with fuzzed tokens */
       char encoding_header[256];
-      int hlen = snprintf (encoding_header, sizeof (encoding_header),
-                          "gzip, deflate, %.*s", (int)(size > 100 ? 100 : size),
-                          (const char *)data);
+      int hlen = snprintf (encoding_header,
+                           sizeof (encoding_header),
+                           "gzip, deflate, %.*s",
+                           (int)(size > 100 ? 100 : size),
+                           (const char *)data);
       if (hlen > 0 && (size_t)hlen < sizeof (encoding_header))
         {
           SocketHTTP_Headers_set (headers, "Accept-Encoding", encoding_header);
@@ -372,7 +398,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Verify count */
       size_t final = SocketHTTP_Headers_count (headers);
-      (void)final;
+      (void) final;
     }
 
     /* ====================================================================
@@ -389,7 +415,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Get all values */
       const char *cookies[10];
-      size_t cookie_count = SocketHTTP_Headers_get_all (headers, "Set-Cookie", cookies, 10);
+      size_t cookie_count
+          = SocketHTTP_Headers_get_all (headers, "Set-Cookie", cookies, 10);
       (void)cookie_count;
 
       /* Iterate and count Set-Cookie headers */

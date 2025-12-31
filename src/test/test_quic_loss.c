@@ -347,8 +347,8 @@ TEST (loss_on_ack_received)
   SocketQUICLoss_on_packet_sent (state, 0, 1000000, 100, 1, 1, 0);
 
   /* ACK packet 0 */
-  res = SocketQUICLoss_on_ack_received (state, &rtt, 0, 1000, 1100000, NULL,
-                                         NULL, &lost_count);
+  res = SocketQUICLoss_on_ack_received (
+      state, &rtt, 0, 1000, 1100000, NULL, NULL, &lost_count);
   ASSERT_EQ (QUIC_LOSS_OK, res);
   ASSERT_EQ (0, lost_count);
   ASSERT_EQ (0, state->bytes_in_flight); /* Packet was acked */
@@ -363,8 +363,8 @@ TEST (loss_on_ack_received_null)
 
   SocketQUICLoss_init_rtt (&rtt);
 
-  res = SocketQUICLoss_on_ack_received (NULL, &rtt, 0, 0, 1000000, NULL, NULL,
-                                         NULL);
+  res = SocketQUICLoss_on_ack_received (
+      NULL, &rtt, 0, 0, 1000000, NULL, NULL, NULL);
   ASSERT_EQ (QUIC_LOSS_ERROR_NULL, res);
 }
 
@@ -387,8 +387,8 @@ TEST (loss_on_ack_packet_threshold)
     SocketQUICLoss_on_packet_sent (state, i, 1000000 + i * 1000, 100, 1, 1, 0);
 
   /* ACK packet 3 only - packets 0 should be declared lost (threshold=3) */
-  SocketQUICLoss_on_ack_received (state, &rtt, 3, 1000, 1100000,
-                                   test_lost_callback, NULL, &lost_count);
+  SocketQUICLoss_on_ack_received (
+      state, &rtt, 3, 1000, 1100000, test_lost_callback, NULL, &lost_count);
 
   /* Packet 0 should be declared lost (3 packets ahead) */
   ASSERT (lost_count >= 1);
@@ -531,8 +531,8 @@ TEST (loss_on_timeout_time_based)
   lost_callback_count = 0;
 
   /* Call timeout handler at time after loss_time */
-  res = SocketQUICLoss_on_loss_timeout (state, &rtt, 1200000, test_lost_callback,
-                                         NULL, &lost_count);
+  res = SocketQUICLoss_on_loss_timeout (
+      state, &rtt, 1200000, test_lost_callback, NULL, &lost_count);
   ASSERT_EQ (QUIC_LOSS_OK, res);
 
   Arena_dispose (&arena);

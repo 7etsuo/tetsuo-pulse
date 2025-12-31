@@ -57,9 +57,9 @@
  * remains as an umbrella header for backward compatibility.
  */
 
-#include "core/SocketError.h"  /* Error handling and categorization */
-#include "core/SocketLog.h"    /* Logging subsystem */
-#include "core/SocketEvent.h"  /* Event dispatching */
+#include "core/SocketError.h" /* Error handling and categorization */
+#include "core/SocketLog.h"   /* Logging subsystem */
+#include "core/SocketEvent.h" /* Event dispatching */
 
 /* ============================================================================
  * COMMON UTILITY MACROS
@@ -102,21 +102,25 @@
  *
  * Includes truncation protection for long messages.
  */
-#define SOCKET_ERROR_FMT(fmt, ...)                                            \
-  do                                                                          \
-    {                                                                         \
-      socket_last_errno = errno;                                              \
-      char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
-      int _socket_error_ret = snprintf (                                      \
-          tmp_buf, sizeof (tmp_buf), fmt " (errno: %d - %s)", ##__VA_ARGS__,  \
-          socket_last_errno, Socket_safe_strerror (socket_last_errno));       \
-      memcpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE);               \
-      socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
-      SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
-      (void)_socket_error_ret;                                                \
-      SocketLog_emit (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,                 \
-                      socket_error_buf);                                      \
-    }                                                                         \
+#define SOCKET_ERROR_FMT(fmt, ...)                                   \
+  do                                                                 \
+    {                                                                \
+      socket_last_errno = errno;                                     \
+      char tmp_buf[SOCKET_ERROR_BUFSIZE];                            \
+      int _socket_error_ret                                          \
+          = snprintf (tmp_buf,                                       \
+                      sizeof (tmp_buf),                              \
+                      fmt " (errno: %d - %s)",                       \
+                      ##__VA_ARGS__,                                 \
+                      socket_last_errno,                             \
+                      Socket_safe_strerror (socket_last_errno));     \
+      memcpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE);      \
+      socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';             \
+      SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);             \
+      (void)_socket_error_ret;                                       \
+      SocketLog_emit (                                               \
+          SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, socket_error_buf); \
+    }                                                                \
   while (0)
 
 /**
@@ -124,20 +128,20 @@
  *
  * Includes truncation protection for long messages.
  */
-#define SOCKET_ERROR_MSG(fmt, ...)                                            \
-  do                                                                          \
-    {                                                                         \
-      socket_last_errno = errno;                                              \
-      char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
-      int _socket_error_ret                                                   \
-          = snprintf (tmp_buf, sizeof (tmp_buf), fmt, ##__VA_ARGS__);         \
-      memcpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE);               \
-      socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
-      SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
-      (void)_socket_error_ret;                                                \
-      SocketLog_emit (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,                 \
-                      socket_error_buf);                                      \
-    }                                                                         \
+#define SOCKET_ERROR_MSG(fmt, ...)                                    \
+  do                                                                  \
+    {                                                                 \
+      socket_last_errno = errno;                                      \
+      char tmp_buf[SOCKET_ERROR_BUFSIZE];                             \
+      int _socket_error_ret                                           \
+          = snprintf (tmp_buf, sizeof (tmp_buf), fmt, ##__VA_ARGS__); \
+      memcpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE);       \
+      socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';              \
+      SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);              \
+      (void)_socket_error_ret;                                        \
+      SocketLog_emit (                                                \
+          SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, socket_error_buf);  \
+    }                                                                 \
   while (0)
 
 /* ============================================================================
@@ -150,7 +154,7 @@
  *
  * @module_name: Module name (e.g., Socket, SocketBuf, SocketPoll)
  */
-#define SOCKET_DECLARE_MODULE_EXCEPTION(module_name)                          \
+#define SOCKET_DECLARE_MODULE_EXCEPTION(module_name) \
   static __thread Except_T module_name##_DetailedException
 
 /**
@@ -161,13 +165,13 @@
  * @brief Thread-safe: Creates thread-local copy with detailed reason
  *
  */
-#define SOCKET_RAISE_MODULE_ERROR(module_name, exception)                     \
-  do                                                                          \
-    {                                                                         \
-      module_name##_DetailedException = (exception);                          \
-      module_name##_DetailedException.reason = socket_error_buf;              \
-      RAISE (module_name##_DetailedException);                                \
-    }                                                                         \
+#define SOCKET_RAISE_MODULE_ERROR(module_name, exception)        \
+  do                                                             \
+    {                                                            \
+      module_name##_DetailedException = (exception);             \
+      module_name##_DetailedException.reason = socket_error_buf; \
+      RAISE (module_name##_DetailedException);                   \
+    }                                                            \
   while (0)
 
 /* ============================================================================
@@ -188,12 +192,12 @@
  * @brief Thread-safe: Yes (uses thread-local buffers)
  *
  */
-#define SOCKET_RAISE_FMT(module_name, exception, fmt, ...)                    \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                  \
-      SOCKET_RAISE_MODULE_ERROR (module_name, exception);                     \
-    }                                                                         \
+#define SOCKET_RAISE_FMT(module_name, exception, fmt, ...) \
+  do                                                       \
+    {                                                      \
+      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);               \
+      SOCKET_RAISE_MODULE_ERROR (module_name, exception);  \
+    }                                                      \
   while (0)
 
 /**
@@ -209,12 +213,12 @@
  * @brief Thread-safe: Yes (uses thread-local buffers)
  *
  */
-#define SOCKET_RAISE_MSG(module_name, exception, fmt, ...)                    \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);                                  \
-      SOCKET_RAISE_MODULE_ERROR (module_name, exception);                     \
-    }                                                                         \
+#define SOCKET_RAISE_MSG(module_name, exception, fmt, ...) \
+  do                                                       \
+    {                                                      \
+      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);               \
+      SOCKET_RAISE_MODULE_ERROR (module_name, exception);  \
+    }                                                      \
   while (0)
 
 /**
@@ -276,9 +280,11 @@ typedef struct SocketMetricsSnapshot
 } SocketMetricsSnapshot;
 
 /**
- * @brief SocketMetrics_increment - Legacy metric increment (forwards to new system)
+ * @brief SocketMetrics_increment - Legacy metric increment (forwards to new
+ * system)
  * @ingroup foundation
- * @deprecated Use SocketMetrics_counter_inc(SocketCounterMetric) from SocketMetrics.h
+ * @deprecated Use SocketMetrics_counter_inc(SocketCounterMetric) from
+ * SocketMetrics.h
  * @param metric Legacy metric enum
  * @param value Amount to add (uint64_t in new API)
  * @threadsafe Yes - forwards to atomic new system
@@ -288,9 +294,11 @@ typedef struct SocketMetricsSnapshot
 void SocketMetrics_increment (SocketMetric metric, unsigned long value);
 
 /**
- * @brief SocketMetrics_getsnapshot - Legacy snapshot (populated from new system)
+ * @brief SocketMetrics_getsnapshot - Legacy snapshot (populated from new
+ * system)
  * @ingroup foundation
- * @deprecated Use SocketMetrics_get(SocketMetrics_Snapshot *) from SocketMetrics.h for full data
+ * @deprecated Use SocketMetrics_get(SocketMetrics_Snapshot *) from
+ * SocketMetrics.h for full data
  * @param snapshot Legacy snapshot struct (counters only)
  * @threadsafe Yes - reads from new atomic/thread-safe system
  * @note Populates legacy values from mapped new counters; unmapped are 0.
@@ -310,7 +318,8 @@ void SocketMetrics_legacy_reset (void);
 /**
  * @brief SocketMetrics_name - Get name (forwards to new or legacy)
  * @ingroup foundation
- * @deprecated Use SocketMetrics_counter_name(SocketCounterMetric) etc. from SocketMetrics.h
+ * @deprecated Use SocketMetrics_counter_name(SocketCounterMetric) etc. from
+ * SocketMetrics.h
  * @param metric Legacy metric enum
  * @return Mapped new name or legacy name for unmapped
  * @threadsafe Yes
@@ -435,7 +444,8 @@ socket_util_hash_uint (unsigned value, unsigned table_size)
  * Use for security-sensitive lookups where attacker may control keys.
  */
 static inline unsigned
-socket_util_hash_uint_seeded (unsigned value, unsigned table_size,
+socket_util_hash_uint_seeded (unsigned value,
+                              unsigned table_size,
                               uint32_t seed)
 {
   uint64_t h = (uint64_t)value * HASH_GOLDEN_RATIO + (uint64_t)seed;
@@ -558,7 +568,8 @@ socket_util_hash_djb2_ci_len (const char *str, size_t len, unsigned table_size)
  * @brief Hash byte sequence with prime multiplier 31 for random data.
  * @ingroup foundation
  * @param data Byte sequence to hash (may contain any byte values).
- * @param len Length of byte sequence (actual bytes hashed is min(len, max_len)).
+ * @param len Length of byte sequence (actual bytes hashed is min(len,
+ * max_len)).
  * @param max_len Maximum bytes to hash from data (for performance).
  * @return Hash value (before modulo/masking).
  * @threadsafe Yes (pure function, no shared state)
@@ -580,7 +591,8 @@ socket_util_hash_djb2_ci_len (const char *str, size_t len, unsigned table_size)
  * @see select_shard() in SocketTLS-performance.c for usage example.
  */
 static inline unsigned
-socket_util_hash_bytes_prime31 (const unsigned char *data, size_t len,
+socket_util_hash_bytes_prime31 (const unsigned char *data,
+                                size_t len,
                                 size_t max_len)
 {
   unsigned hash = 0;
@@ -674,11 +686,11 @@ socket_util_round_up_pow2 (size_t n)
  *   size_t len = MIN(buf_size, data_len);
  */
 #ifndef MIN
-#define MIN(a, b)                                                             \
-  ({                                                                          \
-    __typeof__ (a) _a = (a);                                                  \
-    __typeof__ (b) _b = (b);                                                  \
-    _a < _b ? _a : _b;                                                        \
+#define MIN(a, b)            \
+  ({                         \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a < _b ? _a : _b;       \
   })
 #endif
 
@@ -701,11 +713,11 @@ socket_util_round_up_pow2 (size_t n)
  *   int64_t delay = MAX(0, computed_delay);
  */
 #ifndef MAX
-#define MAX(a, b)                                                             \
-  ({                                                                          \
-    __typeof__ (a) _a = (a);                                                  \
-    __typeof__ (b) _b = (b);                                                  \
-    _a > _b ? _a : _b;                                                        \
+#define MAX(a, b)            \
+  ({                         \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b;       \
   })
 #endif
 
@@ -965,9 +977,8 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  *   };
  *
  *   MyModule_T MyModule_new(Arena_T arena) {
- *     MyModule_T m = arena ? CALLOC(arena, 1, sizeof(*m)) : calloc(1, sizeof(*m));
- *     if (!m) SOCKET_RAISE_MSG(...);
- *     m->arena = arena;
+ *     MyModule_T m = arena ? CALLOC(arena, 1, sizeof(*m)) : calloc(1,
+ * sizeof(*m)); if (!m) SOCKET_RAISE_MSG(...); m->arena = arena;
  *     SOCKET_MUTEX_ARENA_INIT(m, MyModule, MyModule_Failed);
  *     return m;
  *   }
@@ -999,10 +1010,10 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  *     // ... other fields
  *   };
  */
-#define SOCKET_MUTEX_ARENA_FIELDS                                             \
-        pthread_mutex_t mutex;                                                \
-        Arena_T arena;                                                        \
-        int initialized
+#define SOCKET_MUTEX_ARENA_FIELDS \
+  pthread_mutex_t mutex;          \
+  Arena_T arena;                  \
+  int initialized
 
 /**
  * @brief SOCKET_MUTEX_ARENA_INIT - Initialize mutex and set state
@@ -1018,18 +1029,18 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  *   limiter->arena = arena;
  *   SOCKET_MUTEX_ARENA_INIT(limiter, SocketRateLimit, SocketRateLimit_Failed);
  */
-#define SOCKET_MUTEX_ARENA_INIT(obj, module_name, exc_var)                    \
-        do                                                                    \
-          {                                                                   \
-            (obj)->initialized = SOCKET_MUTEX_UNINITIALIZED;                  \
-            if (pthread_mutex_init (&(obj)->mutex, NULL) != 0)                \
-              {                                                               \
-                SOCKET_RAISE_MSG (module_name, exc_var,                       \
-                                  "Failed to initialize mutex");              \
-              }                                                               \
-            (obj)->initialized = SOCKET_MUTEX_INITIALIZED;                    \
-          }                                                                   \
-        while (0)
+#define SOCKET_MUTEX_ARENA_INIT(obj, module_name, exc_var)         \
+  do                                                               \
+    {                                                              \
+      (obj)->initialized = SOCKET_MUTEX_UNINITIALIZED;             \
+      if (pthread_mutex_init (&(obj)->mutex, NULL) != 0)           \
+        {                                                          \
+          SOCKET_RAISE_MSG (                                       \
+              module_name, exc_var, "Failed to initialize mutex"); \
+        }                                                          \
+      (obj)->initialized = SOCKET_MUTEX_INITIALIZED;               \
+    }                                                              \
+  while (0)
 
 /**
  * @brief SOCKET_MUTEX_ARENA_DESTROY - Cleanup mutex if initialized
@@ -1039,16 +1050,16 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  * Sets initialized = SOCKET_MUTEX_UNINITIALIZED after cleanup.
  * Safe to call multiple times (idempotent).
  */
-#define SOCKET_MUTEX_ARENA_DESTROY(obj)                                       \
-        do                                                                    \
-          {                                                                   \
-            if ((obj)->initialized == SOCKET_MUTEX_INITIALIZED)               \
-              {                                                               \
-                pthread_mutex_destroy (&(obj)->mutex);                        \
-                (obj)->initialized = SOCKET_MUTEX_UNINITIALIZED;              \
-              }                                                               \
-          }                                                                   \
-        while (0)
+#define SOCKET_MUTEX_ARENA_DESTROY(obj)                    \
+  do                                                       \
+    {                                                      \
+      if ((obj)->initialized == SOCKET_MUTEX_INITIALIZED)  \
+        {                                                  \
+          pthread_mutex_destroy (&(obj)->mutex);           \
+          (obj)->initialized = SOCKET_MUTEX_UNINITIALIZED; \
+        }                                                  \
+    }                                                      \
+  while (0)
 
 /**
  * @brief SOCKET_MUTEX_ARENA_ALLOC - Allocate from arena or malloc
@@ -1057,9 +1068,9 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  *
  * Returns: Allocated pointer (uninitialized) or NULL on failure
  */
-#define SOCKET_MUTEX_ARENA_ALLOC(obj, size)                                   \
-        ((obj)->arena ? Arena_alloc ((obj)->arena, (size), __FILE__, __LINE__)\
-                      : malloc (size))
+#define SOCKET_MUTEX_ARENA_ALLOC(obj, size)                              \
+  ((obj)->arena ? Arena_alloc ((obj)->arena, (size), __FILE__, __LINE__) \
+                : malloc (size))
 
 /**
  * @brief SOCKET_MUTEX_ARENA_CALLOC - Allocate zeroed memory
@@ -1069,10 +1080,10 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  *
  * Returns: Allocated zeroed pointer or NULL on failure
  */
-#define SOCKET_MUTEX_ARENA_CALLOC(obj, count, size)                           \
-        ((obj)->arena ? Arena_calloc ((obj)->arena, (count), (size),          \
-                                      __FILE__, __LINE__)                     \
-                      : calloc ((count), (size)))
+#define SOCKET_MUTEX_ARENA_CALLOC(obj, count, size)                       \
+  ((obj)->arena                                                           \
+       ? Arena_calloc ((obj)->arena, (count), (size), __FILE__, __LINE__) \
+       : calloc ((count), (size)))
 
 /**
  * @brief SOCKET_MUTEX_ARENA_FREE - Free if malloc mode (no-op for arena)
@@ -1082,15 +1093,15 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  * Only frees if arena == NULL (malloc mode). Arena memory is freed
  * when the arena is disposed.
  */
-#define SOCKET_MUTEX_ARENA_FREE(obj, ptr)                                     \
-        do                                                                    \
-          {                                                                   \
-            if ((obj)->arena == NULL && (ptr) != NULL)                        \
-              {                                                               \
-                free (ptr);                                                   \
-              }                                                               \
-          }                                                                   \
-        while (0)
+#define SOCKET_MUTEX_ARENA_FREE(obj, ptr)        \
+  do                                             \
+    {                                            \
+      if ((obj)->arena == NULL && (ptr) != NULL) \
+        {                                        \
+          free (ptr);                            \
+        }                                        \
+    }                                            \
+  while (0)
 
 /* ============================================================================
  * IP ADDRESS UTILITY FUNCTIONS
@@ -1162,7 +1173,8 @@ socket_util_normalize_hostname (char *dest, const char *src, size_t max_len)
  * Seed should come from SocketCrypto_random_uint32() or similar.
  */
 static inline unsigned
-socket_util_hash_djb2_seeded (const char *str, unsigned table_size,
+socket_util_hash_djb2_seeded (const char *str,
+                              unsigned table_size,
                               uint32_t seed)
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
@@ -1190,7 +1202,8 @@ socket_util_hash_djb2_seeded (const char *str, unsigned table_size,
  * Ideal for DNS name hashing in caches.
  */
 static inline unsigned
-socket_util_hash_djb2_seeded_ci (const char *str, unsigned table_size,
+socket_util_hash_djb2_seeded_ci (const char *str,
+                                 unsigned table_size,
                                  uint32_t seed)
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
@@ -1225,15 +1238,18 @@ socket_util_hash_djb2_seeded_ci (const char *str, unsigned table_size,
  * - Case-insensitive: HTTP header names are case-insensitive per RFC
  * - Length-aware: Header names in parsing buffers aren't null-terminated
  *
- * Uses XOR variant of DJB2 for character mixing (vs. addition in other variants).
- * Seed is mixed using XOR with the initial hash value for simplicity.
+ * Uses XOR variant of DJB2 for character mixing (vs. addition in other
+ * variants). Seed is mixed using XOR with the initial hash value for
+ * simplicity.
  *
  * Use for security-sensitive tables where keys may be attacker-controlled
  * and need case-insensitive comparison with known length.
  */
 static inline unsigned
-socket_util_hash_djb2_seeded_ci_len (const char *str, size_t len,
-                                     unsigned table_size, uint32_t seed)
+socket_util_hash_djb2_seeded_ci_len (const char *str,
+                                     size_t len,
+                                     unsigned table_size,
+                                     uint32_t seed)
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED ^ seed;
 
@@ -1267,7 +1283,8 @@ socket_util_hash_djb2_seeded_ci_len (const char *str, size_t len,
  * Returns "not expired" if time appears to go backwards.
  */
 static inline int
-socket_util_ttl_expired (int64_t insert_time_ms, uint32_t ttl_sec,
+socket_util_ttl_expired (int64_t insert_time_ms,
+                         uint32_t ttl_sec,
                          int64_t now_ms)
 {
   /* Guard against time going backwards */
@@ -1291,7 +1308,8 @@ socket_util_ttl_expired (int64_t insert_time_ms, uint32_t ttl_sec,
  * Returns full TTL if time appears to go backwards.
  */
 static inline uint32_t
-socket_util_ttl_remaining (int64_t insert_time_ms, uint32_t ttl_sec,
+socket_util_ttl_remaining (int64_t insert_time_ms,
+                           uint32_t ttl_sec,
                            int64_t now_ms)
 {
   /* Guard against time going backwards */
@@ -1336,8 +1354,8 @@ socket_util_unpack_be16 (const unsigned char *p)
  * @param v 16-bit value in host byte order.
  * @threadsafe Yes (pure function)
  *
- * Converts 16-bit value from host byte order to big-endian (network) byte order.
- * Used for serializing network protocols (DNS, HTTP/2, QUIC).
+ * Converts 16-bit value from host byte order to big-endian (network) byte
+ * order. Used for serializing network protocols (DNS, HTTP/2, QUIC).
  */
 static inline void
 socket_util_pack_be16 (unsigned char *p, uint16_t v)
@@ -1394,8 +1412,8 @@ socket_util_pack_be24 (unsigned char *p, uint32_t v)
 static inline uint32_t
 socket_util_unpack_be32 (const unsigned char *p)
 {
-  return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
-         | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+  return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8)
+         | (uint32_t)p[3];
 }
 
 /**
@@ -1405,8 +1423,8 @@ socket_util_unpack_be32 (const unsigned char *p)
  * @param v 32-bit value in host byte order.
  * @threadsafe Yes (pure function)
  *
- * Converts 32-bit value from host byte order to big-endian (network) byte order.
- * Used for serializing network protocols (DNS, HTTP/2, QUIC).
+ * Converts 32-bit value from host byte order to big-endian (network) byte
+ * order. Used for serializing network protocols (DNS, HTTP/2, QUIC).
  */
 static inline void
 socket_util_pack_be32 (unsigned char *p, uint32_t v)
@@ -1443,8 +1461,8 @@ socket_util_unpack_be64 (const unsigned char *p)
  * @param v 64-bit value in host byte order.
  * @threadsafe Yes (pure function)
  *
- * Converts 64-bit value from host byte order to big-endian (network) byte order.
- * Used for serializing network protocols (DNS, HTTP/2, QUIC).
+ * Converts 64-bit value from host byte order to big-endian (network) byte
+ * order. Used for serializing network protocols (DNS, HTTP/2, QUIC).
  */
 static inline void
 socket_util_pack_be64 (unsigned char *p, uint64_t v)
@@ -1505,8 +1523,9 @@ socket_util_safe_copy_ip (char *dest, const char *src, size_t max_len)
  * @src: Source string to copy
  * @max_len: Maximum size of destination buffer (including null terminator)
  *
- * Copies up to max_len-1 characters from src to dest and always null-terminates.
- * Prevents buffer overflow by design. Truncates if source exceeds max_len-1.
+ * Copies up to max_len-1 characters from src to dest and always
+ * null-terminates. Prevents buffer overflow by design. Truncates if source
+ * exceeds max_len-1.
  *
  * @return true if entire string was copied, false if truncation occurred
  *
@@ -1587,14 +1606,16 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
  *   // ... critical section ...
  *   SOCKET_MUTEX_UNLOCK(&pool->mutex);
  */
-#define SOCKET_MUTEX_LOCK_OR_RAISE(mutex_ptr, module, exc)                    \
-  do                                                                          \
-    {                                                                         \
-      int _lock_err = pthread_mutex_lock (mutex_ptr);                         \
-      if (_lock_err != 0)                                                     \
-        SOCKET_RAISE_MSG (module, exc, "pthread_mutex_lock failed: %s",       \
-                          Socket_safe_strerror (_lock_err));                  \
-    }                                                                         \
+#define SOCKET_MUTEX_LOCK_OR_RAISE(mutex_ptr, module, exc)   \
+  do                                                         \
+    {                                                        \
+      int _lock_err = pthread_mutex_lock (mutex_ptr);        \
+      if (_lock_err != 0)                                    \
+        SOCKET_RAISE_MSG (module,                            \
+                          exc,                               \
+                          "pthread_mutex_lock failed: %s",   \
+                          Socket_safe_strerror (_lock_err)); \
+    }                                                        \
   while (0)
 
 /**
@@ -1635,13 +1656,16 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
  * Warning: Do not use 'return' inside the code block. Use exception
  * handling (RAISE) or restructure code to avoid early returns.
  */
-#define SOCKET_WITH_MUTEX(mutex_ptr, module, exc, code)                       \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_MUTEX_LOCK_OR_RAISE (mutex_ptr, module, exc);                    \
-      TRY{ code } FINALLY { SOCKET_MUTEX_UNLOCK (mutex_ptr); }                \
-      END_TRY;                                                                \
-    }                                                                         \
+#define SOCKET_WITH_MUTEX(mutex_ptr, module, exc, code)    \
+  do                                                       \
+    {                                                      \
+      SOCKET_MUTEX_LOCK_OR_RAISE (mutex_ptr, module, exc); \
+      TRY{ code } FINALLY                                  \
+      {                                                    \
+        SOCKET_MUTEX_UNLOCK (mutex_ptr);                   \
+      }                                                    \
+      END_TRY;                                             \
+    }                                                      \
   while (0)
 
 /* ============================================================================
@@ -1719,7 +1743,8 @@ socket_util_timespec_to_ms (struct timespec ts)
  * @threadsafe Yes (pure function, no shared state)
  *
  * Adds two timespec structures together, properly handling nanosecond overflow.
- * The result is normalized so that tv_nsec is always in the range [0, 999999999].
+ * The result is normalized so that tv_nsec is always in the range [0,
+ * 999999999].
  *
  * This utility eliminates manual overflow handling when adding intervals to
  * absolute times, a common pattern in timed waits and health checks.
@@ -1776,7 +1801,8 @@ socket_util_timespec_add (struct timespec ts1, struct timespec ts2)
  *     return -1;
  *   }
  *
- * @note Does not handle SIGPIPE - caller should set SO_NOSIGPIPE or ignore SIGPIPE
+ * @note Does not handle SIGPIPE - caller should set SO_NOSIGPIPE or ignore
+ * SIGPIPE
  * @see socket_util_read_all_eintr() for reading with EINTR retry
  * @see write(2) for underlying system call semantics
  */
@@ -1812,7 +1838,8 @@ socket_util_write_all_eintr (int fd, const void *buf, size_t len)
  *
  * Reads exactly the requested number of bytes from the file descriptor,
  * automatically retrying on EINTR (interrupted system call). This is the
- * standard pattern for robust I/O operations that may be interrupted by signals.
+ * standard pattern for robust I/O operations that may be interrupted by
+ * signals.
  *
  * The function continues reading until all data is read or EOF/error occurs.
  * Partial reads are handled by advancing the buffer pointer and reducing the
@@ -1927,10 +1954,10 @@ socket_util_read_all_eintr (int fd, void *buf, size_t len)
  * @see socket_util_safe_mul_size() for multiplication overflow checking
  */
 static inline int
-socket_util_safe_add_u64(uint64_t a, uint64_t b, uint64_t *result)
+socket_util_safe_add_u64 (uint64_t a, uint64_t b, uint64_t *result)
 {
   if (a > UINT64_MAX - b)
-    return 0;  /* Overflow would occur */
+    return 0; /* Overflow would occur */
   *result = a + b;
   return 1;
 }
@@ -1971,10 +1998,10 @@ socket_util_safe_add_u64(uint64_t a, uint64_t b, uint64_t *result)
  * @see socket_util_safe_add_u64() for addition overflow checking
  */
 static inline int
-socket_util_safe_mul_size(size_t a, size_t b, size_t *result)
+socket_util_safe_mul_size (size_t a, size_t b, size_t *result)
 {
   if (a > 0 && b > SIZE_MAX / a)
-    return 0;  /* Overflow would occur */
+    return 0; /* Overflow would occur */
   *result = a * b;
   return 1;
 }
@@ -2015,10 +2042,10 @@ socket_util_safe_mul_size(size_t a, size_t b, size_t *result)
  * @see socket_util_safe_mul_size() for size_t multiplication
  */
 static inline int
-socket_util_safe_mul_u64(uint64_t a, uint64_t b, uint64_t *result)
+socket_util_safe_mul_u64 (uint64_t a, uint64_t b, uint64_t *result)
 {
   if (a > 0 && b > UINT64_MAX / a)
-    return 0;  /* Overflow would occur */
+    return 0; /* Overflow would occur */
   *result = a * b;
   return 1;
 }
@@ -2089,7 +2116,8 @@ socket_util_hex_digit (char c)
  *   const char *url = "hello%20world%21";
  *   char buf[64];
  *   size_t len;
- *   if (socket_util_url_decode(url, strlen(url), buf, sizeof(buf), &len) == 0) {
+ *   if (socket_util_url_decode(url, strlen(url), buf, sizeof(buf), &len) == 0)
+ * {
  *     // buf now contains "hello world!"
  *     // len is 12
  *   }
@@ -2099,8 +2127,11 @@ socket_util_hex_digit (char c)
  * @see RFC 3986 Section 2.1 (Percent-Encoding)
  */
 static inline int
-socket_util_url_decode (const char *src, size_t src_len, char *dst,
-                        size_t dst_size, size_t *out_len)
+socket_util_url_decode (const char *src,
+                        size_t src_len,
+                        char *dst,
+                        size_t dst_size,
+                        size_t *out_len)
 {
   size_t di = 0;
 

@@ -4,7 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/* SocketHTTPClient-retry.c - HTTP Client Retry Logic with Exponential Backoff */
+/* SocketHTTPClient-retry.c - HTTP Client Retry Logic with Exponential Backoff
+ */
 
 #include <errno.h>
 #include <string.h>
@@ -14,15 +15,15 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHTTPClient-private.h"
 
-#define CLEAR_RESPONSE(r)                                                     \
-  do                                                                          \
-    {                                                                         \
-      if ((r))                                                                \
-        {                                                                     \
-          SocketHTTP_Headers_clear ((r)->headers);                            \
-          memset ((r), 0, sizeof (*(r)));                                     \
-        }                                                                     \
-    }                                                                         \
+#define CLEAR_RESPONSE(r)                          \
+  do                                               \
+    {                                              \
+      if ((r))                                     \
+        {                                          \
+          SocketHTTP_Headers_clear ((r)->headers); \
+          memset ((r), 0, sizeof (*(r)));          \
+        }                                          \
+    }                                              \
   while (0)
 
 int
@@ -36,7 +37,8 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
   if (attempt > SOCKET_RETRY_MAX_ATTEMPTS)
     {
       SOCKET_LOG_WARN_MSG ("Attempt %d exceeds max %d, clamping to max_delay",
-                           attempt, SOCKET_RETRY_MAX_ATTEMPTS);
+                           attempt,
+                           SOCKET_RETRY_MAX_ATTEMPTS);
       return client->config.retry_max_delay_ms > 0
                  ? client->config.retry_max_delay_ms
                  : SOCKET_RETRY_DEFAULT_MAX_DELAY_MS;
@@ -93,8 +95,8 @@ httpclient_should_retry_error (const SocketHTTPClient_T client,
 
 int
 httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
-                                             int status,
-                                             SocketHTTP_Method method)
+                                            int status,
+                                            SocketHTTP_Method method)
 {
   if (client == NULL)
     return 0;
@@ -128,8 +130,8 @@ int
 httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
   /* Assume GET method for backward compatibility */
-  return httpclient_should_retry_status_with_method (client, status,
-                                                      HTTP_METHOD_GET);
+  return httpclient_should_retry_status_with_method (
+      client, status, HTTP_METHOD_GET);
 }
 
 void

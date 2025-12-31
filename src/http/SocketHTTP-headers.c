@@ -29,12 +29,12 @@
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
 #define SOCKETHTTP_MAX_DOS_WARNINGS 3 /* Hard fail after this many warnings */
 
-#define VALIDATE_HEADERS_NAME(headers, name, retval)                          \
-  do                                                                          \
-    {                                                                         \
-      if (!(headers) || !(name))                                              \
-        return (retval);                                                      \
-    }                                                                         \
+#define VALIDATE_HEADERS_NAME(headers, name, retval) \
+  do                                                 \
+    {                                                \
+      if (!(headers) || !(name))                     \
+        return (retval);                             \
+    }                                                \
   while (0)
 
 /* ============================================================================
@@ -51,7 +51,8 @@ init_header_hash_seed (void)
   if (SocketCrypto_random_bytes (&header_hash_seed, sizeof (header_hash_seed))
       != 0)
     {
-      /* Fallback: combine multiple entropy sources for better unpredictability */
+      /* Fallback: combine multiple entropy sources for better unpredictability
+       */
       uint32_t time_seed = (uint32_t)time (NULL);
       uint32_t pid_seed = (uint32_t)getpid ();
       /* Use stack address for ASLR entropy */
@@ -60,19 +61,20 @@ init_header_hash_seed (void)
 
       header_hash_seed = time_seed ^ pid_seed ^ stack_seed;
 
-      SOCKET_LOG_WARN_MSG (
-          "Crypto RNG unavailable - using weaker entropy sources for hash seed");
+      SOCKET_LOG_WARN_MSG ("Crypto RNG unavailable - using weaker entropy "
+                           "sources for hash seed");
     }
 }
 
 static HeaderEntry *
-find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
-                      size_t name_len, HeaderEntry ***prev_ptr_out)
+find_entry_with_prev (SocketHTTP_Headers_T headers,
+                      const char *name,
+                      size_t name_len,
+                      HeaderEntry ***prev_ptr_out)
 {
   unsigned bucket
-      = socket_util_hash_djb2_seeded_ci_len (name, name_len,
-                                             SOCKETHTTP_HEADER_BUCKETS,
-                                             header_hash_seed)
+      = socket_util_hash_djb2_seeded_ci_len (
+            name, name_len, SOCKETHTTP_HEADER_BUCKETS, header_hash_seed)
         & SOCKETHTTP_HEADER_BUCKET_MASK;
   HeaderEntry **pp = &headers->buckets[bucket];
 
@@ -86,7 +88,9 @@ find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
           SOCKET_LOG_WARN_MSG (
               "Excessive hash chain length %d in bucket %u - potential DoS "
               "(warning %d/%d)",
-              chain_len, bucket, headers->dos_chain_warnings,
+              chain_len,
+              bucket,
+              headers->dos_chain_warnings,
               SOCKETHTTP_MAX_DOS_WARNINGS);
 
           /* Hard fail after threshold to prevent resource exhaustion */
@@ -194,16 +198,16 @@ static int
 remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 {
   HeaderEntry **prev_ptr = NULL;
-  HeaderEntry *entry = find_entry_with_prev (headers, name, name_len, &prev_ptr);
+  HeaderEntry *entry
+      = find_entry_with_prev (headers, name, name_len, &prev_ptr);
   if (!entry)
     return 0;
 
   size_t delta_temp;
   size_t delta;
-  if (!SocketSecurity_check_add (entry->name_len, entry->value_len,
-                                 &delta_temp)
-      || !SocketSecurity_check_add (delta_temp, HEADER_ENTRY_NULL_OVERHEAD,
-                                    &delta))
+  if (!SocketSecurity_check_add (entry->name_len, entry->value_len, &delta_temp)
+      || !SocketSecurity_check_add (
+          delta_temp, HEADER_ENTRY_NULL_OVERHEAD, &delta))
     {
       headers->total_size = 0;
       SOCKET_LOG_WARN_MSG ("Invalid header entry sizes in remove");
@@ -263,7 +267,9 @@ validate_header_limits (SocketHTTP_Headers_T headers, size_t entry_size)
 }
 
 static int
-allocate_entry_name (Arena_T arena, HeaderEntry *entry, const char *name,
+allocate_entry_name (Arena_T arena,
+                     HeaderEntry *entry,
+                     const char *name,
                      size_t name_len)
 {
   char *name_copy = arena_strndup (arena, name, name_len);
@@ -275,7 +281,9 @@ allocate_entry_name (Arena_T arena, HeaderEntry *entry, const char *name,
 }
 
 static int
-allocate_entry_value (Arena_T arena, HeaderEntry *entry, const char *value,
+allocate_entry_value (Arena_T arena,
+                      HeaderEntry *entry,
+                      const char *value,
                       size_t value_len)
 {
   char *value_copy = arena_strndup (arena, value, value_len);
@@ -327,8 +335,11 @@ SocketHTTP_Headers_clear (SocketHTTP_Headers_T headers)
  */
 
 int
-SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
-                          size_t name_len, const char *value, size_t value_len)
+SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
+                          const char *name,
+                          size_t name_len,
+                          const char *value,
+                          size_t value_len)
 {
   VALIDATE_HEADERS_NAME (headers, name, -1);
 
@@ -342,8 +353,8 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
     return -1;
   size_t entry_size;
-  if (!SocketSecurity_check_add (temp_size, HEADER_ENTRY_NULL_OVERHEAD,
-                                 &entry_size))
+  if (!SocketSecurity_check_add (
+          temp_size, HEADER_ENTRY_NULL_OVERHEAD, &entry_size))
     return -1;
   if (validate_header_limits (headers, entry_size) < 0)
     return -1;
@@ -355,11 +366,9 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (allocate_entry_name (headers->arena, entry, name, name_len) < 0)
     return -1;
 
-  entry->hash
-      = socket_util_hash_djb2_seeded_ci_len (name, name_len,
-                                             SOCKETHTTP_HEADER_BUCKETS,
-                                             header_hash_seed)
-        & SOCKETHTTP_HEADER_BUCKET_MASK;
+  entry->hash = socket_util_hash_djb2_seeded_ci_len (
+                    name, name_len, SOCKETHTTP_HEADER_BUCKETS, header_hash_seed)
+                & SOCKETHTTP_HEADER_BUCKET_MASK;
 
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;
@@ -377,8 +386,10 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
 }
 
 int
-SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers, const char *name,
-                            size_t name_len, const char *value,
+SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers,
+                            const char *name,
+                            size_t name_len,
+                            const char *value,
                             size_t value_len)
 {
   VALIDATE_HEADERS_NAME (headers, name, -1);
@@ -393,8 +404,8 @@ SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers, const char *name,
   if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
     return -1;
   size_t entry_size;
-  if (!SocketSecurity_check_add (temp_size, HEADER_ENTRY_NULL_OVERHEAD,
-                                 &entry_size))
+  if (!SocketSecurity_check_add (
+          temp_size, HEADER_ENTRY_NULL_OVERHEAD, &entry_size))
     return -1;
   if (validate_header_limits (headers, entry_size) < 0)
     return -1;
@@ -410,11 +421,9 @@ SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers, const char *name,
   entry->value_len = value_len;
   entry->is_ref = 1;
 
-  entry->hash
-      = socket_util_hash_djb2_seeded_ci_len (name, name_len,
-                                             SOCKETHTTP_HEADER_BUCKETS,
-                                             header_hash_seed)
-        & SOCKETHTTP_HEADER_BUCKET_MASK;
+  entry->hash = socket_util_hash_djb2_seeded_ci_len (
+                    name, name_len, SOCKETHTTP_HEADER_BUCKETS, header_hash_seed)
+                & SOCKETHTTP_HEADER_BUCKET_MASK;
 
   if (add_to_bucket (headers, entry) < 0)
     return -1;
@@ -456,7 +465,8 @@ SocketHTTP_Headers_materialize (SocketHTTP_Headers_T headers)
 }
 
 int
-SocketHTTP_Headers_add (SocketHTTP_Headers_T headers, const char *name,
+SocketHTTP_Headers_add (SocketHTTP_Headers_T headers,
+                        const char *name,
                         const char *value)
 {
   if (!name)
@@ -467,7 +477,8 @@ SocketHTTP_Headers_add (SocketHTTP_Headers_T headers, const char *name,
 }
 
 int
-SocketHTTP_Headers_set (SocketHTTP_Headers_T headers, const char *name,
+SocketHTTP_Headers_set (SocketHTTP_Headers_T headers,
+                        const char *name,
                         const char *value)
 {
   VALIDATE_HEADERS_NAME (headers, name, -1);
@@ -482,7 +493,8 @@ SocketHTTP_Headers_set (SocketHTTP_Headers_T headers, const char *name,
  */
 
 const char *
-SocketHTTP_Headers_get_n (SocketHTTP_Headers_T headers, const char *name,
+SocketHTTP_Headers_get_n (SocketHTTP_Headers_T headers,
+                          const char *name,
                           size_t name_len)
 {
   VALIDATE_HEADERS_NAME (headers, name, NULL);
@@ -501,7 +513,8 @@ SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
 }
 
 int
-SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
+SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers,
+                            const char *name,
                             int64_t *value)
 {
   if (!headers || !name || !value)
@@ -559,8 +572,10 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
 }
 
 size_t
-SocketHTTP_Headers_get_all_n (SocketHTTP_Headers_T headers, const char *name,
-                              size_t name_len, const char **values,
+SocketHTTP_Headers_get_all_n (SocketHTTP_Headers_T headers,
+                              const char *name,
+                              size_t name_len,
+                              const char **values,
                               size_t max_values)
 {
   if (!headers || !name || !values || max_values == 0)
@@ -580,13 +595,15 @@ SocketHTTP_Headers_get_all_n (SocketHTTP_Headers_T headers, const char *name,
 }
 
 size_t
-SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
-                            const char **values, size_t max_values)
+SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers,
+                            const char *name,
+                            const char **values,
+                            size_t max_values)
 {
   if (!name)
     return 0;
-  return SocketHTTP_Headers_get_all_n (headers, name, strlen (name), values,
-                                       max_values);
+  return SocketHTTP_Headers_get_all_n (
+      headers, name, strlen (name), values, max_values);
 }
 
 /* ============================================================================
@@ -595,7 +612,8 @@ SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
  */
 
 int
-SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers, const char *name,
+SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers,
+                          const char *name,
                           size_t name_len)
 {
   VALIDATE_HEADERS_NAME (headers, name, 0);
@@ -612,8 +630,10 @@ SocketHTTP_Headers_has (SocketHTTP_Headers_T headers, const char *name)
 }
 
 int
-SocketHTTP_Headers_contains_n (SocketHTTP_Headers_T headers, const char *name,
-                               size_t name_len, const char *token,
+SocketHTTP_Headers_contains_n (SocketHTTP_Headers_T headers,
+                               const char *name,
+                               size_t name_len,
+                               const char *token,
                                size_t token_len)
 {
   if (!headers || !name || !token || token_len == 0)
@@ -643,13 +663,14 @@ SocketHTTP_Headers_contains_n (SocketHTTP_Headers_T headers, const char *name,
 }
 
 int
-SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
+SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers,
+                             const char *name,
                              const char *token)
 {
   if (!name || !token)
     return 0;
-  return SocketHTTP_Headers_contains_n (headers, name, strlen (name), token,
-                                        strlen (token));
+  return SocketHTTP_Headers_contains_n (
+      headers, name, strlen (name), token, strlen (token));
 }
 
 /* ============================================================================
@@ -708,7 +729,8 @@ SocketHTTP_Headers_at (SocketHTTP_Headers_T headers, size_t index)
 
 int
 SocketHTTP_Headers_iterate (SocketHTTP_Headers_T headers,
-                            SocketHTTP_HeaderCallback callback, void *userdata)
+                            SocketHTTP_HeaderCallback callback,
+                            void *userdata)
 {
   if (!headers || !callback)
     return 0;
@@ -716,8 +738,11 @@ SocketHTTP_Headers_iterate (SocketHTTP_Headers_T headers,
   HeaderEntry *entry = headers->first;
   while (entry)
     {
-      int result = callback (entry->name, entry->name_len, entry->value,
-                             entry->value_len, userdata);
+      int result = callback (entry->name,
+                             entry->name_len,
+                             entry->value,
+                             entry->value_len,
+                             userdata);
       if (result != 0)
         return result;
       entry = entry->list_next;

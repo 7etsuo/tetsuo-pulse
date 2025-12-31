@@ -103,7 +103,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   size_t cert_size = size - 1;
 
   SocketTLSContext_T ctx = NULL;
-  char temp_path[256] = {0};
+  char temp_path[256] = { 0 };
 
   TRY
   {
@@ -129,8 +129,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_PARSE_PEM:
         {
           /* Try to parse as PEM certificate via temp file */
-          if (write_temp_cert (cert_data, cert_size, temp_path,
-                               sizeof (temp_path))
+          if (write_temp_cert (
+                  cert_data, cert_size, temp_path, sizeof (temp_path))
               == 0)
             {
               FILE *fp = fopen (temp_path, "r");
@@ -214,12 +214,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (ctx)
             {
               /* Try adding as CA */
-              if (write_temp_cert (cert_data, cert_size, temp_path,
-                                   sizeof (temp_path))
+              if (write_temp_cert (
+                      cert_data, cert_size, temp_path, sizeof (temp_path))
                   == 0)
                 {
-                  TRY { SocketTLSContext_load_ca (ctx, temp_path); }
-                  EXCEPT (SocketTLS_Failed) { /* Expected for invalid cert */ }
+                  TRY
+                  {
+                    SocketTLSContext_load_ca (ctx, temp_path);
+                  }
+                  EXCEPT (SocketTLS_Failed)
+                  { /* Expected for invalid cert */
+                  }
                   END_TRY;
                   unlink (temp_path);
                   temp_path[0] = '\0';
@@ -234,12 +239,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           ctx = SocketTLSContext_new_client (NULL);
           if (ctx)
             {
-              if (write_temp_cert (cert_data, cert_size, temp_path,
-                                   sizeof (temp_path))
+              if (write_temp_cert (
+                      cert_data, cert_size, temp_path, sizeof (temp_path))
                   == 0)
                 {
-                  TRY { SocketTLSContext_load_ca (ctx, temp_path); }
-                  EXCEPT (SocketTLS_Failed) {}
+                  TRY
+                  {
+                    SocketTLSContext_load_ca (ctx, temp_path);
+                  }
+                  EXCEPT (SocketTLS_Failed)
+                  {
+                  }
                   END_TRY;
                   unlink (temp_path);
                   temp_path[0] = '\0';
@@ -254,12 +264,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           ctx = SocketTLSContext_new_client (NULL);
           if (ctx)
             {
-              if (write_temp_cert (cert_data, cert_size, temp_path,
-                                   sizeof (temp_path))
+              if (write_temp_cert (
+                      cert_data, cert_size, temp_path, sizeof (temp_path))
                   == 0)
                 {
-                  TRY { SocketTLSContext_add_pin_from_cert (ctx, temp_path); }
-                  EXCEPT (SocketTLS_Failed) {}
+                  TRY
+                  {
+                    SocketTLSContext_add_pin_from_cert (ctx, temp_path);
+                  }
+                  EXCEPT (SocketTLS_Failed)
+                  {
+                  }
                   END_TRY;
                   unlink (temp_path);
                   temp_path[0] = '\0';
@@ -269,8 +284,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) {}
-  ELSE {}
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   if (ctx)

@@ -24,8 +24,9 @@
  * - Buffer size boundary conditions
  * - Configuration limit enforcement
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_tls_config
- * Run:   ./fuzz_tls_config corpus/tls_config/ -fork=16 -max_len=4096
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_tls_config Run:   ./fuzz_tls_config corpus/tls_config/ -fork=16
+ * -max_len=4096
  */
 
 #if SOCKET_HAS_TLS
@@ -73,8 +74,7 @@ verify_default_constants (void)
   assert (SOCKET_TLS13_CIPHERSUITES != NULL);
   assert (strlen (SOCKET_TLS13_CIPHERSUITES) > 0);
   /* Verify order: AES-256-GCM first, ChaCha20 second, AES-128-GCM third */
-  assert (strstr (SOCKET_TLS13_CIPHERSUITES, "TLS_AES_256_GCM_SHA384")
-          != NULL);
+  assert (strstr (SOCKET_TLS13_CIPHERSUITES, "TLS_AES_256_GCM_SHA384") != NULL);
   assert (strstr (SOCKET_TLS13_CIPHERSUITES, "TLS_CHACHA20_POLY1305_SHA256")
           != NULL);
   assert (strstr (SOCKET_TLS13_CIPHERSUITES, "TLS_AES_128_GCM_SHA256") != NULL);
@@ -156,7 +156,10 @@ fuzz_ciphersuites (const uint8_t *data, size_t size)
         SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
         if (ctx)
           {
-            TRY { SocketTLSContext_set_ciphersuites (ctx, ciphersuites); }
+            TRY
+            {
+              SocketTLSContext_set_ciphersuites (ctx, ciphersuites);
+            }
             EXCEPT (SocketTLS_Failed)
             {
               /* Expected for some inputs */
@@ -227,7 +230,10 @@ fuzz_protocol_version (const uint8_t *data, size_t size)
     SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
     if (ctx)
       {
-        TRY { SocketTLSContext_set_min_protocol (ctx, min_version); }
+        TRY
+        {
+          SocketTLSContext_set_min_protocol (ctx, min_version);
+        }
         EXCEPT (SocketTLS_Failed)
         {
           /* Expected for invalid versions */
@@ -237,7 +243,10 @@ fuzz_protocol_version (const uint8_t *data, size_t size)
         if (size > 3)
           {
             int max_version = ((int)data[2] << 8) | data[3];
-            TRY { SocketTLSContext_set_max_protocol (ctx, max_version); }
+            TRY
+            {
+              SocketTLSContext_set_max_protocol (ctx, max_version);
+            }
             EXCEPT (SocketTLS_Failed)
             {
               /* Expected for invalid versions */
@@ -277,14 +286,20 @@ fuzz_session_cache (const uint8_t *data, size_t size)
     SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
     if (ctx)
       {
-        TRY { SocketTLSContext_enable_session_cache (ctx, cache_size, timeout); }
+        TRY
+        {
+          SocketTLSContext_enable_session_cache (ctx, cache_size, timeout);
+        }
         EXCEPT (SocketTLS_Failed)
         {
           /* Expected for invalid values */
         }
         END_TRY;
 
-        TRY { SocketTLSContext_set_session_cache_size (ctx, cache_size); }
+        TRY
+        {
+          SocketTLSContext_set_session_cache_size (ctx, cache_size);
+        }
         EXCEPT (SocketTLS_Failed)
         {
           /* Expected for invalid values */
@@ -352,7 +367,10 @@ fuzz_alpn_list (const uint8_t *data, size_t size)
         SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
         if (ctx)
           {
-            TRY { SocketTLSContext_set_alpn_protos (ctx, protos, actual_count); }
+            TRY
+            {
+              SocketTLSContext_set_alpn_protos (ctx, protos, actual_count);
+            }
             EXCEPT (SocketTLS_Failed)
             {
               /* Expected for invalid protocols */

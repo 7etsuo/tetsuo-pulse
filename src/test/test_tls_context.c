@@ -52,10 +52,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -172,10 +174,13 @@ TEST (context_load_certificate_nonexistent_fails)
   {
     TRY
     {
-      ctx = SocketTLSContext_new_server ("/nonexistent/cert.pem",
-                                         "/nonexistent/key.pem", NULL);
+      ctx = SocketTLSContext_new_server (
+          "/nonexistent/cert.pem", "/nonexistent/key.pem", NULL);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -328,7 +333,7 @@ TEST (context_alpn_single_protocol)
     ctx = SocketTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (ctx);
 
-    const char *protos[] = {"h2"};
+    const char *protos[] = { "h2" };
     SocketTLSContext_set_alpn_protos (ctx, protos, 1);
   }
   FINALLY
@@ -348,7 +353,7 @@ TEST (context_alpn_multiple_protocols)
     ctx = SocketTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (ctx);
 
-    const char *protos[] = {"h2", "http/1.1", "spdy/3.1"};
+    const char *protos[] = { "h2", "http/1.1", "spdy/3.1" };
     SocketTLSContext_set_alpn_protos (ctx, protos, 3);
   }
   FINALLY
@@ -446,14 +451,18 @@ TEST (context_max_protocol_version)
 
 /* Helper to generate certificate with specific hostname */
 static int
-generate_sni_certs (const char *cert_file, const char *key_file,
+generate_sni_certs (const char *cert_file,
+                    const char *key_file,
                     const char *hostname)
 {
   char cmd[1024];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=%s' -batch 2>/dev/null",
-            key_file, cert_file, hostname);
+            key_file,
+            cert_file,
+            hostname);
   return (system (cmd) == 0) ? 0 : -1;
 }
 
@@ -492,10 +501,10 @@ TEST (context_add_sni_certificate)
     ASSERT_NOT_NULL (ctx);
 
     /* Add certificate for specific hostnames with matching certs */
-    SocketTLSContext_add_certificate (ctx, "example.com", cert_file1,
-                                      key_file1);
-    SocketTLSContext_add_certificate (ctx, "test.example.com", cert_file2,
-                                      key_file2);
+    SocketTLSContext_add_certificate (
+        ctx, "example.com", cert_file1, key_file1);
+    SocketTLSContext_add_certificate (
+        ctx, "test.example.com", cert_file2, key_file2);
 
     remove_test_certs (main_cert, main_key);
   }
@@ -523,9 +532,13 @@ TEST (context_invalid_cipher_fails)
 
     TRY
     {
-      SocketTLSContext_set_cipher_list (ctx, "INVALID_CIPHER_THAT_DOES_NOT_EXIST");
+      SocketTLSContext_set_cipher_list (ctx,
+                                        "INVALID_CIPHER_THAT_DOES_NOT_EXIST");
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -558,8 +571,14 @@ TEST (context_mismatched_cert_key_fails)
   TRY
   {
     /* Try to create context with mismatched cert and key */
-    TRY { ctx = SocketTLSContext_new_server (cert1, key2, NULL); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      ctx = SocketTLSContext_new_server (cert1, key2, NULL);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);

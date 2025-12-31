@@ -41,11 +41,10 @@
  * RFC 9000 Section 10.1: The effective timeout is the minimum of both values.
  */
 static inline uint64_t
-get_effective_idle_timeout(uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
+get_effective_idle_timeout (uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
 {
-  return local_timeout_ms < peer_timeout_ms
-         ? local_timeout_ms
-         : peer_timeout_ms;
+  return local_timeout_ms < peer_timeout_ms ? local_timeout_ms
+                                            : peer_timeout_ms;
 }
 
 /**
@@ -57,7 +56,7 @@ get_effective_idle_timeout(uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
  * Ensures timestamps move forward monotonically.
  */
 static inline void
-update_timestamp(uint64_t *timestamp, uint64_t now_ms)
+update_timestamp (uint64_t *timestamp, uint64_t now_ms)
 {
   if (*timestamp == 0 || now_ms > *timestamp)
     *timestamp = now_ms;
@@ -72,9 +71,9 @@ update_timestamp(uint64_t *timestamp, uint64_t now_ms)
  * Effective timeout is min(local, peer). If either is 0, idle timeout disabled.
  */
 void
-SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn,
-                                      uint64_t local_timeout_ms,
-                                      uint64_t peer_timeout_ms)
+SocketQUICConnection_set_idle_timeout (SocketQUICConnection_T conn,
+                                       uint64_t local_timeout_ms,
+                                       uint64_t peer_timeout_ms)
 {
   if (!conn)
     return;
@@ -90,8 +89,8 @@ SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn,
       return;
     }
 
-  uint64_t effective_timeout = get_effective_idle_timeout(local_timeout_ms,
-                                                           peer_timeout_ms);
+  uint64_t effective_timeout
+      = get_effective_idle_timeout (local_timeout_ms, peer_timeout_ms);
 
   /* Set initial deadline (will be updated on packet activity) */
   conn->idle_timeout_deadline_ms = effective_timeout;
@@ -106,8 +105,8 @@ SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn,
  * Updates last activity timestamps and recalculates deadline.
  */
 void
-SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
-                                      uint64_t now_ms)
+SocketQUICConnection_reset_idle_timer (SocketQUICConnection_T conn,
+                                       uint64_t now_ms)
 {
   if (!conn)
     return;
@@ -118,19 +117,18 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
     return;
 
   /* Update last activity timestamp */
-  update_timestamp(&conn->last_packet_sent_ms, now_ms);
-  update_timestamp(&conn->last_packet_received_ms, now_ms);
+  update_timestamp (&conn->last_packet_sent_ms, now_ms);
+  update_timestamp (&conn->last_packet_received_ms, now_ms);
 
   /* Recalculate deadline */
-  uint64_t effective_timeout = get_effective_idle_timeout(
-      conn->local_max_idle_timeout_ms,
-      conn->peer_max_idle_timeout_ms);
+  uint64_t effective_timeout = get_effective_idle_timeout (
+      conn->local_max_idle_timeout_ms, conn->peer_max_idle_timeout_ms);
 
   /* Use safe addition with saturation semantics */
-  if (!socket_util_safe_add_u64(now_ms, effective_timeout,
-                                  &conn->idle_timeout_deadline_ms))
+  if (!socket_util_safe_add_u64 (
+          now_ms, effective_timeout, &conn->idle_timeout_deadline_ms))
     {
-      conn->idle_timeout_deadline_ms = UINT64_MAX;  /* Saturate on overflow */
+      conn->idle_timeout_deadline_ms = UINT64_MAX; /* Saturate on overflow */
     }
 }
 
@@ -141,8 +139,8 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
  * @return 1 if idle timeout exceeded, 0 otherwise.
  */
 int
-SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn,
-                                        uint64_t now_ms)
+SocketQUICConnection_check_idle_timeout (SocketQUICConnection_T conn,
+                                         uint64_t now_ms)
 {
   if (!conn)
     return 0;
@@ -166,13 +164,14 @@ SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn,
  * @param pto_ms Probe Timeout (PTO) value in milliseconds.
  *
  * Transitions to CLOSING state. Caller must send CONNECTION_CLOSE frame
- * with the appropriate error code using SocketQUICFrame_encode_connection_close_*().
- * Connection will transition to CLOSED after 3*PTO.
+ * with the appropriate error code using
+ * SocketQUICFrame_encode_connection_close_*(). Connection will transition to
+ * CLOSED after 3*PTO.
  */
 void
-SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
-                                    uint64_t now_ms,
-                                    uint64_t pto_ms)
+SocketQUICConnection_initiate_close (SocketQUICConnection_T conn,
+                                     uint64_t now_ms,
+                                     uint64_t pto_ms)
 {
   if (!conn)
     return;
@@ -186,14 +185,15 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
 
   /* Calculate closing deadline: 3 * PTO with overflow protection */
   uint64_t timeout;
-  if (!socket_util_safe_mul_u64(pto_ms, QUIC_CLOSING_TIMEOUT_PTO_MULT, &timeout))
+  if (!socket_util_safe_mul_u64 (
+          pto_ms, QUIC_CLOSING_TIMEOUT_PTO_MULT, &timeout))
     {
-      timeout = UINT64_MAX;  /* Saturate on overflow */
+      timeout = UINT64_MAX; /* Saturate on overflow */
     }
 
-  if (!socket_util_safe_add_u64(now_ms, timeout, &conn->closing_deadline_ms))
+  if (!socket_util_safe_add_u64 (now_ms, timeout, &conn->closing_deadline_ms))
     {
-      conn->closing_deadline_ms = UINT64_MAX;  /* Saturate on overflow */
+      conn->closing_deadline_ms = UINT64_MAX; /* Saturate on overflow */
     }
 }
 
@@ -208,9 +208,9 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
  * reset). Connection will transition to CLOSED after 3*PTO.
  */
 void
-SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
-                                    uint64_t now_ms,
-                                    uint64_t pto_ms)
+SocketQUICConnection_enter_draining (SocketQUICConnection_T conn,
+                                     uint64_t now_ms,
+                                     uint64_t pto_ms)
 {
   if (!conn)
     return;
@@ -224,14 +224,15 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
 
   /* Calculate draining deadline: 3 * PTO with overflow protection */
   uint64_t timeout;
-  if (!socket_util_safe_mul_u64(pto_ms, QUIC_CLOSING_TIMEOUT_PTO_MULT, &timeout))
+  if (!socket_util_safe_mul_u64 (
+          pto_ms, QUIC_CLOSING_TIMEOUT_PTO_MULT, &timeout))
     {
-      timeout = UINT64_MAX;  /* Saturate on overflow */
+      timeout = UINT64_MAX; /* Saturate on overflow */
     }
 
-  if (!socket_util_safe_add_u64(now_ms, timeout, &conn->draining_deadline_ms))
+  if (!socket_util_safe_add_u64 (now_ms, timeout, &conn->draining_deadline_ms))
     {
-      conn->draining_deadline_ms = UINT64_MAX;  /* Saturate on overflow */
+      conn->draining_deadline_ms = UINT64_MAX; /* Saturate on overflow */
     }
 }
 
@@ -243,7 +244,7 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
  * Used to determine if new packets should be sent (forbidden in draining).
  */
 int
-SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T conn)
+SocketQUICConnection_is_closing_or_draining (SocketQUICConnection_T conn)
 {
   if (!conn)
     return 0;
@@ -262,7 +263,7 @@ SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T conn)
  * When returns 1, caller should transition to CLOSED state.
  */
 int
-SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn,
+SocketQUICConnection_check_termination_deadline (SocketQUICConnection_T conn,
                                                  uint64_t now_ms)
 {
   if (!conn)
@@ -301,13 +302,14 @@ SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn,
  * Array syntax ensures compile-time size validation.
  */
 void
-SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn,
-                                               const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN])
+SocketQUICConnection_set_stateless_reset_token (
+    SocketQUICConnection_T conn,
+    const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN])
 {
   if (!conn || !token)
     return;
 
-  memcpy(conn->stateless_reset_token, token, QUIC_STATELESS_RESET_TOKEN_LEN);
+  memcpy (conn->stateless_reset_token, token, QUIC_STATELESS_RESET_TOKEN_LEN);
   conn->has_stateless_reset_token = 1;
 }
 
@@ -325,9 +327,9 @@ SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn,
  * Uses constant-time comparison to prevent timing attacks (CWE-208).
  */
 int
-SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
-                                            size_t packet_len,
-                                            const uint8_t *expected_token)
+SocketQUICConnection_verify_stateless_reset (const uint8_t *packet,
+                                             size_t packet_len,
+                                             const uint8_t *expected_token)
 {
   if (!packet || !expected_token)
     return 0;
@@ -336,8 +338,11 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
   if (packet_len < QUIC_STATELESS_RESET_MIN_SIZE)
     return 0;
 
-  /* Compare final 16 bytes with expected token using constant-time comparison */
-  const uint8_t *actual_token = packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN;
-  return SocketCrypto_secure_compare(actual_token, expected_token,
-                                     QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
+  /* Compare final 16 bytes with expected token using constant-time comparison
+   */
+  const uint8_t *actual_token
+      = packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN;
+  return SocketCrypto_secure_compare (
+             actual_token, expected_token, QUIC_STATELESS_RESET_TOKEN_LEN)
+         == 0;
 }

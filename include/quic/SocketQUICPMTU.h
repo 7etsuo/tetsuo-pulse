@@ -141,13 +141,13 @@ typedef enum
  */
 typedef enum
 {
-  QUIC_PMTU_OK = 0,                  /**< Success */
-  QUIC_PMTU_ERROR_NULL = 1,          /**< NULL pointer argument */
-  QUIC_PMTU_ERROR_SIZE = 2,          /**< Invalid size (< 1200 bytes) */
-  QUIC_PMTU_ERROR_BUFFER = 3,        /**< Buffer too small for padding */
-  QUIC_PMTU_ERROR_STATE = 4,         /**< Invalid state for operation */
-  QUIC_PMTU_ERROR_PROBE_LIMIT = 5,   /**< Too many probes in flight */
-  QUIC_PMTU_ERROR_ARENA = 6          /**< Arena allocation failed */
+  QUIC_PMTU_OK = 0,                /**< Success */
+  QUIC_PMTU_ERROR_NULL = 1,        /**< NULL pointer argument */
+  QUIC_PMTU_ERROR_SIZE = 2,        /**< Invalid size (< 1200 bytes) */
+  QUIC_PMTU_ERROR_BUFFER = 3,      /**< Buffer too small for padding */
+  QUIC_PMTU_ERROR_STATE = 4,       /**< Invalid state for operation */
+  QUIC_PMTU_ERROR_PROBE_LIMIT = 5, /**< Too many probes in flight */
+  QUIC_PMTU_ERROR_ARENA = 6        /**< Arena allocation failed */
 } SocketQUICPMTU_Result;
 
 /* ============================================================================
@@ -262,8 +262,7 @@ SocketQUICPMTU_new (Arena_T arena, size_t initial_pmtu, size_t max_pmtu);
  * Note: Memory is arena-allocated, so this just clears state.
  * Actual deallocation happens when arena is disposed.
  */
-extern void
-SocketQUICPMTU_free (T *pmtu);
+extern void SocketQUICPMTU_free (T *pmtu);
 
 /**
  * @brief Pad Initial packet to minimum size (RFC 9000 Section 14.1).
@@ -318,8 +317,7 @@ SocketQUICPMTU_validate_initial_size (size_t packet_len);
  * Call SocketQUICPMTU_get_next_probe_size() to get probe size,
  * then SocketQUICPMTU_send_probe() after sending.
  */
-extern SocketQUICPMTU_Result
-SocketQUICPMTU_start_discovery (T pmtu);
+extern SocketQUICPMTU_Result SocketQUICPMTU_start_discovery (T pmtu);
 
 /**
  * @brief Get next PMTU probe size.
@@ -347,9 +345,10 @@ SocketQUICPMTU_get_next_probe_size (T pmtu, size_t *size_out);
  * Call SocketQUICPMTU_probe_acked() when ACK received,
  * or SocketQUICPMTU_probe_lost() on timeout.
  */
-extern SocketQUICPMTU_Result
-SocketQUICPMTU_send_probe (T pmtu, uint64_t packet_number, size_t size,
-                            uint64_t sent_time_ms);
+extern SocketQUICPMTU_Result SocketQUICPMTU_send_probe (T pmtu,
+                                                        uint64_t packet_number,
+                                                        size_t size,
+                                                        uint64_t sent_time_ms);
 
 /**
  * @brief Mark probe as acknowledged (successful).
@@ -401,8 +400,7 @@ SocketQUICPMTU_process_icmp (T pmtu, size_t icmp_mtu);
  * Returns the maximum packet size that has been validated.
  * Application should not send packets larger than this value.
  */
-extern size_t
-SocketQUICPMTU_get_current (T pmtu);
+extern size_t SocketQUICPMTU_get_current (T pmtu);
 
 /**
  * @brief Get PMTU discovery state.
@@ -410,8 +408,7 @@ SocketQUICPMTU_get_current (T pmtu);
  * @param pmtu PMTU context
  * @return Current DPLPMTUD state
  */
-extern SocketQUICPMTU_State
-SocketQUICPMTU_get_state (T pmtu);
+extern SocketQUICPMTU_State SocketQUICPMTU_get_state (T pmtu);
 
 /**
  * @brief Check for timed-out probes.
@@ -432,8 +429,7 @@ SocketQUICPMTU_check_timeouts (T pmtu, uint64_t current_time_ms);
  * @param result Result code
  * @return Human-readable description string
  */
-extern const char *
-SocketQUICPMTU_result_string (SocketQUICPMTU_Result result);
+extern const char *SocketQUICPMTU_result_string (SocketQUICPMTU_Result result);
 
 #undef T
 

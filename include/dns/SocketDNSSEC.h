@@ -26,7 +26,8 @@
  * ## DNSSEC Overview
  *
  * DNSSEC provides:
- * - **Data origin authentication**: Verify response came from authoritative source
+ * - **Data origin authentication**: Verify response came from authoritative
+ * source
  * - **Data integrity**: Detect tampering with DNS data
  * - **Authenticated denial of existence**: Prove a name/type doesn't exist
  *
@@ -116,16 +117,16 @@ typedef enum
   DNSSEC_ALGO_RSASHA1 = 5,        /**< RSA/SHA-1 (RFC 3110) */
   DNSSEC_ALGO_DSA_NSEC3_SHA1 = 6, /**< DSA-NSEC3-SHA1 (RFC 5155) */
   DNSSEC_ALGO_RSASHA1_NSEC3_SHA1 = 7, /**< RSA/SHA-1-NSEC3-SHA1 (RFC 5155) */
-  DNSSEC_ALGO_RSASHA256 = 8,      /**< RSA/SHA-256 (RFC 5702) - RECOMMENDED */
-  DNSSEC_ALGO_RSASHA512 = 10,     /**< RSA/SHA-512 (RFC 5702) */
-  DNSSEC_ALGO_ECC_GOST = 12,      /**< GOST R 34.10-2001 (RFC 5933) */
+  DNSSEC_ALGO_RSASHA256 = 8,        /**< RSA/SHA-256 (RFC 5702) - RECOMMENDED */
+  DNSSEC_ALGO_RSASHA512 = 10,       /**< RSA/SHA-512 (RFC 5702) */
+  DNSSEC_ALGO_ECC_GOST = 12,        /**< GOST R 34.10-2001 (RFC 5933) */
   DNSSEC_ALGO_ECDSAP256SHA256 = 13, /**< ECDSA P-256/SHA-256 (RFC 6605) */
   DNSSEC_ALGO_ECDSAP384SHA384 = 14, /**< ECDSA P-384/SHA-384 (RFC 6605) */
-  DNSSEC_ALGO_ED25519 = 15,       /**< Ed25519 (RFC 8080) */
-  DNSSEC_ALGO_ED448 = 16,         /**< Ed448 (RFC 8080) */
-  DNSSEC_ALGO_INDIRECT = 252,     /**< Indirect (RFC 4034) */
-  DNSSEC_ALGO_PRIVATEDNS = 253,   /**< Private DNS (RFC 4034) */
-  DNSSEC_ALGO_PRIVATEOID = 254,   /**< Private OID (RFC 4034) */
+  DNSSEC_ALGO_ED25519 = 15,         /**< Ed25519 (RFC 8080) */
+  DNSSEC_ALGO_ED448 = 16,           /**< Ed448 (RFC 8080) */
+  DNSSEC_ALGO_INDIRECT = 252,       /**< Indirect (RFC 4034) */
+  DNSSEC_ALGO_PRIVATEDNS = 253,     /**< Private DNS (RFC 4034) */
+  DNSSEC_ALGO_PRIVATEOID = 254,     /**< Private OID (RFC 4034) */
 } SocketDNSSEC_Algorithm;
 
 /** @} */ /* End of dnssec_algorithms group */
@@ -139,10 +140,10 @@ typedef enum
 
 typedef enum
 {
-  DNSSEC_DIGEST_SHA1 = 1,     /**< SHA-1 (RFC 4034) - 20 bytes */
-  DNSSEC_DIGEST_SHA256 = 2,   /**< SHA-256 (RFC 4509) - 32 bytes */
-  DNSSEC_DIGEST_GOST = 3,     /**< GOST R 34.11-94 (RFC 5933) - 32 bytes */
-  DNSSEC_DIGEST_SHA384 = 4,   /**< SHA-384 (RFC 6605) - 48 bytes */
+  DNSSEC_DIGEST_SHA1 = 1,   /**< SHA-1 (RFC 4034) - 20 bytes */
+  DNSSEC_DIGEST_SHA256 = 2, /**< SHA-256 (RFC 4509) - 32 bytes */
+  DNSSEC_DIGEST_GOST = 3,   /**< GOST R 34.11-94 (RFC 5933) - 32 bytes */
+  DNSSEC_DIGEST_SHA384 = 4, /**< SHA-384 (RFC 6605) - 48 bytes */
 } SocketDNSSEC_DigestType;
 
 /** @} */ /* End of dnssec_digest group */
@@ -210,12 +211,12 @@ typedef enum
  */
 typedef struct
 {
-  uint16_t flags;                /**< Key flags (ZONE, SEP, REVOKE) */
-  uint8_t protocol;              /**< Protocol field (must be 3) */
-  uint8_t algorithm;             /**< Algorithm number (SocketDNSSEC_Algorithm) */
-  const unsigned char *pubkey;   /**< Public key data (points into message) */
-  uint16_t pubkey_len;           /**< Length of public key in bytes */
-  uint16_t key_tag;              /**< Calculated key tag (RFC 4034 Appendix B) */
+  uint16_t flags;              /**< Key flags (ZONE, SEP, REVOKE) */
+  uint8_t protocol;            /**< Protocol field (must be 3) */
+  uint8_t algorithm;           /**< Algorithm number (SocketDNSSEC_Algorithm) */
+  const unsigned char *pubkey; /**< Public key data (points into message) */
+  uint16_t pubkey_len;         /**< Length of public key in bytes */
+  uint16_t key_tag;            /**< Calculated key tag (RFC 4034 Appendix B) */
 } SocketDNSSEC_DNSKEY;
 
 /** Minimum DNSKEY RDATA size (flags + protocol + algorithm = 4 bytes). */
@@ -252,16 +253,16 @@ typedef struct
  */
 typedef struct
 {
-  uint16_t type_covered;           /**< RR type covered by signature */
-  uint8_t algorithm;               /**< Signing algorithm */
-  uint8_t labels;                  /**< Labels in original owner name */
-  uint32_t original_ttl;           /**< Original TTL of covered RRset */
-  uint32_t sig_expiration;         /**< Signature expiration (Unix timestamp) */
-  uint32_t sig_inception;          /**< Signature inception (Unix timestamp) */
-  uint16_t key_tag;                /**< Key tag of signing DNSKEY */
+  uint16_t type_covered;   /**< RR type covered by signature */
+  uint8_t algorithm;       /**< Signing algorithm */
+  uint8_t labels;          /**< Labels in original owner name */
+  uint32_t original_ttl;   /**< Original TTL of covered RRset */
+  uint32_t sig_expiration; /**< Signature expiration (Unix timestamp) */
+  uint32_t sig_inception;  /**< Signature inception (Unix timestamp) */
+  uint16_t key_tag;        /**< Key tag of signing DNSKEY */
   char signer_name[DNS_MAX_NAME_LEN]; /**< Signer's domain name */
-  const unsigned char *signature;  /**< Signature data (points into message) */
-  uint16_t signature_len;          /**< Length of signature in bytes */
+  const unsigned char *signature; /**< Signature data (points into message) */
+  uint16_t signature_len;         /**< Length of signature in bytes */
 } SocketDNSSEC_RRSIG;
 
 /** Minimum RRSIG RDATA fixed fields size (before signer name). */
@@ -289,11 +290,11 @@ typedef struct
  */
 typedef struct
 {
-  uint16_t key_tag;               /**< Key tag of referenced DNSKEY */
-  uint8_t algorithm;              /**< Algorithm of referenced DNSKEY */
-  uint8_t digest_type;            /**< Digest algorithm (SocketDNSSEC_DigestType) */
-  const unsigned char *digest;    /**< Digest data (points into message) */
-  uint16_t digest_len;            /**< Length of digest in bytes */
+  uint16_t key_tag;    /**< Key tag of referenced DNSKEY */
+  uint8_t algorithm;   /**< Algorithm of referenced DNSKEY */
+  uint8_t digest_type; /**< Digest algorithm (SocketDNSSEC_DigestType) */
+  const unsigned char *digest; /**< Digest data (points into message) */
+  uint16_t digest_len;         /**< Length of digest in bytes */
 } SocketDNSSEC_DS;
 
 /** Minimum DS RDATA fixed fields size (before digest). */
@@ -351,15 +352,15 @@ typedef struct
  */
 typedef struct
 {
-  uint8_t hash_algorithm;           /**< Hash algorithm (1 = SHA-1) */
-  uint8_t flags;                    /**< Flags (bit 0 = opt-out) */
-  uint16_t iterations;              /**< Hash iterations */
-  uint8_t salt_len;                 /**< Salt length */
-  const unsigned char *salt;        /**< Salt data (points into message) */
-  uint8_t hash_len;                 /**< Next hashed owner length */
-  const unsigned char *next_hashed; /**< Next hashed owner (points into msg) */
+  uint8_t hash_algorithm;            /**< Hash algorithm (1 = SHA-1) */
+  uint8_t flags;                     /**< Flags (bit 0 = opt-out) */
+  uint16_t iterations;               /**< Hash iterations */
+  uint8_t salt_len;                  /**< Salt length */
+  const unsigned char *salt;         /**< Salt data (points into message) */
+  uint8_t hash_len;                  /**< Next hashed owner length */
+  const unsigned char *next_hashed;  /**< Next hashed owner (points into msg) */
   const unsigned char *type_bitmaps; /**< Type bitmap data (points into msg) */
-  uint16_t type_bitmaps_len;        /**< Length of type bitmaps in bytes */
+  uint16_t type_bitmaps_len;         /**< Length of type bitmaps in bytes */
 } SocketDNSSEC_NSEC3;
 
 /** NSEC3 minimum fixed fields size. */
@@ -400,8 +401,8 @@ typedef struct
  * }
  * @endcode
  */
-extern int SocketDNSSEC_parse_dnskey (const SocketDNS_RR *rr,
-                                       SocketDNSSEC_DNSKEY *dnskey);
+extern int
+SocketDNSSEC_parse_dnskey (const SocketDNS_RR *rr, SocketDNSSEC_DNSKEY *dnskey);
 
 /**
  * @brief Parse RRSIG record RDATA.
@@ -429,9 +430,10 @@ extern int SocketDNSSEC_parse_dnskey (const SocketDNS_RR *rr,
  * }
  * @endcode
  */
-extern int SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
-                                      const SocketDNS_RR *rr,
-                                      SocketDNSSEC_RRSIG *rrsig);
+extern int SocketDNSSEC_parse_rrsig (const unsigned char *msg,
+                                     size_t msglen,
+                                     const SocketDNS_RR *rr,
+                                     SocketDNSSEC_RRSIG *rrsig);
 
 /**
  * @brief Parse DS record RDATA.
@@ -458,9 +460,10 @@ extern int SocketDNSSEC_parse_ds (const SocketDNS_RR *rr, SocketDNSSEC_DS *ds);
  * @param[out] nsec   Output NSEC structure.
  * @return 0 on success, -1 on error.
  */
-extern int SocketDNSSEC_parse_nsec (const unsigned char *msg, size_t msglen,
-                                     const SocketDNS_RR *rr,
-                                     SocketDNSSEC_NSEC *nsec);
+extern int SocketDNSSEC_parse_nsec (const unsigned char *msg,
+                                    size_t msglen,
+                                    const SocketDNS_RR *rr,
+                                    SocketDNSSEC_NSEC *nsec);
 
 /**
  * @brief Parse NSEC3 record RDATA.
@@ -472,8 +475,8 @@ extern int SocketDNSSEC_parse_nsec (const unsigned char *msg, size_t msglen,
  * @param[out] nsec3 Output NSEC3 structure.
  * @return 0 on success, -1 on error.
  */
-extern int SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr,
-                                      SocketDNSSEC_NSEC3 *nsec3);
+extern int
+SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr, SocketDNSSEC_NSEC3 *nsec3);
 
 /**
  * @brief Check if a type is present in NSEC/NSEC3 type bitmaps.
@@ -499,7 +502,8 @@ extern int SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr,
  * @endcode
  */
 extern int SocketDNSSEC_type_in_bitmap (const unsigned char *bitmaps,
-                                         size_t bitmaps_len, uint16_t rrtype);
+                                        size_t bitmaps_len,
+                                        uint16_t rrtype);
 
 /** @} */ /* End of dnssec_parsing group */
 
@@ -523,8 +527,8 @@ extern int SocketDNSSEC_type_in_bitmap (const unsigned char *bitmaps,
  *
  * @note Algorithm 1 (RSA/MD5) uses a different calculation - see RFC 4034 B.1.
  */
-extern uint16_t SocketDNSSEC_calculate_keytag (const unsigned char *rdata,
-                                                size_t rdlen);
+extern uint16_t
+SocketDNSSEC_calculate_keytag (const unsigned char *rdata, size_t rdlen);
 
 /** @} */ /* End of dnssec_keytag group */
 
@@ -547,8 +551,8 @@ extern uint16_t SocketDNSSEC_calculate_keytag (const unsigned char *rdata,
  * @param[in] now   Current time (Unix timestamp), or 0 to use current time.
  * @return 1 if valid, 0 if expired/not-yet-valid, -1 on error.
  */
-extern int SocketDNSSEC_rrsig_valid_time (const SocketDNSSEC_RRSIG *rrsig,
-                                           time_t now);
+extern int
+SocketDNSSEC_rrsig_valid_time (const SocketDNSSEC_RRSIG *rrsig, time_t now);
 
 /**
  * @brief Verify an RRSIG signature over an RRset.
@@ -569,9 +573,11 @@ extern int SocketDNSSEC_rrsig_valid_time (const SocketDNSSEC_RRSIG *rrsig,
  * @note Requires OpenSSL/LibreSSL for cryptographic operations.
  */
 extern int SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
-                                       const SocketDNSSEC_DNSKEY *dnskey,
-                                       const unsigned char *msg, size_t msglen,
-                                       size_t rrset_offset, size_t rrset_count);
+                                      const SocketDNSSEC_DNSKEY *dnskey,
+                                      const unsigned char *msg,
+                                      size_t msglen,
+                                      size_t rrset_offset,
+                                      size_t rrset_count);
 
 /**
  * @brief Verify a DS record matches a DNSKEY.
@@ -586,8 +592,8 @@ extern int SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
  * @return 1 if DS matches DNSKEY, 0 if no match, -1 on error.
  */
 extern int SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
-                                    const SocketDNSSEC_DNSKEY *dnskey,
-                                    const char *owner_name);
+                                   const SocketDNSSEC_DNSKEY *dnskey,
+                                   const char *owner_name);
 
 /**
  * @brief Check if an algorithm is supported for validation.
@@ -627,7 +633,7 @@ extern int SocketDNSSEC_digest_supported (uint8_t digest_type);
  */
 typedef struct SocketDNSSEC_TrustAnchor
 {
-  char zone[DNS_MAX_NAME_LEN];    /**< Zone name this anchor is for */
+  char zone[DNS_MAX_NAME_LEN]; /**< Zone name this anchor is for */
   enum
   {
     TRUST_ANCHOR_DNSKEY,
@@ -676,8 +682,9 @@ extern void SocketDNSSEC_validator_free (SocketDNSSEC_Validator_T *validator);
  * @param[in] anchor    Trust anchor to add (copied).
  * @return 0 on success, -1 on error.
  */
-extern int SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator,
-                                               const SocketDNSSEC_TrustAnchor *anchor);
+extern int
+SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator,
+                                   const SocketDNSSEC_TrustAnchor *anchor);
 
 /**
  * @brief Load trust anchors from a file.
@@ -689,8 +696,9 @@ extern int SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator
  * @param[in] filename  Path to trust anchor file.
  * @return Number of anchors loaded, or -1 on error.
  */
-extern int SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
-                                                 const char *filename);
+extern int
+SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
+                                     const char *filename);
 
 /** @} */ /* End of dnssec_trust group */
 
@@ -723,8 +731,8 @@ extern void SocketDNSSEC_name_canonicalize (char *name);
  * @param[in] name2 Second domain name.
  * @return <0 if name1 < name2, 0 if equal, >0 if name1 > name2.
  */
-extern int SocketDNSSEC_name_canonical_compare (const char *name1,
-                                                 const char *name2);
+extern int
+SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2);
 
 /** @} */ /* End of dnssec_canonical group */
 

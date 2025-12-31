@@ -32,7 +32,7 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer-H2"
 
-#define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG(fmt, ##__VA_ARGS__)
+#define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG (fmt, ##__VA_ARGS__)
 
 /* Module exception handling */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
@@ -74,13 +74,16 @@ server_http2_stream_get_or_create (SocketHTTPServer_T server,
   return s;
 }
 
-/* Connection header validation uses shared http2_is_connection_header_forbidden()
- * from SocketHTTP2-validate.c via SocketHTTP2-private.h */
+/* Connection header validation uses shared
+ * http2_is_connection_header_forbidden() from SocketHTTP2-validate.c via
+ * SocketHTTP2-private.h */
 
 int
-server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
+server_http2_build_request (SocketHTTPServer_T server,
+                            ServerHTTP2Stream *s,
                             const SocketHPACK_Header *headers,
-                            size_t header_count, int end_stream)
+                            size_t header_count,
+                            int end_stream)
 {
   SocketHTTP_Request *req;
   SocketHTTP_Headers_T h;
@@ -119,8 +122,10 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
           /* Pseudo-headers must appear before regular headers */
           if (pseudo_section_ended)
             {
-              SERVER_LOG_ERROR ("Pseudo-header '%.*s' appears after regular headers",
-                               (int)hdr->name_len, hdr->name);
+              SERVER_LOG_ERROR (
+                  "Pseudo-header '%.*s' appears after regular headers",
+                  (int)hdr->name_len,
+                  hdr->name);
               return -1;
             }
 
@@ -137,7 +142,8 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
               method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
               if (method == HTTP_METHOD_UNKNOWN)
                 {
-                  SERVER_LOG_ERROR ("Invalid HTTP method in :method pseudo-header");
+                  SERVER_LOG_ERROR (
+                      "Invalid HTTP method in :method pseudo-header");
                   return -1;
                 }
             }
@@ -150,9 +156,11 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
                 }
               pseudo_headers_seen |= (1 << 1);
               has_scheme = 1;
-              scheme = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+              scheme = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
             }
-          else if (hdr->name_len == 10 && memcmp (hdr->name, ":authority", 10) == 0)
+          else if (hdr->name_len == 10
+                   && memcmp (hdr->name, ":authority", 10) == 0)
             {
               if (pseudo_headers_seen & (1 << 2))
                 {
@@ -161,7 +169,8 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
                 }
               pseudo_headers_seen |= (1 << 2);
               has_authority = 1;
-              authority = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+              authority = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
             }
           else if (hdr->name_len == 5 && memcmp (hdr->name, ":path", 5) == 0)
             {
@@ -172,9 +181,11 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
                 }
               pseudo_headers_seen |= (1 << 3);
               has_path = 1;
-              path = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+              path = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
             }
-          else if (hdr->name_len == 9 && memcmp (hdr->name, ":protocol", 9) == 0)
+          else if (hdr->name_len == 9
+                   && memcmp (hdr->name, ":protocol", 9) == 0)
             {
               if (pseudo_headers_seen & (1 << 4))
                 {
@@ -184,15 +195,18 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
               pseudo_headers_seen |= (1 << 4);
 
               /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
-              /* Note: We can't easily check this here as we don't have conn access */
-              /* The validation happens in http2_validate_headers on the client side */
-              protocol = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+              /* Note: We can't easily check this here as we don't have conn
+               * access */
+              /* The validation happens in http2_validate_headers on the client
+               * side */
+              protocol = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
             }
           else
             {
               /* Unknown pseudo-header */
-              SERVER_LOG_ERROR ("Unknown pseudo-header: %.*s",
-                               (int)hdr->name_len, hdr->name);
+              SERVER_LOG_ERROR (
+                  "Unknown pseudo-header: %.*s", (int)hdr->name_len, hdr->name);
               return -1;
             }
           continue;
@@ -210,13 +224,13 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
        */
       if (http2_validate_regular_header (hdr) != 0)
         {
-          SERVER_LOG_ERROR ("Invalid HTTP/2 header: %.*s",
-                           (int)hdr->name_len, hdr->name);
+          SERVER_LOG_ERROR (
+              "Invalid HTTP/2 header: %.*s", (int)hdr->name_len, hdr->name);
           return -1;
         }
 
-      SocketHTTP_Headers_add_n (h, hdr->name, hdr->name_len, hdr->value,
-                               hdr->value_len);
+      SocketHTTP_Headers_add_n (
+          h, hdr->name, hdr->name_len, hdr->value, hdr->value_len);
     }
 
   /* Validate required pseudo-headers for requests */
@@ -227,7 +241,8 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
     }
   if (!has_scheme && !has_authority)
     {
-      SERVER_LOG_ERROR ("Request missing required :scheme or :authority pseudo-header");
+      SERVER_LOG_ERROR (
+          "Request missing required :scheme or :authority pseudo-header");
       return -1;
     }
   if (!has_path)
@@ -292,7 +307,8 @@ server_http2_try_dispose_stream (ServerConnection *conn, ServerHTTP2Stream *s)
    * and no buffered output remains. */
   if (!s->response_end_stream_sent)
     return;
-  if (s->response_outbuf != NULL && SocketBuf_available (s->response_outbuf) > 0)
+  if (s->response_outbuf != NULL
+      && SocketBuf_available (s->response_outbuf) > 0)
     return;
   if (s->response_body != NULL && s->response_body_sent < s->response_body_len)
     return;
@@ -328,7 +344,8 @@ server_http2_send_end_stream (ServerConnection *conn, ServerHTTP2Stream *s)
       /* Count valid (non-pseudo) trailers. */
       for (size_t i = 0; i < total; i++)
         {
-          const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (s->response_trailers, i);
+          const SocketHTTP_Header *hdr
+              = SocketHTTP_Headers_at (s->response_trailers, i);
           if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
             continue;
           if (hdr->name[0] == ':')
@@ -338,8 +355,8 @@ server_http2_send_end_stream (ServerConnection *conn, ServerHTTP2Stream *s)
 
       if (count > 0)
         {
-          trailers
-              = Arena_alloc (s->arena, count * sizeof (*trailers), __FILE__, __LINE__);
+          trailers = Arena_alloc (
+              s->arena, count * sizeof (*trailers), __FILE__, __LINE__);
           if (trailers == NULL)
             {
               SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
@@ -400,19 +417,21 @@ server_http2_flush_stream_output (ServerConnection *conn, ServerHTTP2Stream *s)
     }
 
   /* Flush non-streaming body remainder */
-  while (s->response_body != NULL && s->response_body_sent < s->response_body_len)
+  while (s->response_body != NULL
+         && s->response_body_sent < s->response_body_len)
     {
       const unsigned char *p = (const unsigned char *)s->response_body;
       size_t remaining = s->response_body_len - s->response_body_sent;
-      ssize_t sent = SocketHTTP2_Stream_send_data (s->stream, p + s->response_body_sent,
-                                                   remaining, 0);
+      ssize_t sent = SocketHTTP2_Stream_send_data (
+          s->stream, p + s->response_body_sent, remaining, 0);
       if (sent <= 0)
         break;
       s->response_body_sent += (size_t)sent;
     }
 
   /* If streaming ended and all pending output is flushed, send END_STREAM. */
-  if (s->response_streaming && s->response_finished && !s->response_end_stream_sent)
+  if (s->response_streaming && s->response_finished
+      && !s->response_end_stream_sent)
     {
       if ((s->response_outbuf == NULL
            || SocketBuf_available (s->response_outbuf) == 0)
@@ -448,10 +467,10 @@ server_http2_send_nonstreaming_response (ServerConnection *conn,
                   && SocketHTTP_Headers_count (s->response_trailers) > 0)
                      ? 1
                      : 0;
-  end_stream
-      = ((s->response_body == NULL || s->response_body_len == 0) && !has_trailers)
-            ? 1
-            : 0;
+  end_stream = ((s->response_body == NULL || s->response_body_len == 0)
+                && !has_trailers)
+                   ? 1
+                   : 0;
 
   if (SocketHTTP2_Stream_send_response (s->stream, &response, end_stream) < 0)
     {
@@ -524,8 +543,8 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
   SocketRateLimit_T limiter = find_rate_limiter (server, s->request->path);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,
-                          rate_limited);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED, rate_limited);
       s->response_status = 429;
       SocketHTTPServer_Request_body_string (&req_ctx, "Too Many Requests");
       SocketHTTPServer_Request_finish (&req_ctx);
@@ -534,8 +553,8 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
 
   if (server->validator != NULL)
     {
-      if (!server->validator (&req_ctx, &reject_status,
-                              server->validator_userdata))
+      if (!server->validator (
+              &req_ctx, &reject_status, server->validator_userdata))
         {
           if (reject_status == 0)
             reject_status = 403;
@@ -548,13 +567,14 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
 
   s->response_status = 200;
 
-  for (MiddlewareEntry *mw = server->middleware_chain; mw != NULL; mw = mw->next)
+  for (MiddlewareEntry *mw = server->middleware_chain; mw != NULL;
+       mw = mw->next)
     {
       int result = mw->func (&req_ctx, mw->userdata);
       if (result != 0)
         {
-          SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
-                              requests_total);
+          SERVER_METRICS_INC (
+              server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
           return;
         }
     }
@@ -562,8 +582,8 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
   if (server->handler != NULL)
     server->handler (&req_ctx, server->handler_userdata);
 
-  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
-                      requests_total);
+  SERVER_METRICS_INC (
+      server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
 
   /* If the handler didn't opt into streaming, send response now. */
   if (!s->response_streaming)
@@ -573,8 +593,10 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
 }
 
 void
-server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stream,
-                        int event, void *userdata)
+server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
+                        SocketHTTP2_Stream_T stream,
+                        int event,
+                        void *userdata)
 {
   HTTP2ServerCallbackCtx *ctx = (HTTP2ServerCallbackCtx *)userdata;
   SocketHTTPServer_T server;
@@ -600,12 +622,16 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stre
       size_t hdr_count = 0;
       int end_stream = 0;
 
-      if (SocketHTTP2_Stream_recv_headers (stream, hdrs,
+      if (SocketHTTP2_Stream_recv_headers (stream,
+                                           hdrs,
                                            SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                           &hdr_count, &end_stream)
+                                           &hdr_count,
+                                           &end_stream)
           == 1)
         {
-          if (server_http2_build_request (server, s, hdrs, hdr_count, end_stream) < 0)
+          if (server_http2_build_request (
+                  server, s, hdrs, hdr_count, end_stream)
+              < 0)
             return;
         }
     }
@@ -614,9 +640,8 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stre
       SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
       size_t trailer_count = 0;
 
-      if (SocketHTTP2_Stream_recv_trailers (stream, trailers,
-                                            SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                            &trailer_count)
+      if (SocketHTTP2_Stream_recv_trailers (
+              stream, trailers, SOCKETHTTP2_MAX_DECODED_HEADERS, &trailer_count)
           == 1)
         {
           if (s->request_trailers == NULL)
@@ -637,9 +662,11 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stre
               /* RFC 9113: trailers must not include pseudo-headers. */
               if (hdr->name_len > 0 && hdr->name[0] == ':')
                 continue;
-              SocketHTTP_Headers_add_n (s->request_trailers, hdr->name,
-                                       hdr->name_len, hdr->value,
-                                       hdr->value_len);
+              SocketHTTP_Headers_add_n (s->request_trailers,
+                                        hdr->name,
+                                        hdr->name_len,
+                                        hdr->value,
+                                        hdr->value_len);
             }
         }
     }
@@ -650,8 +677,8 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stre
 
       for (;;)
         {
-          ssize_t n = SocketHTTP2_Stream_recv_data (stream, buf, sizeof (buf),
-                                                    &end_stream);
+          ssize_t n = SocketHTTP2_Stream_recv_data (
+              stream, buf, sizeof (buf), &end_stream);
           if (n <= 0)
             break;
 
@@ -666,7 +693,10 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stre
               req_ctx.arena = s->arena;
               req_ctx.start_time_ms = Socket_get_monotonic_ms ();
 
-              if (s->body_callback (&req_ctx, buf, (size_t)n, end_stream,
+              if (s->body_callback (&req_ctx,
+                                    buf,
+                                    (size_t)n,
+                                    end_stream,
                                     s->body_callback_userdata)
                   != 0)
                 {
@@ -697,13 +727,15 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stre
                 {
                   if (!s->body_uses_buf)
                     {
-                      size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
+                      size_t initial_size
+                          = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
                       if (max_body > 0 && initial_size > max_body)
                         initial_size = max_body;
                       s->body_buf = SocketBuf_new (s->arena, initial_size);
                       if (s->body_buf == NULL)
                         {
-                          SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+                          SocketHTTP2_Stream_close (stream,
+                                                    HTTP2_INTERNAL_ERROR);
                           return;
                         }
                       s->body_uses_buf = 1;
@@ -798,8 +830,8 @@ server_http2_enable (SocketHTTPServer_T server, ServerConnection *conn)
   ctx->server = server;
   ctx->conn = conn;
 
-  SocketHTTP2_Conn_set_stream_callback (conn->http2_conn, server_http2_stream_cb,
-                                       ctx);
+  SocketHTTP2_Conn_set_stream_callback (
+      conn->http2_conn, server_http2_stream_cb, ctx);
   conn->http2_callback_set = 1;
 
   return 0;

@@ -64,8 +64,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argc;
   (void)argv;
 
-  TRY { g_client_ctx = SocketTLSContext_new_client (NULL); }
-  EXCEPT (SocketTLS_Failed) { g_client_ctx = NULL; }
+  TRY
+  {
+    g_client_ctx = SocketTLSContext_new_client (NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    g_client_ctx = NULL;
+  }
   END_TRY;
 
   return 0;

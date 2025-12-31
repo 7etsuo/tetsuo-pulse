@@ -97,33 +97,34 @@ typedef struct Connection *Connection_T;
  * - OPEN: Backend is unhealthy, connections blocked.
  * - HALF_OPEN: Testing recovery, limited probe connections allowed.
  */
-typedef enum {
-    /**
-     * @brief Normal state - connections allowed.
-     *
-     * The circuit is healthy. All connection attempts proceed normally.
-     * Transitions to OPEN when consecutive failures reach threshold.
-     */
-    POOL_CIRCUIT_CLOSED = 0,
+typedef enum
+{
+  /**
+   * @brief Normal state - connections allowed.
+   *
+   * The circuit is healthy. All connection attempts proceed normally.
+   * Transitions to OPEN when consecutive failures reach threshold.
+   */
+  POOL_CIRCUIT_CLOSED = 0,
 
-    /**
-     * @brief Blocked state - connections rejected.
-     *
-     * Too many consecutive failures detected. All connection attempts
-     * are immediately rejected without attempting connection.
-     * Transitions to HALF_OPEN after reset_timeout_ms elapses.
-     */
-    POOL_CIRCUIT_OPEN = 1,
+  /**
+   * @brief Blocked state - connections rejected.
+   *
+   * Too many consecutive failures detected. All connection attempts
+   * are immediately rejected without attempting connection.
+   * Transitions to HALF_OPEN after reset_timeout_ms elapses.
+   */
+  POOL_CIRCUIT_OPEN = 1,
 
-    /**
-     * @brief Probe state - limited connections for testing recovery.
-     *
-     * Testing if backend has recovered. A limited number of probe
-     * connections are allowed (half_open_max_probes).
-     * - Success: transitions to CLOSED.
-     * - Failure: transitions back to OPEN.
-     */
-    POOL_CIRCUIT_HALF_OPEN = 2
+  /**
+   * @brief Probe state - limited connections for testing recovery.
+   *
+   * Testing if backend has recovered. A limited number of probe
+   * connections are allowed (half_open_max_probes).
+   * - Success: transitions to CLOSED.
+   * - Failure: transitions back to OPEN.
+   */
+  POOL_CIRCUIT_HALF_OPEN = 2
 } SocketPoolCircuit_State;
 
 /**
@@ -136,69 +137,70 @@ typedef enum {
  * @see SocketPoolHealth_config_defaults() for default values.
  * @see SocketPool_enable_health_checks() for enabling.
  */
-typedef struct SocketPoolHealth_Config {
-    /**
-     * @brief Consecutive failures to open circuit.
-     *
-     * Number of consecutive connection failures before circuit transitions
-     * from CLOSED to OPEN. Must be >= 1.
-     * Default: SOCKET_HEALTH_DEFAULT_FAILURE_THRESHOLD (5)
-     */
-    int failure_threshold;
+typedef struct SocketPoolHealth_Config
+{
+  /**
+   * @brief Consecutive failures to open circuit.
+   *
+   * Number of consecutive connection failures before circuit transitions
+   * from CLOSED to OPEN. Must be >= 1.
+   * Default: SOCKET_HEALTH_DEFAULT_FAILURE_THRESHOLD (5)
+   */
+  int failure_threshold;
 
-    /**
-     * @brief Delay before OPEN -> HALF_OPEN transition (ms).
-     *
-     * Time to wait in OPEN state before attempting recovery probes.
-     * Longer values reduce load on failing backends.
-     * Default: SOCKET_HEALTH_DEFAULT_RESET_TIMEOUT_MS (30000)
-     */
-    int reset_timeout_ms;
+  /**
+   * @brief Delay before OPEN -> HALF_OPEN transition (ms).
+   *
+   * Time to wait in OPEN state before attempting recovery probes.
+   * Longer values reduce load on failing backends.
+   * Default: SOCKET_HEALTH_DEFAULT_RESET_TIMEOUT_MS (30000)
+   */
+  int reset_timeout_ms;
 
-    /**
-     * @brief Max probe attempts in HALF_OPEN state.
-     *
-     * Maximum concurrent probe connections allowed while in HALF_OPEN.
-     * Prevents thundering herd when backend recovers.
-     * Default: SOCKET_HEALTH_DEFAULT_HALF_OPEN_MAX_PROBES (3)
-     */
-    int half_open_max_probes;
+  /**
+   * @brief Max probe attempts in HALF_OPEN state.
+   *
+   * Maximum concurrent probe connections allowed while in HALF_OPEN.
+   * Prevents thundering herd when backend recovers.
+   * Default: SOCKET_HEALTH_DEFAULT_HALF_OPEN_MAX_PROBES (3)
+   */
+  int half_open_max_probes;
 
-    /**
-     * @brief Background probe interval (ms).
-     *
-     * How often the health worker thread runs a probe cycle.
-     * Lower values detect failures faster but increase overhead.
-     * Default: SOCKET_HEALTH_DEFAULT_PROBE_INTERVAL_MS (10000)
-     */
-    int probe_interval_ms;
+  /**
+   * @brief Background probe interval (ms).
+   *
+   * How often the health worker thread runs a probe cycle.
+   * Lower values detect failures faster but increase overhead.
+   * Default: SOCKET_HEALTH_DEFAULT_PROBE_INTERVAL_MS (10000)
+   */
+  int probe_interval_ms;
 
-    /**
-     * @brief Per-probe timeout (ms).
-     *
-     * Maximum time to wait for a single probe operation to complete.
-     * Passed to the health probe callback.
-     * Default: SOCKET_HEALTH_DEFAULT_PROBE_TIMEOUT_MS (5000)
-     */
-    int probe_timeout_ms;
+  /**
+   * @brief Per-probe timeout (ms).
+   *
+   * Maximum time to wait for a single probe operation to complete.
+   * Passed to the health probe callback.
+   * Default: SOCKET_HEALTH_DEFAULT_PROBE_TIMEOUT_MS (5000)
+   */
+  int probe_timeout_ms;
 
-    /**
-     * @brief Connections to probe per cycle.
-     *
-     * Maximum number of connections to probe in each background cycle.
-     * Limits CPU/network impact per cycle.
-     * Default: SOCKET_HEALTH_DEFAULT_PROBES_PER_CYCLE (10)
-     */
-    int probes_per_cycle;
+  /**
+   * @brief Connections to probe per cycle.
+   *
+   * Maximum number of connections to probe in each background cycle.
+   * Limits CPU/network impact per cycle.
+   * Default: SOCKET_HEALTH_DEFAULT_PROBES_PER_CYCLE (10)
+   */
+  int probes_per_cycle;
 
-    /**
-     * @brief Maximum circuit breaker entries.
-     *
-     * Limits memory usage by capping total circuit entries. When limit
-     * is reached, new host:port pairs are not tracked (treated as CLOSED).
-     * Default: SOCKET_HEALTH_DEFAULT_MAX_CIRCUITS (10000)
-     */
-    int max_circuits;
+  /**
+   * @brief Maximum circuit breaker entries.
+   *
+   * Limits memory usage by capping total circuit entries. When limit
+   * is reached, new host:port pairs are not tracked (treated as CLOSED).
+   * Default: SOCKET_HEALTH_DEFAULT_MAX_CIRCUITS (10000)
+   */
+  int max_circuits;
 } SocketPoolHealth_Config;
 
 /**
@@ -248,12 +250,10 @@ typedef struct SocketPoolHealth_Config {
  *
  * @see SocketPool_set_health_callback() for registration.
  */
-typedef int (*SocketPool_HealthProbeCallback)(
-    struct SocketPool_T *pool,
-    Connection_T conn,
-    int timeout_ms,
-    void *data
-);
+typedef int (*SocketPool_HealthProbeCallback) (struct SocketPool_T *pool,
+                                               Connection_T conn,
+                                               int timeout_ms,
+                                               void *data);
 
 /**
  * @brief Initialize configuration with production defaults.
@@ -278,7 +278,7 @@ typedef int (*SocketPool_HealthProbeCallback)(
  * config.failure_threshold = 3;  // More aggressive
  * @endcode
  */
-void SocketPoolHealth_config_defaults(SocketPoolHealth_Config *config);
+void SocketPoolHealth_config_defaults (SocketPoolHealth_Config *config);
 
 /**
  * @brief Enable health checking on a pool.
@@ -307,10 +307,8 @@ void SocketPoolHealth_config_defaults(SocketPoolHealth_Config *config);
  * @see SocketPool_disable_health_checks() for cleanup.
  * @see SocketPoolHealth_config_defaults() for defaults.
  */
-int SocketPool_enable_health_checks(
-    struct SocketPool_T *pool,
-    const SocketPoolHealth_Config *config
-);
+int SocketPool_enable_health_checks (struct SocketPool_T *pool,
+                                     const SocketPoolHealth_Config *config);
 
 /**
  * @brief Disable health checking and stop background thread.
@@ -333,7 +331,7 @@ int SocketPool_enable_health_checks(
  *
  * @see SocketPool_enable_health_checks() for enabling.
  */
-void SocketPool_disable_health_checks(struct SocketPool_T *pool);
+void SocketPool_disable_health_checks (struct SocketPool_T *pool);
 
 /**
  * @brief Set custom health probe callback.
@@ -357,11 +355,9 @@ void SocketPool_disable_health_checks(struct SocketPool_T *pool);
  *
  * @see SocketPool_HealthProbeCallback for callback requirements.
  */
-void SocketPool_set_health_callback(
-    struct SocketPool_T *pool,
-    SocketPool_HealthProbeCallback callback,
-    void *data
-);
+void SocketPool_set_health_callback (struct SocketPool_T *pool,
+                                     SocketPool_HealthProbeCallback callback,
+                                     void *data);
 
 /**
  * @brief Get current circuit state for a host:port.
@@ -383,11 +379,9 @@ void SocketPool_set_health_callback(
  *
  * @see SocketPool_circuit_allows() for connection gating.
  */
-SocketPoolCircuit_State SocketPool_circuit_state(
-    struct SocketPool_T *pool,
-    const char *host,
-    int port
-);
+SocketPoolCircuit_State SocketPool_circuit_state (struct SocketPool_T *pool,
+                                                  const char *host,
+                                                  int port);
 
 /**
  * @brief Check if circuit allows new connections.
@@ -426,11 +420,9 @@ SocketPoolCircuit_State SocketPool_circuit_state(
  * @see SocketPool_circuit_state() for state inspection.
  * @see SocketPool_circuit_report_success() for recording outcomes.
  */
-int SocketPool_circuit_allows(
-    struct SocketPool_T *pool,
-    const char *host,
-    int port
-);
+int SocketPool_circuit_allows (struct SocketPool_T *pool,
+                               const char *host,
+                               int port);
 
 /**
  * @brief Report successful connection/operation.
@@ -451,11 +443,9 @@ int SocketPool_circuit_allows(
  *
  * @see SocketPool_circuit_report_failure() for failure reporting.
  */
-void SocketPool_circuit_report_success(
-    struct SocketPool_T *pool,
-    const char *host,
-    int port
-);
+void SocketPool_circuit_report_success (struct SocketPool_T *pool,
+                                        const char *host,
+                                        int port);
 
 /**
  * @brief Report failed connection/operation.
@@ -478,11 +468,9 @@ void SocketPool_circuit_report_success(
  *
  * @see SocketPool_circuit_report_success() for success reporting.
  */
-void SocketPool_circuit_report_failure(
-    struct SocketPool_T *pool,
-    const char *host,
-    int port
-);
+void SocketPool_circuit_report_failure (struct SocketPool_T *pool,
+                                        const char *host,
+                                        int port);
 
 /**
  * @brief Manually reset circuit to CLOSED state.
@@ -504,11 +492,9 @@ void SocketPool_circuit_report_failure(
  *
  * @see SocketPool_circuit_state() for current state.
  */
-int SocketPool_circuit_reset(
-    struct SocketPool_T *pool,
-    const char *host,
-    int port
-);
+int SocketPool_circuit_reset (struct SocketPool_T *pool,
+                              const char *host,
+                              int port);
 
 /**
  * @brief Get health subsystem statistics.
@@ -520,18 +506,17 @@ int SocketPool_circuit_reset(
  * @param probes_sent    [out] Total probes executed (may be NULL).
  * @param probes_passed  [out] Probes that succeeded (may be NULL).
  * @param probes_failed  [out] Probes that failed (may be NULL).
- * @param circuits_opened [out] Times circuits transitioned to OPEN (may be NULL).
+ * @param circuits_opened [out] Times circuits transitioned to OPEN (may be
+ * NULL).
  *
  * Thread Safety: Uses atomic reads.
  *
  * @pre pool != NULL
  */
-void SocketPool_health_stats(
-    struct SocketPool_T *pool,
-    uint64_t *probes_sent,
-    uint64_t *probes_passed,
-    uint64_t *probes_failed,
-    uint64_t *circuits_opened
-);
+void SocketPool_health_stats (struct SocketPool_T *pool,
+                              uint64_t *probes_sent,
+                              uint64_t *probes_passed,
+                              uint64_t *probes_failed,
+                              uint64_t *circuits_opened);
 
 #endif /* SOCKETPOOLHEALTH_INCLUDED */

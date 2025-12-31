@@ -420,8 +420,8 @@ test_limit_queries (void)
 
   /* Test HTTP limits */
   size_t http_uri, http_header_size, http_headers, http_body;
-  SocketSecurity_get_http_limits (&http_uri, &http_header_size, &http_headers,
-                                  &http_body);
+  SocketSecurity_get_http_limits (
+      &http_uri, &http_header_size, &http_headers, &http_body);
   (void)http_uri;
   (void)http_header_size;
   (void)http_headers;
@@ -470,7 +470,9 @@ test_null_handling (void)
     SocketSecurity_get_limits (NULL);
     /* Should raise exception */
   }
-  EXCEPT (SocketSecurity_ValidationFailed) { /* Expected */ }
+  EXCEPT (SocketSecurity_ValidationFailed)
+  { /* Expected */
+  }
   END_TRY;
 }
 
@@ -683,9 +685,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     test_arithmetic_sequence (data, size);
   }
-  EXCEPT (SocketSecurity_SizeExceeded) { /* Expected for oversized values */ }
-  EXCEPT (SocketSecurity_ValidationFailed) { /* Expected for invalid inputs */ }
-  EXCEPT (Arena_Failed) { /* Unlikely but handle */ }
+  EXCEPT (SocketSecurity_SizeExceeded)
+  { /* Expected for oversized values */
+  }
+  EXCEPT (SocketSecurity_ValidationFailed)
+  { /* Expected for invalid inputs */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Unlikely but handle */
+  }
   END_TRY;
 
   return 0;

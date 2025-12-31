@@ -112,7 +112,10 @@ TEST (he_sync_connect_localhost)
   config.attempt_timeout_ms = 2000;
 
   /* Connect using Happy Eyeballs */
-  TRY { client = SocketHappyEyeballs_connect ("127.0.0.1", port, &config); }
+  TRY
+  {
+    client = SocketHappyEyeballs_connect ("127.0.0.1", port, &config);
+  }
   EXCEPT (SocketHE_Failed)
   {
     Socket_free (&server);
@@ -158,7 +161,10 @@ TEST (he_sync_connect_hostname_localhost)
   config.total_timeout_ms = 5000;
 
   /* Connect using hostname "localhost" */
-  TRY { client = SocketHappyEyeballs_connect ("localhost", port, &config); }
+  TRY
+  {
+    client = SocketHappyEyeballs_connect ("localhost", port, &config);
+  }
   EXCEPT (SocketHE_Failed)
   {
     Socket_free (&server);
@@ -192,7 +198,10 @@ TEST (he_sync_connect_timeout)
     if (client)
       Socket_free (&client);
   }
-  EXCEPT (SocketHE_Failed) { caught = 1; }
+  EXCEPT (SocketHE_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
 
   ASSERT (caught);
@@ -509,7 +518,10 @@ TEST (he_error_message)
     if (client)
       Socket_free (&client);
   }
-  EXCEPT (SocketHE_Failed) { caught = 1; }
+  EXCEPT (SocketHE_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
 
   ASSERT (caught);

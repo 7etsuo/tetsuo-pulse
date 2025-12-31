@@ -112,18 +112,18 @@ typedef enum
 typedef enum
 {
   /* Sending states */
-  QUIC_STREAM_STATE_READY = 0,      /**< Initial state, no data sent */
-  QUIC_STREAM_STATE_SEND,           /**< Application sending data */
-  QUIC_STREAM_STATE_DATA_SENT,      /**< FIN sent, awaiting acknowledgment */
-  QUIC_STREAM_STATE_RESET_SENT,     /**< RESET_STREAM sent */
-  QUIC_STREAM_STATE_DATA_RECVD,     /**< All data acknowledged by peer */
-  QUIC_STREAM_STATE_RESET_RECVD,    /**< Reset acknowledged by peer */
+  QUIC_STREAM_STATE_READY = 0,   /**< Initial state, no data sent */
+  QUIC_STREAM_STATE_SEND,        /**< Application sending data */
+  QUIC_STREAM_STATE_DATA_SENT,   /**< FIN sent, awaiting acknowledgment */
+  QUIC_STREAM_STATE_RESET_SENT,  /**< RESET_STREAM sent */
+  QUIC_STREAM_STATE_DATA_RECVD,  /**< All data acknowledged by peer */
+  QUIC_STREAM_STATE_RESET_RECVD, /**< Reset acknowledged by peer */
 
   /* Receiving states */
-  QUIC_STREAM_STATE_RECV,           /**< Receiving data from peer */
-  QUIC_STREAM_STATE_SIZE_KNOWN,     /**< FIN received, final size known */
-  QUIC_STREAM_STATE_DATA_READ,      /**< All data delivered to application */
-  QUIC_STREAM_STATE_RESET_READ      /**< Reset delivered to application */
+  QUIC_STREAM_STATE_RECV,       /**< Receiving data from peer */
+  QUIC_STREAM_STATE_SIZE_KNOWN, /**< FIN received, final size known */
+  QUIC_STREAM_STATE_DATA_READ,  /**< All data delivered to application */
+  QUIC_STREAM_STATE_RESET_READ  /**< Reset delivered to application */
 } SocketQUICStreamState;
 
 /**
@@ -131,13 +131,13 @@ typedef enum
  */
 typedef enum
 {
-  QUIC_STREAM_OK = 0,              /**< Operation succeeded */
-  QUIC_STREAM_ERROR_NULL,          /**< NULL pointer argument */
-  QUIC_STREAM_ERROR_INVALID_ID,    /**< Stream ID exceeds maximum */
-  QUIC_STREAM_ERROR_INVALID_TYPE,  /**< Invalid stream type */
-  QUIC_STREAM_ERROR_WRONG_ROLE,    /**< Wrong role for stream operation */
-  QUIC_STREAM_ERROR_STATE,         /**< Invalid state transition */
-  QUIC_STREAM_ERROR_LIMIT          /**< Stream limit exceeded */
+  QUIC_STREAM_OK = 0,             /**< Operation succeeded */
+  QUIC_STREAM_ERROR_NULL,         /**< NULL pointer argument */
+  QUIC_STREAM_ERROR_INVALID_ID,   /**< Stream ID exceeds maximum */
+  QUIC_STREAM_ERROR_INVALID_TYPE, /**< Invalid stream type */
+  QUIC_STREAM_ERROR_WRONG_ROLE,   /**< Wrong role for stream operation */
+  QUIC_STREAM_ERROR_STATE,        /**< Invalid state transition */
+  QUIC_STREAM_ERROR_LIMIT         /**< Stream limit exceeded */
 } SocketQUICStream_Result;
 
 /**
@@ -148,24 +148,26 @@ typedef enum
 typedef enum
 {
   /* Send-side events */
-  QUIC_STREAM_EVENT_SEND_DATA,        /**< Application sends data on stream */
-  QUIC_STREAM_EVENT_SEND_FIN,         /**< Application signals end of stream */
-  QUIC_STREAM_EVENT_ALL_DATA_ACKED,   /**< All sent data acknowledged by peer */
-  QUIC_STREAM_EVENT_SEND_RESET,       /**< Application resets sending part */
-  QUIC_STREAM_EVENT_RESET_ACKED,      /**< Peer acknowledged RESET_STREAM */
+  QUIC_STREAM_EVENT_SEND_DATA,      /**< Application sends data on stream */
+  QUIC_STREAM_EVENT_SEND_FIN,       /**< Application signals end of stream */
+  QUIC_STREAM_EVENT_ALL_DATA_ACKED, /**< All sent data acknowledged by peer */
+  QUIC_STREAM_EVENT_SEND_RESET,     /**< Application resets sending part */
+  QUIC_STREAM_EVENT_RESET_ACKED,    /**< Peer acknowledged RESET_STREAM */
 
   /* Receive-side events */
-  QUIC_STREAM_EVENT_RECV_DATA,        /**< Received STREAM frame with data */
-  QUIC_STREAM_EVENT_RECV_FIN,         /**< Received STREAM frame with FIN bit */
-  QUIC_STREAM_EVENT_ALL_DATA_RECVD,   /**< All data up to FIN received */
-  QUIC_STREAM_EVENT_APP_READ_DATA,    /**< Application consumed all data */
-  QUIC_STREAM_EVENT_RECV_RESET,       /**< Received RESET_STREAM frame */
-  QUIC_STREAM_EVENT_APP_READ_RESET,   /**< Application notified of reset */
+  QUIC_STREAM_EVENT_RECV_DATA,      /**< Received STREAM frame with data */
+  QUIC_STREAM_EVENT_RECV_FIN,       /**< Received STREAM frame with FIN bit */
+  QUIC_STREAM_EVENT_ALL_DATA_RECVD, /**< All data up to FIN received */
+  QUIC_STREAM_EVENT_APP_READ_DATA,  /**< Application consumed all data */
+  QUIC_STREAM_EVENT_RECV_RESET,     /**< Received RESET_STREAM frame */
+  QUIC_STREAM_EVENT_APP_READ_RESET, /**< Application notified of reset */
 
   /* Bidirectional events */
   QUIC_STREAM_EVENT_RECV_STOP_SENDING, /**< Received STOP_SENDING frame */
 
-  QUIC_STREAM_EVENT_MAX = QUIC_STREAM_EVENT_RECV_STOP_SENDING /**< Maximum event value for bounds checking */
+  QUIC_STREAM_EVENT_MAX
+  = QUIC_STREAM_EVENT_RECV_STOP_SENDING /**< Maximum event value for bounds
+                                           checking */
 } SocketQUICStreamEvent;
 
 /**
@@ -182,8 +184,8 @@ typedef struct SocketQUICStream *SocketQUICStream_T;
  */
 struct SocketQUICStream
 {
-  uint64_t id;                    /**< Stream ID (62-bit) */
-  SocketQUICStreamType type;      /**< Stream type (derived from ID) */
+  uint64_t id;               /**< Stream ID (62-bit) */
+  SocketQUICStreamType type; /**< Stream type (derived from ID) */
 
   /* Dual state machines (RFC 9000 Section 3) */
   SocketQUICStreamState send_state; /**< Send-side state machine */
@@ -191,16 +193,16 @@ struct SocketQUICStream
   SocketQUICStreamState state;      /**< Legacy: combined state (deprecated) */
 
   /* Flow control */
-  uint64_t max_data;              /**< Maximum data peer can send */
-  uint64_t data_sent;             /**< Bytes sent on this stream */
-  uint64_t data_received;         /**< Bytes received on this stream */
-  uint64_t final_size;            /**< Final size (set when FIN received) */
+  uint64_t max_data;      /**< Maximum data peer can send */
+  uint64_t data_sent;     /**< Bytes sent on this stream */
+  uint64_t data_received; /**< Bytes received on this stream */
+  uint64_t final_size;    /**< Final size (set when FIN received) */
 
   /* Flags */
-  unsigned int is_local : 1;      /**< 1 if locally initiated, 0 if remote */
-  unsigned int fin_sent : 1;      /**< FIN has been sent */
-  unsigned int fin_received : 1;  /**< FIN has been received */
-  unsigned int reset_sent : 1;    /**< RESET_STREAM sent */
+  unsigned int is_local : 1;       /**< 1 if locally initiated, 0 if remote */
+  unsigned int fin_sent : 1;       /**< FIN has been sent */
+  unsigned int fin_received : 1;   /**< FIN has been received */
+  unsigned int reset_sent : 1;     /**< RESET_STREAM sent */
   unsigned int reset_received : 1; /**< RESET_STREAM received */
 };
 
@@ -326,8 +328,8 @@ extern uint64_t SocketQUICStream_sequence (uint64_t stream_id);
  *
  * @return New stream handle, or NULL on error.
  */
-extern SocketQUICStream_T SocketQUICStream_new (Arena_T arena,
-                                                 uint64_t stream_id);
+extern SocketQUICStream_T
+SocketQUICStream_new (Arena_T arena, uint64_t stream_id);
 
 /**
  * @brief Initialize a stream structure.
@@ -352,7 +354,8 @@ SocketQUICStream_init (SocketQUICStream_T stream, uint64_t stream_id);
  *
  * @return QUIC_STREAM_OK on success, error code otherwise.
  */
-extern SocketQUICStream_Result SocketQUICStream_reset (SocketQUICStream_T stream);
+extern SocketQUICStream_Result
+SocketQUICStream_reset (SocketQUICStream_T stream);
 
 /* ============================================================================
  * Stream Access Functions
@@ -425,7 +428,8 @@ SocketQUICStream_get_recv_state (const SocketQUICStream_T stream);
 /**
  * @brief Transition the send-side state machine.
  *
- * Implements the sending part of the stream state machine (RFC 9000 Section 3.1).
+ * Implements the sending part of the stream state machine (RFC 9000
+ * Section 3.1).
  *
  * Send states:
  *   Ready -> Send (on SEND_DATA)
@@ -438,7 +442,8 @@ SocketQUICStream_get_recv_state (const SocketQUICStream_T stream);
  * @param stream Stream to transition.
  * @param event  Event triggering the transition.
  *
- * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE on invalid transition.
+ * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE on invalid
+ * transition.
  */
 extern SocketQUICStream_Result
 SocketQUICStream_transition_send (SocketQUICStream_T stream,
@@ -447,7 +452,8 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
 /**
  * @brief Transition the receive-side state machine.
  *
- * Implements the receiving part of the stream state machine (RFC 9000 Section 3.2).
+ * Implements the receiving part of the stream state machine (RFC 9000
+ * Section 3.2).
  *
  * Receive states:
  *   Recv -> SizeKnown (on RECV_FIN)
@@ -460,7 +466,8 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
  * @param stream Stream to transition.
  * @param event  Event triggering the transition.
  *
- * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE on invalid transition.
+ * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE on invalid
+ * transition.
  */
 extern SocketQUICStream_Result
 SocketQUICStream_transition_recv (SocketQUICStream_T stream,

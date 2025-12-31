@@ -133,8 +133,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Try to restore fuzzed session data */
           if (session_data_len > 0)
             {
-              int ret = SocketTLS_session_restore (client, session_data,
-                                                   session_data_len);
+              int ret = SocketTLS_session_restore (
+                  client, session_data, session_data_len);
               /* Expected: 0 or 1 (invalid data should return 0) */
               (void)ret;
             }
@@ -215,8 +215,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Very large length (test overflow protection) */
           if (session_data_len > 0)
             {
-              int ret = SocketTLS_session_restore (client, session_data,
-                                                   session_data_len);
+              int ret = SocketTLS_session_restore (
+                  client, session_data, session_data_len);
               (void)ret;
             }
         }

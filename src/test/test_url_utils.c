@@ -69,8 +69,8 @@ test_url_decode_basic (void)
   assert (len == 11);
 
   /* Multiple percent sequences */
-  ret
-      = socket_util_url_decode ("hello%20world%21", 16, buf, sizeof (buf), &len);
+  ret = socket_util_url_decode (
+      "hello%20world%21", 16, buf, sizeof (buf), &len);
   assert (ret == 0);
   assert (strcmp (buf, "hello world!") == 0);
   assert (len == 12);
@@ -179,20 +179,19 @@ test_url_decode_special_chars (void)
   int ret;
 
   /* Username:password encoding (colon, at-sign) */
-  ret
-      = socket_util_url_decode ("user%3Apass", 11, buf, sizeof (buf), &len);
+  ret = socket_util_url_decode ("user%3Apass", 11, buf, sizeof (buf), &len);
   assert (ret == 0);
   assert (strcmp (buf, "user:pass") == 0);
 
   /* Path with slashes */
-  ret = socket_util_url_decode ("%2Fpath%2Fto%2Ffile", 19, buf, sizeof (buf),
-                                &len);
+  ret = socket_util_url_decode (
+      "%2Fpath%2Fto%2Ffile", 19, buf, sizeof (buf), &len);
   assert (ret == 0);
   assert (strcmp (buf, "/path/to/file") == 0);
 
   /* Query string characters */
-  ret = socket_util_url_decode ("key%3Dvalue%26foo%3Dbar", 23, buf,
-                                sizeof (buf), &len);
+  ret = socket_util_url_decode (
+      "key%3Dvalue%26foo%3Dbar", 23, buf, sizeof (buf), &len);
   assert (ret == 0);
   assert (strcmp (buf, "key=value&foo=bar") == 0);
 
@@ -219,20 +218,20 @@ test_url_decode_proxy_credentials (void)
   assert (strcmp (username, "admin") == 0);
 
   /* Username with special chars */
-  ret = socket_util_url_decode ("user%40domain.com", 17, username,
-                                sizeof (username), NULL);
+  ret = socket_util_url_decode (
+      "user%40domain.com", 17, username, sizeof (username), NULL);
   assert (ret == 0);
   assert (strcmp (username, "user@domain.com") == 0);
 
   /* Password with special chars */
-  ret = socket_util_url_decode ("p%40ssw0rd%21", 13, password,
-                                sizeof (password), NULL);
+  ret = socket_util_url_decode (
+      "p%40ssw0rd%21", 13, password, sizeof (password), NULL);
   assert (ret == 0);
   assert (strcmp (password, "p@ssw0rd!") == 0);
 
   /* URL-unsafe password */
-  ret = socket_util_url_decode ("a%2Fb%3Ac%20d", 13, password,
-                                sizeof (password), NULL);
+  ret = socket_util_url_decode (
+      "a%2Fb%3Ac%20d", 13, password, sizeof (password), NULL);
   assert (ret == 0);
   assert (strcmp (password, "a/b:c d") == 0);
 

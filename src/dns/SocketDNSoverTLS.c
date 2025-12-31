@@ -13,7 +13,8 @@
  *
  * ## Key Implementation Details
  *
- * - Uses same 2-byte length prefix framing as DNS-over-TCP (RFC 1035 Section 4.2.2)
+ * - Uses same 2-byte length prefix framing as DNS-over-TCP (RFC 1035
+ * Section 4.2.2)
  * - TLS session resumption for fast reconnects
  * - Non-blocking TLS handshake with poll integration
  * - Supports opportunistic and strict privacy modes (RFC 8310)
@@ -117,15 +118,14 @@ static const struct
   const char *address;
   const char *server_name;
   int is_ipv6;
-} well_known_servers[] = {
-  { "google", "8.8.8.8", "dns.google", 0 },
-  { "google-v6", "2001:4860:4860::8888", "dns.google", 1 },
-  { "cloudflare", "1.1.1.1", "cloudflare-dns.com", 0 },
-  { "cloudflare-v6", "2606:4700:4700::1111", "cloudflare-dns.com", 1 },
-  { "quad9", "9.9.9.9", "dns.quad9.net", 0 },
-  { "quad9-v6", "2620:fe::fe", "dns.quad9.net", 1 },
-  { NULL, NULL, NULL, 0 }
-};
+} well_known_servers[]
+    = { { "google", "8.8.8.8", "dns.google", 0 },
+        { "google-v6", "2001:4860:4860::8888", "dns.google", 1 },
+        { "cloudflare", "1.1.1.1", "cloudflare-dns.com", 0 },
+        { "cloudflare-v6", "2606:4700:4700::1111", "cloudflare-dns.com", 1 },
+        { "quad9", "9.9.9.9", "dns.quad9.net", 0 },
+        { "quad9-v6", "2620:fe::fe", "dns.quad9.net", 1 },
+        { NULL, NULL, NULL, 0 } };
 
 /* Server configuration entry */
 struct ServerConfig
@@ -222,7 +222,7 @@ const Except_T SocketDNSoverTLS_Failed
     = { &SocketDNSoverTLS_Failed, "DNS-over-TLS operation failed" };
 
 /* Use centralized monotonic time utility from SocketUtil.h */
-#define get_monotonic_ms() Socket_get_monotonic_ms()
+#define get_monotonic_ms() Socket_get_monotonic_ms ()
 
 /* Detect address family from string */
 static int
@@ -327,7 +327,8 @@ create_tls_context (T transport, struct ServerConfig *server)
 /* Setup sockaddr structure for server connection */
 static int
 setup_server_address (const struct ServerConfig *server,
-                      struct sockaddr_storage *addr, socklen_t *addrlen)
+                      struct sockaddr_storage *addr,
+                      socklen_t *addrlen)
 {
   memset (addr, 0, sizeof (*addr));
 
@@ -637,7 +638,9 @@ queue_query (T transport, struct SocketDNSoverTLS_Query *query)
 
 /* Read raw data from TLS socket */
 static int
-read_tls_data (T transport, unsigned char *buf, size_t bufsize,
+read_tls_data (T transport,
+               unsigned char *buf,
+               size_t bufsize,
                ssize_t *bytes_read)
 {
   volatile ssize_t n;
@@ -663,8 +666,10 @@ read_tls_data (T transport, unsigned char *buf, size_t bufsize,
 
 /* Parse 2-byte length prefix from receive buffer */
 static int
-parse_length_prefix (struct Connection *conn, const unsigned char *buf,
-                     size_t buf_len, size_t *processed)
+parse_length_prefix (struct Connection *conn,
+                     const unsigned char *buf,
+                     size_t buf_len,
+                     size_t *processed)
 {
   assert (conn != NULL);
   assert (buf != NULL);
@@ -718,7 +723,8 @@ allocate_recv_buffer (T transport, struct Connection *conn)
 
 /* Copy data into receive buffer */
 static void
-append_to_recv_buffer (struct Connection *conn, const unsigned char *buf,
+append_to_recv_buffer (struct Connection *conn,
+                       const unsigned char *buf,
                        size_t len)
 {
   assert (conn != NULL);
@@ -817,8 +823,11 @@ find_query_by_id (T transport, uint16_t id)
 
 /* Complete a query */
 static void
-complete_query (T transport, struct SocketDNSoverTLS_Query *query,
-                const unsigned char *response, size_t len, int error)
+complete_query (T transport,
+                struct SocketDNSoverTLS_Query *query,
+                const unsigned char *response,
+                size_t len,
+                int error)
 {
   query->completed = 1;
 
@@ -1207,8 +1216,8 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
   server = &transport->servers[transport->server_count];
   memset (server, 0, sizeof (*server));
 
-  if (!socket_util_safe_strncpy (server->address, config->server_address,
-                                  sizeof (server->address)))
+  if (!socket_util_safe_strncpy (
+          server->address, config->server_address, sizeof (server->address)))
     return -1; /* Server address truncated */
 
   server->port = (config->port > 0) ? config->port : DOT_PORT;
@@ -1217,30 +1226,32 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
 
   if (config->server_name)
     {
-      if (!socket_util_safe_strncpy (server->server_name, config->server_name,
-                                      sizeof (server->server_name)))
+      if (!socket_util_safe_strncpy (server->server_name,
+                                     config->server_name,
+                                     sizeof (server->server_name)))
         return -1; /* Server name truncated */
     }
   else
     {
       /* Use address as SNI if no server name provided */
-      if (!socket_util_safe_strncpy (server->server_name, config->server_address,
-                                      sizeof (server->server_name)))
+      if (!socket_util_safe_strncpy (server->server_name,
+                                     config->server_address,
+                                     sizeof (server->server_name)))
         return -1; /* Server name (from address) truncated */
     }
 
   if (config->spki_pin)
     {
-      if (!socket_util_safe_strncpy (server->spki_pin, config->spki_pin,
-                                      sizeof (server->spki_pin)))
+      if (!socket_util_safe_strncpy (
+              server->spki_pin, config->spki_pin, sizeof (server->spki_pin)))
         return -1; /* SPKI pin truncated */
     }
 
   if (config->spki_pin_backup)
     {
       if (!socket_util_safe_strncpy (server->spki_pin_backup,
-                                      config->spki_pin_backup,
-                                      sizeof (server->spki_pin_backup)))
+                                     config->spki_pin_backup,
+                                     sizeof (server->spki_pin_backup)))
         return -1; /* SPKI backup pin truncated */
     }
 
@@ -1249,7 +1260,8 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
 }
 
 int
-SocketDNSoverTLS_add_server (T transport, const char *server_name,
+SocketDNSoverTLS_add_server (T transport,
+                             const char *server_name,
                              SocketDNSoverTLS_Mode mode)
 {
   SocketDNSoverTLS_Config config;
@@ -1315,8 +1327,12 @@ validate_query_submission (T transport, size_t query_len)
 
 /* Allocate and initialize query structure */
 static struct SocketDNSoverTLS_Query *
-create_query (T transport, const unsigned char *query, size_t len,
-              uint16_t id, SocketDNSoverTLS_Callback callback, void *userdata)
+create_query (T transport,
+              const unsigned char *query,
+              size_t len,
+              uint16_t id,
+              SocketDNSoverTLS_Callback callback,
+              void *userdata)
 {
   struct SocketDNSoverTLS_Query *q;
 
@@ -1373,8 +1389,11 @@ ensure_connected (T transport)
 }
 
 SocketDNSoverTLS_Query_T
-SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
-                        SocketDNSoverTLS_Callback callback, void *userdata)
+SocketDNSoverTLS_query (T transport,
+                        const unsigned char *query,
+                        size_t len,
+                        SocketDNSoverTLS_Callback callback,
+                        void *userdata)
 {
   struct SocketDNSoverTLS_Query *q;
   SocketDNS_Header hdr;
@@ -1523,23 +1542,24 @@ SocketDNSoverTLS_stats (T transport, SocketDNSoverTLS_Stats *stats)
 
 /* Dispatch table for error messages */
 static const char *error_messages[] = {
-  [0]  = "Success",
-  [1]  = "Query timeout",
-  [2]  = "Query cancelled",
-  [3]  = "Network error",
-  [4]  = "TLS handshake failed",
-  [5]  = "Certificate verification failed",
-  [6]  = "TLS I/O error",
-  [7]  = "Invalid response",
-  [8]  = "No server configured",
-  [9]  = "Server returned FORMERR",
+  [0] = "Success",
+  [1] = "Query timeout",
+  [2] = "Query cancelled",
+  [3] = "Network error",
+  [4] = "TLS handshake failed",
+  [5] = "Certificate verification failed",
+  [6] = "TLS I/O error",
+  [7] = "Invalid response",
+  [8] = "No server configured",
+  [9] = "Server returned FORMERR",
   [10] = "Server returned SERVFAIL",
   [11] = "Domain does not exist",
   [12] = "Server refused query",
   [13] = "SPKI pin mismatch",
 };
 
-#define ERROR_MESSAGE_COUNT (sizeof (error_messages) / sizeof (error_messages[0]))
+#define ERROR_MESSAGE_COUNT \
+  (sizeof (error_messages) / sizeof (error_messages[0]))
 
 const char *
 SocketDNSoverTLS_strerror (int error)
@@ -1547,7 +1567,7 @@ SocketDNSoverTLS_strerror (int error)
   /* Convert error code to array index (error codes are negative or zero) */
   int index = (error <= 0) ? -error : error;
 
-  if (index >= (int) ERROR_MESSAGE_COUNT)
+  if (index >= (int)ERROR_MESSAGE_COUNT)
     return "Unknown error";
 
   return error_messages[index];

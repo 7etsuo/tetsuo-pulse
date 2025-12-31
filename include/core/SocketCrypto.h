@@ -75,7 +75,8 @@ extern const Except_T SocketCrypto_Failed;
  * @threadsafe Yes.
  * @complexity O(input_len)
  */
-extern void SocketCrypto_sha1 (const void *input, size_t input_len,
+extern void SocketCrypto_sha1 (const void *input,
+                               size_t input_len,
                                unsigned char output[SOCKET_CRYPTO_SHA1_SIZE]);
 
 /**
@@ -90,7 +91,8 @@ extern void SocketCrypto_sha1 (const void *input, size_t input_len,
  * @complexity O(input_len)
  */
 extern void
-SocketCrypto_sha256 (const void *input, size_t input_len,
+SocketCrypto_sha256 (const void *input,
+                     size_t input_len,
                      unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
 
 /**
@@ -103,7 +105,8 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
  * Raises: SocketCrypto_Failed on error or if TLS not available.
  * @threadsafe Yes.
  */
-extern void SocketCrypto_md5 (const void *input, size_t input_len,
+extern void SocketCrypto_md5 (const void *input,
+                              size_t input_len,
                               unsigned char output[SOCKET_CRYPTO_MD5_SIZE]);
 
 /* ============================================================================
@@ -112,7 +115,8 @@ extern void SocketCrypto_md5 (const void *input, size_t input_len,
  */
 
 /**
- * @brief Compute HMAC-SHA256 message authentication code (RFC 2104, FIPS 198-1).
+ * @brief Compute HMAC-SHA256 message authentication code (RFC 2104, FIPS
+ * 198-1).
  *
  * @param[in] key HMAC key (should be cryptographically strong random bytes).
  * @param[in] key_len Key length in bytes (recommended: >= 32 bytes).
@@ -124,7 +128,9 @@ extern void SocketCrypto_md5 (const void *input, size_t input_len,
  * @threadsafe Yes.
  */
 extern void
-SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
+SocketCrypto_hmac_sha256 (const void *key,
+                          size_t key_len,
+                          const void *data,
                           size_t data_len,
                           unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
 
@@ -145,8 +151,10 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
  * Raises: SocketCrypto_Failed if TLS not available or internal error.
  * @threadsafe Yes.
  */
-extern ssize_t SocketCrypto_base64_encode (const void *input, size_t input_len,
-                                           char *output, size_t output_size);
+extern ssize_t SocketCrypto_base64_encode (const void *input,
+                                           size_t input_len,
+                                           char *output,
+                                           size_t output_size);
 
 /**
  * @brief Decode Base64 string to binary data (RFC 4648).
@@ -160,7 +168,8 @@ extern ssize_t SocketCrypto_base64_encode (const void *input, size_t input_len,
  * Raises: SocketCrypto_Failed if TLS not available or internal error.
  * @threadsafe Yes.
  */
-extern ssize_t SocketCrypto_base64_decode (const char *input, size_t input_len,
+extern ssize_t SocketCrypto_base64_decode (const char *input,
+                                           size_t input_len,
                                            unsigned char *output,
                                            size_t output_size);
 
@@ -197,8 +206,10 @@ extern size_t SocketCrypto_base64_decoded_size (size_t input_len);
  *
  * @threadsafe Yes.
  */
-extern void SocketCrypto_hex_encode (const void *input, size_t input_len,
-                                     char *output, int lowercase);
+extern void SocketCrypto_hex_encode (const void *input,
+                                     size_t input_len,
+                                     char *output,
+                                     int lowercase);
 
 /**
  * @brief Decode hexadecimal string to binary data.
@@ -211,7 +222,8 @@ extern void SocketCrypto_hex_encode (const void *input, size_t input_len,
  * Returns: Decoded bytes on success, -1 on error.
  * @threadsafe Yes.
  */
-extern ssize_t SocketCrypto_hex_decode (const char *input, size_t input_len,
+extern ssize_t SocketCrypto_hex_decode (const char *input,
+                                        size_t input_len,
                                         unsigned char *output,
                                         size_t output_capacity);
 
@@ -296,8 +308,8 @@ SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
  * Returns: 0 if equal, non-zero otherwise.
  * @threadsafe Yes.
  */
-extern int SocketCrypto_secure_compare (const void *a, const void *b,
-                                        size_t len);
+extern int
+SocketCrypto_secure_compare (const void *a, const void *b, size_t len);
 
 /**
  * @brief Securely clear sensitive data from memory.

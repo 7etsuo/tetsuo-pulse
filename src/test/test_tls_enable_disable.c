@@ -85,10 +85,12 @@ TEST (tls_enable_with_server_context)
 
   /* Generate test certificate */
   char cmd[1024];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return; /* Skip if openssl not available */
 
@@ -135,8 +137,14 @@ TEST (tls_double_enable_fails)
     SocketTLS_enable (socket, ctx);
 
     /* Second enable should fail */
-    TRY { SocketTLS_enable (socket, ctx); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_enable (socket, ctx);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -216,8 +224,14 @@ TEST (tls_enable_null_socket_fails)
     ctx = SocketTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (ctx);
 
-    TRY { SocketTLS_enable (NULL, ctx); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_enable (NULL, ctx);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -240,8 +254,14 @@ TEST (tls_enable_null_context_fails)
     socket = Socket_new (AF_INET, SOCK_STREAM, 0);
     ASSERT_NOT_NULL (socket);
 
-    TRY { SocketTLS_enable (socket, NULL); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_enable (socket, NULL);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -306,8 +326,14 @@ TEST (tls_set_hostname_null_rejected)
     SocketTLS_set_hostname (socket, "example.com");
 
     /* NULL hostname should raise exception */
-    TRY { SocketTLS_set_hostname (socket, NULL); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_set_hostname (socket, NULL);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -408,10 +434,12 @@ TEST (tls_on_socket_pair)
 
   /* Generate test certificate */
   char cmd[1024];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return;
 

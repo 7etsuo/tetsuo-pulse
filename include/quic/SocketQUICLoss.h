@@ -85,12 +85,12 @@
  */
 typedef struct SocketQUICLossSentPacket
 {
-  uint64_t packet_number;  /**< Packet number */
-  uint64_t sent_time_us;   /**< Time packet was sent (us) */
-  size_t sent_bytes;       /**< Number of bytes in packet */
-  int ack_eliciting;       /**< Non-zero if ack-eliciting */
-  int in_flight;           /**< Non-zero if counts toward bytes_in_flight */
-  int is_crypto;           /**< Non-zero if contains CRYPTO frames */
+  uint64_t packet_number; /**< Packet number */
+  uint64_t sent_time_us;  /**< Time packet was sent (us) */
+  size_t sent_bytes;      /**< Number of bytes in packet */
+  int ack_eliciting;      /**< Non-zero if ack-eliciting */
+  int in_flight;          /**< Non-zero if counts toward bytes_in_flight */
+  int is_crypto;          /**< Non-zero if contains CRYPTO frames */
 
   struct SocketQUICLossSentPacket *next; /**< Free list pointer */
 
@@ -101,11 +101,11 @@ typedef struct SocketQUICLossSentPacket
  */
 typedef struct SocketQUICLossRTT
 {
-  uint64_t smoothed_rtt;    /**< Smoothed RTT in microseconds */
-  uint64_t rtt_var;         /**< RTT variance in microseconds */
-  uint64_t min_rtt;         /**< Minimum RTT observed */
-  uint64_t latest_rtt;      /**< Most recent RTT sample */
-  int has_sample;           /**< Non-zero if we have at least one sample */
+  uint64_t smoothed_rtt; /**< Smoothed RTT in microseconds */
+  uint64_t rtt_var;      /**< RTT variance in microseconds */
+  uint64_t min_rtt;      /**< Minimum RTT observed */
+  uint64_t latest_rtt;   /**< Most recent RTT sample */
+  int has_sample;        /**< Non-zero if we have at least one sample */
 
 } SocketQUICLossRTT_T;
 
@@ -118,24 +118,25 @@ typedef struct SocketQUICLossState
 
   /* Sent packet tracking */
   SocketQUICLossSentPacket_T **sent_packets; /**< Hash table of sent packets */
-  size_t sent_packets_size;                   /**< Hash table size */
-  size_t sent_count;                          /**< Number of tracked packets */
+  size_t sent_packets_size;                  /**< Hash table size */
+  size_t sent_count;                         /**< Number of tracked packets */
   SocketQUICLossSentPacket_T *free_list;     /**< Free list for reuse */
 
   /* Packet number tracking */
-  uint64_t largest_acked;          /**< Largest acknowledged packet number */
-  uint64_t largest_sent;           /**< Largest sent packet number */
+  uint64_t largest_acked; /**< Largest acknowledged packet number */
+  uint64_t largest_sent;  /**< Largest sent packet number */
   uint64_t time_of_last_ack_eliciting; /**< Time of last ack-eliciting packet */
 
   /* Loss detection timers */
-  uint64_t loss_time;              /**< Time-based loss detection timer */
+  uint64_t loss_time; /**< Time-based loss detection timer */
 
   /* Bytes in flight */
-  size_t bytes_in_flight;          /**< Bytes awaiting acknowledgment */
+  size_t bytes_in_flight; /**< Bytes awaiting acknowledgment */
 
   /* Configuration */
-  uint64_t max_ack_delay_us;       /**< Peer's max_ack_delay (from transport params) */
-  int is_handshake_space;          /**< Non-zero for Initial/Handshake */
+  uint64_t
+      max_ack_delay_us;   /**< Peer's max_ack_delay (from transport params) */
+  int is_handshake_space; /**< Non-zero for Initial/Handshake */
 
 } *SocketQUICLossState_T;
 
@@ -153,12 +154,12 @@ typedef void (*SocketQUICLoss_LostCallback) (
  */
 typedef enum
 {
-  QUIC_LOSS_OK = 0,           /**< Operation succeeded */
-  QUIC_LOSS_ERROR_NULL,       /**< NULL pointer argument */
-  QUIC_LOSS_ERROR_DUPLICATE,  /**< Packet number already tracked */
-  QUIC_LOSS_ERROR_NOT_FOUND,  /**< Packet number not found */
-  QUIC_LOSS_ERROR_FULL,       /**< Too many sent packets tracked */
-  QUIC_LOSS_ERROR_INVALID     /**< Invalid packet number or state */
+  QUIC_LOSS_OK = 0,          /**< Operation succeeded */
+  QUIC_LOSS_ERROR_NULL,      /**< NULL pointer argument */
+  QUIC_LOSS_ERROR_DUPLICATE, /**< Packet number already tracked */
+  QUIC_LOSS_ERROR_NOT_FOUND, /**< Packet number not found */
+  QUIC_LOSS_ERROR_FULL,      /**< Too many sent packets tracked */
+  QUIC_LOSS_ERROR_INVALID    /**< Invalid packet number or state */
 } SocketQUICLoss_Result;
 
 /* ============================================================================
@@ -205,9 +206,12 @@ extern void SocketQUICLoss_reset (SocketQUICLossState_T state);
  */
 extern SocketQUICLoss_Result
 SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
-                                uint64_t packet_number, uint64_t sent_time_us,
-                                size_t sent_bytes, int ack_eliciting,
-                                int in_flight, int is_crypto);
+                               uint64_t packet_number,
+                               uint64_t sent_time_us,
+                               size_t sent_bytes,
+                               int ack_eliciting,
+                               int in_flight,
+                               int is_crypto);
 
 /* ============================================================================
  * ACK Processing
@@ -233,13 +237,13 @@ SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
  */
 extern SocketQUICLoss_Result
 SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
-                                 SocketQUICLossRTT_T *rtt,
-                                 uint64_t largest_acked,
-                                 uint64_t ack_delay_us,
-                                 uint64_t recv_time_us,
-                                 SocketQUICLoss_LostCallback lost_callback,
-                                 void *context,
-                                 size_t *lost_count);
+                                SocketQUICLossRTT_T *rtt,
+                                uint64_t largest_acked,
+                                uint64_t ack_delay_us,
+                                uint64_t recv_time_us,
+                                SocketQUICLoss_LostCallback lost_callback,
+                                void *context,
+                                size_t *lost_count);
 
 /**
  * @brief Update RTT estimate with a new sample.
@@ -250,9 +254,9 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
  * @param is_handshake   Non-zero if this is a handshake RTT sample.
  */
 extern void SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt,
-                                        uint64_t latest_rtt_us,
-                                        uint64_t ack_delay_us,
-                                        int is_handshake);
+                                       uint64_t latest_rtt_us,
+                                       uint64_t ack_delay_us,
+                                       int is_handshake);
 
 /* ============================================================================
  * Loss Detection Timers
@@ -271,8 +275,8 @@ extern void SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt,
  * @return PTO interval in microseconds.
  */
 extern uint64_t SocketQUICLoss_get_pto (const SocketQUICLossRTT_T *rtt,
-                                         uint64_t max_ack_delay,
-                                         int pto_count);
+                                        uint64_t max_ack_delay,
+                                        int pto_count);
 
 /**
  * @brief Get the next loss detection timeout.
@@ -287,9 +291,9 @@ extern uint64_t SocketQUICLoss_get_pto (const SocketQUICLossRTT_T *rtt,
  * @return Timeout time in microseconds, or 0 if no timer set.
  */
 extern uint64_t SocketQUICLoss_get_loss_time (const SocketQUICLossState_T state,
-                                               const SocketQUICLossRTT_T *rtt,
-                                               int pto_count,
-                                               uint64_t current_time);
+                                              const SocketQUICLossRTT_T *rtt,
+                                              int pto_count,
+                                              uint64_t current_time);
 
 /**
  * @brief Handle loss detection timeout.
@@ -307,11 +311,11 @@ extern uint64_t SocketQUICLoss_get_loss_time (const SocketQUICLossState_T state,
  */
 extern SocketQUICLoss_Result
 SocketQUICLoss_on_loss_timeout (SocketQUICLossState_T state,
-                                 SocketQUICLossRTT_T *rtt,
-                                 uint64_t current_time,
-                                 SocketQUICLoss_LostCallback lost_callback,
-                                 void *context,
-                                 size_t *lost_count);
+                                SocketQUICLossRTT_T *rtt,
+                                uint64_t current_time,
+                                SocketQUICLoss_LostCallback lost_callback,
+                                void *context,
+                                size_t *lost_count);
 
 /* ============================================================================
  * Query Functions
@@ -325,7 +329,8 @@ SocketQUICLoss_on_loss_timeout (SocketQUICLossState_T state,
  *
  * @return Bytes in flight.
  */
-extern size_t SocketQUICLoss_bytes_in_flight (const SocketQUICLossState_T state);
+extern size_t
+SocketQUICLoss_bytes_in_flight (const SocketQUICLossState_T state);
 
 /**
  * @brief Check if there are any packets awaiting acknowledgment.

@@ -55,22 +55,27 @@ generate_test_certs (const char *cert_file, const char *key_file)
   f = fopen (conf_file, "w");
   if (!f)
     return -1;
-  fprintf (f, "[req]\n"
-              "distinguished_name = req_dn\n"
-              "x509_extensions = v3_ca\n"
-              "[req_dn]\n"
-              "CN = localhost\n"
-              "[v3_ca]\n"
-              "basicConstraints = CA:TRUE\n"
-              "keyUsage = keyCertSign, cRLSign\n");
+  fprintf (f,
+           "[req]\n"
+           "distinguished_name = req_dn\n"
+           "x509_extensions = v3_ca\n"
+           "[req_dn]\n"
+           "CN = localhost\n"
+           "[v3_ca]\n"
+           "basicConstraints = CA:TRUE\n"
+           "keyUsage = keyCertSign, cRLSign\n");
   fclose (f);
 
   /* Generate self-signed certificate for testing using config file */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl genrsa -out %s 2048 2>/dev/null && "
             "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
             "-subj '/CN=localhost' -config %s -extensions v3_ca 2>/dev/null",
-            key_file, key_file, cert_file, conf_file);
+            key_file,
+            key_file,
+            cert_file,
+            conf_file);
   if (system (cmd) != 0)
     {
       unlink (conf_file);
@@ -138,7 +143,10 @@ TEST (tls_context_creation)
     SocketTLSContext_free (&client_ctx);
     ASSERT_NULL (client_ctx);
   }
-  FINALLY { remove_test_certs (cert_file, key_file); }
+  FINALLY
+  {
+    remove_test_certs (cert_file, key_file);
+  }
   END_TRY;
 }
 
@@ -159,8 +167,8 @@ TEST (tls_handshake_and_io)
     /* Create contexts */
     server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
     client_ctx = SocketTLSContext_new_client (NULL);
-    SocketTLSContext_set_verify_mode (
-        client_ctx, TLS_VERIFY_NONE); /* Accept self-signed */
+    SocketTLSContext_set_verify_mode (client_ctx,
+                                      TLS_VERIFY_NONE); /* Accept self-signed */
 
     /* Create connected socket pair */
     SocketPair_new (SOCK_STREAM, &client, &server);
@@ -263,7 +271,10 @@ TEST (tls_handshake_and_io)
     ASSERT_EQ (strcmp (buf, reply), 0);
 
     /* Test Shutdown */
-    TRY { SocketTLS_shutdown (client); }
+    TRY
+    {
+      SocketTLS_shutdown (client);
+    }
     EXCEPT (SocketTLS_ShutdownFailed)
     {
       /* May fail in non-blocking mode - acceptable */
@@ -507,7 +518,10 @@ TEST (tls_context_resource_cleanup)
     /* Double free should be safe (no-op) */
     SocketTLSContext_free (&ctx);
   }
-  FINALLY { remove_test_certs (cert_file, key_file); }
+  FINALLY
+  {
+    remove_test_certs (cert_file, key_file);
+  }
   END_TRY;
 }
 
@@ -541,7 +555,10 @@ TEST (tls_context_ca_accumulation)
   {
     /* May fail if cert is not valid CA - acceptable for this test */
   }
-  FINALLY { remove_test_certs (cert_file, key_file); }
+  FINALLY
+  {
+    remove_test_certs (cert_file, key_file);
+  }
   END_TRY;
 }
 
@@ -587,8 +604,13 @@ TEST (socket_sendfile_tls_fallback_check)
     }
 
   off_t offset = 0;
-  TRY { Socket_sendfile (socket, file_fd, &offset, 10); }
-  ELSE { /* Expected failure (socket not connected) */ }
+  TRY
+  {
+    Socket_sendfile (socket, file_fd, &offset, 10);
+  }
+  ELSE
+  { /* Expected failure (socket not connected) */
+  }
   END_TRY;
 
   close (file_fd);
@@ -599,8 +621,10 @@ TEST (socket_sendfile_tls_fallback_check)
 }
 
 static int
-dummy_accept_verify_cb (int pre_ok, X509_STORE_CTX *ctx,
-                        SocketTLSContext_T tls_ctx, Socket_T sock,
+dummy_accept_verify_cb (int pre_ok,
+                        X509_STORE_CTX *ctx,
+                        SocketTLSContext_T tls_ctx,
+                        Socket_T sock,
                         void *user_data)
 {
   (void)pre_ok;
@@ -612,8 +636,10 @@ dummy_accept_verify_cb (int pre_ok, X509_STORE_CTX *ctx,
 }
 
 static int
-dummy_fail_verify_cb (int pre_ok, X509_STORE_CTX *ctx,
-                      SocketTLSContext_T tls_ctx, Socket_T sock,
+dummy_fail_verify_cb (int pre_ok,
+                      X509_STORE_CTX *ctx,
+                      SocketTLSContext_T tls_ctx,
+                      Socket_T sock,
                       void *user_data)
 {
   (void)ctx;
@@ -698,7 +724,10 @@ TEST (tls_verify_callback_integration)
       long result = SocketTLS_get_verify_result (client_sock);
       ASSERT_EQ (result, X509_V_OK); /* Success with accept_cb on client */
     }
-    ELSE { ASSERT (0); /* Unexpected fail in verify result check */ }
+    ELSE
+    {
+      ASSERT (0); /* Unexpected fail in verify result check */
+    }
     END_TRY;
 
     /* Cleanup */
@@ -777,7 +806,8 @@ TEST (tls_send_recv_large_data)
     loops = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n = SocketTLS_recv (server, recv_buf + total_recv,
+        ssize_t n = SocketTLS_recv (server,
+                                    recv_buf + total_recv,
                                     sizeof (recv_buf) - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
@@ -1130,7 +1160,10 @@ TEST (tls_graceful_shutdown)
     ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
 
     /* Test graceful shutdown */
-    TRY { SocketTLS_shutdown (client); }
+    TRY
+    {
+      SocketTLS_shutdown (client);
+    }
     EXCEPT (SocketTLS_ShutdownFailed)
     {
       /* May fail in non-blocking mode - acceptable */
@@ -1138,8 +1171,13 @@ TEST (tls_graceful_shutdown)
     END_TRY;
 
     /* Multiple shutdown calls should be safe */
-    TRY { SocketTLS_shutdown (client); }
-    EXCEPT (SocketTLS_ShutdownFailed) { /* Already shutdown */ }
+    TRY
+    {
+      SocketTLS_shutdown (client);
+    }
+    EXCEPT (SocketTLS_ShutdownFailed)
+    { /* Already shutdown */
+    }
     END_TRY;
   }
   FINALLY
@@ -1440,9 +1478,9 @@ TEST (socketio_tls_scatter_gather_io)
     ssize_t total_recv = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n
-            = SocketTLS_recv (server, recv_buf + total_recv,
-                              sizeof (recv_buf) - 1 - (size_t)total_recv);
+        ssize_t n = SocketTLS_recv (server,
+                                    recv_buf + total_recv,
+                                    sizeof (recv_buf) - 1 - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
         else
@@ -1711,8 +1749,8 @@ TEST (socketio_tls_send_recv_via_socket_api)
     ssize_t total_recv = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n = Socket_recv (server, buf + total_recv,
-                                 sizeof (buf) - 1 - (size_t)total_recv);
+        ssize_t n = Socket_recv (
+            server, buf + total_recv, sizeof (buf) - 1 - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
         else
@@ -1733,8 +1771,8 @@ TEST (socketio_tls_send_recv_via_socket_api)
     total_recv = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n = Socket_recv (client, buf + total_recv,
-                                 sizeof (buf) - 1 - (size_t)total_recv);
+        ssize_t n = Socket_recv (
+            client, buf + total_recv, sizeof (buf) - 1 - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
         else
@@ -1786,8 +1824,14 @@ TEST (socketio_raw_error_paths)
 
     char buf[64];
     caught_closed = 0;
-    TRY { Socket_recv (sock2, buf, sizeof (buf)); }
-    EXCEPT (Socket_Closed) { caught_closed = 1; }
+    TRY
+    {
+      Socket_recv (sock2, buf, sizeof (buf));
+    }
+    EXCEPT (Socket_Closed)
+    {
+      caught_closed = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_closed, 1);
   }
@@ -1818,8 +1862,14 @@ TEST (socketio_raw_error_paths)
     /* May need multiple sends to trigger EPIPE */
     for (i = 0; i < 10 && !caught_closed; i++)
       {
-        TRY { Socket_send (sock1, send_buf, sizeof (send_buf)); }
-        EXCEPT (Socket_Closed) { caught_closed = 1; }
+        TRY
+        {
+          Socket_send (sock1, send_buf, sizeof (send_buf));
+        }
+        EXCEPT (Socket_Closed)
+        {
+          caught_closed = 1;
+        }
         END_TRY;
         usleep (1000);
       }
@@ -1854,8 +1904,14 @@ TEST (socketio_raw_error_paths)
     iov[1].iov_len = sizeof (recv2);
 
     caught_closed = 0;
-    TRY { Socket_recvv (sock2, iov, 2); }
-    EXCEPT (Socket_Closed) { caught_closed = 1; }
+    TRY
+    {
+      Socket_recvv (sock2, iov, 2);
+    }
+    EXCEPT (Socket_Closed)
+    {
+      caught_closed = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_closed, 1);
   }
@@ -1920,8 +1976,13 @@ TEST (socketio_tls_closed_connection)
     ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
 
     /* First do a proper TLS shutdown to send close_notify */
-    TRY { SocketTLS_shutdown (server); }
-    EXCEPT (SocketTLS_ShutdownFailed) { /* Ignore shutdown failure */ }
+    TRY
+    {
+      SocketTLS_shutdown (server);
+    }
+    EXCEPT (SocketTLS_ShutdownFailed)
+    { /* Ignore shutdown failure */
+    }
     END_TRY;
 
     /* Close server side to trigger error on client send/recv */
@@ -1942,8 +2003,14 @@ TEST (socketio_tls_closed_connection)
           /* n == 0 means EAGAIN (would block), not EOF for TLS */
           (void)n;
         }
-        EXCEPT (Socket_Closed) { caught_exception = 1; }
-        EXCEPT (SocketTLS_Failed) { caught_exception = 1; }
+        EXCEPT (Socket_Closed)
+        {
+          caught_exception = 1;
+        }
+        EXCEPT (SocketTLS_Failed)
+        {
+          caught_exception = 1;
+        }
         END_TRY;
         usleep (1000);
       }
@@ -2089,9 +2156,18 @@ TEST (socketio_tls_validate_not_ready)
 
     const char *msg = "Test before handshake";
     caught_error = 0;
-    TRY { Socket_send (client, msg, strlen (msg)); }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught_error = 1; }
-    EXCEPT (Socket_Failed) { caught_error = 1; }
+    TRY
+    {
+      Socket_send (client, msg, strlen (msg));
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught_error = 1;
+    }
+    EXCEPT (Socket_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
 
     /* We expect an error because handshake is not complete */
@@ -2100,9 +2176,18 @@ TEST (socketio_tls_validate_not_ready)
     /* Also test Socket_recv before handshake */
     char buf[64];
     caught_error = 0;
-    TRY { Socket_recv (client, buf, sizeof (buf)); }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught_error = 1; }
-    EXCEPT (Socket_Failed) { caught_error = 1; }
+    TRY
+    {
+      Socket_recv (client, buf, sizeof (buf));
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught_error = 1;
+    }
+    EXCEPT (Socket_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_error, 1);
 
@@ -2111,9 +2196,18 @@ TEST (socketio_tls_validate_not_ready)
     iov[0].iov_base = (void *)msg;
     iov[0].iov_len = strlen (msg);
     caught_error = 0;
-    TRY { Socket_sendv (client, iov, 1); }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught_error = 1; }
-    EXCEPT (Socket_Failed) { caught_error = 1; }
+    TRY
+    {
+      Socket_sendv (client, iov, 1);
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught_error = 1;
+    }
+    EXCEPT (Socket_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_error, 1);
 
@@ -2121,9 +2215,18 @@ TEST (socketio_tls_validate_not_ready)
     iov[0].iov_base = buf;
     iov[0].iov_len = sizeof (buf);
     caught_error = 0;
-    TRY { Socket_recvv (client, iov, 1); }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught_error = 1; }
-    EXCEPT (Socket_Failed) { caught_error = 1; }
+    TRY
+    {
+      Socket_recvv (client, iov, 1);
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught_error = 1;
+    }
+    EXCEPT (Socket_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_error, 1);
   }
@@ -2265,8 +2368,13 @@ TEST (socketio_tls_io_after_shutdown)
     ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
 
     /* Initiate TLS shutdown on client */
-    TRY { SocketTLS_shutdown (client); }
-    EXCEPT (SocketTLS_ShutdownFailed) { /* Ignore */ }
+    TRY
+    {
+      SocketTLS_shutdown (client);
+    }
+    EXCEPT (SocketTLS_ShutdownFailed)
+    { /* Ignore */
+    }
     END_TRY;
 
     /* Now try to send - may trigger SSL error handling */
@@ -2276,9 +2384,18 @@ TEST (socketio_tls_io_after_shutdown)
       ssize_t n = Socket_send (client, msg, strlen (msg));
       (void)n;
     }
-    EXCEPT (Socket_Closed) { exception_count++; }
-    EXCEPT (SocketTLS_Failed) { exception_count++; }
-    EXCEPT (Socket_Failed) { exception_count++; }
+    EXCEPT (Socket_Closed)
+    {
+      exception_count++;
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      exception_count++;
+    }
+    EXCEPT (Socket_Failed)
+    {
+      exception_count++;
+    }
     END_TRY;
     /* May or may not throw depending on SSL state */
 
@@ -2289,9 +2406,18 @@ TEST (socketio_tls_io_after_shutdown)
       ssize_t n = Socket_recv (server, buf, sizeof (buf));
       (void)n;
     }
-    EXCEPT (Socket_Closed) { exception_count++; }
-    EXCEPT (SocketTLS_Failed) { exception_count++; }
-    EXCEPT (Socket_Failed) { exception_count++; }
+    EXCEPT (Socket_Closed)
+    {
+      exception_count++;
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      exception_count++;
+    }
+    EXCEPT (Socket_Failed)
+    {
+      exception_count++;
+    }
     END_TRY;
     /* May or may not throw - just verify we don't crash */
 
@@ -2469,16 +2595,18 @@ TEST (tls_cipher_suite_negotiation)
 /* Generate client certificate with proper extensions for mTLS
  * Uses config file approach for LibreSSL/macOS compatibility */
 static int
-generate_client_cert (const char *client_cert, const char *client_key,
-                      const char *ca_cert, const char *ca_key)
+generate_client_cert (const char *client_cert,
+                      const char *client_key,
+                      const char *ca_cert,
+                      const char *ca_key)
 {
   char cmd[2048];
   const char *conf_file = "/tmp/openssl_client.cnf";
   FILE *f;
 
   /* Generate client private key */
-  snprintf (cmd, sizeof (cmd), "openssl genrsa -out %s 2048 2>/dev/null",
-            client_key);
+  snprintf (
+      cmd, sizeof (cmd), "openssl genrsa -out %s 2048 2>/dev/null", client_key);
   if (system (cmd) != 0)
     return -1;
 
@@ -2486,21 +2614,24 @@ generate_client_cert (const char *client_cert, const char *client_key,
   f = fopen (conf_file, "w");
   if (!f)
     return -1;
-  fprintf (f, "[req]\n"
-              "distinguished_name = req_dn\n"
-              "[req_dn]\n"
-              "CN = client\n"
-              "[client_ext]\n"
-              "basicConstraints = CA:FALSE\n"
-              "keyUsage = digitalSignature, keyEncipherment\n"
-              "extendedKeyUsage = clientAuth\n");
+  fprintf (f,
+           "[req]\n"
+           "distinguished_name = req_dn\n"
+           "[req_dn]\n"
+           "CN = client\n"
+           "[client_ext]\n"
+           "basicConstraints = CA:FALSE\n"
+           "keyUsage = digitalSignature, keyEncipherment\n"
+           "extendedKeyUsage = clientAuth\n");
   fclose (f);
 
   /* Generate CSR */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -new -key %s -out /tmp/client.csr "
             "-subj '/CN=client' -config %s 2>/dev/null",
-            client_key, conf_file);
+            client_key,
+            conf_file);
   if (system (cmd) != 0)
     {
       unlink (conf_file);
@@ -2508,11 +2639,15 @@ generate_client_cert (const char *client_cert, const char *client_key,
     }
 
   /* Sign with CA, including extensions */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl x509 -req -in /tmp/client.csr -CA %s -CAkey %s "
             "-CAcreateserial -out %s -days 1 "
             "-extfile %s -extensions client_ext 2>/dev/null",
-            ca_cert, ca_key, client_cert, conf_file);
+            ca_cert,
+            ca_key,
+            client_cert,
+            conf_file);
   if (system (cmd) != 0)
     {
       unlink (conf_file);
@@ -2679,7 +2814,7 @@ TEST (tls_session_save_buffer_sizing)
         /* Buffer too small test - use 1 byte buffer */
         size_t small_len = 1;
         ret = SocketTLS_session_save (client, buf, &small_len);
-        ASSERT_EQ (ret, 0); /* Buffer too small */
+        ASSERT_EQ (ret, 0);     /* Buffer too small */
         ASSERT (small_len > 1); /* Should update with required size */
       }
   }
@@ -2722,8 +2857,8 @@ TEST (tls_session_restore_timing)
 
     /* Test session restore before TLS enabled - should fail */
     unsigned char fake_session[64] = { 0 };
-    int ret = SocketTLS_session_restore (client, fake_session,
-                                         sizeof (fake_session));
+    int ret = SocketTLS_session_restore (
+        client, fake_session, sizeof (fake_session));
     ASSERT_EQ (ret, -1); /* TLS not enabled */
 
     SocketTLS_enable (client, client_ctx);
@@ -2731,8 +2866,8 @@ TEST (tls_session_restore_timing)
 
     /* Test session restore with invalid data - should return 0 (graceful
      * failure) */
-    ret = SocketTLS_session_restore (client, fake_session,
-                                     sizeof (fake_session));
+    ret = SocketTLS_session_restore (
+        client, fake_session, sizeof (fake_session));
     ASSERT_EQ (ret, 0); /* Invalid session data */
 
     /* Test session restore with empty data */
@@ -2759,8 +2894,8 @@ TEST (tls_session_restore_timing)
     ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
 
     /* Test session restore after handshake - should fail */
-    ret = SocketTLS_session_restore (client, fake_session,
-                                     sizeof (fake_session));
+    ret = SocketTLS_session_restore (
+        client, fake_session, sizeof (fake_session));
     ASSERT_EQ (ret, -1); /* Too late - handshake already done */
   }
   FINALLY
@@ -2852,12 +2987,14 @@ TEST (tls_is_session_reused_states)
 #endif
 }
 
-/* ==================== Connection Info Query Tests (Section 1.9) ====================
+/* ==================== Connection Info Query Tests (Section 1.9)
+ * ====================
  */
 
 /**
  * Test SocketTLS_get_cipher() for TLS 1.3 cipher suites.
- * Verifies that correct cipher names are returned for all TLS 1.3 cipher suites.
+ * Verifies that correct cipher names are returned for all TLS 1.3 cipher
+ * suites.
  */
 TEST (tls_get_cipher_tls13)
 {
@@ -3178,7 +3315,10 @@ TEST (tls_get_verify_result_codes)
               && client_state != TLS_HANDSHAKE_ERROR)
             client_state = SocketTLS_handshake (client);
         }
-        EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+        EXCEPT (SocketTLS_HandshakeFailed)
+        {
+          handshake_failed = 1;
+        }
         EXCEPT (SocketTLS_VerifyFailed)
         {
           handshake_failed = 1;
@@ -3192,7 +3332,10 @@ TEST (tls_get_verify_result_codes)
               && server_state != TLS_HANDSHAKE_ERROR)
             server_state = SocketTLS_handshake (server);
         }
-        EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+        EXCEPT (SocketTLS_HandshakeFailed)
+        {
+          handshake_failed = 1;
+        }
         END_TRY;
 
         loops++;
@@ -3207,13 +3350,13 @@ TEST (tls_get_verify_result_codes)
         /* Check verify result for specific X509 error code */
         result = SocketTLS_get_verify_result (client);
         /* Self-signed cert errors: */
-        int is_valid_error = (result == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
-                              || result == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
-                              || result == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT
-                              || result
-                                     == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-                              || result == X509_V_ERR_CERT_UNTRUSTED
-                              || result == X509_V_ERR_INVALID_CALL);
+        int is_valid_error
+            = (result == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+               || result == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+               || result == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT
+               || result == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+               || result == X509_V_ERR_CERT_UNTRUSTED
+               || result == X509_V_ERR_INVALID_CALL);
         ASSERT (is_valid_error);
       }
 
@@ -3288,8 +3431,14 @@ TEST (tls_get_verify_error_string_buffer)
               && client_state != TLS_HANDSHAKE_ERROR)
             client_state = SocketTLS_handshake (client);
         }
-        EXCEPT (SocketTLS_HandshakeFailed) { client_state = TLS_HANDSHAKE_ERROR; }
-        EXCEPT (SocketTLS_VerifyFailed) { client_state = TLS_HANDSHAKE_ERROR; }
+        EXCEPT (SocketTLS_HandshakeFailed)
+        {
+          client_state = TLS_HANDSHAKE_ERROR;
+        }
+        EXCEPT (SocketTLS_VerifyFailed)
+        {
+          client_state = TLS_HANDSHAKE_ERROR;
+        }
         END_TRY;
 
         TRY
@@ -3298,7 +3447,10 @@ TEST (tls_get_verify_error_string_buffer)
               && server_state != TLS_HANDSHAKE_ERROR)
             server_state = SocketTLS_handshake (server);
         }
-        EXCEPT (SocketTLS_HandshakeFailed) { server_state = TLS_HANDSHAKE_ERROR; }
+        EXCEPT (SocketTLS_HandshakeFailed)
+        {
+          server_state = TLS_HANDSHAKE_ERROR;
+        }
         END_TRY;
 
         loops++;
@@ -3322,7 +3474,8 @@ TEST (tls_get_verify_error_string_buffer)
           {
             /* Test with normal buffer */
             memset (buf, 0, sizeof (buf));
-            result = SocketTLS_get_verify_error_string (client, buf, sizeof (buf));
+            result
+                = SocketTLS_get_verify_error_string (client, buf, sizeof (buf));
             if (result)
               {
                 ASSERT (strlen (buf) > 0);
@@ -3333,8 +3486,8 @@ TEST (tls_get_verify_error_string_buffer)
             /* Test truncation with small buffer (10 bytes) */
             char small_buf[10];
             memset (small_buf, 'X', sizeof (small_buf));
-            result = SocketTLS_get_verify_error_string (client, small_buf,
-                                                        sizeof (small_buf));
+            result = SocketTLS_get_verify_error_string (
+                client, small_buf, sizeof (small_buf));
             if (result)
               {
                 /* Verify null-termination */
@@ -3345,8 +3498,8 @@ TEST (tls_get_verify_error_string_buffer)
 
             /* Test with 1-byte buffer (edge case) */
             char tiny_buf[1];
-            result = SocketTLS_get_verify_error_string (client, tiny_buf,
-                                                        sizeof (tiny_buf));
+            result = SocketTLS_get_verify_error_string (
+                client, tiny_buf, sizeof (tiny_buf));
             if (result)
               {
                 ASSERT (tiny_buf[0] == '\0');
@@ -3357,7 +3510,8 @@ TEST (tls_get_verify_error_string_buffer)
     /* Test on non-TLS socket - returns error string for invalid call error */
     plain = Socket_new (AF_INET, SOCK_STREAM, 0);
     result = SocketTLS_get_verify_error_string (plain, buf, sizeof (buf));
-    /* Non-TLS sockets return X509_V_ERR_INVALID_CALL which has an error string */
+    /* Non-TLS sockets return X509_V_ERR_INVALID_CALL which has an error string
+     */
     if (result)
       {
         ASSERT (strlen (buf) > 0);
@@ -3409,7 +3563,8 @@ TEST (tls_get_verify_error_string_buffer)
         if (code == X509_V_OK)
           {
             /* No error - get_verify_error_string should return NULL */
-            result = SocketTLS_get_verify_error_string (client, buf, sizeof (buf));
+            result
+                = SocketTLS_get_verify_error_string (client, buf, sizeof (buf));
             ASSERT_NULL (result);
           }
       }
@@ -3510,7 +3665,10 @@ TEST (tls_ktls_integration)
     ASSERT (server_rx == 0 || server_rx == 1);
 
     printf ("  kTLS active - client TX:%d RX:%d, server TX:%d RX:%d\n",
-            client_tx, client_rx, server_tx, server_rx);
+            client_tx,
+            client_rx,
+            server_tx,
+            server_rx);
 
     /* Test bidirectional I/O with kTLS (or fallback) */
     const char *msg1 = "Hello from client with kTLS!";
@@ -3577,7 +3735,8 @@ TEST (tls_ktls_integration)
 int
 main (void)
 {
-  /* Ignore SIGPIPE - required for socket tests that may write to closed peers */
+  /* Ignore SIGPIPE - required for socket tests that may write to closed peers
+   */
   signal (SIGPIPE, SIG_IGN);
 
   Test_run_all ();

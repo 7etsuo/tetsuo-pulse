@@ -113,7 +113,8 @@ grow_pin_array (T ctx)
 
   if (ctx->pinning.pins && ctx->pinning.count > 0)
     {
-      memcpy (new_pins, ctx->pinning.pins,
+      memcpy (new_pins,
+              ctx->pinning.pins,
               ctx->pinning.count * sizeof (TLSCertPin));
     }
 
@@ -139,7 +140,8 @@ insert_pin (T ctx, const unsigned char *hash)
     return;
 
   ensure_pin_capacity (ctx);
-  memcpy (ctx->pinning.pins[ctx->pinning.count].hash, hash,
+  memcpy (ctx->pinning.pins[ctx->pinning.count].hash,
+          hash,
           SOCKET_TLS_PIN_HASH_LEN);
   ctx->pinning.count++;
 }
@@ -173,7 +175,8 @@ tls_pinning_extract_spki_hash (const X509 *cert, unsigned char *out_hash)
 
 /* Constant-time search to prevent timing attacks */
 int
-tls_pinning_find (const TLSCertPin *pins, size_t count,
+tls_pinning_find (const TLSCertPin *pins,
+                  size_t count,
                   const unsigned char *hash)
 {
   if (!pins || count == 0 || !hash)
@@ -183,8 +186,8 @@ tls_pinning_find (const TLSCertPin *pins, size_t count,
   volatile int found = 0;
   for (size_t i = 0; i < count; i++)
     {
-      int match = (SocketCrypto_secure_compare (hash, pins[i].hash,
-                                                SOCKET_TLS_PIN_HASH_LEN)
+      int match = (SocketCrypto_secure_compare (
+                       hash, pins[i].hash, SOCKET_TLS_PIN_HASH_LEN)
                    == 0);
       found |= match;
     }
@@ -211,11 +214,13 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
   if (chain_len > max_check)
     {
       SOCKET_LOG_WARN_MSG ("Pinning check truncated: chain_len=%d > max=%d",
-                           chain_len, max_check);
+                           chain_len,
+                           max_check);
       chain_len = max_check;
     }
 
-  unsigned char hashes[SOCKET_TLS_MAX_CERT_CHAIN_DEPTH][SOCKET_TLS_PIN_HASH_LEN];
+  unsigned char hashes[SOCKET_TLS_MAX_CERT_CHAIN_DEPTH]
+                      [SOCKET_TLS_PIN_HASH_LEN];
   int num_hashes = 0;
   for (int i = 0; i < chain_len; i++)
     {
@@ -289,13 +294,14 @@ open_cert_file_secure (const char *cert_file)
     {
       if (errno == ELOOP)
         {
-          RAISE_CTX_ERROR_MSG (
-              SocketTLS_Failed,
-              "Symlinks not allowed for certificate files: %s", cert_file);
+          RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                               "Symlinks not allowed for certificate files: %s",
+                               cert_file);
         }
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
                            "Cannot open certificate file '%.200s': %s",
-                           cert_file, Socket_safe_strerror (errno));
+                           cert_file,
+                           Socket_safe_strerror (errno));
     }
 
   FILE *fp = fdopen (fd, "r");
@@ -314,8 +320,7 @@ validate_cert_file_size (FILE *fp)
 {
   if (fseeko (fp, 0, SEEK_END) != 0)
     {
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Cannot seek in certificate file");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Cannot seek in certificate file");
     }
 
   off_t fsize = ftello (fp);
@@ -331,7 +336,8 @@ validate_cert_file_size (FILE *fp)
     {
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
                            "Certificate file too large: %ld bytes (max %zu)",
-                           fsize, (size_t)SOCKET_TLS_MAX_CERT_FILE_SIZE);
+                           fsize,
+                           (size_t)SOCKET_TLS_MAX_CERT_FILE_SIZE);
     }
   return fsize;
 }
@@ -394,9 +400,8 @@ SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert)
   unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
   if (tls_pinning_extract_spki_hash (cert, hash) != 0)
     {
-      RAISE_CTX_ERROR_MSG (
-          SocketTLS_Failed,
-          "Failed to extract SPKI hash from X509 certificate");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Failed to extract SPKI hash from X509 certificate");
     }
 
   pthread_mutex_lock (&ctx->pinning.lock);

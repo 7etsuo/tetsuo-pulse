@@ -39,10 +39,13 @@
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
 /* Sharded session cache configuration constants */
-#define SOCKET_TLS_SHARDED_BUCKET_COUNT     64   /* Power-of-2 for efficient modulo operations */
-#define SOCKET_TLS_SHARDED_MIN_SHARDS       2    /* Minimum for meaningful sharding */
-#define SOCKET_TLS_SHARDED_MAX_SHARDS       256  /* Maximum for reasonable memory usage */
-#define TLS_SESSION_ID_MAX_SIZE             32   /* Maximum session ID size (SSL_MAX_SSL_SESSION_ID_LENGTH) */
+#define SOCKET_TLS_SHARDED_BUCKET_COUNT \
+  64 /* Power-of-2 for efficient modulo operations */
+#define SOCKET_TLS_SHARDED_MIN_SHARDS 2 /* Minimum for meaningful sharding */
+#define SOCKET_TLS_SHARDED_MAX_SHARDS \
+  256 /* Maximum for reasonable memory usage */
+#define TLS_SESSION_ID_MAX_SIZE \
+  32 /* Maximum session ID size (SSL_MAX_SSL_SESSION_ID_LENGTH) */
 
 /* Ex-data index for associating SocketTLSContext_T with SSL_CTX
  * Thread-safe initialization using pthread_once to prevent race conditions
@@ -58,9 +61,9 @@ static pthread_once_t tls_ctx_ex_data_once = PTHREAD_ONCE_INIT;
  * SSL_CTX_get_ex_new_index() simultaneously and get different indices.
  */
 static void
-init_ex_data_index(void)
+init_ex_data_index (void)
 {
-  tls_ctx_ex_data_index = SSL_CTX_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+  tls_ctx_ex_data_index = SSL_CTX_get_ex_new_index (0, NULL, NULL, NULL, NULL);
 }
 
 /**
@@ -69,9 +72,9 @@ init_ex_data_index(void)
  * Uses pthread_once for guaranteed single initialization across all threads.
  */
 static void
-ensure_ex_data_index(void)
+ensure_ex_data_index (void)
 {
-  pthread_once(&tls_ctx_ex_data_once, init_ex_data_index);
+  pthread_once (&tls_ctx_ex_data_once, init_ex_data_index);
 }
 
 
@@ -129,7 +132,8 @@ SocketTLS_optimize_handshake (Socket_T socket)
   if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof (optval)) < 0)
     {
       SOCKET_LOG_DEBUG_MSG (
-          "TCP_NODELAY failed for fd=%d (errno=%d, may be non-TCP socket)", fd,
+          "TCP_NODELAY failed for fd=%d (errno=%d, may be non-TCP socket)",
+          fd,
           errno);
       /* Continue - this might be a Unix domain socket or other non-TCP type */
     }
@@ -146,8 +150,8 @@ SocketTLS_optimize_handshake (Socket_T socket)
    * The kernel will revert to normal behavior after some time. */
   if (setsockopt (fd, IPPROTO_TCP, TCP_QUICKACK, &optval, sizeof (optval)) < 0)
     {
-      SOCKET_LOG_DEBUG_MSG ("TCP_QUICKACK failed for fd=%d (errno=%d)", fd,
-                            errno);
+      SOCKET_LOG_DEBUG_MSG (
+          "TCP_QUICKACK failed for fd=%d (errno=%d)", fd, errno);
       /* Continue - not critical, just an optimization */
     }
   else
@@ -297,7 +301,9 @@ SocketTLSContext_disable_early_data (SocketTLSContext_T ctx)
  * @threadsafe No - modifies SSL state
  */
 int
-SocketTLS_write_early_data (Socket_T socket, const void *buf, size_t len,
+SocketTLS_write_early_data (Socket_T socket,
+                            const void *buf,
+                            size_t len,
                             size_t *written)
 {
   assert (socket);
@@ -337,7 +343,8 @@ SocketTLS_write_early_data (Socket_T socket, const void *buf, size_t len,
       *written = bytes_written;
       SocketMetrics_counter_inc (SOCKET_CTR_TLS_EARLY_DATA_SENT);
       SOCKET_LOG_DEBUG_MSG ("Wrote %zu bytes of early data for fd=%d",
-                            bytes_written, SocketBase_fd (socket->base));
+                            bytes_written,
+                            SocketBase_fd (socket->base));
       return 1;
     }
 
@@ -389,7 +396,9 @@ SocketTLS_write_early_data (Socket_T socket, const void *buf, size_t len,
  * @threadsafe No - modifies SSL state
  */
 int
-SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
+SocketTLS_read_early_data (Socket_T socket,
+                           void *buf,
+                           size_t len,
                            size_t *readbytes)
 {
   assert (socket);
@@ -420,7 +429,8 @@ SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
       *readbytes = bytes_read;
       SocketMetrics_counter_inc (SOCKET_CTR_TLS_EARLY_DATA_RECV);
       SOCKET_LOG_DEBUG_MSG ("Read %zu bytes of early data for fd=%d",
-                            bytes_read, SocketBase_fd (socket->base));
+                            bytes_read,
+                            SocketBase_fd (socket->base));
       return 1;
 
     case SSL_READ_EARLY_DATA_FINISH:
@@ -544,7 +554,8 @@ SocketTLS_request_key_update (Socket_T socket, int request_peer_update)
     {
       SOCKET_LOG_DEBUG_MSG ("KeyUpdate not available for TLS version 0x%x "
                             "(requires TLS 1.3) on fd=%d",
-                            SSL_version (ssl), SocketBase_fd (socket->base));
+                            SSL_version (ssl),
+                            SocketBase_fd (socket->base));
       errno = ENOTSUP;
       return 0;
     }
@@ -565,7 +576,8 @@ SocketTLS_request_key_update (Socket_T socket, int request_peer_update)
   SocketMetrics_counter_inc (SOCKET_CTR_TLS_KEY_UPDATES);
 
   SOCKET_LOG_DEBUG_MSG ("KeyUpdate %s queued for fd=%d (total updates: %d)",
-                        request_peer_update ? "with peer request" : "local only",
+                        request_peer_update ? "with peer request"
+                                            : "local only",
                         SocketBase_fd (socket->base),
                         socket->tls_key_update_count);
 
@@ -600,18 +612,20 @@ SocketTLS_get_key_update_count (Socket_T socket)
 /**
  * @brief Session entry wrapper for intrusive hash table
  */
-typedef struct SessionEntry {
-  unsigned char session_id[TLS_SESSION_ID_MAX_SIZE];  /**< Copy of session ID for lookup */
-  SSL_SESSION *session;          /**< The OpenSSL session object */
-  struct SessionEntry *next;     /**< Hash chain pointer */
+typedef struct SessionEntry
+{
+  unsigned char
+      session_id[TLS_SESSION_ID_MAX_SIZE]; /**< Copy of session ID for lookup */
+  SSL_SESSION *session;                    /**< The OpenSSL session object */
+  struct SessionEntry *next;               /**< Hash chain pointer */
 } SessionEntry;
 
 /* Helper functions for sharded session hash table */
 static unsigned
 sharded_session_hash (const void *key, unsigned seed, unsigned table_size)
 {
-  uintptr_t h = (uintptr_t) key ^ seed;
-  return (unsigned) (h % table_size);
+  uintptr_t h = (uintptr_t)key ^ seed;
+  return (unsigned)(h % table_size);
 }
 
 static int
@@ -627,12 +641,12 @@ sharded_session_next_ptr (void *entry)
 }
 
 /* Static config for sharded session hash table */
-static const HashTable_Config sharded_session_config = {
-    .bucket_count = SOCKET_TLS_SHARDED_BUCKET_COUNT,
-    .hash_seed = SOCKET_UTIL_DJB2_SEED,
-    .hash = sharded_session_hash,
-    .compare = sharded_session_compare,
-    .next_ptr = sharded_session_next_ptr};
+static const HashTable_Config sharded_session_config
+    = { .bucket_count = SOCKET_TLS_SHARDED_BUCKET_COUNT,
+        .hash_seed = SOCKET_UTIL_DJB2_SEED,
+        .hash = sharded_session_hash,
+        .compare = sharded_session_compare,
+        .next_ptr = sharded_session_next_ptr };
 
 /**
  * Select shard based on session ID hash using golden ratio multiplication
@@ -650,7 +664,8 @@ static const HashTable_Config sharded_session_config = {
  * good distribution across shards without the overhead of full DJB2.
  */
 static size_t
-select_shard (TLSSessionCacheSharded_T *cache, const unsigned char *session_id,
+select_shard (TLSSessionCacheSharded_T *cache,
+              const unsigned char *session_id,
               size_t id_len)
 {
   /* Hash first 16 bytes of session ID using prime-31 hash */
@@ -664,28 +679,34 @@ select_shard (TLSSessionCacheSharded_T *cache, const unsigned char *session_id,
  * sharded_get_session_cb - Retrieve session from sharded cache
  */
 static SSL_SESSION *
-sharded_get_session_cb(SSL *ssl, const unsigned char *id, int id_len, int *copy)
+sharded_get_session_cb (SSL *ssl,
+                        const unsigned char *id,
+                        int id_len,
+                        int *copy)
 {
-  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
-  SocketTLSContext_T ctx = SSL_CTX_get_ex_data(ssl_ctx, tls_ctx_ex_data_index);
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
   if (!ctx || !ctx->sharded_enabled)
     return NULL;
 
   TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
-  size_t shard_idx = select_shard(cache, id, (size_t)id_len);
+  size_t shard_idx = select_shard (cache, id, (size_t)id_len);
   TLSSessionShard_T *shard = &cache->shards[shard_idx];
 
-  pthread_mutex_lock(&shard->mutex);
-  SessionEntry *entry = HashTable_find(shard->session_table, id, NULL);
+  pthread_mutex_lock (&shard->mutex);
+  SessionEntry *entry = HashTable_find (shard->session_table, id, NULL);
   SSL_SESSION *sess = NULL;
-  if (entry) {
-    sess = entry->session;
-    shard->hits++;
-    *copy = 1;
-  } else {
-    shard->misses++;
-  }
-  pthread_mutex_unlock(&shard->mutex);
+  if (entry)
+    {
+      sess = entry->session;
+      shard->hits++;
+      *copy = 1;
+    }
+  else
+    {
+      shard->misses++;
+    }
+  pthread_mutex_unlock (&shard->mutex);
 
   return sess;
 }
@@ -694,42 +715,47 @@ sharded_get_session_cb(SSL *ssl, const unsigned char *id, int id_len, int *copy)
  * sharded_new_session_cb - Store newly negotiated session
  */
 static int
-sharded_new_session_cb(SSL *ssl, SSL_SESSION *sess)
+sharded_new_session_cb (SSL *ssl, SSL_SESSION *sess)
 {
-  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
-  SocketTLSContext_T ctx = SSL_CTX_get_ex_data(ssl_ctx, tls_ctx_ex_data_index);
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
   if (!ctx || !ctx->sharded_enabled)
     return 0;
 
   unsigned int id_len;
-  const unsigned char *id = SSL_SESSION_get_id(sess, &id_len);
+  const unsigned char *id = SSL_SESSION_get_id (sess, &id_len);
 
   TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
-  size_t shard_idx = select_shard(cache, id, id_len);
+  size_t shard_idx = select_shard (cache, id, id_len);
   TLSSessionShard_T *shard = &cache->shards[shard_idx];
 
-  pthread_mutex_lock(&shard->mutex);
-  if (shard->current_count >= shard->max_sessions) {
-    pthread_mutex_unlock(&shard->mutex);
-    return 0;
-  }
+  pthread_mutex_lock (&shard->mutex);
+  if (shard->current_count >= shard->max_sessions)
+    {
+      pthread_mutex_unlock (&shard->mutex);
+      return 0;
+    }
 
-  SessionEntry *entry = Arena_alloc(ctx->arena, sizeof(SessionEntry), __FILE__, __LINE__);
-  if (!entry) {
-    pthread_mutex_unlock(&shard->mutex);
-    return 0;
-  }
+  SessionEntry *entry
+      = Arena_alloc (ctx->arena, sizeof (SessionEntry), __FILE__, __LINE__);
+  if (!entry)
+    {
+      pthread_mutex_unlock (&shard->mutex);
+      return 0;
+    }
 
-  memset(entry->session_id, 0, TLS_SESSION_ID_MAX_SIZE);
-  memcpy(entry->session_id, id,
-         (id_len < TLS_SESSION_ID_MAX_SIZE) ? id_len : TLS_SESSION_ID_MAX_SIZE);
+  memset (entry->session_id, 0, TLS_SESSION_ID_MAX_SIZE);
+  memcpy (entry->session_id,
+          id,
+          (id_len < TLS_SESSION_ID_MAX_SIZE) ? id_len
+                                             : TLS_SESSION_ID_MAX_SIZE);
   entry->session = sess;
   entry->next = NULL;
 
-  HashTable_insert(shard->session_table, entry, entry->session_id);
+  HashTable_insert (shard->session_table, entry, entry->session_id);
   shard->current_count++;
   shard->stores++;
-  pthread_mutex_unlock(&shard->mutex);
+  pthread_mutex_unlock (&shard->mutex);
 
   return 1;
 }
@@ -738,28 +764,29 @@ sharded_new_session_cb(SSL *ssl, SSL_SESSION *sess)
  * sharded_remove_session_cb - Remove session from sharded cache
  */
 static void
-sharded_remove_session_cb(SSL_CTX *ssl_ctx, SSL_SESSION *sess)
+sharded_remove_session_cb (SSL_CTX *ssl_ctx, SSL_SESSION *sess)
 {
-  SocketTLSContext_T ctx = SSL_CTX_get_ex_data(ssl_ctx, tls_ctx_ex_data_index);
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
   if (!ctx || !ctx->sharded_enabled)
     return;
 
   unsigned int id_len;
-  const unsigned char *id = SSL_SESSION_get_id(sess, &id_len);
+  const unsigned char *id = SSL_SESSION_get_id (sess, &id_len);
 
   TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
-  size_t shard_idx = select_shard(cache, id, id_len);
+  size_t shard_idx = select_shard (cache, id, id_len);
   TLSSessionShard_T *shard = &cache->shards[shard_idx];
 
-  pthread_mutex_lock(&shard->mutex);
+  pthread_mutex_lock (&shard->mutex);
   void *prev = NULL;
-  SessionEntry *entry = HashTable_find(shard->session_table, id, &prev);
-  if (entry) {
-    HashTable_remove(shard->session_table, entry, prev, id);
-    if (shard->current_count > 0)
-      shard->current_count--;
-  }
-  pthread_mutex_unlock(&shard->mutex);
+  SessionEntry *entry = HashTable_find (shard->session_table, id, &prev);
+  if (entry)
+    {
+      HashTable_remove (shard->session_table, entry, prev, id);
+      if (shard->current_count > 0)
+        shard->current_count--;
+    }
+  pthread_mutex_unlock (&shard->mutex);
 }
 
 /**
@@ -800,49 +827,60 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
 
     /* Set OpenSSL to use no internal cache, rely on custom sharded callbacks */
     int mode = ctx->is_server ? SSL_SESS_CACHE_SERVER : SSL_SESS_CACHE_CLIENT;
-    SSL_CTX_set_session_cache_mode (ctx->ssl_ctx, SSL_SESS_CACHE_NO_INTERNAL_STORE | mode);
+    SSL_CTX_set_session_cache_mode (ctx->ssl_ctx,
+                                    SSL_SESS_CACHE_NO_INTERNAL_STORE | mode);
 
     /* Allocate sharded cache structure */
     ctx->sharded_session_cache.num_shards = actual_shards;
     ctx->sharded_session_cache.shard_mask = actual_shards - 1;
-    ctx->sharded_session_cache.shards = Arena_calloc (ctx->arena, actual_shards,
-                                                       sizeof (TLSSessionShard_T),
-                                                       __FILE__, __LINE__);
+    ctx->sharded_session_cache.shards
+        = Arena_calloc (ctx->arena,
+                        actual_shards,
+                        sizeof (TLSSessionShard_T),
+                        __FILE__,
+                        __LINE__);
 
     /* Default: evenly distribute total cache capacity across shards.
      * If sessions_per_shard is 0, calculate it by dividing the global
      * SOCKET_TLS_SESSION_CACHE_SIZE (1000 sessions) by the number of shards. */
-    size_t sessions_per_shard_final = sessions_per_shard ? sessions_per_shard : (SOCKET_TLS_SESSION_CACHE_SIZE / actual_shards);
+    size_t sessions_per_shard_final
+        = sessions_per_shard ? sessions_per_shard
+                             : (SOCKET_TLS_SESSION_CACHE_SIZE / actual_shards);
 
     for (size_t i = 0; i < actual_shards; i++)
-    {
-      TLSSessionShard_T *shard = &ctx->sharded_session_cache.shards[i];
+      {
+        TLSSessionShard_T *shard = &ctx->sharded_session_cache.shards[i];
 
-      /* Initialize hash table for sessions using file-scope config */
-      shard->session_table = HashTable_new (ctx->arena, &sharded_session_config);
-      if (!shard->session_table)
-        RAISE_TLS_ERROR (SocketTLS_Failed);
+        /* Initialize hash table for sessions using file-scope config */
+        shard->session_table
+            = HashTable_new (ctx->arena, &sharded_session_config);
+        if (!shard->session_table)
+          RAISE_TLS_ERROR (SocketTLS_Failed);
 
-      pthread_mutex_init (&shard->mutex, NULL);
+        pthread_mutex_init (&shard->mutex, NULL);
 
-      shard->max_sessions = sessions_per_shard_final;
-      shard->current_count = 0;
-      shard->hits = shard->misses = shard->stores = 0;
-    }
+        shard->max_sessions = sessions_per_shard_final;
+        shard->current_count = 0;
+        shard->hits = shard->misses = shard->stores = 0;
+      }
 
     ctx->sharded_enabled = 1;
 
-    ensure_ex_data_index();
-    if (SSL_CTX_set_ex_data(ctx->ssl_ctx, tls_ctx_ex_data_index, ctx) != 1)
+    ensure_ex_data_index ();
+    if (SSL_CTX_set_ex_data (ctx->ssl_ctx, tls_ctx_ex_data_index, ctx) != 1)
       {
-        SOCKET_LOG_WARN_MSG ("Failed to set SSL_CTX ex_data for sharded session cache");
+        SOCKET_LOG_WARN_MSG (
+            "Failed to set SSL_CTX ex_data for sharded session cache");
       }
-    SSL_CTX_sess_set_get_cb(ctx->ssl_ctx, sharded_get_session_cb);
-    SSL_CTX_sess_set_new_cb(ctx->ssl_ctx, sharded_new_session_cb);
-    SSL_CTX_sess_set_remove_cb(ctx->ssl_ctx, sharded_remove_session_cb);
+    SSL_CTX_sess_set_get_cb (ctx->ssl_ctx, sharded_get_session_cb);
+    SSL_CTX_sess_set_new_cb (ctx->ssl_ctx, sharded_new_session_cb);
+    SSL_CTX_sess_set_remove_cb (ctx->ssl_ctx, sharded_remove_session_cb);
 
-    SOCKET_LOG_INFO_MSG ("Created sharded session cache with %zu shards (%zu sessions/shard, timeout %lds)",
-                         actual_shards, sessions_per_shard_final, timeout_seconds);
+    SOCKET_LOG_INFO_MSG ("Created sharded session cache with %zu shards (%zu "
+                         "sessions/shard, timeout %lds)",
+                         actual_shards,
+                         sessions_per_shard_final,
+                         timeout_seconds);
   }
   EXCEPT (SocketTLS_Failed)
   {
@@ -853,7 +891,8 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
 }
 
 /**
- * SocketTLSContext_get_sharded_stats - Get aggregate statistics from sharded session cache
+ * SocketTLSContext_get_sharded_stats - Get aggregate statistics from sharded
+ * session cache
  * @ctx: TLS context with sharded cache enabled
  * @total_hits: Output - total cache hits across all shards (may be NULL)
  * @total_misses: Output - total cache misses across all shards (may be NULL)
@@ -868,12 +907,15 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
  * @see SocketTLSContext_create_sharded_cache() to enable sharded caching
  */
 void
-SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx, size_t *total_hits,
-                                    size_t *total_misses, size_t *total_stores)
+SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx,
+                                    size_t *total_hits,
+                                    size_t *total_misses,
+                                    size_t *total_stores)
 {
   if (!ctx || !ctx->sharded_enabled)
     {
-      SocketTLSContext_get_cache_stats (ctx, total_hits, total_misses, total_stores);
+      SocketTLSContext_get_cache_stats (
+          ctx, total_hits, total_misses, total_stores);
       return;
     }
 
@@ -889,11 +931,17 @@ SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx, size_t *total_hits,
       pthread_mutex_unlock (&shard->mutex);
     }
 
-  if (total_hits) *total_hits = hits;
-  if (total_misses) *total_misses = misses;
-  if (total_stores) *total_stores = stores;
+  if (total_hits)
+    *total_hits = hits;
+  if (total_misses)
+    *total_misses = misses;
+  if (total_stores)
+    *total_stores = stores;
 
-  SOCKET_LOG_DEBUG_MSG ("Sharded cache stats: hits=%zu misses=%zu stores=%zu", hits, misses, stores);
+  SOCKET_LOG_DEBUG_MSG ("Sharded cache stats: hits=%zu misses=%zu stores=%zu",
+                        hits,
+                        misses,
+                        stores);
 }
 
 /**
@@ -901,10 +949,10 @@ SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx, size_t *total_hits,
  */
 struct TLSPoolBuffer
 {
-  void *data;                    /**< Buffer data */
-  size_t size;                   /**< Buffer size */
-  int in_use;                    /**< 1 if currently allocated */
-  struct TLSPoolBuffer *next;    /**< Next in free list */
+  void *data;                 /**< Buffer data */
+  size_t size;                /**< Buffer size */
+  int in_use;                 /**< 1 if currently allocated */
+  struct TLSPoolBuffer *next; /**< Next in free list */
 };
 
 /**
@@ -912,14 +960,14 @@ struct TLSPoolBuffer
  */
 struct TLSBufferPool
 {
-  struct TLSPoolBuffer *buffers;  /**< Array of buffer entries */
+  struct TLSPoolBuffer *buffers;   /**< Array of buffer entries */
   struct TLSPoolBuffer *free_list; /**< Head of free list */
-  size_t buffer_size;             /**< Size of each buffer */
-  size_t total_buffers;           /**< Total number of buffers */
-  size_t in_use;                  /**< Buffers currently allocated */
-  pthread_mutex_t mutex;          /**< Pool lock */
-  Arena_T arena;                  /**< Memory arena for the pool */
-  int owns_arena;                 /**< 1 if pool owns arena, 0 if caller owns */
+  size_t buffer_size;              /**< Size of each buffer */
+  size_t total_buffers;            /**< Total number of buffers */
+  size_t in_use;                   /**< Buffers currently allocated */
+  pthread_mutex_t mutex;           /**< Pool lock */
+  Arena_T arena;                   /**< Memory arena for the pool */
+  int owns_arena; /**< 1 if pool owns arena, 0 if caller owns */
 };
 
 typedef struct TLSBufferPool *TLSBufferPool_T;
@@ -972,8 +1020,8 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
     }
   else
     {
-      pool = Arena_alloc (pool_arena, sizeof (struct TLSBufferPool), __FILE__,
-                         __LINE__);
+      pool = Arena_alloc (
+          pool_arena, sizeof (struct TLSBufferPool), __FILE__, __LINE__);
       if (!pool)
         return NULL;
     }
@@ -996,7 +1044,9 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
     }
 
   /* Allocate buffer array */
-  pool->buffers = Arena_alloc (pool_arena, num_buffers * sizeof (struct TLSPoolBuffer), __FILE__,
+  pool->buffers = Arena_alloc (pool_arena,
+                               num_buffers * sizeof (struct TLSPoolBuffer),
+                               __FILE__,
                                __LINE__);
   if (!pool->buffers)
     {
@@ -1032,7 +1082,8 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
     }
 
   SOCKET_LOG_DEBUG_MSG ("Created TLS buffer pool: %zu buffers of %zu bytes",
-                        num_buffers, buffer_size);
+                        num_buffers,
+                        buffer_size);
 
   return pool;
 }
@@ -1115,7 +1166,9 @@ TLSBufferPool_release (TLSBufferPool_T pool, void *buffer)
  * Thread-safe: Yes
  */
 void
-TLSBufferPool_stats (TLSBufferPool_T pool, size_t *total, size_t *in_use,
+TLSBufferPool_stats (TLSBufferPool_T pool,
+                     size_t *total,
+                     size_t *in_use,
                      size_t *available)
 {
   if (!pool)
@@ -1163,7 +1216,8 @@ TLSBufferPool_free (TLSBufferPool_T *pool)
 
   pthread_mutex_destroy (&p->mutex);
 
-  /* Clear caller's pointer first (always safe - points to caller's stack/heap) */
+  /* Clear caller's pointer first (always safe - points to caller's stack/heap)
+   */
   *pool = NULL;
 
   if (owns_arena)
@@ -1196,7 +1250,8 @@ TLSBufferPool_free (TLSBufferPool_T *pool)
  */
 void
 SocketTLSContext_set_early_data_replay_callback (
-    SocketTLSContext_T ctx, SocketTLSEarlyDataReplayCallback callback,
+    SocketTLSContext_T ctx,
+    SocketTLSEarlyDataReplayCallback callback,
     void *user_data)
 {
   assert (ctx);
@@ -1231,16 +1286,14 @@ SocketTLSContext_set_early_data_replay_callback (
  * Thread-safe: No - call during configuration phase only.
  */
 void
-SocketTLSContext_require_early_data_replay (SocketTLSContext_T ctx,
-                                             int require)
+SocketTLSContext_require_early_data_replay (SocketTLSContext_T ctx, int require)
 {
   assert (ctx);
 
   if (!ctx->is_server)
     {
-      RAISE_TLS_ERROR_MSG (
-          SocketTLS_Failed,
-          "Replay requirement only valid for server contexts");
+      RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                           "Replay requirement only valid for server contexts");
     }
 
   ctx->early_data_replay_required = require ? 1 : 0;
@@ -1285,8 +1338,8 @@ SocketTLSContext_has_early_data_replay_callback (SocketTLSContext_T ctx)
  */
 int
 SocketTLSContext_check_early_data_replay (SocketTLSContext_T ctx,
-                                           const unsigned char *session_id,
-                                           size_t session_id_len)
+                                          const unsigned char *session_id,
+                                          size_t session_id_len)
 {
   assert (ctx);
 
@@ -1312,8 +1365,8 @@ SocketTLSContext_check_early_data_replay (SocketTLSContext_T ctx,
     }
 
   /* Invoke the callback */
-  int result = callback (ctx, session_id, session_id_len,
-                         ctx->early_data_replay_user_data);
+  int result = callback (
+      ctx, session_id, session_id_len, ctx->early_data_replay_user_data);
 
   if (result)
     {

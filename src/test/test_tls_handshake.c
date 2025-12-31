@@ -51,10 +51,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -100,11 +102,12 @@ TEST (handshake_single_step_unconnected)
     {
       TLSHandshakeState state = SocketTLS_handshake (socket);
       /* On unconnected socket, should get an error state or exception */
-      ASSERT (state == TLS_HANDSHAKE_ERROR
-              || state == TLS_HANDSHAKE_WANT_READ
+      ASSERT (state == TLS_HANDSHAKE_ERROR || state == TLS_HANDSHAKE_WANT_READ
               || state == TLS_HANDSHAKE_WANT_WRITE);
     }
-    EXCEPT (SocketTLS_HandshakeFailed) { /* Expected on unconnected socket */ }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    { /* Expected on unconnected socket */
+    }
     END_TRY;
   }
   FINALLY
@@ -347,9 +350,18 @@ TEST (handshake_before_enable_fails)
     ASSERT_NOT_NULL (socket);
 
     /* Handshake without TLS enable should fail */
-    TRY { SocketTLS_handshake (socket); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_handshake (socket);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -366,9 +378,18 @@ TEST (handshake_null_socket_fails)
 {
   volatile int caught = 0;
 
-  TRY { SocketTLS_handshake (NULL); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
-  EXCEPT (SocketTLS_HandshakeFailed) { caught = 1; }
+  TRY
+  {
+    SocketTLS_handshake (NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (caught, 1);

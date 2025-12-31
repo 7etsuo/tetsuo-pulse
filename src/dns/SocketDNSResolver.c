@@ -97,14 +97,14 @@ typedef enum
 /* Internal query structure */
 struct SocketDNSResolver_Query
 {
-  uint16_t id;                        /* DNS message ID */
-  char hostname[DNS_MAX_NAME_LEN];    /* Original query hostname */
+  uint16_t id;                         /* DNS message ID */
+  char hostname[DNS_MAX_NAME_LEN];     /* Original query hostname */
   char current_name[DNS_MAX_NAME_LEN]; /* Current name (may be CNAME target) */
-  int flags;                          /* Resolution flags */
-  QueryState state;                   /* Current state */
-  int cname_depth;                    /* CNAME chain depth */
-  int query_type;                     /* Current query type (A or AAAA) */
-  int is_tcp;                         /* Using TCP transport */
+  int flags;                           /* Resolution flags */
+  QueryState state;                    /* Current state */
+  int cname_depth;                     /* CNAME chain depth */
+  int query_type;                      /* Current query type (A or AAAA) */
+  int is_tcp;                          /* Using TCP transport */
 
   /* Results accumulation */
   SocketDNSResolver_Address addresses[RESOLVER_MAX_ADDRESSES];
@@ -131,11 +131,11 @@ struct SocketDNSResolver_Query
 /* Cache entry structure */
 struct CacheEntry
 {
-  char *hostname;                                      /* Cached hostname */
+  char *hostname; /* Cached hostname */
   SocketDNSResolver_Address addresses[RESOLVER_MAX_ADDRESSES];
   size_t address_count;
   uint32_t ttl;
-  int64_t insert_time_ms;                              /* Monotonic timestamp */
+  int64_t insert_time_ms; /* Monotonic timestamp */
   struct CacheEntry *hash_next;
   struct CacheEntry *lru_prev;
   struct CacheEntry *lru_next;
@@ -172,21 +172,28 @@ struct T
 
 /* Forward declarations */
 static void transport_callback (SocketDNSQuery_T query,
-                                const unsigned char *response, size_t len,
-                                int error, void *userdata);
+                                const unsigned char *response,
+                                size_t len,
+                                int error,
+                                void *userdata);
 static int send_query (T resolver, struct SocketDNSResolver_Query *q);
-static void complete_query (T resolver, struct SocketDNSResolver_Query *q,
-                            int error);
-static void cache_insert (T resolver, const char *hostname,
+static void
+complete_query (T resolver, struct SocketDNSResolver_Query *q, int error);
+static void cache_insert (T resolver,
+                          const char *hostname,
                           const SocketDNSResolver_Address *addresses,
-                          size_t count, uint32_t ttl);
+                          size_t count,
+                          uint32_t ttl);
 static struct CacheEntry *cache_lookup (T resolver, const char *hostname);
-static struct SocketDNSResolver_Query *initialize_query (
-    T resolver, const char *hostname, int flags,
-    SocketDNSResolver_Callback callback, void *userdata);
+static struct SocketDNSResolver_Query *
+initialize_query (T resolver,
+                  const char *hostname,
+                  int flags,
+                  SocketDNSResolver_Callback callback,
+                  void *userdata);
 
 /* Use centralized monotonic time utility from SocketUtil.h */
-#define get_monotonic_ms() Socket_get_monotonic_ms()
+#define get_monotonic_ms() Socket_get_monotonic_ms ()
 
 /**
  * @brief Hash DNS hostname for cache lookup.
@@ -242,7 +249,8 @@ is_ipv4_address (const char *hostname, struct in_addr *addr)
  * @return 1 if valid IPv6, 0 otherwise.
  */
 static int
-is_ipv6_address (const char *hostname, struct in6_addr *addr,
+is_ipv6_address (const char *hostname,
+                 struct in6_addr *addr,
                  unsigned int *scope_id_out)
 {
   struct in6_addr temp_addr;
@@ -306,7 +314,8 @@ is_ipv6_address (const char *hostname, struct in6_addr *addr,
 static int
 is_ip_address (const char *hostname)
 {
-  return is_ipv4_address (hostname, NULL) || is_ipv6_address (hostname, NULL, NULL);
+  return is_ipv4_address (hostname, NULL)
+         || is_ipv6_address (hostname, NULL, NULL);
 }
 
 /* Check if hostname is "localhost" (case-insensitive) */
@@ -602,8 +611,10 @@ cache_lookup (T resolver, const char *hostname)
 }
 
 static void
-cache_insert (T resolver, const char *hostname,
-              const SocketDNSResolver_Address *addresses, size_t count,
+cache_insert (T resolver,
+              const char *hostname,
+              const SocketDNSResolver_Address *addresses,
+              size_t count,
               uint32_t ttl)
 {
   if (resolver->cache_max_entries == 0 || count == 0)
@@ -614,23 +625,24 @@ cache_insert (T resolver, const char *hostname,
     cache_evict_oldest (resolver);
 
   /* Allocate entry from arena */
-  struct CacheEntry *entry = Arena_alloc (resolver->arena, sizeof (*entry),
-                                          __FILE__, __LINE__);
+  struct CacheEntry *entry
+      = Arena_alloc (resolver->arena, sizeof (*entry), __FILE__, __LINE__);
   if (!entry)
     return;
 
   /* Allocate hostname from arena to prevent leak */
   size_t hostname_len = strlen (hostname) + 1;
-  entry->hostname = Arena_alloc (resolver->arena, hostname_len, __FILE__,
-                                 __LINE__);
+  entry->hostname
+      = Arena_alloc (resolver->arena, hostname_len, __FILE__, __LINE__);
   if (!entry->hostname)
     return;
   memcpy (entry->hostname, hostname, hostname_len);
 
   /* Copy addresses */
-  size_t copy_count = count > RESOLVER_MAX_ADDRESSES ? RESOLVER_MAX_ADDRESSES
-                                                     : count;
-  memcpy (entry->addresses, addresses,
+  size_t copy_count
+      = count > RESOLVER_MAX_ADDRESSES ? RESOLVER_MAX_ADDRESSES : count;
+  memcpy (entry->addresses,
+          addresses,
           copy_count * sizeof (SocketDNSResolver_Address));
   entry->address_count = copy_count;
   entry->ttl = ttl;
@@ -694,8 +706,10 @@ build_query_message (struct SocketDNSResolver_Query *q, int query_type)
 
   /* Initialize and encode question */
   SocketDNS_question_init (&question, q->current_name, query_type);
-  if (SocketDNS_question_encode (&question, q->query_msg + offset,
-                                 MAX_QUERY_MESSAGE_SIZE - offset, &written)
+  if (SocketDNS_question_encode (&question,
+                                 q->query_msg + offset,
+                                 MAX_QUERY_MESSAGE_SIZE - offset,
+                                 &written)
       != 0)
     return -1;
   offset += written;
@@ -715,15 +729,17 @@ build_query_message (struct SocketDNSResolver_Query *q, int query_type)
  * Prevents cache poisoning by verifying the response is for our query.
  */
 static int
-validate_response_question (const unsigned char *response, size_t len,
+validate_response_question (const unsigned char *response,
+                            size_t len,
                             struct SocketDNSResolver_Query *q)
 {
   SocketDNS_Question question;
   size_t consumed;
 
   /* Decode first question from response */
-  if (SocketDNS_question_decode (response, len, DNS_HEADER_SIZE,
-                                  &question, &consumed) != 0)
+  if (SocketDNS_question_decode (
+          response, len, DNS_HEADER_SIZE, &question, &consumed)
+      != 0)
     return RESOLVER_ERROR_INVALID;
 
   /* QNAME must match (case-insensitive per RFC 1035 Section 2.3.3) */
@@ -759,13 +775,14 @@ validate_response_question (const unsigned char *response, size_t len,
  */
 static int
 parse_cname_rr (struct SocketDNSResolver_Query *q,
-                const unsigned char *response, size_t len,
+                const unsigned char *response,
+                size_t len,
                 const SocketDNS_RR *rr)
 {
   char cname_target[DNS_MAX_NAME_LEN] = { 0 };
 
-  if (SocketDNS_rdata_parse_cname (response, len, rr, cname_target,
-                                   sizeof (cname_target))
+  if (SocketDNS_rdata_parse_cname (
+          response, len, rr, cname_target, sizeof (cname_target))
       < 0)
     return RESOLVER_OK; /* Skip invalid CNAME */
 
@@ -796,7 +813,8 @@ parse_cname_rr (struct SocketDNSResolver_Query *q,
  * @return RESOLVER_OK on success or skip
  */
 static int
-parse_address_rr (struct SocketDNSResolver_Query *q, const SocketDNS_RR *rr,
+parse_address_rr (struct SocketDNSResolver_Query *q,
+                  const SocketDNS_RR *rr,
                   int family)
 {
   if (q->address_count >= RESOLVER_MAX_ADDRESSES)
@@ -853,7 +871,8 @@ parse_address_rr (struct SocketDNSResolver_Query *q, const SocketDNS_RR *rr,
  */
 static int
 parse_answer_rr (struct SocketDNSResolver_Query *q,
-                 const unsigned char *response, size_t len,
+                 const unsigned char *response,
+                 size_t len,
                  const SocketDNS_RR *rr)
 {
   switch (rr->type)
@@ -936,7 +955,9 @@ validate_response_rcode (const SocketDNS_Header *header)
  */
 static int
 parse_answer_section (struct SocketDNSResolver_Query *q,
-                      const unsigned char *response, size_t len, int qdcount,
+                      const unsigned char *response,
+                      size_t len,
+                      int qdcount,
                       int ancount)
 {
   SocketDNS_Question question;
@@ -947,8 +968,8 @@ parse_answer_section (struct SocketDNSResolver_Query *q,
   /* Skip question section */
   for (int i = 0; i < qdcount; i++)
     {
-      if (SocketDNS_question_decode (response, len, offset, &question,
-                                     &consumed)
+      if (SocketDNS_question_decode (
+              response, len, offset, &question, &consumed)
           != 0)
         return RESOLVER_ERROR_INVALID;
       offset += consumed;
@@ -970,13 +991,16 @@ parse_answer_section (struct SocketDNSResolver_Query *q,
 }
 
 static int
-parse_response (T resolver, struct SocketDNSResolver_Query *q,
-                const unsigned char *response, size_t len)
+parse_response (T resolver,
+                struct SocketDNSResolver_Query *q,
+                const unsigned char *response,
+                size_t len)
 {
   SocketDNS_Header header;
   int result;
 
-  (void)resolver; /* Currently unused - reserved for future caching extensions */
+  (void)
+      resolver; /* Currently unused - reserved for future caching extensions */
 
   /* Decode header */
   if (SocketDNS_header_decode (response, len, &header) != 0)
@@ -1001,8 +1025,8 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     return result;
 
   /* Parse answer section */
-  return parse_answer_section (q, response, len, header.qdcount,
-                               header.ancount);
+  return parse_answer_section (
+      q, response, len, header.qdcount, header.ancount);
 }
 
 /*
@@ -1042,8 +1066,11 @@ handle_transport_error (struct SocketDNSResolver_Query *q, int error)
 }
 
 static void
-transport_callback (SocketDNSQuery_T query, const unsigned char *response,
-                    size_t len, int error, void *userdata)
+transport_callback (SocketDNSQuery_T query,
+                    const unsigned char *response,
+                    size_t len,
+                    int error,
+                    void *userdata)
 {
   struct SocketDNSResolver_Query *q = userdata;
   T resolver;
@@ -1124,13 +1151,19 @@ send_query (T resolver, struct SocketDNSResolver_Query *q)
   SocketDNSQuery_T tq;
   if (q->is_tcp || (q->flags & RESOLVER_FLAG_TCP))
     {
-      tq = SocketDNSTransport_query_tcp (resolver->transport, q->query_msg,
-                                         q->query_len, transport_callback, q);
+      tq = SocketDNSTransport_query_tcp (resolver->transport,
+                                         q->query_msg,
+                                         q->query_len,
+                                         transport_callback,
+                                         q);
     }
   else
     {
-      tq = SocketDNSTransport_query_udp (resolver->transport, q->query_msg,
-                                         q->query_len, transport_callback, q);
+      tq = SocketDNSTransport_query_udp (resolver->transport,
+                                         q->query_msg,
+                                         q->query_len,
+                                         transport_callback,
+                                         q);
     }
 
   if (!tq)
@@ -1152,17 +1185,21 @@ complete_query (T resolver, struct SocketDNSResolver_Query *q, int error)
   if (error == RESOLVER_OK && q->address_count > 0)
     {
       /* Build result - use reallocarray to prevent integer overflow */
-      result.addresses = reallocarray (NULL, q->address_count,
-                                       sizeof (SocketDNSResolver_Address));
+      result.addresses = reallocarray (
+          NULL, q->address_count, sizeof (SocketDNSResolver_Address));
       if (result.addresses)
         {
-          memcpy (result.addresses, q->addresses,
+          memcpy (result.addresses,
+                  q->addresses,
                   q->address_count * sizeof (SocketDNSResolver_Address));
           result.count = q->address_count;
           result.min_ttl = q->min_ttl;
 
           /* Cache the result */
-          cache_insert (resolver, q->hostname, q->addresses, q->address_count,
+          cache_insert (resolver,
+                        q->hostname,
+                        q->addresses,
+                        q->address_count,
                         q->min_ttl);
         }
       else
@@ -1182,8 +1219,8 @@ complete_query (T resolver, struct SocketDNSResolver_Query *q, int error)
   /* Invoke callback */
   if (q->callback)
     {
-      q->callback (q, error == RESOLVER_OK ? &result : NULL, error,
-                   q->userdata);
+      q->callback (
+          q, error == RESOLVER_OK ? &result : NULL, error, q->userdata);
     }
 
   /* Free result */
@@ -1309,8 +1346,8 @@ SocketDNSResolver_load_resolv_conf (T resolver)
     {
       const char *ns = config.nameservers[i].address;
       if (ns[0] != '\0'
-          && SocketDNSTransport_add_nameserver (resolver->transport, ns,
-                                                DNS_PORT)
+          && SocketDNSTransport_add_nameserver (
+                 resolver->transport, ns, DNS_PORT)
                  == 0)
         {
           count++;
@@ -1324,7 +1361,8 @@ SocketDNSResolver_load_resolv_conf (T resolver)
   /* Propagate to transport layer */
   SocketDNSTransport_Config transport_config = { 0 };
   transport_config.initial_timeout_ms = resolver->timeout_ms;
-  transport_config.max_timeout_ms = resolver->timeout_ms * TIMEOUT_BACKOFF_MULTIPLIER;
+  transport_config.max_timeout_ms
+      = resolver->timeout_ms * TIMEOUT_BACKOFF_MULTIPLIER;
   transport_config.max_retries = resolver->max_retries;
   transport_config.rotate_nameservers = SocketDNSConfig_has_rotate (&config);
   SocketDNSTransport_configure (resolver->transport, &transport_config);
@@ -1359,8 +1397,8 @@ void
 SocketDNSResolver_set_timeout (T resolver, int timeout_ms)
 {
   assert (resolver);
-  resolver->timeout_ms = timeout_ms > 0 ? timeout_ms
-                                        : RESOLVER_DEFAULT_TIMEOUT_MS;
+  resolver->timeout_ms
+      = timeout_ms > 0 ? timeout_ms : RESOLVER_DEFAULT_TIMEOUT_MS;
 
   /* Propagate to transport (RFC 1035 §4.2.1) */
   apply_config_to_transport (resolver);
@@ -1370,8 +1408,8 @@ void
 SocketDNSResolver_set_retries (T resolver, int max_retries)
 {
   assert (resolver);
-  resolver->max_retries = max_retries >= 0 ? max_retries
-                                           : RESOLVER_DEFAULT_MAX_RETRIES;
+  resolver->max_retries
+      = max_retries >= 0 ? max_retries : RESOLVER_DEFAULT_MAX_RETRIES;
 
   /* Propagate to transport (RFC 1035 §4.2.1) */
   apply_config_to_transport (resolver);
@@ -1387,8 +1425,10 @@ SocketDNSResolver_set_retries (T resolver, int max_retries)
  * @return 1 if handled (IPv4 or IPv6 literal), 0 otherwise.
  */
 static int
-try_ip_literal (const char *hostname, int flags,
-                SocketDNSResolver_Callback callback, void *userdata)
+try_ip_literal (const char *hostname,
+                int flags,
+                SocketDNSResolver_Callback callback,
+                void *userdata)
 {
   SocketDNSResolver_Result result = { 0 };
   SocketDNSResolver_Address addr = { 0 };
@@ -1445,8 +1485,10 @@ try_ip_literal (const char *hostname, int flags,
  * @return 1 if handled, 0 otherwise.
  */
 static int
-try_localhost (const char *hostname, int flags,
-               SocketDNSResolver_Callback callback, void *userdata)
+try_localhost (const char *hostname,
+               int flags,
+               SocketDNSResolver_Callback callback,
+               void *userdata)
 {
   SocketDNSResolver_Result result = { 0 };
   SocketDNSResolver_Address addrs[2];
@@ -1491,8 +1533,11 @@ try_localhost (const char *hostname, int flags,
  * @return 1 if cache hit, 0 otherwise.
  */
 static int
-try_cache (T resolver, const char *hostname, int flags,
-           SocketDNSResolver_Callback callback, void *userdata)
+try_cache (T resolver,
+           const char *hostname,
+           int flags,
+           SocketDNSResolver_Callback callback,
+           void *userdata)
 {
   struct CacheEntry *cached;
   SocketDNSResolver_Result result = { 0 };
@@ -1505,12 +1550,13 @@ try_cache (T resolver, const char *hostname, int flags,
     return 0;
 
   /* Build result from cache - use reallocarray to prevent overflow */
-  result.addresses = reallocarray (NULL, cached->address_count,
-                                   sizeof (SocketDNSResolver_Address));
+  result.addresses = reallocarray (
+      NULL, cached->address_count, sizeof (SocketDNSResolver_Address));
   if (!result.addresses)
     return 0; /* Allocation failed, proceed to query */
 
-  memcpy (result.addresses, cached->addresses,
+  memcpy (result.addresses,
+          cached->addresses,
           cached->address_count * sizeof (SocketDNSResolver_Address));
   result.count = cached->address_count;
   result.min_ttl = cached->ttl;
@@ -1533,9 +1579,10 @@ try_cache (T resolver, const char *hostname, int flags,
  * @return 0 if valid, error code otherwise.
  */
 static int
-validate_query_prerequisites (T resolver, const char *hostname,
-                               SocketDNSResolver_Callback callback,
-                               void *userdata)
+validate_query_prerequisites (T resolver,
+                              const char *hostname,
+                              SocketDNSResolver_Callback callback,
+                              void *userdata)
 {
   /* Check nameservers */
   if (SocketDNSTransport_nameserver_count (resolver->transport) == 0)
@@ -1568,8 +1615,11 @@ validate_query_prerequisites (T resolver, const char *hostname,
  * @return Initialized query on success, NULL on allocation failure.
  */
 static struct SocketDNSResolver_Query *
-initialize_query (T resolver, const char *hostname, int flags,
-                  SocketDNSResolver_Callback callback, void *userdata)
+initialize_query (T resolver,
+                  const char *hostname,
+                  int flags,
+                  SocketDNSResolver_Callback callback,
+                  void *userdata)
 {
   struct SocketDNSResolver_Query *q;
 
@@ -1596,8 +1646,11 @@ initialize_query (T resolver, const char *hostname, int flags,
 }
 
 SocketDNSResolver_Query_T
-SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
-                           SocketDNSResolver_Callback callback, void *userdata)
+SocketDNSResolver_resolve (T resolver,
+                           const char *hostname,
+                           int flags,
+                           SocketDNSResolver_Callback callback,
+                           void *userdata)
 {
   struct SocketDNSResolver_Query *q;
 
@@ -1697,7 +1750,8 @@ timeout_tracker_expired (const TimeoutTracker *tracker)
 
 static void
 resolve_sync_callback (SocketDNSResolver_Query_T query,
-                       const SocketDNSResolver_Result *result, int error,
+                       const SocketDNSResolver_Result *result,
+                       int error,
                        void *userdata)
 {
   struct resolve_sync_context *ctx = userdata;
@@ -1709,11 +1763,12 @@ resolve_sync_callback (SocketDNSResolver_Query_T query,
   if (error == RESOLVER_OK && result && result->count > 0)
     {
       /* Copy result - caller must free */
-      ctx->result.addresses
-          = reallocarray (NULL, result->count, sizeof (SocketDNSResolver_Address));
+      ctx->result.addresses = reallocarray (
+          NULL, result->count, sizeof (SocketDNSResolver_Address));
       if (ctx->result.addresses)
         {
-          memcpy (ctx->result.addresses, result->addresses,
+          memcpy (ctx->result.addresses,
+                  result->addresses,
                   result->count * sizeof (SocketDNSResolver_Address));
           ctx->result.count = result->count;
           ctx->result.min_ttl = result->min_ttl;
@@ -1737,7 +1792,8 @@ resolve_sync_callback (SocketDNSResolver_Query_T query,
  * @return RESOLVER_OK on completion, RESOLVER_ERROR_TIMEOUT on timeout.
  */
 static int
-run_sync_event_loop (T resolver, SocketDNSResolver_Query_T query,
+run_sync_event_loop (T resolver,
+                     SocketDNSResolver_Query_T query,
                      struct resolve_sync_context *ctx,
                      TimeoutTracker *tracker)
 {
@@ -1763,7 +1819,9 @@ run_sync_event_loop (T resolver, SocketDNSResolver_Query_T query,
 }
 
 int
-SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
+SocketDNSResolver_resolve_sync (T resolver,
+                                const char *hostname,
+                                int flags,
                                 int timeout_ms,
                                 SocketDNSResolver_Result *result)
 {
@@ -1786,8 +1844,8 @@ SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
   timeout_tracker_init (&tracker, timeout_ms);
 
   /* Start async resolution */
-  query = SocketDNSResolver_resolve (resolver, hostname, flags,
-                                     resolve_sync_callback, &ctx);
+  query = SocketDNSResolver_resolve (
+      resolver, hostname, flags, resolve_sync_callback, &ctx);
 
   /* Fast path: immediate completion (cached, localhost, IP literal) */
   if (ctx.done)
@@ -2070,7 +2128,8 @@ SocketDNSResolver_cache_stats (T resolver, SocketDNSResolver_CacheStats *stats)
 }
 
 int
-SocketDNSResolver_cache_lookup (T resolver, const char *hostname,
+SocketDNSResolver_cache_lookup (T resolver,
+                                const char *hostname,
                                 SocketDNSResolver_Result *result)
 {
   struct CacheEntry *cached;
@@ -2088,12 +2147,13 @@ SocketDNSResolver_cache_lookup (T resolver, const char *hostname,
     return RESOLVER_ERROR_NXDOMAIN; /* Not in cache */
 
   /* Build result from cache - use reallocarray to prevent integer overflow */
-  result->addresses = reallocarray (NULL, cached->address_count,
-                                    sizeof (SocketDNSResolver_Address));
+  result->addresses = reallocarray (
+      NULL, cached->address_count, sizeof (SocketDNSResolver_Address));
   if (!result->addresses)
     return RESOLVER_ERROR_NOMEM;
 
-  memcpy (result->addresses, cached->addresses,
+  memcpy (result->addresses,
+          cached->addresses,
           cached->address_count * sizeof (SocketDNSResolver_Address));
   result->count = cached->address_count;
   result->min_ttl = cached->ttl;

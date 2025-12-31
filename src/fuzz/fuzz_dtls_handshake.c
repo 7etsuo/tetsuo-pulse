@@ -66,8 +66,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argc;
   (void)argv;
 
-  TRY { g_client_ctx = SocketDTLSContext_new_client (NULL); }
-  EXCEPT (SocketDTLS_Failed) { g_client_ctx = NULL; }
+  TRY
+  {
+    g_client_ctx = SocketDTLSContext_new_client (NULL);
+  }
+  EXCEPT (SocketDTLS_Failed)
+  {
+    g_client_ctx = NULL;
+  }
   END_TRY;
 
   return 0;
@@ -169,7 +175,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Before enable: should show disabled */
         assert (SocketDTLS_is_enabled (socket) == 0);
         assert (SocketDTLS_is_handshake_done (socket) == 0);
-        assert (SocketDTLS_get_last_state (socket) == DTLS_HANDSHAKE_NOT_STARTED);
+        assert (SocketDTLS_get_last_state (socket)
+                == DTLS_HANDSHAKE_NOT_STARTED);
 
         SocketDTLS_enable (socket, g_client_ctx);
 
@@ -233,15 +240,33 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketDTLS_Failed) {}
-  EXCEPT (SocketDTLS_HandshakeFailed) {}
-  EXCEPT (SocketDTLS_VerifyFailed) {}
-  EXCEPT (SocketDTLS_CookieFailed) {}
-  EXCEPT (SocketDTLS_TimeoutExpired) {}
-  EXCEPT (SocketDTLS_ShutdownFailed) {}
-  EXCEPT (SocketDgram_Failed) {}
-  EXCEPT (Socket_Closed) {}
-  ELSE {}
+  EXCEPT (SocketDTLS_Failed)
+  {
+  }
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_CookieFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_TimeoutExpired)
+  {
+  }
+  EXCEPT (SocketDTLS_ShutdownFailed)
+  {
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   /* Cleanup - only the socket, context is reused */

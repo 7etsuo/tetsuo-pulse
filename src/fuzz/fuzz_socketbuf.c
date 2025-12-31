@@ -114,7 +114,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             assert (SocketBuf_space (small_buf) == MIN_FUZZ_CAPACITY);
             (void)small_buf; /* Suppress unused-but-set warning */
           }
-          EXCEPT (SocketBuf_Failed) { /* Expected for invalid capacities */ }
+          EXCEPT (SocketBuf_Failed)
+          { /* Expected for invalid capacities */
+          }
           END_TRY;
         }
         break;
@@ -389,8 +391,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketBuf_Failed) { /* Expected for some operations */ }
-  EXCEPT (Arena_Failed) { /* Memory allocation can fail */ }
+  EXCEPT (SocketBuf_Failed)
+  { /* Expected for some operations */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory allocation can fail */
+  }
   FINALLY
   {
     /* Release buffer (arena owns memory) */

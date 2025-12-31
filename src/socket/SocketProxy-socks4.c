@@ -48,7 +48,7 @@
 #define SOCKS4_RESPONSE_SIZE 8
 
 /** SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
-static const unsigned char SOCKS4A_MARKER_IP[4] = {0x00, 0x00, 0x00, 0x01};
+static const unsigned char SOCKS4A_MARKER_IP[4] = { 0x00, 0x00, 0x00, 0x01 };
 
 /* ============================================================================
  * Static Helper Functions
@@ -68,16 +68,18 @@ static const unsigned char SOCKS4A_MARKER_IP[4] = {0x00, 0x00, 0x00, 0x01};
  * not exceed send_buf capacity.
  *
  * Sets PROXY_ERROR_PROTOCOL with "Request too large" message on failure,
- * following the pattern established at line 329 in proxy_socks4a_send_connect().
+ * following the pattern established at line 329 in
+ * proxy_socks4a_send_connect().
  */
 static inline int
-socks4_ensure_buffer_space (struct SocketProxy_Conn_T *conn, size_t current_len,
+socks4_ensure_buffer_space (struct SocketProxy_Conn_T *conn,
+                            size_t current_len,
                             size_t needed_bytes)
 {
   if (current_len + needed_bytes > sizeof (conn->send_buf))
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4 request too large for buffer");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large for buffer");
       return -1;
     }
   return 0;
@@ -112,16 +114,20 @@ socks4_write_header (unsigned char *buf, int port)
  *
  * Returns: 0 on success, -1 if buffer overflow
  *
- * Username length and validity already checked by caller (socks4_validate_inputs).
+ * Username length and validity already checked by caller
+ * (socks4_validate_inputs).
  */
 static int
-socks4_write_userid (unsigned char *buf, size_t buf_remaining,
-                     const char *username, size_t *bytes_written)
+socks4_write_userid (unsigned char *buf,
+                     size_t buf_remaining,
+                     const char *username,
+                     size_t *bytes_written)
 {
   const char *userid = (username != NULL) ? username : "";
   size_t userid_len = strlen (userid);
 
-  /* userid_len already validated <= SOCKET_PROXY_MAX_USERNAME_LEN and UTF-8 by caller */
+  /* userid_len already validated <= SOCKET_PROXY_MAX_USERNAME_LEN and UTF-8 by
+   * caller */
 
   /* Need space for userid + null terminator */
   if (userid_len + 1 > buf_remaining)
@@ -154,16 +160,18 @@ socks4_validate_username (struct SocketProxy_Conn_T *conn)
   size_t user_len = strlen (conn->username);
   if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+      socketproxy_set_error (conn,
+                             PROXY_ERROR_PROTOCOL,
                              "Username too long (max %d): %zu",
-                             SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
+                             SOCKET_PROXY_MAX_USERNAME_LEN,
+                             user_len);
       return -1;
     }
 
   if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Invalid UTF-8 in username");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "Invalid UTF-8 in username");
       return -1;
     }
 
@@ -195,25 +203,25 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
     SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
 
     /* Validate hostname and optionally get its length */
-    if (socketcommon_validate_hostname_internal (conn->target_host, 1,
-                                                  SocketProxy_Failed, &host_len)
+    if (socketcommon_validate_hostname_internal (
+            conn->target_host, 1, SocketProxy_Failed, &host_len)
         != 0)
       {
-        RETURN -1;
+        RETURN - 1;
       }
 
     /* UTF-8 validation for target host (hostnames may be internationalized) */
     if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
       {
-        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                               "Invalid UTF-8 in target host");
-        RETURN -1;
+        socketproxy_set_error (
+            conn, PROXY_ERROR_PROTOCOL, "Invalid UTF-8 in target host");
+        RETURN - 1;
       }
   }
   EXCEPT (SocketProxy_Failed)
   {
     socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "%s", socket_error_buf);
-    RETURN -1;
+    RETURN - 1;
   }
   END_TRY;
 
@@ -227,7 +235,6 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
 
   return 0;
 }
-
 
 
 /* ============================================================================
@@ -266,7 +273,8 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
   if (inet_pton (AF_INET, conn->target_host, &ipv4) != 1)
     {
       socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL,
+          conn,
+          PROXY_ERROR_PROTOCOL,
           "SOCKS4 requires IPv4 address (use SOCKS4A for hostnames)");
       return -1;
     }
@@ -278,8 +286,8 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
   /* Write header: version + command + port */
   if (len + 4 > sizeof (conn->send_buf))
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4 request too large");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
       return -1;
     }
   len += socks4_write_header (buf + len, conn->target_port);
@@ -291,20 +299,22 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
   /* Write destination IP (network byte order) */
   if (len + 4 > sizeof (conn->send_buf))
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4 request too large");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
       return -1;
     }
   memcpy (buf + len, &ipv4, 4);
   len += 4;
 
   /* Write userid with null terminator */
-  if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
-                           conn->username, &userid_written)
+  if (socks4_write_userid (buf + len,
+                           sizeof (conn->send_buf) - len,
+                           conn->username,
+                           &userid_written)
       < 0)
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4 request too large for buffer");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large for buffer");
       return -1;
     }
   len += userid_written;
@@ -353,7 +363,8 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
     return proxy_socks4_send_connect (conn);
 
   /* host_len already computed by socks4_validate_inputs() above */
-  /* Additional validation (UTF-8, etc.) already performed in socks4_validate_inputs() */
+  /* Additional validation (UTF-8, etc.) already performed in
+   * socks4_validate_inputs() */
 
   /* Validate buffer space for header (4 bytes) */
   if (socks4_ensure_buffer_space (conn, len, 4) < 0)
@@ -362,8 +373,8 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* Write header: version + command + port */
   if (len + 4 > sizeof (conn->send_buf))
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4a request too large");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4a request too large");
       return -1;
     }
   len += socks4_write_header (buf + len, conn->target_port);
@@ -375,20 +386,22 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* Write SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
   if (len + 4 > sizeof (conn->send_buf))
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4a request too large");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4a request too large");
       return -1;
     }
   memcpy (buf + len, SOCKS4A_MARKER_IP, 4);
   len += 4;
 
   /* Write userid with null terminator */
-  if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
-                           conn->username, &userid_written)
+  if (socks4_write_userid (buf + len,
+                           sizeof (conn->send_buf) - len,
+                           conn->username,
+                           &userid_written)
       < 0)
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "SOCKS4 request too large for buffer");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large for buffer");
       return -1;
     }
   len += userid_written;
@@ -446,8 +459,10 @@ proxy_socks4_recv_response (struct SocketProxy_Conn_T *conn)
   if (buf[0] != 0)
     {
       socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL,
-          "Invalid SOCKS4 reply version: 0x%02X (expected 0x00)", buf[0]);
+          conn,
+          PROXY_ERROR_PROTOCOL,
+          "Invalid SOCKS4 reply version: 0x%02X (expected 0x00)",
+          buf[0]);
       return PROXY_ERROR_PROTOCOL;
     }
 

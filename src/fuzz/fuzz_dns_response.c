@@ -110,8 +110,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         case DNS_TYPE_CNAME:
           {
             char cname[DNS_MAX_NAME_LEN];
-            (void)SocketDNS_rdata_parse_cname (data, size, &rr, cname,
-                                               sizeof (cname));
+            (void)SocketDNS_rdata_parse_cname (
+                data, size, &rr, cname, sizeof (cname));
             break;
           }
         case DNS_TYPE_SOA:

@@ -32,14 +32,16 @@ struct SocketSimple_Reconnect
 
 static void
 state_callback_wrapper (SocketReconnect_T core __attribute__ ((unused)),
-                         SocketReconnect_State old_state,
-                         SocketReconnect_State new_state, void *userdata)
+                        SocketReconnect_State old_state,
+                        SocketReconnect_State new_state,
+                        void *userdata)
 {
   struct SocketSimple_Reconnect *conn
       = (struct SocketSimple_Reconnect *)userdata;
   if (conn && conn->user_callback)
     {
-      conn->user_callback (conn, (SocketSimple_Reconnect_State)old_state,
+      conn->user_callback (conn,
+                           (SocketSimple_Reconnect_State)old_state,
                            (SocketSimple_Reconnect_State)new_state,
                            conn->user_data);
     }
@@ -50,15 +52,15 @@ state_callback_wrapper (SocketReconnect_T core __attribute__ ((unused)),
  *============================================================================*/
 
 /* Default reconnection policy values */
-#define RECONNECT_DEFAULT_INITIAL_DELAY_MS    100
-#define RECONNECT_DEFAULT_MAX_DELAY_MS        30000
-#define RECONNECT_DEFAULT_MULTIPLIER          2.0
-#define RECONNECT_DEFAULT_JITTER              0.25
-#define RECONNECT_DEFAULT_MAX_ATTEMPTS        10
-#define RECONNECT_DEFAULT_CIRCUIT_THRESHOLD   5
-#define RECONNECT_DEFAULT_CIRCUIT_RESET_MS    60000
-#define RECONNECT_DEFAULT_HEALTH_INTERVAL_MS  30000
-#define RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS   5000
+#define RECONNECT_DEFAULT_INITIAL_DELAY_MS 100
+#define RECONNECT_DEFAULT_MAX_DELAY_MS 30000
+#define RECONNECT_DEFAULT_MULTIPLIER 2.0
+#define RECONNECT_DEFAULT_JITTER 0.25
+#define RECONNECT_DEFAULT_MAX_ATTEMPTS 10
+#define RECONNECT_DEFAULT_CIRCUIT_THRESHOLD 5
+#define RECONNECT_DEFAULT_CIRCUIT_RESET_MS 60000
+#define RECONNECT_DEFAULT_HEALTH_INTERVAL_MS 30000
+#define RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS 5000
 
 /**
  * @brief Map Simple API policy to Core API policy.
@@ -106,8 +108,9 @@ Socket_simple_reconnect_policy_defaults (SocketSimple_Reconnect_Policy *policy)
  *============================================================================*/
 
 SocketSimple_Reconnect_T
-Socket_simple_reconnect_new (const char *host, int port,
-                              const SocketSimple_Reconnect_Policy *policy)
+Socket_simple_reconnect_new (const char *host,
+                             int port,
+                             const SocketSimple_Reconnect_Policy *policy)
 {
   volatile SocketReconnect_T core = NULL;
 
@@ -143,8 +146,8 @@ Socket_simple_reconnect_new (const char *host, int port,
 
   TRY
   {
-    core = SocketReconnect_new (host, port, &core_policy,
-                                 state_callback_wrapper, handle);
+    core = SocketReconnect_new (
+        host, port, &core_policy, state_callback_wrapper, handle);
     handle->core = core;
   }
   EXCEPT (SocketReconnect_Failed)
@@ -198,7 +201,10 @@ Socket_simple_reconnect_connect (SocketSimple_Reconnect_T conn)
       return -1;
     }
 
-  TRY { SocketReconnect_connect (conn->core); }
+  TRY
+  {
+    SocketReconnect_connect (conn->core);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "Connect failed");
@@ -356,8 +362,9 @@ Socket_simple_reconnect_process (SocketSimple_Reconnect_T conn)
  *============================================================================*/
 
 ssize_t
-Socket_simple_reconnect_send (SocketSimple_Reconnect_T conn, const void *data,
-                               size_t len)
+Socket_simple_reconnect_send (SocketSimple_Reconnect_T conn,
+                              const void *data,
+                              size_t len)
 {
   Socket_simple_clear_error ();
 
@@ -383,8 +390,9 @@ Socket_simple_reconnect_send (SocketSimple_Reconnect_T conn, const void *data,
 }
 
 ssize_t
-Socket_simple_reconnect_recv (SocketSimple_Reconnect_T conn, void *buf,
-                               size_t len)
+Socket_simple_reconnect_recv (SocketSimple_Reconnect_T conn,
+                              void *buf,
+                              size_t len)
 {
   Socket_simple_clear_error ();
 
@@ -415,8 +423,8 @@ Socket_simple_reconnect_recv (SocketSimple_Reconnect_T conn, void *buf,
 
 int
 Socket_simple_reconnect_set_callback (SocketSimple_Reconnect_T conn,
-                                       SocketSimple_Reconnect_Callback callback,
-                                       void *userdata)
+                                      SocketSimple_Reconnect_Callback callback,
+                                      void *userdata)
 {
   Socket_simple_clear_error ();
 

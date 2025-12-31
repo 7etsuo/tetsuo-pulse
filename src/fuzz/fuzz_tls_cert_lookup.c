@@ -63,7 +63,8 @@ typedef struct
  * indicate no certificate found (safe behavior for fuzzing).
  */
 static X509 *
-fuzz_cert_lookup_callback (X509_STORE_CTX *store_ctx, const X509_NAME *name,
+fuzz_cert_lookup_callback (X509_STORE_CTX *store_ctx,
+                           const X509_NAME *name,
                            void *user_data)
 {
   FuzzLookupContext *ctx = (FuzzLookupContext *)user_data;
@@ -114,8 +115,8 @@ fuzz_set_cert_lookup_callback (const uint8_t *data, size_t size)
       return 0;
 
     /* Set the callback */
-    SocketTLSContext_set_cert_lookup_callback (ctx, fuzz_cert_lookup_callback,
-                                               &fuzz_ctx);
+    SocketTLSContext_set_cert_lookup_callback (
+        ctx, fuzz_cert_lookup_callback, &fuzz_ctx);
     result = 1;
 
     /* Optionally disable it if fuzz data says so */
@@ -229,8 +230,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketTLSContext_set_cert_lookup_callback (ctx, NULL, NULL);
             }
         }
-        EXCEPT (SocketTLS_Failed) {}
-        ELSE {}
+        EXCEPT (SocketTLS_Failed)
+        {
+        }
+        ELSE
+        {
+        }
         END_TRY;
         if (ctx)
           SocketTLSContext_free (&ctx);

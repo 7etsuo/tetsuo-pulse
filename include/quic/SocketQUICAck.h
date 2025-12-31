@@ -54,9 +54,9 @@
 typedef enum
 {
   QUIC_ECN_NOT_ECT = 0, /**< Not ECN-Capable Transport */
-  QUIC_ECN_ECT0    = 1, /**< ECN Capable Transport (0) */
-  QUIC_ECN_ECT1    = 2, /**< ECN Capable Transport (1) */
-  QUIC_ECN_CE      = 3  /**< Congestion Experienced */
+  QUIC_ECN_ECT0 = 1,    /**< ECN Capable Transport (0) */
+  QUIC_ECN_ECT1 = 2,    /**< ECN Capable Transport (1) */
+  QUIC_ECN_CE = 3       /**< Congestion Experienced */
 } SocketQUICECN_Type;
 
 /**
@@ -138,25 +138,28 @@ typedef struct SocketQUICAckState
   Arena_T arena; /**< Memory arena for allocations */
 
   /* Packet number tracking */
-  SocketQUICAckRange_T *ranges; /**< Received packet ranges (sorted, descending) */
-  size_t range_count;           /**< Number of active ranges */
-  size_t range_capacity;        /**< Allocated range capacity */
+  SocketQUICAckRange_T
+      *ranges;           /**< Received packet ranges (sorted, descending) */
+  size_t range_count;    /**< Number of active ranges */
+  size_t range_capacity; /**< Allocated range capacity */
 
-  uint64_t largest_received;    /**< Largest packet number received */
-  uint64_t largest_recv_time;   /**< Time when largest was received (us) */
+  uint64_t largest_received;  /**< Largest packet number received */
+  uint64_t largest_recv_time; /**< Time when largest was received (us) */
 
   /* ACK generation state */
-  int ack_pending;               /**< Non-zero if ACK should be sent */
-  int ack_eliciting_count;       /**< Ack-eliciting packets since last ACK */
-  uint64_t last_ack_sent_time;   /**< Time of last ACK sent (us) */
+  int ack_pending;             /**< Non-zero if ACK should be sent */
+  int ack_eliciting_count;     /**< Ack-eliciting packets since last ACK */
+  uint64_t last_ack_sent_time; /**< Time of last ACK sent (us) */
 
   /* Configuration */
-  uint64_t max_ack_delay_us;     /**< Max delay before ACK (from transport params) */
-  int is_handshake_space;        /**< Non-zero for Initial/Handshake (no delayed ACK) */
+  uint64_t
+      max_ack_delay_us;   /**< Max delay before ACK (from transport params) */
+  int is_handshake_space; /**< Non-zero for Initial/Handshake (no delayed ACK)
+                           */
 
   /* ECN tracking */
   SocketQUICAckECN_T ecn_counts; /**< ECN codepoint counts */
-  int ecn_validated;              /**< Non-zero if ECN is validated */
+  int ecn_validated;             /**< Non-zero if ECN is validated */
 
 } *SocketQUICAckState_T;
 
@@ -165,13 +168,13 @@ typedef struct SocketQUICAckState
  */
 typedef enum
 {
-  QUIC_ACK_OK = 0,             /**< Operation succeeded */
-  QUIC_ACK_ERROR_NULL,         /**< NULL pointer argument */
-  QUIC_ACK_ERROR_DUPLICATE,    /**< Packet number already received */
-  QUIC_ACK_ERROR_OLD,          /**< Packet number too old (pruned) */
-  QUIC_ACK_ERROR_RANGE,        /**< Range limit exceeded */
-  QUIC_ACK_ERROR_ENCODE,       /**< ACK frame encoding failed */
-  QUIC_ACK_ERROR_BUFFER        /**< Output buffer too small */
+  QUIC_ACK_OK = 0,          /**< Operation succeeded */
+  QUIC_ACK_ERROR_NULL,      /**< NULL pointer argument */
+  QUIC_ACK_ERROR_DUPLICATE, /**< Packet number already received */
+  QUIC_ACK_ERROR_OLD,       /**< Packet number too old (pruned) */
+  QUIC_ACK_ERROR_RANGE,     /**< Range limit exceeded */
+  QUIC_ACK_ERROR_ENCODE,    /**< ACK frame encoding failed */
+  QUIC_ACK_ERROR_BUFFER     /**< Output buffer too small */
 } SocketQUICAck_Result;
 
 /* ============================================================================
@@ -219,8 +222,10 @@ extern void SocketQUICAck_reset (SocketQUICAckState_T state);
  * @return QUIC_ACK_OK on success, error code otherwise.
  */
 extern SocketQUICAck_Result
-SocketQUICAck_record_packet (SocketQUICAckState_T state, uint64_t packet_number,
-                              uint64_t recv_time_us, int ack_eliciting);
+SocketQUICAck_record_packet (SocketQUICAckState_T state,
+                             uint64_t packet_number,
+                             uint64_t recv_time_us,
+                             int ack_eliciting);
 
 /**
  * @brief Record ECN information from received packet.
@@ -248,7 +253,7 @@ extern void SocketQUICAck_record_ecn (SocketQUICAckState_T state, int ecn_type);
  * @return Non-zero if ACK should be sent.
  */
 extern int SocketQUICAck_should_send (const SocketQUICAckState_T state,
-                                       uint64_t current_time);
+                                      uint64_t current_time);
 
 /**
  * @brief Generate an ACK frame from current state.
@@ -263,9 +268,11 @@ extern int SocketQUICAck_should_send (const SocketQUICAckState_T state,
  *
  * @return QUIC_ACK_OK on success, error code otherwise.
  */
-extern SocketQUICAck_Result
-SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
-                       uint8_t *out, size_t out_size, size_t *out_len);
+extern SocketQUICAck_Result SocketQUICAck_encode (SocketQUICAckState_T state,
+                                                  uint64_t current_time,
+                                                  uint8_t *out,
+                                                  size_t out_size,
+                                                  size_t *out_len);
 
 /**
  * @brief Mark ACK as sent, resetting pending state.
@@ -275,7 +282,8 @@ SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
  * @param state        ACK state to update.
  * @param current_time Time when ACK was sent.
  */
-extern void SocketQUICAck_mark_sent (SocketQUICAckState_T state, uint64_t current_time);
+extern void
+SocketQUICAck_mark_sent (SocketQUICAckState_T state, uint64_t current_time);
 
 /* ============================================================================
  * Query Functions
@@ -300,7 +308,7 @@ extern uint64_t SocketQUICAck_get_largest (const SocketQUICAckState_T state);
  * @return Non-zero if packet was received.
  */
 extern int SocketQUICAck_contains (const SocketQUICAckState_T state,
-                                    uint64_t packet_number);
+                                   uint64_t packet_number);
 
 /**
  * @brief Get the number of tracked ACK ranges.
@@ -335,8 +343,8 @@ extern const char *SocketQUICAck_result_string (SocketQUICAck_Result result);
  * @param removed_count       Output: number of ranges removed (optional).
  */
 extern void SocketQUICAck_prune (SocketQUICAckState_T state,
-                                  uint64_t oldest_to_keep,
-                                  size_t *removed_count);
+                                 uint64_t oldest_to_keep,
+                                 size_t *removed_count);
 
 /** @} */
 

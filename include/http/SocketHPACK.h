@@ -81,14 +81,14 @@ typedef struct
 typedef struct SocketHPACK_Table *SocketHPACK_Table_T;
 
 /** Create dynamic table with FIFO eviction (RFC 7541 Section 4). */
-extern SocketHPACK_Table_T SocketHPACK_Table_new (size_t max_size,
-                                                  Arena_T arena);
+extern SocketHPACK_Table_T
+SocketHPACK_Table_new (size_t max_size, Arena_T arena);
 
 extern void SocketHPACK_Table_free (SocketHPACK_Table_T *table);
 
 /** Update max size, evicting oldest entries if necessary. */
-extern void SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table,
-                                            size_t max_size);
+extern void
+SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size);
 
 extern size_t SocketHPACK_Table_size (SocketHPACK_Table_T table);
 extern size_t SocketHPACK_Table_count (SocketHPACK_Table_T table);
@@ -99,9 +99,11 @@ extern SocketHPACK_Result SocketHPACK_Table_get (SocketHPACK_Table_T table,
                                                  size_t index,
                                                  SocketHPACK_Header *header);
 
-extern SocketHPACK_Result
-SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
-                       size_t name_len, const char *value, size_t value_len);
+extern SocketHPACK_Result SocketHPACK_Table_add (SocketHPACK_Table_T table,
+                                                 const char *name,
+                                                 size_t name_len,
+                                                 const char *value,
+                                                 size_t value_len);
 
 typedef struct SocketHPACK_Encoder *SocketHPACK_Encoder_T;
 
@@ -124,7 +126,8 @@ extern void SocketHPACK_Encoder_free (SocketHPACK_Encoder_T *encoder);
 /** Encode header block. Returns bytes written, or -1 on error. */
 extern ssize_t SocketHPACK_Encoder_encode (SocketHPACK_Encoder_T encoder,
                                            const SocketHPACK_Header *headers,
-                                           size_t count, unsigned char *output,
+                                           size_t count,
+                                           unsigned char *output,
                                            size_t output_size);
 
 extern void SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
@@ -156,9 +159,12 @@ extern void SocketHPACK_Decoder_free (SocketHPACK_Decoder_T *decoder);
 /** Decode HPACK header block (RFC 7541 Section 6). */
 extern SocketHPACK_Result
 SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
-                            const unsigned char *input, size_t input_len,
-                            SocketHPACK_Header *headers, size_t max_headers,
-                            size_t *header_count, Arena_T arena);
+                            const unsigned char *input,
+                            size_t input_len,
+                            SocketHPACK_Header *headers,
+                            size_t max_headers,
+                            size_t *header_count,
+                            Arena_T arena);
 
 extern void SocketHPACK_Decoder_set_table_size (SocketHPACK_Decoder_T decoder,
                                                 size_t max_size);
@@ -178,26 +184,31 @@ extern ssize_t SocketHPACK_huffman_decode (const unsigned char *input,
                                            unsigned char *output,
                                            size_t output_size);
 
-extern size_t SocketHPACK_huffman_encoded_size (const unsigned char *input,
-                                                size_t input_len);
+extern size_t
+SocketHPACK_huffman_encoded_size (const unsigned char *input, size_t input_len);
 
 /** Encode integer with prefix (RFC 7541 Section 5.1). */
-extern size_t SocketHPACK_int_encode (uint64_t value, int prefix_bits,
+extern size_t SocketHPACK_int_encode (uint64_t value,
+                                      int prefix_bits,
                                       unsigned char *output,
                                       size_t output_size);
 
 /** Decode integer with prefix (RFC 7541 Section 5.1). */
-extern SocketHPACK_Result
-SocketHPACK_int_decode (const unsigned char *input, size_t input_len,
-                        int prefix_bits, uint64_t *value, size_t *consumed);
+extern SocketHPACK_Result SocketHPACK_int_decode (const unsigned char *input,
+                                                  size_t input_len,
+                                                  int prefix_bits,
+                                                  uint64_t *value,
+                                                  size_t *consumed);
 
 /** Get entry from static table by index (1-61). */
-extern SocketHPACK_Result SocketHPACK_static_get (size_t index,
-                                                  SocketHPACK_Header *header);
+extern SocketHPACK_Result
+SocketHPACK_static_get (size_t index, SocketHPACK_Header *header);
 
 /** Find entry in static table. Returns index or 0 if not found. */
-extern int SocketHPACK_static_find (const char *name, size_t name_len,
-                                    const char *value, size_t value_len);
+extern int SocketHPACK_static_find (const char *name,
+                                    size_t name_len,
+                                    const char *value,
+                                    size_t value_len);
 
 extern const char *SocketHPACK_result_string (SocketHPACK_Result result);
 

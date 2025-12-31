@@ -55,7 +55,8 @@ SocketQUICConnectionID_init (SocketQUICConnectionID_T *cid)
 }
 
 SocketQUICConnectionID_Result
-SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid, const uint8_t *data,
+SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid,
+                            const uint8_t *data,
                             size_t len)
 {
   if (cid == NULL)
@@ -109,7 +110,8 @@ SocketQUICConnectionID_generate_reset_token (SocketQUICConnectionID_T *cid)
   if (cid == NULL)
     return QUIC_CONNID_ERROR_NULL;
 
-  if (!SECURE_RANDOM (cid->stateless_reset_token, QUIC_STATELESS_RESET_TOKEN_LEN))
+  if (!SECURE_RANDOM (cid->stateless_reset_token,
+                      QUIC_STATELESS_RESET_TOKEN_LEN))
     return QUIC_CONNID_ERROR_RANDOM;
 
   cid->has_reset_token = 1;
@@ -139,7 +141,8 @@ SocketQUICConnectionID_equal (const SocketQUICConnectionID_T *a,
 
 int
 SocketQUICConnectionID_equal_raw (const SocketQUICConnectionID_T *cid,
-                                  const uint8_t *data, size_t len)
+                                  const uint8_t *data,
+                                  size_t len)
 {
   if (cid == NULL)
     return 0;
@@ -177,7 +180,8 @@ SocketQUICConnectionID_copy (SocketQUICConnectionID_T *dst,
 
 size_t
 SocketQUICConnectionID_encode_length (const SocketQUICConnectionID_T *cid,
-                                      uint8_t *output, size_t output_size)
+                                      uint8_t *output,
+                                      size_t output_size)
 {
   if (cid == NULL || output == NULL)
     return 0;
@@ -191,7 +195,8 @@ SocketQUICConnectionID_encode_length (const SocketQUICConnectionID_T *cid,
 
 size_t
 SocketQUICConnectionID_encode (const SocketQUICConnectionID_T *cid,
-                               uint8_t *output, size_t output_size)
+                               uint8_t *output,
+                               size_t output_size)
 {
   if (cid == NULL)
     return 0;
@@ -208,7 +213,8 @@ SocketQUICConnectionID_encode (const SocketQUICConnectionID_T *cid,
 
 size_t
 SocketQUICConnectionID_encode_with_length (const SocketQUICConnectionID_T *cid,
-                                           uint8_t *output, size_t output_size)
+                                           uint8_t *output,
+                                           size_t output_size)
 {
   size_t total;
 
@@ -229,8 +235,10 @@ SocketQUICConnectionID_encode_with_length (const SocketQUICConnectionID_T *cid,
 }
 
 SocketQUICConnectionID_Result
-SocketQUICConnectionID_decode (const uint8_t *data, size_t len,
-                               SocketQUICConnectionID_T *cid, size_t *consumed)
+SocketQUICConnectionID_decode (const uint8_t *data,
+                               size_t len,
+                               SocketQUICConnectionID_T *cid,
+                               size_t *consumed)
 {
   uint8_t cid_len;
 
@@ -259,7 +267,8 @@ SocketQUICConnectionID_decode (const uint8_t *data, size_t len,
 }
 
 SocketQUICConnectionID_Result
-SocketQUICConnectionID_decode_fixed (const uint8_t *data, size_t len,
+SocketQUICConnectionID_decode_fixed (const uint8_t *data,
+                                     size_t len,
                                      SocketQUICConnectionID_T *cid,
                                      size_t cid_len)
 {
@@ -293,12 +302,13 @@ SocketQUICConnectionID_hash (const SocketQUICConnectionID_T *cid)
     return 0;
 
   /* Use centralized DJB2 hash for binary data */
-  return socket_util_hash_djb2_len ((const char *)cid->data, cid->len,
-                                     UINT32_MAX);
+  return socket_util_hash_djb2_len (
+      (const char *)cid->data, cid->len, UINT32_MAX);
 }
 
 int
-SocketQUICConnectionID_to_hex (const SocketQUICConnectionID_T *cid, char *buf,
+SocketQUICConnectionID_to_hex (const SocketQUICConnectionID_T *cid,
+                               char *buf,
                                size_t size)
 {
   static const char hex[] = "0123456789abcdef";

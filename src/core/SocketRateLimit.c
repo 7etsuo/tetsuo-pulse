@@ -16,25 +16,22 @@
 
 #define T SocketRateLimit_T
 
-#define WITH_LOCK(limiter, code)                                              \
-  do                                                                          \
-    {                                                                         \
-      T _l = (T)(limiter);                                                    \
-      SOCKET_WITH_MUTEX (&_l->mutex, SocketRateLimit, SocketRateLimit_Failed,\
-                         code);                                               \
-    }                                                                         \
+#define WITH_LOCK(limiter, code)                                      \
+  do                                                                  \
+    {                                                                 \
+      T _l = (T)(limiter);                                            \
+      SOCKET_WITH_MUTEX (                                             \
+          &_l->mutex, SocketRateLimit, SocketRateLimit_Failed, code); \
+    }                                                                 \
   while (0)
 
-#define RATELIMIT_IS_VALID(_l)                                                \
-  ((_l)->initialized == SOCKET_MUTEX_INITIALIZED)
+#define RATELIMIT_IS_VALID(_l) ((_l)->initialized == SOCKET_MUTEX_INITIALIZED)
 
 static struct SocketLiveCount ratelimit_live_tracker
     = SOCKETLIVECOUNT_STATIC_INIT;
 
-#define ratelimit_live_inc()                                                  \
-  SocketLiveCount_increment (&ratelimit_live_tracker)
-#define ratelimit_live_dec()                                                  \
-  SocketLiveCount_decrement (&ratelimit_live_tracker)
+#define ratelimit_live_inc() SocketLiveCount_increment (&ratelimit_live_tracker)
+#define ratelimit_live_dec() SocketLiveCount_decrement (&ratelimit_live_tracker)
 
 const Except_T SocketRateLimit_Failed
     = { &SocketRateLimit_Failed, "Rate limiter operation failed" };
@@ -126,8 +123,8 @@ ratelimit_refill_bucket (T limiter)
   if (elapsed_ms == 0)
     return;
 
-  tokens_to_add = ratelimit_calculate_tokens_to_add (elapsed_ms,
-                                                     limiter->tokens_per_sec);
+  tokens_to_add
+      = ratelimit_calculate_tokens_to_add (elapsed_ms, limiter->tokens_per_sec);
 
   if (tokens_to_add > 0)
     ratelimit_add_tokens (limiter, tokens_to_add, now_ms);
@@ -271,7 +268,9 @@ ratelimit_allocate (Arena_T arena)
 }
 
 static void
-ratelimit_init_fields (T limiter, size_t tokens_per_sec, size_t bucket_size,
+ratelimit_init_fields (T limiter,
+                       size_t tokens_per_sec,
+                       size_t bucket_size,
                        Arena_T arena)
 {
   assert (limiter);
@@ -297,15 +296,16 @@ static void
 ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
 {
   if (tokens_per_sec == 0)
-    SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
-                      "tokens_per_sec must be > 0");
+    SOCKET_RAISE_MSG (
+        SocketRateLimit, SocketRateLimit_Failed, "tokens_per_sec must be > 0");
 
   if (*bucket_size == 0)
     *bucket_size = tokens_per_sec;
 
   if (!SocketSecurity_check_size (tokens_per_sec)
       || !SocketSecurity_check_size (*bucket_size))
-    SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+    SOCKET_RAISE_MSG (SocketRateLimit,
+                      SocketRateLimit_Failed,
                       "Rate limiter parameters exceed security limits");
 }
 
@@ -319,7 +319,8 @@ SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size)
 
   limiter = ratelimit_allocate (arena);
   if (!limiter)
-    SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+    SOCKET_RAISE_MSG (SocketRateLimit,
+                      SocketRateLimit_Failed,
                       "Failed to allocate rate limiter");
 
   ratelimit_init_fields (limiter, tokens_per_sec, normalized_bucket, arena);
@@ -369,9 +370,8 @@ SocketRateLimit_free (T *limiter)
         }
       if (retries < 0)
         {
-          SOCKET_RATELIMIT_WARN (
-              "SocketRateLimit_free: destroying potentially "
-              "locked mutex after timeout");
+          SOCKET_RATELIMIT_WARN ("SocketRateLimit_free: destroying potentially "
+                                 "locked mutex after timeout");
         }
 
       pthread_mutex_destroy (&l->mutex);
@@ -420,7 +420,8 @@ ratelimit_update_rate_locked (T limiter, size_t new_rate)
   if (new_rate > 0)
     {
       if (!SocketSecurity_check_size (new_rate))
-        SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+        SOCKET_RAISE_MSG (SocketRateLimit,
+                          SocketRateLimit_Failed,
                           "Invalid tokens_per_sec - exceeds security limits");
       limiter->tokens_per_sec = new_rate;
     }
@@ -432,7 +433,8 @@ ratelimit_update_bucket_locked (T limiter, size_t new_size)
   if (new_size > 0)
     {
       if (!SocketSecurity_check_size (new_size))
-        SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+        SOCKET_RAISE_MSG (SocketRateLimit,
+                          SocketRateLimit_Failed,
                           "Invalid bucket_size - exceeds security limits");
       limiter->bucket_size = new_size;
       if (limiter->tokens > new_size)
@@ -454,7 +456,8 @@ SocketRateLimit_reset (T limiter)
 
   WITH_LOCK (limiter, {
     if (!RATELIMIT_IS_VALID (_l))
-      SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+      SOCKET_RAISE_MSG (SocketRateLimit,
+                        SocketRateLimit_Failed,
                         "Cannot reset shutdown or uninitialized rate limiter");
 
     ratelimit_reset_locked (_l);
@@ -462,15 +465,15 @@ SocketRateLimit_reset (T limiter)
 }
 
 void
-SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
-                           size_t bucket_size)
+SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
 {
   assert (limiter);
 
   WITH_LOCK (limiter, {
     if (!RATELIMIT_IS_VALID (_l))
       SOCKET_RAISE_MSG (
-          SocketRateLimit, SocketRateLimit_Failed,
+          SocketRateLimit,
+          SocketRateLimit_Failed,
           "Cannot configure shutdown or uninitialized rate limiter");
 
     ratelimit_update_rate_locked (_l, tokens_per_sec);

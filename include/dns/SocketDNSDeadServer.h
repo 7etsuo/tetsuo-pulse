@@ -45,7 +45,8 @@
  * - Automatic recovery when server responds
  * - Thread-safe operations
  *
- * @see SocketDNSServfailCache.h for SERVFAIL caching (different from dead server).
+ * @see SocketDNSServfailCache.h for SERVFAIL caching (different from dead
+ * server).
  * @see SocketDNSTransport.h for transport layer integration.
  */
 
@@ -63,7 +64,8 @@
 
 /**
  * Maximum length for IPv4/IPv6 address string.
- * INET6_ADDRSTRLEN is 46 bytes, padded to 64 for null termination and extensibility.
+ * INET6_ADDRSTRLEN is 46 bytes, padded to 64 for null termination and
+ * extensibility.
  */
 #define DNS_ADDR_STR_MAX 64
 
@@ -74,7 +76,8 @@
 #define DNS_DEAD_SERVER_MAX_TRACKED 32
 
 /**
- * RFC 2308 Section 7.2: Dead server indication MUST NOT be kept beyond 5 minutes.
+ * RFC 2308 Section 7.2: Dead server indication MUST NOT be kept beyond 5
+ * minutes.
  */
 #define DNS_DEAD_SERVER_MAX_TTL 300
 
@@ -108,13 +111,13 @@ typedef struct
  */
 typedef struct
 {
-  uint64_t checks;           /**< Total is_dead checks */
-  uint64_t dead_hits;        /**< Times a dead server was skipped */
-  uint64_t alive_marks;      /**< Times a server was marked alive */
-  uint64_t dead_marks;       /**< Times a server was marked dead */
-  uint64_t expirations;      /**< Times a dead marking expired */
-  size_t current_dead;       /**< Currently tracked dead servers */
-  size_t max_tracked;        /**< Maximum capacity */
+  uint64_t checks;      /**< Total is_dead checks */
+  uint64_t dead_hits;   /**< Times a dead server was skipped */
+  uint64_t alive_marks; /**< Times a server was marked alive */
+  uint64_t dead_marks;  /**< Times a server was marked dead */
+  uint64_t expirations; /**< Times a dead marking expired */
+  size_t current_dead;  /**< Currently tracked dead servers */
+  size_t max_tracked;   /**< Maximum capacity */
 } SocketDNS_DeadServerStats;
 
 /* Lifecycle functions */
@@ -159,7 +162,8 @@ extern void SocketDNSDeadServer_free (T *tracker);
  * dead marking hasn't expired (< 5 minutes). Expired entries are pruned.
  *
  * @param tracker Tracker instance.
- * @param address Nameserver address (e.g., "8.8.8.8" or "2001:4860:4860::8888").
+ * @param address Nameserver address (e.g., "8.8.8.8" or
+ * "2001:4860:4860::8888").
  * @param entry   Output entry details (may be NULL if not needed).
  * @return true if server is dead and should be skipped, false otherwise.
  *
@@ -170,8 +174,9 @@ extern void SocketDNSDeadServer_free (T *tracker);
  * }
  * @endcode
  */
-extern bool SocketDNSDeadServer_is_dead (T tracker, const char *address,
-                                          SocketDNS_DeadServerEntry *entry);
+extern bool SocketDNSDeadServer_is_dead (T tracker,
+                                         const char *address,
+                                         SocketDNS_DeadServerEntry *entry);
 
 /**
  * @brief Record a timeout/failure for a nameserver.
@@ -261,8 +266,8 @@ extern int SocketDNSDeadServer_get_threshold (T tracker);
  * @param tracker Tracker instance.
  * @param stats   Output statistics structure.
  */
-extern void SocketDNSDeadServer_stats (T tracker,
-                                        SocketDNS_DeadServerStats *stats);
+extern void
+SocketDNSDeadServer_stats (T tracker, SocketDNS_DeadServerStats *stats);
 
 /** @} */ /* End of dns_dead_server group */
 

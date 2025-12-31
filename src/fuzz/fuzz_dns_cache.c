@@ -89,8 +89,8 @@ typedef enum
  * Ensures null termination.
  */
 static size_t
-extract_string (const uint8_t *data, size_t size, size_t *offset, char *out,
-                size_t max_len)
+extract_string (
+    const uint8_t *data, size_t size, size_t *offset, char *out, size_t max_len)
 {
   if (*offset >= size)
     {
@@ -151,7 +151,9 @@ extract_uint32 (const uint8_t *data, size_t size, size_t *offset)
  * @brief Create fake SOA RDATA for testing.
  */
 static void
-make_soa_rdata (const uint8_t *data, size_t size, size_t *offset,
+make_soa_rdata (const uint8_t *data,
+                size_t size,
+                size_t *offset,
                 SocketDNS_CachedSOA *soa)
 {
   memset (soa, 0, sizeof (*soa));
@@ -233,8 +235,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             extract_string (data, size, &offset, qname, sizeof (qname));
             qclass = extract_uint16 (data, size, &offset);
             ttl = extract_uint32 (data, size, &offset);
-            (void)SocketDNSNegCache_insert_nxdomain (negcache, qname, qclass,
-                                                      ttl);
+            (void)SocketDNSNegCache_insert_nxdomain (
+                negcache, qname, qclass, ttl);
             break;
 
           case OP_NEG_INSERT_NODATA:
@@ -242,8 +244,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             qtype = extract_uint16 (data, size, &offset);
             qclass = extract_uint16 (data, size, &offset);
             ttl = extract_uint32 (data, size, &offset);
-            (void)SocketDNSNegCache_insert_nodata (negcache, qname, qtype,
-                                                    qclass, ttl);
+            (void)SocketDNSNegCache_insert_nodata (
+                negcache, qname, qtype, qclass, ttl);
             break;
 
           case OP_NEG_INSERT_NXDOMAIN_SOA:
@@ -282,8 +284,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               qclass = extract_uint16 (data, size, &offset);
 
               SocketDNS_NegCacheEntry entry;
-              (void)SocketDNSNegCache_lookup (negcache, qname, qtype, qclass,
-                                               &entry);
+              (void)SocketDNSNegCache_lookup (
+                  negcache, qname, qtype, qclass, &entry);
             }
             break;
 
@@ -296,8 +298,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             extract_string (data, size, &offset, qname, sizeof (qname));
             qtype = extract_uint16 (data, size, &offset);
             qclass = extract_uint16 (data, size, &offset);
-            (void)SocketDNSNegCache_remove_nodata (negcache, qname, qtype,
-                                                    qclass);
+            (void)SocketDNSNegCache_remove_nodata (
+                negcache, qname, qtype, qclass);
             break;
 
           case OP_NEG_BUILD_RESPONSE:
@@ -318,9 +320,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   size_t written;
                   uint16_t query_id = extract_uint16 (data, size, &offset);
 
-                  (void)SocketDNSNegCache_build_response (
-                      &entry, qname, qtype, qclass, query_id, response,
-                      sizeof (response), &written);
+                  (void)SocketDNSNegCache_build_response (&entry,
+                                                          qname,
+                                                          qtype,
+                                                          qclass,
+                                                          query_id,
+                                                          response,
+                                                          sizeof (response),
+                                                          &written);
                 }
             }
             break;
@@ -357,11 +364,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             extract_string (data, size, &offset, qname, sizeof (qname));
             qtype = extract_uint16 (data, size, &offset);
             qclass = extract_uint16 (data, size, &offset);
-            extract_string (data, size, &offset, nameserver,
-                            sizeof (nameserver));
+            extract_string (
+                data, size, &offset, nameserver, sizeof (nameserver));
             ttl = extract_uint32 (data, size, &offset);
-            (void)SocketDNSServfailCache_insert (servfailcache, qname, qtype,
-                                                  qclass, nameserver, ttl);
+            (void)SocketDNSServfailCache_insert (
+                servfailcache, qname, qtype, qclass, nameserver, ttl);
             break;
 
           case OP_SERVFAIL_LOOKUP:
@@ -369,8 +376,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               extract_string (data, size, &offset, qname, sizeof (qname));
               qtype = extract_uint16 (data, size, &offset);
               qclass = extract_uint16 (data, size, &offset);
-              extract_string (data, size, &offset, nameserver,
-                              sizeof (nameserver));
+              extract_string (
+                  data, size, &offset, nameserver, sizeof (nameserver));
 
               SocketDNS_ServfailCacheEntry entry;
               (void)SocketDNSServfailCache_lookup (
@@ -382,17 +389,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             extract_string (data, size, &offset, qname, sizeof (qname));
             qtype = extract_uint16 (data, size, &offset);
             qclass = extract_uint16 (data, size, &offset);
-            extract_string (data, size, &offset, nameserver,
-                            sizeof (nameserver));
-            (void)SocketDNSServfailCache_remove (servfailcache, qname, qtype,
-                                                  qclass, nameserver);
+            extract_string (
+                data, size, &offset, nameserver, sizeof (nameserver));
+            (void)SocketDNSServfailCache_remove (
+                servfailcache, qname, qtype, qclass, nameserver);
             break;
 
           case OP_SERVFAIL_REMOVE_NS:
-            extract_string (data, size, &offset, nameserver,
-                            sizeof (nameserver));
+            extract_string (
+                data, size, &offset, nameserver, sizeof (nameserver));
             (void)SocketDNSServfailCache_remove_nameserver (servfailcache,
-                                                             nameserver);
+                                                            nameserver);
             break;
 
           case OP_SERVFAIL_CLEAR:
@@ -429,7 +436,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   }
   EXCEPT (Arena_Failed)
   {
-     /* Expected - fuzzer may exhaust memory */
+    /* Expected - fuzzer may exhaust memory */
   }
   FINALLY
   {

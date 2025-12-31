@@ -151,8 +151,7 @@ TEST (frame_stream_encode_buffer_too_small)
   size_t len;
 
   /* Try to encode frame larger than buffer */
-  len = SocketQUICFrame_encode_stream (0, 0, data, 100, 0, buf,
-                                        sizeof (buf));
+  len = SocketQUICFrame_encode_stream (0, 0, data, 100, 0, buf, sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should fail gracefully */
 
@@ -203,18 +202,18 @@ TEST (frame_stream_encode_overflow_protection)
 
   /* Test integer overflow protection - SIZE_MAX should cause overflow check to
    * fail */
-  size_t len = SocketQUICFrame_encode_stream (0, 0, data, SIZE_MAX, 0, buf,
-                                               sizeof (buf));
+  size_t len = SocketQUICFrame_encode_stream (
+      0, 0, data, SIZE_MAX, 0, buf, sizeof (buf));
   ASSERT_EQ (0, len); /* Should fail due to overflow */
 
   /* Test near-overflow case: SIZE_MAX - small value */
-  len = SocketQUICFrame_encode_stream (0, 0, data, SIZE_MAX - 10, 0, buf,
-                                        sizeof (buf));
+  len = SocketQUICFrame_encode_stream (
+      0, 0, data, SIZE_MAX - 10, 0, buf, sizeof (buf));
   ASSERT_EQ (0, len); /* Should fail due to overflow */
 
   /* Test with offset to ensure header_size calculation works */
-  len = SocketQUICFrame_encode_stream (100, 500, data, SIZE_MAX - 20, 0, buf,
-                                        sizeof (buf));
+  len = SocketQUICFrame_encode_stream (
+      100, 500, data, SIZE_MAX - 20, 0, buf, sizeof (buf));
   ASSERT_EQ (0, len); /* Should fail due to overflow */
 }
 
@@ -252,12 +251,14 @@ TEST (frame_stream_decode_error_distinction)
 
   /* Test 2: Wrong frame type error */
   uint8_t wrong_type[] = { 0x01, 0x00 }; /* PING frame */
-  result = SocketQUICFrame_decode_stream (wrong_type, sizeof (wrong_type), &frame);
+  result
+      = SocketQUICFrame_decode_stream (wrong_type, sizeof (wrong_type), &frame);
   ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TYPE, result);
 
   /* Test 3: Truncated frame error */
   uint8_t truncated[] = { 0x08 }; /* STREAM frame, but no stream ID */
-  result = SocketQUICFrame_decode_stream (truncated, sizeof (truncated), &frame);
+  result
+      = SocketQUICFrame_decode_stream (truncated, sizeof (truncated), &frame);
   ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result);
 
   /* Verify errors are distinct */

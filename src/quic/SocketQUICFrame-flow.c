@@ -34,8 +34,9 @@
  */
 
 size_t
-SocketQUICFrame_encode_max_data (uint64_t max_data, uint8_t *out,
-                                  size_t out_size)
+SocketQUICFrame_encode_max_data (uint64_t max_data,
+                                 uint8_t *out,
+                                 size_t out_size)
 {
   if (!out)
     return 0;
@@ -75,8 +76,10 @@ SocketQUICFrame_encode_max_data (uint64_t max_data, uint8_t *out,
  */
 
 size_t
-SocketQUICFrame_encode_max_stream_data (uint64_t stream_id, uint64_t max_data,
-                                         uint8_t *out, size_t out_size)
+SocketQUICFrame_encode_max_stream_data (uint64_t stream_id,
+                                        uint64_t max_data,
+                                        uint8_t *out,
+                                        size_t out_size)
 {
   if (!out)
     return 0;
@@ -120,8 +123,10 @@ SocketQUICFrame_encode_max_stream_data (uint64_t stream_id, uint64_t max_data,
  */
 
 size_t
-SocketQUICFrame_encode_max_streams (int bidirectional, uint64_t max_streams,
-                                     uint8_t *out, size_t out_size)
+SocketQUICFrame_encode_max_streams (int bidirectional,
+                                    uint64_t max_streams,
+                                    uint8_t *out,
+                                    size_t out_size)
 {
   if (!out)
     return 0;
@@ -142,7 +147,7 @@ SocketQUICFrame_encode_max_streams (int bidirectional, uint64_t max_streams,
 
   /* Type: 0x12 (bidi) or 0x13 (uni) */
   out[pos++] = bidirectional ? QUIC_FRAME_MAX_STREAMS_BIDI
-                              : QUIC_FRAME_MAX_STREAMS_UNI;
+                             : QUIC_FRAME_MAX_STREAMS_UNI;
 
   /* Maximum Streams */
   if (!encode_varint_field (max_streams, out, &pos, out_size))
@@ -173,8 +178,9 @@ SocketQUICFrame_encode_max_streams (int bidirectional, uint64_t max_streams,
  * @note Requires buffer of at least 1 + varint_size(max_data) bytes.
  */
 size_t
-SocketQUICFrame_encode_data_blocked (uint64_t max_data, uint8_t *out,
-                                      size_t out_size)
+SocketQUICFrame_encode_data_blocked (uint64_t max_data,
+                                     uint8_t *out,
+                                     size_t out_size)
 {
   if (!out)
     return 0;
@@ -229,8 +235,9 @@ SocketQUICFrame_encode_data_blocked (uint64_t max_data, uint8_t *out,
  */
 size_t
 SocketQUICFrame_encode_stream_data_blocked (uint64_t stream_id,
-                                             uint64_t max_data, uint8_t *out,
-                                             size_t out_size)
+                                            uint64_t max_data,
+                                            uint8_t *out,
+                                            size_t out_size)
 {
   if (!out)
     return 0;
@@ -290,8 +297,10 @@ SocketQUICFrame_encode_stream_data_blocked (uint64_t stream_id,
  * @note Requires buffer of at least 1 + varint_size(max_streams) bytes.
  */
 size_t
-SocketQUICFrame_encode_streams_blocked (int bidirectional, uint64_t max_streams,
-                                        uint8_t *out, size_t out_size)
+SocketQUICFrame_encode_streams_blocked (int bidirectional,
+                                        uint64_t max_streams,
+                                        uint8_t *out,
+                                        size_t out_size)
 {
   if (!out)
     return 0;
@@ -312,7 +321,7 @@ SocketQUICFrame_encode_streams_blocked (int bidirectional, uint64_t max_streams,
 
   /* Encode frame type based on direction */
   out[pos++] = bidirectional ? QUIC_FRAME_STREAMS_BLOCKED_BIDI
-                              : QUIC_FRAME_STREAMS_BLOCKED_UNI;
+                             : QUIC_FRAME_STREAMS_BLOCKED_UNI;
 
   /* Encode max_streams */
   if (!encode_varint_field (max_streams, out, &pos, out_size))

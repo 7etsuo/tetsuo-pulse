@@ -49,10 +49,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -284,8 +286,8 @@ TEST (ocsp_gen_callback_set)
     ASSERT_NOT_NULL (ctx);
 
     /* Set OCSP generation callback */
-    SocketTLSContext_set_ocsp_gen_callback (ctx, test_ocsp_gen_callback,
-                                            &callback_count);
+    SocketTLSContext_set_ocsp_gen_callback (
+        ctx, test_ocsp_gen_callback, &callback_count);
 
     /* Callback is not invoked until a client requests OCSP stapling */
     ASSERT_EQ (callback_count, 0);
@@ -315,8 +317,8 @@ TEST (ocsp_gen_callback_null_clears)
     ASSERT_NOT_NULL (ctx);
 
     /* Set then clear callback */
-    SocketTLSContext_set_ocsp_gen_callback (ctx, test_ocsp_gen_callback,
-                                            &callback_count);
+    SocketTLSContext_set_ocsp_gen_callback (
+        ctx, test_ocsp_gen_callback, &callback_count);
     SocketTLSContext_set_ocsp_gen_callback (ctx, NULL, NULL);
   }
   FINALLY
@@ -328,7 +330,8 @@ TEST (ocsp_gen_callback_null_clears)
   END_TRY;
 }
 
-/* ==================== OCSP Must-Staple Tests (RFC 7633) ==================== */
+/* ==================== OCSP Must-Staple Tests (RFC 7633) ====================
+ */
 
 TEST (ocsp_must_staple_disabled_by_default)
 {

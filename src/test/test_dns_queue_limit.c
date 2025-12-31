@@ -36,8 +36,7 @@ TEST (dns_queue_limit_enforced)
     /* Fill the queue to capacity */
     for (i = 0; i < 5; i++)
       {
-        requests[i]
-            = SocketDNS_resolve (dns, "example.com", 80, NULL, NULL);
+        requests[i] = SocketDNS_resolve (dns, "example.com", 80, NULL, NULL);
         ASSERT_NOT_NULL (requests[i]);
       }
 
@@ -47,7 +46,8 @@ TEST (dns_queue_limit_enforced)
       requests[5] = SocketDNS_resolve (dns, "example.com", 80, NULL, NULL);
       /* Should not reach here */
       Test_fail ("Expected SocketDNS_Failed exception for queue full",
-                 __FILE__, __LINE__);
+                 __FILE__,
+                 __LINE__);
     }
     EXCEPT (SocketDNS_Failed)
     {
@@ -140,12 +140,14 @@ TEST (dns_queue_limit_zero)
     ASSERT_EQ (SocketDNS_getmaxpending (dns), 0);
 
     /* Hostname resolution should fail when queue is full (0 capacity).
-     * Note: IP literals resolve synchronously and won't count toward pending. */
+     * Note: IP literals resolve synchronously and won't count toward pending.
+     */
     TRY
     {
       SocketDNS_resolve (dns, "example.com", 80, NULL, NULL);
       Test_fail ("Expected SocketDNS_Failed exception with max_pending=0",
-                 __FILE__, __LINE__);
+                 __FILE__,
+                 __LINE__);
     }
     EXCEPT (SocketDNS_Failed)
     {

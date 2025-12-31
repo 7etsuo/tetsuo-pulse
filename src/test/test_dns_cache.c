@@ -25,7 +25,10 @@ static struct addrinfo *
 resolve_quiet (SocketDNS_T dns, const char *host, int port)
 {
   struct addrinfo *volatile result = NULL;
-  TRY { result = SocketDNS_resolve_sync (dns, host, port, NULL, 5000); }
+  TRY
+  {
+    result = SocketDNS_resolve_sync (dns, host, port, NULL, 5000);
+  }
   EXCEPT (SocketDNS_Failed)
   {
     /* Resolution failed - return NULL */
@@ -107,7 +110,7 @@ TEST (dns_cache_miss)
 
   /* Note: 127.0.0.1 is an IP and bypasses cache */
   SocketDNS_cache_stats (dns, &stats);
-  ASSERT_EQ (stats.misses, 1);    /* Only localhost causes miss */
+  ASSERT_EQ (stats.misses, 1);     /* Only localhost causes miss */
   ASSERT_EQ (stats.insertions, 1); /* Only localhost gets cached */
 
   if (res1)

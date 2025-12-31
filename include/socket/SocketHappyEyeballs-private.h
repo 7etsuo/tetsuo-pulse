@@ -201,7 +201,7 @@ typedef struct SocketHE_AddressEntry
   int tried;  /**< 0 if not attempted, 1 if connect() called (success or fail).
                */
   SocketHE_AttemptState state; /**< Current state of the attempt. */
-  int error; /**< Saved errno on failure (0 if not failed). */
+  int error;                   /**< Saved errno on failure (0 if not failed). */
   int64_t
       start_time_ms; /**< Monotonic timestamp when connect() started (ms). */
   struct SocketHE_AddressEntry
@@ -213,7 +213,7 @@ typedef struct SocketHE_Attempt
   struct addrinfo
       *addr; /**< Target address (borrowed reference from DNS results). */
   SocketHE_AttemptState state; /**< Current state of the attempt. */
-  int error; /**< Saved errno on failure (0 if not failed). */
+  int error;                   /**< Saved errno on failure (0 if not failed). */
   int64_t
       start_time_ms; /**< Monotonic timestamp when connect() started (ms). */
   struct SocketHE_Attempt *next; /**< Next attempt in singly-linked list. */
@@ -402,34 +402,36 @@ struct SocketHE_T
   int port;   /**< Target service port number. */
 
   /* === External Dependencies (Borrowed) === */
-  SocketDNSResolver_T
-      resolver; /**< Async DNS resolver for resolution (NULL=create internal). */
-  SocketPoll_T
-      poll; /**< Optional event poll for async progress (NULL=sync). */
+  SocketDNSResolver_T resolver; /**< Async DNS resolver for resolution
+                                   (NULL=create internal). */
+  SocketPoll_T poll; /**< Optional event poll for async progress (NULL=sync). */
 
   /* === Owned Resources === */
   Arena_T arena; /**< Arena for all internal allocations. */
-  Arena_T resolver_arena; /**< Arena for resolver (only when owns_resolver=1). */
-  int owns_resolver; /**< Flag: 1 if this context created and owns ::resolver. */
-  int owns_poll;     /**< Flag: 1 if this context created and owns ::poll. */
+  Arena_T
+      resolver_arena; /**< Arena for resolver (only when owns_resolver=1). */
+  int owns_resolver;  /**< Flag: 1 if this context created and owns ::resolver.
+                       */
+  int owns_poll;      /**< Flag: 1 if this context created and owns ::poll. */
 
   /* === DNS State === */
   SocketDNSResolver_Query_T
-      dns_query; /**< Active asynchronous DNS query handle. */
+      dns_query;             /**< Active asynchronous DNS query handle. */
   struct addrinfo *resolved; /**< Owned list of resolved addresses
                                 (freeaddrinfo on cleanup). */
-  volatile int dns_complete; /**< Flag: 1 if DNS resolution succeeded or failed. */
-  int dns_error;             /**< Resolver error code if resolution failed. */
   volatile int
-      dns_callback_pending; /**< Flag: 1 if callback has fired, result pending. */
+      dns_complete; /**< Flag: 1 if DNS resolution succeeded or failed. */
+  int dns_error;    /**< Resolver error code if resolution failed. */
+  volatile int dns_callback_pending; /**< Flag: 1 if callback has fired, result
+                                        pending. */
 
   /* === Address Management === */
   SocketHE_AddressEntry_T *addresses; /**< Head of preference-sorted address
                                          list (arena-allocated). */
-  SocketHE_AddressEntry_T *
-      next_ipv6; /**< Pointer to next untried IPv6 address for interleaving. */
-  SocketHE_AddressEntry_T *
-      next_ipv4; /**< Pointer to next untried IPv4 address for interleaving. */
+  SocketHE_AddressEntry_T
+      *next_ipv6; /**< Pointer to next untried IPv6 address for interleaving. */
+  SocketHE_AddressEntry_T
+      *next_ipv4; /**< Pointer to next untried IPv4 address for interleaving. */
   int interleave_prefer_ipv6; /**< Interleave state: 1=prefer IPv6 next,
                                  0=prefer IPv4. */
 
@@ -487,7 +489,7 @@ struct SocketHE_T
  * @see SocketHE_Attempt_T::next for linking.
  * @see SocketHE_AttemptState for attempt states.
  */
-#define HE_FOREACH_ATTEMPT(he, iter)                                          \
+#define HE_FOREACH_ATTEMPT(he, iter) \
   for (SocketHE_Attempt_T *iter = (he)->attempts; iter; iter = iter->next)
 
 /* ============================================================================

@@ -124,8 +124,11 @@ parse_settings_payload (const uint8_t *data, size_t size)
  * Build SETTINGS frame with given settings
  */
 static size_t
-build_settings_frame (uint8_t *buffer, size_t buffer_size, uint8_t flags,
-                      const uint16_t *ids, const uint32_t *values,
+build_settings_frame (uint8_t *buffer,
+                      size_t buffer_size,
+                      uint8_t flags,
+                      const uint16_t *ids,
+                      const uint32_t *values,
                       size_t num_settings)
 {
   if (buffer_size < HTTP2_FRAME_HEADER_SIZE + num_settings * 6)
@@ -170,9 +173,12 @@ test_all_settings (void)
 
   /* Test each setting ID */
   uint16_t setting_ids[] = {
-    HTTP2_SETTINGS_HEADER_TABLE_SIZE,     HTTP2_SETTINGS_ENABLE_PUSH,
-    HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, HTTP2_SETTINGS_INITIAL_WINDOW_SIZE,
-    HTTP2_SETTINGS_MAX_FRAME_SIZE,        HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE,
+    HTTP2_SETTINGS_HEADER_TABLE_SIZE,
+    HTTP2_SETTINGS_ENABLE_PUSH,
+    HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS,
+    HTTP2_SETTINGS_INITIAL_WINDOW_SIZE,
+    HTTP2_SETTINGS_MAX_FRAME_SIZE,
+    HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE,
     0x0007, /* Unknown setting */
     0x00FF, /* Unknown setting */
     0xFFFF, /* Unknown setting */
@@ -180,30 +186,31 @@ test_all_settings (void)
 
   /* Test values for each setting */
   uint32_t test_values[] = {
-    0,          1,          2,          100,
-    4096,       16384,      65535,      16777215,
-    0x7FFFFFFF, 0x80000000, 0xFFFFFFFF,
+    0,     1,        2,          100,        4096,       16384,
+    65535, 16777215, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFF,
   };
 
   for (size_t id_idx = 0;
-       id_idx < sizeof (setting_ids) / sizeof (setting_ids[0]); id_idx++)
+       id_idx < sizeof (setting_ids) / sizeof (setting_ids[0]);
+       id_idx++)
     {
       for (size_t val_idx = 0;
-           val_idx < sizeof (test_values) / sizeof (test_values[0]); val_idx++)
+           val_idx < sizeof (test_values) / sizeof (test_values[0]);
+           val_idx++)
         {
           uint16_t id = setting_ids[id_idx];
           uint32_t value = test_values[val_idx];
 
           /* Build single setting frame */
-          size_t frame_size
-              = build_settings_frame (buffer, sizeof (buffer), 0, &id, &value, 1);
+          size_t frame_size = build_settings_frame (
+              buffer, sizeof (buffer), 0, &id, &value, 1);
 
           if (frame_size > 0)
             {
               /* Parse the frame header */
               SocketHTTP2_FrameHeader header;
-              int result = SocketHTTP2_frame_header_parse (buffer, frame_size,
-                                                           &header);
+              int result = SocketHTTP2_frame_header_parse (
+                  buffer, frame_size, &header);
               (void)result;
 
               /* Parse the payload */
@@ -229,8 +236,8 @@ test_settings_ack (void)
   uint8_t buffer[16];
 
   /* Valid ACK: empty payload, ACK flag set */
-  size_t frame_size = build_settings_frame (buffer, sizeof (buffer), 0x01,
-                                            NULL, NULL, 0);
+  size_t frame_size
+      = build_settings_frame (buffer, sizeof (buffer), 0x01, NULL, NULL, 0);
 
   if (frame_size > 0)
     {
@@ -241,8 +248,8 @@ test_settings_ack (void)
   /* Invalid ACK: non-empty payload with ACK flag */
   uint16_t id = HTTP2_SETTINGS_HEADER_TABLE_SIZE;
   uint32_t value = 4096;
-  frame_size = build_settings_frame (buffer, sizeof (buffer), 0x01, &id,
-                                     &value, 1);
+  frame_size
+      = build_settings_frame (buffer, sizeof (buffer), 0x01, &id, &value, 1);
 
   if (frame_size > 0)
     {
@@ -277,8 +284,8 @@ test_multiple_settings (void)
   };
 
   size_t num_settings = sizeof (ids) / sizeof (ids[0]);
-  size_t frame_size = build_settings_frame (buffer, sizeof (buffer), 0, ids,
-                                            values, num_settings);
+  size_t frame_size = build_settings_frame (
+      buffer, sizeof (buffer), 0, ids, values, num_settings);
 
   if (frame_size > 0)
     {
@@ -287,9 +294,9 @@ test_multiple_settings (void)
 
       if (frame_size > HTTP2_FRAME_HEADER_SIZE)
         {
-          int count = parse_settings_payload (buffer + HTTP2_FRAME_HEADER_SIZE,
-                                              frame_size
-                                                  - HTTP2_FRAME_HEADER_SIZE);
+          int count
+              = parse_settings_payload (buffer + HTTP2_FRAME_HEADER_SIZE,
+                                        frame_size - HTTP2_FRAME_HEADER_SIZE);
           (void)count;
         }
     }
@@ -344,9 +351,9 @@ static void
 test_setting_edge_cases (void)
 {
   /* ENABLE_PUSH edge cases */
-  validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 0); /* Valid */
-  validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 1); /* Valid */
-  validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 2); /* Invalid */
+  validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 0);          /* Valid */
+  validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 1);          /* Valid */
+  validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 2);          /* Invalid */
   validate_setting (HTTP2_SETTINGS_ENABLE_PUSH, 0xFFFFFFFF); /* Invalid */
 
   /* INITIAL_WINDOW_SIZE edge cases */
@@ -359,14 +366,13 @@ test_setting_edge_cases (void)
                     0xFFFFFFFF); /* Invalid */
 
   /* MAX_FRAME_SIZE edge cases */
-  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 0);     /* Invalid */
-  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16383); /* Invalid */
-  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16384); /* Valid (min) */
-  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16385); /* Valid */
+  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 0);        /* Invalid */
+  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16383);    /* Invalid */
+  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16384);    /* Valid (min) */
+  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16385);    /* Valid */
   validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16777215); /* Valid (max) */
   validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 16777216); /* Invalid */
-  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE,
-                    0xFFFFFFFF); /* Invalid */
+  validate_setting (HTTP2_SETTINGS_MAX_FRAME_SIZE, 0xFFFFFFFF); /* Invalid */
 
   /* HEADER_TABLE_SIZE edge cases (any value valid) */
   validate_setting (HTTP2_SETTINGS_HEADER_TABLE_SIZE, 0);
@@ -452,8 +458,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                       | ((uint32_t)data[offset + 4] << 8) | data[offset + 5];
         }
 
-      size_t frame_size = build_settings_frame (buffer, sizeof (buffer), 0,
-                                                ids, values, num_settings);
+      size_t frame_size = build_settings_frame (
+          buffer, sizeof (buffer), 0, ids, values, num_settings);
 
       if (frame_size > 0)
         {
@@ -487,21 +493,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
    * Test 10: Boundary values for all settings
    * ==================================================================== */
   {
-    uint32_t boundary_values[] = { 0,
-                                   1,
-                                   0x7FFFFFFF,
-                                   0x80000000,
-                                   0xFFFFFFFF,
-                                   16384,
-                                   16383,
-                                   16385,
-                                   16777215,
-                                   16777216 };
+    uint32_t boundary_values[]
+        = { 0,     1,     0x7FFFFFFF, 0x80000000, 0xFFFFFFFF,
+            16384, 16383, 16385,      16777215,   16777216 };
 
     for (uint16_t id = 0; id <= 10; id++)
       {
         for (size_t v = 0;
-             v < sizeof (boundary_values) / sizeof (boundary_values[0]); v++)
+             v < sizeof (boundary_values) / sizeof (boundary_values[0]);
+             v++)
           {
             validate_setting (id, boundary_values[v]);
           }

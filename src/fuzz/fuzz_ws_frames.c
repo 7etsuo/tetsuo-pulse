@@ -364,8 +364,8 @@ test_fragmentation (const uint8_t *data, size_t size)
           /* Control frames don't affect fragmentation state */
           /* Just skip over them */
           size_t header_size;
-          uint64_t payload_len
-              = extract_payload_length (data + offset, size - offset, &header_size);
+          uint64_t payload_len = extract_payload_length (
+              data + offset, size - offset, &header_size);
 
           if (header_size == 0)
             break;
@@ -469,16 +469,15 @@ test_config_validation (const uint8_t *data, size_t size)
 static void
 test_close_codes (void)
 {
-  SocketWS_CloseCode codes[] = {
-    WS_CLOSE_NORMAL,           WS_CLOSE_GOING_AWAY,
-    WS_CLOSE_PROTOCOL_ERROR,   WS_CLOSE_UNSUPPORTED_DATA,
-    WS_CLOSE_NO_STATUS,        WS_CLOSE_ABNORMAL,
-    WS_CLOSE_INVALID_PAYLOAD,  WS_CLOSE_POLICY_VIOLATION,
-    WS_CLOSE_MESSAGE_TOO_BIG,  WS_CLOSE_MANDATORY_EXT,
-    WS_CLOSE_INTERNAL_ERROR,   WS_CLOSE_SERVICE_RESTART,
-    WS_CLOSE_TRY_AGAIN_LATER,  WS_CLOSE_BAD_GATEWAY,
-    WS_CLOSE_TLS_HANDSHAKE
-  };
+  SocketWS_CloseCode codes[]
+      = { WS_CLOSE_NORMAL,          WS_CLOSE_GOING_AWAY,
+          WS_CLOSE_PROTOCOL_ERROR,  WS_CLOSE_UNSUPPORTED_DATA,
+          WS_CLOSE_NO_STATUS,       WS_CLOSE_ABNORMAL,
+          WS_CLOSE_INVALID_PAYLOAD, WS_CLOSE_POLICY_VIOLATION,
+          WS_CLOSE_MESSAGE_TOO_BIG, WS_CLOSE_MANDATORY_EXT,
+          WS_CLOSE_INTERNAL_ERROR,  WS_CLOSE_SERVICE_RESTART,
+          WS_CLOSE_TRY_AGAIN_LATER, WS_CLOSE_BAD_GATEWAY,
+          WS_CLOSE_TLS_HANDSHAKE };
 
   for (size_t i = 0; i < sizeof (codes) / sizeof (codes[0]); i++)
     {
@@ -522,13 +521,15 @@ test_error_strings (void)
 static void
 test_state_values (void)
 {
-  SocketWS_State states[]
-      = { WS_STATE_CONNECTING, WS_STATE_OPEN, WS_STATE_CLOSING, WS_STATE_CLOSED };
+  SocketWS_State states[] = {
+    WS_STATE_CONNECTING, WS_STATE_OPEN, WS_STATE_CLOSING, WS_STATE_CLOSED
+  };
 
   for (size_t i = 0; i < sizeof (states) / sizeof (states[0]); i++)
     {
       /* Verify state values are in expected range */
-      int valid = (states[i] >= WS_STATE_CONNECTING && states[i] <= WS_STATE_CLOSED);
+      int valid
+          = (states[i] >= WS_STATE_CONNECTING && states[i] <= WS_STATE_CLOSED);
       (void)valid;
     }
 }
@@ -603,11 +604,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Cleanup */
     Arena_clear (arena_instance);
   }
-  EXCEPT (SocketWS_Failed) { /* Expected; good coverage */ }
-  EXCEPT (SocketWS_ProtocolError) { /* Expected; good coverage */ }
-  EXCEPT (SocketWS_Closed) { /* Expected; good coverage */ }
-  EXCEPT (Arena_Failed) { /* Expected; good coverage */ }
-  EXCEPT (SocketUTF8_Failed) { /* Expected; good coverage */ }
+  EXCEPT (SocketWS_Failed)
+  { /* Expected; good coverage */
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  { /* Expected; good coverage */
+  }
+  EXCEPT (SocketWS_Closed)
+  { /* Expected; good coverage */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Expected; good coverage */
+  }
+  EXCEPT (SocketUTF8_Failed)
+  { /* Expected; good coverage */
+  }
   END_TRY;
 
   arena_instance = arena;

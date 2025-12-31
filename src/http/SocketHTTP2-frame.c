@@ -17,37 +17,37 @@
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2"
-#define REQUIRE_STREAM(header)                                                \
-  do                                                                          \
-    {                                                                         \
-      if ((header)->stream_id == 0)                                           \
-        return HTTP2_PROTOCOL_ERROR;                                          \
-    }                                                                         \
+#define REQUIRE_STREAM(header)       \
+  do                                 \
+    {                                \
+      if ((header)->stream_id == 0)  \
+        return HTTP2_PROTOCOL_ERROR; \
+    }                                \
   while (0)
-#define REQUIRE_CONNECTION_ONLY(header)                                       \
-  do                                                                          \
-    {                                                                         \
-      if ((header)->stream_id != 0)                                           \
-        return HTTP2_PROTOCOL_ERROR;                                          \
-    }                                                                         \
+#define REQUIRE_CONNECTION_ONLY(header) \
+  do                                    \
+    {                                   \
+      if ((header)->stream_id != 0)     \
+        return HTTP2_PROTOCOL_ERROR;    \
+    }                                   \
   while (0)
-#define REQUIRE_EXACT_LENGTH(header, expected)                                \
-  do                                                                          \
-    {                                                                         \
-      if ((header)->length != (expected))                                     \
-        return HTTP2_FRAME_SIZE_ERROR;                                        \
-    }                                                                         \
-  while (0)
-
-#define REQUIRE_VALID_FLAGS(header, valid_flags)                             \
-  do                                                                          \
-    {                                                                         \
-      if (((header)->flags & ~(valid_flags)) != 0)                            \
-        return HTTP2_PROTOCOL_ERROR;                                          \
-    }                                                                         \
+#define REQUIRE_EXACT_LENGTH(header, expected) \
+  do                                           \
+    {                                          \
+      if ((header)->length != (expected))      \
+        return HTTP2_FRAME_SIZE_ERROR;         \
+    }                                          \
   while (0)
 
-#define STRING_LOOKUP(array, count, index, unknown)                           \
+#define REQUIRE_VALID_FLAGS(header, valid_flags)   \
+  do                                               \
+    {                                              \
+      if (((header)->flags & ~(valid_flags)) != 0) \
+        return HTTP2_PROTOCOL_ERROR;               \
+    }                                              \
+  while (0)
+
+#define STRING_LOOKUP(array, count, index, unknown) \
   (((size_t)(index) < (count)) ? (array)[(index)] : (unknown))
 
 typedef SocketHTTP2_ErrorCode (*FrameValidator) (
@@ -105,7 +105,7 @@ static const char *frame_type_names[] = {
   "CONTINUATION"   /* 0x9 */
 };
 
-#define FRAME_TYPE_COUNT                                                      \
+#define FRAME_TYPE_COUNT \
   (sizeof (frame_type_names) / sizeof (frame_type_names[0]))
 
 static const char *error_code_names[] = {
@@ -125,7 +125,7 @@ static const char *error_code_names[] = {
   "HTTP_1_1_REQUIRED"    /* 0xd */
 };
 
-#define ERROR_CODE_COUNT                                                      \
+#define ERROR_CODE_COUNT \
   (sizeof (error_code_names) / sizeof (error_code_names[0]))
 
 static const char *stream_state_names[]
@@ -133,13 +133,13 @@ static const char *stream_state_names[]
         "open",  "half-closed (local)", "half-closed (remote)",
         "closed" };
 
-#define STREAM_STATE_COUNT                                                    \
+#define STREAM_STATE_COUNT \
   (sizeof (stream_state_names) / sizeof (stream_state_names[0]))
 
 /* Big-endian pack/unpack helpers - using shared utilities from SocketUtil.h */
-#define http2_unpack_be24(data) socket_util_unpack_be24(data)
-#define http2_pack_be24(data, value) socket_util_pack_be24(data, value)
-#define http2_pack_uint32_be(data, value) socket_util_pack_be32(data, value)
+#define http2_unpack_be24(data) socket_util_unpack_be24 (data)
+#define http2_pack_be24(data, value) socket_util_pack_be24 (data, value)
+#define http2_pack_uint32_be(data, value) socket_util_pack_be32 (data, value)
 
 /* Stream ID helpers with reserved bit masking (bit 31) - HTTP/2 specific */
 static inline uint32_t
@@ -159,7 +159,8 @@ http2_pack_stream_id (unsigned char *data, uint32_t stream_id)
 }
 
 int
-SocketHTTP2_frame_header_parse (const unsigned char *data, size_t input_len,
+SocketHTTP2_frame_header_parse (const unsigned char *data,
+                                size_t input_len,
                                 SocketHTTP2_FrameHeader *header)
 {
   if (!data || input_len < HTTP2_FRAME_HEADER_SIZE || !header)
@@ -210,8 +211,9 @@ validate_headers_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_STREAM (header);
-  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_END_STREAM | HTTP2_FLAG_END_HEADERS
-                       | HTTP2_FLAG_PADDED | HTTP2_FLAG_PRIORITY);
+  REQUIRE_VALID_FLAGS (header,
+                       HTTP2_FLAG_END_STREAM | HTTP2_FLAG_END_HEADERS
+                           | HTTP2_FLAG_PADDED | HTTP2_FLAG_PRIORITY);
   return HTTP2_NO_ERROR;
 }
 
@@ -222,7 +224,7 @@ validate_priority_frame (const SocketHTTP2_FrameHeader *header,
   (void)conn;
   REQUIRE_STREAM (header);
   REQUIRE_EXACT_LENGTH (header, HTTP2_PRIORITY_PAYLOAD_SIZE);
-  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
+  REQUIRE_VALID_FLAGS (header, 0); /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
 
@@ -233,7 +235,7 @@ validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
   (void)conn;
   REQUIRE_STREAM (header);
   REQUIRE_EXACT_LENGTH (header, HTTP2_RST_STREAM_PAYLOAD_SIZE);
-  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
+  REQUIRE_VALID_FLAGS (header, 0); /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
 
@@ -286,7 +288,7 @@ validate_goaway_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_CONNECTION_ONLY (header);
-  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
+  REQUIRE_VALID_FLAGS (header, 0); /* No flags allowed */
   if (header->length < HTTP2_GOAWAY_HEADER_SIZE)
     return HTTP2_FRAME_SIZE_ERROR;
   return HTTP2_NO_ERROR;
@@ -298,7 +300,7 @@ validate_window_update_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_EXACT_LENGTH (header, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
-  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
+  REQUIRE_VALID_FLAGS (header, 0); /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
 
@@ -342,7 +344,8 @@ http2_frame_validate (SocketHTTP2_Conn_T conn,
 
 int
 http2_frame_send (SocketHTTP2_Conn_T conn,
-                  const SocketHTTP2_FrameHeader *header, const void *payload,
+                  const SocketHTTP2_FrameHeader *header,
+                  const void *payload,
                   size_t payload_len)
 {
   unsigned char frame_header[HTTP2_FRAME_HEADER_SIZE];
@@ -365,13 +368,13 @@ http2_frame_send (SocketHTTP2_Conn_T conn,
 
   if (payload_len > 0)
     {
-      if (SocketBuf_write (conn->send_buf, payload, payload_len)
-          != payload_len)
+      if (SocketBuf_write (conn->send_buf, payload, payload_len) != payload_len)
         {
           SOCKET_LOG_ERROR_MSG ("Failed to write HTTP/2 frame payload to send "
                                 "buffer: type=%s stream=%u len=%zu",
                                 SocketHTTP2_frame_type_string (header->type),
-                                header->stream_id, payload_len);
+                                header->stream_id,
+                                payload_len);
           return -1;
         }
     }
@@ -382,8 +385,8 @@ http2_frame_send (SocketHTTP2_Conn_T conn,
 const char *
 SocketHTTP2_error_string (SocketHTTP2_ErrorCode code)
 {
-  return STRING_LOOKUP (error_code_names, ERROR_CODE_COUNT, code,
-                        "UNKNOWN_ERROR");
+  return STRING_LOOKUP (
+      error_code_names, ERROR_CODE_COUNT, code, "UNKNOWN_ERROR");
 }
 
 const char *
@@ -393,15 +396,15 @@ SocketHTTP2_frame_type_string (SocketHTTP2_FrameType type)
   if (type == HTTP2_FRAME_PRIORITY_UPDATE)
     return "PRIORITY_UPDATE";
 
-  return STRING_LOOKUP (frame_type_names, FRAME_TYPE_COUNT, type,
-                        "UNKNOWN_FRAME");
+  return STRING_LOOKUP (
+      frame_type_names, FRAME_TYPE_COUNT, type, "UNKNOWN_FRAME");
 }
 
 const char *
 SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state)
 {
-  return STRING_LOOKUP (stream_state_names, STREAM_STATE_COUNT, state,
-                        "UNKNOWN_STATE");
+  return STRING_LOOKUP (
+      stream_state_names, STREAM_STATE_COUNT, state, "UNKNOWN_STATE");
 }
 
 void
@@ -416,7 +419,8 @@ http2_send_connection_error (SocketHTTP2_Conn_T conn,
 }
 
 void
-http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
+http2_send_stream_error (SocketHTTP2_Conn_T conn,
+                         uint32_t stream_id,
                          SocketHTTP2_ErrorCode error_code)
 {
   SocketHTTP2_FrameHeader header;
@@ -450,12 +454,14 @@ http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   if (http2_frame_send (conn, &header, payload, sizeof (payload)) != 0)
     {
       SOCKET_LOG_WARN_MSG ("Failed to send RST_STREAM for stream %u: %s",
-                           stream_id, SocketHTTP2_error_string (error_code));
+                           stream_id,
+                           SocketHTTP2_error_string (error_code));
     }
 }
 
 void
-http2_emit_stream_event (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+http2_emit_stream_event (SocketHTTP2_Conn_T conn,
+                         SocketHTTP2_Stream_T stream,
                          int event)
 {
   if (!conn || !stream)

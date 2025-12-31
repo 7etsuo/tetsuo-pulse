@@ -115,17 +115,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Search for specific well-known options */
           int found;
 
-          found = SocketDNS_edns_option_find (opt.rdata, opt.rdlength,
-                                              DNS_EDNS_OPT_COOKIE, &option);
+          found = SocketDNS_edns_option_find (
+              opt.rdata, opt.rdlength, DNS_EDNS_OPT_COOKIE, &option);
           (void)found;
 
-          found = SocketDNS_edns_option_find (opt.rdata, opt.rdlength,
-                                              DNS_EDNS_OPT_EXTENDED_ERROR,
-                                              &option);
+          found = SocketDNS_edns_option_find (
+              opt.rdata, opt.rdlength, DNS_EDNS_OPT_EXTENDED_ERROR, &option);
           (void)found;
 
-          found = SocketDNS_edns_option_find (opt.rdata, opt.rdlength,
-                                              DNS_EDNS_OPT_PADDING, &option);
+          found = SocketDNS_edns_option_find (
+              opt.rdata, opt.rdlength, DNS_EDNS_OPT_PADDING, &option);
           (void)found;
         }
 
@@ -180,8 +179,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       option.data = (option.length > 0) ? (data + 4) : NULL;
 
-      int enc_len
-          = SocketDNS_edns_option_encode (&option, buf, sizeof (buf));
+      int enc_len = SocketDNS_edns_option_encode (&option, buf, sizeof (buf));
       (void)enc_len;
     }
 
@@ -245,10 +243,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       for (size_t i = 0; i + 8 <= size; i += 8)
         {
           now = ((uint64_t)data[i] << 56) | ((uint64_t)data[i + 1] << 48)
-                | ((uint64_t)data[i + 2] << 40)
-                | ((uint64_t)data[i + 3] << 32)
-                | ((uint64_t)data[i + 4] << 24)
-                | ((uint64_t)data[i + 5] << 16)
+                | ((uint64_t)data[i + 2] << 40) | ((uint64_t)data[i + 3] << 32)
+                | ((uint64_t)data[i + 4] << 24) | ((uint64_t)data[i + 5] << 16)
                 | ((uint64_t)data[i + 6] << 8) | data[i + 7];
         }
 

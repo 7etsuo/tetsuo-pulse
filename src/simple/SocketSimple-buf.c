@@ -121,7 +121,10 @@ Socket_simple_buf_write (SocketSimple_Buf_T buf, const void *data, size_t len)
   if (len == 0)
     return 0;
 
-  TRY { written = SocketBuf_write (buf->buf, data, len); }
+  TRY
+  {
+    written = SocketBuf_write (buf->buf, data, len);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer write failed");
@@ -157,7 +160,10 @@ Socket_simple_buf_commit (SocketSimple_Buf_T buf, size_t len)
       return -1;
     }
 
-  TRY { SocketBuf_written (buf->buf, len); }
+  TRY
+  {
+    SocketBuf_written (buf->buf, len);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer commit failed");
@@ -194,7 +200,10 @@ Socket_simple_buf_read (SocketSimple_Buf_T buf, void *data, size_t len)
   if (len == 0)
     return 0;
 
-  TRY { n = SocketBuf_read (buf->buf, data, len); }
+  TRY
+  {
+    n = SocketBuf_read (buf->buf, data, len);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer read failed");
@@ -227,7 +236,10 @@ Socket_simple_buf_peek (SocketSimple_Buf_T buf, void *data, size_t len)
   if (len == 0)
     return 0;
 
-  TRY { n = SocketBuf_peek (buf->buf, data, len); }
+  TRY
+  {
+    n = SocketBuf_peek (buf->buf, data, len);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer peek failed");
@@ -270,7 +282,10 @@ Socket_simple_buf_consume (SocketSimple_Buf_T buf, size_t len)
       return -1;
     }
 
-  TRY { SocketBuf_consume (buf->buf, len); }
+  TRY
+  {
+    SocketBuf_consume (buf->buf, len);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer consume failed");
@@ -296,12 +311,14 @@ Socket_simple_buf_readline (SocketSimple_Buf_T buf, char *line, size_t maxlen)
 
   if (!line || maxlen == 0)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid line buffer");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid line buffer");
       return -1;
     }
 
-  TRY { n = SocketBuf_readline (buf->buf, line, maxlen); }
+  TRY
+  {
+    n = SocketBuf_readline (buf->buf, line, maxlen);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer readline failed");
@@ -366,7 +383,10 @@ Socket_simple_buf_clear (SocketSimple_Buf_T buf)
   if (!buf || !buf->buf)
     return;
 
-  TRY { SocketBuf_clear (buf->buf); }
+  TRY
+  {
+    SocketBuf_clear (buf->buf);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     /* Silently ignore errors on clear */
@@ -380,7 +400,10 @@ Socket_simple_buf_clear_secure (SocketSimple_Buf_T buf)
   if (!buf || !buf->buf)
     return;
 
-  TRY { SocketBuf_secureclear (buf->buf); }
+  TRY
+  {
+    SocketBuf_secureclear (buf->buf);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     /* Silently ignore errors on secure clear */
@@ -399,7 +422,10 @@ Socket_simple_buf_reserve (SocketSimple_Buf_T buf, size_t min_space)
       return -1;
     }
 
-  TRY { SocketBuf_reserve (buf->buf, min_space); }
+  TRY
+  {
+    SocketBuf_reserve (buf->buf, min_space);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Buffer reserve failed");
@@ -421,7 +447,10 @@ Socket_simple_buf_compact (SocketSimple_Buf_T buf)
       return -1;
     }
 
-  TRY { SocketBuf_compact (buf->buf); }
+  TRY
+  {
+    SocketBuf_compact (buf->buf);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer compact failed");
@@ -437,8 +466,9 @@ Socket_simple_buf_compact (SocketSimple_Buf_T buf)
  *============================================================================*/
 
 ssize_t
-Socket_simple_buf_find (SocketSimple_Buf_T buf, const void *needle,
-                         size_t needle_len)
+Socket_simple_buf_find (SocketSimple_Buf_T buf,
+                        const void *needle,
+                        size_t needle_len)
 {
   volatile ssize_t pos = -1;
 
@@ -456,7 +486,10 @@ Socket_simple_buf_find (SocketSimple_Buf_T buf, const void *needle,
       return -1;
     }
 
-  TRY { pos = SocketBuf_find (buf->buf, needle, needle_len); }
+  TRY
+  {
+    pos = SocketBuf_find (buf->buf, needle, needle_len);
+  }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer find failed");
@@ -472,7 +505,43 @@ Socket_simple_buf_find (SocketSimple_Buf_T buf, const void *needle,
  *============================================================================*/
 
 ssize_t
-Socket_simple_buf_readv (SocketSimple_Buf_T buf, const struct iovec *iov,
+Socket_simple_buf_readv (SocketSimple_Buf_T buf,
+                         const struct iovec *iov,
+                         int iovcnt)
+{
+  volatile ssize_t n = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!buf || !buf->buf)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid buffer");
+      return -1;
+    }
+
+  if (!iov && iovcnt > 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid iovec");
+      return -1;
+    }
+
+  TRY
+  {
+    n = SocketBuf_readv (buf->buf, iov, iovcnt);
+  }
+  EXCEPT (SocketBuf_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer readv failed");
+    return -1;
+  }
+  END_TRY;
+
+  return n;
+}
+
+ssize_t
+Socket_simple_buf_writev (SocketSimple_Buf_T buf,
+                          const struct iovec *iov,
                           int iovcnt)
 {
   volatile ssize_t n = 0;
@@ -491,38 +560,10 @@ Socket_simple_buf_readv (SocketSimple_Buf_T buf, const struct iovec *iov,
       return -1;
     }
 
-  TRY { n = SocketBuf_readv (buf->buf, iov, iovcnt); }
-  EXCEPT (SocketBuf_Failed)
+  TRY
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer readv failed");
-    return -1;
+    n = SocketBuf_writev (buf->buf, iov, iovcnt);
   }
-  END_TRY;
-
-  return n;
-}
-
-ssize_t
-Socket_simple_buf_writev (SocketSimple_Buf_T buf, const struct iovec *iov,
-                           int iovcnt)
-{
-  volatile ssize_t n = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!buf || !buf->buf)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid buffer");
-      return -1;
-    }
-
-  if (!iov && iovcnt > 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid iovec");
-      return -1;
-    }
-
-  TRY { n = SocketBuf_writev (buf->buf, iov, iovcnt); }
   EXCEPT (SocketBuf_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_IO, "Buffer writev failed");

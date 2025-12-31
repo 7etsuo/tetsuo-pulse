@@ -56,14 +56,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (result == 0)
     {
       /* Parse succeeded - test roundtrip encoding */
-      int enc_len
-          = SocketDNSCookie_encode (&cookie, encoded, sizeof (encoded));
+      int enc_len = SocketDNSCookie_encode (&cookie, encoded, sizeof (encoded));
 
       if (enc_len > 0)
         {
           /* Decode the encoded cookie */
-          int dec_result
-              = SocketDNSCookie_parse (encoded, enc_len, &decoded);
+          int dec_result = SocketDNSCookie_parse (encoded, enc_len, &decoded);
 
           if (dec_result == 0)
             {
@@ -98,7 +96,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       int r1 = SocketDNSCookie_parse (data, size / 2, &cookie1);
 
       /* Try parsing second half as cookie2 */
-      int r2 = SocketDNSCookie_parse (data + size / 2, size - size / 2, &cookie2);
+      int r2
+          = SocketDNSCookie_parse (data + size / 2, size - size / 2, &cookie2);
 
       if (r1 == 0 && r2 == 0)
         {
@@ -137,13 +136,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Test with no server cookie */
       cookie.server_cookie_len = 0;
-      int enc_len
-          = SocketDNSCookie_encode (&cookie, encoded, sizeof (encoded));
+      int enc_len = SocketDNSCookie_encode (&cookie, encoded, sizeof (encoded));
       (void)enc_len;
 
       /* Test with various server cookie lengths */
       for (size_t slen = DNS_SERVER_COOKIE_MIN_SIZE;
-           slen <= DNS_SERVER_COOKIE_MAX_SIZE && slen + 8 <= size; slen += 4)
+           slen <= DNS_SERVER_COOKIE_MAX_SIZE && slen + 8 <= size;
+           slen += 4)
         {
           cookie.server_cookie_len = slen;
           memcpy (cookie.server_cookie, data + 8, slen);

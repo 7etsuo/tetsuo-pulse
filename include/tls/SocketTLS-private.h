@@ -118,7 +118,7 @@
  *
  * Creates thread-local copy of exception with reason from tls_error_buf.
  */
-#define RAISE_TLS_ERROR(exception)                                            \
+#define RAISE_TLS_ERROR(exception) \
   SOCKET_RAISE_MODULE_ERROR (SocketTLS, exception)
 
 /**
@@ -132,7 +132,7 @@
  * exception storage to prevent race conditions. The message is formatted
  * into tls_error_buf and attached to the exception before raising.
  */
-#define RAISE_TLS_ERROR_MSG(exception, fmt, ...)                              \
+#define RAISE_TLS_ERROR_MSG(exception, fmt, ...) \
   SOCKET_RAISE_MSG (SocketTLS, exception, fmt, ##__VA_ARGS__)
 
 /**
@@ -147,12 +147,12 @@
  *
  * @see SocketTLS_enable() for enabling TLS on sockets
  */
-#define REQUIRE_TLS_ENABLED(socket, exception)                                \
-  do                                                                          \
-    {                                                                         \
-      if (!(socket)->tls_enabled)                                             \
-        RAISE_TLS_ERROR_MSG (exception, "TLS not enabled on socket");         \
-    }                                                                         \
+#define REQUIRE_TLS_ENABLED(socket, exception)                        \
+  do                                                                  \
+    {                                                                 \
+      if (!(socket)->tls_enabled)                                     \
+        RAISE_TLS_ERROR_MSG (exception, "TLS not enabled on socket"); \
+    }                                                                 \
   while (0)
 
 /**
@@ -192,25 +192,25 @@
  *
  * @return SSL* pointer for immediate use in TLS operations
  */
-#define VALIDATE_TLS_IO_READY(socket, exception)                              \
-  ({                                                                          \
-    if (!(socket)->tls_enabled)                                               \
-      {                                                                       \
-        TLS_ERROR_MSG ("TLS not enabled on socket");                          \
-        RAISE_TLS_ERROR (exception);                                          \
-      }                                                                       \
-    if (!(socket)->tls_handshake_done)                                        \
-      {                                                                       \
-        TLS_ERROR_MSG ("TLS handshake not complete");                         \
-        RAISE_TLS_ERROR (exception);                                          \
-      }                                                                       \
-    SSL *_ssl = tls_socket_get_ssl (socket);                                  \
-    if (!_ssl)                                                                \
-      {                                                                       \
-        TLS_ERROR_MSG ("SSL object not available");                           \
-        RAISE_TLS_ERROR (exception);                                          \
-      }                                                                       \
-    _ssl;                                                                     \
+#define VALIDATE_TLS_IO_READY(socket, exception)      \
+  ({                                                  \
+    if (!(socket)->tls_enabled)                       \
+      {                                               \
+        TLS_ERROR_MSG ("TLS not enabled on socket");  \
+        RAISE_TLS_ERROR (exception);                  \
+      }                                               \
+    if (!(socket)->tls_handshake_done)                \
+      {                                               \
+        TLS_ERROR_MSG ("TLS handshake not complete"); \
+        RAISE_TLS_ERROR (exception);                  \
+      }                                               \
+    SSL *_ssl = tls_socket_get_ssl (socket);          \
+    if (!_ssl)                                        \
+      {                                               \
+        TLS_ERROR_MSG ("SSL object not available");   \
+        RAISE_TLS_ERROR (exception);                  \
+      }                                               \
+    _ssl;                                             \
   })
 
 /* ============================================================================
@@ -317,29 +317,32 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
     }
 }
 
- /**
-  * @brief tls_handle_ssl_write_result - Handle result from SSL_write or SSL_sendfile
-  * @ingroup security
-  * @param ssl SSL connection object
-  * @param ssl_result Raw result from SSL_write (int) or SSL_sendfile (ssize_t)
-  * @param operation Operation name for error message (e.g., "TLS send", "sendfile")
-  *
-  * Common handler for SSL write I/O errors. Returns bytes sent (>0), 0 for would-block
-  * (errno=EAGAIN), or raises appropriate exception for fatal errors.
-  *
-  * Matches logic in SocketTLS_send/recv for consistency. Used by kTLS sendfile and
-  * other I/O operations to avoid code duplication.
-  *
-  * @return Bytes sent on success, 0 on would-block, raises on fatal error
-  * @threadsafe Yes - per-connection SSL state
-  */
-static inline void
-tls_format_openssl_error (const char *context);
+/**
+ * @brief tls_handle_ssl_write_result - Handle result from SSL_write or
+ * SSL_sendfile
+ * @ingroup security
+ * @param ssl SSL connection object
+ * @param ssl_result Raw result from SSL_write (int) or SSL_sendfile (ssize_t)
+ * @param operation Operation name for error message (e.g., "TLS send",
+ * "sendfile")
+ *
+ * Common handler for SSL write I/O errors. Returns bytes sent (>0), 0 for
+ * would-block (errno=EAGAIN), or raises appropriate exception for fatal errors.
+ *
+ * Matches logic in SocketTLS_send/recv for consistency. Used by kTLS sendfile
+ * and other I/O operations to avoid code duplication.
+ *
+ * @return Bytes sent on success, 0 on would-block, raises on fatal error
+ * @threadsafe Yes - per-connection SSL state
+ */
+static inline void tls_format_openssl_error (const char *context);
 
 /* Forward declaration to fix compilation order */
 
 static inline ssize_t
-tls_handle_ssl_write_result (SSL *ssl, ssize_t ssl_result, const char *operation)
+tls_handle_ssl_write_result (SSL *ssl,
+                             ssize_t ssl_result,
+                             const char *operation)
 {
   if (ssl_result > 0)
     return ssl_result;
@@ -355,23 +358,27 @@ tls_handle_ssl_write_result (SSL *ssl, ssize_t ssl_result, const char *operation
 
     case SSL_ERROR_ZERO_RETURN:
       errno = 0;
-      tls_format_openssl_error (operation ? operation : "TLS write: peer closed (zero return)");
-      return -2;  /* Special: clean close - caller should raise Socket_Closed */
+      tls_format_openssl_error (
+          operation ? operation : "TLS write: peer closed (zero return)");
+      return -2; /* Special: clean close - caller should raise Socket_Closed */
 
     case SSL_ERROR_SYSCALL:
       if (errno == 0)
         errno = ECONNRESET;
-      tls_format_openssl_error (operation ? operation : "TLS write syscall error");
+      tls_format_openssl_error (operation ? operation
+                                          : "TLS write syscall error");
       return -1;
 
     case SSL_ERROR_SSL:
       errno = EPROTO;
-      tls_format_openssl_error (operation ? operation : "TLS write protocol error");
+      tls_format_openssl_error (operation ? operation
+                                          : "TLS write protocol error");
       return -1;
 
     default:
       errno = EIO;
-      tls_format_openssl_error (operation ? operation : "TLS write unknown error");
+      tls_format_openssl_error (operation ? operation
+                                          : "TLS write unknown error");
       return -1;
     }
 }
@@ -393,8 +400,8 @@ tls_handle_ssl_write_result (SSL *ssl, ssize_t ssl_result, const char *operation
 static inline void
 tls_format_openssl_error (const char *context)
 {
-  ssl_format_openssl_error_to_buf (context, socket_error_buf,
-                                   SOCKET_ERROR_BUFSIZE);
+  ssl_format_openssl_error_to_buf (
+      context, socket_error_buf, SOCKET_ERROR_BUFSIZE);
 }
 
 /* ============================================================================
@@ -678,14 +685,16 @@ typedef struct
  * @brief Sharded session cache shard for concurrent access.
  * @internal
  */
-struct TLSSessionShard {
-  HashTable_T session_table;   /**< Hash table mapping session ID (const unsigned char*) to SSL_SESSION* */
-  pthread_mutex_t mutex;       /**< Protects shard state and hash table */
-  size_t max_sessions;         /**< Max sessions before eviction */
-  size_t current_count;        /**< Current active sessions */
-  size_t hits;                 /**< Hits on this shard */
-  size_t misses;               /**< Misses on this shard */
-  size_t stores;               /**< Stores on this shard */
+struct TLSSessionShard
+{
+  HashTable_T session_table; /**< Hash table mapping session ID (const unsigned
+                                char*) to SSL_SESSION* */
+  pthread_mutex_t mutex;     /**< Protects shard state and hash table */
+  size_t max_sessions;       /**< Max sessions before eviction */
+  size_t current_count;      /**< Current active sessions */
+  size_t hits;               /**< Hits on this shard */
+  size_t misses;             /**< Misses on this shard */
+  size_t stores;             /**< Stores on this shard */
 };
 typedef struct TLSSessionShard TLSSessionShard_T;
 
@@ -693,10 +702,11 @@ typedef struct TLSSessionShard TLSSessionShard_T;
  * @brief Sharded session cache manager for high-concurrency servers.
  * @internal
  */
-struct TLSSessionCacheSharded {
-  TLSSessionShard_T *shards;   /**< Array of shards */
-  size_t num_shards;           /**< Number of shards */
-  size_t shard_mask;           /**< num_shards - 1 for fast modulo */
+struct TLSSessionCacheSharded
+{
+  TLSSessionShard_T *shards; /**< Array of shards */
+  size_t num_shards;         /**< Number of shards */
+  size_t shard_mask;         /**< num_shards - 1 for fast modulo */
 };
 typedef struct TLSSessionCacheSharded TLSSessionCacheSharded_T;
 
@@ -710,13 +720,16 @@ typedef struct TLSSessionCacheSharded TLSSessionCacheSharded_T;
  */
 struct T
 {
-  SSL_CTX *ssl_ctx; /**< OpenSSL SSL_CTX object for TLS sessions. */
-  Arena_T arena;    /**< Memory arena for internal allocations. */
-  int is_server;    /**< 1 for server context, 0 for client context. */
+  SSL_CTX *ssl_ctx;          /**< OpenSSL SSL_CTX object for TLS sessions. */
+  Arena_T arena;             /**< Memory arena for internal allocations. */
+  int is_server;             /**< 1 for server context, 0 for client context. */
   int session_cache_enabled; /**< Flag to enable session caching (default: 1).
                               */
-  TLSSessionCacheSharded_T sharded_session_cache; /**< Sharded session cache structure for multi-threaded scalability */
-  int sharded_enabled; /**< 1 if sharded session cache is active (disables standard cache) */
+  TLSSessionCacheSharded_T
+      sharded_session_cache; /**< Sharded session cache structure for
+                                multi-threaded scalability */
+  int sharded_enabled;       /**< 1 if sharded session cache is active (disables
+                                standard cache) */
   size_t session_cache_size; /**< Maximum number of sessions in cache (default:
                                 1024). */
   size_t cache_hits;         /**< Number of session resumptions (hits). */
@@ -750,7 +763,7 @@ struct T
   /* Custom verification callback */
   SocketTLSVerifyCallback verify_callback; /**< Custom X509 verify callback for
                                               peer certificate validation. */
-  void *verify_user_data; /**< Opaque user data passed to verify callback. */
+  void *verify_user_data;    /**< Opaque user data passed to verify callback. */
   TLSVerifyMode verify_mode; /**< Stored verification mode (e.g.,
                                 TLS_VERIFY_NONE, TLS_VERIFY_PEER). */
 
@@ -767,8 +780,7 @@ struct T
   long crl_refresh_interval; /**< Refresh interval in seconds (0 = disabled) */
   int64_t crl_next_refresh_ms; /**< Next scheduled refresh time in monotonic
                                   milliseconds */
-  void
-      *crl_callback; /**< SocketTLSCrlCallback (cast to avoid circular deps) */
+  void *crl_callback; /**< SocketTLSCrlCallback (cast to avoid circular deps) */
   void *crl_user_data; /**< User data for CRL callback */
 
   pthread_mutex_t
@@ -786,8 +798,8 @@ struct T
   void *cert_lookup_user_data; /**< User data for cert lookup callback */
 
   /* 0-RTT Early Data Replay Protection */
-  void *early_data_replay_callback; /**< SocketTLSEarlyDataReplayCallback (cast
-                                       to avoid circular deps) */
+  void *early_data_replay_callback;  /**< SocketTLSEarlyDataReplayCallback (cast
+                                        to avoid circular deps) */
   void *early_data_replay_user_data; /**< User data for replay callback */
   int early_data_replay_required;    /**< 1 = require replay protection before
                                         accepting early data (server only) */
@@ -807,17 +819,17 @@ struct T
  * @see pthread_mutex_lock() for POSIX mutex semantics.
  * @threadsafe Yes - standard mutex locking.
  */
-#define CRL_LOCK(ctx)                                                         \
-  do                                                                          \
-    {                                                                         \
-      int err = pthread_mutex_lock (&(ctx)->crl_mutex);                       \
-      if (err != 0)                                                           \
-        {                                                                     \
-          SOCKET_LOG_ERROR_MSG ("CRL mutex lock failed: %d", err);            \
-          RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL mutex lock failed: %d", \
-                               err);                                          \
-        }                                                                     \
-    }                                                                         \
+#define CRL_LOCK(ctx)                                              \
+  do                                                               \
+    {                                                              \
+      int err = pthread_mutex_lock (&(ctx)->crl_mutex);            \
+      if (err != 0)                                                \
+        {                                                          \
+          SOCKET_LOG_ERROR_MSG ("CRL mutex lock failed: %d", err); \
+          RAISE_CTX_ERROR_MSG (                                    \
+              SocketTLS_Failed, "CRL mutex lock failed: %d", err); \
+        }                                                          \
+    }                                                              \
   while (0)
 
 /**
@@ -834,17 +846,17 @@ struct T
  * @see pthread_mutex_unlock() for POSIX mutex release.
  * @threadsafe Yes - standard mutex unlocking.
  */
-#define CRL_UNLOCK(ctx)                                                       \
-  do                                                                          \
-    {                                                                         \
-      int err = pthread_mutex_unlock (&(ctx)->crl_mutex);                     \
-      if (err != 0)                                                           \
-        {                                                                     \
-          SOCKET_LOG_ERROR_MSG ("CRL mutex unlock failed: %d", err);          \
-          RAISE_CTX_ERROR_MSG (SocketTLS_Failed,                              \
-                               "CRL mutex unlock failed: %d", err);           \
-        }                                                                     \
-    }                                                                         \
+#define CRL_UNLOCK(ctx)                                              \
+  do                                                                 \
+    {                                                                \
+      int err = pthread_mutex_unlock (&(ctx)->crl_mutex);            \
+      if (err != 0)                                                  \
+        {                                                            \
+          SOCKET_LOG_ERROR_MSG ("CRL mutex unlock failed: %d", err); \
+          RAISE_CTX_ERROR_MSG (                                      \
+              SocketTLS_Failed, "CRL mutex unlock failed: %d", err); \
+        }                                                            \
+    }                                                                \
   while (0)
 
 /* ============================================================================
@@ -871,7 +883,7 @@ struct T
  * @see tls_error_buf for error message storage.
  */
 
-#define RAISE_CTX_ERROR(exception)                                            \
+#define RAISE_CTX_ERROR(exception) \
   SOCKET_RAISE_MODULE_ERROR (SocketTLSContext, exception)
 
 /**
@@ -889,7 +901,7 @@ struct T
  * @see RAISE_CTX_ERROR() for using pre-formatted error buffer.
  * @see SOCKET_RAISE_MSG() underlying macro implementation.
  */
-#define RAISE_CTX_ERROR_MSG(exception, fmt, ...)                              \
+#define RAISE_CTX_ERROR_MSG(exception, fmt, ...) \
   SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, ##__VA_ARGS__)
 
 /**
@@ -906,7 +918,7 @@ struct T
  * @throws SocketTLSContext exception with formatted details.
  * @see RAISE_CTX_ERROR_MSG() primary formatted exception macro.
  */
-#define RAISE_CTX_ERROR_FMT(exception, fmt, ...)                              \
+#define RAISE_CTX_ERROR_FMT(exception, fmt, ...) \
   SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, __VA_ARGS__)
 
 /* ============================================================================
@@ -964,7 +976,8 @@ extern void ctx_raise_openssl_error (const char *context);
  * @threadsafe Conditional - safe if arena is not concurrently modified.
  */
 static inline char *
-ctx_arena_strdup (SocketTLSContext_T ctx, const char *str,
+ctx_arena_strdup (SocketTLSContext_T ctx,
+                  const char *str,
                   const char *error_msg)
 {
   size_t len = strlen (str) + 1;
@@ -1061,8 +1074,8 @@ extern SocketTLSContext_T tls_context_get_from_ssl_ctx (SSL_CTX *ssl_ctx);
  * @see SocketTLSContext_new_server() for high-level server context creation
  * @see SocketTLSContext_new_client() for high-level client context creation
  */
-extern SocketTLSContext_T ctx_alloc_and_init (const SSL_METHOD *method,
-                                              int is_server);
+extern SocketTLSContext_T
+ctx_alloc_and_init (const SSL_METHOD *method, int is_server);
 
 /* ============================================================================
  * Certificate Pinning Internal Functions
@@ -1109,8 +1122,8 @@ tls_pinning_init (TLSContextPinning *pinning)
  * @see RFC 7469 Certificate Transparency and Public Key Pinning Extension.
  * @threadsafe Yes - pure computation on input objects.
  */
-extern int tls_pinning_extract_spki_hash (const X509 *cert,
-                                          unsigned char *out_hash);
+extern int
+tls_pinning_extract_spki_hash (const X509 *cert, unsigned char *out_hash);
 
 /**
  * @brief Verify if any certificate in the chain matches a configured pin.
@@ -1131,8 +1144,8 @@ extern int tls_pinning_extract_spki_hash (const X509 *cert,
  * @see SocketTLSContext_add_pin() for configuring pins.
  * @threadsafe Yes - locks pinning mutex internally.
  */
-extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
-                                    const STACK_OF (X509) * chain);
+extern int
+tls_pinning_check_chain (SocketTLSContext_T ctx, const STACK_OF (X509) * chain);
 
 /**
  * @brief Perform constant-time search for a hash in pinning array.
@@ -1152,7 +1165,8 @@ extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
  * @see tls_pinning_extract_spki_hash() for generating search hashes.
  * @threadsafe No - caller must hold pinning lock.
  */
-extern int tls_pinning_find (const TLSCertPin *pins, size_t count,
+extern int tls_pinning_find (const TLSCertPin *pins,
+                             size_t count,
                              const unsigned char *hash);
 
 /* ============================================================================

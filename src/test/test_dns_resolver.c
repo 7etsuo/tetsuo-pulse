@@ -25,7 +25,8 @@ static volatile size_t g_callback_count = 0;
 
 static void
 test_callback (SocketDNSResolver_Query_T query,
-               const SocketDNSResolver_Result *result, int error,
+               const SocketDNSResolver_Result *result,
+               int error,
                void *userdata)
 {
   (void)query;
@@ -102,9 +103,8 @@ TEST (dns_resolver_ip_address)
   g_callback_error = -999;
   g_callback_count = 0;
 
-  SocketDNSResolver_Query_T q
-      = SocketDNSResolver_resolve (resolver, "127.0.0.1", RESOLVER_FLAG_IPV4,
-                                   test_callback, NULL);
+  SocketDNSResolver_Query_T q = SocketDNSResolver_resolve (
+      resolver, "127.0.0.1", RESOLVER_FLAG_IPV4, test_callback, NULL);
 
   /* IP addresses return NULL query handle and invoke callback immediately */
   ASSERT_NULL (q);
@@ -117,8 +117,8 @@ TEST (dns_resolver_ip_address)
   g_callback_error = -999;
   g_callback_count = 0;
 
-  q = SocketDNSResolver_resolve (resolver, "::1", RESOLVER_FLAG_IPV6,
-                                 test_callback, NULL);
+  q = SocketDNSResolver_resolve (
+      resolver, "::1", RESOLVER_FLAG_IPV6, test_callback, NULL);
 
   ASSERT_NULL (q);
   ASSERT_EQ (g_callback_invoked, 1);
@@ -144,9 +144,8 @@ TEST (dns_resolver_ipv6_zone_id)
   g_callback_count = 0;
 
   /* fe80::1%lo - link-local with loopback zone ID */
-  SocketDNSResolver_Query_T q
-      = SocketDNSResolver_resolve (resolver, "fe80::1%lo", RESOLVER_FLAG_IPV6,
-                                   test_callback, NULL);
+  SocketDNSResolver_Query_T q = SocketDNSResolver_resolve (
+      resolver, "fe80::1%lo", RESOLVER_FLAG_IPV6, test_callback, NULL);
 
   /* Should return immediately (no DNS query) */
   ASSERT_NULL (q);
@@ -159,8 +158,8 @@ TEST (dns_resolver_ipv6_zone_id)
   g_callback_error = -999;
   g_callback_count = 0;
 
-  q = SocketDNSResolver_resolve (resolver, "fe80::1%eth0", RESOLVER_FLAG_IPV6,
-                                 test_callback, NULL);
+  q = SocketDNSResolver_resolve (
+      resolver, "fe80::1%eth0", RESOLVER_FLAG_IPV6, test_callback, NULL);
 
   ASSERT_NULL (q);
   ASSERT_EQ (g_callback_invoked, 1);
@@ -180,29 +179,29 @@ TEST (dns_resolver_ipv4_formats)
 
   /* Standard format */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "192.168.1.1", RESOLVER_FLAG_IPV4,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "192.168.1.1", RESOLVER_FLAG_IPV4, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* Loopback */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "127.0.0.1", RESOLVER_FLAG_IPV4,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "127.0.0.1", RESOLVER_FLAG_IPV4, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* All zeros */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "0.0.0.0", RESOLVER_FLAG_IPV4,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "0.0.0.0", RESOLVER_FLAG_IPV4, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* Broadcast */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "255.255.255.255", RESOLVER_FLAG_IPV4,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "255.255.255.255", RESOLVER_FLAG_IPV4, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
@@ -219,36 +218,42 @@ TEST (dns_resolver_ipv6_formats)
 
   /* Full format */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-                             RESOLVER_FLAG_IPV6, test_callback, NULL);
+  SocketDNSResolver_resolve (resolver,
+                             "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                             RESOLVER_FLAG_IPV6,
+                             test_callback,
+                             NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* Compressed format */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "2001:db8:85a3::8a2e:370:7334",
-                             RESOLVER_FLAG_IPV6, test_callback, NULL);
+  SocketDNSResolver_resolve (resolver,
+                             "2001:db8:85a3::8a2e:370:7334",
+                             RESOLVER_FLAG_IPV6,
+                             test_callback,
+                             NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* Loopback */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "::1", RESOLVER_FLAG_IPV6,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "::1", RESOLVER_FLAG_IPV6, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* All zeros */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "::", RESOLVER_FLAG_IPV6,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "::", RESOLVER_FLAG_IPV6, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
   /* IPv4-mapped IPv6 */
   g_callback_invoked = 0;
-  SocketDNSResolver_resolve (resolver, "::ffff:192.0.2.1", RESOLVER_FLAG_IPV6,
-                             test_callback, NULL);
+  SocketDNSResolver_resolve (
+      resolver, "::ffff:192.0.2.1", RESOLVER_FLAG_IPV6, test_callback, NULL);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
 
@@ -268,9 +273,8 @@ TEST (dns_resolver_localhost)
   g_callback_error = -999;
   g_callback_count = 0;
 
-  SocketDNSResolver_Query_T q
-      = SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_BOTH,
-                                   test_callback, NULL);
+  SocketDNSResolver_Query_T q = SocketDNSResolver_resolve (
+      resolver, "localhost", RESOLVER_FLAG_BOTH, test_callback, NULL);
 
   ASSERT_NULL (q);
   ASSERT_EQ (g_callback_invoked, 1);
@@ -281,8 +285,8 @@ TEST (dns_resolver_localhost)
   /* Case insensitive */
   g_callback_invoked = 0;
   g_callback_count = 0;
-  q = SocketDNSResolver_resolve (resolver, "LOCALHOST", RESOLVER_FLAG_BOTH,
-                                 test_callback, NULL);
+  q = SocketDNSResolver_resolve (
+      resolver, "LOCALHOST", RESOLVER_FLAG_BOTH, test_callback, NULL);
   ASSERT_NULL (q);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
@@ -291,8 +295,8 @@ TEST (dns_resolver_localhost)
   /* IPv4 only */
   g_callback_invoked = 0;
   g_callback_count = 0;
-  q = SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_IPV4,
-                                 test_callback, NULL);
+  q = SocketDNSResolver_resolve (
+      resolver, "localhost", RESOLVER_FLAG_IPV4, test_callback, NULL);
   ASSERT_NULL (q);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
@@ -301,8 +305,8 @@ TEST (dns_resolver_localhost)
   /* IPv6 only */
   g_callback_invoked = 0;
   g_callback_count = 0;
-  q = SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_IPV6,
-                                 test_callback, NULL);
+  q = SocketDNSResolver_resolve (
+      resolver, "localhost", RESOLVER_FLAG_IPV6, test_callback, NULL);
   ASSERT_NULL (q);
   ASSERT_EQ (g_callback_invoked, 1);
   ASSERT_EQ (g_callback_error, RESOLVER_OK);
@@ -323,9 +327,8 @@ TEST (dns_resolver_no_nameservers)
   g_callback_invoked = 0;
   g_callback_error = -999;
 
-  SocketDNSResolver_Query_T q
-      = SocketDNSResolver_resolve (resolver, "example.com", RESOLVER_FLAG_IPV4,
-                                   test_callback, NULL);
+  SocketDNSResolver_Query_T q = SocketDNSResolver_resolve (
+      resolver, "example.com", RESOLVER_FLAG_IPV4, test_callback, NULL);
 
   /* Should fail immediately with no nameservers error */
   ASSERT_NULL (q);
@@ -614,7 +617,8 @@ TEST (dns_bailiwick_invalid)
   ASSERT (!SocketDNS_name_in_bailiwick ("notexample.com", "example.com"));
 
   /* Domain embedded in attacker domain */
-  ASSERT (!SocketDNS_name_in_bailiwick ("example.com.attacker.com", "example.com"));
+  ASSERT (
+      !SocketDNS_name_in_bailiwick ("example.com.attacker.com", "example.com"));
 
   /* NULL handling */
   ASSERT (!SocketDNS_name_in_bailiwick (NULL, "example.com"));

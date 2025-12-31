@@ -279,7 +279,8 @@ TEST (quic_stream_new_invalid_id)
   ASSERT_NOT_NULL (arena);
 
   /* Invalid stream ID (exceeds maximum) */
-  SocketQUICStream_T stream = SocketQUICStream_new (arena, QUIC_STREAM_ID_MAX + 1);
+  SocketQUICStream_T stream
+      = SocketQUICStream_new (arena, QUIC_STREAM_ID_MAX + 1);
   ASSERT_NULL (stream);
 
   Arena_dispose (&arena);
@@ -382,8 +383,7 @@ TEST (quic_stream_get_send_state)
              QUIC_STREAM_STATE_READY);
 
   stream.send_state = QUIC_STREAM_STATE_SEND;
-  ASSERT_EQ (SocketQUICStream_get_send_state (&stream),
-             QUIC_STREAM_STATE_SEND);
+  ASSERT_EQ (SocketQUICStream_get_send_state (&stream), QUIC_STREAM_STATE_SEND);
 
   stream.send_state = QUIC_STREAM_STATE_DATA_SENT;
   ASSERT_EQ (SocketQUICStream_get_send_state (&stream),
@@ -395,8 +395,7 @@ TEST (quic_stream_get_recv_state)
   struct SocketQUICStream stream;
 
   SocketQUICStream_init (&stream, 0);
-  ASSERT_EQ (SocketQUICStream_get_recv_state (&stream),
-             QUIC_STREAM_STATE_RECV);
+  ASSERT_EQ (SocketQUICStream_get_recv_state (&stream), QUIC_STREAM_STATE_RECV);
 
   stream.recv_state = QUIC_STREAM_STATE_SIZE_KNOWN;
   ASSERT_EQ (SocketQUICStream_get_recv_state (&stream),
@@ -449,15 +448,15 @@ TEST (quic_stream_type_string)
 
 TEST (quic_stream_state_string)
 {
-  ASSERT (strcmp (SocketQUICStream_state_string (QUIC_STREAM_STATE_READY),
-                  "Ready")
-          == 0);
-  ASSERT (strcmp (SocketQUICStream_state_string (QUIC_STREAM_STATE_SEND),
-                  "Send")
-          == 0);
-  ASSERT (strcmp (SocketQUICStream_state_string (QUIC_STREAM_STATE_RECV),
-                  "Recv")
-          == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_state_string (QUIC_STREAM_STATE_READY), "Ready")
+      == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_state_string (QUIC_STREAM_STATE_SEND), "Send")
+      == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_state_string (QUIC_STREAM_STATE_RECV), "Recv")
+      == 0);
   ASSERT (strcmp (SocketQUICStream_state_string ((SocketQUICStreamState)99),
                   "Unknown")
           == 0);
@@ -483,9 +482,10 @@ TEST (quic_stream_event_string)
   ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_SEND_FIN),
                   "SendFin")
           == 0);
-  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_ALL_DATA_ACKED),
-                  "AllDataAcked")
-          == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_ALL_DATA_ACKED),
+              "AllDataAcked")
+      == 0);
   ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_SEND_RESET),
                   "SendReset")
           == 0);
@@ -500,21 +500,25 @@ TEST (quic_stream_event_string)
   ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_FIN),
                   "RecvFin")
           == 0);
-  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_ALL_DATA_RECVD),
-                  "AllDataRecvd")
-          == 0);
-  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_APP_READ_DATA),
-                  "AppReadData")
-          == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_ALL_DATA_RECVD),
+              "AllDataRecvd")
+      == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_APP_READ_DATA),
+              "AppReadData")
+      == 0);
   ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_RESET),
                   "RecvReset")
           == 0);
-  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_APP_READ_RESET),
-                  "AppReadReset")
-          == 0);
+  ASSERT (
+      strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_APP_READ_RESET),
+              "AppReadReset")
+      == 0);
 
   /* Bidirectional events */
-  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_STOP_SENDING),
+  ASSERT (strcmp (SocketQUICStream_event_string (
+                      QUIC_STREAM_EVENT_RECV_STOP_SENDING),
                   "RecvStopSending")
           == 0);
 

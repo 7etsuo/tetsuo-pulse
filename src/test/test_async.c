@@ -66,7 +66,10 @@ TEST (async_new_free)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -100,7 +103,10 @@ TEST (async_backend_name)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -132,7 +138,10 @@ TEST (async_is_available)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -166,7 +175,10 @@ TEST (async_cancel_valid_request)
   volatile unsigned request_id1 = 0;
   volatile unsigned request_id2 = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -174,7 +186,10 @@ TEST (async_cancel_valid_request)
   }
   END_TRY;
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -189,20 +204,34 @@ TEST (async_cancel_valid_request)
   /* Submit two requests to test hash chain traversal in cancel */
   TRY
   {
-    request_id1
-        = SocketAsync_send (async, socket, test_data, strlen (test_data),
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    request_id1 = SocketAsync_send (async,
+                                    socket,
+                                    test_data,
+                                    strlen (test_data),
+                                    async_test_callback,
+                                    NULL,
+                                    ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { request_id1 = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    request_id1 = 0;
+  }
   END_TRY;
 
   TRY
   {
-    request_id2
-        = SocketAsync_recv (async, socket, recv_buffer, sizeof (recv_buffer),
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    request_id2 = SocketAsync_recv (async,
+                                    socket,
+                                    recv_buffer,
+                                    sizeof (recv_buffer),
+                                    async_test_callback,
+                                    NULL,
+                                    ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { request_id2 = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    request_id2 = 0;
+  }
   END_TRY;
 
   /* Cancel in reverse order to exercise different code paths */
@@ -236,7 +265,10 @@ TEST (async_cancel_invalid)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -264,7 +296,10 @@ TEST (async_send_fallback_mode)
   Socket_T socket = NULL;
   volatile unsigned request_id = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -274,7 +309,10 @@ TEST (async_send_fallback_mode)
   END_TRY;
 
   /* Create a socket for testing */
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -289,9 +327,13 @@ TEST (async_send_fallback_mode)
 
   TRY
   {
-    request_id
-        = SocketAsync_send (async, socket, test_data, strlen (test_data),
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    request_id = SocketAsync_send (async,
+                                   socket,
+                                   test_data,
+                                   strlen (test_data),
+                                   async_test_callback,
+                                   NULL,
+                                   ASYNC_FLAG_NONE);
   }
   EXCEPT (SocketAsync_Failed)
   {
@@ -322,7 +364,10 @@ TEST (async_recv_fallback_mode)
   Socket_T socket = NULL;
   volatile unsigned request_id = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -332,7 +377,10 @@ TEST (async_recv_fallback_mode)
   END_TRY;
 
   /* Create a socket for testing */
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -347,9 +395,13 @@ TEST (async_recv_fallback_mode)
 
   TRY
   {
-    request_id
-        = SocketAsync_recv (async, socket, recv_buffer, sizeof (recv_buffer),
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    request_id = SocketAsync_recv (async,
+                                   socket,
+                                   recv_buffer,
+                                   sizeof (recv_buffer),
+                                   async_test_callback,
+                                   NULL,
+                                   ASYNC_FLAG_NONE);
   }
   EXCEPT (SocketAsync_Failed)
   {
@@ -379,7 +431,10 @@ TEST (async_process_completions_no_pending)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -405,7 +460,10 @@ TEST (async_submit_batch)
   SocketAsync_T async = NULL;
   Socket_T socket = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -413,7 +471,10 @@ TEST (async_submit_batch)
   }
   END_TRY;
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -464,7 +525,10 @@ TEST (async_submit_batch_empty)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -489,7 +553,10 @@ TEST (async_cancel_all)
   SocketAsync_T async = NULL;
   Socket_T socket = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -497,7 +564,10 @@ TEST (async_cancel_all)
   }
   END_TRY;
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -513,18 +583,34 @@ TEST (async_cancel_all)
 
   TRY
   {
-    req1 = SocketAsync_send (async, socket, test_data, strlen (test_data),
-                             async_test_callback, NULL, ASYNC_FLAG_NONE);
+    req1 = SocketAsync_send (async,
+                             socket,
+                             test_data,
+                             strlen (test_data),
+                             async_test_callback,
+                             NULL,
+                             ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { req1 = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req1 = 0;
+  }
   END_TRY;
 
   TRY
   {
-    req2 = SocketAsync_recv (async, socket, recv_buf, sizeof (recv_buf),
-                             async_test_callback, NULL, ASYNC_FLAG_NONE);
+    req2 = SocketAsync_recv (async,
+                             socket,
+                             recv_buf,
+                             sizeof (recv_buf),
+                             async_test_callback,
+                             NULL,
+                             ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { req2 = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req2 = 0;
+  }
   END_TRY;
 
   (void)req2; /* Suppress unused warning - we only check req1 cancellation */
@@ -552,7 +638,10 @@ TEST (async_cancel_all_empty)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -650,7 +739,10 @@ TEST (async_get_progress_invalid_id)
   SocketAsync_T async = NULL;
   size_t completed = 999, total = 999;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -676,7 +768,10 @@ TEST (async_get_progress_pending)
   SocketAsync_T async = NULL;
   Socket_T socket = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -684,7 +779,10 @@ TEST (async_get_progress_pending)
   }
   END_TRY;
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -699,10 +797,18 @@ TEST (async_get_progress_pending)
 
   TRY
   {
-    req_id = SocketAsync_send (async, socket, test_data, strlen (test_data),
-                               async_test_callback, NULL, ASYNC_FLAG_NONE);
+    req_id = SocketAsync_send (async,
+                               socket,
+                               test_data,
+                               strlen (test_data),
+                               async_test_callback,
+                               NULL,
+                               ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req_id = 0;
+  }
   END_TRY;
 
   if (req_id > 0)
@@ -728,7 +834,10 @@ TEST (async_send_continue_invalid)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -758,7 +867,10 @@ TEST (async_recv_continue_invalid)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -786,7 +898,10 @@ TEST (async_timeout_default)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -808,7 +923,10 @@ TEST (async_timeout_set_get)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -853,7 +971,10 @@ TEST (async_expire_stale_empty)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -887,7 +1008,10 @@ TEST (async_send_timeout_basic)
   SocketAsync_T async = NULL;
   Socket_T socket = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -895,7 +1019,10 @@ TEST (async_send_timeout_basic)
   }
   END_TRY;
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -910,11 +1037,19 @@ TEST (async_send_timeout_basic)
 
   TRY
   {
-    req_id = SocketAsync_send_timeout (async, socket, test_data,
-                                        strlen (test_data), async_test_callback,
-                                        NULL, ASYNC_FLAG_NONE, 5000);
+    req_id = SocketAsync_send_timeout (async,
+                                       socket,
+                                       test_data,
+                                       strlen (test_data),
+                                       async_test_callback,
+                                       NULL,
+                                       ASYNC_FLAG_NONE,
+                                       5000);
   }
-  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req_id = 0;
+  }
   END_TRY;
 
   /* Should succeed if async available */
@@ -937,7 +1072,10 @@ TEST (async_recv_timeout_basic)
   SocketAsync_T async = NULL;
   Socket_T socket = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -945,7 +1083,10 @@ TEST (async_recv_timeout_basic)
   }
   END_TRY;
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -960,11 +1101,19 @@ TEST (async_recv_timeout_basic)
 
   TRY
   {
-    req_id = SocketAsync_recv_timeout (async, socket, recv_buf,
-                                        sizeof (recv_buf), async_test_callback,
-                                        NULL, ASYNC_FLAG_NONE, 5000);
+    req_id = SocketAsync_recv_timeout (async,
+                                       socket,
+                                       recv_buf,
+                                       sizeof (recv_buf),
+                                       async_test_callback,
+                                       NULL,
+                                       ASYNC_FLAG_NONE,
+                                       5000);
   }
-  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req_id = 0;
+  }
   END_TRY;
 
   /* Should succeed if async available */
@@ -1043,7 +1192,10 @@ TEST (async_iouring_backend_detection)
   Arena_T arena = Arena_new ();
   SocketAsync_T async = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1076,7 +1228,10 @@ TEST (async_iouring_submit_and_cancel)
   SocketAsync_T async = NULL;
   Socket_T socket = NULL;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1097,7 +1252,10 @@ TEST (async_iouring_submit_and_cancel)
   ASSERT (strcmp (backend, "io_uring") == 0);
 
   /* Create a socket for testing */
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1112,24 +1270,41 @@ TEST (async_iouring_submit_and_cancel)
   char recv_buf[64];
   memset (recv_buf, 0, sizeof (recv_buf));
 
-  /* Submit send request (will fail since socket not connected, but tests io_uring path) */
+  /* Submit send request (will fail since socket not connected, but tests
+   * io_uring path) */
   volatile unsigned send_id = 0;
   TRY
   {
-    send_id = SocketAsync_send (async, socket, test_data, test_len,
-                                 async_test_callback, NULL, ASYNC_FLAG_NONE);
+    send_id = SocketAsync_send (async,
+                                socket,
+                                test_data,
+                                test_len,
+                                async_test_callback,
+                                NULL,
+                                ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { send_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    send_id = 0;
+  }
   END_TRY;
 
   /* Submit recv request */
   volatile unsigned recv_id = 0;
   TRY
   {
-    recv_id = SocketAsync_recv (async, socket, recv_buf, sizeof (recv_buf),
-                                 async_test_callback, NULL, ASYNC_FLAG_NONE);
+    recv_id = SocketAsync_recv (async,
+                                socket,
+                                recv_buf,
+                                sizeof (recv_buf),
+                                async_test_callback,
+                                NULL,
+                                ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { recv_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    recv_id = 0;
+  }
   END_TRY;
 
   /* Verify requests were submitted successfully */
@@ -1171,7 +1346,10 @@ TEST (async_iouring_high_concurrency)
   memset (socks, 0, sizeof (socks));
   memset ((void *)request_ids, 0, sizeof (request_ids));
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1195,12 +1373,22 @@ TEST (async_iouring_high_concurrency)
         socks[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
         created++;
 
-        request_ids[i] = SocketAsync_send (async, socks[i], test_data, 1,
-                                            async_test_callback, NULL,
-                                            ASYNC_FLAG_NONE);
+        request_ids[i] = SocketAsync_send (async,
+                                           socks[i],
+                                           test_data,
+                                           1,
+                                           async_test_callback,
+                                           NULL,
+                                           ASYNC_FLAG_NONE);
       }
-      EXCEPT (Socket_Failed) { break; }
-      EXCEPT (SocketAsync_Failed) { break; }
+      EXCEPT (Socket_Failed)
+      {
+        break;
+      }
+      EXCEPT (SocketAsync_Failed)
+      {
+        break;
+      }
       END_TRY;
     }
 
@@ -1269,7 +1457,10 @@ TEST (async_timer_fires)
   int nfds;
 
   /* Create poll with timer support */
-  TRY { poll = SocketPoll_new (10); }
+  TRY
+  {
+    poll = SocketPoll_new (10);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     ASSERT (0); /* Should not fail */
@@ -1287,8 +1478,7 @@ TEST (async_timer_fires)
 
   /* Verify we're using io_uring backend for async */
   const char *backend = SocketAsync_backend_name (async);
-  if (strcmp (backend, "io_uring") != 0
-      && strstr (backend, "io_uring") == NULL)
+  if (strcmp (backend, "io_uring") != 0 && strstr (backend, "io_uring") == NULL)
     {
       /* Not io_uring - skip test */
       SocketPoll_free (&poll);
@@ -1330,7 +1520,10 @@ TEST (async_timer_cancel)
   AsyncTimerContext ctx = { 0, 0 };
   SocketEvent_T *events = NULL;
 
-  TRY { poll = SocketPoll_new (10); }
+  TRY
+  {
+    poll = SocketPoll_new (10);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     ASSERT (0);
@@ -1347,8 +1540,7 @@ TEST (async_timer_cancel)
     }
 
   const char *backend = SocketAsync_backend_name (async);
-  if (strcmp (backend, "io_uring") != 0
-      && strstr (backend, "io_uring") == NULL)
+  if (strcmp (backend, "io_uring") != 0 && strstr (backend, "io_uring") == NULL)
     {
       SocketPoll_free (&poll);
       return;
@@ -1386,7 +1578,10 @@ TEST (async_timer_multiple)
   SocketEvent_T *events = NULL;
   int64_t start_time;
 
-  TRY { poll = SocketPoll_new (10); }
+  TRY
+  {
+    poll = SocketPoll_new (10);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     ASSERT (0);
@@ -1403,8 +1598,7 @@ TEST (async_timer_multiple)
     }
 
   const char *backend = SocketAsync_backend_name (async);
-  if (strcmp (backend, "io_uring") != 0
-      && strstr (backend, "io_uring") == NULL)
+  if (strcmp (backend, "io_uring") != 0 && strstr (backend, "io_uring") == NULL)
     {
       SocketPoll_free (&poll);
       return;
@@ -1422,8 +1616,9 @@ TEST (async_timer_multiple)
   start_time = Socket_get_monotonic_ms ();
 
   /* Wait long enough for all timers */
-  for (int i = 0; i < 5 && (ctx1.call_count == 0 || ctx2.call_count == 0
-                            || ctx3.call_count == 0);
+  for (int i = 0; i < 5
+                  && (ctx1.call_count == 0 || ctx2.call_count == 0
+                      || ctx3.call_count == 0);
        i++)
     {
       SocketPoll_wait (poll, &events, 50);
@@ -1468,7 +1663,10 @@ TEST (async_send_fixed_overflow_attack)
   Socket_T socket = NULL;
   volatile int raised_exception = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1484,7 +1682,10 @@ TEST (async_send_fixed_overflow_attack)
       return;
     }
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1500,7 +1701,10 @@ TEST (async_send_fixed_overflow_attack)
   void *bufs[1] = { test_buf };
   size_t lens[1] = { sizeof (test_buf) };
 
-  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  TRY
+  {
+    SocketAsync_register_buffers (async, bufs, lens, 1);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Socket_free (&socket);
@@ -1517,10 +1721,19 @@ TEST (async_send_fixed_overflow_attack)
   /* This should raise an exception due to overflow protection */
   TRY
   {
-    SocketAsync_send_fixed (async, socket, 0, offset, len,
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    SocketAsync_send_fixed (async,
+                            socket,
+                            0,
+                            offset,
+                            len,
+                            async_test_callback,
+                            NULL,
+                            ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    raised_exception = 1;
+  }
   END_TRY;
 
   /* Should have caught the overflow */
@@ -1546,7 +1759,10 @@ TEST (async_recv_fixed_overflow_attack)
   Socket_T socket = NULL;
   volatile int raised_exception = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1562,7 +1778,10 @@ TEST (async_recv_fixed_overflow_attack)
       return;
     }
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1578,7 +1797,10 @@ TEST (async_recv_fixed_overflow_attack)
   void *bufs[1] = { test_buf };
   size_t lens[1] = { sizeof (test_buf) };
 
-  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  TRY
+  {
+    SocketAsync_register_buffers (async, bufs, lens, 1);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Socket_free (&socket);
@@ -1595,10 +1817,19 @@ TEST (async_recv_fixed_overflow_attack)
   /* This should raise an exception due to overflow protection */
   TRY
   {
-    SocketAsync_recv_fixed (async, socket, 0, offset, len,
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    SocketAsync_recv_fixed (async,
+                            socket,
+                            0,
+                            offset,
+                            len,
+                            async_test_callback,
+                            NULL,
+                            ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    raised_exception = 1;
+  }
   END_TRY;
 
   /* Should have caught the overflow */
@@ -1623,7 +1854,10 @@ TEST (async_send_fixed_large_offset)
   Socket_T socket = NULL;
   volatile int raised_exception = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1638,7 +1872,10 @@ TEST (async_send_fixed_large_offset)
       return;
     }
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1651,7 +1888,10 @@ TEST (async_send_fixed_large_offset)
   void *bufs[1] = { test_buf };
   size_t lens[1] = { sizeof (test_buf) };
 
-  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  TRY
+  {
+    SocketAsync_register_buffers (async, bufs, lens, 1);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Socket_free (&socket);
@@ -1667,10 +1907,19 @@ TEST (async_send_fixed_large_offset)
 
   TRY
   {
-    SocketAsync_send_fixed (async, socket, 0, offset, len,
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    SocketAsync_send_fixed (async,
+                            socket,
+                            0,
+                            offset,
+                            len,
+                            async_test_callback,
+                            NULL,
+                            ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    raised_exception = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (1, raised_exception);
@@ -1694,7 +1943,10 @@ TEST (async_recv_fixed_valid_bounds)
   Socket_T socket = NULL;
   volatile unsigned req_id = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1709,7 +1961,10 @@ TEST (async_recv_fixed_valid_bounds)
       return;
     }
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1722,7 +1977,10 @@ TEST (async_recv_fixed_valid_bounds)
   void *bufs[1] = { test_buf };
   size_t lens[1] = { sizeof (test_buf) };
 
-  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  TRY
+  {
+    SocketAsync_register_buffers (async, bufs, lens, 1);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Socket_free (&socket);
@@ -1735,11 +1993,13 @@ TEST (async_recv_fixed_valid_bounds)
   /* Valid access: read 512 bytes starting at offset 256 */
   TRY
   {
-    req_id = SocketAsync_recv_fixed (async, socket, 0, 256, 512,
-                                      async_test_callback, NULL,
-                                      ASYNC_FLAG_NONE);
+    req_id = SocketAsync_recv_fixed (
+        async, socket, 0, 256, 512, async_test_callback, NULL, ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req_id = 0;
+  }
   END_TRY;
 
   /* Should succeed */
@@ -1767,7 +2027,10 @@ TEST (async_send_fixed_edge_case)
   Socket_T socket = NULL;
   volatile unsigned req_id = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1782,7 +2045,10 @@ TEST (async_send_fixed_edge_case)
       return;
     }
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1795,7 +2061,10 @@ TEST (async_send_fixed_edge_case)
   void *bufs[1] = { test_buf };
   size_t lens[1] = { sizeof (test_buf) };
 
-  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  TRY
+  {
+    SocketAsync_register_buffers (async, bufs, lens, 1);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Socket_free (&socket);
@@ -1811,11 +2080,19 @@ TEST (async_send_fixed_edge_case)
 
   TRY
   {
-    req_id = SocketAsync_send_fixed (async, socket, 0, offset, len,
-                                      async_test_callback, NULL,
-                                      ASYNC_FLAG_NONE);
+    req_id = SocketAsync_send_fixed (async,
+                                     socket,
+                                     0,
+                                     offset,
+                                     len,
+                                     async_test_callback,
+                                     NULL,
+                                     ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    req_id = 0;
+  }
   END_TRY;
 
   /* Should succeed */
@@ -1843,7 +2120,10 @@ TEST (async_send_fixed_one_past_end)
   Socket_T socket = NULL;
   volatile int raised_exception = 0;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose (&arena);
@@ -1858,7 +2138,10 @@ TEST (async_send_fixed_one_past_end)
       return;
     }
 
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     SocketAsync_free (&async);
@@ -1871,7 +2154,10 @@ TEST (async_send_fixed_one_past_end)
   void *bufs[1] = { test_buf };
   size_t lens[1] = { sizeof (test_buf) };
 
-  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  TRY
+  {
+    SocketAsync_register_buffers (async, bufs, lens, 1);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Socket_free (&socket);
@@ -1887,10 +2173,19 @@ TEST (async_send_fixed_one_past_end)
 
   TRY
   {
-    SocketAsync_send_fixed (async, socket, 0, offset, len,
-                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+    SocketAsync_send_fixed (async,
+                            socket,
+                            0,
+                            offset,
+                            len,
+                            async_test_callback,
+                            NULL,
+                            ASYNC_FLAG_NONE);
   }
-  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  EXCEPT (SocketAsync_Failed)
+  {
+    raised_exception = 1;
+  }
   END_TRY;
 
   /* Should have raised exception */

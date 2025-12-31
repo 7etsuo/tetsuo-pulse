@@ -58,9 +58,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Decode fuzzed HPACK data */
     SocketHPACK_Header headers[MAX_HEADERS];
     size_t header_count = 0;
-    SocketHPACK_Result res = SocketHPACK_Decoder_decode (
-        decoder, data, size, headers, MAX_HEADERS, &header_count,
-        arena_instance);
+    SocketHPACK_Result res = SocketHPACK_Decoder_decode (decoder,
+                                                         data,
+                                                         size,
+                                                         headers,
+                                                         MAX_HEADERS,
+                                                         &header_count,
+                                                         arena_instance);
 
     /* Access decoded headers to trigger full processing */
     (void)res;

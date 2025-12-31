@@ -65,8 +65,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   (void)is_ip;
 
   /* Test SocketCommon_validate_hostname via exception handling */
-  TRY { SocketCommon_validate_hostname (hostname, SocketDNS_Failed); }
-  EXCEPT (SocketDNS_Failed) { /* Expected for invalid hostnames */ }
+  TRY
+  {
+    SocketCommon_validate_hostname (hostname, SocketDNS_Failed);
+  }
+  EXCEPT (SocketDNS_Failed)
+  { /* Expected for invalid hostnames */
+  }
   END_TRY;
 
   /* Test validate_resolve_params with various combinations */
@@ -83,11 +88,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
   }
-  EXCEPT (SocketDNS_Failed) { /* Expected for invalid hostnames */ }
+  EXCEPT (SocketDNS_Failed)
+  { /* Expected for invalid hostnames */
+  }
   END_TRY;
 
   /* Test with NULL hostname (should be allowed for wildcard bind) */
-  TRY { validate_resolve_params (NULL, 8080); }
+  TRY
+  {
+    validate_resolve_params (NULL, 8080);
+  }
   EXCEPT (SocketDNS_Failed)
   {
     /* May or may not raise depending on implementation */

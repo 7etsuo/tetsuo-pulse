@@ -25,8 +25,9 @@
  * - URL-encoded traversal patterns
  * - Mixed separator attacks (Unix/Windows path separators)
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_ssl_path_validation
- * Run:   ./fuzz_ssl_path_validation corpus/ssl_path/ -fork=16 -max_len=8192
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_ssl_path_validation Run:   ./fuzz_ssl_path_validation corpus/ssl_path/
+ * -fork=16 -max_len=8192
  */
 
 #if SOCKET_HAS_TLS
@@ -67,63 +68,63 @@ static void
 test_known_attack_patterns (void)
 {
   /* Path traversal patterns that MUST be rejected */
-  static const char *traversal_attacks[] = {
-      /* Basic Unix traversal */
-      "..",
-      "../",
-      "../..",
-      "../../etc/passwd",
-      "/etc/passwd/../../../etc/shadow",
-      "foo/../../../etc/passwd",
-      "/tmp/./../../etc/passwd",
+  static const char *traversal_attacks[]
+      = { /* Basic Unix traversal */
+          "..",
+          "../",
+          "../..",
+          "../../etc/passwd",
+          "/etc/passwd/../../../etc/shadow",
+          "foo/../../../etc/passwd",
+          "/tmp/./../../etc/passwd",
 
-      /* Windows-style traversal */
-      "..\\",
-      "..\\..\\",
-      "..\\..\\windows\\system32\\config",
-      "foo\\..\\..\\windows\\system.ini",
+          /* Windows-style traversal */
+          "..\\",
+          "..\\..\\",
+          "..\\..\\windows\\system32\\config",
+          "foo\\..\\..\\windows\\system.ini",
 
-      /* Mixed separators */
-      "../\\..\\",
-      "..\\/../",
-      "foo/..\\bar/../..",
+          /* Mixed separators */
+          "../\\..\\",
+          "..\\/../",
+          "foo/..\\bar/../..",
 
-      /* URL-encoded (may appear in web contexts) */
-      "..%2f",
-      "..%5c",
-      "%2e%2e/",
-      "%2e%2e%2f",
+          /* URL-encoded (may appear in web contexts) */
+          "..%2f",
+          "..%5c",
+          "%2e%2e/",
+          "%2e%2e%2f",
 
-      /* Double-encoded */
-      "%252e%252e%252f",
-      "..%252f",
+          /* Double-encoded */
+          "%252e%252e%252f",
+          "..%252f",
 
-      /* Unicode/overlong (should be caught by control char check) */
-      "..%c0%af",
-      "..%c1%1c",
+          /* Unicode/overlong (should be caught by control char check) */
+          "..%c0%af",
+          "..%c1%1c",
 
-      /* Null byte injection (truncation attack) */
-      "../etc/passwd\x00.jpg",
-      "valid.crt\x00../../../etc/shadow",
+          /* Null byte injection (truncation attack) */
+          "../etc/passwd\x00.jpg",
+          "valid.crt\x00../../../etc/shadow",
 
-      /* Trailing traversal */
-      "foo/..",
-      "bar/../..",
-      "/tmp/cert/..",
+          /* Trailing traversal */
+          "foo/..",
+          "bar/../..",
+          "/tmp/cert/..",
 
-      /* Just parent directory references */
-      "/..",
-      "\\..",
-      "/foo/bar/..",
-      "\\foo\\bar\\..",
+          /* Just parent directory references */
+          "/..",
+          "\\..",
+          "/foo/bar/..",
+          "\\foo\\bar\\..",
 
-      NULL};
+          NULL
+        };
 
   for (const char **pattern = traversal_attacks; *pattern != NULL; ++pattern)
     {
       /* All traversal attacks must be rejected */
-      int result
-          = ssl_validate_file_path (*pattern, SOCKET_SSL_MAX_PATH_LEN);
+      int result = ssl_validate_file_path (*pattern, SOCKET_SSL_MAX_PATH_LEN);
       (void)result; /* Fuzzer should not crash; result is 0 (rejected) */
     }
 }
@@ -134,37 +135,37 @@ test_known_attack_patterns (void)
 static void
 test_control_char_patterns (void)
 {
-  static const char *control_attacks[] = {
-      /* Null byte at various positions */
-      "/etc/passwd\x00",
-      "\x00/etc/passwd",
-      "/etc/\x00passwd",
+  static const char *control_attacks[]
+      = { /* Null byte at various positions */
+          "/etc/passwd\x00",
+          "\x00/etc/passwd",
+          "/etc/\x00passwd",
 
-      /* Bell character */
-      "/tmp/cert\x07.pem",
+          /* Bell character */
+          "/tmp/cert\x07.pem",
 
-      /* Tab and newline */
-      "/tmp/cert\t.pem",
-      "/tmp/cert\n.pem",
-      "/tmp/cert\r\n.pem",
+          /* Tab and newline */
+          "/tmp/cert\t.pem",
+          "/tmp/cert\n.pem",
+          "/tmp/cert\r\n.pem",
 
-      /* Escape sequences (for terminal injection) */
-      "/tmp/cert\x1b[2J.pem",
-      "\x1b[0;31m/tmp/cert.pem",
+          /* Escape sequences (for terminal injection) */
+          "/tmp/cert\x1b[2J.pem",
+          "\x1b[0;31m/tmp/cert.pem",
 
-      /* Form feed and other C0 controls */
-      "/tmp/cert\x0c.pem",
-      "/tmp/cert\x0b.pem",
+          /* Form feed and other C0 controls */
+          "/tmp/cert\x0c.pem",
+          "/tmp/cert\x0b.pem",
 
-      /* DEL character */
-      "/tmp/cert\x7f.pem",
+          /* DEL character */
+          "/tmp/cert\x7f.pem",
 
-      NULL};
+          NULL
+        };
 
   for (const char **pattern = control_attacks; *pattern != NULL; ++pattern)
     {
-      int result
-          = ssl_validate_file_path (*pattern, SOCKET_SSL_MAX_PATH_LEN);
+      int result = ssl_validate_file_path (*pattern, SOCKET_SSL_MAX_PATH_LEN);
       (void)result;
     }
 }
@@ -348,8 +349,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     case OP_VALIDATE_PATH:
       {
         /* Main validation test with fuzzed input */
-        int result
-            = ssl_validate_file_path (path, SOCKET_SSL_MAX_PATH_LEN);
+        int result = ssl_validate_file_path (path, SOCKET_SSL_MAX_PATH_LEN);
         (void)result;
 
         /* Also test with exact length (may include embedded nulls) */

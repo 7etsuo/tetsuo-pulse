@@ -117,12 +117,12 @@ extern int Test_get_failures (void);
  * @see ASSERT() macros for test assertions.
  * @see Test_register() for internal registration mechanism.
  */
-#define TEST(name)                                                            \
-  static void test_##name (void);                                             \
-  static void __attribute__ ((constructor)) test_register_##name (void)       \
-  {                                                                           \
-    Test_register (#name, test_##name);                                       \
-  }                                                                           \
+#define TEST(name)                                                      \
+  static void test_##name (void);                                       \
+  static void __attribute__ ((constructor)) test_register_##name (void) \
+  {                                                                     \
+    Test_register (#name, test_##name);                                 \
+  }                                                                     \
   static void test_##name (void)
 
 /**
@@ -154,15 +154,15 @@ extern void Test_register (const char *name, void (*func) (void));
  * @see ASSERT_NULL() for NULL pointer assertions.
  * @see Test_Failed for the exception type raised.
  */
-#define ASSERT(condition)                                                     \
-  do                                                                          \
-    {                                                                         \
-      if (!(condition))                                                       \
-        {                                                                     \
-          Test_fail ("Assertion failed: " #condition, __FILE__, __LINE__);    \
-          RAISE (Test_Failed);                                                \
-        }                                                                     \
-    }                                                                         \
+#define ASSERT(condition)                                                  \
+  do                                                                       \
+    {                                                                      \
+      if (!(condition))                                                    \
+        {                                                                  \
+          Test_fail ("Assertion failed: " #condition, __FILE__, __LINE__); \
+          RAISE (Test_Failed);                                             \
+        }                                                                  \
+    }                                                                      \
   while (0)
 
 /**
@@ -179,15 +179,15 @@ extern void Test_register (const char *name, void (*func) (void));
  * @see ASSERT_NE() for inequality assertions.
  * @see ASSERT() for general boolean assertions.
  */
-#define ASSERT_EQ(expected, actual)                                           \
-  do                                                                          \
-    {                                                                         \
-      if ((expected) != (actual))                                             \
-        {                                                                     \
-          Test_fail_eq (#expected, #actual, __FILE__, __LINE__);              \
-          RAISE (Test_Failed);                                                \
-        }                                                                     \
-    }                                                                         \
+#define ASSERT_EQ(expected, actual)                              \
+  do                                                             \
+    {                                                            \
+      if ((expected) != (actual))                                \
+        {                                                        \
+          Test_fail_eq (#expected, #actual, __FILE__, __LINE__); \
+          RAISE (Test_Failed);                                   \
+        }                                                        \
+    }                                                            \
   while (0)
 
 /**
@@ -204,15 +204,15 @@ extern void Test_register (const char *name, void (*func) (void));
  * @see ASSERT_EQ() for equality assertions.
  * @see ASSERT() for general boolean assertions.
  */
-#define ASSERT_NE(expected, actual)                                           \
-  do                                                                          \
-    {                                                                         \
-      if ((expected) == (actual))                                             \
-        {                                                                     \
-          Test_fail_ne (#expected, #actual, __FILE__, __LINE__);              \
-          RAISE (Test_Failed);                                                \
-        }                                                                     \
-    }                                                                         \
+#define ASSERT_NE(expected, actual)                              \
+  do                                                             \
+    {                                                            \
+      if ((expected) == (actual))                                \
+        {                                                        \
+          Test_fail_ne (#expected, #actual, __FILE__, __LINE__); \
+          RAISE (Test_Failed);                                   \
+        }                                                        \
+    }                                                            \
   while (0)
 
 /**
@@ -228,16 +228,16 @@ extern void Test_register (const char *name, void (*func) (void));
  * @see ASSERT_NOT_NULL() for non-NULL assertions.
  * @see ASSERT() for general boolean assertions.
  */
-#define ASSERT_NULL(ptr)                                                      \
-  do                                                                          \
-    {                                                                         \
-      if ((ptr) != NULL)                                                      \
-        {                                                                     \
-          Test_fail ("Assertion failed: " #ptr " is not NULL", __FILE__,      \
-                     __LINE__);                                               \
-          RAISE (Test_Failed);                                                \
-        }                                                                     \
-    }                                                                         \
+#define ASSERT_NULL(ptr)                                                     \
+  do                                                                         \
+    {                                                                        \
+      if ((ptr) != NULL)                                                     \
+        {                                                                    \
+          Test_fail (                                                        \
+              "Assertion failed: " #ptr " is not NULL", __FILE__, __LINE__); \
+          RAISE (Test_Failed);                                               \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
 /**
@@ -253,16 +253,16 @@ extern void Test_register (const char *name, void (*func) (void));
  * @see ASSERT_NULL() for NULL assertions.
  * @see ASSERT() for general boolean assertions.
  */
-#define ASSERT_NOT_NULL(ptr)                                                  \
-  do                                                                          \
-    {                                                                         \
-      if ((ptr) == NULL)                                                      \
-        {                                                                     \
-          Test_fail ("Assertion failed: " #ptr " is NULL", __FILE__,          \
-                     __LINE__);                                               \
-          RAISE (Test_Failed);                                                \
-        }                                                                     \
-    }                                                                         \
+#define ASSERT_NOT_NULL(ptr)                                             \
+  do                                                                     \
+    {                                                                    \
+      if ((ptr) == NULL)                                                 \
+        {                                                                \
+          Test_fail (                                                    \
+              "Assertion failed: " #ptr " is NULL", __FILE__, __LINE__); \
+          RAISE (Test_Failed);                                           \
+        }                                                                \
+    }                                                                    \
   while (0)
 
 /**
@@ -293,8 +293,10 @@ extern void Test_fail (const char *message, const char *file, int line);
  * @internal Implementation detail of assertion macros.
  * @see ASSERT_EQ() macro for public assertion interface.
  */
-extern void Test_fail_eq (const char *expected_str, const char *actual_str,
-                          const char *file, int line);
+extern void Test_fail_eq (const char *expected_str,
+                          const char *actual_str,
+                          const char *file,
+                          int line);
 
 /**
  * @brief Internal function for reporting inequality assertion failures.
@@ -310,8 +312,10 @@ extern void Test_fail_eq (const char *expected_str, const char *actual_str,
  * @internal Implementation detail of assertion macros.
  * @see ASSERT_NE() macro for public assertion interface.
  */
-extern void Test_fail_ne (const char *expected_str, const char *actual_str,
-                          const char *file, int line);
+extern void Test_fail_ne (const char *expected_str,
+                          const char *actual_str,
+                          const char *file,
+                          int line);
 
 #undef T
 

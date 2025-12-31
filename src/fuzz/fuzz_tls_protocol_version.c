@@ -65,19 +65,20 @@ static const int valid_versions[] = {
   TLS1_2_VERSION,
   TLS1_3_VERSION,
 };
-#define NUM_VALID_VERSIONS (sizeof (valid_versions) / sizeof (valid_versions[0]))
+#define NUM_VALID_VERSIONS \
+  (sizeof (valid_versions) / sizeof (valid_versions[0]))
 
 /* Invalid/edge case versions for fuzzing boundary conditions */
 static const int edge_versions[] = {
-  0,             /* Auto-select */
-  0x0200,        /* SSL 2.0 (ancient, disabled) */
-  0x0300,        /* SSL 3.0 (deprecated, POODLE vulnerable) */
-  TLS1_VERSION,  /* TLS 1.0 */
-  TLS1_1_VERSION,/* TLS 1.1 */
-  TLS1_2_VERSION,/* TLS 1.2 */
-  TLS1_3_VERSION,/* TLS 1.3 */
-  0x0305,        /* Hypothetical TLS 1.4 */
-  0xFFFF,        /* Maximum possible value */
+  0,              /* Auto-select */
+  0x0200,         /* SSL 2.0 (ancient, disabled) */
+  0x0300,         /* SSL 3.0 (deprecated, POODLE vulnerable) */
+  TLS1_VERSION,   /* TLS 1.0 */
+  TLS1_1_VERSION, /* TLS 1.1 */
+  TLS1_2_VERSION, /* TLS 1.2 */
+  TLS1_3_VERSION, /* TLS 1.3 */
+  0x0305,         /* Hypothetical TLS 1.4 */
+  0xFFFF,         /* Maximum possible value */
 };
 #define NUM_EDGE_VERSIONS (sizeof (edge_versions) / sizeof (edge_versions[0]))
 

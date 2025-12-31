@@ -29,9 +29,9 @@
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIO);
 
 /* Convenience macros for unified error+raise pattern */
-#define RAISE_FMT(e, fmt, ...)                                                \
+#define RAISE_FMT(e, fmt, ...) \
   SOCKET_RAISE_FMT (SocketIO, e, fmt, ##__VA_ARGS__)
-#define RAISE_MSG(e, fmt, ...)                                                \
+#define RAISE_MSG(e, fmt, ...) \
   SOCKET_RAISE_MSG (SocketIO, e, fmt, ##__VA_ARGS__)
 
 #if SOCKET_HAS_TLS
@@ -51,8 +51,7 @@ extern int Socket_fd (const T socket);
 /* Note: Some functions are extern (declared in header), some are static */
 static ssize_t socket_send_tls (T socket, const void *buf, size_t len);
 static ssize_t socket_recv_tls (T socket, void *buf, size_t len);
-static ssize_t socket_sendv_tls (T socket, const struct iovec *iov,
-                                 int iovcnt);
+static ssize_t socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt);
 static ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
 #endif
 
@@ -179,8 +178,8 @@ socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
         return 0;
       if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
-      RAISE_FMT (Socket_Failed, "Scatter/gather send failed (iovcnt=%d)",
-                 iovcnt);
+      RAISE_FMT (
+          Socket_Failed, "Scatter/gather send failed (iovcnt=%d)", iovcnt);
     }
 
   return result;
@@ -197,8 +196,8 @@ socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
         return 0;
       if (socketio_is_connection_closed_recv ())
         RAISE (Socket_Closed);
-      RAISE_FMT (Socket_Failed, "Scatter/gather receive failed (iovcnt=%d)",
-                 iovcnt);
+      RAISE_FMT (
+          Socket_Failed, "Scatter/gather receive failed (iovcnt=%d)", iovcnt);
     }
   else if (result == 0)
     {
@@ -209,8 +208,7 @@ socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
 }
 
 ssize_t
-socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
-                       int flags)
+socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt, int flags)
 {
   assert (socket);
   assert (iov);
@@ -396,8 +394,8 @@ socket_send_tls (T socket, const void *buf, size_t len)
 
   /* Validate size fits in int to prevent truncation (SSL_write takes int) */
   if (len > INT_MAX)
-    RAISE_FMT (SocketTLS_Failed, "TLS send size exceeds INT_MAX (len=%zu)",
-               len);
+    RAISE_FMT (
+        SocketTLS_Failed, "TLS send size exceeds INT_MAX (len=%zu)", len);
 
   int ssl_result = SSL_write (ssl, buf, (int)len);
 
@@ -418,8 +416,8 @@ socket_recv_tls (T socket, void *buf, size_t len)
 
   /* Validate size fits in int to prevent truncation (SSL_read takes int) */
   if (len > INT_MAX)
-    RAISE_FMT (SocketTLS_Failed, "TLS recv size exceeds INT_MAX (len=%zu)",
-               len);
+    RAISE_FMT (
+        SocketTLS_Failed, "TLS recv size exceeds INT_MAX (len=%zu)", len);
 
   int ssl_result = SSL_read (ssl, buf, (int)len);
 
@@ -438,7 +436,9 @@ socket_recv_tls (T socket, void *buf, size_t len)
 /* Merged from SocketIO-tls-iov.c */
 
 static size_t
-copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
+copy_iov_to_buffer (const struct iovec *iov,
+                    int iovcnt,
+                    void *buffer,
                     size_t buffer_size)
 {
   size_t offset = 0;
@@ -449,7 +449,8 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
     RAISE_MSG (Socket_Failed, "iovec total size overflow or invalid");
   if (total > buffer_size)
     RAISE_FMT (Socket_Failed,
-               "Buffer too small for iovec (need %zu, have %zu)", total,
+               "Buffer too small for iovec (need %zu, have %zu)",
+               total,
                buffer_size);
 
   /* Validate iov_base non-NULL for positive lengths */
@@ -465,8 +466,10 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
 }
 
 static size_t
-distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
-                          struct iovec *iov, int iovcnt)
+distribute_buffer_to_iov (const void *buffer,
+                          size_t buffer_len,
+                          struct iovec *iov,
+                          int iovcnt)
 {
   size_t remaining = buffer_len;
   size_t src_offset = 0;
@@ -474,14 +477,16 @@ distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
   /* Pre-validate iov params and bases (symmetric to copy_iov_to_buffer) */
   if (!iov || iovcnt <= 0 || iovcnt > IOV_MAX)
     {
-      RAISE_FMT (Socket_Failed, "Invalid distribute iov params: iovcnt=%d",
-                 iovcnt);
+      RAISE_FMT (
+          Socket_Failed, "Invalid distribute iov params: iovcnt=%d", iovcnt);
     }
   size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   if (buffer_len > total_capacity)
     {
-      RAISE_FMT (Socket_Failed, "buffer_len %zu exceeds iov capacity %zu",
-                 buffer_len, total_capacity);
+      RAISE_FMT (Socket_Failed,
+                 "buffer_len %zu exceeds iov capacity %zu",
+                 buffer_len,
+                 total_capacity);
     }
   SocketCommon_validate_iov_bases (iov, iovcnt);
 
@@ -506,7 +511,8 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
    * int) */
   if (total_len > INT_MAX)
     RAISE_FMT (SocketTLS_Failed,
-               "TLS sendv size exceeds INT_MAX (total_len=%zu)", total_len);
+               "TLS sendv size exceeds INT_MAX (total_len=%zu)",
+               total_len);
 
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);

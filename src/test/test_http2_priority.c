@@ -27,33 +27,33 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_ASSERT(cond, msg)                                                \
-  do                                                                          \
-    {                                                                         \
-      if (!(cond))                                                            \
-        {                                                                     \
-          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);  \
-          return 0;                                                           \
-        }                                                                     \
-    }                                                                         \
+#define TEST_ASSERT(cond, msg)                                               \
+  do                                                                         \
+    {                                                                        \
+      if (!(cond))                                                           \
+        {                                                                    \
+          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__); \
+          return 0;                                                          \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
-#define TEST_BEGIN(name)                                                      \
-  do                                                                          \
-    {                                                                         \
-      tests_run++;                                                            \
-      printf ("  Testing %s... ", #name);                                     \
-      fflush (stdout);                                                        \
-    }                                                                         \
+#define TEST_BEGIN(name)                  \
+  do                                      \
+    {                                     \
+      tests_run++;                        \
+      printf ("  Testing %s... ", #name); \
+      fflush (stdout);                    \
+    }                                     \
   while (0)
 
-#define TEST_PASS()                                                           \
-  do                                                                          \
-    {                                                                         \
-      tests_passed++;                                                         \
-      printf ("PASSED\n");                                                    \
-      return 1;                                                               \
-    }                                                                         \
+#define TEST_PASS()        \
+  do                       \
+    {                      \
+      tests_passed++;      \
+      printf ("PASSED\n"); \
+      return 1;            \
+    }                      \
   while (0)
 
 /* Priority initialization tests */
@@ -379,9 +379,11 @@ test_priority_update_frame_type_string (void)
 {
   TEST_BEGIN (priority_update_frame_type_string);
 
-  const char *name = SocketHTTP2_frame_type_string (HTTP2_FRAME_PRIORITY_UPDATE);
+  const char *name
+      = SocketHTTP2_frame_type_string (HTTP2_FRAME_PRIORITY_UPDATE);
 
-  /* The frame type name may be "UNKNOWN_FRAME" until we add it to the frame_type_names array */
+  /* The frame type name may be "UNKNOWN_FRAME" until we add it to the
+   * frame_type_names array */
   /* For now, just check it doesn't crash */
   TEST_ASSERT (name != NULL, "Frame type string should not be NULL");
 

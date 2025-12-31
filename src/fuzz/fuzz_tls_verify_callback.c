@@ -60,8 +60,11 @@ static volatile int g_last_preverify = -1;
  * fuzz_accept_cb - Accept callback for fuzzing
  */
 static int
-fuzz_accept_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
-                SocketTLSContext_T tls_ctx, Socket_T sock, void *user_data)
+fuzz_accept_cb (int pre_ok,
+                X509_STORE_CTX *x509_ctx,
+                SocketTLSContext_T tls_ctx,
+                Socket_T sock,
+                void *user_data)
 {
   (void)tls_ctx;
   (void)sock;
@@ -81,8 +84,11 @@ fuzz_accept_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
  * fuzz_reject_cb - Reject callback for fuzzing
  */
 static int
-fuzz_reject_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
-                SocketTLSContext_T tls_ctx, Socket_T sock, void *user_data)
+fuzz_reject_cb (int pre_ok,
+                X509_STORE_CTX *x509_ctx,
+                SocketTLSContext_T tls_ctx,
+                Socket_T sock,
+                void *user_data)
 {
   (void)tls_ctx;
   (void)sock;
@@ -102,8 +108,11 @@ fuzz_reject_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
  * fuzz_raise_tls_cb - Callback that raises SocketTLS_Failed
  */
 static int
-fuzz_raise_tls_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
-                   SocketTLSContext_T tls_ctx, Socket_T sock, void *user_data)
+fuzz_raise_tls_cb (int pre_ok,
+                   X509_STORE_CTX *x509_ctx,
+                   SocketTLSContext_T tls_ctx,
+                   Socket_T sock,
+                   void *user_data)
 {
   (void)pre_ok;
   (void)x509_ctx;
@@ -120,8 +129,10 @@ fuzz_raise_tls_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
  * fuzz_raise_custom_cb - Callback that raises custom exception
  */
 static int
-fuzz_raise_custom_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
-                      SocketTLSContext_T tls_ctx, Socket_T sock,
+fuzz_raise_custom_cb (int pre_ok,
+                      X509_STORE_CTX *x509_ctx,
+                      SocketTLSContext_T tls_ctx,
+                      Socket_T sock,
                       void *user_data)
 {
   (void)pre_ok;
@@ -144,7 +155,8 @@ fuzz_raise_custom_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
  * Tests various callback configurations and verify mode combinations.
  */
 static void
-fuzz_verify_callback_config (uint8_t op, uint8_t mode_byte,
+fuzz_verify_callback_config (uint8_t op,
+                             uint8_t mode_byte,
                              uint8_t user_data_valid)
 {
   SocketTLSContext_T ctx = NULL;
@@ -213,8 +225,8 @@ fuzz_verify_callback_config (uint8_t op, uint8_t mode_byte,
     /* For MODE_CHANGE operation, change mode after setting callback */
     if (op % VERIFY_CB_OP_COUNT == VERIFY_CB_MODE_CHANGE)
       {
-        TLSVerifyMode new_mode = (mode_byte & 0x80) ? TLS_VERIFY_NONE
-                                                    : TLS_VERIFY_PEER;
+        TLSVerifyMode new_mode
+            = (mode_byte & 0x80) ? TLS_VERIFY_NONE : TLS_VERIFY_PEER;
         SocketTLSContext_set_verify_mode (ctx, new_mode);
       }
 
@@ -222,8 +234,14 @@ fuzz_verify_callback_config (uint8_t op, uint8_t mode_byte,
     SocketTLSContext_set_verify_callback (ctx, NULL, NULL);
     SocketTLSContext_set_verify_callback (ctx, cb, user_data);
   }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
-  ELSE { caught = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
+  ELSE
+  {
+    caught = 1;
+  }
   FINALLY
   {
     if (ctx)
@@ -291,8 +309,14 @@ fuzz_verify_mode_transitions (const uint8_t *data, size_t size)
           }
       }
   }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
-  ELSE { caught = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
+  ELSE
+  {
+    caught = 1;
+  }
   FINALLY
   {
     if (ctx)

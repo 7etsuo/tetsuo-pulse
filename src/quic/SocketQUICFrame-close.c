@@ -31,7 +31,8 @@
  * implementations must enforce one to prevent resource exhaustion.
  *
  * @param reason  Reason phrase to validate (may be NULL).
- * @param out_len Output: length of reason phrase (capped at QUIC_REASON_MAX_LENGTH).
+ * @param out_len Output: length of reason phrase (capped at
+ * QUIC_REASON_MAX_LENGTH).
  *
  * @return 1 if valid (or NULL), 0 if invalid UTF-8 or exceeds maximum length.
  */
@@ -74,10 +75,12 @@ validate_utf8_reason (const char *reason, size_t *out_len)
  * @return Number of bytes written on success, 0 on error.
  */
 static size_t
-encode_connection_close_common (uint8_t frame_type_byte, uint64_t error_code,
-                                 const uint64_t *frame_type_ptr,
-                                 const char *reason, uint8_t *out,
-                                 size_t out_len)
+encode_connection_close_common (uint8_t frame_type_byte,
+                                uint64_t error_code,
+                                const uint64_t *frame_type_ptr,
+                                const char *reason,
+                                uint8_t *out,
+                                size_t out_len)
 {
   if (!out || out_len == 0)
     return 0;
@@ -90,7 +93,8 @@ encode_connection_close_common (uint8_t frame_type_byte, uint64_t error_code,
   /* Calculate required size */
   size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t error_code_len = SocketQUICVarInt_size (error_code);
-  size_t frame_type_len = frame_type_ptr ? SocketQUICVarInt_size (*frame_type_ptr) : 0;
+  size_t frame_type_len
+      = frame_type_ptr ? SocketQUICVarInt_size (*frame_type_ptr) : 0;
   size_t reason_len_size = SocketQUICVarInt_size (reason_len);
 
   if (!VALIDATE_VARINT_SIZES (error_code_len, reason_len_size))
@@ -101,7 +105,8 @@ encode_connection_close_common (uint8_t frame_type_byte, uint64_t error_code,
 
   /* Check for integer overflow in total_len calculation.
    * Prevent SIZE_MAX wraparound that could bypass buffer size check. */
-  size_t fixed_size = type_len + error_code_len + frame_type_len + reason_len_size;
+  size_t fixed_size
+      = type_len + error_code_len + frame_type_len + reason_len_size;
   if (reason_len > SIZE_MAX - fixed_size)
     return 0; /* Overflow would occur */
 
@@ -175,14 +180,17 @@ encode_connection_close_common (uint8_t frame_type_byte, uint64_t error_code,
  */
 size_t
 SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
-                                                    uint64_t frame_type,
-                                                    const char *reason,
-                                                    uint8_t *out,
-                                                    size_t out_len)
+                                                   uint64_t frame_type,
+                                                   const char *reason,
+                                                   uint8_t *out,
+                                                   size_t out_len)
 {
   return encode_connection_close_common (QUIC_FRAME_CONNECTION_CLOSE,
-                                          error_code, &frame_type, reason, out,
-                                          out_len);
+                                         error_code,
+                                         &frame_type,
+                                         reason,
+                                         out,
+                                         out_len);
 }
 
 /**
@@ -220,10 +228,10 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
  */
 size_t
 SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
-                                              const char *reason,
-                                              uint8_t *out, size_t out_len)
+                                             const char *reason,
+                                             uint8_t *out,
+                                             size_t out_len)
 {
-  return encode_connection_close_common (QUIC_FRAME_CONNECTION_CLOSE_APP,
-                                          error_code, NULL, reason, out,
-                                          out_len);
+  return encode_connection_close_common (
+      QUIC_FRAME_CONNECTION_CLOSE_APP, error_code, NULL, reason, out, out_len);
 }

@@ -96,11 +96,11 @@
  */
 typedef enum
 {
-  QUIC_PATH_UNKNOWN = 0,    /**< Path not yet validated */
-  QUIC_PATH_VALIDATING,     /**< PATH_CHALLENGE sent, awaiting response */
-  QUIC_PATH_VALIDATED,      /**< PATH_RESPONSE received, path usable */
-  QUIC_PATH_FAILED,         /**< Validation failed or timeout */
-  QUIC_PATH_ABANDONED       /**< Path explicitly abandoned */
+  QUIC_PATH_UNKNOWN = 0, /**< Path not yet validated */
+  QUIC_PATH_VALIDATING,  /**< PATH_CHALLENGE sent, awaiting response */
+  QUIC_PATH_VALIDATED,   /**< PATH_RESPONSE received, path usable */
+  QUIC_PATH_FAILED,      /**< Validation failed or timeout */
+  QUIC_PATH_ABANDONED    /**< Path explicitly abandoned */
 } SocketQUICPath_State;
 
 /**
@@ -131,15 +131,15 @@ typedef struct SocketQUICPath
   SocketQUICConnectionID_T cid; /**< Connection ID used on this path */
 
   /** Path validation state */
-  SocketQUICPath_State state; /**< Current validation state */
+  SocketQUICPath_State state;                  /**< Current validation state */
   uint8_t challenge[QUIC_PATH_CHALLENGE_SIZE]; /**< Challenge data sent */
   uint64_t challenge_sent_time; /**< Timestamp when challenge was sent (ms) */
   int challenge_count;          /**< Number of challenges sent */
 
   /** Congestion control state (simplified) */
-  uint64_t cwnd;         /**< Congestion window in bytes */
+  uint64_t cwnd;            /**< Congestion window in bytes */
   uint64_t bytes_in_flight; /**< Bytes sent but not acked */
-  uint64_t ssthresh;     /**< Slow-start threshold */
+  uint64_t ssthresh;        /**< Slow-start threshold */
 
   /** Statistics */
   uint64_t packets_sent;     /**< Total packets sent on this path */
@@ -185,7 +185,8 @@ typedef enum
 {
   QUIC_MIGRATION_OK = 0,              /**< Operation succeeded */
   QUIC_MIGRATION_ERROR_NULL,          /**< NULL pointer argument */
-  QUIC_MIGRATION_ERROR_INVALID_STATE, /**< Invalid operation for current state */
+  QUIC_MIGRATION_ERROR_INVALID_STATE, /**< Invalid operation for current state
+                                       */
   QUIC_MIGRATION_ERROR_NO_CID,        /**< No available connection IDs */
   QUIC_MIGRATION_ERROR_PATH_LIMIT,    /**< Maximum paths exceeded */
   QUIC_MIGRATION_ERROR_TIMEOUT,       /**< Path validation timeout */
@@ -214,7 +215,8 @@ extern const Except_T SocketQUICMigration_Failed;
  * @return Pointer to new migration manager, or NULL on failure.
  */
 extern SocketQUICMigration_T *
-SocketQUICMigration_new (Arena_T arena, SocketQUICConnection_T connection,
+SocketQUICMigration_new (Arena_T arena,
+                         SocketQUICConnection_T connection,
                          SocketQUICMigration_Role role);
 
 /**
@@ -226,10 +228,9 @@ SocketQUICMigration_new (Arena_T arena, SocketQUICConnection_T connection,
  * @param connection Associated QUIC connection.
  * @param role       Migration role (client or server).
  */
-extern void
-SocketQUICMigration_init (SocketQUICMigration_T *migration,
-                          SocketQUICConnection_T connection,
-                          SocketQUICMigration_Role role);
+extern void SocketQUICMigration_init (SocketQUICMigration_T *migration,
+                                      SocketQUICConnection_T connection,
+                                      SocketQUICMigration_Role role);
 
 /**
  * @brief Free a migration manager.
@@ -310,16 +311,20 @@ SocketQUICMigration_find_path (SocketQUICMigration_T *migration,
  * 4. Ensure datagram is padded to at least 1200 bytes (RFC 9000 §8.2.1)
  * 5. Wait for PATH_RESPONSE from peer
  * 6. Call SocketQUICMigration_handle_path_response() when response arrives
- * 7. Once path is VALIDATED, call SocketQUICMigration_initiate() to complete migration
+ * 7. Once path is VALIDATED, call SocketQUICMigration_initiate() to complete
+ * migration
  *
  * Frame Transmission Requirements:
  * - PATH_CHALLENGE MUST be sent in a packet that is padded to 1200+ bytes
- * - PATH_CHALLENGE can be sent multiple times if no response (see check_timeouts)
+ * - PATH_CHALLENGE can be sent multiple times if no response (see
+ * check_timeouts)
  * - Path MUST be validated before sending any other application data on it
- * - Do not send PATH_CHALLENGE for initial path (pre-validated during handshake)
+ * - Do not send PATH_CHALLENGE for initial path (pre-validated during
+ * handshake)
  *
  * The function allocates or reuses a path slot, generates cryptographically
- * secure random challenge data, and sets the path state to QUIC_PATH_VALIDATING.
+ * secure random challenge data, and sets the path state to
+ * QUIC_PATH_VALIDATING.
  *
  * @param migration Migration manager.
  * @param peer_addr Peer address to probe.
@@ -368,9 +373,9 @@ SocketQUICMigration_handle_path_response (SocketQUICMigration_T *migration,
  * @return QUIC_MIGRATION_OK on success, error code otherwise.
  */
 extern SocketQUICMigration_Result
-SocketQUICMigration_handle_path_challenge (
-    SocketQUICMigration_T *migration, const uint8_t challenge_data[8],
-    uint8_t response_out[8]);
+SocketQUICMigration_handle_path_challenge (SocketQUICMigration_T *migration,
+                                           const uint8_t challenge_data[8],
+                                           uint8_t response_out[8]);
 
 /**
  * @brief Check for path validation timeouts.
@@ -383,9 +388,8 @@ SocketQUICMigration_handle_path_challenge (
  *
  * @return Number of paths that timed out.
  */
-extern int
-SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
-                                    uint64_t current_time_ms);
+extern int SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
+                                               uint64_t current_time_ms);
 
 /* ============================================================================
  * Migration Functions (RFC 9000 Section 9)
@@ -433,7 +437,8 @@ SocketQUICMigration_initiate (SocketQUICMigration_T *migration,
 extern SocketQUICMigration_Result
 SocketQUICMigration_handle_peer_address_change (
     SocketQUICMigration_T *migration,
-    const struct sockaddr_storage *peer_addr, uint64_t current_time_ms);
+    const struct sockaddr_storage *peer_addr,
+    uint64_t current_time_ms);
 
 /* ============================================================================
  * Congestion Control Functions (RFC 9000 Section 9.4)
@@ -471,8 +476,8 @@ SocketQUICMigration_reset_congestion (SocketQUICPath_T *new_path,
  * @param path    Path to update.
  * @param rtt_us  RTT sample in microseconds.
  */
-extern void SocketQUICMigration_update_rtt (SocketQUICPath_T *path,
-                                            uint64_t rtt_us);
+extern void
+SocketQUICMigration_update_rtt (SocketQUICPath_T *path, uint64_t rtt_us);
 
 /* ============================================================================
  * Utility Functions
@@ -526,7 +531,8 @@ SocketQUICMigration_result_string (SocketQUICMigration_Result result);
  * @return Number of characters written (excluding null), or -1 on error.
  */
 extern int SocketQUICMigration_path_to_string (const SocketQUICPath_T *path,
-                                               char *buf, size_t size);
+                                               char *buf,
+                                               size_t size);
 
 /** @} */
 

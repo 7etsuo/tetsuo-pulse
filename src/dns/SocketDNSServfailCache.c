@@ -31,11 +31,11 @@
  */
 struct ServfailCacheEntry
 {
-  char name[DNS_SERVFAIL_MAX_NAME + 1]; /**< Normalized (lowercase) QNAME */
+  char name[DNS_SERVFAIL_MAX_NAME + 1];     /**< Normalized (lowercase) QNAME */
   char nameserver[DNS_SERVFAIL_MAX_NS + 1]; /**< Nameserver address */
-  uint16_t qtype;    /**< QTYPE */
-  uint16_t qclass;   /**< QCLASS */
-  uint32_t ttl;      /**< Original TTL (capped at DNS_SERVFAIL_MAX_TTL) */
+  uint16_t qtype;                           /**< QTYPE */
+  uint16_t qclass;                          /**< QCLASS */
+  uint32_t ttl;           /**< Original TTL (capped at DNS_SERVFAIL_MAX_TTL) */
   int64_t insert_time_ms; /**< Monotonic insertion time */
   struct ServfailCacheEntry *hash_next; /**< Hash chain pointer */
   struct ServfailCacheEntry *lru_prev;  /**< LRU list prev */
@@ -47,18 +47,19 @@ struct ServfailCacheEntry
  */
 struct T
 {
-  Arena_T arena; /**< Memory arena */
+  Arena_T arena;         /**< Memory arena */
   pthread_mutex_t mutex; /**< Thread safety */
 
-  struct ServfailCacheEntry *hash_table[SERVFAIL_HASH_SIZE]; /**< Hash buckets */
+  struct ServfailCacheEntry
+      *hash_table[SERVFAIL_HASH_SIZE]; /**< Hash buckets */
   struct ServfailCacheEntry *lru_head; /**< LRU head (most recent) */
   struct ServfailCacheEntry *lru_tail; /**< LRU tail (oldest) */
 
-  size_t size;         /**< Current entry count */
-  size_t max_entries;  /**< Maximum capacity */
+  size_t size;        /**< Current entry count */
+  size_t max_entries; /**< Maximum capacity */
 
   /* Hash collision DoS protection */
-  uint32_t hash_seed;  /**< Random seed for hash function */
+  uint32_t hash_seed; /**< Random seed for hash function */
 
   /* Statistics */
   uint64_t hits;
@@ -68,7 +69,8 @@ struct T
   uint64_t expirations;
 };
 
-/* normalize_name() replaced by socket_util_normalize_hostname() from SocketUtil.h */
+/* normalize_name() replaced by socket_util_normalize_hostname() from
+ * SocketUtil.h */
 
 /**
  * @brief Compute hash for cache key 4-tuple with seed.
@@ -76,14 +78,18 @@ struct T
  * Includes name, qtype, qclass, and nameserver in hash calculation.
  * Uses a random seed to protect against hash collision DoS attacks.
  *
- * Implementation follows the DJB2 XOR pattern from socket_util_hash_djb2_seeded_ci()
- * but extends it to incorporate all four tuple components in a single hash chain.
- * This avoids the overhead of calling the utility function and then continuing
- * the hash, while maintaining consistency with the project's hash utilities.
+ * Implementation follows the DJB2 XOR pattern from
+ * socket_util_hash_djb2_seeded_ci() but extends it to incorporate all four
+ * tuple components in a single hash chain. This avoids the overhead of calling
+ * the utility function and then continuing the hash, while maintaining
+ * consistency with the project's hash utilities.
  */
 static unsigned
-compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass,
-                        const char *nameserver, uint32_t seed)
+compute_hash_with_seed (const char *name,
+                        uint16_t qtype,
+                        uint16_t qclass,
+                        const char *nameserver,
+                        uint32_t seed)
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
@@ -114,15 +120,20 @@ compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass,
  * @brief Compute hash for cache key 4-tuple (wrapper for cache instance).
  */
 static unsigned
-compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass,
+compute_hash (T cache,
+              const char *name,
+              uint16_t qtype,
+              uint16_t qclass,
               const char *nameserver)
 {
-  return compute_hash_with_seed (name, qtype, qclass, nameserver, cache->hash_seed);
+  return compute_hash_with_seed (
+      name, qtype, qclass, nameserver, cache->hash_seed);
 }
 
 /* entry_expired() replaced by socket_util_ttl_expired() from SocketUtil.h */
 
-/* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from SocketUtil.h */
+/* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from
+ * SocketUtil.h */
 
 /**
  * @brief Remove entry from LRU list.
@@ -200,9 +211,8 @@ static void
 entry_free (T cache, struct ServfailCacheEntry *entry)
 {
   /* Compute bucket for hash removal */
-  unsigned bucket
-      = compute_hash (cache, entry->name, entry->qtype, entry->qclass,
-                      entry->nameserver);
+  unsigned bucket = compute_hash (
+      cache, entry->name, entry->qtype, entry->qclass, entry->nameserver);
 
   hash_remove (cache, entry, bucket);
   lru_remove (cache, entry);
@@ -228,10 +238,14 @@ evict_lru (T cache)
  * @brief Find entry by exact key 4-tuple.
  */
 static struct ServfailCacheEntry *
-find_entry (T cache, const char *normalized_name, uint16_t qtype,
-            uint16_t qclass, const char *nameserver)
+find_entry (T cache,
+            const char *normalized_name,
+            uint16_t qtype,
+            uint16_t qclass,
+            const char *nameserver)
 {
-  unsigned bucket = compute_hash (cache, normalized_name, qtype, qclass, nameserver);
+  unsigned bucket
+      = compute_hash (cache, normalized_name, qtype, qclass, nameserver);
   struct ServfailCacheEntry *entry = cache->hash_table[bucket];
 
   while (entry)
@@ -252,9 +266,8 @@ find_entry (T cache, const char *normalized_name, uint16_t qtype,
 static void
 hash_insert (T cache, struct ServfailCacheEntry *entry)
 {
-  unsigned bucket
-      = compute_hash (cache, entry->name, entry->qtype, entry->qclass,
-                      entry->nameserver);
+  unsigned bucket = compute_hash (
+      cache, entry->name, entry->qtype, entry->qclass, entry->nameserver);
   entry->hash_next = cache->hash_table[bucket];
   cache->hash_table[bucket] = entry;
 }
@@ -265,8 +278,8 @@ hash_insert (T cache, struct ServfailCacheEntry *entry)
 static struct ServfailCacheEntry *
 entry_alloc (T cache)
 {
-  return Arena_alloc (cache->arena, sizeof (struct ServfailCacheEntry),
-                      __FILE__, __LINE__);
+  return Arena_alloc (
+      cache->arena, sizeof (struct ServfailCacheEntry), __FILE__, __LINE__);
 }
 
 /* Public API */
@@ -285,7 +298,8 @@ SocketDNSServfailCache_new (Arena_T arena)
   cache->arena = arena;
   cache->max_entries = DNS_SERVFAIL_DEFAULT_MAX;
 
-  /* Initialize cryptographically secure random seed for hash collision DoS protection */
+  /* Initialize cryptographically secure random seed for hash collision DoS
+   * protection */
   cache->hash_seed = SocketCrypto_random_uint32 ();
 
   if (pthread_mutex_init (&cache->mutex, NULL) != 0)
@@ -307,9 +321,12 @@ SocketDNSServfailCache_free (T *cache)
 }
 
 SocketDNS_ServfailCacheResult
-SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
-                                uint16_t qclass, const char *nameserver,
-                                SocketDNS_ServfailCacheEntry *entry)
+SocketDNSServfailCache_lookup (T cache,
+                               const char *qname,
+                               uint16_t qtype,
+                               uint16_t qclass,
+                               const char *nameserver,
+                               SocketDNS_ServfailCacheEntry *entry)
 {
   if (cache == NULL || qname == NULL || nameserver == NULL)
     return DNS_SERVFAIL_MISS;
@@ -345,7 +362,8 @@ SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
   if (entry != NULL && found != NULL)
     {
       entry->original_ttl = found->ttl;
-      entry->ttl_remaining = socket_util_ttl_remaining (found->insert_time_ms, found->ttl, now_ms);
+      entry->ttl_remaining = socket_util_ttl_remaining (
+          found->insert_time_ms, found->ttl, now_ms);
       entry->insert_time_ms = found->insert_time_ms;
     }
 
@@ -381,9 +399,12 @@ SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
  *    - Use in conjunction with query timeout and retry logic
  */
 int
-SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
-                                uint16_t qclass, const char *nameserver,
-                                uint32_t ttl)
+SocketDNSServfailCache_insert (T cache,
+                               const char *qname,
+                               uint16_t qtype,
+                               uint16_t qclass,
+                               const char *nameserver,
+                               uint32_t ttl)
 {
   if (cache == NULL || qname == NULL || nameserver == NULL)
     return -1;
@@ -436,8 +457,8 @@ SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
 
   memset (entry, 0, sizeof (*entry));
   if (!socket_util_safe_strncpy (entry->name, normalized, sizeof (entry->name))
-      || !socket_util_safe_strncpy (entry->nameserver, nameserver,
-                                     sizeof (entry->nameserver)))
+      || !socket_util_safe_strncpy (
+          entry->nameserver, nameserver, sizeof (entry->nameserver)))
     {
       entry_free (cache, entry);
       pthread_mutex_unlock (&cache->mutex);
@@ -459,8 +480,11 @@ SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
 }
 
 int
-SocketDNSServfailCache_remove (T cache, const char *qname, uint16_t qtype,
-                                uint16_t qclass, const char *nameserver)
+SocketDNSServfailCache_remove (T cache,
+                               const char *qname,
+                               uint16_t qtype,
+                               uint16_t qclass,
+                               const char *nameserver)
 {
   if (cache == NULL || qname == NULL || nameserver == NULL)
     return 0;

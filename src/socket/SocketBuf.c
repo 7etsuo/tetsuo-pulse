@@ -27,39 +27,39 @@ const Except_T SocketBuf_Failed
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketBuf);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketBuf, e)
-#define RAISE_MSG(e, fmt, ...)                                                \
+#define RAISE_MSG(e, fmt, ...) \
   SOCKET_RAISE_MSG (SocketBuf, e, fmt, ##__VA_ARGS__)
 
-#define VALIDATE_BUF(buf)                                                     \
-  do                                                                          \
-    {                                                                         \
-      if (!buf)                                                               \
-        RAISE_MODULE_ERROR (SocketBuf_Failed);                                \
-      SOCKETBUF_INVARIANTS (buf);                                             \
-    }                                                                         \
+#define VALIDATE_BUF(buf)                      \
+  do                                           \
+    {                                          \
+      if (!buf)                                \
+        RAISE_MODULE_ERROR (SocketBuf_Failed); \
+      SOCKETBUF_INVARIANTS (buf);              \
+    }                                          \
   while (0)
 
-#define VALIDATE_BUF_CONST(buf, retval)                                       \
-  do                                                                          \
-    {                                                                         \
-      if (!buf)                                                               \
-        return (retval);                                                      \
-      if (!SocketBuf_check_invariants (buf))                                  \
-        return (retval);                                                      \
-    }                                                                         \
+#define VALIDATE_BUF_CONST(buf, retval)      \
+  do                                         \
+    {                                        \
+      if (!buf)                              \
+        return (retval);                     \
+      if (!SocketBuf_check_invariants (buf)) \
+        return (retval);                     \
+    }                                        \
   while (0)
 
 #define T SocketBuf_T
 
-#define SOCKETBUF_INVARIANTS(buf)                                             \
-  do                                                                          \
-    {                                                                         \
-      if (!SocketBuf_check_invariants (buf))                                  \
-        {                                                                     \
-          SOCKET_ERROR_MSG ("SocketBuf invariants violated");                 \
-          RAISE_MODULE_ERROR (SocketBuf_Failed);                              \
-        }                                                                     \
-    }                                                                         \
+#define SOCKETBUF_INVARIANTS(buf)                             \
+  do                                                          \
+    {                                                         \
+      if (!SocketBuf_check_invariants (buf))                  \
+        {                                                     \
+          SOCKET_ERROR_MSG ("SocketBuf invariants violated"); \
+          RAISE_MODULE_ERROR (SocketBuf_Failed);              \
+        }                                                     \
+    }                                                         \
   while (0)
 
 struct T
@@ -279,8 +279,10 @@ SocketBuf_consume (T buf, size_t len)
   VALIDATE_BUF (buf);
 
   if (len > buf->size)
-    RAISE_MSG (SocketBuf_Failed, "consume len %zu exceeds available data %zu",
-               len, buf->size);
+    RAISE_MSG (SocketBuf_Failed,
+               "consume len %zu exceeds available data %zu",
+               len,
+               buf->size);
 
   buf->head = (buf->head + len) % buf->capacity;
   buf->size -= len;
@@ -426,8 +428,7 @@ SocketBuf_reserve (T buf, size_t min_space)
   SOCKETBUF_INVARIANTS (buf);
 
   if (!SocketSecurity_check_size (min_space))
-    RAISE_MSG (SocketBuf_Failed,
-               "min_space exceeds security allocation limit");
+    RAISE_MSG (SocketBuf_Failed, "min_space exceeds security allocation limit");
 
   size_t total_needed;
   if (SocketSecurity_check_add (buf->size, min_space, &total_needed) != 1)
@@ -439,8 +440,9 @@ SocketBuf_reserve (T buf, size_t min_space)
 
   size_t new_cap = reserve_calc_new_capacity (buf->capacity, total_needed);
   if (new_cap == 0)
-    RAISE_MSG (SocketBuf_Failed, "SocketBuf reserve: new capacity invalid "
-                                 "(overflow or exceeds limits)");
+    RAISE_MSG (SocketBuf_Failed,
+               "SocketBuf reserve: new capacity invalid "
+               "(overflow or exceeds limits)");
 
   char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
   if (!new_data)
@@ -523,8 +525,10 @@ SocketBuf_written (T buf, size_t len)
   VALIDATE_BUF (buf);
 
   if (len > buf->capacity - buf->size)
-    RAISE_MSG (SocketBuf_Failed, "written len %zu exceeds available space %zu",
-               len, buf->capacity - buf->size);
+    RAISE_MSG (SocketBuf_Failed,
+               "written len %zu exceeds available space %zu",
+               len,
+               buf->capacity - buf->size);
 
   buf->tail = (buf->tail + len) % buf->capacity;
   buf->size += len;
@@ -542,13 +546,13 @@ SocketBuf_written (T buf, size_t len)
 static void
 compact_rotate_in_place (char *data, size_t capacity, size_t head, size_t size)
 {
-#define SWAP_BYTES(a, b)                                                      \
-  do                                                                          \
-    {                                                                         \
-      char tmp = (a);                                                         \
-      (a) = (b);                                                              \
-      (b) = tmp;                                                              \
-    }                                                                         \
+#define SWAP_BYTES(a, b) \
+  do                     \
+    {                    \
+      char tmp = (a);    \
+      (a) = (b);         \
+      (b) = tmp;         \
+    }                    \
   while (0)
 
   size_t first_part = capacity - head;
@@ -652,8 +656,14 @@ SocketBuf_ensure (T buf, size_t min_space)
   if (SocketBuf_space (buf) >= min_space)
     return 1;
 
-  TRY { SocketBuf_reserve (buf, min_space); }
-  EXCEPT (SocketBuf_Failed) { return 0; }
+  TRY
+  {
+    SocketBuf_reserve (buf, min_space);
+  }
+  EXCEPT (SocketBuf_Failed)
+  {
+    return 0;
+  }
   END_TRY;
 
   return 1;
@@ -668,8 +678,10 @@ get_byte_at_offset (const T buf, size_t offset)
 
 
 static int
-match_pattern_at_offset (const T buf, size_t offset,
-                         const unsigned char *pattern, size_t pattern_len)
+match_pattern_at_offset (const T buf,
+                         size_t offset,
+                         const unsigned char *pattern,
+                         size_t pattern_len)
 {
   for (size_t j = 0; j < pattern_len; j++)
     {
@@ -712,7 +724,9 @@ SocketBuf_find (T buf, const void *needle, size_t needle_len)
 
 
 static size_t
-readline_copy_and_strip (const char *src, size_t src_len, char *dst,
+readline_copy_and_strip (const char *src,
+                         size_t src_len,
+                         char *dst,
                          ssize_t newline_pos)
 {
   size_t line_bytes;
@@ -934,8 +948,10 @@ async_buf_callback (Socket_T socket, ssize_t bytes, int err, void *user_data)
 }
 
 unsigned
-SocketBuf_flush_async (SocketBuf_T buf, SocketBuf_AsyncCallback cb,
-                       void *user_data, int flags)
+SocketBuf_flush_async (SocketBuf_T buf,
+                       SocketBuf_AsyncCallback cb,
+                       void *user_data,
+                       int flags)
 {
   VALIDATE_BUF (buf);
 
@@ -961,10 +977,11 @@ SocketBuf_flush_async (SocketBuf_T buf, SocketBuf_AsyncCallback cb,
     }
 
   /* Allocate state for callback bridging */
-  AsyncBufState *state = Arena_alloc (buf->arena, sizeof (*state), __FILE__,
-                                      __LINE__);
+  AsyncBufState *state
+      = Arena_alloc (buf->arena, sizeof (*state), __FILE__, __LINE__);
   if (!state)
-    RAISE_MSG (SocketBuf_Failed, SOCKET_ENOMEM ": Failed to allocate async state");
+    RAISE_MSG (SocketBuf_Failed,
+               SOCKET_ENOMEM ": Failed to allocate async state");
 
   state->buf = buf;
   state->user_cb = cb;
@@ -972,16 +989,23 @@ SocketBuf_flush_async (SocketBuf_T buf, SocketBuf_AsyncCallback cb,
   state->is_fill = 0;
 
   /* Submit async send */
-  unsigned req_id = SocketAsync_send (buf->async, buf->socket, data, avail,
-                                      async_buf_callback, state,
+  unsigned req_id = SocketAsync_send (buf->async,
+                                      buf->socket,
+                                      data,
+                                      avail,
+                                      async_buf_callback,
+                                      state,
                                       (SocketAsync_Flags)flags);
 
   return req_id;
 }
 
 unsigned
-SocketBuf_fill_async (SocketBuf_T buf, size_t max_fill,
-                      SocketBuf_AsyncCallback cb, void *user_data, int flags)
+SocketBuf_fill_async (SocketBuf_T buf,
+                      size_t max_fill,
+                      SocketBuf_AsyncCallback cb,
+                      void *user_data,
+                      int flags)
 {
   VALIDATE_BUF (buf);
 
@@ -1010,10 +1034,11 @@ SocketBuf_fill_async (SocketBuf_T buf, size_t max_fill,
     space = max_fill;
 
   /* Allocate state for callback bridging */
-  AsyncBufState *state = Arena_alloc (buf->arena, sizeof (*state), __FILE__,
-                                      __LINE__);
+  AsyncBufState *state
+      = Arena_alloc (buf->arena, sizeof (*state), __FILE__, __LINE__);
   if (!state)
-    RAISE_MSG (SocketBuf_Failed, SOCKET_ENOMEM ": Failed to allocate async state");
+    RAISE_MSG (SocketBuf_Failed,
+               SOCKET_ENOMEM ": Failed to allocate async state");
 
   state->buf = buf;
   state->user_cb = cb;
@@ -1021,8 +1046,12 @@ SocketBuf_fill_async (SocketBuf_T buf, size_t max_fill,
   state->is_fill = 1;
 
   /* Submit async recv */
-  unsigned req_id = SocketAsync_recv (buf->async, buf->socket, write_ptr, space,
-                                      async_buf_callback, state,
+  unsigned req_id = SocketAsync_recv (buf->async,
+                                      buf->socket,
+                                      write_ptr,
+                                      space,
+                                      async_buf_callback,
+                                      state,
                                       (SocketAsync_Flags)flags);
 
   return req_id;

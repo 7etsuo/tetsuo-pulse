@@ -41,14 +41,10 @@
 #include "core/Except.h"
 
 /* Test exception types */
-static const Except_T Test_Exception_A
-    = { &Test_Exception_A, "Exception A" };
-static const Except_T Test_Exception_B
-    = { &Test_Exception_B, "Exception B" };
-static const Except_T Test_Exception_C
-    = { &Test_Exception_C, "Exception C" };
-static const Except_T Test_Exception_D
-    = { &Test_Exception_D, "Exception D" };
+static const Except_T Test_Exception_A = { &Test_Exception_A, "Exception A" };
+static const Except_T Test_Exception_B = { &Test_Exception_B, "Exception B" };
+static const Except_T Test_Exception_C = { &Test_Exception_C, "Exception C" };
+static const Except_T Test_Exception_D = { &Test_Exception_D, "Exception D" };
 
 /* Maximum safe nesting depth */
 #define MAX_NESTING_DEPTH 32
@@ -114,7 +110,10 @@ test_simple_try (void)
 {
   volatile int executed = 0;
 
-  TRY { executed = 1; }
+  TRY
+  {
+    executed = 1;
+  }
   END_TRY;
 
   assert (executed == 1);
@@ -130,11 +129,26 @@ test_raise_catch (uint8_t exc_idx)
   volatile int caught = 0;
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception_A) { caught = 1; }
-  EXCEPT (Test_Exception_B) { caught = 2; }
-  EXCEPT (Test_Exception_C) { caught = 3; }
-  EXCEPT (Test_Exception_D) { caught = 4; }
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception_A)
+  {
+    caught = 1;
+  }
+  EXCEPT (Test_Exception_B)
+  {
+    caught = 2;
+  }
+  EXCEPT (Test_Exception_C)
+  {
+    caught = 3;
+  }
+  EXCEPT (Test_Exception_D)
+  {
+    caught = 4;
+  }
   END_TRY;
 
   assert (caught > 0);
@@ -150,12 +164,26 @@ test_raise_finally (uint8_t exc_idx)
   volatile int finally_ran = 0;
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception_A) {}
-  EXCEPT (Test_Exception_B) {}
-  EXCEPT (Test_Exception_C) {}
-  EXCEPT (Test_Exception_D) {}
-  FINALLY { finally_ran = 1; }
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception_A)
+  {
+  }
+  EXCEPT (Test_Exception_B)
+  {
+  }
+  EXCEPT (Test_Exception_C)
+  {
+  }
+  EXCEPT (Test_Exception_D)
+  {
+  }
+  FINALLY
+  {
+    finally_ran = 1;
+  }
   END_TRY;
 
   assert (finally_ran == 1);
@@ -175,20 +203,47 @@ test_nested_raise (uint8_t inner_exc, uint8_t outer_exc)
 
   TRY
   {
-    TRY { RAISE (*inner); }
-    EXCEPT (Test_Exception_A) { inner_caught = 1; }
-    EXCEPT (Test_Exception_B) { inner_caught = 2; }
-    EXCEPT (Test_Exception_C) { inner_caught = 3; }
-    EXCEPT (Test_Exception_D) { inner_caught = 4; }
+    TRY
+    {
+      RAISE (*inner);
+    }
+    EXCEPT (Test_Exception_A)
+    {
+      inner_caught = 1;
+    }
+    EXCEPT (Test_Exception_B)
+    {
+      inner_caught = 2;
+    }
+    EXCEPT (Test_Exception_C)
+    {
+      inner_caught = 3;
+    }
+    EXCEPT (Test_Exception_D)
+    {
+      inner_caught = 4;
+    }
     END_TRY;
 
     /* After handling inner, raise outer */
     RAISE (*outer);
   }
-  EXCEPT (Test_Exception_A) { outer_caught = 1; }
-  EXCEPT (Test_Exception_B) { outer_caught = 2; }
-  EXCEPT (Test_Exception_C) { outer_caught = 3; }
-  EXCEPT (Test_Exception_D) { outer_caught = 4; }
+  EXCEPT (Test_Exception_A)
+  {
+    outer_caught = 1;
+  }
+  EXCEPT (Test_Exception_B)
+  {
+    outer_caught = 2;
+  }
+  EXCEPT (Test_Exception_C)
+  {
+    outer_caught = 3;
+  }
+  EXCEPT (Test_Exception_D)
+  {
+    outer_caught = 4;
+  }
   END_TRY;
 
   assert (inner_caught > 0);
@@ -209,7 +264,10 @@ test_reraise_immediate (uint8_t exc_idx)
 
   TRY
   {
-    TRY { RAISE (*exc); }
+    TRY
+    {
+      RAISE (*exc);
+    }
     EXCEPT (Test_Exception_A)
     {
       inner_caught = 1;
@@ -232,10 +290,22 @@ test_reraise_immediate (uint8_t exc_idx)
     }
     END_TRY;
   }
-  EXCEPT (Test_Exception_A) { outer_caught = 1; }
-  EXCEPT (Test_Exception_B) { outer_caught = 2; }
-  EXCEPT (Test_Exception_C) { outer_caught = 3; }
-  EXCEPT (Test_Exception_D) { outer_caught = 4; }
+  EXCEPT (Test_Exception_A)
+  {
+    outer_caught = 1;
+  }
+  EXCEPT (Test_Exception_B)
+  {
+    outer_caught = 2;
+  }
+  EXCEPT (Test_Exception_C)
+  {
+    outer_caught = 3;
+  }
+  EXCEPT (Test_Exception_D)
+  {
+    outer_caught = 4;
+  }
   END_TRY;
 
   assert (inner_caught > 0);
@@ -256,7 +326,10 @@ test_reraise_delayed (uint8_t exc_idx)
 
   TRY
   {
-    TRY { RAISE (*exc); }
+    TRY
+    {
+      RAISE (*exc);
+    }
     EXCEPT (Test_Exception_A)
     {
       inner_processing = 1;
@@ -277,9 +350,18 @@ test_reraise_delayed (uint8_t exc_idx)
     }
     END_TRY;
   }
-  EXCEPT (Test_Exception_A) { outer_caught = 1; }
-  EXCEPT (Test_Exception_B) { outer_caught = 2; }
-  ELSE { outer_caught = 3; }
+  EXCEPT (Test_Exception_A)
+  {
+    outer_caught = 1;
+  }
+  EXCEPT (Test_Exception_B)
+  {
+    outer_caught = 2;
+  }
+  ELSE
+  {
+    outer_caught = 3;
+  }
   END_TRY;
 
   assert (inner_processing > 0);
@@ -304,11 +386,26 @@ test_early_return_helper (int should_return, uint8_t exc_idx)
     if (should_return == 2)
       RAISE (*exc);
   }
-  EXCEPT (Test_Exception_A) { RETURN 100; }
-  EXCEPT (Test_Exception_B) { RETURN 200; }
-  EXCEPT (Test_Exception_C) { RETURN 300; }
-  EXCEPT (Test_Exception_D) { RETURN 400; }
-  FINALLY { finally_ran = 1; }
+  EXCEPT (Test_Exception_A)
+  {
+    RETURN 100;
+  }
+  EXCEPT (Test_Exception_B)
+  {
+    RETURN 200;
+  }
+  EXCEPT (Test_Exception_C)
+  {
+    RETURN 300;
+  }
+  EXCEPT (Test_Exception_D)
+  {
+    RETURN 400;
+  }
+  FINALLY
+  {
+    finally_ran = 1;
+  }
   END_TRY;
 
   (void)finally_ran;
@@ -326,10 +423,18 @@ test_early_return (uint8_t variant, uint8_t exc_idx)
   {
     result = test_early_return_helper (variant % 3, exc_idx);
   }
-  EXCEPT (Test_Exception_A) { }
-  EXCEPT (Test_Exception_B) { }
-  EXCEPT (Test_Exception_C) { }
-  EXCEPT (Test_Exception_D) { }
+  EXCEPT (Test_Exception_A)
+  {
+  }
+  EXCEPT (Test_Exception_B)
+  {
+  }
+  EXCEPT (Test_Exception_C)
+  {
+  }
+  EXCEPT (Test_Exception_D)
+  {
+  }
   END_TRY;
   (void)result;
 }
@@ -353,19 +458,35 @@ test_finally_only (uint8_t should_raise, uint8_t exc_idx)
           if (should_raise)
             RAISE (*exc);
         }
-        FINALLY { finally_ran = 1; }
+        FINALLY
+        {
+          finally_ran = 1;
+        }
         END_TRY;
       }
-      EXCEPT (Test_Exception_A) {}
-      EXCEPT (Test_Exception_B) {}
-      EXCEPT (Test_Exception_C) {}
-      EXCEPT (Test_Exception_D) {}
+      EXCEPT (Test_Exception_A)
+      {
+      }
+      EXCEPT (Test_Exception_B)
+      {
+      }
+      EXCEPT (Test_Exception_C)
+      {
+      }
+      EXCEPT (Test_Exception_D)
+      {
+      }
       END_TRY;
     }
   else
     {
-      TRY { /* Nothing */ }
-      FINALLY { finally_ran = 1; }
+      TRY
+      { /* Nothing */
+      }
+      FINALLY
+      {
+        finally_ran = 1;
+      }
       END_TRY;
     }
 
@@ -381,9 +502,18 @@ test_else_handler (uint8_t exc_idx)
   volatile int caught = 0;
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception_A) { caught = 1; }
-  ELSE { caught = 99; }
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception_A)
+  {
+    caught = 1;
+  }
+  ELSE
+  {
+    caught = 99;
+  }
   END_TRY;
 
   assert (caught > 0);
@@ -442,23 +572,33 @@ test_deep_nesting (int depth, int raise_at)
                             if (raise_at == 5)
                               RAISE (Test_Exception_A);
                           }
-                          EXCEPT (Test_Exception_A) {}
+                          EXCEPT (Test_Exception_A)
+                          {
+                          }
                           END_TRY;
                         }
                     }
-                    EXCEPT (Test_Exception_D) {}
+                    EXCEPT (Test_Exception_D)
+                    {
+                    }
                     END_TRY;
                   }
               }
-              EXCEPT (Test_Exception_C) {}
+              EXCEPT (Test_Exception_C)
+              {
+              }
               END_TRY;
             }
         }
-        EXCEPT (Test_Exception_B) {}
+        EXCEPT (Test_Exception_B)
+        {
+        }
         END_TRY;
       }
   }
-  EXCEPT (Test_Exception_A) {}
+  EXCEPT (Test_Exception_A)
+  {
+  }
   END_TRY;
 
   (void)level;
@@ -481,8 +621,14 @@ test_interleaved_nesting (uint8_t pattern)
       if (pattern & 0x01)
         RAISE (Test_Exception_A);
     }
-    EXCEPT (Test_Exception_A) { state = 3; }
-    FINALLY { state += 10; }
+    EXCEPT (Test_Exception_A)
+    {
+      state = 3;
+    }
+    FINALLY
+    {
+      state += 10;
+    }
     END_TRY;
 
     TRY
@@ -491,14 +637,23 @@ test_interleaved_nesting (uint8_t pattern)
       if (pattern & 0x02)
         RAISE (Test_Exception_B);
     }
-    EXCEPT (Test_Exception_B) { state += 200; }
+    EXCEPT (Test_Exception_B)
+    {
+      state += 200;
+    }
     END_TRY;
 
     if (pattern & 0x04)
       RAISE (Test_Exception_C);
   }
-  EXCEPT (Test_Exception_C) { state += 1000; }
-  FINALLY { state += 10000; }
+  EXCEPT (Test_Exception_C)
+  {
+    state += 1000;
+  }
+  FINALLY
+  {
+    state += 10000;
+  }
   END_TRY;
 
   (void)state;
@@ -512,11 +667,22 @@ test_empty_handlers (uint8_t exc_idx)
 {
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception_A) {}
-  EXCEPT (Test_Exception_B) {}
-  EXCEPT (Test_Exception_C) {}
-  EXCEPT (Test_Exception_D) {}
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception_A)
+  {
+  }
+  EXCEPT (Test_Exception_B)
+  {
+  }
+  EXCEPT (Test_Exception_C)
+  {
+  }
+  EXCEPT (Test_Exception_D)
+  {
+  }
   END_TRY;
 }
 
@@ -599,7 +765,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* FINALLY block that might raise (dangerous pattern) */
           {
             volatile int state = 0;
-            TRY { state = 1; }
+            TRY
+            {
+              state = 1;
+            }
             FINALLY
             {
               state = 2;
@@ -616,7 +785,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
 
       /* Verify exception stack integrity after each operation */
-      TRY { /* Sentinel - verifies stack is usable */ }
+      TRY
+      { /* Sentinel - verifies stack is usable */
+      }
       END_TRY;
 
       /* Early exit if running low on data */
@@ -625,7 +796,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Final integrity check */
-  TRY { /* Stack should be clean */ }
+  TRY
+  { /* Stack should be clean */
+  }
   END_TRY;
 
   return 0;

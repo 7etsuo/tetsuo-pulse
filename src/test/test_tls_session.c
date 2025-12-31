@@ -50,10 +50,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -450,8 +452,14 @@ TEST (session_ticket_wrong_key_size)
     unsigned char short_key[32];
     memset (short_key, 0x42, 32);
 
-    TRY { SocketTLSContext_enable_session_tickets (ctx, short_key, 32); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_enable_session_tickets (ctx, short_key, 32);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -483,8 +491,14 @@ TEST (session_id_context_too_long)
     unsigned char long_context[64];
     memset (long_context, 'A', 64);
 
-    TRY { SocketTLSContext_set_session_id_context (ctx, long_context, 64); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_set_session_id_context (ctx, long_context, 64);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);

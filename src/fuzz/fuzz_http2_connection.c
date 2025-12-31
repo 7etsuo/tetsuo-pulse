@@ -105,15 +105,15 @@ static const uint8_t HTTP2_PREFACE[24] = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
 typedef struct
 {
   Arena_T arena;
-  Socket_T client_sock;         /* Client side of socket pair */
-  Socket_T server_sock;         /* Server side (we inject data here) */
-  SocketHTTP2_Conn_T conn;      /* HTTP/2 connection under test */
+  Socket_T client_sock;    /* Client side of socket pair */
+  Socket_T server_sock;    /* Server side (we inject data here) */
+  SocketHTTP2_Conn_T conn; /* HTTP/2 connection under test */
   SocketHTTP2_Stream_T streams[MAX_STREAMS];
   size_t stream_count;
-  int is_client;                /* 1 if testing client, 0 if server */
+  int is_client; /* 1 if testing client, 0 if server */
   int handshake_complete;
-  const uint8_t *data;          /* Current fuzz input */
-  size_t size;                  /* Remaining size */
+  const uint8_t *data; /* Current fuzz input */
+  size_t size;         /* Remaining size */
 } FuzzState;
 
 /* ============================================================================
@@ -212,7 +212,10 @@ inject_data (FuzzState *state, const uint8_t *data, size_t len)
  * Build and inject a valid HTTP/2 frame
  */
 static void
-build_frame (uint8_t *buf, uint32_t length, uint8_t type, uint8_t flags,
+build_frame (uint8_t *buf,
+             uint32_t length,
+             uint8_t type,
+             uint8_t flags,
              uint32_t stream_id)
 {
   buf[0] = (length >> 16) & 0xFF;
@@ -254,7 +257,8 @@ static size_t valid_stream_count = 0;
  * Returns the stream ID to use for this frame type.
  */
 static uint32_t
-fix_stream_id_for_frame (uint8_t frame_type, uint32_t original_id,
+fix_stream_id_for_frame (uint8_t frame_type,
+                         uint32_t original_id,
                          int is_client)
 {
   /* Connection-level frames MUST use stream 0 */
@@ -330,8 +334,9 @@ process_buffered_frames (FuzzState *state)
         break;
 
       SocketHTTP2_FrameHeader header;
-      if (SocketHTTP2_frame_header_parse (data, HTTP2_FRAME_HEADER_SIZE,
-                                           &header) != 0)
+      if (SocketHTTP2_frame_header_parse (
+              data, HTTP2_FRAME_HEADER_SIZE, &header)
+          != 0)
         {
           /* Invalid header - consume a byte and continue */
           SocketBuf_consume (recv_buf, 1);
@@ -356,8 +361,8 @@ process_buffered_frames (FuzzState *state)
       /* Process the frame */
       TRY
       {
-        int result = http2_process_frame (state->conn, &header,
-                                          data + HTTP2_FRAME_HEADER_SIZE);
+        int result = http2_process_frame (
+            state->conn, &header, data + HTTP2_FRAME_HEADER_SIZE);
         if (result >= 0)
           debug_frames_processed++;
         else
@@ -401,12 +406,24 @@ op_process_events (FuzzState *state)
     /* First try regular processing (may fail on socket read) */
     SocketHTTP2_Conn_process (state->conn, 0x01);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { /* Expected */ }
-  EXCEPT (SocketHTTP2_StreamError) { /* Expected */ }
-  EXCEPT (SocketHTTP2_FlowControlError) { /* Expected */ }
-  EXCEPT (SocketHTTP2_Failed) { /* Expected */ }
-  EXCEPT (Socket_Failed) { /* Expected - socket read may fail */ }
-  EXCEPT (Socket_Closed) { /* Expected */ }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP2_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected - socket read may fail */
+  }
+  EXCEPT (Socket_Closed)
+  { /* Expected */
+  }
   END_TRY;
 
   /* Also directly process any buffered data */
@@ -426,10 +443,18 @@ op_flush (FuzzState *state)
   {
     SocketHTTP2_Conn_flush (state->conn);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_Failed) { }
-  EXCEPT (Socket_Failed) { }
-  EXCEPT (Socket_Closed) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_Failed)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
   END_TRY;
 }
 
@@ -448,7 +473,9 @@ op_handshake (FuzzState *state)
     if (result == 0)
       state->handshake_complete = 1;
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
   END_TRY;
 }
 
@@ -471,8 +498,12 @@ op_new_stream (FuzzState *state)
         state->streams[state->stream_count++] = stream;
       }
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_StreamError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+  }
   END_TRY;
 }
 
@@ -536,9 +567,15 @@ op_send_headers (FuzzState *state)
   {
     SocketHTTP2_Stream_send_headers (stream, headers, count, end_stream);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_StreamError) { }
-  EXCEPT (SocketHTTP2_FlowControlError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+  }
   END_TRY;
 }
 
@@ -564,9 +601,15 @@ op_send_data (FuzzState *state)
   {
     SocketHTTP2_Stream_send_data (stream, buf, len, end_stream);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_StreamError) { }
-  EXCEPT (SocketHTTP2_FlowControlError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+  }
   END_TRY;
 }
 
@@ -590,11 +633,15 @@ op_recv_headers (FuzzState *state)
 
   TRY
   {
-    SocketHTTP2_Stream_recv_headers (stream, headers, MAX_HEADERS,
-                                     &header_count, &end_stream);
+    SocketHTTP2_Stream_recv_headers (
+        stream, headers, MAX_HEADERS, &header_count, &end_stream);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_StreamError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+  }
   END_TRY;
 }
 
@@ -619,8 +666,12 @@ op_recv_data (FuzzState *state)
   {
     SocketHTTP2_Stream_recv_data (stream, buf, sizeof (buf), &end_stream);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_StreamError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+  }
   END_TRY;
 }
 
@@ -645,8 +696,12 @@ op_close_stream (FuzzState *state)
     SocketHTTP2_Stream_close (stream, (SocketHTTP2_ErrorCode)error_code);
     state->streams[stream_idx] = NULL;
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_StreamError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+  }
   END_TRY;
 }
 
@@ -670,8 +725,12 @@ op_window_update (FuzzState *state)
     /* Connection-level window update */
     SocketHTTP2_Conn_window_update (state->conn, increment);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
-  EXCEPT (SocketHTTP2_FlowControlError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+  }
   END_TRY;
 
   /* Also try stream-level if we have streams */
@@ -685,9 +744,15 @@ op_window_update (FuzzState *state)
           {
             SocketHTTP2_Stream_window_update (stream, increment);
           }
-          EXCEPT (SocketHTTP2_ProtocolError) { }
-          EXCEPT (SocketHTTP2_StreamError) { }
-          EXCEPT (SocketHTTP2_FlowControlError) { }
+          EXCEPT (SocketHTTP2_ProtocolError)
+          {
+          }
+          EXCEPT (SocketHTTP2_StreamError)
+          {
+          }
+          EXCEPT (SocketHTTP2_FlowControlError)
+          {
+          }
           END_TRY;
         }
     }
@@ -710,7 +775,9 @@ op_ping (FuzzState *state)
   {
     SocketHTTP2_Conn_ping (state->conn, opaque);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
   END_TRY;
 }
 
@@ -729,10 +796,12 @@ op_goaway (FuzzState *state)
 
   TRY
   {
-    SocketHTTP2_Conn_goaway (state->conn, (SocketHTTP2_ErrorCode)error_code,
-                             debug, debug_len);
+    SocketHTTP2_Conn_goaway (
+        state->conn, (SocketHTTP2_ErrorCode)error_code, debug, debug_len);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
   END_TRY;
 }
 
@@ -758,7 +827,9 @@ op_settings (FuzzState *state)
   {
     SocketHTTP2_Conn_settings (state->conn, settings, count);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
   END_TRY;
 }
 
@@ -834,8 +905,11 @@ op_inject_headers (FuzzState *state)
       hpack_len += 9;
     }
 
-  build_frame (frame, (uint32_t)hpack_len, HTTP2_FRAME_HEADERS,
-               flags | HTTP2_FLAG_END_HEADERS, stream_id);
+  build_frame (frame,
+               (uint32_t)hpack_len,
+               HTTP2_FRAME_HEADERS,
+               flags | HTTP2_FLAG_END_HEADERS,
+               stream_id);
   memcpy (frame + 9, hpack_payload, hpack_len);
 
   inject_data (state, frame, 9 + hpack_len);
@@ -854,8 +928,8 @@ op_inject_data_frame (FuzzState *state)
   uint8_t payload[MAX_DATA_SIZE];
   size_t payload_len = read_bytes (state, payload, sizeof (payload));
 
-  build_frame (frame, (uint32_t)payload_len, HTTP2_FRAME_DATA, flags,
-               stream_id);
+  build_frame (
+      frame, (uint32_t)payload_len, HTTP2_FRAME_DATA, flags, stream_id);
   memcpy (frame + 9, payload, payload_len);
 
   inject_data (state, frame, 9 + payload_len);
@@ -960,11 +1034,13 @@ op_query_state (FuzzState *state)
 
   /* Query settings */
   for (int id = HTTP2_SETTINGS_HEADER_TABLE_SIZE;
-       id <= HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE; id++)
+       id <= HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE;
+       id++)
     {
-      (void)SocketHTTP2_Conn_get_setting (state->conn, (SocketHTTP2_SettingsId)id);
+      (void)SocketHTTP2_Conn_get_setting (state->conn,
+                                          (SocketHTTP2_SettingsId)id);
       (void)SocketHTTP2_Conn_get_local_setting (state->conn,
-                                                 (SocketHTTP2_SettingsId)id);
+                                                (SocketHTTP2_SettingsId)id);
     }
 
   /* Query stream state */
@@ -1002,8 +1078,12 @@ op_query_state (FuzzState *state)
  * Parse HTTP/2 frame header from bytes
  */
 static int
-parse_frame_header (const uint8_t *data, size_t size, uint32_t *length,
-                    uint8_t *type, uint8_t *flags, uint32_t *stream_id)
+parse_frame_header (const uint8_t *data,
+                    size_t size,
+                    uint32_t *length,
+                    uint8_t *type,
+                    uint8_t *flags,
+                    uint32_t *stream_id)
 {
   if (size < 9)
     return 0;
@@ -1020,7 +1100,10 @@ parse_frame_header (const uint8_t *data, size_t size, uint32_t *length,
  * Write HTTP/2 frame header to bytes
  */
 static void
-write_frame_header (uint8_t *data, uint32_t length, uint8_t type, uint8_t flags,
+write_frame_header (uint8_t *data,
+                    uint32_t length,
+                    uint8_t type,
+                    uint8_t flags,
                     uint32_t stream_id)
 {
   data[0] = (length >> 16) & 0xFF;
@@ -1057,7 +1140,9 @@ mut_rand (uint32_t *seed)
  * 7. Frame deletion - remove frames
  */
 size_t
-LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
+LLVMFuzzerCustomMutator (uint8_t *data,
+                         size_t size,
+                         size_t max_size,
                          unsigned int seed)
 {
   if (size < 2)
@@ -1065,7 +1150,7 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
       /* Initialize with a valid seed if too small */
       if (max_size >= 10)
         {
-          data[0] = seed & 1;                    /* Client/server mode */
+          data[0] = seed & 1;                        /* Client/server mode */
           write_frame_header (data + 1, 0, 4, 0, 0); /* Empty SETTINGS */
           return 10;
         }
@@ -1095,8 +1180,8 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
       /* Mutate flags */
       if (frames_size >= 9)
         {
-          uint8_t flag_mutations[] = { 0x00, 0x01, 0x04, 0x05, 0x08, 0x09,
-                                       0x0C, 0x0D, 0x20, 0xFF };
+          uint8_t flag_mutations[]
+              = { 0x00, 0x01, 0x04, 0x05, 0x08, 0x09, 0x0C, 0x0D, 0x20, 0xFF };
           frames[4] = flag_mutations[mut_rand (&rand_state) % 10];
         }
       break;
@@ -1118,10 +1203,9 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
       /* Mutate length field */
       if (frames_size >= 9)
         {
-          uint32_t lengths[] = { 0,       1,        4,        8,
-                                 9,       16,       256,      1024,
-                                 16384,   16385,    0xFFFF,   0x3FFFFF,
-                                 0x7FFFFF, 0xFFFFFF };
+          uint32_t lengths[]
+              = { 0,    1,     4,     8,      9,        16,       256,
+                  1024, 16384, 16385, 0xFFFF, 0x3FFFFF, 0x7FFFFF, 0xFFFFFF };
           uint32_t new_len = lengths[mut_rand (&rand_state) % 14];
           frames[0] = (new_len >> 16) & 0xFF;
           frames[1] = (new_len >> 8) & 0xFF;
@@ -1144,7 +1228,8 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
         {
           /* Insert empty SETTINGS or PING frame */
           uint8_t new_frame[18];
-          uint8_t type = (mut_rand (&rand_state) & 1) ? 4 : 6; /* SETTINGS or PING */
+          uint8_t type
+              = (mut_rand (&rand_state) & 1) ? 4 : 6; /* SETTINGS or PING */
           size_t len = (type == 4) ? 0 : 8;
           write_frame_header (new_frame, (uint32_t)len, type, 0, 0);
           if (type == 6)
@@ -1155,7 +1240,8 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
 
           /* Insert at frame boundary or random position */
           size_t insert_pos = 1 + (mut_rand (&rand_state) % frames_size);
-          memmove (data + insert_pos + 9 + len, data + insert_pos,
+          memmove (data + insert_pos + 9 + len,
+                   data + insert_pos,
                    size - insert_pos);
           memcpy (data + insert_pos, new_frame, 9 + len);
           return size + 9 + len;
@@ -1169,13 +1255,14 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
           uint32_t length;
           uint8_t type, flags;
           uint32_t stream_id;
-          if (parse_frame_header (frames, frames_size, &length, &type, &flags,
-                                  &stream_id))
+          if (parse_frame_header (
+                  frames, frames_size, &length, &type, &flags, &stream_id))
             {
               size_t frame_size = 9 + (length > 4096 ? 4096 : length);
               if (frame_size < frames_size)
                 {
-                  memmove (frames, frames + frame_size, frames_size - frame_size);
+                  memmove (
+                      frames, frames + frame_size, frames_size - frame_size);
                   return 1 + (frames_size - frame_size);
                 }
             }
@@ -1189,8 +1276,8 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
           uint32_t len1;
           uint8_t type1, flags1;
           uint32_t id1;
-          if (parse_frame_header (frames, frames_size, &len1, &type1, &flags1,
-                                  &id1))
+          if (parse_frame_header (
+                  frames, frames_size, &len1, &type1, &flags1, &id1))
             {
               size_t frame1_size = 9 + (len1 > 256 ? 256 : len1);
               if (frame1_size + 9 <= frames_size)
@@ -1199,8 +1286,11 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
                   uint8_t type2, flags2;
                   uint32_t id2;
                   if (parse_frame_header (frames + frame1_size,
-                                          frames_size - frame1_size, &len2,
-                                          &type2, &flags2, &id2))
+                                          frames_size - frame1_size,
+                                          &len2,
+                                          &type2,
+                                          &flags2,
+                                          &id2))
                     {
                       /* Just swap the types and flags */
                       uint8_t tmp_type = frames[3];
@@ -1251,9 +1341,13 @@ LLVMFuzzerCustomMutator (uint8_t *data, size_t size, size_t max_size,
  * Custom crossover that respects frame boundaries.
  */
 size_t
-LLVMFuzzerCustomCrossOver (const uint8_t *data1, size_t size1,
-                           const uint8_t *data2, size_t size2, uint8_t *out,
-                           size_t max_out_size, unsigned int seed)
+LLVMFuzzerCustomCrossOver (const uint8_t *data1,
+                           size_t size1,
+                           const uint8_t *data2,
+                           size_t size2,
+                           uint8_t *out,
+                           size_t max_out_size,
+                           unsigned int seed)
 {
   if (size1 < 2 || size2 < 2 || max_out_size < 2)
     {
@@ -1280,7 +1374,8 @@ LLVMFuzzerCustomCrossOver (const uint8_t *data1, size_t size1,
   while (out_pos < max_out_size && (rem1 >= 9 || rem2 >= 9))
     {
       /* Choose source based on random and availability */
-      int use_src1 = (rem1 >= 9) && ((rem2 < 9) || (mut_rand (&rand_state) & 1));
+      int use_src1
+          = (rem1 >= 9) && ((rem2 < 9) || (mut_rand (&rand_state) & 1));
 
       const uint8_t *src = use_src1 ? src1 : src2;
       size_t *rem = use_src1 ? &rem1 : &rem2;
@@ -1376,15 +1471,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * - Stream hash table creation failures
      *
      * For fuzzing, we catch and continue to avoid blocking coverage. */
-    state.conn
-        = SocketHTTP2_Conn_new (state.client_sock, &config, state.arena);
+    state.conn = SocketHTTP2_Conn_new (state.client_sock, &config, state.arena);
 
     if (state.conn)
       {
         debug_conn_created++;
 
         /* Force connection into READY state for effective fuzzing.
-         * This bypasses handshake requirements to test core frame processing. */
+         * This bypasses handshake requirements to test core frame processing.
+         */
         state.conn->state = HTTP2_CONN_STATE_READY;
         state.conn->settings_ack_pending = 0;
         state.handshake_complete = 1;
@@ -1424,20 +1519,25 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 }
             }
         }
-        EXCEPT (SocketHTTP2_ProtocolError) { }
-        EXCEPT (SocketHTTP2_StreamError) { }
+        EXCEPT (SocketHTTP2_ProtocolError)
+        {
+        }
+        EXCEPT (SocketHTTP2_StreamError)
+        {
+        }
         END_TRY;
 
         /* Primary fuzzing mode: inject remaining data as raw HTTP/2 frames
-         * and process them. This exercises the frame parsing and state machine. */
+         * and process them. This exercises the frame parsing and state machine.
+         */
         if (state.size > 0)
           {
             /* Inject all remaining fuzz data directly into receive buffer */
             size_t to_inject = state.size;
             if (to_inject > 0 && state.conn->recv_buf)
               {
-                size_t written = SocketBuf_write (state.conn->recv_buf,
-                                                   state.data, to_inject);
+                size_t written = SocketBuf_write (
+                    state.conn->recv_buf, state.data, to_inject);
                 if (written > 0)
                   debug_data_injected++;
                 state.data += to_inject;
@@ -1479,7 +1579,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           hdr.flags = 0;
           hdr.length = 4;
           hdr.stream_id = 0;
-          payload[0] = 0; payload[1] = 0; payload[2] = 0x10; payload[3] = 0; /* increment 4096 */
+          payload[0] = 0;
+          payload[1] = 0;
+          payload[2] = 0x10;
+          payload[3] = 0; /* increment 4096 */
           http2_process_frame (state.conn, &hdr, payload);
 
           /* RST_STREAM frame (type 3) - stream level */
@@ -1489,18 +1592,31 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               hdr.flags = 0;
               hdr.length = 4;
               hdr.stream_id = SocketHTTP2_Stream_id (state.streams[0]);
-              payload[0] = 0; payload[1] = 0; payload[2] = 0; payload[3] = 8; /* CANCEL */
+              payload[0] = 0;
+              payload[1] = 0;
+              payload[2] = 0;
+              payload[3] = 8; /* CANCEL */
               http2_process_frame (state.conn, &hdr, payload);
             }
         }
-        EXCEPT (SocketHTTP2_ProtocolError) { }
-        EXCEPT (SocketHTTP2_StreamError) { }
-        EXCEPT (SocketHTTP2_FlowControlError) { }
-        EXCEPT (SocketHTTP2_Failed) { }
+        EXCEPT (SocketHTTP2_ProtocolError)
+        {
+        }
+        EXCEPT (SocketHTTP2_StreamError)
+        {
+        }
+        EXCEPT (SocketHTTP2_FlowControlError)
+        {
+        }
+        EXCEPT (SocketHTTP2_Failed)
+        {
+        }
         END_TRY;
 
-        /* Alternative: operation-based fuzzing using first byte as mode selector */
-        /* This is disabled by default but can be enabled for more structured fuzzing */
+        /* Alternative: operation-based fuzzing using first byte as mode
+         * selector */
+        /* This is disabled by default but can be enabled for more structured
+         * fuzzing */
 #if 0
         while (state.size > 0 && !SocketHTTP2_Conn_is_closed (state.conn))
           {
@@ -1513,14 +1629,30 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketHTTP2_Conn_free (&state.conn);
       }
   }
-  EXCEPT (SocketHTTP2_ProtocolError) { /* Expected during fuzzing */ }
-  EXCEPT (SocketHTTP2_StreamError) { /* Expected */ }
-  EXCEPT (SocketHTTP2_FlowControlError) { /* Expected */ }
-  EXCEPT (SocketHTTP2_Failed) { /* Expected */ }
-  EXCEPT (SocketHTTP2) { /* Base HTTP/2 exception */ }
-  EXCEPT (Socket_Failed) { /* Socket errors expected */ }
-  EXCEPT (Socket_Closed) { /* Connection closed */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  { /* Expected during fuzzing */
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP2_Failed)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP2)
+  { /* Base HTTP/2 exception */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Socket errors expected */
+  }
+  EXCEPT (Socket_Closed)
+  { /* Connection closed */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 
   /* Cleanup */
@@ -1539,8 +1671,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       fprintf (stderr,
                "DEBUG: runs=%zu conn_ok=%zu conn_fail=%zu inject=%zu "
                "frames_ok=%zu frames_fail=%zu\n",
-               run_count, debug_conn_created, debug_conn_failed,
-               debug_data_injected, debug_frames_processed, debug_frames_failed);
+               run_count,
+               debug_conn_created,
+               debug_conn_failed,
+               debug_data_injected,
+               debug_frames_processed,
+               debug_frames_failed);
     }
 
   return 0;

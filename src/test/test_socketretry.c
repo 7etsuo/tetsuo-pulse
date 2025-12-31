@@ -190,7 +190,10 @@ TEST (socketretry_new_invalid_policy_negative_attempts)
     SocketRetry_T retry = SocketRetry_new (&bad);
     (void)retry;
   }
-  EXCEPT (SocketRetry_Failed) { raised = 1; }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -209,7 +212,10 @@ TEST (socketretry_new_invalid_policy_bad_multiplier)
     SocketRetry_T retry = SocketRetry_new (&bad);
     (void)retry;
   }
-  EXCEPT (SocketRetry_Failed) { raised = 1; }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -228,7 +234,10 @@ TEST (socketretry_new_invalid_policy_bad_jitter)
     SocketRetry_T retry = SocketRetry_new (&bad);
     (void)retry;
   }
-  EXCEPT (SocketRetry_Failed) { raised = 1; }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -355,7 +364,8 @@ TEST (socketretry_execute_simple)
   TRY
   {
     retry = SocketRetry_new (&policy);
-    int result = SocketRetry_execute_simple (retry, op_succeed_on_attempt, &ctx);
+    int result
+        = SocketRetry_execute_simple (retry, op_succeed_on_attempt, &ctx);
 
     ASSERT_EQ (result, 0);
     ASSERT_EQ (ctx.attempts_made, 2);
@@ -417,8 +427,8 @@ TEST (socketretry_execute_with_should_retry_selective)
   TRY
   {
     retry = SocketRetry_new (&policy);
-    int result = SocketRetry_execute (retry, op_always_fail,
-                                      should_retry_eagain_only, &ctx);
+    int result = SocketRetry_execute (
+        retry, op_always_fail, should_retry_eagain_only, &ctx);
 
     ASSERT_EQ (result, ECONNREFUSED);
     ASSERT_EQ (ctx.attempts_made, 1); /* Stopped after first - not EAGAIN */
@@ -567,14 +577,16 @@ TEST (socketretry_reset_allows_reuse)
 
     /* First use */
     TestOpContext ctx1 = { .succeed_on_attempt = 2 };
-    int result1 = SocketRetry_execute (retry, op_succeed_on_attempt, NULL, &ctx1);
+    int result1
+        = SocketRetry_execute (retry, op_succeed_on_attempt, NULL, &ctx1);
     ASSERT_EQ (result1, 0);
 
     /* Reset and reuse */
     SocketRetry_reset (retry);
 
     TestOpContext ctx2 = { .succeed_on_attempt = 3 };
-    int result2 = SocketRetry_execute (retry, op_succeed_on_attempt, NULL, &ctx2);
+    int result2
+        = SocketRetry_execute (retry, op_succeed_on_attempt, NULL, &ctx2);
     ASSERT_EQ (result2, 0);
 
     SocketRetry_Stats stats;
@@ -637,8 +649,14 @@ TEST (socketretry_set_policy_invalid_raises)
     SocketRetry_policy_defaults (&bad);
     bad.max_attempts = -1; /* Invalid */
 
-    TRY { SocketRetry_set_policy (retry, &bad); }
-    EXCEPT (SocketRetry_Failed) { raised = 1; }
+    TRY
+    {
+      SocketRetry_set_policy (retry, &bad);
+    }
+    EXCEPT (SocketRetry_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
   }
   FINALLY

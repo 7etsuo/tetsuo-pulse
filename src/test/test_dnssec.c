@@ -20,20 +20,20 @@
  */
 TEST (dnskey_parse)
 {
-  unsigned char dnskey_rdata[] = {
-      0x01, 0x01, /* Flags: 257 (KSK) */
-      0x03,       /* Protocol: 3 */
-      0x08,       /* Algorithm: 8 (RSA/SHA-256) */
-      0x03, 0x01, 0x00, 0x01, /* Exponent: 65537 */
-      0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89,
-      0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78};
+  unsigned char dnskey_rdata[]
+      = { 0x01, 0x01,             /* Flags: 257 (KSK) */
+          0x03,                   /* Protocol: 3 */
+          0x08,                   /* Algorithm: 8 (RSA/SHA-256) */
+          0x03, 0x01, 0x00, 0x01, /* Exponent: 65537 */
+          0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89,
+          0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78 };
 
-  SocketDNS_RR rr = {.name = "example.com",
-                     .type = DNS_TYPE_DNSKEY,
-                     .rclass = DNS_CLASS_IN,
-                     .ttl = 3600,
-                     .rdlength = sizeof (dnskey_rdata),
-                     .rdata = dnskey_rdata};
+  SocketDNS_RR rr = { .name = "example.com",
+                      .type = DNS_TYPE_DNSKEY,
+                      .rclass = DNS_CLASS_IN,
+                      .ttl = 3600,
+                      .rdlength = sizeof (dnskey_rdata),
+                      .rdata = dnskey_rdata };
 
   SocketDNSSEC_DNSKEY dnskey;
   int ret = SocketDNSSEC_parse_dnskey (&rr, &dnskey);
@@ -51,15 +51,14 @@ TEST (dnskey_parse)
  */
 TEST (dnskey_flags)
 {
-  unsigned char zsk_rdata[] = {
-      0x01, 0x00, /* Flags: 256 (ZONE) */
-      0x03,       /* Protocol: 3 */
-      0x08,       /* Algorithm: 8 */
-      0x00, 0x00, 0x00, 0x01};
+  unsigned char zsk_rdata[] = { 0x01, 0x00, /* Flags: 256 (ZONE) */
+                                0x03,       /* Protocol: 3 */
+                                0x08,       /* Algorithm: 8 */
+                                0x00, 0x00, 0x00, 0x01 };
 
-  SocketDNS_RR rr = {.type = DNS_TYPE_DNSKEY,
-                     .rdlength = sizeof (zsk_rdata),
-                     .rdata = zsk_rdata};
+  SocketDNS_RR rr = { .type = DNS_TYPE_DNSKEY,
+                      .rdlength = sizeof (zsk_rdata),
+                      .rdata = zsk_rdata };
 
   SocketDNSSEC_DNSKEY dnskey;
   int ret = SocketDNSSEC_parse_dnskey (&rr, &dnskey);
@@ -74,15 +73,14 @@ TEST (dnskey_flags)
  */
 TEST (dnskey_invalid_protocol)
 {
-  unsigned char bad_proto[] = {
-      0x01, 0x01, /* Flags: 257 */
-      0x02,       /* Protocol: 2 (INVALID) */
-      0x08,       /* Algorithm: 8 */
-      0x00, 0x00, 0x00, 0x01};
+  unsigned char bad_proto[] = { 0x01, 0x01, /* Flags: 257 */
+                                0x02,       /* Protocol: 2 (INVALID) */
+                                0x08,       /* Algorithm: 8 */
+                                0x00, 0x00, 0x00, 0x01 };
 
-  SocketDNS_RR rr = {.type = DNS_TYPE_DNSKEY,
-                     .rdlength = sizeof (bad_proto),
-                     .rdata = bad_proto};
+  SocketDNS_RR rr = { .type = DNS_TYPE_DNSKEY,
+                      .rdlength = sizeof (bad_proto),
+                      .rdata = bad_proto };
 
   SocketDNSSEC_DNSKEY dnskey;
   int ret = SocketDNSSEC_parse_dnskey (&rr, &dnskey);
@@ -95,20 +93,20 @@ TEST (dnskey_invalid_protocol)
  */
 TEST (ds_parse)
 {
-  unsigned char ds_rdata[] = {
-      0x12, 0x34, /* Key Tag: 0x1234 */
-      0x08,       /* Algorithm: 8 */
-      0x02,       /* Digest Type: 2 (SHA-256) */
-      0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
-      0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20};
+  unsigned char ds_rdata[]
+      = { 0x12, 0x34, /* Key Tag: 0x1234 */
+          0x08,       /* Algorithm: 8 */
+          0x02,       /* Digest Type: 2 (SHA-256) */
+          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+          0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+          0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20 };
 
-  SocketDNS_RR rr = {.name = "example.com",
-                     .type = DNS_TYPE_DS,
-                     .rclass = DNS_CLASS_IN,
-                     .ttl = 3600,
-                     .rdlength = sizeof (ds_rdata),
-                     .rdata = ds_rdata};
+  SocketDNS_RR rr = { .name = "example.com",
+                      .type = DNS_TYPE_DS,
+                      .rclass = DNS_CLASS_IN,
+                      .ttl = 3600,
+                      .rdlength = sizeof (ds_rdata),
+                      .rdata = ds_rdata };
 
   SocketDNSSEC_DS ds;
   int ret = SocketDNSSEC_parse_ds (&rr, &ds);
@@ -125,16 +123,16 @@ TEST (ds_parse)
  */
 TEST (ds_sha1)
 {
-  unsigned char ds_rdata[] = {
-      0x00, 0x01, /* Key Tag: 1 */
-      0x05,       /* Algorithm: 5 (RSA/SHA-1) */
-      0x01,       /* Digest Type: 1 (SHA-1) */
-      0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-      0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
+  unsigned char ds_rdata[]
+      = { 0x00, 0x01, /* Key Tag: 1 */
+          0x05,       /* Algorithm: 5 (RSA/SHA-1) */
+          0x01,       /* Digest Type: 1 (SHA-1) */
+          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+          0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14 };
 
-  SocketDNS_RR rr = {.type = DNS_TYPE_DS,
-                     .rdlength = sizeof (ds_rdata),
-                     .rdata = ds_rdata};
+  SocketDNS_RR rr = { .type = DNS_TYPE_DS,
+                      .rdlength = sizeof (ds_rdata),
+                      .rdata = ds_rdata };
 
   SocketDNSSEC_DS ds;
   int ret = SocketDNSSEC_parse_ds (&rr, &ds);
@@ -149,15 +147,15 @@ TEST (ds_sha1)
  */
 TEST (ds_invalid_digest_len)
 {
-  unsigned char ds_rdata[] = {0x00, 0x01, 0x08, 0x02, /* SHA-256 type */
-                              0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                              0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-                              0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
-                              0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B};
+  unsigned char ds_rdata[]
+      = { 0x00, 0x01, 0x08, 0x02, /* SHA-256 type */
+          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+          0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12,
+          0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B };
 
-  SocketDNS_RR rr = {.type = DNS_TYPE_DS,
-                     .rdlength = sizeof (ds_rdata),
-                     .rdata = ds_rdata};
+  SocketDNS_RR rr = { .type = DNS_TYPE_DS,
+                      .rdlength = sizeof (ds_rdata),
+                      .rdata = ds_rdata };
 
   SocketDNSSEC_DS ds;
   int ret = SocketDNSSEC_parse_ds (&rr, &ds);
@@ -170,14 +168,13 @@ TEST (ds_invalid_digest_len)
  */
 TEST (keytag_calculation)
 {
-  unsigned char dnskey_rdata[] = {
-      0x01, 0x01, /* Flags: 257 */
-      0x03,       /* Protocol: 3 */
-      0x08,       /* Algorithm: 8 */
-      0x03, 0x01, 0x00, 0x01};
+  unsigned char dnskey_rdata[] = { 0x01, 0x01, /* Flags: 257 */
+                                   0x03,       /* Protocol: 3 */
+                                   0x08,       /* Algorithm: 8 */
+                                   0x03, 0x01, 0x00, 0x01 };
 
-  uint16_t tag = SocketDNSSEC_calculate_keytag (dnskey_rdata,
-                                                 sizeof (dnskey_rdata));
+  uint16_t tag
+      = SocketDNSSEC_calculate_keytag (dnskey_rdata, sizeof (dnskey_rdata));
 
   ASSERT (tag != 0);
 }
@@ -188,15 +185,19 @@ TEST (keytag_calculation)
 TEST (nsec_type_bitmap)
 {
   unsigned char bitmap[] = {
-      0x00, 0x06,             /* Window 0, bitmap length 6 */
-      0x40, 0x00, 0x00, 0x08, /* Bit 1 (A) and bit 28 (AAAA) */
-      0x00, 0x02              /* Bit 46 (RRSIG) */
+    0x00, 0x06,             /* Window 0, bitmap length 6 */
+    0x40, 0x00, 0x00, 0x08, /* Bit 1 (A) and bit 28 (AAAA) */
+    0x00, 0x02              /* Bit 46 (RRSIG) */
   };
 
-  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_A) == 1);
-  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_AAAA) == 1);
-  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_RRSIG) == 1);
-  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_MX) == 0);
+  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_A)
+          == 1);
+  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_AAAA)
+          == 1);
+  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_RRSIG)
+          == 1);
+  ASSERT (SocketDNSSEC_type_in_bitmap (bitmap, sizeof (bitmap), DNS_TYPE_MX)
+          == 0);
 }
 
 /*
@@ -204,10 +205,13 @@ TEST (nsec_type_bitmap)
  */
 TEST (canonical_name_compare)
 {
-  ASSERT (SocketDNSSEC_name_canonical_compare ("Example.COM", "example.com") == 0);
+  ASSERT (SocketDNSSEC_name_canonical_compare ("Example.COM", "example.com")
+          == 0);
   ASSERT (SocketDNSSEC_name_canonical_compare ("com", "example.com") < 0);
   ASSERT (SocketDNSSEC_name_canonical_compare ("aaa.com", "bbb.com") < 0);
-  ASSERT (SocketDNSSEC_name_canonical_compare ("a.example.com", "aa.example.com") < 0);
+  ASSERT (
+      SocketDNSSEC_name_canonical_compare ("a.example.com", "aa.example.com")
+      < 0);
 }
 
 /*
@@ -226,8 +230,8 @@ TEST (canonical_name_fold)
 TEST (rrsig_time_validity)
 {
   SocketDNSSEC_RRSIG rrsig = {
-      .sig_inception = 1700000000,
-      .sig_expiration = 1800000000,
+    .sig_inception = 1700000000,
+    .sig_expiration = 1800000000,
   };
 
   ASSERT (SocketDNSSEC_rrsig_valid_time (&rrsig, 1750000000) == 1);
@@ -265,21 +269,21 @@ TEST (digest_support)
  */
 TEST (nsec3_parse)
 {
-  unsigned char nsec3_rdata[] = {
-      0x01,       /* Hash Algorithm: 1 (SHA-1) */
-      0x00,       /* Flags: 0 */
-      0x00, 0x0A, /* Iterations: 10 */
-      0x04,       /* Salt Length: 4 */
-      0xAB, 0xCD, 0xEF, 0x12, /* Salt */
-      0x14,                   /* Hash Length: 20 */
-      0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-      0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14,
-      0x00, 0x04, /* Window 0, length 4 */
-      0x40, 0x00, 0x00, 0x08};
+  unsigned char nsec3_rdata[]
+      = { 0x01,                   /* Hash Algorithm: 1 (SHA-1) */
+          0x00,                   /* Flags: 0 */
+          0x00, 0x0A,             /* Iterations: 10 */
+          0x04,                   /* Salt Length: 4 */
+          0xAB, 0xCD, 0xEF, 0x12, /* Salt */
+          0x14,                   /* Hash Length: 20 */
+          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+          0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+          0x11, 0x12, 0x13, 0x14, 0x00, 0x04, /* Window 0, length 4 */
+          0x40, 0x00, 0x00, 0x08 };
 
-  SocketDNS_RR rr = {.type = DNS_TYPE_NSEC3,
-                     .rdlength = sizeof (nsec3_rdata),
-                     .rdata = nsec3_rdata};
+  SocketDNS_RR rr = { .type = DNS_TYPE_NSEC3,
+                      .rdlength = sizeof (nsec3_rdata),
+                      .rdata = nsec3_rdata };
 
   SocketDNSSEC_NSEC3 nsec3;
   int ret = SocketDNSSEC_parse_nsec3 (&rr, &nsec3);
@@ -302,53 +306,77 @@ TEST (dnskey_rsa_overflow_attack)
   /* Create DNSKEY structure with malicious RSA public key */
   /* Public key blob has exp_len = 0xFFFF which would cause pointer overflow */
   unsigned char malicious_pubkey[] = {
-      0x00,       /* Exponent length byte = 0 (means use next 2 bytes) */
-      0xFF, 0xFF, /* Exponent length: 65535 (malicious - would cause overflow) */
-      0x01, 0x02, 0x03, 0x04 /* Only 4 bytes of actual data */
+    0x00,       /* Exponent length byte = 0 (means use next 2 bytes) */
+    0xFF, 0xFF, /* Exponent length: 65535 (malicious - would cause overflow) */
+    0x01, 0x02, 0x03, 0x04 /* Only 4 bytes of actual data */
   };
 
-  SocketDNSSEC_DNSKEY dnskey = {
-      .flags = 257,
-      .protocol = 3,
-      .algorithm = DNSSEC_ALGO_RSASHA256,
-      .pubkey = malicious_pubkey,
-      .pubkey_len = sizeof (malicious_pubkey),
-      .key_tag = 0x1234
-  };
+  SocketDNSSEC_DNSKEY dnskey = { .flags = 257,
+                                 .protocol = 3,
+                                 .algorithm = DNSSEC_ALGO_RSASHA256,
+                                 .pubkey = malicious_pubkey,
+                                 .pubkey_len = sizeof (malicious_pubkey),
+                                 .key_tag = 0x1234 };
 
   /* Create minimal RRSIG that passes initial checks */
-  SocketDNSSEC_RRSIG rrsig = {
-      .type_covered = 1, /* A record */
-      .algorithm = DNSSEC_ALGO_RSASHA256,
-      .labels = 2,
-      .original_ttl = 3600,
-      .sig_expiration = 0x7FFFFFFF, /* Far future */
-      .sig_inception = 0, /* Epoch */
-      .key_tag = 0x1234,
-      .signature = (unsigned char *)"dummy",
-      .signature_len = 8
-  };
+  SocketDNSSEC_RRSIG rrsig = { .type_covered = 1, /* A record */
+                               .algorithm = DNSSEC_ALGO_RSASHA256,
+                               .labels = 2,
+                               .original_ttl = 3600,
+                               .sig_expiration = 0x7FFFFFFF, /* Far future */
+                               .sig_inception = 0,           /* Epoch */
+                               .key_tag = 0x1234,
+                               .signature = (unsigned char *)"dummy",
+                               .signature_len = 8 };
 
   /* Minimal DNS message with one RR */
   unsigned char msg[] = {
-      /* DNS Header */
-      0x00, 0x00, /* ID */
-      0x00, 0x00, /* Flags */
-      0x00, 0x00, /* QDCOUNT */
-      0x00, 0x01, /* ANCOUNT = 1 */
-      0x00, 0x00, /* NSCOUNT */
-      0x00, 0x00, /* ARCOUNT */
-      /* Answer RR: example.com A 1.2.3.4 */
-      0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 0x03, 'c', 'o', 'm', 0x00,
-      0x00, 0x01, /* Type A */
-      0x00, 0x01, /* Class IN */
-      0x00, 0x00, 0x0e, 0x10, /* TTL 3600 */
-      0x00, 0x04, /* RDLENGTH 4 */
-      0x01, 0x02, 0x03, 0x04 /* 1.2.3.4 */
+    /* DNS Header */
+    0x00,
+    0x00, /* ID */
+    0x00,
+    0x00, /* Flags */
+    0x00,
+    0x00, /* QDCOUNT */
+    0x00,
+    0x01, /* ANCOUNT = 1 */
+    0x00,
+    0x00, /* NSCOUNT */
+    0x00,
+    0x00, /* ARCOUNT */
+    /* Answer RR: example.com A 1.2.3.4 */
+    0x07,
+    'e',
+    'x',
+    'a',
+    'm',
+    'p',
+    'l',
+    'e',
+    0x03,
+    'c',
+    'o',
+    'm',
+    0x00,
+    0x00,
+    0x01, /* Type A */
+    0x00,
+    0x01, /* Class IN */
+    0x00,
+    0x00,
+    0x0e,
+    0x10, /* TTL 3600 */
+    0x00,
+    0x04, /* RDLENGTH 4 */
+    0x01,
+    0x02,
+    0x03,
+    0x04 /* 1.2.3.4 */
   };
 
   /* Attempt verification - should return DNSSEC_BOGUS due to overflow check */
-  int result = SocketDNSSEC_verify_rrsig (&rrsig, &dnskey, msg, sizeof (msg), 12, 1);
+  int result
+      = SocketDNSSEC_verify_rrsig (&rrsig, &dnskey, msg, sizeof (msg), 12, 1);
 
   /* Should fail with DNSSEC_BOGUS (2) due to bounds check on exp_len */
   ASSERT (result == 2); /* DNSSEC_BOGUS */
@@ -363,40 +391,36 @@ TEST (dnskey_rsa_exponent_oob)
 #ifdef SOCKET_HAS_TLS
   /* Public key where exponent length exceeds remaining buffer */
   unsigned char oob_pubkey[] = {
-      0x10,       /* Exponent length: 16 bytes */
-      0x01, 0x02, 0x03, 0x04, 0x05 /* Only 5 bytes left (needs 16 + modulus) */
+    0x10,                        /* Exponent length: 16 bytes */
+    0x01, 0x02, 0x03, 0x04, 0x05 /* Only 5 bytes left (needs 16 + modulus) */
   };
 
-  SocketDNSSEC_DNSKEY dnskey = {
-      .flags = 257,
-      .protocol = 3,
-      .algorithm = DNSSEC_ALGO_RSASHA256,
-      .pubkey = oob_pubkey,
-      .pubkey_len = sizeof (oob_pubkey),
-      .key_tag = 0x1234
-  };
+  SocketDNSSEC_DNSKEY dnskey = { .flags = 257,
+                                 .protocol = 3,
+                                 .algorithm = DNSSEC_ALGO_RSASHA256,
+                                 .pubkey = oob_pubkey,
+                                 .pubkey_len = sizeof (oob_pubkey),
+                                 .key_tag = 0x1234 };
 
-  SocketDNSSEC_RRSIG rrsig = {
-      .type_covered = 1,
-      .algorithm = DNSSEC_ALGO_RSASHA256,
-      .labels = 2,
-      .original_ttl = 3600,
-      .sig_expiration = 0x7FFFFFFF,
-      .sig_inception = 0,
-      .key_tag = 0x1234,
-      .signature = (unsigned char *)"dummy",
-      .signature_len = 8
-  };
+  SocketDNSSEC_RRSIG rrsig = { .type_covered = 1,
+                               .algorithm = DNSSEC_ALGO_RSASHA256,
+                               .labels = 2,
+                               .original_ttl = 3600,
+                               .sig_expiration = 0x7FFFFFFF,
+                               .sig_inception = 0,
+                               .key_tag = 0x1234,
+                               .signature = (unsigned char *)"dummy",
+                               .signature_len = 8 };
 
-  unsigned char msg[] = {
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
-      0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 0x03, 'c', 'o', 'm', 0x00,
-      0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x0e, 0x10, 0x00, 0x04,
-      0x01, 0x02, 0x03, 0x04
-  };
+  unsigned char msg[]
+      = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+          0x00, 0x00, 0x07, 'e',  'x',  'a',  'm',  'p',  'l',  'e',
+          0x03, 'c',  'o',  'm',  0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+          0x00, 0x0e, 0x10, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04 };
 
   /* Attempt verification - should return DNSSEC_BOGUS */
-  int result = SocketDNSSEC_verify_rrsig (&rrsig, &dnskey, msg, sizeof (msg), 12, 1);
+  int result
+      = SocketDNSSEC_verify_rrsig (&rrsig, &dnskey, msg, sizeof (msg), 12, 1);
 
   /* Should fail with DNSSEC_BOGUS (2) due to exp_len > remaining */
   ASSERT (result == 2); /* DNSSEC_BOGUS */
@@ -427,8 +451,9 @@ TEST (load_anchors_bind_format)
 
   /* Write DNSKEY record (simplified base64 key) */
   fprintf (fp, "; Trust anchor for root zone\n");
-  fprintf (fp, ". IN DNSKEY 257 3 8 "
-               "AwEAAagAIKlVZrpC6Ia7gEzahOR+9W29euxhJhVVLOyQbSEW0O8gcCjF\n");
+  fprintf (fp,
+           ". IN DNSKEY 257 3 8 "
+           "AwEAAagAIKlVZrpC6Ia7gEzahOR+9W29euxhJhVVLOyQbSEW0O8gcCjF\n");
   fprintf (fp, "\n");
 
   /* Write DS record */
@@ -439,8 +464,9 @@ TEST (load_anchors_bind_format)
       "49FD46E6C4B45C55D4AC69CBD3CD34AC1AFE51DE3D5A1D1E1E1F1E1F1E1F1E1F\n");
 
   /* Write entry with optional TTL field */
-  fprintf (fp, "test.org. 3600 IN DNSKEY 256 3 13 "
-               "AQPJ////4Q==\n");
+  fprintf (fp,
+           "test.org. 3600 IN DNSKEY 256 3 13 "
+           "AQPJ////4Q==\n");
 
   fclose (fp);
 

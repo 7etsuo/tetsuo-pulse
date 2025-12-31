@@ -36,11 +36,11 @@
 #define T SocketPool_T
 
 /* Forward declarations - grouped at top for clarity */
-static void release_connection_resources (T pool, Connection_T conn,
-                                          Socket_T socket);
+static void
+release_connection_resources (T pool, Connection_T conn, Socket_T socket);
 static void SocketPool_connections_release_buffers (Connection_T conn);
-static void remove_known_connection (T pool, Connection_T conn,
-                                     Socket_T socket);
+static void
+remove_known_connection (T pool, Connection_T conn, Socket_T socket);
 
 /* ============================================================================
  * Free List Management
@@ -467,8 +467,13 @@ setup_tls_session_resumption (Connection_T conn, Socket_T socket)
 static void
 shutdown_tls_connection (Socket_T socket)
 {
-  TRY { SocketTLS_shutdown (socket); }
-  ELSE { /* Ignore all errors during cleanup */ }
+  TRY
+  {
+    SocketTLS_shutdown (socket);
+  }
+  ELSE
+  { /* Ignore all errors during cleanup */
+  }
   END_TRY;
 }
 
@@ -656,8 +661,9 @@ Connection_T
 SocketPool_add (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
-                    "Invalid NULL pool or socket in SocketPool_add");
+    SOCKET_RAISE_MSG (SocketPool,
+                      SocketPool_Failed,
+                      "Invalid NULL pool or socket in SocketPool_add");
 
   time_t now = safe_time ();
 
@@ -740,7 +746,8 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
     {
       /* Already removed by another thread - assume handled */
       if (!valid)
-        SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+        SocketLog_emitf (SOCKET_LOG_DEBUG,
+                         SOCKET_LOG_COMPONENT,
                          "Validation invalid but connection already removed");
       return 1; /* Treat as valid (gone) */
     }
@@ -750,7 +757,8 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
 
   /* Still invalid and present - remove it */
   pool->stats_validation_failures++;
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
                    "Connection validation callback returned invalid - "
                    "removing");
   remove_known_connection (pool, conn, conn->socket);
@@ -772,8 +780,9 @@ Connection_T
 SocketPool_get (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
-                    "Invalid NULL pool or socket in SocketPool_get");
+    SOCKET_RAISE_MSG (SocketPool,
+                      SocketPool_Failed,
+                      "Invalid NULL pool or socket in SocketPool_get");
 
   time_t now = safe_time ();
 
@@ -790,7 +799,6 @@ SocketPool_get (T pool, Socket_T socket)
           return NULL;
         }
       /* Valid connection - update stats */
-
     }
 
   POOL_UNLOCK (pool);
@@ -908,8 +916,9 @@ void
 SocketPool_remove (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
-                    "Invalid NULL pool or socket in SocketPool_remove");
+    SOCKET_RAISE_MSG (SocketPool,
+                      SocketPool_Failed,
+                      "Invalid NULL pool or socket in SocketPool_remove");
 
   POOL_LOCK (pool);
   remove_unlocked (pool, socket);
@@ -981,8 +990,11 @@ is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
  * Thread-safe: Call with mutex held
  */
 static void
-process_connection_for_cleanup (T pool, Connection_T conn, time_t idle_timeout,
-                                time_t now, size_t *close_count)
+process_connection_for_cleanup (T pool,
+                                Connection_T conn,
+                                time_t idle_timeout,
+                                time_t now,
+                                size_t *close_count)
 {
   validate_saved_session (conn, now);
 
@@ -1007,8 +1019,8 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 
   for (Connection_T conn = pool->active_head; conn != NULL;
        conn = conn->active_next)
-    process_connection_for_cleanup (pool, conn, idle_timeout, now,
-                                    &close_count);
+    process_connection_for_cleanup (
+        pool, conn, idle_timeout, now, &close_count);
 
   return close_count;
 }
@@ -1226,8 +1238,10 @@ check_socket_health (const Connection_T conn)
   const int error = check_socket_error (fd);
   if (error != 0)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Connection health check: SO_ERROR=%d (%s)", error,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
+                       "Connection health check: SO_ERROR=%d (%s)",
+                       error,
                        Socket_safe_strerror (error));
       return POOL_CONN_ERROR;
     }
@@ -1268,8 +1282,10 @@ SocketPool_ConnHealth
 SocketPool_check_connection (T pool, Connection_T conn)
 {
   if (!pool || !conn)
-    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
-                    "Invalid NULL pool or conn in SocketPool_check_connection");
+    SOCKET_RAISE_MSG (
+        SocketPool,
+        SocketPool_Failed,
+        "Invalid NULL pool or conn in SocketPool_check_connection");
 
   SocketPool_ConnHealth res = check_socket_health (conn);
   if (res != POOL_CONN_HEALTHY)

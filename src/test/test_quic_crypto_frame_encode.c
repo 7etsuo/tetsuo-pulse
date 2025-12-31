@@ -73,8 +73,8 @@ TEST (frame_crypto_encode_large_offset)
 
   /* Encode CRYPTO frame with large offset */
   uint64_t large_offset = 1000000;
-  len = SocketQUICFrame_encode_crypto (large_offset, data, 11, buf,
-                                        sizeof (buf));
+  len = SocketQUICFrame_encode_crypto (
+      large_offset, data, 11, buf, sizeof (buf));
 
   ASSERT (len > 0);
   ASSERT_EQ (0x06, buf[0]);
@@ -120,8 +120,8 @@ TEST (frame_crypto_encode_large_data)
     data[i] = (uint8_t)(i % 256);
 
   /* Encode large CRYPTO frame */
-  len = SocketQUICFrame_encode_crypto (100, data, sizeof (data), buf,
-                                        sizeof (buf));
+  len = SocketQUICFrame_encode_crypto (
+      100, data, sizeof (data), buf, sizeof (buf));
 
   ASSERT (len > 0);
   ASSERT_EQ (0x06, buf[0]);
@@ -142,8 +142,7 @@ TEST (frame_crypto_encode_buffer_too_small)
   const uint8_t data[100] = { 0 };
 
   /* Try to encode frame larger than buffer */
-  size_t len
-      = SocketQUICFrame_encode_crypto (0, data, 100, buf, sizeof (buf));
+  size_t len = SocketQUICFrame_encode_crypto (0, data, 100, buf, sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should fail gracefully */
 }
@@ -173,13 +172,13 @@ TEST (frame_crypto_encode_overflow_protection)
 
   /* Test integer overflow protection - SIZE_MAX should cause overflow check to
    * fail */
-  size_t len = SocketQUICFrame_encode_crypto (0, data, SIZE_MAX, buf,
-                                               sizeof (buf));
+  size_t len
+      = SocketQUICFrame_encode_crypto (0, data, SIZE_MAX, buf, sizeof (buf));
   ASSERT_EQ (0, len); /* Should fail due to overflow */
 
   /* Test near-overflow case: SIZE_MAX - small value */
-  len = SocketQUICFrame_encode_crypto (0, data, SIZE_MAX - 10, buf,
-                                        sizeof (buf));
+  len = SocketQUICFrame_encode_crypto (
+      0, data, SIZE_MAX - 10, buf, sizeof (buf));
   ASSERT_EQ (0, len); /* Should fail due to overflow */
 }
 
@@ -258,7 +257,7 @@ TEST (frame_crypto_decode_invalid_type)
 TEST (frame_crypto_decode_truncated)
 {
   /* CRYPTO frame with incomplete header */
-  uint8_t buf1[] = { 0x06 }; /* Just type, no offset */
+  uint8_t buf1[] = { 0x06 };       /* Just type, no offset */
   uint8_t buf2[] = { 0x06, 0x00 }; /* Type + offset, no length */
   SocketQUICFrameCrypto_T frame;
 
@@ -295,12 +294,14 @@ TEST (frame_crypto_decode_error_distinction)
 
   /* Test 2: Wrong frame type error */
   uint8_t wrong_type[] = { 0x01, 0x00 }; /* PING frame */
-  result = SocketQUICFrame_decode_crypto (wrong_type, sizeof (wrong_type), &frame);
+  result
+      = SocketQUICFrame_decode_crypto (wrong_type, sizeof (wrong_type), &frame);
   ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TYPE, result);
 
   /* Test 3: Truncated frame error */
   uint8_t truncated[] = { 0x06 }; /* CRYPTO frame, but no offset */
-  result = SocketQUICFrame_decode_crypto (truncated, sizeof (truncated), &frame);
+  result
+      = SocketQUICFrame_decode_crypto (truncated, sizeof (truncated), &frame);
   ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result);
 
   /* Verify errors are distinct */
@@ -337,8 +338,8 @@ TEST (frame_crypto_offset_encoding)
 
   for (size_t i = 0; i < sizeof (offsets) / sizeof (offsets[0]); i++)
     {
-      size_t len = SocketQUICFrame_encode_crypto (offsets[i], data, 4, buf,
-                                                   sizeof (buf));
+      size_t len = SocketQUICFrame_encode_crypto (
+          offsets[i], data, 4, buf, sizeof (buf));
       ASSERT (len > 0);
 
       SocketQUICFrameCrypto_T frame;

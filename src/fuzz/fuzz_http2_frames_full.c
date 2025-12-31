@@ -24,7 +24,8 @@
  * - PUSH_PROMISE frames (server push)
  * - CONTINUATION frames (header continuation)
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_http2_frames_full
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_http2_frames_full
  * ./fuzz_http2_frames_full corpus/http2_frames/ -fork=16 -max_len=65536
  */
 
@@ -60,8 +61,13 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
  * Build a frame with fuzzed payload
  */
 static size_t
-build_frame (uint8_t *buffer, size_t buffer_size, uint8_t type, uint8_t flags,
-             uint32_t stream_id, const uint8_t *payload, size_t payload_len)
+build_frame (uint8_t *buffer,
+             size_t buffer_size,
+             uint8_t type,
+             uint8_t flags,
+             uint32_t stream_id,
+             const uint8_t *payload,
+             size_t payload_len)
 {
   if (buffer_size < FRAME_HEADER_SIZE + payload_len)
     return 0;
@@ -99,7 +105,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   size_t frame_size;
   SocketHPACK_Decoder_T hpack_decoder = NULL;
 
-  /* Require minimum input: 1 byte selector + 1 byte flags + 4 bytes stream_id */
+  /* Require minimum input: 1 byte selector + 1 byte flags + 4 bytes stream_id
+   */
   if (size < 6)
     return 0;
 
@@ -111,11 +118,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   Arena_clear (g_arena);
 
   /* Select ONE frame type based on first input byte */
-  uint8_t frame_types[] = {
-      HTTP2_FRAME_DATA,       HTTP2_FRAME_HEADERS,     HTTP2_FRAME_PRIORITY,
-      HTTP2_FRAME_RST_STREAM, HTTP2_FRAME_SETTINGS,    HTTP2_FRAME_PUSH_PROMISE,
-      HTTP2_FRAME_PING,       HTTP2_FRAME_GOAWAY,      HTTP2_FRAME_WINDOW_UPDATE,
-      HTTP2_FRAME_CONTINUATION};
+  uint8_t frame_types[]
+      = { HTTP2_FRAME_DATA,          HTTP2_FRAME_HEADERS,
+          HTTP2_FRAME_PRIORITY,      HTTP2_FRAME_RST_STREAM,
+          HTTP2_FRAME_SETTINGS,      HTTP2_FRAME_PUSH_PROMISE,
+          HTTP2_FRAME_PING,          HTTP2_FRAME_GOAWAY,
+          HTTP2_FRAME_WINDOW_UPDATE, HTTP2_FRAME_CONTINUATION };
   uint8_t frame_type = frame_types[data[0] % 10];
 
   /* Get flags and stream_id from fuzz data */
@@ -135,15 +143,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     hpack_decoder = SocketHPACK_Decoder_new (NULL, g_arena);
 
     /* Build frame with fuzzed payload */
-    frame_size = build_frame (frame_buffer, sizeof (frame_buffer), frame_type,
-                              flags, stream_id, payload_data, payload_size);
+    frame_size = build_frame (frame_buffer,
+                              sizeof (frame_buffer),
+                              frame_type,
+                              flags,
+                              stream_id,
+                              payload_data,
+                              payload_size);
 
     if (frame_size > 0)
       {
         /* Parse frame header */
         SocketHTTP2_FrameHeader header;
-        int parse_result
-            = SocketHTTP2_frame_header_parse (frame_buffer, frame_size, &header);
+        int parse_result = SocketHTTP2_frame_header_parse (
+            frame_buffer, frame_size, &header);
 
         if (parse_result == 0)
           {
@@ -166,9 +179,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   {
                     SocketHPACK_Header headers[16];
                     size_t header_count = 0;
-                    SocketHPACK_Decoder_decode (hpack_decoder, payload,
-                                                payload_len, headers, 16,
-                                                &header_count, g_arena);
+                    SocketHPACK_Decoder_decode (hpack_decoder,
+                                                payload,
+                                                payload_len,
+                                                headers,
+                                                16,
+                                                &header_count,
+                                                g_arena);
                   }
                 break;
 
@@ -234,9 +251,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   {
                     SocketHPACK_Header headers[16];
                     size_t header_count = 0;
-                    SocketHPACK_Decoder_decode (hpack_decoder, payload + 4,
-                                                payload_len - 4, headers, 16,
-                                                &header_count, g_arena);
+                    SocketHPACK_Decoder_decode (hpack_decoder,
+                                                payload + 4,
+                                                payload_len - 4,
+                                                headers,
+                                                16,
+                                                &header_count,
+                                                g_arena);
                   }
                 break;
 
@@ -250,9 +271,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (hpack_decoder)
       SocketHPACK_Decoder_free (&hpack_decoder);
   }
-  EXCEPT (SocketHTTP2_ProtocolError) {}
-  EXCEPT (SocketHPACK_Error) {}
-  EXCEPT (Arena_Failed) {}
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+  }
+  EXCEPT (SocketHPACK_Error)
+  {
+  }
+  EXCEPT (Arena_Failed)
+  {
+  }
   END_TRY;
 
   return 0;

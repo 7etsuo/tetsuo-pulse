@@ -168,8 +168,7 @@ extern const Except_T SocketCommon_Failed;
  * @see Socket_bind() and Socket_connect() which use similar setup internally
  * @see docs/ASYNC_IO.md for advanced resolution patterns with SocketDNS
  */
-void SocketCommon_setup_hints (struct addrinfo *hints, int socktype,
-                               int flags);
+void SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags);
 
 /**
  * @brief Resolve hostname/port to addrinfo structure using getaddrinfo
@@ -201,10 +200,12 @@ void SocketCommon_setup_hints (struct addrinfo *hints, int socktype,
  * @see freeaddrinfo(3) for cleaning up resolved structures.
  * @see docs/ERROR_HANDLING.md for exception patterns in network code.
  */
-int SocketCommon_resolve_address (const char *host, int port,
+int SocketCommon_resolve_address (const char *host,
+                                  int port,
                                   const struct addrinfo *hints,
                                   struct addrinfo **res,
-                                  Except_T exception_type, int socket_family,
+                                  Except_T exception_type,
+                                  int socket_family,
                                   int use_exceptions);
 
 /**
@@ -334,8 +335,7 @@ void SocketCommon_validate_port (int port, Except_T exception_type);
  * @see SocketCommon_resolve_address() internal caller
  * @see SocketConfig.h SOCKET_MAX_HOSTNAME_LEN constant
  */
-void SocketCommon_validate_hostname (const char *host,
-                                     Except_T exception_type);
+void SocketCommon_validate_hostname (const char *host, Except_T exception_type);
 
 /**
  * @brief Normalize wildcard/any-address host strings to NULL for internal use.
@@ -485,8 +485,10 @@ const char *SocketCommon_normalize_wildcard_host (const char *host);
  * @see Socket_getlocaladdr/port, Socket_getpeeraddr/port public wrappers
  * @see core/Arena.h for allocation management
  */
-int SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
-                                 socklen_t addrlen, char **addr_out,
+int SocketCommon_cache_endpoint (Arena_T arena,
+                                 const struct sockaddr *addr,
+                                 socklen_t addrlen,
+                                 char **addr_out,
                                  int *port_out);
 
 /**
@@ -572,8 +574,8 @@ int SocketCommon_has_cloexec (int fd);
  * @throws Specified exception type on failure
  * @note Thread-safe: Yes (operates on single fd)
  */
-int SocketCommon_getoption_int (int fd, int level, int optname, int *value,
-                                Except_T exception_type);
+int SocketCommon_getoption_int (
+    int fd, int level, int optname, int *value, Except_T exception_type);
 
 /**
  * @brief Get timeval socket option
@@ -587,7 +589,9 @@ int SocketCommon_getoption_int (int fd, int level, int optname, int *value,
  * @throws Specified exception type on failure
  * @note Thread-safe: Yes (operates on single fd)
  */
-int SocketCommon_getoption_timeval (int fd, int level, int optname,
+int SocketCommon_getoption_timeval (int fd,
+                                    int level,
+                                    int optname,
                                     struct timeval *tv,
                                     Except_T exception_type);
 
@@ -609,9 +613,12 @@ int SocketCommon_getoption_timeval (int fd, int level, int optname,
  * @note Use NI_NUMERICHOST flag to get numeric IP address instead of hostname.
  */
 int SocketCommon_reverse_lookup (const struct sockaddr *addr,
-                                 socklen_t addrlen, char *host,
-                                 socklen_t hostlen, char *serv,
-                                 socklen_t servlen, int flags,
+                                 socklen_t addrlen,
+                                 char *host,
+                                 socklen_t hostlen,
+                                 char *serv,
+                                 socklen_t servlen,
+                                 int flags,
                                  Except_T exception_type);
 
 /**
@@ -697,9 +704,8 @@ extern void SocketCommon_free_base (SocketBase_T *base_ptr);
  * setsockopt calls
  * @note Thread-safe: Yes for own resources
  */
-extern void SocketCommon_set_option_int (SocketBase_T base, int level,
-                                         int optname, int value,
-                                         Except_T exc_type);
+extern void SocketCommon_set_option_int (
+    SocketBase_T base, int level, int optname, int value, Except_T exc_type);
 
 /**
  * @brief Set TTL or hop limit based on family
@@ -710,7 +716,9 @@ extern void SocketCommon_set_option_int (SocketBase_T base, int level,
  * @param exc_type Raise on fail
  * @note Unifies set_ipv4_ttl and set_ipv6_hop_limit
  */
-extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl,
+extern void SocketCommon_set_ttl (SocketBase_T base,
+                                  int family,
+                                  int ttl,
                                   Except_T exc_type);
 
 /**
@@ -724,7 +732,8 @@ extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl,
  * @note Handles resolution, interface setup, family-specific mreq
  * @note Thread-safe for own fd
  */
-extern void SocketCommon_join_multicast (SocketBase_T base, const char *group,
+extern void SocketCommon_join_multicast (SocketBase_T base,
+                                         const char *group,
                                          const char *interface,
                                          Except_T exc_type);
 
@@ -737,7 +746,8 @@ extern void SocketCommon_join_multicast (SocketBase_T base, const char *group,
  * @param exc_type Exception to raise on failure
  * @note Symmetric to join; drops membership via setsockopt
  */
-extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group,
+extern void SocketCommon_leave_multicast (SocketBase_T base,
+                                          const char *group,
                                           const char *interface,
                                           Except_T exc_type);
 
@@ -749,8 +759,8 @@ extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group,
  * @param exc_type Raise on fail
  * @note Unifies duplicated fcntl calls for O_NONBLOCK
  */
-extern void SocketCommon_set_nonblock (SocketBase_T base, bool enable,
-                                       Except_T exc_type);
+extern void
+SocketCommon_set_nonblock (SocketBase_T base, bool enable, Except_T exc_type);
 
 /**
  * @brief Calculate total length of iovec array with overflow protection
@@ -762,8 +772,8 @@ extern void SocketCommon_set_nonblock (SocketBase_T base, bool enable,
  * @note Thread-safe: Yes
  * @note Unifies duplicated calculation loops across modules
  */
-extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov,
-                                                    int iovcnt);
+extern size_t
+SocketCommon_calculate_total_iov_len (const struct iovec *iov, int iovcnt);
 
 /**
  * @brief Validate iovec array base pointers are non-NULL for positive lengths
@@ -774,8 +784,8 @@ extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov,
  * @note Thread-safe: Yes (read-only validation)
  * @note Unifies duplicated NULL validation in SocketIO sendv/recvv operations
  */
-extern void SocketCommon_validate_iov_bases (const struct iovec *iov,
-                                             int iovcnt);
+extern void
+SocketCommon_validate_iov_bases (const struct iovec *iov, int iovcnt);
 
 /**
  * @brief Advance iovec array past sent/received bytes (modifies in place)
@@ -789,8 +799,8 @@ extern void SocketCommon_validate_iov_bases (const struct iovec *iov,
  * @note Thread-safe: Yes (local ops)
  * @note Unifies duplicated advance logic for sendvall/recvvall
  */
-extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt,
-                                      size_t bytes);
+extern void
+SocketCommon_advance_iov (struct iovec *iov, int iovcnt, size_t bytes);
 
 /**
  * @brief Find first non-empty iovec in array
@@ -848,8 +858,8 @@ extern struct iovec *SocketCommon_alloc_iov_copy (const struct iovec *iov,
  * @note Uses fcntl F_SETFD; called after socket()/socketpair()/accept()
  * fallback
  */
-extern void SocketCommon_set_cloexec_fd (int fd, bool enable,
-                                         Except_T exc_type);
+extern void
+SocketCommon_set_cloexec_fd (int fd, bool enable, Except_T exc_type);
 
 /**
  * @brief Try bind fd to address (extracted from Socket.c)
@@ -892,7 +902,8 @@ extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base,
  * @note Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal
  * raise
  */
-extern int SocketCommon_handle_bind_error (int err, const char *addr_str,
+extern int SocketCommon_handle_bind_error (int err,
+                                           const char *addr_str,
                                            Except_T exc_type);
 
 /**
@@ -933,8 +944,8 @@ extern int SocketCommon_get_socket_family (SocketBase_T base);
  * @throws Specified exception type if host is NULL
  * @note Thread-safe: Yes
  */
-extern void SocketCommon_validate_host_not_null (const char *host,
-                                                 Except_T exception_type);
+extern void
+SocketCommon_validate_host_not_null (const char *host, Except_T exception_type);
 
 /**
  * @brief Deep copy of addrinfo linked list
@@ -949,8 +960,7 @@ extern void SocketCommon_validate_host_not_null (const char *host,
  * @note No exceptions raised; returns NULL on malloc failure or src==NULL.
  * @note Thread-safe: Yes
  */
-extern struct addrinfo *
-SocketCommon_copy_addrinfo (const struct addrinfo *src);
+extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
 
 /**
  * @brief Free addrinfo chain created by copy_addrinfo
@@ -1103,9 +1113,9 @@ struct SocketLiveCount
  * @see struct SocketLiveCount for field details.
  * @see SocketLiveCount_increment(), SocketLiveCount_decrement() for usage.
  */
-#define SOCKETLIVECOUNT_STATIC_INIT                                           \
-  {                                                                           \
-    0, PTHREAD_MUTEX_INITIALIZER                                              \
+#define SOCKETLIVECOUNT_STATIC_INIT \
+  {                                 \
+    0, PTHREAD_MUTEX_INITIALIZER    \
   }
 
 /**
@@ -1335,8 +1345,8 @@ extern int SocketCommon_wait_for_fd (int fd, short events, int timeout_ms);
  * @see SocketHappyEyeballs for usage in connection racing
  * @see dns/SocketDNSResolver.h for SocketDNSResolver_Result type
  */
-extern struct addrinfo *SocketCommon_resolver_to_addrinfo (const void *result,
-                                                           int port);
+extern struct addrinfo *
+SocketCommon_resolver_to_addrinfo (const void *result, int port);
 
 /**
  * @brief Free addrinfo list created by SocketCommon_resolver_to_addrinfo
@@ -1375,7 +1385,8 @@ extern struct addrinfo *SocketCommon_resolver_to_addrinfo (const void *result,
 extern void SocketCommon_free_resolver_addrinfo (struct addrinfo *ai);
 
 /**
- * @brief Shutdown global resources (e.g., DNS resolver) to prevent leaks in tests
+ * @brief Shutdown global resources (e.g., DNS resolver) to prevent leaks in
+ * tests
  * @ingroup core_io
  * Call at program exit after all operations complete.
  * @threadsafe Yes - but call from main thread only.

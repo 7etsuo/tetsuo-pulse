@@ -204,8 +204,7 @@ hpack_validate_header_ptr (SocketHPACK_Header *header, const char *func)
 {
   if (header == NULL)
     {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK %s: NULL output header pointer",
-                            func);
+      SOCKET_LOG_ERROR_MSG ("SocketHPACK %s: NULL output header pointer", func);
       return HPACK_ERROR;
     }
   return HPACK_OK;
@@ -217,7 +216,8 @@ hpack_validate_table_index (const SocketHPACK_Table_T table, size_t index)
   if (index == 0 || index > table->count)
     {
       SOCKET_LOG_WARN_MSG (
-          "SocketHPACK Table_get: invalid index %zu (valid range 1-%zu)", index,
+          "SocketHPACK Table_get: invalid index %zu (valid range 1-%zu)",
+          index,
           table->count);
       return HPACK_ERROR_INVALID_INDEX;
     }
@@ -225,7 +225,8 @@ hpack_validate_table_index (const SocketHPACK_Table_T table, size_t index)
   if (index - 1 >= table->capacity)
     {
       SOCKET_LOG_ERROR_MSG (
-          "SocketHPACK Table_get: offset %zu exceeds capacity %zu", index - 1,
+          "SocketHPACK Table_get: offset %zu exceeds capacity %zu",
+          index - 1,
           table->capacity);
       return HPACK_ERROR_INVALID_INDEX;
     }
@@ -251,7 +252,8 @@ hpack_populate_header_from_dynamic (const HPACK_DynamicEntry *entry,
   header->never_index = 0;
 }
 
-/* Case-insensitive comparison with explicit lengths (ASCII, for HTTP headers) */
+/* Case-insensitive comparison with explicit lengths (ASCII, for HTTP headers)
+ */
 static int
 hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
 {
@@ -271,9 +273,13 @@ hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
 /* Match entry against name and optionally value.
  * Returns: 1=exact match, 0=name-only match, -1=no match */
 static int
-hpack_match_entry (const char *entry_name, size_t entry_name_len,
-                   const char *entry_value, size_t entry_value_len,
-                   const char *name, size_t name_len, const char *value,
+hpack_match_entry (const char *entry_name,
+                   size_t entry_name_len,
+                   const char *entry_value,
+                   size_t entry_value_len,
+                   const char *name,
+                   size_t name_len,
+                   const char *value,
                    size_t value_len)
 {
   if (entry_name_len != name_len)
@@ -292,9 +298,12 @@ hpack_match_entry (const char *entry_name, size_t entry_name_len,
 }
 
 static SocketHPACK_Result
-hpack_duplicate_header_strings (Arena_T arena, const char *name,
-                                size_t name_len, const char *value,
-                                size_t value_len, char **name_out,
+hpack_duplicate_header_strings (Arena_T arena,
+                                const char *name,
+                                size_t name_len,
+                                const char *value,
+                                size_t value_len,
+                                char **name_out,
                                 char **value_out)
 {
   assert (arena != NULL);
@@ -349,8 +358,11 @@ hpack_table_clear (SocketHPACK_Table_T table)
 }
 
 static SocketHPACK_Result
-hpack_dynamic_entry_init (Arena_T arena, const char *name, size_t name_len,
-                          const char *value, size_t value_len,
+hpack_dynamic_entry_init (Arena_T arena,
+                          const char *name,
+                          size_t name_len,
+                          const char *value,
+                          size_t value_len,
                           HPACK_DynamicEntry *entry)
 {
   SocketHPACK_Result res;
@@ -358,13 +370,14 @@ hpack_dynamic_entry_init (Arena_T arena, const char *name, size_t name_len,
   assert (arena != NULL);
   assert (entry != NULL);
 
-  res = hpack_duplicate_header_strings (arena, name, name_len, value,
-                                        value_len, &entry->name, &entry->value);
+  res = hpack_duplicate_header_strings (
+      arena, name, name_len, value, value_len, &entry->name, &entry->value);
   if (res != HPACK_OK)
     {
       SOCKET_LOG_ERROR_MSG ("SocketHPACK: hpack_dynamic_entry_init failed - "
                             "%s (name_len=%zu, value_len=%zu)",
-                            SocketHPACK_result_string (res), name_len,
+                            SocketHPACK_result_string (res),
+                            name_len,
                             value_len);
       return res;
     }
@@ -408,7 +421,8 @@ hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
           SOCKET_LOG_ERROR_MSG (
               "SocketHPACK: table corruption detected (entry_size=%zu > "
               "table_size=%zu), resetting table",
-              entry_size, table->size);
+              entry_size,
+              table->size);
           table->size = 0;
           table->count = 0;
           return evicted;
@@ -441,7 +455,8 @@ SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
   if (index == 0 || index > SOCKETHPACK_STATIC_TABLE_SIZE)
     {
       SOCKET_LOG_WARN_MSG (
-          "SocketHPACK static_get: invalid index %zu (valid range 1-%zu)", index,
+          "SocketHPACK static_get: invalid index %zu (valid range 1-%zu)",
+          index,
           (size_t)SOCKETHPACK_STATIC_TABLE_SIZE);
       return HPACK_ERROR_INVALID_INDEX;
     }
@@ -457,7 +472,9 @@ SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
 }
 
 int
-SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
+SocketHPACK_static_find (const char *name,
+                         size_t name_len,
+                         const char *value,
                          size_t value_len)
 {
   int name_match = 0;
@@ -469,10 +486,14 @@ SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
   for (i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
     {
       const HPACK_StaticEntry *entry = &hpack_static_table[i];
-      int match
-          = hpack_match_entry (entry->name, entry->name_len, entry->value,
-                               entry->value_len, name, name_len, value,
-                               value_len);
+      int match = hpack_match_entry (entry->name,
+                                     entry->name_len,
+                                     entry->value,
+                                     entry->value_len,
+                                     name,
+                                     name_len,
+                                     value,
+                                     value_len);
 
       if (match == 1)
         return (int)(i + 1);
@@ -501,7 +522,8 @@ SocketHPACK_Table_new (size_t max_size, Arena_T arena)
 
   table = ALLOC (arena, sizeof (*table));
   if (table == NULL)
-    SOCKET_RAISE_MSG (SocketHPACK, SocketHPACK_Error,
+    SOCKET_RAISE_MSG (SocketHPACK,
+                      SocketHPACK_Error,
                       "failed to allocate SocketHPACK_Table structure");
 
   initial_capacity = hpack_dynamic_initial_capacity (max_size);
@@ -510,7 +532,8 @@ SocketHPACK_Table_new (size_t max_size, Arena_T arena)
       = CALLOC (arena, initial_capacity, sizeof (HPACK_DynamicEntry));
   if (table->entries == NULL)
     SOCKET_RAISE_MSG (
-        SocketHPACK, SocketHPACK_Error,
+        SocketHPACK,
+        SocketHPACK_Error,
         "failed to allocate SocketHPACK_Table entries array (capacity=%zu)",
         initial_capacity);
 
@@ -568,7 +591,8 @@ SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size)
     {
       SOCKET_LOG_WARN_MSG (
           "SocketHPACK Table_set_max_size: clamping max_size from %zu to %zu",
-          max_size, (size_t)SOCKETHPACK_MAX_TABLE_SIZE);
+          max_size,
+          (size_t)SOCKETHPACK_MAX_TABLE_SIZE);
       max_size = SOCKETHPACK_MAX_TABLE_SIZE;
     }
 
@@ -581,7 +605,8 @@ SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size)
 }
 
 SocketHPACK_Result
-SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
+SocketHPACK_Table_get (SocketHPACK_Table_T table,
+                       size_t index,
                        SocketHPACK_Header *header)
 {
   SocketHPACK_Result res;
@@ -605,8 +630,11 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
 }
 
 SocketHPACK_Result
-SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
-                       size_t name_len, const char *value, size_t value_len)
+SocketHPACK_Table_add (SocketHPACK_Table_T table,
+                       const char *name,
+                       size_t name_len,
+                       const char *value,
+                       size_t value_len)
 {
   size_t entry_size;
   HPACK_DynamicEntry *entry_ptr;
@@ -628,8 +656,8 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
 
   entry_ptr = &table->entries[table->tail];
 
-  res = hpack_dynamic_entry_init (table->arena, name, name_len, value,
-                                  value_len, entry_ptr);
+  res = hpack_dynamic_entry_init (
+      table->arena, name, name_len, value, value_len, entry_ptr);
   if (res != HPACK_OK)
     return res;
 
@@ -641,8 +669,11 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
 }
 
 int
-SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
-                        size_t name_len, const char *value, size_t value_len)
+SocketHPACK_Table_find (SocketHPACK_Table_T table,
+                        const char *name,
+                        size_t name_len,
+                        const char *value,
+                        size_t value_len)
 {
   int name_match = 0;
   size_t i;
@@ -657,10 +688,14 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
     {
       size_t slot = hpack_table_index_to_slot (table, i + 1);
       HPACK_DynamicEntry *entry = &table->entries[slot];
-      int match
-          = hpack_match_entry (entry->name, entry->name_len, entry->value,
-                               entry->value_len, name, name_len, value,
-                               value_len);
+      int match = hpack_match_entry (entry->name,
+                                     entry->name_len,
+                                     entry->value,
+                                     entry->value_len,
+                                     name,
+                                     name_len,
+                                     value,
+                                     value_len);
 
       if (match == 1)
         return (int)(i + 1);

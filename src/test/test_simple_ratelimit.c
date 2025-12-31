@@ -19,8 +19,7 @@
 /* Test basic rate limiter creation */
 TEST (ratelimit_new_creates_limiter)
 {
-  SocketSimple_RateLimit_T limiter
-      = Socket_simple_ratelimit_new (100, 10);
+  SocketSimple_RateLimit_T limiter = Socket_simple_ratelimit_new (100, 10);
   ASSERT_NOT_NULL (limiter);
   Socket_simple_ratelimit_free (&limiter);
   ASSERT_NULL (limiter);
@@ -29,8 +28,7 @@ TEST (ratelimit_new_creates_limiter)
 /* Test try_acquire basic operation */
 TEST (ratelimit_try_acquire_basic)
 {
-  SocketSimple_RateLimit_T limiter
-      = Socket_simple_ratelimit_new (100, 10);
+  SocketSimple_RateLimit_T limiter = Socket_simple_ratelimit_new (100, 10);
   ASSERT_NOT_NULL (limiter);
 
   /* Should succeed - bucket starts full */
@@ -141,8 +139,7 @@ TEST (ratelimit_acquire_timeout_times_out)
 /* Test reset functionality */
 TEST (ratelimit_reset_refills_bucket)
 {
-  SocketSimple_RateLimit_T limiter
-      = Socket_simple_ratelimit_new (100, 10);
+  SocketSimple_RateLimit_T limiter = Socket_simple_ratelimit_new (100, 10);
   ASSERT_NOT_NULL (limiter);
 
   /* Drain the bucket */
@@ -163,8 +160,7 @@ TEST (ratelimit_reset_refills_bucket)
 /* Test statistics tracking */
 TEST (ratelimit_statistics_tracking)
 {
-  SocketSimple_RateLimit_T limiter
-      = Socket_simple_ratelimit_new (100, 10);
+  SocketSimple_RateLimit_T limiter = Socket_simple_ratelimit_new (100, 10);
   ASSERT_NOT_NULL (limiter);
 
   /* Acquire some tokens */
@@ -191,8 +187,7 @@ TEST (ratelimit_statistics_tracking)
 /* Test Issue #2283: large timeout should not cause integer truncation */
 TEST (ratelimit_acquire_timeout_handles_large_timeout)
 {
-  SocketSimple_RateLimit_T limiter
-      = Socket_simple_ratelimit_new (100, 10);
+  SocketSimple_RateLimit_T limiter = Socket_simple_ratelimit_new (100, 10);
   ASSERT_NOT_NULL (limiter);
 
   /* Use bucket normally first to verify state */

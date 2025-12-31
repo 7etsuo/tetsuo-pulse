@@ -296,7 +296,7 @@ TEST (sendfile_bounds_check_concept)
   /* Verify that SSIZE_MAX is less than the maximum off_t value on this system.
    * This ensures the bounds check can actually protect against overflow.
    * If off_t max <= SSIZE_MAX, the check isn't needed (can't overflow). */
-  off_t max_off_t = (off_t) ((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
+  off_t max_off_t = (off_t)((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
   ASSERT (max_off_t >= SSIZE_MAX);
 
   /* The actual overflow scenario can't be easily tested without

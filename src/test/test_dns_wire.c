@@ -27,11 +27,11 @@ TEST (dns_wire_header_roundtrip)
 
   /* Set up a typical query header */
   orig.id = 0x1234;
-  orig.qr = 0;                    /* Query */
+  orig.qr = 0; /* Query */
   orig.opcode = DNS_OPCODE_QUERY;
   orig.aa = 0;
   orig.tc = 0;
-  orig.rd = 1;                    /* Recursion desired */
+  orig.rd = 1; /* Recursion desired */
   orig.ra = 0;
   orig.z = 0;
   orig.rcode = DNS_RCODE_NOERROR;
@@ -72,13 +72,13 @@ TEST (dns_wire_header_all_flags)
 
   /* Response with all flags set */
   orig.id = 0xABCD;
-  orig.qr = 1;                    /* Response */
+  orig.qr = 1; /* Response */
   orig.opcode = DNS_OPCODE_STATUS;
-  orig.aa = 1;                    /* Authoritative */
-  orig.tc = 1;                    /* Truncated */
-  orig.rd = 1;                    /* Recursion desired */
-  orig.ra = 1;                    /* Recursion available */
-  orig.z = 0;                     /* Reserved, must be 0 */
+  orig.aa = 1; /* Authoritative */
+  orig.tc = 1; /* Truncated */
+  orig.rd = 1; /* Recursion desired */
+  orig.ra = 1; /* Recursion available */
+  orig.z = 0;  /* Reserved, must be 0 */
   orig.rcode = DNS_RCODE_REFUSED;
   orig.qdcount = 0xFFFF;
   orig.ancount = 0x1234;
@@ -118,12 +118,12 @@ TEST (dns_wire_decode_known_query)
    * Additional: 0
    */
   unsigned char query[] = {
-    0x12, 0x34,   /* ID */
-    0x01, 0x00,   /* Flags: RD=1, rest 0 */
-    0x00, 0x01,   /* QDCOUNT = 1 */
-    0x00, 0x00,   /* ANCOUNT = 0 */
-    0x00, 0x00,   /* NSCOUNT = 0 */
-    0x00, 0x00    /* ARCOUNT = 0 */
+    0x12, 0x34, /* ID */
+    0x01, 0x00, /* Flags: RD=1, rest 0 */
+    0x00, 0x01, /* QDCOUNT = 1 */
+    0x00, 0x00, /* ANCOUNT = 0 */
+    0x00, 0x00, /* NSCOUNT = 0 */
+    0x00, 0x00  /* ARCOUNT = 0 */
   };
 
   SocketDNS_Header h;
@@ -153,12 +153,12 @@ TEST (dns_wire_decode_known_response)
    * Additional: 0
    */
   unsigned char response[] = {
-    0x12, 0x34,   /* ID */
-    0x81, 0x80,   /* Flags: QR=1, RD=1, RA=1 */
-    0x00, 0x01,   /* QDCOUNT = 1 */
-    0x00, 0x01,   /* ANCOUNT = 1 */
-    0x00, 0x00,   /* NSCOUNT = 0 */
-    0x00, 0x00    /* ARCOUNT = 0 */
+    0x12, 0x34, /* ID */
+    0x81, 0x80, /* Flags: QR=1, RD=1, RA=1 */
+    0x00, 0x01, /* QDCOUNT = 1 */
+    0x00, 0x01, /* ANCOUNT = 1 */
+    0x00, 0x00, /* NSCOUNT = 0 */
+    0x00, 0x00  /* ARCOUNT = 0 */
   };
 
   SocketDNS_Header h;
@@ -184,12 +184,12 @@ TEST (dns_wire_decode_nxdomain)
    * Flags: 0x8183 (QR=1, RD=1, RA=1, RCODE=3)
    */
   unsigned char nxdomain[] = {
-    0x56, 0x78,   /* ID */
-    0x81, 0x83,   /* Flags: QR=1, RD=1, RA=1, RCODE=NXDOMAIN(3) */
-    0x00, 0x01,   /* QDCOUNT = 1 */
-    0x00, 0x00,   /* ANCOUNT = 0 */
-    0x00, 0x01,   /* NSCOUNT = 1 (SOA for negative caching) */
-    0x00, 0x00    /* ARCOUNT = 0 */
+    0x56, 0x78, /* ID */
+    0x81, 0x83, /* Flags: QR=1, RD=1, RA=1, RCODE=NXDOMAIN(3) */
+    0x00, 0x01, /* QDCOUNT = 1 */
+    0x00, 0x00, /* ANCOUNT = 0 */
+    0x00, 0x01, /* NSCOUNT = 1 (SOA for negative caching) */
+    0x00, 0x00  /* ARCOUNT = 0 */
   };
 
   SocketDNS_Header h;
@@ -209,12 +209,12 @@ TEST (dns_wire_truncated_response)
    * Flags: 0x8280 (QR=1, TC=1, RA=1)
    */
   unsigned char truncated[] = {
-    0xAB, 0xCD,   /* ID */
-    0x82, 0x80,   /* Flags: QR=1, TC=1, RA=1 */
-    0x00, 0x01,   /* QDCOUNT = 1 */
-    0x00, 0x05,   /* ANCOUNT = 5 (but truncated) */
-    0x00, 0x00,   /* NSCOUNT = 0 */
-    0x00, 0x00    /* ARCOUNT = 0 */
+    0xAB, 0xCD, /* ID */
+    0x82, 0x80, /* Flags: QR=1, TC=1, RA=1 */
+    0x00, 0x01, /* QDCOUNT = 1 */
+    0x00, 0x05, /* ANCOUNT = 5 (but truncated) */
+    0x00, 0x00, /* NSCOUNT = 0 */
+    0x00, 0x00  /* ARCOUNT = 0 */
   };
 
   SocketDNS_Header h;
@@ -232,12 +232,12 @@ TEST (dns_wire_authoritative_answer)
    * Flags: 0x8400 (QR=1, AA=1)
    */
   unsigned char auth[] = {
-    0x11, 0x22,   /* ID */
-    0x84, 0x00,   /* Flags: QR=1, AA=1 */
-    0x00, 0x01,   /* QDCOUNT = 1 */
-    0x00, 0x01,   /* ANCOUNT = 1 */
-    0x00, 0x00,   /* NSCOUNT = 0 */
-    0x00, 0x00    /* ARCOUNT = 0 */
+    0x11, 0x22, /* ID */
+    0x84, 0x00, /* Flags: QR=1, AA=1 */
+    0x00, 0x01, /* QDCOUNT = 1 */
+    0x00, 0x01, /* ANCOUNT = 1 */
+    0x00, 0x00, /* NSCOUNT = 0 */
+    0x00, 0x00  /* ARCOUNT = 0 */
   };
 
   SocketDNS_Header h;
@@ -321,8 +321,11 @@ TEST (dns_wire_opcode_values)
   SocketDNS_Header h = { 0 };
   SocketDNS_Header decoded;
   unsigned char buf[DNS_HEADER_SIZE];
-  uint8_t opcodes[] = { DNS_OPCODE_QUERY, DNS_OPCODE_IQUERY, DNS_OPCODE_STATUS,
-                        DNS_OPCODE_NOTIFY, DNS_OPCODE_UPDATE };
+  uint8_t opcodes[] = { DNS_OPCODE_QUERY,
+                        DNS_OPCODE_IQUERY,
+                        DNS_OPCODE_STATUS,
+                        DNS_OPCODE_NOTIFY,
+                        DNS_OPCODE_UPDATE };
   size_t i;
 
   for (i = 0; i < sizeof (opcodes) / sizeof (opcodes[0]); i++)
@@ -343,9 +346,9 @@ TEST (dns_wire_rcode_values)
   SocketDNS_Header h = { 0 };
   SocketDNS_Header decoded;
   unsigned char buf[DNS_HEADER_SIZE];
-  uint8_t rcodes[] = { DNS_RCODE_NOERROR,  DNS_RCODE_FORMERR,
-                       DNS_RCODE_SERVFAIL, DNS_RCODE_NXDOMAIN,
-                       DNS_RCODE_NOTIMP,   DNS_RCODE_REFUSED };
+  uint8_t rcodes[]
+      = { DNS_RCODE_NOERROR,  DNS_RCODE_FORMERR, DNS_RCODE_SERVFAIL,
+          DNS_RCODE_NXDOMAIN, DNS_RCODE_NOTIMP,  DNS_RCODE_REFUSED };
   size_t i;
 
   for (i = 0; i < sizeof (rcodes) / sizeof (rcodes[0]); i++)
@@ -367,8 +370,8 @@ TEST (dns_wire_byte_order)
   SocketDNS_Header h = { 0 };
   unsigned char buf[DNS_HEADER_SIZE];
 
-  h.id = 0x0102;        /* Should encode as 0x01, 0x02 */
-  h.qdcount = 0x0304;   /* Should encode as 0x03, 0x04 */
+  h.id = 0x0102;      /* Should encode as 0x01, 0x02 */
+  h.qdcount = 0x0304; /* Should encode as 0x03, 0x04 */
   h.ancount = 0x0506;
   h.nscount = 0x0708;
   h.arcount = 0x090A;
@@ -393,13 +396,13 @@ TEST (dns_wire_boundary_values)
   /* Test maximum values */
   h.id = 0xFFFF;
   h.qr = 1;
-  h.opcode = 0x0F;      /* Max 4-bit value */
+  h.opcode = 0x0F; /* Max 4-bit value */
   h.aa = 1;
   h.tc = 1;
   h.rd = 1;
   h.ra = 1;
-  h.z = 0x07;           /* Max 3-bit value (though should be 0) */
-  h.rcode = 0x0F;       /* Max 4-bit value */
+  h.z = 0x07;     /* Max 3-bit value (though should be 0) */
+  h.rcode = 0x0F; /* Max 4-bit value */
   h.qdcount = 0xFFFF;
   h.ancount = 0xFFFF;
   h.nscount = 0xFFFF;
@@ -438,7 +441,7 @@ TEST (dns_wire_flags_byte_layout)
 
   /* Test OPCODE (bits 14-11 = 0x78 in first flags byte) */
   memset (&h, 0, sizeof (h));
-  h.opcode = 0x0F;      /* All bits set */
+  h.opcode = 0x0F; /* All bits set */
   SocketDNS_header_encode (&h, buf, sizeof (buf));
   ASSERT ((buf[2] & 0x78) == 0x78);
 
@@ -519,8 +522,10 @@ TEST (dns_name_encode_trailing_dot)
   unsigned char buf[DNS_MAX_NAME_LEN];
   size_t written1, written2;
 
-  ASSERT_EQ (SocketDNS_name_encode ("example.com", buf, sizeof (buf), &written1), 0);
-  ASSERT_EQ (SocketDNS_name_encode ("example.com.", buf, sizeof (buf), &written2), 0);
+  ASSERT_EQ (
+      SocketDNS_name_encode ("example.com", buf, sizeof (buf), &written1), 0);
+  ASSERT_EQ (
+      SocketDNS_name_encode ("example.com.", buf, sizeof (buf), &written2), 0);
   ASSERT_EQ (written1, written2);
 }
 
@@ -528,14 +533,14 @@ TEST (dns_name_encode_trailing_dot)
 TEST (dns_name_decode_basic)
 {
   /* Wire format for "www.example.com" */
-  unsigned char wire[] = { 3, 'w', 'w', 'w', 7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-                           3, 'c', 'o', 'm', 0 };
+  unsigned char wire[] = { 3,   'w', 'w', 'w', 7,   'e', 'x', 'a', 'm',
+                           'p', 'l', 'e', 3,   'c', 'o', 'm', 0 };
   char name[DNS_MAX_NAME_LEN];
   size_t consumed;
   int len;
 
-  len = SocketDNS_name_decode (wire, sizeof (wire), 0, name, sizeof (name),
-                               &consumed);
+  len = SocketDNS_name_decode (
+      wire, sizeof (wire), 0, name, sizeof (name), &consumed);
   ASSERT_EQ (len, 15); /* "www.example.com" */
   ASSERT_EQ (consumed, 17);
   ASSERT (strcmp (name, "www.example.com") == 0);
@@ -572,11 +577,11 @@ TEST (dns_name_decode_compression)
   /* Now add "www" + pointer at offset 25 */
   msg[25] = 3;
   memcpy (msg + 26, "www", 3);
-  msg[29] = 0xC0;       /* Compression pointer */
-  msg[30] = 12;         /* Points to offset 12 */
+  msg[29] = 0xC0; /* Compression pointer */
+  msg[30] = 12;   /* Points to offset 12 */
 
   len = SocketDNS_name_decode (msg, 31, 25, name, sizeof (name), &consumed);
-  ASSERT_EQ (len, 15); /* "www.example.com" */
+  ASSERT_EQ (len, 15);     /* "www.example.com" */
   ASSERT_EQ (consumed, 6); /* 1 + 3 + 2 (pointer) */
   ASSERT (strcmp (name, "www.example.com") == 0);
 }
@@ -593,7 +598,8 @@ TEST (dns_name_decode_loop_detection)
   msg[12] = 0xC0;
   msg[13] = 12;
 
-  ASSERT_EQ (SocketDNS_name_decode (msg, 14, 12, name, sizeof (name), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_decode (msg, 14, 12, name, sizeof (name), NULL),
+             -1);
 }
 
 /* Test valid domain names */
@@ -602,8 +608,8 @@ TEST (dns_name_valid_basic)
   ASSERT_EQ (SocketDNS_name_valid ("example.com"), 1);
   ASSERT_EQ (SocketDNS_name_valid ("www.example.com"), 1);
   ASSERT_EQ (SocketDNS_name_valid ("a.b.c.d.e.f"), 1);
-  ASSERT_EQ (SocketDNS_name_valid (""), 1); /* Root */
-  ASSERT_EQ (SocketDNS_name_valid ("."), 1); /* Root */
+  ASSERT_EQ (SocketDNS_name_valid (""), 1);             /* Root */
+  ASSERT_EQ (SocketDNS_name_valid ("."), 1);            /* Root */
   ASSERT_EQ (SocketDNS_name_valid ("example.com."), 1); /* Trailing dot */
 }
 
@@ -677,7 +683,8 @@ TEST (dns_name_null_handling)
 
   ASSERT_EQ (SocketDNS_name_encode (NULL, buf, sizeof (buf), NULL), -1);
   ASSERT_EQ (SocketDNS_name_encode ("test", NULL, sizeof (buf), NULL), -1);
-  ASSERT_EQ (SocketDNS_name_decode (NULL, 32, 0, name, sizeof (name), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_decode (NULL, 32, 0, name, sizeof (name), NULL),
+             -1);
   ASSERT_EQ (SocketDNS_name_decode (buf, 32, 0, NULL, sizeof (name), NULL), -1);
   ASSERT_EQ (SocketDNS_name_equal (NULL, "test"), 0);
   ASSERT_EQ (SocketDNS_name_equal ("test", NULL), 0);
@@ -688,7 +695,7 @@ TEST (dns_name_wire_length)
 {
   ASSERT_EQ (SocketDNS_name_wire_length (""), 1);
   ASSERT_EQ (SocketDNS_name_wire_length ("."), 1);
-  ASSERT_EQ (SocketDNS_name_wire_length ("com"), 5); /* 1+3+1 */
+  ASSERT_EQ (SocketDNS_name_wire_length ("com"), 5);          /* 1+3+1 */
   ASSERT_EQ (SocketDNS_name_wire_length ("example.com"), 13); /* 1+7+1+3+1 */
   ASSERT_EQ (SocketDNS_name_wire_length ("www.example.com"), 17);
 }
@@ -701,7 +708,7 @@ TEST (dns_name_roundtrip)
     "www.example.com",
     "a.b.c.d.e.f.g",
     "test123.subdomain.domain.tld",
-    ""  /* root */
+    "" /* root */
   };
   size_t i;
 
@@ -712,9 +719,10 @@ TEST (dns_name_roundtrip)
       size_t written, consumed;
       int len;
 
-      ASSERT_EQ (SocketDNS_name_encode (names[i], wire, sizeof (wire), &written), 0);
-      len = SocketDNS_name_decode (wire, written, 0, decoded, sizeof (decoded),
-                                   &consumed);
+      ASSERT_EQ (
+          SocketDNS_name_encode (names[i], wire, sizeof (wire), &written), 0);
+      len = SocketDNS_name_decode (
+          wire, written, 0, decoded, sizeof (decoded), &consumed);
       ASSERT (len >= 0);
       ASSERT_EQ (consumed, written);
 
@@ -758,7 +766,8 @@ TEST (dns_name_decode_invalid_offset)
   memset (msg, 0, sizeof (msg));
 
   /* Offset beyond message length */
-  ASSERT_EQ (SocketDNS_name_decode (msg, 32, 100, name, sizeof (name), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_decode (msg, 32, 100, name, sizeof (name), NULL),
+             -1);
 }
 
 /* Test truncated label */
@@ -768,7 +777,9 @@ TEST (dns_name_decode_truncated_label)
   unsigned char msg[] = { 10, 'a', 'b', 'c', 'd', 'e' };
   char name[DNS_MAX_NAME_LEN];
 
-  ASSERT_EQ (SocketDNS_name_decode (msg, sizeof (msg), 0, name, sizeof (name), NULL), -1);
+  ASSERT_EQ (
+      SocketDNS_name_decode (msg, sizeof (msg), 0, name, sizeof (name), NULL),
+      -1);
 }
 
 /* Test nested compression pointers */
@@ -799,7 +810,7 @@ TEST (dns_name_decode_nested_pointers)
   msg[32] = 17; /* Points to "example" + pointer */
 
   len = SocketDNS_name_decode (msg, 33, 27, name, sizeof (name), &consumed);
-  ASSERT_EQ (len, 15); /* "www.example.com" */
+  ASSERT_EQ (len, 15);     /* "www.example.com" */
   ASSERT_EQ (consumed, 6); /* 1+3+2 */
   ASSERT (strcmp (name, "www.example.com") == 0);
 }
@@ -901,11 +912,10 @@ TEST (dns_question_decode_basic)
 {
   /* Wire format for "example.com" A IN query */
   unsigned char wire[] = {
-    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    3, 'c', 'o', 'm',
-    0,        /* Name terminator */
-    0, 1,     /* QTYPE = A (1) */
-    0, 1      /* QCLASS = IN (1) */
+    7,   'e', 'x', 'a', 'm', 'p', 'l',
+    'e', 3,   'c', 'o', 'm', 0, /* Name terminator */
+    0,   1,                     /* QTYPE = A (1) */
+    0,   1                      /* QCLASS = IN (1) */
   };
   SocketDNS_Question q;
   size_t consumed;
@@ -924,11 +934,9 @@ TEST (dns_question_decode_aaaa)
 {
   /* Wire format for "test.org" AAAA IN query */
   unsigned char wire[] = {
-    4, 't', 'e', 's', 't',
-    3, 'o', 'r', 'g',
-    0,        /* Name terminator */
-    0, 28,    /* QTYPE = AAAA (28) */
-    0, 1      /* QCLASS = IN (1) */
+    4, 't', 'e', 's', 't', 3, 'o', 'r', 'g', 0, /* Name terminator */
+    0, 28,                                      /* QTYPE = AAAA (28) */
+    0, 1                                        /* QCLASS = IN (1) */
   };
   SocketDNS_Question q;
   size_t consumed;
@@ -944,7 +952,8 @@ TEST (dns_question_decode_aaaa)
 /* Test question encode/decode roundtrip */
 TEST (dns_question_roundtrip)
 {
-  const struct {
+  const struct
+  {
     const char *name;
     uint16_t qtype;
   } tests[] = {
@@ -953,7 +962,7 @@ TEST (dns_question_roundtrip)
     { "mail.domain.net", DNS_TYPE_MX },
     { "ns1.provider.com", DNS_TYPE_NS },
     { "_srv._tcp.example.com", DNS_TYPE_SRV },
-    { "", DNS_TYPE_A },  /* Root domain */
+    { "", DNS_TYPE_A }, /* Root domain */
   };
   size_t i;
 
@@ -964,8 +973,10 @@ TEST (dns_question_roundtrip)
       size_t written, consumed;
 
       SocketDNS_question_init (&orig, tests[i].name, tests[i].qtype);
-      ASSERT_EQ (SocketDNS_question_encode (&orig, wire, sizeof (wire), &written), 0);
-      ASSERT_EQ (SocketDNS_question_decode (wire, written, 0, &decoded, &consumed), 0);
+      ASSERT_EQ (
+          SocketDNS_question_encode (&orig, wire, sizeof (wire), &written), 0);
+      ASSERT_EQ (
+          SocketDNS_question_decode (wire, written, 0, &decoded, &consumed), 0);
       ASSERT_EQ (consumed, written);
       ASSERT (SocketDNS_name_equal (orig.qname, decoded.qname) == 1);
       ASSERT_EQ (decoded.qtype, orig.qtype);
@@ -988,8 +999,10 @@ TEST (dns_question_decode_offset)
   msg[17] = 3;
   memcpy (msg + 18, "com", 3);
   msg[21] = 0;
-  msg[22] = 0; msg[23] = 1;  /* QTYPE = A */
-  msg[24] = 0; msg[25] = 1;  /* QCLASS = IN */
+  msg[22] = 0;
+  msg[23] = 1; /* QTYPE = A */
+  msg[24] = 0;
+  msg[25] = 1; /* QCLASS = IN */
 
   ASSERT_EQ (SocketDNS_question_decode (msg, 26, 12, &q, &consumed), 0);
   ASSERT_EQ (consumed, 14); /* 10 (name) + 4 (type+class) */
@@ -1012,9 +1025,8 @@ TEST (dns_question_decode_truncated)
 {
   /* Wire format missing QCLASS bytes */
   unsigned char wire[] = {
-    3, 'c', 'o', 'm',
-    0,        /* Name terminator */
-    0, 1      /* QTYPE = A, but QCLASS missing */
+    3, 'c', 'o', 'm', 0, /* Name terminator */
+    0, 1                 /* QTYPE = A, but QCLASS missing */
   };
   SocketDNS_Question q;
 
@@ -1058,9 +1070,11 @@ TEST (dns_question_decode_compressed)
   msg[25] = 3;
   memcpy (msg + 26, "www", 3);
   msg[29] = 0xC0;
-  msg[30] = 12;  /* Pointer to "example.com" */
-  msg[31] = 0; msg[32] = 1;  /* QTYPE = A */
-  msg[33] = 0; msg[34] = 1;  /* QCLASS = IN */
+  msg[30] = 12; /* Pointer to "example.com" */
+  msg[31] = 0;
+  msg[32] = 1; /* QTYPE = A */
+  msg[33] = 0;
+  msg[34] = 1; /* QCLASS = IN */
 
   ASSERT_EQ (SocketDNS_question_decode (msg, 35, 25, &q, &consumed), 0);
   ASSERT_EQ (consumed, 10); /* 1+3+2 (name with pointer) + 4 (type+class) */
@@ -1075,14 +1089,13 @@ TEST (dns_rr_decode_a_record)
 {
   /* Wire format for "example.com" A record with IP 192.0.2.1 */
   unsigned char wire[] = {
-    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    3, 'c', 'o', 'm',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A (1) */
-    0, 1,           /* CLASS = IN (1) */
-    0, 0, 0x0E, 0x10, /* TTL = 3600 seconds */
-    0, 4,           /* RDLENGTH = 4 */
-    192, 0, 2, 1    /* RDATA = 192.0.2.1 */
+    7,   'e', 'x',  'a',  'm', 'p', 'l',
+    'e', 3,   'c',  'o',  'm', 0, /* Name terminator */
+    0,   1,                       /* TYPE = A (1) */
+    0,   1,                       /* CLASS = IN (1) */
+    0,   0,   0x0E, 0x10,         /* TTL = 3600 seconds */
+    0,   4,                       /* RDLENGTH = 4 */
+    192, 0,   2,    1             /* RDATA = 192.0.2.1 */
   };
   SocketDNS_RR rr;
   size_t consumed;
@@ -1108,16 +1121,14 @@ TEST (dns_rr_decode_aaaa_record)
 {
   /* Wire format for "ipv6.example.com" AAAA record with 2001:db8::1 */
   unsigned char wire[] = {
-    4, 'i', 'p', 'v', '6',
-    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    3, 'c', 'o', 'm',
-    0,              /* Name terminator */
-    0, 28,          /* TYPE = AAAA (28) */
-    0, 1,           /* CLASS = IN (1) */
-    0, 0, 0x1C, 0x20, /* TTL = 7200 seconds */
-    0, 16,          /* RDLENGTH = 16 */
-    0x20, 0x01, 0x0D, 0xB8, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01  /* 2001:db8::1 */
+    4,    'i',  'p',  'v',  '6',  7,    'e',  'x',  'a',
+    'm',  'p',  'l',  'e',  3,    'c',  'o',  'm',  0, /* Name terminator */
+    0,    28,                                          /* TYPE = AAAA (28) */
+    0,    1,                                           /* CLASS = IN (1) */
+    0,    0,    0x1C, 0x20,                            /* TTL = 7200 seconds */
+    0,    16,                                          /* RDLENGTH = 16 */
+    0x20, 0x01, 0x0D, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 /* 2001:db8::1 */
   };
   SocketDNS_RR rr;
   size_t consumed;
@@ -1154,12 +1165,21 @@ TEST (dns_rr_decode_compressed_name)
 
   /* RR at offset 25 with compressed name pointing to offset 12 */
   msg[25] = 0xC0;
-  msg[26] = 12;       /* Pointer to "example.com" */
-  msg[27] = 0; msg[28] = 1;   /* TYPE = A */
-  msg[29] = 0; msg[30] = 1;   /* CLASS = IN */
-  msg[31] = 0; msg[32] = 0; msg[33] = 0; msg[34] = 60;  /* TTL = 60 */
-  msg[35] = 0; msg[36] = 4;   /* RDLENGTH = 4 */
-  msg[37] = 10; msg[38] = 0; msg[39] = 0; msg[40] = 1;  /* 10.0.0.1 */
+  msg[26] = 12; /* Pointer to "example.com" */
+  msg[27] = 0;
+  msg[28] = 1; /* TYPE = A */
+  msg[29] = 0;
+  msg[30] = 1; /* CLASS = IN */
+  msg[31] = 0;
+  msg[32] = 0;
+  msg[33] = 0;
+  msg[34] = 60; /* TTL = 60 */
+  msg[35] = 0;
+  msg[36] = 4; /* RDLENGTH = 4 */
+  msg[37] = 10;
+  msg[38] = 0;
+  msg[39] = 0;
+  msg[40] = 1; /* 10.0.0.1 */
 
   ASSERT_EQ (SocketDNS_rr_decode (msg, 41, 25, &rr, &consumed), 0);
   ASSERT_EQ (consumed, 16); /* 2 (ptr) + 10 (fixed) + 4 (rdata) */
@@ -1173,13 +1193,12 @@ TEST (dns_rr_decode_compressed_name)
 TEST (dns_rr_decode_zero_ttl)
 {
   unsigned char wire[] = {
-    3, 'f', 'o', 'o',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A */
-    0, 1,           /* CLASS = IN */
-    0, 0, 0, 0,     /* TTL = 0 */
-    0, 4,           /* RDLENGTH = 4 */
-    127, 0, 0, 1    /* 127.0.0.1 */
+    3,   'f', 'o', 'o', 0, /* Name terminator */
+    0,   1,                /* TYPE = A */
+    0,   1,                /* CLASS = IN */
+    0,   0,   0,   0,      /* TTL = 0 */
+    0,   4,                /* RDLENGTH = 4 */
+    127, 0,   0,   1       /* 127.0.0.1 */
   };
   SocketDNS_RR rr;
 
@@ -1190,15 +1209,12 @@ TEST (dns_rr_decode_zero_ttl)
 /* Test RR with maximum TTL */
 TEST (dns_rr_decode_max_ttl)
 {
-  unsigned char wire[] = {
-    3, 'f', 'o', 'o',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A */
-    0, 1,           /* CLASS = IN */
-    0xFF, 0xFF, 0xFF, 0xFF, /* TTL = 0xFFFFFFFF (max) */
-    0, 4,           /* RDLENGTH = 4 */
-    1, 2, 3, 4
-  };
+  unsigned char wire[] = { 3,    'f',  'o',  'o',  0, /* Name terminator */
+                           0,    1,                   /* TYPE = A */
+                           0,    1,                   /* CLASS = IN */
+                           0xFF, 0xFF, 0xFF, 0xFF, /* TTL = 0xFFFFFFFF (max) */
+                           0,    4,                /* RDLENGTH = 4 */
+                           1,    2,    3,    4 };
   SocketDNS_RR rr;
 
   ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), 0);
@@ -1209,12 +1225,11 @@ TEST (dns_rr_decode_max_ttl)
 TEST (dns_rr_decode_zero_rdlength)
 {
   unsigned char wire[] = {
-    3, 'f', 'o', 'o',
-    0,              /* Name terminator */
-    0, 10,          /* TYPE = NULL (10) */
-    0, 1,           /* CLASS = IN */
-    0, 0, 0, 60,    /* TTL = 60 */
-    0, 0            /* RDLENGTH = 0 */
+    3, 'f', 'o', 'o', 0, /* Name terminator */
+    0, 10,               /* TYPE = NULL (10) */
+    0, 1,                /* CLASS = IN */
+    0, 0,   0,   60,     /* TTL = 60 */
+    0, 0                 /* RDLENGTH = 0 */
   };
   SocketDNS_RR rr;
   size_t consumed;
@@ -1222,22 +1237,19 @@ TEST (dns_rr_decode_zero_rdlength)
   ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, &consumed), 0);
   ASSERT_EQ (consumed, sizeof (wire));
   ASSERT_EQ (rr.rdlength, 0);
-  ASSERT_NULL (rr.rdata);  /* NULL when rdlength is 0 */
+  ASSERT_NULL (rr.rdata); /* NULL when rdlength is 0 */
 }
 
 /* Test RR skip basic */
 TEST (dns_rr_skip_basic)
 {
-  unsigned char wire[] = {
-    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    3, 'c', 'o', 'm',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A */
-    0, 1,           /* CLASS = IN */
-    0, 0, 0x0E, 0x10, /* TTL = 3600 */
-    0, 4,           /* RDLENGTH = 4 */
-    192, 0, 2, 1
-  };
+  unsigned char wire[] = { 7,   'e', 'x',  'a',  'm', 'p', 'l',
+                           'e', 3,   'c',  'o',  'm', 0, /* Name terminator */
+                           0,   1,                       /* TYPE = A */
+                           0,   1,                       /* CLASS = IN */
+                           0,   0,   0x0E, 0x10,         /* TTL = 3600 */
+                           0,   4,                       /* RDLENGTH = 4 */
+                           192, 0,   2,    1 };
   size_t consumed;
 
   ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), 0, &consumed), 0);
@@ -1250,15 +1262,49 @@ TEST (dns_rr_skip_multiple)
   /* Two A records back to back */
   unsigned char wire[] = {
     /* First RR: "a.com" A 1.2.3.4 */
-    1, 'a', 3, 'c', 'o', 'm', 0,
-    0, 1, 0, 1,           /* TYPE=A, CLASS=IN */
-    0, 0, 0, 60,          /* TTL=60 */
-    0, 4, 1, 2, 3, 4,     /* RDLENGTH=4, RDATA */
+    1,
+    'a',
+    3,
+    'c',
+    'o',
+    'm',
+    0,
+    0,
+    1,
+    0,
+    1, /* TYPE=A, CLASS=IN */
+    0,
+    0,
+    0,
+    60, /* TTL=60 */
+    0,
+    4,
+    1,
+    2,
+    3,
+    4, /* RDLENGTH=4, RDATA */
     /* Second RR: "b.com" A 5.6.7.8 */
-    1, 'b', 3, 'c', 'o', 'm', 0,
-    0, 1, 0, 1,           /* TYPE=A, CLASS=IN */
-    0, 0, 0, 60,          /* TTL=60 */
-    0, 4, 5, 6, 7, 8      /* RDLENGTH=4, RDATA */
+    1,
+    'b',
+    3,
+    'c',
+    'o',
+    'm',
+    0,
+    0,
+    1,
+    0,
+    1, /* TYPE=A, CLASS=IN */
+    0,
+    0,
+    0,
+    60, /* TTL=60 */
+    0,
+    4,
+    5,
+    6,
+    7,
+    8 /* RDLENGTH=4, RDATA */
   };
   size_t consumed1, consumed2;
   size_t offset = 0;
@@ -1290,31 +1336,46 @@ TEST (dns_rr_decode_after_question)
 
   /* Build a minimal response: header + question + answer */
   /* Header at offset 0: ID=0x1234, QR=1, QDCOUNT=1, ANCOUNT=1 */
-  msg[0] = 0x12; msg[1] = 0x34;  /* ID */
-  msg[2] = 0x80; msg[3] = 0x00;  /* QR=1, flags=0 */
-  msg[4] = 0; msg[5] = 1;        /* QDCOUNT=1 */
-  msg[6] = 0; msg[7] = 1;        /* ANCOUNT=1 */
+  msg[0] = 0x12;
+  msg[1] = 0x34; /* ID */
+  msg[2] = 0x80;
+  msg[3] = 0x00; /* QR=1, flags=0 */
+  msg[4] = 0;
+  msg[5] = 1; /* QDCOUNT=1 */
+  msg[6] = 0;
+  msg[7] = 1; /* ANCOUNT=1 */
 
   /* Question at offset 12: "test.com" A IN */
   offset = 12;
   msg[offset++] = 4;
-  memcpy (msg + offset, "test", 4); offset += 4;
+  memcpy (msg + offset, "test", 4);
+  offset += 4;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 1;  /* QTYPE=A */
-  msg[offset++] = 0; msg[offset++] = 1;  /* QCLASS=IN */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* QTYPE=A */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* QCLASS=IN */
 
   /* Answer RR: compressed name + A record */
   msg[offset++] = 0xC0;
-  msg[offset++] = 12;  /* Pointer to "test.com" */
-  msg[offset++] = 0; msg[offset++] = 1;  /* TYPE=A */
-  msg[offset++] = 0; msg[offset++] = 1;  /* CLASS=IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 120; /* TTL=120 */
-  msg[offset++] = 0; msg[offset++] = 4;  /* RDLENGTH=4 */
-  msg[offset++] = 93; msg[offset++] = 184;
-  msg[offset++] = 216; msg[offset++] = 34; /* 93.184.216.34 */
+  msg[offset++] = 12; /* Pointer to "test.com" */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* TYPE=A */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS=IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 120; /* TTL=120 */
+  msg[offset++] = 0;
+  msg[offset++] = 4; /* RDLENGTH=4 */
+  msg[offset++] = 93;
+  msg[offset++] = 184;
+  msg[offset++] = 216;
+  msg[offset++] = 34; /* 93.184.216.34 */
 
   /* Parse question */
   ASSERT_EQ (SocketDNS_question_decode (msg, offset, 12, &q, &consumed), 0);
@@ -1334,12 +1395,11 @@ TEST (dns_rr_decode_after_question)
 TEST (dns_rr_decode_truncated_rdata)
 {
   unsigned char wire[] = {
-    3, 'f', 'o', 'o',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A */
-    0, 1,           /* CLASS = IN */
-    0, 0, 0, 60,    /* TTL = 60 */
-    0, 4            /* RDLENGTH = 4, but no RDATA follows */
+    3, 'f', 'o', 'o', 0, /* Name terminator */
+    0, 1,                /* TYPE = A */
+    0, 1,                /* CLASS = IN */
+    0, 0,   0,   60,     /* TTL = 60 */
+    0, 4                 /* RDLENGTH = 4, but no RDATA follows */
   };
   SocketDNS_RR rr;
 
@@ -1350,11 +1410,10 @@ TEST (dns_rr_decode_truncated_rdata)
 TEST (dns_rr_decode_truncated_fixed)
 {
   unsigned char wire[] = {
-    3, 'f', 'o', 'o',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A */
-    0, 1,           /* CLASS = IN */
-    0, 0            /* TTL incomplete */
+    3, 'f', 'o', 'o', 0, /* Name terminator */
+    0, 1,                /* TYPE = A */
+    0, 1,                /* CLASS = IN */
+    0, 0                 /* TTL incomplete */
   };
   SocketDNS_RR rr;
 
@@ -1364,12 +1423,8 @@ TEST (dns_rr_decode_truncated_fixed)
 /* Test RR NULL pointer handling */
 TEST (dns_rr_null_handling)
 {
-  unsigned char wire[] = {
-    3, 'f', 'o', 'o', 0,
-    0, 1, 0, 1,
-    0, 0, 0, 60,
-    0, 4, 1, 2, 3, 4
-  };
+  unsigned char wire[]
+      = { 3, 'f', 'o', 'o', 0, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 1, 2, 3, 4 };
   SocketDNS_RR rr;
   size_t consumed;
 
@@ -1399,14 +1454,13 @@ TEST (dns_rr_decode_invalid_offset)
 TEST (dns_rdata_parse_a_valid)
 {
   unsigned char wire[] = {
-    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    3, 'c', 'o', 'm',
-    0,              /* Name terminator */
-    0, 1,           /* TYPE = A */
-    0, 1,           /* CLASS = IN */
-    0, 0, 0x0E, 0x10, /* TTL = 3600 */
-    0, 4,           /* RDLENGTH = 4 */
-    93, 184, 216, 34  /* 93.184.216.34 (example.com) */
+    7,   'e', 'x',  'a',  'm', 'p', 'l',
+    'e', 3,   'c',  'o',  'm', 0, /* Name terminator */
+    0,   1,                       /* TYPE = A */
+    0,   1,                       /* CLASS = IN */
+    0,   0,   0x0E, 0x10,         /* TTL = 3600 */
+    0,   4,                       /* RDLENGTH = 4 */
+    93,  184, 216,  34            /* 93.184.216.34 (example.com) */
   };
   SocketDNS_RR rr;
   struct in_addr addr;
@@ -1424,18 +1478,46 @@ TEST (dns_rdata_parse_a_valid)
 /* Test AAAA record RDATA parsing */
 TEST (dns_rdata_parse_aaaa_valid)
 {
-  unsigned char wire[] = {
-    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    3, 'c', 'o', 'm',
-    0,              /* Name terminator */
-    0, 28,          /* TYPE = AAAA (28) */
-    0, 1,           /* CLASS = IN */
-    0, 0, 0x0E, 0x10, /* TTL = 3600 */
-    0, 16,          /* RDLENGTH = 16 */
-    /* 2606:2800:0220:0001:0248:1893:25c8:1946 */
-    0x26, 0x06, 0x28, 0x00, 0x02, 0x20, 0x00, 0x01,
-    0x02, 0x48, 0x18, 0x93, 0x25, 0xc8, 0x19, 0x46
-  };
+  unsigned char wire[] = { 7,
+                           'e',
+                           'x',
+                           'a',
+                           'm',
+                           'p',
+                           'l',
+                           'e',
+                           3,
+                           'c',
+                           'o',
+                           'm',
+                           0, /* Name terminator */
+                           0,
+                           28, /* TYPE = AAAA (28) */
+                           0,
+                           1, /* CLASS = IN */
+                           0,
+                           0,
+                           0x0E,
+                           0x10, /* TTL = 3600 */
+                           0,
+                           16, /* RDLENGTH = 16 */
+                           /* 2606:2800:0220:0001:0248:1893:25c8:1946 */
+                           0x26,
+                           0x06,
+                           0x28,
+                           0x00,
+                           0x02,
+                           0x20,
+                           0x00,
+                           0x01,
+                           0x02,
+                           0x48,
+                           0x18,
+                           0x93,
+                           0x25,
+                           0xc8,
+                           0x19,
+                           0x46 };
   SocketDNS_RR rr;
   struct in6_addr addr;
   char str[INET6_ADDRSTRLEN];
@@ -1454,7 +1536,7 @@ TEST (dns_rdata_parse_a_wrong_rdlength)
 {
   SocketDNS_RR rr;
   struct in_addr addr;
-  unsigned char fake_rdata[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  unsigned char fake_rdata[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
 
   memset (&rr, 0, sizeof (rr));
   rr.type = DNS_TYPE_A;
@@ -1499,7 +1581,7 @@ TEST (dns_rdata_parse_a_rejects_aaaa)
 
   memset (&rr, 0, sizeof (rr));
   memset (fake_rdata, 0, sizeof (fake_rdata));
-  rr.type = DNS_TYPE_AAAA;  /* Wrong type */
+  rr.type = DNS_TYPE_AAAA; /* Wrong type */
   rr.rdlength = 4;
   rr.rdata = fake_rdata;
 
@@ -1515,7 +1597,7 @@ TEST (dns_rdata_parse_aaaa_rejects_a)
 
   memset (&rr, 0, sizeof (rr));
   memset (fake_rdata, 0, sizeof (fake_rdata));
-  rr.type = DNS_TYPE_A;  /* Wrong type */
+  rr.type = DNS_TYPE_A; /* Wrong type */
   rr.rdlength = 16;
   rr.rdata = fake_rdata;
 
@@ -1527,7 +1609,7 @@ TEST (dns_rdata_parse_a_null_handling)
 {
   SocketDNS_RR rr;
   struct in_addr addr;
-  unsigned char fake_rdata[4] = {1, 2, 3, 4};
+  unsigned char fake_rdata[4] = { 1, 2, 3, 4 };
 
   memset (&rr, 0, sizeof (rr));
   rr.type = DNS_TYPE_A;
@@ -1574,7 +1656,7 @@ TEST (dns_rdata_parse_a_loopback)
 {
   SocketDNS_RR rr;
   struct in_addr addr;
-  unsigned char rdata[4] = {127, 0, 0, 1};  /* 127.0.0.1 */
+  unsigned char rdata[4] = { 127, 0, 0, 1 }; /* 127.0.0.1 */
   char str[INET_ADDRSTRLEN];
 
   memset (&rr, 0, sizeof (rr));
@@ -1592,8 +1674,8 @@ TEST (dns_rdata_parse_aaaa_loopback)
 {
   SocketDNS_RR rr;
   struct in6_addr addr;
-  unsigned char rdata[16] = {0, 0, 0, 0, 0, 0, 0, 0,
-                             0, 0, 0, 0, 0, 0, 0, 1};  /* ::1 */
+  unsigned char rdata[16]
+      = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }; /* ::1 */
   char str[INET6_ADDRSTRLEN];
 
   memset (&rr, 0, sizeof (rr));
@@ -1625,30 +1707,41 @@ TEST (dns_rdata_parse_cname_valid)
 
   /* Query name "alias.example.com" at offset 12 */
   msg[offset++] = 5;
-  memcpy (msg + offset, "alias", 5); offset += 5;
+  memcpy (msg + offset, "alias", 5);
+  offset += 5;
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* CNAME RR header */
   size_t rr_start = offset;
   msg[offset++] = 0xC0; /* Compression pointer */
   msg[offset++] = 12;   /* Points back to "alias.example.com" */
-  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0x0E; msg[offset++] = 0x10; /* TTL = 3600 */
-  msg[offset++] = 0; msg[offset++] = 15;  /* RDLENGTH = 15 */
+  msg[offset++] = 0;
+  msg[offset++] = 5; /* TYPE = CNAME */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0x0E;
+  msg[offset++] = 0x10; /* TTL = 3600 */
+  msg[offset++] = 0;
+  msg[offset++] = 15; /* RDLENGTH = 15 */
 
   /* CNAME RDATA: "www.example.com" */
   msg[offset++] = 3;
-  memcpy (msg + offset, "www", 3); offset += 3;
+  memcpy (msg + offset, "www", 3);
+  offset += 3;
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
@@ -1673,26 +1766,35 @@ TEST (dns_rdata_parse_cname_compressed)
 
   /* "example.com" at offset 12 */
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* CNAME RR with "www" + pointer */
   size_t rr_start = offset;
   msg[offset++] = 3;
-  memcpy (msg + offset, "foo", 3); offset += 3;
+  memcpy (msg + offset, "foo", 3);
+  offset += 3;
   msg[offset++] = 0xC0;
   msg[offset++] = 12; /* ptr to "example.com" */
-  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 60;  /* TTL = 60 */
-  msg[offset++] = 0; msg[offset++] = 6;   /* RDLENGTH = 6 (www + ptr) */
+  msg[offset++] = 0;
+  msg[offset++] = 5; /* TYPE = CNAME */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 60; /* TTL = 60 */
+  msg[offset++] = 0;
+  msg[offset++] = 6; /* RDLENGTH = 6 (www + ptr) */
 
   /* CNAME RDATA: "www" + pointer to offset 12 */
   msg[offset++] = 3;
-  memcpy (msg + offset, "www", 3); offset += 3;
+  memcpy (msg + offset, "www", 3);
+  offset += 3;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
 
@@ -1710,16 +1812,17 @@ TEST (dns_rdata_parse_cname_wrong_type)
   unsigned char msg[64];
   SocketDNS_RR rr;
   char cname[DNS_MAX_NAME_LEN];
-  unsigned char fake_rdata[4] = {1, 2, 3, 4};
+  unsigned char fake_rdata[4] = { 1, 2, 3, 4 };
 
   memset (msg, 0, sizeof (msg));
   memset (&rr, 0, sizeof (rr));
-  rr.type = DNS_TYPE_A;  /* Wrong type - should be CNAME */
+  rr.type = DNS_TYPE_A; /* Wrong type - should be CNAME */
   rr.rdlength = 4;
   rr.rdata = fake_rdata;
 
-  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
-                                           cname, sizeof (cname)), -1);
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (
+                 msg, sizeof (msg), &rr, cname, sizeof (cname)),
+             -1);
 }
 
 /* Test NULL pointer handling */
@@ -1735,23 +1838,26 @@ TEST (dns_rdata_parse_cname_null_handling)
   memset (fake_rdata, 0, sizeof (fake_rdata));
   rr.type = DNS_TYPE_CNAME;
   rr.rdlength = 10;
-  rr.rdata = msg + 20;  /* Point somewhere in msg */
+  rr.rdata = msg + 20; /* Point somewhere in msg */
 
   /* NULL msg */
-  ASSERT_EQ (SocketDNS_rdata_parse_cname (NULL, sizeof (msg), &rr,
-                                           cname, sizeof (cname)), -1);
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (
+                 NULL, sizeof (msg), &rr, cname, sizeof (cname)),
+             -1);
 
   /* NULL rr */
-  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), NULL,
-                                           cname, sizeof (cname)), -1);
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (
+                 msg, sizeof (msg), NULL, cname, sizeof (cname)),
+             -1);
 
   /* NULL cname buffer */
-  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
-                                           NULL, sizeof (cname)), -1);
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (
+                 msg, sizeof (msg), &rr, NULL, sizeof (cname)),
+             -1);
 
   /* Zero cnamelen */
-  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
-                                           cname, 0), -1);
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr, cname, 0),
+             -1);
 }
 
 /* Test CNAME with empty RDATA */
@@ -1764,11 +1870,12 @@ TEST (dns_rdata_parse_cname_empty_rdata)
   memset (msg, 0, sizeof (msg));
   memset (&rr, 0, sizeof (rr));
   rr.type = DNS_TYPE_CNAME;
-  rr.rdlength = 0;  /* Empty */
+  rr.rdlength = 0; /* Empty */
   rr.rdata = NULL;
 
-  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
-                                           cname, sizeof (cname)), -1);
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (
+                 msg, sizeof (msg), &rr, cname, sizeof (cname)),
+             -1);
 }
 
 /* Test full integration: header -> question -> CNAME RR -> parse */
@@ -1804,32 +1911,45 @@ TEST (dns_rdata_parse_cname_integration)
   /* Build question at offset 12: "alias.test.com" CNAME */
   offset = 12;
   msg[offset++] = 5;
-  memcpy (msg + offset, "alias", 5); offset += 5;
+  memcpy (msg + offset, "alias", 5);
+  offset += 5;
   msg[offset++] = 4;
-  memcpy (msg + offset, "test", 4); offset += 4;
+  memcpy (msg + offset, "test", 4);
+  offset += 4;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 5;  /* QTYPE = CNAME */
-  msg[offset++] = 0; msg[offset++] = 1;  /* QCLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 5; /* QTYPE = CNAME */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* QCLASS = IN */
 
   /* Build answer RR with compressed name */
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
-  msg[offset++] = 12;   /* Pointer to "alias.test.com" */
-  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 120; /* TTL = 120 */
-  msg[offset++] = 0; msg[offset++] = 12;  /* RDLENGTH = 12 */
+  msg[offset++] = 12; /* Pointer to "alias.test.com" */
+  msg[offset++] = 0;
+  msg[offset++] = 5; /* TYPE = CNAME */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 120; /* TTL = 120 */
+  msg[offset++] = 0;
+  msg[offset++] = 12; /* RDLENGTH = 12 */
 
   /* CNAME RDATA: "real.test.com" */
   msg[offset++] = 4;
-  memcpy (msg + offset, "real", 4); offset += 4;
+  memcpy (msg + offset, "real", 4);
+  offset += 4;
   msg[offset++] = 4;
-  memcpy (msg + offset, "test", 4); offset += 4;
+  memcpy (msg + offset, "test", 4);
+  offset += 4;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* Parse header */
@@ -1838,7 +1958,8 @@ TEST (dns_rdata_parse_cname_integration)
   ASSERT_EQ (decoded_header.ancount, 1);
 
   /* Parse question */
-  ASSERT_EQ (SocketDNS_question_decode (msg, offset, 12, &question, &consumed), 0);
+  ASSERT_EQ (SocketDNS_question_decode (msg, offset, 12, &question, &consumed),
+             0);
   ASSERT (strcmp (question.qname, "alias.test.com") == 0);
 
   /* Parse CNAME RR */
@@ -1847,7 +1968,8 @@ TEST (dns_rdata_parse_cname_integration)
   ASSERT_EQ (rr.ttl, 120);
 
   /* Parse CNAME RDATA */
-  int len = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
+  int len
+      = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
   ASSERT (len >= 0);
   ASSERT (strcmp (cname, "real.test.com") == 0);
 }
@@ -1866,30 +1988,39 @@ TEST (dns_rdata_parse_cname_deep_compression)
 
   /* "com" at offset 12 */
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* "example" + ptr to "com" at offset 17 */
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
 
   /* RR with name "foo" + ptr to "example.com" */
   size_t rr_start = offset;
   msg[offset++] = 3;
-  memcpy (msg + offset, "foo", 3); offset += 3;
+  memcpy (msg + offset, "foo", 3);
+  offset += 3;
   msg[offset++] = 0xC0;
   msg[offset++] = 17;
-  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 60;  /* TTL */
-  msg[offset++] = 0; msg[offset++] = 6;   /* RDLENGTH */
+  msg[offset++] = 0;
+  msg[offset++] = 5; /* TYPE = CNAME */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 60; /* TTL */
+  msg[offset++] = 0;
+  msg[offset++] = 6; /* RDLENGTH */
 
   /* CNAME RDATA: "bar" + ptr to "example.com" */
   msg[offset++] = 3;
-  memcpy (msg + offset, "bar", 3); offset += 3;
+  memcpy (msg + offset, "bar", 3);
+  offset += 3;
   msg[offset++] = 0xC0;
   msg[offset++] = 17;
 
@@ -1915,30 +2046,41 @@ TEST (dns_rdata_parse_cname_subdomain)
 
   /* "short.io" at offset 12 */
   msg[offset++] = 5;
-  memcpy (msg + offset, "short", 5); offset += 5;
+  memcpy (msg + offset, "short", 5);
+  offset += 5;
   msg[offset++] = 2;
-  memcpy (msg + offset, "io", 2); offset += 2;
+  memcpy (msg + offset, "io", 2);
+  offset += 2;
   msg[offset++] = 0;
 
   /* CNAME RR */
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
-  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 300 & 0xFF; /* TTL = 300 */
-  msg[offset++] = 0; msg[offset++] = 22;  /* RDLENGTH */
+  msg[offset++] = 0;
+  msg[offset++] = 5; /* TYPE = CNAME */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 300 & 0xFF; /* TTL = 300 */
+  msg[offset++] = 0;
+  msg[offset++] = 22; /* RDLENGTH */
 
   /* CNAME RDATA: "redirect.cdn.cloudflare.net" */
   msg[offset++] = 8;
-  memcpy (msg + offset, "redirect", 8); offset += 8;
+  memcpy (msg + offset, "redirect", 8);
+  offset += 8;
   msg[offset++] = 3;
-  memcpy (msg + offset, "cdn", 3); offset += 3;
+  memcpy (msg + offset, "cdn", 3);
+  offset += 3;
   msg[offset++] = 10;
-  memcpy (msg + offset, "cloudflare", 10); offset += 10;
+  memcpy (msg + offset, "cloudflare", 10);
+  offset += 10;
   msg[offset++] = 3;
-  memcpy (msg + offset, "net", 3); offset += 3;
+  memcpy (msg + offset, "net", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
@@ -1967,35 +2109,44 @@ TEST (dns_rdata_parse_soa_valid)
 
   /* "example.com" at offset 12 */
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 3;
-  memcpy (msg + offset, "com", 3); offset += 3;
+  memcpy (msg + offset, "com", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* SOA RR */
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
-  msg[offset++] = 12;  /* Name pointer to example.com */
-  msg[offset++] = 0; msg[offset++] = 6;   /* TYPE = SOA */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0x0E; msg[offset++] = 0x10; /* TTL = 3600 */
+  msg[offset++] = 12; /* Name pointer to example.com */
+  msg[offset++] = 0;
+  msg[offset++] = 6; /* TYPE = SOA */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0x0E;
+  msg[offset++] = 0x10; /* TTL = 3600 */
 
   /* RDLENGTH - calculated after building RDATA */
   size_t rdlen_offset = offset;
-  msg[offset++] = 0; msg[offset++] = 0; /* placeholder */
+  msg[offset++] = 0;
+  msg[offset++] = 0; /* placeholder */
 
   size_t rdata_start = offset;
 
   /* MNAME: "ns1.example.com" */
   msg[offset++] = 3;
-  memcpy (msg + offset, "ns1", 3); offset += 3;
+  memcpy (msg + offset, "ns1", 3);
+  offset += 3;
   msg[offset++] = 0xC0;
   msg[offset++] = 12; /* pointer to example.com */
 
   /* RNAME: "hostmaster.example.com" */
   msg[offset++] = 10;
-  memcpy (msg + offset, "hostmaster", 10); offset += 10;
+  memcpy (msg + offset, "hostmaster", 10);
+  offset += 10;
   msg[offset++] = 0xC0;
   msg[offset++] = 12; /* pointer to example.com */
 
@@ -2060,22 +2211,29 @@ TEST (dns_rdata_parse_soa_compressed_mname)
 
   /* "dns.google" at offset 12 */
   msg[offset++] = 3;
-  memcpy (msg + offset, "dns", 3); offset += 3;
+  memcpy (msg + offset, "dns", 3);
+  offset += 3;
   msg[offset++] = 6;
-  memcpy (msg + offset, "google", 6); offset += 6;
+  memcpy (msg + offset, "google", 6);
+  offset += 6;
   msg[offset++] = 0;
 
   /* SOA RR */
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
-  msg[offset++] = 0; msg[offset++] = 6;   /* TYPE = SOA */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 60;  /* TTL = 60 */
+  msg[offset++] = 0;
+  msg[offset++] = 6; /* TYPE = SOA */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 60; /* TTL = 60 */
 
   size_t rdlen_offset = offset;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   size_t rdata_start = offset;
 
@@ -2085,17 +2243,34 @@ TEST (dns_rdata_parse_soa_compressed_mname)
 
   /* RNAME: "admin.google" (uncompressed) */
   msg[offset++] = 5;
-  memcpy (msg + offset, "admin", 5); offset += 5;
+  memcpy (msg + offset, "admin", 5);
+  offset += 5;
   msg[offset++] = 6;
-  memcpy (msg + offset, "google", 6); offset += 6;
+  memcpy (msg + offset, "google", 6);
+  offset += 6;
   msg[offset++] = 0;
 
   /* Fixed fields (20 bytes) */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01; /* SERIAL */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x03; msg[offset++] = 0x84; /* REFRESH */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x3C; /* RETRY */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x07; msg[offset++] = 0x08; /* EXPIRE */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x3C; /* MINIMUM */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01; /* SERIAL */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x03;
+  msg[offset++] = 0x84; /* REFRESH */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x3C; /* RETRY */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x07;
+  msg[offset++] = 0x08; /* EXPIRE */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x3C; /* MINIMUM */
 
   size_t rdlen = offset - rdata_start;
   msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
@@ -2120,46 +2295,72 @@ TEST (dns_rdata_parse_soa_compressed_rname)
 
   /* "example.org" at offset 12 */
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 3;
-  memcpy (msg + offset, "org", 3); offset += 3;
+  memcpy (msg + offset, "org", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* SOA RR */
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
-  msg[offset++] = 0; msg[offset++] = 6;   /* TYPE = SOA */
-  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 120; /* TTL */
+  msg[offset++] = 0;
+  msg[offset++] = 6; /* TYPE = SOA */
+  msg[offset++] = 0;
+  msg[offset++] = 1; /* CLASS = IN */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 120; /* TTL */
 
   size_t rdlen_offset = offset;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   size_t rdata_start = offset;
 
   /* MNAME: "ns.example.org" (uncompressed) */
   msg[offset++] = 2;
-  memcpy (msg + offset, "ns", 2); offset += 2;
+  memcpy (msg + offset, "ns", 2);
+  offset += 2;
   msg[offset++] = 7;
-  memcpy (msg + offset, "example", 7); offset += 7;
+  memcpy (msg + offset, "example", 7);
+  offset += 7;
   msg[offset++] = 3;
-  memcpy (msg + offset, "org", 3); offset += 3;
+  memcpy (msg + offset, "org", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* RNAME: "admin" + pointer to example.org */
   msg[offset++] = 5;
-  memcpy (msg + offset, "admin", 5); offset += 5;
+  memcpy (msg + offset, "admin", 5);
+  offset += 5;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
 
   /* Fixed fields */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x64; /* SERIAL = 100 */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01; msg[offset++] = 0x2C; /* REFRESH = 300 */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x64; /* RETRY = 100 */
-  msg[offset++] = 0x00; msg[offset++] = 0x01; msg[offset++] = 0x51; msg[offset++] = 0x80; /* EXPIRE = 86400 */
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01; msg[offset++] = 0x2C; /* MINIMUM = 300 */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x64; /* SERIAL = 100 */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x2C; /* REFRESH = 300 */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x64; /* RETRY = 100 */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x51;
+  msg[offset++] = 0x80; /* EXPIRE = 86400 */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x2C; /* MINIMUM = 300 */
 
   size_t rdlen = offset - rdata_start;
   msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
@@ -2186,22 +2387,29 @@ TEST (dns_rdata_parse_soa_both_compressed)
 
   /* "test.net" at offset 12 */
   msg[offset++] = 4;
-  memcpy (msg + offset, "test", 4); offset += 4;
+  memcpy (msg + offset, "test", 4);
+  offset += 4;
   msg[offset++] = 3;
-  memcpy (msg + offset, "net", 3); offset += 3;
+  memcpy (msg + offset, "net", 3);
+  offset += 3;
   msg[offset++] = 0;
 
   /* SOA RR */
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
-  msg[offset++] = 0; msg[offset++] = 6;
-  msg[offset++] = 0; msg[offset++] = 1;
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 6;
+  msg[offset++] = 0;
+  msg[offset++] = 1;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   size_t rdlen_offset = offset;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   size_t rdata_start = offset;
 
@@ -2214,11 +2422,26 @@ TEST (dns_rdata_parse_soa_both_compressed)
   msg[offset++] = 12;
 
   /* Fixed fields */
-  msg[offset++] = 0x12; msg[offset++] = 0x34; msg[offset++] = 0x56; msg[offset++] = 0x78;
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01;
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x02;
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x03;
-  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x04;
+  msg[offset++] = 0x12;
+  msg[offset++] = 0x34;
+  msg[offset++] = 0x56;
+  msg[offset++] = 0x78;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x02;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x03;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x04;
 
   size_t rdlen = offset - rdata_start;
   msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
@@ -2245,7 +2468,7 @@ TEST (dns_rdata_parse_soa_wrong_type)
   memset (msg, 0, sizeof (msg));
   memset (&rr, 0, sizeof (rr));
 
-  rr.type = DNS_TYPE_A;  /* Wrong type */
+  rr.type = DNS_TYPE_A; /* Wrong type */
   rr.rclass = DNS_CLASS_IN;
   rr.rdlength = 40;
   rr.rdata = msg + 12;
@@ -2301,21 +2524,31 @@ TEST (dns_rdata_parse_soa_truncated_fixed)
   size_t rr_start = offset;
   msg[offset++] = 0xC0;
   msg[offset++] = 12;
-  msg[offset++] = 0; msg[offset++] = 6;
-  msg[offset++] = 0; msg[offset++] = 1;
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 6;
+  msg[offset++] = 0;
+  msg[offset++] = 1;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   /* RDLENGTH = 10 (only enough for 2 pointers + partial fixed fields) */
-  msg[offset++] = 0; msg[offset++] = 10;
+  msg[offset++] = 0;
+  msg[offset++] = 10;
 
   size_t rdata_start = offset;
-  msg[offset++] = 0xC0; msg[offset++] = 12;  /* MNAME pointer */
-  msg[offset++] = 0xC0; msg[offset++] = 12;  /* RNAME pointer */
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12; /* MNAME pointer */
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12; /* RNAME pointer */
   /* Only 6 bytes of fixed fields (need 20) */
-  msg[offset++] = 0x00; msg[offset++] = 0x00;
-  msg[offset++] = 0x00; msg[offset++] = 0x01;
-  msg[offset++] = 0x00; msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
 
   ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
   ASSERT_EQ (rr.type, DNS_TYPE_SOA);
@@ -2374,7 +2607,9 @@ TEST (dns_rdata_parse_soa_integration)
   /* Build question for "example.net" SOA */
   SocketDNS_question_init (&question, "example.net", DNS_TYPE_SOA);
   size_t qwritten;
-  ASSERT_EQ (SocketDNS_question_encode (&question, msg + offset, sizeof (msg) - offset, &qwritten), 0);
+  ASSERT_EQ (SocketDNS_question_encode (
+                 &question, msg + offset, sizeof (msg) - offset, &qwritten),
+             0);
   size_t name_offset = offset; /* Remember where name starts for compression */
   offset += qwritten;
 
@@ -2464,7 +2699,9 @@ TEST (dns_rdata_parse_soa_integration)
 
   /* Decode and verify question */
   SocketDNS_Question decoded_question;
-  ASSERT_EQ (SocketDNS_question_decode (msg, offset, DNS_HEADER_SIZE, &decoded_question, &consumed), 0);
+  ASSERT_EQ (SocketDNS_question_decode (
+                 msg, offset, DNS_HEADER_SIZE, &decoded_question, &consumed),
+             0);
   ASSERT (strcmp (decoded_question.qname, "example.net") == 0);
   ASSERT_EQ (decoded_question.qtype, DNS_TYPE_SOA);
 
@@ -2501,14 +2738,19 @@ TEST (dns_rdata_parse_soa_verify_values)
 
   /* SOA RR for root */
   size_t rr_start = offset;
-  msg[offset++] = 0;  /* Root name */
-  msg[offset++] = 0; msg[offset++] = 6;
-  msg[offset++] = 0; msg[offset++] = 1;
-  msg[offset++] = 0; msg[offset++] = 0;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; /* Root name */
+  msg[offset++] = 0;
+  msg[offset++] = 6;
+  msg[offset++] = 0;
+  msg[offset++] = 1;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   size_t rdlen_offset = offset;
-  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
 
   size_t rdata_start = offset;
 
@@ -2620,17 +2862,17 @@ TEST (dns_opt_encode_basic)
   ASSERT_EQ (len, DNS_OPT_FIXED_SIZE);
 
   /* Verify wire format */
-  ASSERT_EQ (buf[0], 0x00);       /* NAME = root */
-  ASSERT_EQ (buf[1], 0x00);       /* TYPE high byte */
-  ASSERT_EQ (buf[2], 41);         /* TYPE = OPT (41) */
-  ASSERT_EQ (buf[3], 0x10);       /* CLASS high byte (4096 >> 8 = 16) */
-  ASSERT_EQ (buf[4], 0x00);       /* CLASS low byte */
-  ASSERT_EQ (buf[5], 0x00);       /* TTL byte 0 (extended RCODE) */
-  ASSERT_EQ (buf[6], 0x00);       /* TTL byte 1 (version) */
-  ASSERT_EQ (buf[7], 0x00);       /* TTL byte 2 (flags high) */
-  ASSERT_EQ (buf[8], 0x00);       /* TTL byte 3 (flags low) */
-  ASSERT_EQ (buf[9], 0x00);       /* RDLENGTH high */
-  ASSERT_EQ (buf[10], 0x00);      /* RDLENGTH low */
+  ASSERT_EQ (buf[0], 0x00);  /* NAME = root */
+  ASSERT_EQ (buf[1], 0x00);  /* TYPE high byte */
+  ASSERT_EQ (buf[2], 41);    /* TYPE = OPT (41) */
+  ASSERT_EQ (buf[3], 0x10);  /* CLASS high byte (4096 >> 8 = 16) */
+  ASSERT_EQ (buf[4], 0x00);  /* CLASS low byte */
+  ASSERT_EQ (buf[5], 0x00);  /* TTL byte 0 (extended RCODE) */
+  ASSERT_EQ (buf[6], 0x00);  /* TTL byte 1 (version) */
+  ASSERT_EQ (buf[7], 0x00);  /* TTL byte 2 (flags high) */
+  ASSERT_EQ (buf[8], 0x00);  /* TTL byte 3 (flags low) */
+  ASSERT_EQ (buf[9], 0x00);  /* RDLENGTH high */
+  ASSERT_EQ (buf[10], 0x00); /* RDLENGTH low */
 }
 
 /* Test OPT encoding with DO bit set */
@@ -2662,7 +2904,7 @@ TEST (dns_opt_encode_extended_rcode)
   int len;
 
   SocketDNS_opt_init (&opt, 4096);
-  opt.extended_rcode = 0x01;  /* BADVERS upper bits */
+  opt.extended_rcode = 0x01; /* BADVERS upper bits */
   opt.version = 0;
 
   len = SocketDNS_opt_encode (&opt, buf, sizeof (buf));
@@ -2679,11 +2921,11 @@ TEST (dns_opt_decode_basic)
 {
   SocketDNS_OPT opt;
   unsigned char buf[DNS_OPT_FIXED_SIZE] = {
-    0x00,             /* NAME = root */
-    0x00, 0x29,       /* TYPE = 41 (OPT) */
-    0x10, 0x00,       /* CLASS = 4096 */
-    0x00, 0x00, 0x00, 0x00,  /* TTL = 0 */
-    0x00, 0x00        /* RDLENGTH = 0 */
+    0x00,                   /* NAME = root */
+    0x00, 0x29,             /* TYPE = 41 (OPT) */
+    0x10, 0x00,             /* CLASS = 4096 */
+    0x00, 0x00, 0x00, 0x00, /* TTL = 0 */
+    0x00, 0x00              /* RDLENGTH = 0 */
   };
   int consumed;
 
@@ -2703,11 +2945,11 @@ TEST (dns_opt_decode_with_options)
 {
   SocketDNS_OPT opt;
   unsigned char buf[] = {
-    0x00,             /* NAME = root */
-    0x00, 0x29,       /* TYPE = 41 (OPT) */
-    0x04, 0xD0,       /* CLASS = 1232 */
-    0x00, 0x00, 0x80, 0x00,  /* TTL: extended=0, ver=0, DO=1, Z=0 */
-    0x00, 0x04,       /* RDLENGTH = 4 */
+    0x00,                   /* NAME = root */
+    0x00, 0x29,             /* TYPE = 41 (OPT) */
+    0x04, 0xD0,             /* CLASS = 1232 */
+    0x00, 0x00, 0x80, 0x00, /* TTL: extended=0, ver=0, DO=1, Z=0 */
+    0x00, 0x04,             /* RDLENGTH = 4 */
     0xDE, 0xAD, 0xBE, 0xEF  /* RDATA (dummy options) */
   };
   int consumed;
@@ -2727,34 +2969,28 @@ TEST (dns_opt_decode_with_options)
 TEST (dns_opt_decode_invalid_name)
 {
   SocketDNS_OPT opt;
-  unsigned char buf[] = {
-    0x03, 'f', 'o', 'o', 0x00,  /* NAME = "foo" (not root) */
-    0x00, 0x29,       /* TYPE = 41 */
-    0x10, 0x00,       /* CLASS */
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00
-  };
+  unsigned char buf[]
+      = { 0x03, 'f',  'o',  'o',  0x00, /* NAME = "foo" (not root) */
+          0x00, 0x29,                   /* TYPE = 41 */
+          0x10, 0x00,                   /* CLASS */
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   int consumed;
 
   consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
-  ASSERT_EQ (consumed, -1);  /* Should fail */
+  ASSERT_EQ (consumed, -1); /* Should fail */
 }
 
 /* Test OPT decode rejects wrong TYPE */
 TEST (dns_opt_decode_invalid_type)
 {
   SocketDNS_OPT opt;
-  unsigned char buf[] = {
-    0x00,             /* NAME = root */
-    0x00, 0x01,       /* TYPE = 1 (A, not OPT) */
-    0x10, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00
-  };
+  unsigned char buf[] = { 0x00,       /* NAME = root */
+                          0x00, 0x01, /* TYPE = 1 (A, not OPT) */
+                          0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   int consumed;
 
   consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
-  ASSERT_EQ (consumed, -1);  /* Should fail */
+  ASSERT_EQ (consumed, -1); /* Should fail */
 }
 
 /* Test OPT decode handles truncated buffer */
@@ -2770,9 +3006,8 @@ TEST (dns_opt_decode_truncated)
 
   /* Buffer too short for declared RDLENGTH */
   unsigned char buf2[] = {
-    0x00, 0x00, 0x29, 0x10, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x10  /* RDLENGTH = 16, but no RDATA */
+    0x00, 0x00, 0x29, 0x10, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x10 /* RDLENGTH = 16, but no RDATA */
   };
   consumed = SocketDNS_opt_decode (buf2, sizeof (buf2), &opt);
   ASSERT_EQ (consumed, -1);
@@ -2817,7 +3052,7 @@ TEST (dns_opt_extended_rcode_calc)
   memset (&opt, 0, sizeof (opt));
 
   /* Standard RCODE (no extension) */
-  hdr.rcode = 5;  /* REFUSED */
+  hdr.rcode = 5; /* REFUSED */
   rcode = SocketDNS_opt_extended_rcode (&hdr, NULL);
   ASSERT_EQ (rcode, 5);
 
@@ -2828,13 +3063,14 @@ TEST (dns_opt_extended_rcode_calc)
   ASSERT_EQ (rcode, 16);
 
   /* Extended RCODE with both parts set */
-  hdr.rcode = 3;  /* NXDOMAIN in lower bits */
-  opt.extended_rcode = 2;  /* 2 << 4 = 32 */
+  hdr.rcode = 3;          /* NXDOMAIN in lower bits */
+  opt.extended_rcode = 2; /* 2 << 4 = 32 */
   rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
-  ASSERT_EQ (rcode, 35);  /* (2 << 4) | 3 = 32 + 3 */
+  ASSERT_EQ (rcode, 35); /* (2 << 4) | 3 = 32 + 3 */
 }
 
-/* ==================== EDNS Option Tests (RFC 6891 §6.1.2) ==================== */
+/* ==================== EDNS Option Tests (RFC 6891 §6.1.2) ====================
+ */
 
 /* Test encode/decode single option */
 TEST (dns_edns_option_encode_decode)
@@ -2852,13 +3088,13 @@ TEST (dns_edns_option_encode_decode)
 
   /* Encode */
   encoded = SocketDNS_edns_option_encode (&orig, buf, sizeof (buf));
-  ASSERT_EQ (encoded, 12);  /* 4 (header) + 8 (data) */
+  ASSERT_EQ (encoded, 12); /* 4 (header) + 8 (data) */
 
   /* Verify wire format */
-  ASSERT_EQ (buf[0], 0x00);  /* Code high byte */
-  ASSERT_EQ (buf[1], 0x0A);  /* Code low byte (10) */
-  ASSERT_EQ (buf[2], 0x00);  /* Length high byte */
-  ASSERT_EQ (buf[3], 0x08);  /* Length low byte (8) */
+  ASSERT_EQ (buf[0], 0x00); /* Code high byte */
+  ASSERT_EQ (buf[1], 0x0A); /* Code low byte (10) */
+  ASSERT_EQ (buf[2], 0x00); /* Length high byte */
+  ASSERT_EQ (buf[3], 0x08); /* Length low byte (8) */
   ASSERT_EQ (memcmp (buf + 4, data, 8), 0);
 
   /* Decode via iterator */
@@ -2877,12 +3113,11 @@ TEST (dns_edns_option_encode_decode)
 /* Test encode/decode multiple options */
 TEST (dns_edns_options_multiple)
 {
-  unsigned char cookie_data[] = { 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22 };
+  unsigned char cookie_data[]
+      = { 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22 };
   unsigned char padding_data[] = { 0x00, 0x00, 0x00, 0x00 };
-  SocketDNS_EDNSOption opts[] = {
-    { DNS_EDNS_OPT_COOKIE, 8, cookie_data },
-    { DNS_EDNS_OPT_PADDING, 4, padding_data }
-  };
+  SocketDNS_EDNSOption opts[] = { { DNS_EDNS_OPT_COOKIE, 8, cookie_data },
+                                  { DNS_EDNS_OPT_PADDING, 4, padding_data } };
   SocketDNS_EDNSOption decoded;
   SocketDNS_EDNSOptionIter iter;
   unsigned char buf[64];
@@ -2891,7 +3126,7 @@ TEST (dns_edns_options_multiple)
 
   /* Encode multiple options */
   encoded = SocketDNS_edns_options_encode (opts, 2, buf, sizeof (buf));
-  ASSERT_EQ (encoded, 20);  /* (4+8) + (4+4) = 12 + 8 = 20 */
+  ASSERT_EQ (encoded, 20); /* (4+8) + (4+4) = 12 + 8 = 20 */
 
   /* Decode and count options */
   SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
@@ -2926,13 +3161,13 @@ TEST (dns_edns_option_zero_length)
   orig.data = NULL;
 
   encoded = SocketDNS_edns_option_encode (&orig, buf, sizeof (buf));
-  ASSERT_EQ (encoded, 4);  /* Just header, no data */
+  ASSERT_EQ (encoded, 4); /* Just header, no data */
 
   /* Verify wire format */
   ASSERT_EQ (buf[0], 0x00);
-  ASSERT_EQ (buf[1], 0x0B);  /* Code 11 */
+  ASSERT_EQ (buf[1], 0x0B); /* Code 11 */
   ASSERT_EQ (buf[2], 0x00);
-  ASSERT_EQ (buf[3], 0x00);  /* Length 0 */
+  ASSERT_EQ (buf[3], 0x00); /* Length 0 */
 
   /* Decode */
   SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
@@ -2945,12 +3180,11 @@ TEST (dns_edns_option_zero_length)
 /* Test find option by code (present) */
 TEST (dns_edns_option_find_present)
 {
-  unsigned char cookie_data[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+  unsigned char cookie_data[]
+      = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
   unsigned char nsid_data[] = { 'n', 's', '1' };
-  SocketDNS_EDNSOption opts[] = {
-    { DNS_EDNS_OPT_NSID, 3, nsid_data },
-    { DNS_EDNS_OPT_COOKIE, 8, cookie_data }
-  };
+  SocketDNS_EDNSOption opts[] = { { DNS_EDNS_OPT_NSID, 3, nsid_data },
+                                  { DNS_EDNS_OPT_COOKIE, 8, cookie_data } };
   SocketDNS_EDNSOption found;
   unsigned char buf[64];
   int encoded;
@@ -2959,13 +3193,17 @@ TEST (dns_edns_option_find_present)
   ASSERT (encoded > 0);
 
   /* Find COOKIE (second option) */
-  ASSERT (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_COOKIE, &found) == 1);
+  ASSERT (SocketDNS_edns_option_find (
+              buf, (size_t)encoded, DNS_EDNS_OPT_COOKIE, &found)
+          == 1);
   ASSERT_EQ (found.code, DNS_EDNS_OPT_COOKIE);
   ASSERT_EQ (found.length, 8);
   ASSERT_EQ (memcmp (found.data, cookie_data, 8), 0);
 
   /* Find NSID (first option) */
-  ASSERT (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_NSID, &found) == 1);
+  ASSERT (SocketDNS_edns_option_find (
+              buf, (size_t)encoded, DNS_EDNS_OPT_NSID, &found)
+          == 1);
   ASSERT_EQ (found.code, DNS_EDNS_OPT_NSID);
   ASSERT_EQ (found.length, 3);
   ASSERT_EQ (memcmp (found.data, nsid_data, 3), 0);
@@ -2975,9 +3213,7 @@ TEST (dns_edns_option_find_present)
 TEST (dns_edns_option_find_not_present)
 {
   unsigned char nsid_data[] = { 'n', 's', '1' };
-  SocketDNS_EDNSOption opts[] = {
-    { DNS_EDNS_OPT_NSID, 3, nsid_data }
-  };
+  SocketDNS_EDNSOption opts[] = { { DNS_EDNS_OPT_NSID, 3, nsid_data } };
   SocketDNS_EDNSOption found;
   unsigned char buf[32];
   int encoded;
@@ -2986,10 +3222,14 @@ TEST (dns_edns_option_find_not_present)
   ASSERT (encoded > 0);
 
   /* Try to find COOKIE (not present) */
-  ASSERT_EQ (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_COOKIE, &found), 0);
+  ASSERT_EQ (SocketDNS_edns_option_find (
+                 buf, (size_t)encoded, DNS_EDNS_OPT_COOKIE, &found),
+             0);
 
   /* Try to find Extended Error (not present) */
-  ASSERT_EQ (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_EXTENDED_ERROR, &found), 0);
+  ASSERT_EQ (SocketDNS_edns_option_find (
+                 buf, (size_t)encoded, DNS_EDNS_OPT_EXTENDED_ERROR, &found),
+             0);
 }
 
 /* Test iterate over empty RDATA */
@@ -3013,7 +3253,8 @@ TEST (dns_edns_option_iter_truncated_header)
 {
   SocketDNS_EDNSOptionIter iter;
   SocketDNS_EDNSOption opt;
-  unsigned char buf[] = { 0x00, 0x0A, 0x00 };  /* Only 3 bytes, need 4 for header */
+  unsigned char buf[]
+      = { 0x00, 0x0A, 0x00 }; /* Only 3 bytes, need 4 for header */
 
   SocketDNS_edns_option_iter_init (&iter, buf, sizeof (buf));
   ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, &opt), 0);
@@ -3036,7 +3277,7 @@ TEST (dns_edns_option_encode_buffer_small)
 {
   SocketDNS_EDNSOption opt;
   unsigned char data[] = { 0x01, 0x02, 0x03, 0x04 };
-  unsigned char buf[4];  /* Too small for 4-byte header + 4-byte data */
+  unsigned char buf[4]; /* Too small for 4-byte header + 4-byte data */
 
   opt.code = DNS_EDNS_OPT_PADDING;
   opt.length = 4;
@@ -3096,7 +3337,8 @@ TEST (dns_edns_option_null_handling)
   ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, NULL), 0);
 
   /* find with NULL should return 0 */
-  ASSERT_EQ (SocketDNS_edns_option_find (buf, 32, DNS_EDNS_OPT_COOKIE, NULL), 0);
+  ASSERT_EQ (SocketDNS_edns_option_find (buf, 32, DNS_EDNS_OPT_COOKIE, NULL),
+             0);
 }
 
 /* Test option codes enum values */
@@ -3123,12 +3365,12 @@ TEST (dns_edns_option_roundtrip_wire)
    * Option 2: Padding (12), length 2, data 0x00 0x00
    */
   unsigned char wire[] = {
-    0x00, 0x03,             /* Code: NSID (3) */
-    0x00, 0x04,             /* Length: 4 */
-    'n', 's', '4', '2',     /* Data: "ns42" */
-    0x00, 0x0C,             /* Code: Padding (12) */
-    0x00, 0x02,             /* Length: 2 */
-    0x00, 0x00              /* Data: padding bytes */
+    0x00, 0x03,           /* Code: NSID (3) */
+    0x00, 0x04,           /* Length: 4 */
+    'n',  's',  '4', '2', /* Data: "ns42" */
+    0x00, 0x0C,           /* Code: Padding (12) */
+    0x00, 0x02,           /* Length: 2 */
+    0x00, 0x00            /* Data: padding bytes */
   };
   SocketDNS_EDNSOption opt;
   SocketDNS_EDNSOptionIter iter;
@@ -3174,7 +3416,7 @@ TEST (dns_edns_option_large_data)
   opt.data = data;
 
   encoded = SocketDNS_edns_option_encode (&opt, buf, sizeof (buf));
-  ASSERT_EQ (encoded, 260);  /* 4 + 256 */
+  ASSERT_EQ (encoded, 260); /* 4 + 256 */
 
   SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
   ASSERT (SocketDNS_edns_option_iter_next (&iter, &decoded) == 1);
@@ -3276,7 +3518,7 @@ TEST (dns_opt_ttl_all_fields)
   flags.extended_rcode = 0x12;
   flags.version = 0x34;
   flags.do_bit = 1;
-  flags.z = 0x5678 & 0x7FFF;  /* Only 15 bits */
+  flags.z = 0x5678 & 0x7FFF; /* Only 15 bits */
 
   ttl = SocketDNS_opt_ttl_encode (&flags);
 
@@ -3297,8 +3539,8 @@ TEST (dns_opt_is_badvers)
   SocketDNS_OPT opt = { 0 };
 
   /* BADVERS = extended RCODE 16 = (1 << 4) | 0 */
-  hdr.rcode = 0;  /* Lower 4 bits */
-  opt.extended_rcode = 1;  /* Upper 8 bits: 1 << 4 = 16 */
+  hdr.rcode = 0;          /* Lower 4 bits */
+  opt.extended_rcode = 1; /* Upper 8 bits: 1 << 4 = 16 */
 
   ASSERT (SocketDNS_opt_is_badvers (&hdr, &opt) == 1);
 
@@ -3374,7 +3616,7 @@ TEST (dns_extended_rcode_constants)
 {
   /* Verify extended RCODE values match IANA registry */
   ASSERT_EQ (DNS_RCODE_EXT_BADVERS, 16);
-  ASSERT_EQ (DNS_RCODE_EXT_BADSIG, 16);  /* Same as BADVERS */
+  ASSERT_EQ (DNS_RCODE_EXT_BADSIG, 16); /* Same as BADVERS */
   ASSERT_EQ (DNS_RCODE_EXT_BADKEY, 17);
   ASSERT_EQ (DNS_RCODE_EXT_BADTIME, 18);
   ASSERT_EQ (DNS_RCODE_EXT_BADMODE, 19);
@@ -3422,7 +3664,7 @@ TEST (dns_opt_ttl_z_bits)
   uint32_t ttl;
 
   /* Set Z bits (15 bits maximum) */
-  flags.z = 0x7FFF;  /* Maximum valid Z value */
+  flags.z = 0x7FFF; /* Maximum valid Z value */
 
   ttl = SocketDNS_opt_ttl_encode (&flags);
   ASSERT_EQ (ttl, 0x7FFFU);
@@ -3431,10 +3673,10 @@ TEST (dns_opt_ttl_z_bits)
   ASSERT_EQ (decoded.z, 0x7FFF);
 
   /* Z bits should be masked to 15 bits */
-  flags.z = 0xFFFF;  /* Overflow */
+  flags.z = 0xFFFF; /* Overflow */
   ttl = SocketDNS_opt_ttl_encode (&flags);
   SocketDNS_opt_ttl_decode (ttl, &decoded);
-  ASSERT_EQ (decoded.z, 0x7FFF);  /* Only 15 bits preserved */
+  ASSERT_EQ (decoded.z, 0x7FFF); /* Only 15 bits preserved */
 }
 
 /*
@@ -3529,7 +3771,7 @@ TEST (dns_payload_fallback_to_tcp)
 
   ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_TCP);
   size = SocketDNS_payload_get_size (&tracker, NULL);
-  ASSERT_EQ (size, 0);  /* 0 means TCP required */
+  ASSERT_EQ (size, 0); /* 0 means TCP required */
   ASSERT (SocketDNS_payload_needs_tcp (&tracker) == 1);
 }
 
@@ -3666,11 +3908,17 @@ TEST (dns_payload_null_handling)
 /* Test state name strings */
 TEST (dns_payload_state_names)
 {
-  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_4096), "4096") == 0);
-  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_1400), "1400") == 0);
-  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_512), "512") == 0);
-  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_TCP), "TCP") == 0);
-  ASSERT (strcmp (SocketDNS_payload_state_name ((SocketDNS_PayloadState)99), "unknown") == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_4096), "4096")
+          == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_1400), "1400")
+          == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_512), "512")
+          == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_TCP), "TCP")
+          == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name ((SocketDNS_PayloadState)99),
+                  "unknown")
+          == 0);
 }
 
 /* Test custom config */
@@ -3890,11 +4138,9 @@ TEST (dns_opt_validate_multiple_options)
   SocketDNS_OPT_ValidationResult result;
 
   /* Two options: NSID (code=3) and COOKIE (code=10) */
-  unsigned char rdata[] = {
-    0x00, 0x03, 0x00, 0x02, 'A', 'B',      /* NSID: "AB" */
-    0x00, 0x0A, 0x00, 0x08,                /* COOKIE: 8 bytes */
-    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
-  };
+  unsigned char rdata[] = { 0x00, 0x03, 0x00, 0x02, 'A',  'B', /* NSID: "AB" */
+                            0x00, 0x0A, 0x00, 0x08, /* COOKIE: 8 bytes */
+                            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
   opt.udp_payload_size = 4096;
   opt.extended_rcode = 0;
@@ -3920,7 +4166,7 @@ TEST (dns_response_count_opt_none)
   memset (msg, 0, sizeof (msg));
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
-  hdr.qr = 1;  /* Response */
+  hdr.qr = 1; /* Response */
   hdr.qdcount = 1;
   hdr.ancount = 0;
   hdr.nscount = 0;
@@ -3929,11 +4175,17 @@ TEST (dns_response_count_opt_none)
 
   /* Add question: example.com A */
   unsigned char *p = msg + len;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;  /* TYPE A */
-  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  *p++ = 0;
+  *p++ = 1; /* TYPE A */
+  *p++ = 0;
+  *p++ = 1; /* CLASS IN */
   len = (size_t)(p - msg);
 
   count = SocketDNS_response_count_opt (msg, len, &hdr);
@@ -3952,7 +4204,7 @@ TEST (dns_response_count_opt_one)
   memset (msg, 0, sizeof (msg));
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
-  hdr.qr = 1;  /* Response */
+  hdr.qr = 1; /* Response */
   hdr.qdcount = 1;
   hdr.ancount = 0;
   hdr.nscount = 0;
@@ -3961,18 +4213,30 @@ TEST (dns_response_count_opt_one)
 
   /* Add question: example.com A */
   unsigned char *p = msg + len;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;  /* TYPE A */
-  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  *p++ = 0;
+  *p++ = 1; /* TYPE A */
+  *p++ = 0;
+  *p++ = 1; /* CLASS IN */
 
   /* Add OPT record: NAME=0, TYPE=41, CLASS=4096, TTL=0, RDLEN=0 */
-  *p++ = 0;            /* NAME: root */
-  *p++ = 0; *p++ = 41; /* TYPE: OPT */
-  *p++ = 0x10; *p++ = 0x00; /* CLASS: 4096 (UDP payload) */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
-  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+  *p++ = 0; /* NAME: root */
+  *p++ = 0;
+  *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x10;
+  *p++ = 0x00; /* CLASS: 4096 (UDP payload) */
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0; /* TTL */
+  *p++ = 0;
+  *p++ = 0; /* RDLEN: 0 */
 
   len = (size_t)(p - msg);
 
@@ -3992,7 +4256,7 @@ TEST (dns_response_count_opt_multiple)
   memset (msg, 0, sizeof (msg));
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
-  hdr.qr = 1;  /* Response */
+  hdr.qr = 1; /* Response */
   hdr.qdcount = 1;
   hdr.ancount = 0;
   hdr.nscount = 0;
@@ -4001,25 +4265,43 @@ TEST (dns_response_count_opt_multiple)
 
   /* Add question: example.com A */
   unsigned char *p = msg + len;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;  /* TYPE A */
-  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  *p++ = 0;
+  *p++ = 1; /* TYPE A */
+  *p++ = 0;
+  *p++ = 1; /* CLASS IN */
 
   /* First OPT record */
-  *p++ = 0;            /* NAME: root */
-  *p++ = 0; *p++ = 41; /* TYPE: OPT */
-  *p++ = 0x10; *p++ = 0x00; /* CLASS: 4096 */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
-  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+  *p++ = 0; /* NAME: root */
+  *p++ = 0;
+  *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x10;
+  *p++ = 0x00; /* CLASS: 4096 */
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0; /* TTL */
+  *p++ = 0;
+  *p++ = 0; /* RDLEN: 0 */
 
   /* Second OPT record */
-  *p++ = 0;            /* NAME: root */
-  *p++ = 0; *p++ = 41; /* TYPE: OPT */
-  *p++ = 0x08; *p++ = 0x00; /* CLASS: 2048 */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
-  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+  *p++ = 0; /* NAME: root */
+  *p++ = 0;
+  *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x08;
+  *p++ = 0x00; /* CLASS: 2048 */
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0; /* TTL */
+  *p++ = 0;
+  *p++ = 0; /* RDLEN: 0 */
 
   len = (size_t)(p - msg);
 
@@ -4035,7 +4317,7 @@ TEST (dns_response_count_opt_null)
 
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
-  hdr.qr = 1;  /* Response */
+  hdr.qr = 1; /* Response */
   hdr.qdcount = 1;
 
   count = SocketDNS_response_count_opt (NULL, 100, &hdr);
@@ -4046,7 +4328,7 @@ TEST (dns_response_count_opt_null)
 TEST (dns_response_count_opt_null_header)
 {
   int count;
-  unsigned char msg[12] = {0};
+  unsigned char msg[12] = { 0 };
 
   count = SocketDNS_response_count_opt (msg, sizeof (msg), NULL);
   ASSERT_EQ (count, -1);
@@ -4063,7 +4345,7 @@ TEST (dns_response_count_opt_truncated)
   memset (msg, 0, sizeof (msg));
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
-  hdr.qr = 1;  /* Response */
+  hdr.qr = 1; /* Response */
   hdr.qdcount = 1;
   hdr.arcount = 1;
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
@@ -4076,13 +4358,28 @@ TEST (dns_response_count_opt_truncated)
 TEST (dns_opt_validation_str)
 {
   ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_VALID), "valid") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_NAME), "invalid NAME (must be root)") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_TYPE), "invalid TYPE (must be 41)") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_MULTIPLE), "multiple OPT records") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_TRUNCATED), "truncated RDATA") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_MALFORMED_OPTION), "malformed option in RDATA") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_RDATA), "invalid RDATA") == 0);
-  ASSERT (strcmp (SocketDNS_opt_validation_str ((SocketDNS_OPT_ValidationResult)99), "unknown error") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_NAME),
+                  "invalid NAME (must be root)")
+          == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_TYPE),
+                  "invalid TYPE (must be 41)")
+          == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_MULTIPLE),
+                  "multiple OPT records")
+          == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_TRUNCATED),
+                  "truncated RDATA")
+          == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_MALFORMED_OPTION),
+                  "malformed option in RDATA")
+          == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_RDATA),
+                  "invalid RDATA")
+          == 0);
+  ASSERT (
+      strcmp (SocketDNS_opt_validation_str ((SocketDNS_OPT_ValidationResult)99),
+              "unknown error")
+      == 0);
 }
 
 /* Test OPT record in answer section is still counted */
@@ -4097,7 +4394,7 @@ TEST (dns_response_count_opt_in_answer)
   memset (msg, 0, sizeof (msg));
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
-  hdr.qr = 1;  /* Response */
+  hdr.qr = 1; /* Response */
   hdr.qdcount = 1;
   hdr.ancount = 1;
   hdr.nscount = 0;
@@ -4106,18 +4403,30 @@ TEST (dns_response_count_opt_in_answer)
 
   /* Add question: example.com A */
   unsigned char *p = msg + len;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;  /* TYPE A */
-  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  *p++ = 0;
+  *p++ = 1; /* TYPE A */
+  *p++ = 0;
+  *p++ = 1; /* CLASS IN */
 
   /* Add OPT in answer section (unusual) */
-  *p++ = 0;            /* NAME: root */
-  *p++ = 0; *p++ = 41; /* TYPE: OPT */
-  *p++ = 0x10; *p++ = 0x00; /* CLASS: 4096 */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
-  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+  *p++ = 0; /* NAME: root */
+  *p++ = 0;
+  *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x10;
+  *p++ = 0x00; /* CLASS: 4096 */
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0; /* TTL */
+  *p++ = 0;
+  *p++ = 0; /* RDLEN: 0 */
 
   len = (size_t)(p - msg);
 
@@ -4132,21 +4441,37 @@ TEST (dns_response_count_opt_in_answer)
 
 /* Helper to build SOA RDATA */
 static size_t
-build_soa_rdata (unsigned char *buf, uint32_t serial, uint32_t refresh,
-                 uint32_t retry, uint32_t expire, uint32_t minimum)
+build_soa_rdata (unsigned char *buf,
+                 uint32_t serial,
+                 uint32_t refresh,
+                 uint32_t retry,
+                 uint32_t expire,
+                 uint32_t minimum)
 {
   unsigned char *p = buf;
 
   /* MNAME: ns1.example.com */
-  *p++ = 3; memcpy (p, "ns1", 3); p += 3;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 3;
+  memcpy (p, "ns1", 3);
+  p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
 
   /* RNAME: admin.example.com */
-  *p++ = 5; memcpy (p, "admin", 5); p += 5;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 5;
+  memcpy (p, "admin", 5);
+  p += 5;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
 
   /* SERIAL (32-bit, big-endian) */
@@ -4204,11 +4529,17 @@ TEST (dns_extract_negative_ttl_no_soa)
 
   /* Add question */
   p = msg + 12;
-  *p++ = 11; memcpy (p, "nonexistent", 11); p += 11;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 11;
+  memcpy (p, "nonexistent", 11);
+  p += 11;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;  /* TYPE A */
-  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  *p++ = 0;
+  *p++ = 1; /* TYPE A */
+  *p++ = 0;
+  *p++ = 1; /* CLASS IN */
 
   ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
   ASSERT_EQ (ttl, DNS_NEGATIVE_TTL_DEFAULT);
@@ -4233,34 +4564,48 @@ TEST (dns_extract_negative_ttl_ttl_less_than_minimum)
   hdr.rcode = DNS_RCODE_NXDOMAIN;
   hdr.qdcount = 1;
   hdr.ancount = 0;
-  hdr.nscount = 1;  /* One SOA in authority */
+  hdr.nscount = 1; /* One SOA in authority */
   hdr.arcount = 0;
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
 
   /* Add question */
   p = msg + 12;
-  *p++ = 11; memcpy (p, "nonexistent", 11); p += 11;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 11;
+  memcpy (p, "nonexistent", 11);
+  p += 11;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;  /* TYPE A */
-  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  *p++ = 0;
+  *p++ = 1; /* TYPE A */
+  *p++ = 0;
+  *p++ = 1; /* CLASS IN */
 
   /* Add SOA RR in authority section */
   /* Owner: com */
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
 
   /* TYPE: SOA (6) */
-  *p++ = 0; *p++ = 6;
+  *p++ = 0;
+  *p++ = 6;
 
   /* CLASS: IN (1) */
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
 
   /* TTL: 100 seconds (lower than MINIMUM) */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 100;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 100;
 
   /* Build SOA RDATA: MINIMUM = 300 */
-  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
+  soa_rdata_len
+      = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
 
   /* RDLENGTH */
   *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
@@ -4301,23 +4646,37 @@ TEST (dns_extract_negative_ttl_minimum_less_than_ttl)
 
   /* Add question */
   p = msg + 12;
-  *p++ = 11; memcpy (p, "nonexistent", 11); p += 11;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 11;
+  memcpy (p, "nonexistent", 11);
+  p += 11;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
 
   /* Add SOA RR */
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 6;  /* TYPE: SOA */
-  *p++ = 0; *p++ = 1;  /* CLASS: IN */
+  *p++ = 0;
+  *p++ = 6; /* TYPE: SOA */
+  *p++ = 0;
+  *p++ = 1; /* CLASS: IN */
 
   /* TTL: 600 seconds (higher than MINIMUM) */
-  *p++ = 0; *p++ = 0; *p++ = 0x02; *p++ = 0x58;  /* 600 */
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0x02;
+  *p++ = 0x58; /* 600 */
 
   /* Build SOA RDATA: MINIMUM = 120 */
-  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 120);
+  soa_rdata_len
+      = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 120);
 
   *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
   *p++ = (unsigned char)(soa_rdata_len & 0xFF);
@@ -4350,22 +4709,36 @@ TEST (dns_extract_negative_ttl_equal_values)
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
 
   p = msg + 12;
-  *p++ = 4; memcpy (p, "test", 4); p += 4;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 4;
+  memcpy (p, "test", 4);
+  p += 4;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
 
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 6;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 6;
+  *p++ = 0;
+  *p++ = 1;
 
   /* TTL: 300 seconds (same as MINIMUM) */
-  *p++ = 0; *p++ = 0; *p++ = 0x01; *p++ = 0x2C;  /* 300 */
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0x01;
+  *p++ = 0x2C; /* 300 */
 
   /* MINIMUM = 300 */
-  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
+  soa_rdata_len
+      = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
 
   *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
   *p++ = (unsigned char)(soa_rdata_len & 0xFF);
@@ -4386,7 +4759,7 @@ TEST (dns_extract_negative_ttl_null)
 /* Test extract negative TTL with message too short */
 TEST (dns_extract_negative_ttl_too_short)
 {
-  unsigned char msg[10] = {0};
+  unsigned char msg[10] = { 0 };
   uint32_t ttl = SocketDNS_extract_negative_ttl (msg, 5, NULL);
   ASSERT_EQ (ttl, DNS_NEGATIVE_TTL_DEFAULT);
 }
@@ -4411,22 +4784,36 @@ TEST (dns_extract_negative_ttl_capped_at_max)
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
 
   p = msg + 12;
-  *p++ = 4; memcpy (p, "test", 4); p += 4;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 4;
+  memcpy (p, "test", 4);
+  p += 4;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
 
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 6;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 6;
+  *p++ = 0;
+  *p++ = 1;
 
   /* TTL: 86400 seconds (1 day - exceeds max) */
-  *p++ = 0; *p++ = 0x01; *p++ = 0x51; *p++ = 0x80;  /* 86400 */
+  *p++ = 0;
+  *p++ = 0x01;
+  *p++ = 0x51;
+  *p++ = 0x80; /* 86400 */
 
   /* MINIMUM = 86400 (also exceeds max) */
-  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 86400);
+  soa_rdata_len
+      = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 86400);
 
   *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
   *p++ = (unsigned char)(soa_rdata_len & 0xFF);
@@ -4453,30 +4840,46 @@ TEST (dns_extract_negative_ttl_nodata)
   memset (&hdr, 0, sizeof (hdr));
   hdr.id = 0x1234;
   hdr.qr = 1;
-  hdr.rcode = DNS_RCODE_NOERROR;  /* NODATA has NOERROR */
+  hdr.rcode = DNS_RCODE_NOERROR; /* NODATA has NOERROR */
   hdr.qdcount = 1;
   hdr.ancount = 0;
   hdr.nscount = 1;
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
 
   p = msg + 12;
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 28;  /* TYPE AAAA */
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 28; /* TYPE AAAA */
+  *p++ = 0;
+  *p++ = 1;
 
-  *p++ = 7; memcpy (p, "example", 7); p += 7;
-  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 7;
+  memcpy (p, "example", 7);
+  p += 7;
+  *p++ = 3;
+  memcpy (p, "com", 3);
+  p += 3;
   *p++ = 0;
-  *p++ = 0; *p++ = 6;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 6;
+  *p++ = 0;
+  *p++ = 1;
 
   /* TTL: 200 */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 200;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 200;
 
   /* MINIMUM = 180 */
-  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 180);
+  soa_rdata_len
+      = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 180);
 
   *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
   *p++ = (unsigned char)(soa_rdata_len & 0xFF);
@@ -4508,17 +4911,26 @@ TEST (dns_extract_negative_ttl_zero_minimum)
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
 
   p = msg + 12;
-  *p++ = 4; memcpy (p, "test", 4); p += 4;
+  *p++ = 4;
+  memcpy (p, "test", 4);
+  p += 4;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
 
-  *p++ = 0;  /* Root zone */
-  *p++ = 0; *p++ = 6;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0; /* Root zone */
+  *p++ = 0;
+  *p++ = 6;
+  *p++ = 0;
+  *p++ = 1;
 
   /* TTL: 300 */
-  *p++ = 0; *p++ = 0; *p++ = 0x01; *p++ = 0x2C;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0x01;
+  *p++ = 0x2C;
 
   /* MINIMUM = 0 */
   soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 0);
@@ -4553,20 +4965,30 @@ TEST (dns_extract_negative_ttl_zero_record_ttl)
   SocketDNS_header_encode (&hdr, msg, sizeof (msg));
 
   p = msg + 12;
-  *p++ = 4; memcpy (p, "test", 4); p += 4;
+  *p++ = 4;
+  memcpy (p, "test", 4);
+  p += 4;
   *p++ = 0;
-  *p++ = 0; *p++ = 1;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
+  *p++ = 0;
+  *p++ = 1;
 
-  *p++ = 0;  /* Root zone */
-  *p++ = 0; *p++ = 6;
-  *p++ = 0; *p++ = 1;
+  *p++ = 0; /* Root zone */
+  *p++ = 0;
+  *p++ = 6;
+  *p++ = 0;
+  *p++ = 1;
 
   /* TTL: 0 */
-  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
+  *p++ = 0;
 
   /* MINIMUM = 300 */
-  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
+  soa_rdata_len
+      = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
 
   *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
   *p++ = (unsigned char)(soa_rdata_len & 0xFF);

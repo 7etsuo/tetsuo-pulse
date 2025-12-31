@@ -58,8 +58,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       memset (name, 0, sizeof (name));
       consumed = 0;
 
-      result = SocketDNS_name_decode (data, size, offset, name, sizeof (name),
-                                      &consumed);
+      result = SocketDNS_name_decode (
+          data, size, offset, name, sizeof (name), &consumed);
 
       if (result >= 0)
         {
@@ -76,9 +76,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   char decoded[DNS_MAX_NAME_LEN + 16];
                   size_t dec_consumed;
 
-                  int dec_result = SocketDNS_name_decode (
-                      wire, written, 0, decoded, sizeof (decoded),
-                      &dec_consumed);
+                  int dec_result = SocketDNS_name_decode (wire,
+                                                          written,
+                                                          0,
+                                                          decoded,
+                                                          sizeof (decoded),
+                                                          &dec_consumed);
 
                   if (dec_result >= 0)
                     {

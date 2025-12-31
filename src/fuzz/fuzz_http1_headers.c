@@ -104,8 +104,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       if (req)
         {
           char serialize_buf[8192];
-          SocketHTTP1_serialize_request (req, serialize_buf,
-                                         sizeof (serialize_buf));
+          SocketHTTP1_serialize_request (
+              req, serialize_buf, sizeof (serialize_buf));
         }
     }
 

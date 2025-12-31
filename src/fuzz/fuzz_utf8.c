@@ -48,9 +48,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     size_t i = 0;
     while (i < size)
       {
-        size_t chunk = (size - i > 16)
-                           ? 16
-                           : size - i; /* Small chunks for state fuzz */
+        size_t chunk
+            = (size - i > 16) ? 16 : size - i; /* Small chunks for state fuzz */
         SocketUTF8_Result res = SocketUTF8_update (&state, data + i, chunk);
         (void)res; /* Coverage on invalid */
         i += chunk;
@@ -65,7 +64,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     SocketUTF8_finish (&state); /* Final check */
   }
-  EXCEPT (SocketUTF8_Failed) { /* Expected; validates rejection */ }
+  EXCEPT (SocketUTF8_Failed)
+  { /* Expected; validates rejection */
+  }
   END_TRY;
 
   Arena_dispose (&arena_instance);

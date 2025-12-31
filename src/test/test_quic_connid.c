@@ -105,7 +105,8 @@ TEST (quic_connid_set_zero_len)
 {
   SocketQUICConnectionID_T cid;
 
-  SocketQUICConnectionID_Result res = SocketQUICConnectionID_set (&cid, NULL, 0);
+  SocketQUICConnectionID_Result res
+      = SocketQUICConnectionID_set (&cid, NULL, 0);
 
   ASSERT_EQ (res, QUIC_CONNID_OK);
   ASSERT_EQ (cid.len, 0);
@@ -134,7 +135,8 @@ TEST (quic_connid_set_null_data_nonzero_len)
 {
   SocketQUICConnectionID_T cid;
 
-  /* len > 0 but data == NULL should return error (not create zero-filled CID) */
+  /* len > 0 but data == NULL should return error (not create zero-filled CID)
+   */
   SocketQUICConnectionID_Result res
       = SocketQUICConnectionID_set (&cid, NULL, 8);
 
@@ -160,7 +162,8 @@ TEST (quic_connid_generate_max_len)
 {
   SocketQUICConnectionID_T cid;
 
-  SocketQUICConnectionID_Result res = SocketQUICConnectionID_generate (&cid, 20);
+  SocketQUICConnectionID_Result res
+      = SocketQUICConnectionID_generate (&cid, 20);
 
   ASSERT_EQ (res, QUIC_CONNID_OK);
   ASSERT_EQ (cid.len, 20);
@@ -180,7 +183,8 @@ TEST (quic_connid_generate_too_long)
 {
   SocketQUICConnectionID_T cid;
 
-  SocketQUICConnectionID_Result res = SocketQUICConnectionID_generate (&cid, 21);
+  SocketQUICConnectionID_Result res
+      = SocketQUICConnectionID_generate (&cid, 21);
 
   ASSERT_EQ (res, QUIC_CONNID_ERROR_LENGTH);
 }
@@ -397,7 +401,8 @@ TEST (quic_connid_encode_with_length)
 
   SocketQUICConnectionID_set (&cid, data, 3);
 
-  size_t n = SocketQUICConnectionID_encode_with_length (&cid, buf, sizeof (buf));
+  size_t n
+      = SocketQUICConnectionID_encode_with_length (&cid, buf, sizeof (buf));
 
   ASSERT_EQ (n, 4);
   ASSERT_EQ (buf[0], 3);
@@ -411,7 +416,8 @@ TEST (quic_connid_encode_with_length_zero)
 
   SocketQUICConnectionID_set (&cid, NULL, 0);
 
-  size_t n = SocketQUICConnectionID_encode_with_length (&cid, buf, sizeof (buf));
+  size_t n
+      = SocketQUICConnectionID_encode_with_length (&cid, buf, sizeof (buf));
 
   ASSERT_EQ (n, 1);
   ASSERT_EQ (buf[0], 0);
@@ -644,8 +650,8 @@ TEST (quic_connid_encode_decode_roundtrip)
 
   SocketQUICConnectionID_generate (&original, 12);
 
-  size_t encoded = SocketQUICConnectionID_encode_with_length (&original, buf,
-                                                              sizeof (buf));
+  size_t encoded = SocketQUICConnectionID_encode_with_length (
+      &original, buf, sizeof (buf));
   ASSERT (encoded > 0);
 
   SocketQUICConnectionID_Result res
@@ -666,8 +672,8 @@ TEST (quic_connid_roundtrip_all_lengths)
 
       SocketQUICConnectionID_generate (&original, len);
 
-      size_t encoded = SocketQUICConnectionID_encode_with_length (&original, buf,
-                                                                  sizeof (buf));
+      size_t encoded = SocketQUICConnectionID_encode_with_length (
+          &original, buf, sizeof (buf));
 
       SocketQUICConnectionID_Result res
           = SocketQUICConnectionID_decode (buf, encoded, &decoded, &consumed);

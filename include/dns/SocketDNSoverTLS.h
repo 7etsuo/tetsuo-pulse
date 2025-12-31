@@ -119,7 +119,8 @@
 #define DOT_ERROR_SERVFAIL -10     /**< Server returned SERVFAIL */
 #define DOT_ERROR_NXDOMAIN -11     /**< Domain does not exist */
 #define DOT_ERROR_REFUSED -12      /**< Server refused query */
-#define DOT_ERROR_SPKI_MISMATCH -13 /**< SPKI pin mismatch (RFC 7858 Section 4.2) */
+#define DOT_ERROR_SPKI_MISMATCH \
+  -13 /**< SPKI pin mismatch (RFC 7858 Section 4.2) */
 
 /**
  * @brief DNS-over-TLS privacy modes (RFC 8310 Section 5).
@@ -175,7 +176,8 @@ typedef struct SocketDNSoverTLS_Query *SocketDNSoverTLS_Query_T;
  */
 typedef void (*SocketDNSoverTLS_Callback) (SocketDNSoverTLS_Query_T query,
                                            const unsigned char *response,
-                                           size_t len, int error,
+                                           size_t len,
+                                           int error,
                                            void *userdata);
 
 /**
@@ -186,15 +188,15 @@ typedef void (*SocketDNSoverTLS_Callback) (SocketDNSoverTLS_Query_T query,
  */
 typedef struct
 {
-  const char *server_address;  /**< Server IPv4 or IPv6 address */
-  int port;                    /**< Port number (default: 853) */
-  const char *server_name;     /**< TLS SNI hostname (e.g., "dns.google") */
-  SocketDNSoverTLS_Mode mode;  /**< Privacy mode */
+  const char *server_address; /**< Server IPv4 or IPv6 address */
+  int port;                   /**< Port number (default: 853) */
+  const char *server_name;    /**< TLS SNI hostname (e.g., "dns.google") */
+  SocketDNSoverTLS_Mode mode; /**< Privacy mode */
 
   /**
-   * Optional SPKI pin for Out-of-Band Key-Pinned Privacy (RFC 7858 Section 4.2).
-   * Base64-encoded SHA-256 hash of the server's SPKI.
-   * If NULL, SPKI pinning is disabled.
+   * Optional SPKI pin for Out-of-Band Key-Pinned Privacy (RFC 7858
+   * Section 4.2). Base64-encoded SHA-256 hash of the server's SPKI. If NULL,
+   * SPKI pinning is disabled.
    */
   const char *spki_pin;
 
@@ -255,8 +257,8 @@ extern void SocketDNSoverTLS_free (T *transport);
  * @param config    Server configuration.
  * @return 0 on success, -1 on error.
  */
-extern int SocketDNSoverTLS_configure (T transport,
-                                       const SocketDNSoverTLS_Config *config);
+extern int
+SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config);
 
 /**
  * @brief Add a preconfigured DoT server by name.
@@ -277,7 +279,8 @@ extern int SocketDNSoverTLS_configure (T transport,
  * @param mode        Privacy mode to use.
  * @return 0 on success, -1 if name unknown.
  */
-extern int SocketDNSoverTLS_add_server (T transport, const char *server_name,
+extern int SocketDNSoverTLS_add_server (T transport,
+                                        const char *server_name,
                                         SocketDNSoverTLS_Mode mode);
 
 /**
@@ -315,9 +318,12 @@ extern int SocketDNSoverTLS_server_count (T transport);
  *
  * @note The 2-byte length prefix is added automatically.
  */
-extern SocketDNSoverTLS_Query_T SocketDNSoverTLS_query (
-    T transport, const unsigned char *query, size_t len,
-    SocketDNSoverTLS_Callback callback, void *userdata);
+extern SocketDNSoverTLS_Query_T
+SocketDNSoverTLS_query (T transport,
+                        const unsigned char *query,
+                        size_t len,
+                        SocketDNSoverTLS_Callback callback,
+                        void *userdata);
 
 /**
  * @brief Cancel a pending query.
@@ -327,7 +333,8 @@ extern SocketDNSoverTLS_Query_T SocketDNSoverTLS_query (
  * @param query     Query handle to cancel.
  * @return 0 on success, -1 if query not found.
  */
-extern int SocketDNSoverTLS_cancel (T transport, SocketDNSoverTLS_Query_T query);
+extern int
+SocketDNSoverTLS_cancel (T transport, SocketDNSoverTLS_Query_T query);
 
 /**
  * @brief Get query ID from query handle.

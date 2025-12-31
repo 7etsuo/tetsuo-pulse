@@ -80,8 +80,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Cleanup decoder */
     SocketHPACK_Decoder_free (&decoder);
   }
-  EXCEPT (SocketHPACK_Error) { /* Expected for malformed input */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketHPACK_Error)
+  { /* Expected for malformed input */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 
   return 0;

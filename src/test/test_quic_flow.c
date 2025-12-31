@@ -317,8 +317,8 @@ TEST (flow_stream_can_send)
 
   ASSERT (SocketQUICFlowStream_can_send (fs, 1024));
   ASSERT (SocketQUICFlowStream_can_send (fs, QUIC_FLOW_DEFAULT_STREAM_WINDOW));
-  ASSERT (!SocketQUICFlowStream_can_send (fs,
-                                          QUIC_FLOW_DEFAULT_STREAM_WINDOW + 1));
+  ASSERT (
+      !SocketQUICFlowStream_can_send (fs, QUIC_FLOW_DEFAULT_STREAM_WINDOW + 1));
 
   Arena_dispose (&arena);
 }
@@ -384,9 +384,8 @@ TEST (flow_stream_update_send_max)
   arena = Arena_new ();
   fs = SocketQUICFlowStream_new (arena, 4);
 
-  res = SocketQUICFlowStream_update_send_max (fs,
-                                              QUIC_FLOW_DEFAULT_STREAM_WINDOW
-                                                  * 2);
+  res = SocketQUICFlowStream_update_send_max (
+      fs, QUIC_FLOW_DEFAULT_STREAM_WINDOW * 2);
   ASSERT_EQ (QUIC_FLOW_OK, res);
   ASSERT_EQ (QUIC_FLOW_DEFAULT_STREAM_WINDOW * 2, fs->send_max_data);
 
@@ -403,9 +402,8 @@ TEST (flow_stream_update_send_max_decrease)
   fs = SocketQUICFlowStream_new (arena, 4);
 
   /* Try to decrease (not allowed) */
-  res = SocketQUICFlowStream_update_send_max (fs,
-                                              QUIC_FLOW_DEFAULT_STREAM_WINDOW
-                                                  / 2);
+  res = SocketQUICFlowStream_update_send_max (
+      fs, QUIC_FLOW_DEFAULT_STREAM_WINDOW / 2);
   ASSERT_EQ (QUIC_FLOW_ERROR_INVALID, res);
 
   Arena_dispose (&arena);

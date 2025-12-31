@@ -73,8 +73,8 @@ read_u16 (const uint8_t *p)
  * Returns: Length of extracted string (excluding null)
  */
 static size_t
-extract_string (const uint8_t *data, size_t size, size_t offset, char *out,
-                size_t out_len)
+extract_string (
+    const uint8_t *data, size_t size, size_t offset, char *out, size_t out_len)
 {
   size_t i;
   size_t max_len = out_len - 1;
@@ -155,7 +155,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 socket_count++;
               }
           }
-          EXCEPT (SocketDgram_Failed) { /* Socket creation can fail */ }
+          EXCEPT (SocketDgram_Failed)
+          { /* Socket creation can fail */
+          }
           END_TRY;
 
           /* Verify live count tracking */
@@ -208,7 +210,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 END_TRY;
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -249,7 +253,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 END_TRY;
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -321,7 +327,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   }
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -354,31 +362,46 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 END_TRY;
 
                 /* Test boundary values explicitly */
-                TRY { SocketDgram_setttl (sockets[0], 1); /* Min valid */ }
-                EXCEPT (SocketDgram_Failed) {}
+                TRY
+                {
+                  SocketDgram_setttl (sockets[0], 1); /* Min valid */
+                }
+                EXCEPT (SocketDgram_Failed)
+                {
+                }
                 END_TRY;
 
-                TRY { SocketDgram_setttl (sockets[0], 255); /* Max valid */ }
-                EXCEPT (SocketDgram_Failed) {}
+                TRY
+                {
+                  SocketDgram_setttl (sockets[0], 255); /* Max valid */
+                }
+                EXCEPT (SocketDgram_Failed)
+                {
+                }
                 END_TRY;
 
                 TRY
                 {
                   SocketDgram_setttl (sockets[0], 0); /* Invalid - too low */
                 }
-                EXCEPT (SocketDgram_Failed) { /* Expected to fail */ }
+                EXCEPT (SocketDgram_Failed)
+                { /* Expected to fail */
+                }
                 END_TRY;
 
                 TRY
                 {
-                  SocketDgram_setttl (sockets[0],
-                                      256); /* Invalid - too high */
+                  SocketDgram_setttl (sockets[0], 256); /* Invalid - too high */
                 }
-                EXCEPT (SocketDgram_Failed) { /* Expected to fail */ }
+                EXCEPT (SocketDgram_Failed)
+                { /* Expected to fail */
+                }
                 END_TRY;
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -425,15 +448,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                     TRY
                     {
-                      SocketDgram_joinmulticast (sockets[0], "224.0.0.251",
-                                                 iface[0] ? iface : NULL);
+                      SocketDgram_joinmulticast (
+                          sockets[0], "224.0.0.251", iface[0] ? iface : NULL);
                     }
-                    EXCEPT (SocketDgram_Failed) {}
+                    EXCEPT (SocketDgram_Failed)
+                    {
+                    }
                     END_TRY;
                   }
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -476,11 +503,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   (void)local_port;
                   (void)is_bound;
                 }
-                EXCEPT (SocketDgram_Failed) {}
+                EXCEPT (SocketDgram_Failed)
+                {
+                }
                 END_TRY;
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -526,26 +557,41 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketDgram_connect (sockets[0], "127.0.0.1", 9999);
                     SocketDgram_sendv (sockets[0], iov, iovcnt);
                   }
-                  EXCEPT (SocketDgram_Failed) { /* Expected - no receiver */ }
+                  EXCEPT (SocketDgram_Failed)
+                  { /* Expected - no receiver */
+                  }
                   END_TRY;
 
                   /* Try recvv - will return 0 (would block) */
-                  TRY { SocketDgram_recvv (sockets[0], iov, iovcnt); }
-                  EXCEPT (SocketDgram_Failed) {}
+                  TRY
+                  {
+                    SocketDgram_recvv (sockets[0], iov, iovcnt);
+                  }
+                  EXCEPT (SocketDgram_Failed)
+                  {
+                  }
                   END_TRY;
                 }
-                EXCEPT (SocketDgram_Failed) {}
+                EXCEPT (SocketDgram_Failed)
+                {
+                }
                 END_TRY;
               }
           }
-          EXCEPT (SocketDgram_Failed) {}
+          EXCEPT (SocketDgram_Failed)
+          {
+          }
           END_TRY;
         }
         break;
       }
   }
-  EXCEPT (SocketDgram_Failed) { /* Top-level exception handler */ }
-  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
+  EXCEPT (SocketDgram_Failed)
+  { /* Top-level exception handler */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory allocation failure */
+  }
   FINALLY
   {
     /* Clean up all sockets */

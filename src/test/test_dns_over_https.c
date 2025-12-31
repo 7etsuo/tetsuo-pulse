@@ -26,8 +26,11 @@ static volatile int g_callback_error = -999;
 static volatile size_t g_response_len = 0;
 
 static void
-test_callback (SocketDNSoverHTTPS_Query_T query, const unsigned char *response,
-               size_t len, int error, void *userdata)
+test_callback (SocketDNSoverHTTPS_Query_T query,
+               const unsigned char *response,
+               size_t len,
+               int error,
+               void *userdata)
 {
   (void)query;
   (void)userdata;
@@ -73,9 +76,9 @@ TEST (doh_server_config)
 
   /* Add server via config struct */
   SocketDNSoverHTTPS_Config config = { .url = "https://dns.google/dns-query",
-                                        .method = DOH_METHOD_POST,
-                                        .prefer_http2 = 1,
-                                        .timeout_ms = 5000 };
+                                       .method = DOH_METHOD_POST,
+                                       .prefer_http2 = 1,
+                                       .timeout_ms = 5000 };
 
   int ret = SocketDNSoverHTTPS_configure (doh, &config);
   ASSERT_EQ (ret, 0);
@@ -146,8 +149,10 @@ TEST (doh_query_no_server)
   SocketDNS_question_init (&question, "example.com", DNS_TYPE_A);
 
   size_t written;
-  int ret = SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                                       sizeof (query) - DNS_HEADER_SIZE, &written);
+  int ret = SocketDNS_question_encode (&question,
+                                       query + DNS_HEADER_SIZE,
+                                       sizeof (query) - DNS_HEADER_SIZE,
+                                       &written);
   ASSERT_EQ (ret, 0);
   query_len = DNS_HEADER_SIZE + written;
 
@@ -187,9 +192,11 @@ TEST (doh_error_strings)
   ASSERT_NOT_NULL (SocketDNSoverHTTPS_strerror (-100));
 
   /* Specific string checks */
-  ASSERT (strcmp (SocketDNSoverHTTPS_strerror (DOH_ERROR_SUCCESS), "Success") == 0);
+  ASSERT (strcmp (SocketDNSoverHTTPS_strerror (DOH_ERROR_SUCCESS), "Success")
+          == 0);
   ASSERT (strcmp (SocketDNSoverHTTPS_strerror (DOH_ERROR_NXDOMAIN),
-                  "Domain not found (NXDOMAIN)") == 0);
+                  "Domain not found (NXDOMAIN)")
+          == 0);
 }
 
 /* Test: Statistics initialized to zero */
@@ -238,8 +245,10 @@ TEST (doh_query_id)
   SocketDNS_question_init (&question, "example.com", DNS_TYPE_A);
 
   size_t written;
-  ret = SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                                   sizeof (query) - DNS_HEADER_SIZE, &written);
+  ret = SocketDNS_question_encode (&question,
+                                   query + DNS_HEADER_SIZE,
+                                   sizeof (query) - DNS_HEADER_SIZE,
+                                   &written);
   ASSERT_EQ (ret, 0);
   ASSERT (written > 0);
 
@@ -286,9 +295,9 @@ TEST (doh_get_method_config)
 
   /* Configure with GET method */
   SocketDNSoverHTTPS_Config config = { .url = "https://dns.google/dns-query",
-                                        .method = DOH_METHOD_GET,
-                                        .prefer_http2 = 1,
-                                        .timeout_ms = 5000 };
+                                       .method = DOH_METHOD_GET,
+                                       .prefer_http2 = 1,
+                                       .timeout_ms = 5000 };
 
   int ret = SocketDNSoverHTTPS_configure (doh, &config);
   ASSERT_EQ (ret, 0);
@@ -342,9 +351,9 @@ TEST (doh_base64url_internal)
 
   /* Configure with GET method */
   SocketDNSoverHTTPS_Config config = { .url = "https://dns.google/dns-query",
-                                        .method = DOH_METHOD_GET,
-                                        .prefer_http2 = 1,
-                                        .timeout_ms = 100 };
+                                       .method = DOH_METHOD_GET,
+                                       .prefer_http2 = 1,
+                                       .timeout_ms = 100 };
 
   int ret = SocketDNSoverHTTPS_configure (doh, &config);
   ASSERT_EQ (ret, 0);
@@ -360,8 +369,10 @@ TEST (doh_base64url_internal)
   SocketDNS_question_init (&question, "a.b", DNS_TYPE_A);
 
   size_t written;
-  ret = SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                                   sizeof (query) - DNS_HEADER_SIZE, &written);
+  ret = SocketDNS_question_encode (&question,
+                                   query + DNS_HEADER_SIZE,
+                                   sizeof (query) - DNS_HEADER_SIZE,
+                                   &written);
   ASSERT_EQ (ret, 0);
   ASSERT (written > 0);
 

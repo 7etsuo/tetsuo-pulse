@@ -432,40 +432,57 @@ typedef struct
 } HuffmanDecodeConfig;
 
 /* RFC 7541 Appendix B - Huffman decode configuration constants */
-#define HPACK_DECODE_5BIT_MASK      0x1Fu
-#define HPACK_DECODE_5BIT_FIRST     0x00u
-#define HPACK_DECODE_5BIT_LAST      0x09u
-#define HPACK_DECODE_5BIT_COUNT     10u
-#define HPACK_DECODE_5BIT_OFFSET    0u
+#define HPACK_DECODE_5BIT_MASK 0x1Fu
+#define HPACK_DECODE_5BIT_FIRST 0x00u
+#define HPACK_DECODE_5BIT_LAST 0x09u
+#define HPACK_DECODE_5BIT_COUNT 10u
+#define HPACK_DECODE_5BIT_OFFSET 0u
 
-#define HPACK_DECODE_6BIT_MASK      0x3Fu
-#define HPACK_DECODE_6BIT_FIRST     0x14u
-#define HPACK_DECODE_6BIT_LAST      0x2Du
-#define HPACK_DECODE_6BIT_COUNT     26u
-#define HPACK_DECODE_6BIT_OFFSET    10u
+#define HPACK_DECODE_6BIT_MASK 0x3Fu
+#define HPACK_DECODE_6BIT_FIRST 0x14u
+#define HPACK_DECODE_6BIT_LAST 0x2Du
+#define HPACK_DECODE_6BIT_COUNT 26u
+#define HPACK_DECODE_6BIT_OFFSET 10u
 
-#define HPACK_DECODE_7BIT_MASK      0x7Fu
-#define HPACK_DECODE_7BIT_FIRST     0x5Cu
-#define HPACK_DECODE_7BIT_LAST      0x7Bu
-#define HPACK_DECODE_7BIT_COUNT     32u
-#define HPACK_DECODE_7BIT_OFFSET    36u
+#define HPACK_DECODE_7BIT_MASK 0x7Fu
+#define HPACK_DECODE_7BIT_FIRST 0x5Cu
+#define HPACK_DECODE_7BIT_LAST 0x7Bu
+#define HPACK_DECODE_7BIT_COUNT 32u
+#define HPACK_DECODE_7BIT_OFFSET 36u
 
-#define HPACK_DECODE_8BIT_MASK      0xFFu
-#define HPACK_DECODE_8BIT_FIRST     0xF8u
-#define HPACK_DECODE_8BIT_LAST      0xFDu
-#define HPACK_DECODE_8BIT_COUNT     6u
-#define HPACK_DECODE_8BIT_OFFSET    68u
+#define HPACK_DECODE_8BIT_MASK 0xFFu
+#define HPACK_DECODE_8BIT_FIRST 0xF8u
+#define HPACK_DECODE_8BIT_LAST 0xFDu
+#define HPACK_DECODE_8BIT_COUNT 6u
+#define HPACK_DECODE_8BIT_OFFSET 68u
 
 /* Individual config verification - symbol counts must sum to 74 */
-_Static_assert (HPACK_DECODE_5BIT_COUNT + HPACK_DECODE_6BIT_COUNT + HPACK_DECODE_7BIT_COUNT + HPACK_DECODE_8BIT_COUNT == 74,
+_Static_assert (HPACK_DECODE_5BIT_COUNT + HPACK_DECODE_6BIT_COUNT
+                        + HPACK_DECODE_7BIT_COUNT + HPACK_DECODE_8BIT_COUNT
+                    == 74,
                 "Decode config symbol counts must sum to 74");
 
-static const HuffmanDecodeConfig hpack_decode_configs[] = {
-  { 5, HPACK_DECODE_5BIT_MASK, HPACK_DECODE_5BIT_FIRST, HPACK_DECODE_5BIT_LAST, HPACK_DECODE_5BIT_OFFSET },
-  { 6, HPACK_DECODE_6BIT_MASK, HPACK_DECODE_6BIT_FIRST, HPACK_DECODE_6BIT_LAST, HPACK_DECODE_6BIT_OFFSET },
-  { 7, HPACK_DECODE_7BIT_MASK, HPACK_DECODE_7BIT_FIRST, HPACK_DECODE_7BIT_LAST, HPACK_DECODE_7BIT_OFFSET },
-  { 8, HPACK_DECODE_8BIT_MASK, HPACK_DECODE_8BIT_FIRST, HPACK_DECODE_8BIT_LAST, HPACK_DECODE_8BIT_OFFSET }
-};
+static const HuffmanDecodeConfig hpack_decode_configs[]
+    = { { 5,
+          HPACK_DECODE_5BIT_MASK,
+          HPACK_DECODE_5BIT_FIRST,
+          HPACK_DECODE_5BIT_LAST,
+          HPACK_DECODE_5BIT_OFFSET },
+        { 6,
+          HPACK_DECODE_6BIT_MASK,
+          HPACK_DECODE_6BIT_FIRST,
+          HPACK_DECODE_6BIT_LAST,
+          HPACK_DECODE_6BIT_OFFSET },
+        { 7,
+          HPACK_DECODE_7BIT_MASK,
+          HPACK_DECODE_7BIT_FIRST,
+          HPACK_DECODE_7BIT_LAST,
+          HPACK_DECODE_7BIT_OFFSET },
+        { 8,
+          HPACK_DECODE_8BIT_MASK,
+          HPACK_DECODE_8BIT_FIRST,
+          HPACK_DECODE_8BIT_LAST,
+          HPACK_DECODE_8BIT_OFFSET } };
 
 #define NUM_DECODE_CONFIGS \
   (sizeof (hpack_decode_configs) / sizeof (hpack_decode_configs[0]))
@@ -949,11 +966,14 @@ process_next_huffman_symbol (uint64_t *bits,
 
 /**
  * Validate EOS symbol and apply padding rules (RFC 7541 §5.2).
- * Single responsibility: Check EOS padding validity and update bit availability to 0 if valid.
- * Returns 1 if valid EOS (sets *bits_avail_out = 0), 0 otherwise.
+ * Single responsibility: Check EOS padding validity and update bit availability
+ * to 0 if valid. Returns 1 if valid EOS (sets *bits_avail_out = 0), 0
+ * otherwise.
  */
 static int
-validate_and_apply_eos_padding (uint64_t bits, int bits_avail, int code_len,
+validate_and_apply_eos_padding (uint64_t bits,
+                                int bits_avail,
+                                int code_len,
                                 int *bits_avail_out)
 {
   int pad_bits = bits_avail - code_len;
@@ -967,43 +987,49 @@ validate_and_apply_eos_padding (uint64_t bits, int bits_avail, int code_len,
 
 /**
  * Scan code lengths 9-30 bits for a matching symbol or EOS.
- * Single responsibility: Iterate possible long code lengths, decode first match.
- * Returns DECODE_SYMBOL (1) or DECODE_EOS (2) on success (updates *bits_avail_out),
- * DECODE_ERROR (-1) on emit failure, 0 on no match.
+ * Single responsibility: Iterate possible long code lengths, decode first
+ * match. Returns DECODE_SYMBOL (1) or DECODE_EOS (2) on success (updates
+ * *bits_avail_out), DECODE_ERROR (-1) on emit failure, 0 on no match.
  */
 static int
-scan_for_long_code_match (uint64_t bits, int bits_avail,
-                          unsigned char *output, size_t *out_pos, size_t output_size,
+scan_for_long_code_match (uint64_t bits,
+                          int bits_avail,
+                          unsigned char *output,
+                          size_t *out_pos,
+                          size_t output_size,
                           int *bits_avail_out)
 {
-  int max_code_len = (bits_avail > HPACK_HUFFMAN_MAX_BITS) ?
-                       HPACK_HUFFMAN_MAX_BITS : bits_avail;
+  int max_code_len = (bits_avail > HPACK_HUFFMAN_MAX_BITS)
+                         ? HPACK_HUFFMAN_MAX_BITS
+                         : bits_avail;
 
   for (int code_len = 9; code_len <= max_code_len; code_len++)
     {
       uint64_t code = extract_code_bits (bits, bits_avail, code_len);
       int sym = find_symbol_by_code (code_len, code);
       if (sym < 0)
-        continue;  // No match, try next length
+        continue; // No match, try next length
 
       // Match found
       int local_avail;
       if (sym == HPACK_HUFFMAN_EOS)
         {
-          if (!validate_and_apply_eos_padding (bits, bits_avail, code_len, &local_avail))
-            return 0;  // Invalid padding: fail entire attempt (per original)
+          if (!validate_and_apply_eos_padding (
+                  bits, bits_avail, code_len, &local_avail))
+            return 0; // Invalid padding: fail entire attempt (per original)
           *bits_avail_out = local_avail;
           return DECODE_EOS;
         }
 
       // Regular symbol
-      if (emit_decoded_byte (output, out_pos, output_size, (unsigned char) sym) < 0)
+      if (emit_decoded_byte (output, out_pos, output_size, (unsigned char)sym)
+          < 0)
         return DECODE_ERROR;
       *bits_avail_out = bits_avail - code_len;
       return DECODE_SYMBOL;
     }
 
-  return 0;  // No match across all lengths
+  return 0; // No match across all lengths
 }
 
 /* ============================================================================

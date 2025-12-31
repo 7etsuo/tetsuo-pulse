@@ -61,7 +61,6 @@ chunk_limit (const struct ChunkHeader *chunk)
 static inline void
 arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
 {
-
   ptr->prev = arena->prev;
   ptr->avail = arena->avail;
   ptr->limit = arena->limit;
@@ -85,8 +84,7 @@ static _Atomic size_t global_memory_limit = 0; /* 0 = unlimited */
 void
 SocketConfig_set_max_memory (size_t max_bytes)
 {
-  atomic_store_explicit (&global_memory_limit, max_bytes,
-                         memory_order_release);
+  atomic_store_explicit (&global_memory_limit, max_bytes, memory_order_release);
 }
 
 size_t
@@ -106,8 +104,7 @@ static int check_alloc_allowed (size_t current, size_t nbytes, size_t limit);
 static int
 global_memory_try_unlimited (size_t nbytes)
 {
-  atomic_fetch_add_explicit (&global_memory_used, nbytes,
-                             memory_order_relaxed);
+  atomic_fetch_add_explicit (&global_memory_used, nbytes, memory_order_relaxed);
   return 1;
 }
 
@@ -126,8 +123,10 @@ global_memory_try_limited (size_t limit, size_t nbytes)
 
       desired = current + nbytes;
     }
-  while (!atomic_compare_exchange_weak_explicit (&global_memory_used, &current,
-                                                 desired, memory_order_acq_rel,
+  while (!atomic_compare_exchange_weak_explicit (&global_memory_used,
+                                                 &current,
+                                                 desired,
+                                                 memory_order_acq_rel,
                                                  memory_order_acquire));
 
   return 1;
@@ -148,8 +147,7 @@ global_memory_try_alloc (size_t nbytes)
 static void
 global_memory_release (size_t nbytes)
 {
-  atomic_fetch_sub_explicit (&global_memory_used, nbytes,
-                             memory_order_relaxed);
+  atomic_fetch_sub_explicit (&global_memory_used, nbytes, memory_order_relaxed);
 }
 
 static int
@@ -165,8 +163,8 @@ check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
   return 1;
 }
 
-#define ARENA_VALID_PTR_ARITH(ptr, offset, max)                               \
-  (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset))                               \
+#define ARENA_VALID_PTR_ARITH(ptr, offset, max) \
+  (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset)) \
    && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
 
 static int
@@ -178,13 +176,15 @@ validate_chunk_size (size_t chunk_size, size_t *total_out)
     {
       SOCKET_ERROR_MSG (
           "Chunk size overflow: sizeof(header)=%zu + chunk_size=%zu",
-          sizeof (union header), chunk_size);
+          sizeof (union header),
+          chunk_size);
       return ARENA_FAILURE;
     }
 
   if (!SocketSecurity_check_size (total))
     {
-      SOCKET_ERROR_MSG ("Chunk size exceeds maximum: %zu (limit=%zu)", total,
+      SOCKET_ERROR_MSG ("Chunk size exceeds maximum: %zu (limit=%zu)",
+                        total,
                         SocketSecurity_get_max_allocation ());
       return ARENA_FAILURE;
     }
@@ -201,7 +201,8 @@ acquire_global_memory (size_t total)
       SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_MEMORY_EXCEEDED);
       SOCKET_ERROR_MSG ("Global memory limit exceeded: requested %zu bytes, "
                         "limit %zu, used %zu",
-                        total, SocketConfig_get_max_memory (),
+                        total,
+                        SocketConfig_get_max_memory (),
                         SocketConfig_get_memory_used ());
       return ARENA_FAILURE;
     }
@@ -325,7 +326,8 @@ arena_has_space (const T arena, size_t nbytes)
 }
 
 static int
-arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
+arena_allocate_new_chunk (size_t chunk_size,
+                          struct ChunkHeader **ptr_out,
                           char **limit_out)
 {
   size_t total;
@@ -420,14 +422,14 @@ Arena_new (void)
 
   arena = malloc (sizeof (*arena));
   if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      ARENA_ENOMEM ": Cannot allocate arena structure");
+    SOCKET_RAISE_MSG (
+        Arena, Arena_Failed, ARENA_ENOMEM ": Cannot allocate arena structure");
 
   if (pthread_mutex_init (&arena->mutex, NULL) != 0)
     {
       free (arena);
-      SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                        "Failed to initialize arena mutex");
+      SOCKET_RAISE_MSG (
+          Arena, Arena_Failed, "Failed to initialize arena mutex");
     }
 
   arena_reset (arena, 1);
@@ -442,8 +444,8 @@ Arena_new_unlocked (void)
 
   arena = malloc (sizeof (*arena));
   if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      ARENA_ENOMEM ": Cannot allocate arena structure");
+    SOCKET_RAISE_MSG (
+        Arena, Arena_Failed, ARENA_ENOMEM ": Cannot allocate arena structure");
 
   /* No mutex initialization for unlocked arenas */
   arena_reset (arena, 0);
@@ -491,8 +493,8 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 
   aligned_size = arena_calculate_aligned_size (nbytes);
   if (aligned_size == 0)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "Invalid allocation size: %zu bytes", nbytes);
+    SOCKET_RAISE_MSG (
+        Arena, Arena_Failed, "Invalid allocation size: %zu bytes", nbytes);
 
   if (arena->locked)
     SOCKET_MUTEX_LOCK_OR_RAISE (&arena->mutex, Arena, Arena_Failed);
@@ -501,8 +503,8 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
     {
       if (arena->locked)
         SOCKET_MUTEX_UNLOCK (&arena->mutex);
-      SOCKET_RAISE_MSG (Arena, Arena_Failed, "Failed to allocate %zu bytes",
-                        aligned_size);
+      SOCKET_RAISE_MSG (
+          Arena, Arena_Failed, "Failed to allocate %zu bytes", aligned_size);
     }
 
   result = arena->avail;
@@ -520,23 +522,31 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
   (void)file;
   (void)line;
   if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s",
-                      "Arena_calloc");
+    SOCKET_RAISE_MSG (
+        Arena, Arena_Failed, "NULL arena pointer in %s", "Arena_calloc");
   if (count == 0 || nbytes == 0)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "Invalid count (%zu) or nbytes (%zu) in %s", count,
-                      nbytes, "Arena_calloc");
+    SOCKET_RAISE_MSG (Arena,
+                      Arena_Failed,
+                      "Invalid count (%zu) or nbytes (%zu) in %s",
+                      count,
+                      nbytes,
+                      "Arena_calloc");
 
   size_t total;
   if (!SocketSecurity_check_multiply (count, nbytes, &total))
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "calloc overflow: count=%zu, nbytes=%zu in %s", count,
-                      nbytes, "Arena_calloc");
+    SOCKET_RAISE_MSG (Arena,
+                      Arena_Failed,
+                      "calloc overflow: count=%zu, nbytes=%zu in %s",
+                      count,
+                      nbytes,
+                      "Arena_calloc");
 
   if (!SocketSecurity_check_size (total))
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
+    SOCKET_RAISE_MSG (Arena,
+                      Arena_Failed,
                       "calloc size exceeds maximum: %zu (limit=%zu) in %s",
-                      total, SocketSecurity_get_max_allocation (),
+                      total,
+                      SocketSecurity_get_max_allocation (),
                       "Arena_calloc");
 
   void *ptr = Arena_alloc (arena, total, file, line);

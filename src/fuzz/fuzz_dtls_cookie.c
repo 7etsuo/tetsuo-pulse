@@ -79,10 +79,12 @@ setup_test_certs (void)
 {
   FILE *f;
 
-  snprintf (g_cert_path, sizeof (g_cert_path), "/tmp/fuzz_dtls_cert_%d.pem",
+  snprintf (g_cert_path,
+            sizeof (g_cert_path),
+            "/tmp/fuzz_dtls_cert_%d.pem",
             getpid ());
-  snprintf (g_key_path, sizeof (g_key_path), "/tmp/fuzz_dtls_key_%d.pem",
-            getpid ());
+  snprintf (
+      g_key_path, sizeof (g_key_path), "/tmp/fuzz_dtls_key_%d.pem", getpid ());
 
   /* Write certificate */
   f = fopen (g_cert_path, "w");
@@ -131,8 +133,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argv;
 
   /* Create cached client context */
-  TRY { g_client_ctx = SocketDTLSContext_new_client (NULL); }
-  EXCEPT (SocketDTLS_Failed) { g_client_ctx = NULL; }
+  TRY
+  {
+    g_client_ctx = SocketDTLSContext_new_client (NULL);
+  }
+  EXCEPT (SocketDTLS_Failed)
+  {
+    g_client_ctx = NULL;
+  }
   END_TRY;
 
   return 0;
@@ -194,7 +202,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0; /* Skip if certs not available */
 
   volatile uint8_t op = get_op (data, size);
-  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety) */
+  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety)
+   */
   SocketDTLSContext_T volatile ctx = NULL;
   volatile int exception_caught = 0;
 

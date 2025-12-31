@@ -130,7 +130,7 @@
  * @see docs/ERROR_HANDLING.md for comprehensive exception patterns
  * @see SocketDTLS_DetailedException thread-local instance definition
  */
-#define RAISE_DTLS_ERROR(exception)                                           \
+#define RAISE_DTLS_ERROR(exception) \
   SOCKET_RAISE_MODULE_ERROR (SocketDTLS, exception)
 
 /**
@@ -208,12 +208,12 @@
  * @see core/Except.h for exception handling TRY/EXCEPT patterns
  * @see docs/ERROR_HANDLING.md#detailed-exceptions for best practices
  */
-#define RAISE_DTLS_ERROR_MSG(exception, msg)                                  \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_ERROR_MSG (msg);                                                 \
-      RAISE_DTLS_ERROR (exception);                                           \
-    }                                                                         \
+#define RAISE_DTLS_ERROR_MSG(exception, msg) \
+  do                                         \
+    {                                        \
+      SOCKET_ERROR_MSG (msg);                \
+      RAISE_DTLS_ERROR (exception);          \
+    }                                        \
   while (0)
 
 /**
@@ -268,12 +268,12 @@
  * @see SocketDgram-private.h for socket internal state (dtls_enabled flag)
  * @see docs/SECURITY.md#dtls-validation for best practices
  */
-#define REQUIRE_DTLS_ENABLED(socket, exception)                               \
-  do                                                                          \
-    {                                                                         \
-      if (!(socket)->dtls_enabled)                                            \
-        RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket");       \
-    }                                                                         \
+#define REQUIRE_DTLS_ENABLED(socket, exception)                         \
+  do                                                                    \
+    {                                                                   \
+      if (!(socket)->dtls_enabled)                                      \
+        RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket"); \
+    }                                                                   \
   while (0)
 
 /**
@@ -476,25 +476,25 @@
  * @see SocketDTLS.h#SocketDTLS_send for public API using this internally
  * @see docs/TLS.md#dtls-io-validation for security rationale
  */
-#define VALIDATE_DTLS_IO_READY(socket, exception)                             \
-  ({                                                                          \
-    if (!(socket)->dtls_enabled)                                              \
-      {                                                                       \
-        DTLS_ERROR_MSG ("DTLS not enabled on socket");                        \
-        RAISE_DTLS_ERROR (exception);                                         \
-      }                                                                       \
-    if (!(socket)->dtls_handshake_done)                                       \
-      {                                                                       \
-        DTLS_ERROR_MSG ("DTLS handshake not complete");                       \
-        RAISE_DTLS_ERROR (exception);                                         \
-      }                                                                       \
-    SSL *ssl_conn = dtls_socket_get_ssl (socket);                                 \
-    if (!ssl_conn)                                                                \
-      {                                                                       \
-        DTLS_ERROR_MSG ("SSL object not available");                          \
-        RAISE_DTLS_ERROR (exception);                                         \
-      }                                                                       \
-    ssl_conn;                                                                     \
+#define VALIDATE_DTLS_IO_READY(socket, exception)       \
+  ({                                                    \
+    if (!(socket)->dtls_enabled)                        \
+      {                                                 \
+        DTLS_ERROR_MSG ("DTLS not enabled on socket");  \
+        RAISE_DTLS_ERROR (exception);                   \
+      }                                                 \
+    if (!(socket)->dtls_handshake_done)                 \
+      {                                                 \
+        DTLS_ERROR_MSG ("DTLS handshake not complete"); \
+        RAISE_DTLS_ERROR (exception);                   \
+      }                                                 \
+    SSL *ssl_conn = dtls_socket_get_ssl (socket);       \
+    if (!ssl_conn)                                      \
+      {                                                 \
+        DTLS_ERROR_MSG ("SSL object not available");    \
+        RAISE_DTLS_ERROR (exception);                   \
+      }                                                 \
+    ssl_conn;                                           \
   })
 
 /* ============================================================================
@@ -710,8 +710,8 @@ dtls_handle_ssl_error (SocketDgram_T socket, SSL *ssl, int ssl_result)
 static inline void
 dtls_format_openssl_error (const char *context)
 {
-  ssl_format_openssl_error_to_buf (context, socket_error_buf,
-                                   SOCKET_ERROR_BUFSIZE);
+  ssl_format_openssl_error_to_buf (
+      context, socket_error_buf, SOCKET_ERROR_BUFSIZE);
 }
 
 /* ============================================================================
@@ -762,10 +762,9 @@ dtls_validate_file_path (const char *path)
  */
 typedef struct
 {
-  unsigned char secret[SOCKET_DTLS_COOKIE_SECRET_LEN]; /**< HMAC secret */
-  unsigned char
-      prev_secret[SOCKET_DTLS_COOKIE_SECRET_LEN]; /**< Previous secret for
-                                                     rotation */
+  unsigned char secret[SOCKET_DTLS_COOKIE_SECRET_LEN];      /**< HMAC secret */
+  unsigned char prev_secret[SOCKET_DTLS_COOKIE_SECRET_LEN]; /**< Previous secret
+                                                               for rotation */
   int cookie_enabled;           /**< Cookie exchange enabled */
   pthread_mutex_t secret_mutex; /**< Protects secret rotation */
 } DTLSContextCookie;
@@ -784,8 +783,8 @@ typedef struct
 typedef struct
 {
   const char **protocols; /**< Array of protocol strings */
-  size_t *lens;           /**< Precomputed lengths of protocols[i] for O(1) access */
-  size_t count;           /**< Number of protocols */
+  size_t *lens; /**< Precomputed lengths of protocols[i] for O(1) access */
+  size_t count; /**< Number of protocols */
   const char
       *selected; /**< Negotiated protocol (set by server, read by client) */
 } DTLSContextALPN;
@@ -828,7 +827,8 @@ struct T
 };
 
 /**
- * @brief Context-specific raise macros using centralized SocketUtil infrastructure
+ * @brief Context-specific raise macros using centralized SocketUtil
+ * infrastructure
  * @ingroup security
  *
  * These macros provide module-prefixed exception raising for SocketDTLSContext
@@ -839,13 +839,13 @@ struct T
  * @see core/SocketUtil.h for implementation details
  */
 #define RAISE_DTLS_CTX_ERROR(exception) \
-  SOCKET_RAISE_MODULE_ERROR(SocketDTLSContext, exception)
+  SOCKET_RAISE_MODULE_ERROR (SocketDTLSContext, exception)
 
 #define RAISE_DTLS_CTX_ERROR_MSG(exception, msg) \
-  SOCKET_RAISE_MSG(SocketDTLSContext, exception, msg)
+  SOCKET_RAISE_MSG (SocketDTLSContext, exception, msg)
 
 #define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...) \
-  SOCKET_RAISE_FMT(SocketDTLSContext, exception, fmt, ##__VA_ARGS__)
+  SOCKET_RAISE_FMT (SocketDTLSContext, exception, fmt, ##__VA_ARGS__)
 
 /* ============================================================================
  * Utility Macros
@@ -876,14 +876,14 @@ struct T
  * @return SSL* pointer if validation passes
  * @threadsafe No - modifies thread-local error buffer
  */
-#define REQUIRE_DTLS_SSL(socket, exception)                                   \
-  ({                                                                          \
-    if (!(socket)->dtls_enabled)                                              \
-      RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket");         \
-    SSL *ssl_conn = dtls_socket_get_ssl (socket);                                 \
-    if (!ssl_conn)                                                                \
-      RAISE_DTLS_ERROR_MSG (exception, "SSL object not available");           \
-    ssl_conn;                                                                     \
+#define REQUIRE_DTLS_SSL(socket, exception)                           \
+  ({                                                                  \
+    if (!(socket)->dtls_enabled)                                      \
+      RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket"); \
+    SSL *ssl_conn = dtls_socket_get_ssl (socket);                     \
+    if (!ssl_conn)                                                    \
+      RAISE_DTLS_ERROR_MSG (exception, "SSL object not available");   \
+    ssl_conn;                                                         \
   })
 
 /* ============================================================================
@@ -1091,7 +1091,8 @@ struct T
  *
  * @return 1 on success, 0 on failure
  */
-extern int dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
+extern int dtls_cookie_generate_cb (SSL *ssl,
+                                    unsigned char *cookie,
                                     unsigned int *cookie_len);
 
 /**
@@ -1102,7 +1103,8 @@ extern int dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
  *
  * @return 1 if valid, 0 if invalid
  */
-extern int dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
+extern int dtls_cookie_verify_cb (SSL *ssl,
+                                  const unsigned char *cookie,
                                   unsigned int cookie_len);
 
 /**

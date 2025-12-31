@@ -59,8 +59,10 @@ timer_callback_wrapper (void *data)
  * This type represents the signature of SocketTimer_add() and
  * SocketTimer_add_repeating().
  */
-typedef SocketTimer_T (*TimerCreateFn) (SocketPoll_T, int64_t,
-                                        SocketTimerCallback, void *);
+typedef SocketTimer_T (*TimerCreateFn) (SocketPoll_T,
+                                        int64_t,
+                                        SocketTimerCallback,
+                                        void *);
 
 /**
  * @brief Common implementation for timer creation.
@@ -79,10 +81,14 @@ typedef SocketTimer_T (*TimerCreateFn) (SocketPoll_T, int64_t,
  * @return Timer handle on success, NULL on error.
  */
 static SocketSimple_Timer_T
-timer_add_common (SocketSimple_Poll_T poll, int64_t time_ms,
-                  SocketSimple_TimerCallback callback, void *userdata,
-                  int allow_zero, const char *time_error_msg,
-                  TimerCreateFn create_fn, const char *fail_msg)
+timer_add_common (SocketSimple_Poll_T poll,
+                  int64_t time_ms,
+                  SocketSimple_TimerCallback callback,
+                  void *userdata,
+                  int allow_zero,
+                  const char *time_error_msg,
+                  TimerCreateFn create_fn,
+                  const char *fail_msg)
 {
   Socket_simple_clear_error ();
 
@@ -143,21 +149,32 @@ timer_add_common (SocketSimple_Poll_T poll, int64_t time_ms,
 }
 
 SocketSimple_Timer_T
-Socket_simple_timer_add (SocketSimple_Poll_T poll, int64_t delay_ms,
-                          SocketSimple_TimerCallback callback, void *userdata)
+Socket_simple_timer_add (SocketSimple_Poll_T poll,
+                         int64_t delay_ms,
+                         SocketSimple_TimerCallback callback,
+                         void *userdata)
 {
-  return timer_add_common (poll, delay_ms, callback, userdata, 1,
-                           "Delay must be non-negative", SocketTimer_add,
+  return timer_add_common (poll,
+                           delay_ms,
+                           callback,
+                           userdata,
+                           1,
+                           "Delay must be non-negative",
+                           SocketTimer_add,
                            "Failed to add timer");
 }
 
 SocketSimple_Timer_T
 Socket_simple_timer_add_repeating (SocketSimple_Poll_T poll,
-                                    int64_t interval_ms,
-                                    SocketSimple_TimerCallback callback,
-                                    void *userdata)
+                                   int64_t interval_ms,
+                                   SocketSimple_TimerCallback callback,
+                                   void *userdata)
 {
-  return timer_add_common (poll, interval_ms, callback, userdata, 0,
+  return timer_add_common (poll,
+                           interval_ms,
+                           callback,
+                           userdata,
+                           0,
                            "Interval must be positive",
                            SocketTimer_add_repeating,
                            "Failed to add repeating timer");
@@ -207,7 +224,7 @@ validate_timer_operation (SocketSimple_Poll_T poll, SocketSimple_Timer_T timer)
 
 int
 Socket_simple_timer_cancel (SocketSimple_Poll_T poll,
-                             SocketSimple_Timer_T timer)
+                            SocketSimple_Timer_T timer)
 {
   SocketPoll_T core_poll = validate_timer_operation (poll, timer);
   if (!core_poll)
@@ -226,8 +243,8 @@ Socket_simple_timer_cancel (SocketSimple_Poll_T poll,
 
 int
 Socket_simple_timer_reschedule (SocketSimple_Poll_T poll,
-                                 SocketSimple_Timer_T timer,
-                                 int64_t new_delay_ms)
+                                SocketSimple_Timer_T timer,
+                                int64_t new_delay_ms)
 {
   SocketPoll_T core_poll = validate_timer_operation (poll, timer);
   if (!core_poll)
@@ -263,7 +280,7 @@ Socket_simple_timer_pause (SocketSimple_Poll_T poll, SocketSimple_Timer_T timer)
 
 int
 Socket_simple_timer_resume (SocketSimple_Poll_T poll,
-                             SocketSimple_Timer_T timer)
+                            SocketSimple_Timer_T timer)
 {
   SocketPoll_T core_poll = validate_timer_operation (poll, timer);
   if (!core_poll)
@@ -285,7 +302,7 @@ Socket_simple_timer_resume (SocketSimple_Poll_T poll,
 
 int64_t
 Socket_simple_timer_remaining (SocketSimple_Poll_T poll,
-                                SocketSimple_Timer_T timer)
+                               SocketSimple_Timer_T timer)
 {
   if (!poll || !timer || !timer->is_valid)
     return -1;
@@ -299,7 +316,7 @@ Socket_simple_timer_remaining (SocketSimple_Poll_T poll,
 
 int
 Socket_simple_timer_is_pending (SocketSimple_Poll_T poll,
-                                 SocketSimple_Timer_T timer)
+                                SocketSimple_Timer_T timer)
 {
   if (!poll || !timer)
     return 0;
@@ -321,7 +338,7 @@ Socket_simple_timer_is_pending (SocketSimple_Poll_T poll,
 
 int
 Socket_simple_timer_next_timeout (SocketSimple_Poll_T poll
-                                   __attribute__ ((unused)))
+                                  __attribute__ ((unused)))
 {
   /* Timer timeout calculation is handled internally by SocketPoll_wait.
    * This function is provided for API completeness but returns -1
@@ -330,8 +347,7 @@ Socket_simple_timer_next_timeout (SocketSimple_Poll_T poll
 }
 
 int
-Socket_simple_timer_process (SocketSimple_Poll_T poll
-                              __attribute__ ((unused)))
+Socket_simple_timer_process (SocketSimple_Poll_T poll __attribute__ ((unused)))
 {
   /* Timer processing is handled internally by SocketPoll_wait.
    * This function is provided for API completeness. */
@@ -340,7 +356,7 @@ Socket_simple_timer_process (SocketSimple_Poll_T poll
 
 int
 Socket_simple_timer_cancel_all (SocketSimple_Poll_T poll
-                                 __attribute__ ((unused)))
+                                __attribute__ ((unused)))
 {
   Socket_simple_clear_error ();
 
@@ -360,7 +376,6 @@ Socket_simple_timer_count (SocketSimple_Poll_T poll __attribute__ ((unused)))
   Socket_simple_clear_error ();
 
   /* Timer count not available from core API. */
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "Timer count not supported");
+  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED, "Timer count not supported");
   return -1;
 }

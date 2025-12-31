@@ -23,7 +23,7 @@
  * ============================================================================
  */
 
-#define NANOSECONDS_PER_SECOND      1000000000ULL
+#define NANOSECONDS_PER_SECOND 1000000000ULL
 #define NANOSECONDS_PER_MILLISECOND 1000000ULL
 
 /* ============================================================================
@@ -144,8 +144,7 @@ Socket_simple_ratelimit_free (SocketSimple_RateLimit_T *limit)
  */
 
 int
-Socket_simple_ratelimit_try_acquire (SocketSimple_RateLimit_T limit,
-                                     int tokens)
+Socket_simple_ratelimit_try_acquire (SocketSimple_RateLimit_T limit, int tokens)
 {
   if (!limit || tokens <= 0)
     return 0;
@@ -189,7 +188,7 @@ Socket_simple_ratelimit_wait_ms (SocketSimple_RateLimit_T limit, int tokens)
     {
       double needed = tokens - limit->tokens;
       double seconds = needed / limit->tokens_per_sec;
-      wait_ms = (int)ceil(seconds * 1000.0);
+      wait_ms = (int)ceil (seconds * 1000.0);
     }
 
   pthread_mutex_unlock (&limit->mutex);
@@ -236,7 +235,8 @@ Socket_simple_ratelimit_acquire (SocketSimple_RateLimit_T limit, int tokens)
 
 int
 Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
-                                         int tokens, int timeout_ms)
+                                         int tokens,
+                                         int timeout_ms)
 {
   if (!limit)
     {
@@ -256,7 +256,8 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
     }
 
   uint64_t start = get_monotonic_ns ();
-  uint64_t deadline = start + (uint64_t)timeout_ms * NANOSECONDS_PER_MILLISECOND;
+  uint64_t deadline
+      = start + (uint64_t)timeout_ms * NANOSECONDS_PER_MILLISECOND;
 
   while (!Socket_simple_ratelimit_try_acquire (limit, tokens))
     {
@@ -331,7 +332,8 @@ Socket_simple_ratelimit_reset (SocketSimple_RateLimit_T limit)
 
 int
 Socket_simple_ratelimit_set_rate (SocketSimple_RateLimit_T limit,
-                                  int tokens_per_sec, int burst)
+                                  int tokens_per_sec,
+                                  int burst)
 {
   if (!limit)
     {

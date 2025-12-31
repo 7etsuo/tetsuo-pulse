@@ -40,7 +40,8 @@ struct SocketSimple_IPTracker
  */
 
 /**
- * @brief Common pattern for wrapping core security objects in Simple API handles.
+ * @brief Common pattern for wrapping core security objects in Simple API
+ * handles.
  *
  * This macro extracts the duplicated pattern from Socket_simple_syn_new and
  * Socket_simple_ip_tracker_new, providing consistent error handling and
@@ -48,50 +49,62 @@ struct SocketSimple_IPTracker
  *
  * @param CORE_TYPE      Core module type (e.g., SocketSYNProtect_T)
  * @param CORE_VAR       Variable name for core object (e.g., protect)
- * @param HANDLE_TYPE    Simple API handle type (e.g., struct SocketSimple_SYNProtect)
+ * @param HANDLE_TYPE    Simple API handle type (e.g., struct
+ * SocketSimple_SYNProtect)
  * @param HANDLE_VAR     Variable name for handle (e.g., handle)
- * @param CORE_CREATE    Expression to create core object (e.g., SocketSYNProtect_new(...))
- * @param CORE_FREE      Function to free core object (e.g., SocketSYNProtect_free)
+ * @param CORE_CREATE    Expression to create core object (e.g.,
+ * SocketSYNProtect_new(...))
+ * @param CORE_FREE      Function to free core object (e.g.,
+ * SocketSYNProtect_free)
  * @param CORE_EXCEPTION Exception type to catch (e.g., SocketSYNProtect_Failed)
  * @param ERROR_MSG      Error message string literal
  * @param MEMBER_NAME    Name of member in handle struct (e.g., protect)
  */
-#define SIMPLE_SECURITY_WRAP_NEW(CORE_TYPE, CORE_VAR, HANDLE_TYPE,            \
-                                 HANDLE_VAR, CORE_CREATE, CORE_FREE,           \
-                                 CORE_EXCEPTION, ERROR_MSG, MEMBER_NAME)       \
-  do                                                                           \
-    {                                                                          \
-      volatile CORE_TYPE CORE_VAR = NULL;                                      \
-      HANDLE_TYPE *HANDLE_VAR = NULL;                                          \
-                                                                               \
-      Socket_simple_clear_error ();                                            \
-                                                                               \
-      TRY { CORE_VAR = CORE_CREATE; }                                          \
-      EXCEPT (CORE_EXCEPTION)                                                  \
-      {                                                                        \
-        simple_set_error (SOCKET_SIMPLE_ERR_SECURITY, ERROR_MSG);              \
-        return NULL;                                                           \
-      }                                                                        \
-      END_TRY;                                                                 \
-                                                                               \
-      if (!CORE_VAR)                                                           \
-        {                                                                      \
-          simple_set_error (SOCKET_SIMPLE_ERR_SECURITY, ERROR_MSG);            \
-          return NULL;                                                         \
-        }                                                                      \
-                                                                               \
-      HANDLE_VAR = calloc (1, sizeof (*HANDLE_VAR));                           \
-      if (!HANDLE_VAR)                                                         \
-        {                                                                      \
-          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,                          \
-                            "Memory allocation failed");                       \
-          CORE_FREE ((CORE_TYPE *)&CORE_VAR);                                  \
-          return NULL;                                                         \
-        }                                                                      \
-                                                                               \
-      HANDLE_VAR->MEMBER_NAME = CORE_VAR;                                      \
-      return HANDLE_VAR;                                                       \
-    }                                                                          \
+#define SIMPLE_SECURITY_WRAP_NEW(CORE_TYPE,                         \
+                                 CORE_VAR,                          \
+                                 HANDLE_TYPE,                       \
+                                 HANDLE_VAR,                        \
+                                 CORE_CREATE,                       \
+                                 CORE_FREE,                         \
+                                 CORE_EXCEPTION,                    \
+                                 ERROR_MSG,                         \
+                                 MEMBER_NAME)                       \
+  do                                                                \
+    {                                                               \
+      volatile CORE_TYPE CORE_VAR = NULL;                           \
+      HANDLE_TYPE *HANDLE_VAR = NULL;                               \
+                                                                    \
+      Socket_simple_clear_error ();                                 \
+                                                                    \
+      TRY                                                           \
+      {                                                             \
+        CORE_VAR = CORE_CREATE;                                     \
+      }                                                             \
+      EXCEPT (CORE_EXCEPTION)                                       \
+      {                                                             \
+        simple_set_error (SOCKET_SIMPLE_ERR_SECURITY, ERROR_MSG);   \
+        return NULL;                                                \
+      }                                                             \
+      END_TRY;                                                      \
+                                                                    \
+      if (!CORE_VAR)                                                \
+        {                                                           \
+          simple_set_error (SOCKET_SIMPLE_ERR_SECURITY, ERROR_MSG); \
+          return NULL;                                              \
+        }                                                           \
+                                                                    \
+      HANDLE_VAR = calloc (1, sizeof (*HANDLE_VAR));                \
+      if (!HANDLE_VAR)                                              \
+        {                                                           \
+          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,               \
+                            "Memory allocation failed");            \
+          CORE_FREE ((CORE_TYPE *)&CORE_VAR);                       \
+          return NULL;                                              \
+        }                                                           \
+                                                                    \
+      HANDLE_VAR->MEMBER_NAME = CORE_VAR;                           \
+      return HANDLE_VAR;                                            \
+    }                                                               \
   while (0)
 
 /* ============================================================================
@@ -144,10 +157,15 @@ Socket_simple_syn_new (const SocketSimple_SYNConfig *config)
       core_config.max_tracked_ips = config->max_tracked_ips;
     }
 
-  SIMPLE_SECURITY_WRAP_NEW (
-      SocketSYNProtect_T, protect, struct SocketSimple_SYNProtect, handle,
-      SocketSYNProtect_new (NULL, &core_config), SocketSYNProtect_free,
-      SocketSYNProtect_Failed, "Failed to create SYN protection", protect);
+  SIMPLE_SECURITY_WRAP_NEW (SocketSYNProtect_T,
+                            protect,
+                            struct SocketSimple_SYNProtect,
+                            handle,
+                            SocketSYNProtect_new (NULL, &core_config),
+                            SocketSYNProtect_free,
+                            SocketSYNProtect_Failed,
+                            "Failed to create SYN protection",
+                            protect);
 }
 
 void
@@ -269,7 +287,8 @@ Socket_simple_syn_whitelist_contains (SocketSimple_SYNProtect_T protect,
 
 int
 Socket_simple_syn_blacklist_add (SocketSimple_SYNProtect_T protect,
-                                 const char *ip, int duration_ms)
+                                 const char *ip,
+                                 int duration_ms)
 {
   if (!protect || !protect->protect || !ip)
     return 0;
@@ -331,7 +350,8 @@ Socket_simple_syn_stats (SocketSimple_SYNProtect_T protect,
 
 int
 Socket_simple_syn_get_ip_state (SocketSimple_SYNProtect_T protect,
-                                const char *ip, SocketSimple_IPState *state)
+                                const char *ip,
+                                SocketSimple_IPState *state)
 {
   if (!protect || !protect->protect || !ip || !state)
     return 0;
@@ -447,10 +467,15 @@ Socket_simple_syn_reputation_name (SocketSimple_Reputation rep)
 SocketSimple_IPTracker_T
 Socket_simple_ip_tracker_new (int max_per_ip)
 {
-  SIMPLE_SECURITY_WRAP_NEW (
-      SocketIPTracker_T, tracker, struct SocketSimple_IPTracker, handle,
-      SocketIPTracker_new (NULL, max_per_ip), SocketIPTracker_free,
-      SocketIPTracker_Failed, "Failed to create IP tracker", tracker);
+  SIMPLE_SECURITY_WRAP_NEW (SocketIPTracker_T,
+                            tracker,
+                            struct SocketSimple_IPTracker,
+                            handle,
+                            SocketIPTracker_new (NULL, max_per_ip),
+                            SocketIPTracker_free,
+                            SocketIPTracker_Failed,
+                            "Failed to create IP tracker",
+                            tracker);
 }
 
 void

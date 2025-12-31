@@ -98,8 +98,8 @@ TEST (security_http_limits_query)
 {
   size_t max_uri, max_header_size, max_headers, max_body;
 
-  SocketSecurity_get_http_limits (&max_uri, &max_header_size, &max_headers,
-                                  &max_body);
+  SocketSecurity_get_http_limits (
+      &max_uri, &max_header_size, &max_headers, &max_body);
 
   ASSERT (max_uri > 0);
   ASSERT (max_header_size > 0);
@@ -499,8 +499,8 @@ TEST (security_http_header_name_injection_rejected)
 
   /* Header name with CRLF injection attempt should be rejected */
   /* Returns -1 on invalid header name */
-  int result = SocketHTTP_Headers_add (headers, "X-Injected\r\nEvil: Header",
-                                       "value");
+  int result
+      = SocketHTTP_Headers_add (headers, "X-Injected\r\nEvil: Header", "value");
   ASSERT_EQ (-1, result);
 
   /* Headers freed when arena is disposed */
@@ -533,8 +533,7 @@ TEST (security_http_header_name_invalid_chars_rejected)
 
   /* Header name with space (invalid per RFC 9110) should be rejected */
   /* Returns -1 on invalid header name */
-  int result
-      = SocketHTTP_Headers_add (headers, "Invalid Header Name", "value");
+  int result = SocketHTTP_Headers_add (headers, "Invalid Header Name", "value");
   ASSERT_EQ (-1, result);
 
   /* Headers freed when arena is disposed */
@@ -594,8 +593,7 @@ TEST (security_utf8_too_large_rejected)
 TEST (security_utf8_invalid_continuation_rejected)
 {
   /* Invalid continuation byte */
-  const unsigned char invalid[]
-      = { 0xC2, 0x00 }; /* NUL instead of 0x80-0xBF */
+  const unsigned char invalid[] = { 0xC2, 0x00 }; /* NUL instead of 0x80-0xBF */
   ASSERT_EQ (UTF8_INVALID, SocketUTF8_validate (invalid, sizeof (invalid)));
 
   /* Missing continuation */
@@ -692,7 +690,9 @@ TEST (security_http1_line_limit_enforced)
 
   /* Request line exceeding limit */
   char long_request[256];
-  snprintf (long_request, sizeof (long_request), "GET /%s HTTP/1.1\r\n",
+  snprintf (long_request,
+            sizeof (long_request),
+            "GET /%s HTTP/1.1\r\n",
             string_repeat ('a', 145));
 
   size_t consumed;
@@ -809,12 +809,14 @@ TEST (security_cookie_set_invalid_name_chars_rejected)
     "name=value; name=invalid value"    /* Space in name */
   };
 
-  for (size_t i = 0;
-       i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
+  for (size_t i = 0; i < sizeof (invalid_headers) / sizeof (invalid_headers[0]);
+       i++)
     {
       result = httpclient_parse_set_cookie (invalid_headers[i],
-                                            strlen (invalid_headers[i]), &uri,
-                                            &cookie, arena);
+                                            strlen (invalid_headers[i]),
+                                            &uri,
+                                            &cookie,
+                                            arena);
       ASSERT_EQ (-1, result); /* Should be rejected */
     }
 
@@ -847,12 +849,14 @@ TEST (security_cookie_set_invalid_value_chars_rejected)
     "name=value invalid"  /* Space in unquoted value */
   };
 
-  for (size_t i = 0;
-       i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
+  for (size_t i = 0; i < sizeof (invalid_headers) / sizeof (invalid_headers[0]);
+       i++)
     {
       result = httpclient_parse_set_cookie (invalid_headers[i],
-                                            strlen (invalid_headers[i]), &uri,
-                                            &cookie, arena);
+                                            strlen (invalid_headers[i]),
+                                            &uri,
+                                            &cookie,
+                                            arena);
       ASSERT_EQ (-1, result); /* Should be rejected */
     }
 
@@ -878,12 +882,14 @@ TEST (security_cookie_set_unclosed_quote_rejected)
     "name=\"value\n",   /* LF in quoted value */
   };
 
-  for (size_t i = 0;
-       i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
+  for (size_t i = 0; i < sizeof (invalid_headers) / sizeof (invalid_headers[0]);
+       i++)
     {
       result = httpclient_parse_set_cookie (invalid_headers[i],
-                                            strlen (invalid_headers[i]), &uri,
-                                            &cookie, arena);
+                                            strlen (invalid_headers[i]),
+                                            &uri,
+                                            &cookie,
+                                            arena);
       ASSERT_EQ (-1, result); /* Should be rejected */
     }
 
@@ -906,8 +912,8 @@ TEST (security_cookie_set_huge_max_age_clamped)
    * host */
   const char *huge_max_age
       = "name=value; Max-Age=999999999999999999999; Domain=example.com";
-  result = httpclient_parse_set_cookie (huge_max_age, strlen (huge_max_age),
-                                        &uri, &cookie, arena);
+  result = httpclient_parse_set_cookie (
+      huge_max_age, strlen (huge_max_age), &uri, &cookie, arena);
   ASSERT_EQ (0, result);
   ASSERT (cookie.expires < time (NULL) + HTTPCLIENT_MAX_COOKIE_AGE_SEC
                                + 10); /* Should be clamped */
@@ -927,12 +933,14 @@ TEST (security_cookie_set_huge_domain_rejected)
 
   /* Domain too long should be rejected */
   char huge_domain[HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 100];
-  snprintf (huge_domain, sizeof (huge_domain), "name=value; Domain=%.*s",
+  snprintf (huge_domain,
+            sizeof (huge_domain),
+            "name=value; Domain=%.*s",
             HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 50,
             string_repeat ('a', HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 50));
 
-  result = httpclient_parse_set_cookie (huge_domain, strlen (huge_domain),
-                                        &uri, &cookie, arena);
+  result = httpclient_parse_set_cookie (
+      huge_domain, strlen (huge_domain), &uri, &cookie, arena);
   ASSERT_EQ (-1, result); /* Should be rejected */
 
   Arena_dispose (&arena);
@@ -1024,8 +1032,8 @@ TEST (security_cookie_samesite_strict_stored)
   ASSERT_EQ (0, result);
 
   /* Verify cookie was stored with correct SameSite attribute */
-  const SocketHTTPClient_Cookie *stored = SocketHTTPClient_CookieJar_get (
-      jar, "example.com", "/", "test_strict");
+  const SocketHTTPClient_Cookie *stored
+      = SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "test_strict");
   ASSERT_NOT_NULL (stored);
   ASSERT_EQ (COOKIE_SAMESITE_STRICT, stored->same_site);
 
@@ -1089,8 +1097,11 @@ TEST (security_cookie_file_load_large_rejected)
   const size_t test_cookie_count = 200;
   for (size_t i = 0; i < test_cookie_count; i++)
     {
-      fprintf (f, "example.com\tTRUE\t/\tFALSE\t%ld\tcookie%zu\tvalue%zu\n",
-               (long)future, i, i);
+      fprintf (f,
+               "example.com\tTRUE\t/\tFALSE\t%ld\tcookie%zu\tvalue%zu\n",
+               (long)future,
+               i,
+               i);
     }
   fclose (f);
 
@@ -1137,8 +1148,8 @@ TEST (security_control_chars_clean_string)
 TEST (security_control_chars_detects_nul)
 {
   /* Test NUL byte (0x00) detection */
-  const char nul_string[] = { 'H', 'e', 'l', 'l', 'o', 0x00, 'W', 'o', 'r',
-                              'l',  'd',  0 };
+  const char nul_string[]
+      = { 'H', 'e', 'l', 'l', 'o', 0x00, 'W', 'o', 'r', 'l', 'd', 0 };
   ASSERT_EQ (1, SocketSecurity_has_control_chars (nul_string, 11));
 
   /* NUL at beginning */
@@ -1154,7 +1165,8 @@ TEST (security_control_chars_detects_cr)
 {
   /* Test CR (0x0D) detection - header injection vector */
   const char *cr_string = "Header-Name: value\rInjected: evil";
-  ASSERT_EQ (1, SocketSecurity_has_control_chars (cr_string, strlen (cr_string)));
+  ASSERT_EQ (1,
+             SocketSecurity_has_control_chars (cr_string, strlen (cr_string)));
 
   /* CR at beginning */
   const char *cr_start = "\rHeader: value";
@@ -1169,7 +1181,8 @@ TEST (security_control_chars_detects_lf)
 {
   /* Test LF (0x0A) detection - header injection vector */
   const char *lf_string = "Header-Name: value\nInjected: evil";
-  ASSERT_EQ (1, SocketSecurity_has_control_chars (lf_string, strlen (lf_string)));
+  ASSERT_EQ (1,
+             SocketSecurity_has_control_chars (lf_string, strlen (lf_string)));
 
   /* LF at beginning */
   const char *lf_start = "\nHeader: value";
@@ -1189,8 +1202,8 @@ TEST (security_control_chars_detects_crlf)
 
   /* Multiple CRLF sequences */
   const char *multi_crlf = "Line1\r\nLine2\r\nLine3";
-  ASSERT_EQ (1,
-             SocketSecurity_has_control_chars (multi_crlf, strlen (multi_crlf)));
+  ASSERT_EQ (
+      1, SocketSecurity_has_control_chars (multi_crlf, strlen (multi_crlf)));
 }
 
 TEST (security_control_chars_usage_pattern)
@@ -1207,8 +1220,9 @@ TEST (security_control_chars_usage_pattern)
     }
 
   /* Unsafe header value */
-  if (injected_value && SocketSecurity_has_control_chars (
-                            injected_value, strlen (injected_value)))
+  if (injected_value
+      && SocketSecurity_has_control_chars (injected_value,
+                                           strlen (injected_value)))
     {
       /* Expected: should detect injection attempt */
       ASSERT (1);
@@ -1229,8 +1243,8 @@ TEST (security_control_chars_allows_other_control_chars)
   ASSERT_EQ (0, SocketSecurity_has_control_chars (with_tab, strlen (with_tab)));
 
   /* Other control characters are allowed (though uncommon) */
-  const char with_ctrl[] = { 'H', 'e', 'l', 'l', 'o', 0x01, 'W', 'o', 'r',
-                             'l',  'd',  0 };
+  const char with_ctrl[]
+      = { 'H', 'e', 'l', 'l', 'o', 0x01, 'W', 'o', 'r', 'l', 'd', 0 };
   /* 0x01 is a control char but not NUL/CR/LF, so allowed */
   ASSERT_EQ (0, SocketSecurity_has_control_chars (with_ctrl, 11));
 }
@@ -1240,8 +1254,7 @@ TEST (security_control_chars_high_ascii)
   /* Test that high ASCII values (> 0x7F) are allowed */
   const unsigned char high_ascii[]
       = { 0xC0, 0xC1, 0xFF, 0x80, 0xFE, 0 }; /* Various high bytes */
-  ASSERT_EQ (
-      0, SocketSecurity_has_control_chars ((const char *)high_ascii, 5));
+  ASSERT_EQ (0, SocketSecurity_has_control_chars ((const char *)high_ascii, 5));
 }
 
 /* ============================================================================
@@ -1270,10 +1283,8 @@ TEST (security_size_to_int_max_valid)
 TEST (security_size_to_int_capping)
 {
   /* Sizes exceeding INT_MAX should be capped */
-  ASSERT_EQ (INT_MAX,
-             SocketSecurity_size_to_int ((size_t)INT_MAX + 1));
-  ASSERT_EQ (INT_MAX,
-             SocketSecurity_size_to_int ((size_t)INT_MAX + 1000));
+  ASSERT_EQ (INT_MAX, SocketSecurity_size_to_int ((size_t)INT_MAX + 1));
+  ASSERT_EQ (INT_MAX, SocketSecurity_size_to_int ((size_t)INT_MAX + 1000));
 
   /* Very large sizes should be capped to INT_MAX */
   ASSERT_EQ (INT_MAX, SocketSecurity_size_to_int (SIZE_MAX));
@@ -1305,7 +1316,9 @@ TEST (security_size_to_int_openssl_pattern)
  * SOCKET_SSL_UNUSED macro - compiles without warnings when macro is correct.
  */
 static int
-helper_with_unused_params (int used, int unused1, const char *unused2,
+helper_with_unused_params (int used,
+                           int unused1,
+                           const char *unused2,
                            void *unused3)
 {
   /* Suppress unused parameter warnings using the TLS utility macro */

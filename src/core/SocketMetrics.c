@@ -36,7 +36,7 @@ static const char *const STATSD_PCT_P50 = "p50";
 static const char *const STATSD_PCT_P95 = "p95";
 static const char *const STATSD_PCT_P99 = "p99";
 
-#define METRICS_LOG_DEBUG_MSG(fmt, ...)                                       \
+#define METRICS_LOG_DEBUG_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_DEBUG, "metrics", fmt, ##__VA_ARGS__)
 
 #ifdef SOCKET_METRICS_DEBUG
@@ -70,144 +70,231 @@ static _Atomic int peak_socket_count = 0;
 
 static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   /* Pool */
-  "pool_connections_created", "pool_connections_destroyed",
-  "pool_connections_failed", "pool_connections_reused",
-  "pool_connections_evicted", "pool_drain_started", "pool_drain_completed",
+  "pool_connections_created",
+  "pool_connections_destroyed",
+  "pool_connections_failed",
+  "pool_connections_reused",
+  "pool_connections_evicted",
+  "pool_drain_started",
+  "pool_drain_completed",
   /* HTTP Client */
-  "http_client_requests_total", "http_client_requests_failed",
-  "http_client_requests_timeout", "http_client_bytes_sent",
-  "http_client_bytes_received", "http_client_retries",
+  "http_client_requests_total",
+  "http_client_requests_failed",
+  "http_client_requests_timeout",
+  "http_client_bytes_sent",
+  "http_client_bytes_received",
+  "http_client_retries",
   /* HTTP Server */
-  "http_server_requests_total", "http_server_requests_failed",
-  "http_server_requests_timeout", "http_server_rate_limited",
-  "http_server_bytes_sent", "http_server_bytes_received",
+  "http_server_requests_total",
+  "http_server_requests_failed",
+  "http_server_requests_timeout",
+  "http_server_rate_limited",
+  "http_server_bytes_sent",
+  "http_server_bytes_received",
   "http_server_connections_total",
   /* HTTP Responses */
-  "http_responses_1xx", "http_responses_2xx", "http_responses_3xx",
-  "http_responses_4xx", "http_responses_5xx",
+  "http_responses_1xx",
+  "http_responses_2xx",
+  "http_responses_3xx",
+  "http_responses_4xx",
+  "http_responses_5xx",
   /* TLS */
-  "tls_handshakes_total", "tls_handshakes_failed", "tls_session_reuse_count",
-  "tls_cert_verify_failures", "tls_renegotiations", "tls_pinning_failures",
-  "tls_ct_verification_failures", "tls_crl_check_failures",
+  "tls_handshakes_total",
+  "tls_handshakes_failed",
+  "tls_session_reuse_count",
+  "tls_cert_verify_failures",
+  "tls_renegotiations",
+  "tls_pinning_failures",
+  "tls_ct_verification_failures",
+  "tls_crl_check_failures",
   /* DTLS */
-  "dtls_handshakes_total", "dtls_handshakes_complete",
-  "dtls_handshakes_failed", "dtls_cookies_generated", "dtls_cookies_verified",
-  "dtls_cookie_verification_failures", "dtls_replay_packets_detected",
+  "dtls_handshakes_total",
+  "dtls_handshakes_complete",
+  "dtls_handshakes_failed",
+  "dtls_cookies_generated",
+  "dtls_cookies_verified",
+  "dtls_cookie_verification_failures",
+  "dtls_replay_packets_detected",
   "dtls_fragment_failures",
   /* DNS */
-  "dns_queries_total", "dns_queries_completed", "dns_queries_failed",
-  "dns_queries_timeout", "dns_queries_cancelled", "dns_cache_hits",
+  "dns_queries_total",
+  "dns_queries_completed",
+  "dns_queries_failed",
+  "dns_queries_timeout",
+  "dns_queries_cancelled",
+  "dns_cache_hits",
   "dns_cache_misses",
   /* Socket */
-  "socket_created", "socket_closed", "socket_connect_success",
-  "socket_connect_failed", "socket_accept_total",
+  "socket_created",
+  "socket_closed",
+  "socket_connect_success",
+  "socket_connect_failed",
+  "socket_accept_total",
   /* Poll */
-  "poll_wakeups", "poll_events_dispatched", "poll_timeout_expirations",
+  "poll_wakeups",
+  "poll_events_dispatched",
+  "poll_timeout_expirations",
   /* Resource Limits */
-  "limit_header_size_exceeded", "limit_body_size_exceeded",
-  "limit_response_size_exceeded", "limit_memory_exceeded",
-  "limit_connections_exceeded", "limit_streams_exceeded",
+  "limit_header_size_exceeded",
+  "limit_body_size_exceeded",
+  "limit_response_size_exceeded",
+  "limit_memory_exceeded",
+  "limit_connections_exceeded",
+  "limit_streams_exceeded",
   "limit_header_list_exceeded",
   /* SYN Flood Protection Counters */
-  "synprotect_attempts_total", "synprotect_allowed", "synprotect_throttled",
-  "synprotect_challenged", "synprotect_blocked", "synprotect_whitelisted",
-  "synprotect_blacklisted", "synprotect_lru_evictions"
+  "synprotect_attempts_total",
+  "synprotect_allowed",
+  "synprotect_throttled",
+  "synprotect_challenged",
+  "synprotect_blocked",
+  "synprotect_whitelisted",
+  "synprotect_blacklisted",
+  "synprotect_lru_evictions"
 };
 
 static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   /* Pool */
-  "Total connections created in pool", "Total connections destroyed in pool",
-  "Failed connection attempts", "Connections reused from pool",
+  "Total connections created in pool",
+  "Total connections destroyed in pool",
+  "Failed connection attempts",
+  "Connections reused from pool",
   "Connections evicted due to idle/age limits",
-  "Pool drain operations started", "Pool drain operations completed",
+  "Pool drain operations started",
+  "Pool drain operations completed",
   /* HTTP Client */
-  "Total HTTP requests sent", "Failed HTTP requests",
-  "HTTP requests that timed out", "Total bytes sent by HTTP client",
-  "Total bytes received by HTTP client", "HTTP request retry count",
+  "Total HTTP requests sent",
+  "Failed HTTP requests",
+  "HTTP requests that timed out",
+  "Total bytes sent by HTTP client",
+  "Total bytes received by HTTP client",
+  "HTTP request retry count",
   /* HTTP Server */
-  "Total HTTP requests received", "Failed request processing",
+  "Total HTTP requests received",
+  "Failed request processing",
   "HTTP requests that timed out on server",
-  "HTTP requests rejected by rate limiter", "Total bytes sent by HTTP server",
+  "HTTP requests rejected by rate limiter",
+  "Total bytes sent by HTTP server",
   "Total bytes received by HTTP server",
   "Total connections accepted by server",
   /* HTTP Responses */
-  "Informational HTTP responses (1xx)", "Successful HTTP responses (2xx)",
-  "Redirection HTTP responses (3xx)", "Client error HTTP responses (4xx)",
+  "Informational HTTP responses (1xx)",
+  "Successful HTTP responses (2xx)",
+  "Redirection HTTP responses (3xx)",
+  "Client error HTTP responses (4xx)",
   "Server error HTTP responses (5xx)",
   /* TLS */
-  "Total TLS handshakes attempted", "Failed TLS handshakes",
-  "TLS session resumption count", "TLS certificate verification failures",
-  "TLS renegotiation attempts (blocked)", "TLS certificate pinning failures",
+  "Total TLS handshakes attempted",
+  "Failed TLS handshakes",
+  "TLS session resumption count",
+  "TLS certificate verification failures",
+  "TLS renegotiation attempts (blocked)",
+  "TLS certificate pinning failures",
   "TLS Certificate Transparency verification failures",
   "TLS CRL/OCSP revocation check failures",
   /* DTLS */
-  "Total DTLS handshakes initiated", "Completed DTLS handshakes",
-  "Failed DTLS handshakes", "DTLS hello cookies generated for SYN protection",
-  "DTLS cookies verified successfully", "Invalid or expired DTLS cookies",
+  "Total DTLS handshakes initiated",
+  "Completed DTLS handshakes",
+  "Failed DTLS handshakes",
+  "DTLS hello cookies generated for SYN protection",
+  "DTLS cookies verified successfully",
+  "Invalid or expired DTLS cookies",
   "DTLS packets rejected due to replay detection",
   "DTLS fragmented message reassembly failures",
   /* DNS */
-  "Total DNS queries submitted", "Successfully completed DNS queries",
-  "Failed DNS queries", "DNS queries that timed out", "DNS queries cancelled",
-  "DNS cache hits", "DNS cache misses",
+  "Total DNS queries submitted",
+  "Successfully completed DNS queries",
+  "Failed DNS queries",
+  "DNS queries that timed out",
+  "DNS queries cancelled",
+  "DNS cache hits",
+  "DNS cache misses",
   /* Socket */
-  "Total sockets created", "Total sockets closed",
-  "Successful socket connect operations", "Failed socket connect operations",
+  "Total sockets created",
+  "Total sockets closed",
+  "Successful socket connect operations",
+  "Failed socket connect operations",
   "Total socket accept operations",
   /* Poll */
-  "Poll/epoll wakeup count", "Events dispatched from poll",
+  "Poll/epoll wakeup count",
+  "Events dispatched from poll",
   "Poll timeout expirations",
   /* Resource Limits */
-  "HTTP header size limit exceeded", "HTTP body size limit exceeded",
-  "HTTP response size limit exceeded", "Global memory limit exceeded",
-  "Maximum connections limit exceeded", "HTTP/2 max streams limit exceeded",
+  "HTTP header size limit exceeded",
+  "HTTP body size limit exceeded",
+  "HTTP response size limit exceeded",
+  "Global memory limit exceeded",
+  "Maximum connections limit exceeded",
+  "HTTP/2 max streams limit exceeded",
   "HTTP/2 header list size limit exceeded",
   /* SYN Flood Protection */
   "Total SYN connection attempts tracked",
-  "SYN connections immediately allowed", "SYN connections throttled (delayed)",
-  "SYN connections challenged (proof-of-work)", "SYN connections blocked",
-  "IPs added to whitelist", "IPs added to blacklist",
+  "SYN connections immediately allowed",
+  "SYN connections throttled (delayed)",
+  "SYN connections challenged (proof-of-work)",
+  "SYN connections blocked",
+  "IPs added to whitelist",
+  "IPs added to blacklist",
   "IP table entries evicted due to LRU"
 };
 
 static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {
   /* Pool */
-  "pool_active_connections", "pool_idle_connections",
-  "pool_pending_connections", "pool_size",
+  "pool_active_connections",
+  "pool_idle_connections",
+  "pool_pending_connections",
+  "pool_size",
   /* HTTP Client */
-  "http_client_active_requests", "http_client_open_connections",
+  "http_client_active_requests",
+  "http_client_open_connections",
   /* HTTP Server */
-  "http_server_active_connections", "http_server_active_requests",
+  "http_server_active_connections",
+  "http_server_active_requests",
   "http_server_queued_requests",
   /* TLS */
-  "tls_active_sessions", "tls_cached_sessions", "dtls_active_sessions",
+  "tls_active_sessions",
+  "tls_cached_sessions",
+  "dtls_active_sessions",
   /* DNS */
-  "dns_pending_queries", "dns_worker_threads", "dns_cache_size",
+  "dns_pending_queries",
+  "dns_worker_threads",
+  "dns_cache_size",
   /* Socket */
   "socket_open_fds",
   /* Poll */
-  "poll_registered_fds", "poll_active_timers",
+  "poll_registered_fds",
+  "poll_active_timers",
   /* SYN Flood Protection */
-  "synprotect_tracked_ips", "synprotect_blocked_ips"
+  "synprotect_tracked_ips",
+  "synprotect_blocked_ips"
 };
 
 static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
   /* Pool */
-  "Currently active connections in pool", "Currently idle connections in pool",
-  "Pending connection attempts", "Current pool capacity",
+  "Currently active connections in pool",
+  "Currently idle connections in pool",
+  "Pending connection attempts",
+  "Current pool capacity",
   /* HTTP Client */
-  "In-flight HTTP requests", "Open HTTP client connections",
+  "In-flight HTTP requests",
+  "Open HTTP client connections",
   /* HTTP Server */
-  "Active HTTP server connections", "In-flight server requests",
+  "Active HTTP server connections",
+  "In-flight server requests",
   "Requests waiting in queue",
   /* TLS */
-  "Active TLS sessions", "Cached TLS session tickets", "Active DTLS sessions",
+  "Active TLS sessions",
+  "Cached TLS session tickets",
+  "Active DTLS sessions",
   /* DNS */
-  "Pending DNS queries", "Active DNS worker threads", "DNS cache entry count",
+  "Pending DNS queries",
+  "Active DNS worker threads",
+  "DNS cache entry count",
   /* Socket */
   "Open file descriptors",
   /* Poll */
-  "File descriptors registered with poll", "Active timers",
+  "File descriptors registered with poll",
+  "Active timers",
   /* SYN Flood Protection */
   "Number of IP addresses currently tracked for SYN protection",
   "Number of currently blocked IP addresses"
@@ -215,15 +302,21 @@ static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
 
 static const char *const histogram_names[SOCKET_HISTOGRAM_METRIC_COUNT] = {
   /* Pool */
-  "pool_acquire_time_ms", "pool_connection_age_ms", "pool_idle_time_ms",
+  "pool_acquire_time_ms",
+  "pool_connection_age_ms",
+  "pool_idle_time_ms",
   /* HTTP Client */
-  "http_client_request_latency_ms", "http_client_connect_time_ms",
-  "http_client_ttfb_ms", "http_client_response_size",
+  "http_client_request_latency_ms",
+  "http_client_connect_time_ms",
+  "http_client_ttfb_ms",
+  "http_client_response_size",
   /* HTTP Server */
-  "http_server_request_latency_ms", "http_server_response_size",
+  "http_server_request_latency_ms",
+  "http_server_response_size",
   "http_server_request_size",
   /* TLS */
-  "tls_handshake_time_ms", "dtls_handshake_time_ms",
+  "tls_handshake_time_ms",
+  "dtls_handshake_time_ms",
   /* DNS */
   "dns_query_time_ms",
   /* Socket */
@@ -232,16 +325,21 @@ static const char *const histogram_names[SOCKET_HISTOGRAM_METRIC_COUNT] = {
 
 static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
   /* Pool */
-  "Time to acquire connection from pool (ms)", "Connection age at close (ms)",
+  "Time to acquire connection from pool (ms)",
+  "Connection age at close (ms)",
   "Time connection was idle (ms)",
   /* HTTP Client */
-  "HTTP request total latency (ms)", "HTTP connection establishment time (ms)",
-  "HTTP time to first byte (ms)", "HTTP response body size (bytes)",
+  "HTTP request total latency (ms)",
+  "HTTP connection establishment time (ms)",
+  "HTTP time to first byte (ms)",
+  "HTTP response body size (bytes)",
   /* HTTP Server */
-  "HTTP request processing time (ms)", "HTTP response body size (bytes)",
+  "HTTP request processing time (ms)",
+  "HTTP response body size (bytes)",
   "HTTP request body size (bytes)",
   /* TLS */
-  "TLS handshake duration (ms)", "DTLS handshake duration (ms)",
+  "TLS handshake duration (ms)",
+  "DTLS handshake duration (ms)",
   /* DNS */
   "DNS query duration (ms)",
   /* Socket */
@@ -303,8 +401,8 @@ histogram_init (Histogram *h)
   rc = pthread_mutex_init (&h->mutex, NULL);
   if (rc != 0)
     {
-      SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
-                       "pthread_mutex_init failed: %d", rc);
+      SocketLog_emitf (
+          SOCKET_LOG_ERROR, "metrics", "pthread_mutex_init failed: %d", rc);
       return -1;
     }
   memset (h->values, 0, sizeof (h->values));
@@ -325,7 +423,8 @@ histogram_destroy (Histogram *h)
       int rc = pthread_mutex_destroy (&h->mutex);
       if (rc != 0)
         {
-          SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           "metrics",
                            "pthread_mutex_destroy failed: %d (mutex may be "
                            "locked)",
                            rc);
@@ -422,8 +521,7 @@ histogram_percentile (Histogram *h, double percentile)
 }
 
 static void
-histogram_copy_basic_stats (Histogram *h,
-                            SocketMetrics_HistogramSnapshot *snap)
+histogram_copy_basic_stats (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
 {
   pthread_mutex_lock (&h->mutex);
   snap->sum = h->sum;
@@ -450,14 +548,16 @@ static const double percentile_levels[]
         PERCENTILE_P95, PERCENTILE_P99, PERCENTILE_P999 };
 
 static void
-histogram_calculate_percentiles (const double *sorted, size_t n,
+histogram_calculate_percentiles (const double *sorted,
+                                 size_t n,
                                  SocketMetrics_HistogramSnapshot *snap)
 {
   double *pfields[] = { &snap->p50, &snap->p75, &snap->p90,
                         &snap->p95, &snap->p99, &snap->p999 };
 
   for (size_t k = 0;
-       k < sizeof (percentile_levels) / sizeof (percentile_levels[0]); k++)
+       k < sizeof (percentile_levels) / sizeof (percentile_levels[0]);
+       k++)
     {
       *pfields[k] = percentile_from_sorted (sorted, n, percentile_levels[k]);
     }
@@ -567,8 +667,10 @@ SocketMetrics_shutdown (void)
       int rc = pthread_mutex_destroy (&histogram_values[i].mutex);
       if (rc != 0)
         {
-          SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
-                           "pthread_mutex_destroy failed: %d", rc);
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           "metrics",
+                           "pthread_mutex_destroy failed: %d",
+                           rc);
         }
     }
   pthread_mutex_unlock (&metrics_global_mutex);
@@ -769,8 +871,8 @@ SocketMetrics_reset_histograms (void)
 }
 
 static size_t
-export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
-               ...)
+export_append (
+    char *buffer, size_t buffer_size, size_t *pos, const char *fmt, ...)
 {
   va_list args;
   int written;
@@ -798,72 +900,126 @@ export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
 }
 
 static void
-export_counter_prometheus (char *buffer, size_t buffer_size, size_t *pos,
-                           int idx, uint64_t value)
+export_counter_prometheus (
+    char *buffer, size_t buffer_size, size_t *pos, int idx, uint64_t value)
 {
-  export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n",
-                 counter_names[idx], counter_help[idx]);
-  export_append (buffer, buffer_size, pos, "# TYPE socket_%s counter\n",
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "# HELP socket_%s %s\n",
+                 counter_names[idx],
+                 counter_help[idx]);
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "# TYPE socket_%s counter\n",
                  counter_names[idx]);
-  export_append (buffer, buffer_size, pos, "socket_%s %llu\n",
-                 counter_names[idx], (unsigned long long)value);
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "socket_%s %llu\n",
+                 counter_names[idx],
+                 (unsigned long long)value);
 }
 
 static void
-export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
-                         int idx, int64_t value)
+export_gauge_prometheus (
+    char *buffer, size_t buffer_size, size_t *pos, int idx, int64_t value)
 {
-  export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n",
-                 gauge_names[idx], gauge_help[idx]);
-  export_append (buffer, buffer_size, pos, "# TYPE socket_%s gauge\n",
-                 gauge_names[idx]);
-  export_append (buffer, buffer_size, pos, "socket_%s %lld\n",
-                 gauge_names[idx], (long long)value);
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "# HELP socket_%s %s\n",
+                 gauge_names[idx],
+                 gauge_help[idx]);
+  export_append (
+      buffer, buffer_size, pos, "# TYPE socket_%s gauge\n", gauge_names[idx]);
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "socket_%s %lld\n",
+                 gauge_names[idx],
+                 (long long)value);
 }
 
 static void
-export_prometheus_quantiles (char *buffer, size_t buffer_size, size_t *pos,
+export_prometheus_quantiles (char *buffer,
+                             size_t buffer_size,
+                             size_t *pos,
                              const char *name,
                              const SocketMetrics_HistogramSnapshot *h)
 {
   if (h->count > 0)
     {
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
-                     QUANTILE_STR_P50, h->p50);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
-                     QUANTILE_STR_P90, h->p90);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
-                     QUANTILE_STR_P95, h->p95);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
-                     QUANTILE_STR_P99, h->p99);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
-                     QUANTILE_STR_P999, h->p999);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n",
+                     name,
+                     QUANTILE_STR_P50,
+                     h->p50);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n",
+                     name,
+                     QUANTILE_STR_P90,
+                     h->p90);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n",
+                     name,
+                     QUANTILE_STR_P95,
+                     h->p95);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n",
+                     name,
+                     QUANTILE_STR_P99,
+                     h->p99);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n",
+                     name,
+                     QUANTILE_STR_P999,
+                     h->p999);
     }
 }
 
 static void
-export_prometheus_histogram_summary (char *buffer, size_t buffer_size,
-                                     size_t *pos, const char *name,
+export_prometheus_histogram_summary (char *buffer,
+                                     size_t buffer_size,
+                                     size_t *pos,
+                                     const char *name,
                                      const SocketMetrics_HistogramSnapshot *h)
 {
-  export_append (buffer, buffer_size, pos, "socket_%s_sum %.3f\n", name,
-                 h->sum);
-  export_append (buffer, buffer_size, pos, "socket_%s_count %llu\n", name,
+  export_append (
+      buffer, buffer_size, pos, "socket_%s_sum %.3f\n", name, h->sum);
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "socket_%s_count %llu\n",
+                 name,
                  (unsigned long long)h->count);
 }
 
 static void
-export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
-                             int idx, const SocketMetrics_HistogramSnapshot *h)
+export_histogram_prometheus (char *buffer,
+                             size_t buffer_size,
+                             size_t *pos,
+                             int idx,
+                             const SocketMetrics_HistogramSnapshot *h)
 {
   const char *name = histogram_names[idx];
 
-  export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n", name,
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "# HELP socket_%s %s\n",
+                 name,
                  histogram_help[idx]);
   export_append (buffer, buffer_size, pos, "# TYPE socket_%s summary\n", name);
 
@@ -885,79 +1041,125 @@ SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
   SocketMetrics_get (&snapshot);
 
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
-    export_counter_prometheus (buffer, buffer_size, &pos, i,
-                               snapshot.counters[i]);
+    export_counter_prometheus (
+        buffer, buffer_size, &pos, i, snapshot.counters[i]);
 
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
     export_gauge_prometheus (buffer, buffer_size, &pos, i, snapshot.gauges[i]);
 
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    export_histogram_prometheus (buffer, buffer_size, &pos, i,
-                                 &snapshot.histograms[i]);
+    export_histogram_prometheus (
+        buffer, buffer_size, &pos, i, &snapshot.histograms[i]);
 
   return pos;
 }
 
 static void
-export_statsd_counters (char *buffer, size_t buffer_size, size_t *pos,
+export_statsd_counters (char *buffer,
+                        size_t buffer_size,
+                        size_t *pos,
                         const char *pfx,
                         const SocketMetrics_Snapshot *snapshot)
 {
   int i;
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     {
-      export_append (buffer, buffer_size, pos, "%s.%s:%llu|c\n", pfx,
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "%s.%s:%llu|c\n",
+                     pfx,
                      counter_names[i],
                      (unsigned long long)snapshot->counters[i]);
     }
 }
 
 static void
-export_statsd_gauges (char *buffer, size_t buffer_size, size_t *pos,
-                      const char *pfx, const SocketMetrics_Snapshot *snapshot)
+export_statsd_gauges (char *buffer,
+                      size_t buffer_size,
+                      size_t *pos,
+                      const char *pfx,
+                      const SocketMetrics_Snapshot *snapshot)
 {
   int i;
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
     {
-      export_append (buffer, buffer_size, pos, "%s.%s:%lld|g\n", pfx,
-                     gauge_names[i], (long long)snapshot->gauges[i]);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "%s.%s:%lld|g\n",
+                     pfx,
+                     gauge_names[i],
+                     (long long)snapshot->gauges[i]);
     }
 }
 
 static void
-export_statsd_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
-                                const char *pfx, const char *name,
+export_statsd_single_histogram (char *buffer,
+                                size_t buffer_size,
+                                size_t *pos,
+                                const char *pfx,
+                                const char *name,
                                 const SocketMetrics_HistogramSnapshot *h)
 {
   if (h->count > 0)
     {
-      export_append (buffer, buffer_size, pos, "%s.%s.%s:%.3f|g\n", pfx, name,
-                     STATSD_PCT_P50, h->p50);
-      export_append (buffer, buffer_size, pos, "%s.%s.%s:%.3f|g\n", pfx, name,
-                     STATSD_PCT_P95, h->p95);
-      export_append (buffer, buffer_size, pos, "%s.%s.%s:%.3f|g\n", pfx, name,
-                     STATSD_PCT_P99, h->p99);
-      export_append (buffer, buffer_size, pos, "%s.%s.count:%llu|c\n", pfx,
-                     name, (unsigned long long)h->count);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "%s.%s.%s:%.3f|g\n",
+                     pfx,
+                     name,
+                     STATSD_PCT_P50,
+                     h->p50);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "%s.%s.%s:%.3f|g\n",
+                     pfx,
+                     name,
+                     STATSD_PCT_P95,
+                     h->p95);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "%s.%s.%s:%.3f|g\n",
+                     pfx,
+                     name,
+                     STATSD_PCT_P99,
+                     h->p99);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "%s.%s.count:%llu|c\n",
+                     pfx,
+                     name,
+                     (unsigned long long)h->count);
     }
 }
 
 static void
-export_statsd_histograms (char *buffer, size_t buffer_size, size_t *pos,
+export_statsd_histograms (char *buffer,
+                          size_t buffer_size,
+                          size_t *pos,
                           const char *pfx,
                           const SocketMetrics_Snapshot *snapshot)
 {
   int i;
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     {
-      export_statsd_single_histogram (buffer, buffer_size, pos, pfx,
+      export_statsd_single_histogram (buffer,
+                                      buffer_size,
+                                      pos,
+                                      pfx,
                                       histogram_names[i],
                                       &snapshot->histograms[i]);
     }
 }
 
 size_t
-SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
+SocketMetrics_export_statsd (char *buffer,
+                             size_t buffer_size,
                              const char *prefix)
 {
   size_t pos = 0;
@@ -979,7 +1181,9 @@ SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
 }
 
 static void
-export_json_counters (char *buffer, size_t buffer_size, size_t *pos,
+export_json_counters (char *buffer,
+                      size_t buffer_size,
+                      size_t *pos,
                       const SocketMetrics_Snapshot *snapshot)
 {
   int i;
@@ -991,7 +1195,10 @@ export_json_counters (char *buffer, size_t buffer_size, size_t *pos,
       if (!first)
         export_append (buffer, buffer_size, pos, ",\n");
       first = 0;
-      export_append (buffer, buffer_size, pos, "    \"%s\": %llu",
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "    \"%s\": %llu",
                      counter_names[i],
                      (unsigned long long)snapshot->counters[i]);
     }
@@ -999,7 +1206,9 @@ export_json_counters (char *buffer, size_t buffer_size, size_t *pos,
 }
 
 static void
-export_json_gauges (char *buffer, size_t buffer_size, size_t *pos,
+export_json_gauges (char *buffer,
+                    size_t buffer_size,
+                    size_t *pos,
                     const SocketMetrics_Snapshot *snapshot)
 {
   int i;
@@ -1011,24 +1220,39 @@ export_json_gauges (char *buffer, size_t buffer_size, size_t *pos,
       if (!first)
         export_append (buffer, buffer_size, pos, ",\n");
       first = 0;
-      export_append (buffer, buffer_size, pos, "    \"%s\": %lld",
-                     gauge_names[i], (long long)snapshot->gauges[i]);
+      export_append (buffer,
+                     buffer_size,
+                     pos,
+                     "    \"%s\": %lld",
+                     gauge_names[i],
+                     (long long)snapshot->gauges[i]);
     }
   export_append (buffer, buffer_size, pos, "\n  },");
 }
 
 static void
-export_json_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
+export_json_single_histogram (char *buffer,
+                              size_t buffer_size,
+                              size_t *pos,
                               const char *name,
                               const SocketMetrics_HistogramSnapshot *h)
 {
   export_append (buffer, buffer_size, pos, "    \"%s\": {\n", name);
-  export_append (buffer, buffer_size, pos, "      \"count\": %llu,\n",
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "      \"count\": %llu,\n",
                  (unsigned long long)h->count);
   export_append (buffer, buffer_size, pos, "      \"sum\": %.3f,\n", h->sum);
-  export_append (buffer, buffer_size, pos, "      \"min\": %.3f,\n",
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "      \"min\": %.3f,\n",
                  h->count > 0 ? h->min : 0.0);
-  export_append (buffer, buffer_size, pos, "      \"max\": %.3f,\n",
+  export_append (buffer,
+                 buffer_size,
+                 pos,
+                 "      \"max\": %.3f,\n",
                  h->count > 0 ? h->max : 0.0);
   export_append (buffer, buffer_size, pos, "      \"mean\": %.3f,\n", h->mean);
   export_append (buffer, buffer_size, pos, "      \"p50\": %.3f,\n", h->p50);
@@ -1041,7 +1265,9 @@ export_json_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
 }
 
 static void
-export_json_histograms (char *buffer, size_t buffer_size, size_t *pos,
+export_json_histograms (char *buffer,
+                        size_t buffer_size,
+                        size_t *pos,
                         const SocketMetrics_Snapshot *snapshot)
 {
   int i;
@@ -1053,7 +1279,9 @@ export_json_histograms (char *buffer, size_t buffer_size, size_t *pos,
       if (!first)
         export_append (buffer, buffer_size, pos, ",\n");
       first = 0;
-      export_json_single_histogram (buffer, buffer_size, pos,
+      export_json_single_histogram (buffer,
+                                    buffer_size,
+                                    pos,
                                     histogram_names[i],
                                     &snapshot->histograms[i]);
     }
@@ -1073,7 +1301,10 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
   SocketMetrics_get (&snapshot);
 
   export_append (buffer, buffer_size, &pos, "{\n");
-  export_append (buffer, buffer_size, &pos, "  \"timestamp_ms\": %llu,\n",
+  export_append (buffer,
+                 buffer_size,
+                 &pos,
+                 "  \"timestamp_ms\": %llu,\n",
                  (unsigned long long)snapshot.timestamp_ms);
 
   export_json_counters (buffer, buffer_size, &pos, &snapshot);
@@ -1169,9 +1400,11 @@ SocketMetrics_update_peak_if_needed (int current_count)
 
   while (current_count > old_peak)
     {
-      if (atomic_compare_exchange_weak_explicit (
-              &peak_socket_count, &old_peak, current_count,
-              memory_order_relaxed, memory_order_relaxed))
+      if (atomic_compare_exchange_weak_explicit (&peak_socket_count,
+                                                 &old_peak,
+                                                 current_count,
+                                                 memory_order_relaxed,
+                                                 memory_order_relaxed))
         break;
     }
 }

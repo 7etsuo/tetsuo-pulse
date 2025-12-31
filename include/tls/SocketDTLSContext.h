@@ -540,7 +540,8 @@ extern void SocketDTLSContext_ref (T ctx);
  * @see docs/SECURITY.md#certificate-management for rotation strategies and
  * best practices.
  */
-extern void SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
+extern void SocketDTLSContext_load_certificate (T ctx,
+                                                const char *cert_file,
                                                 const char *key_file);
 
 /**
@@ -1039,8 +1040,8 @@ extern void SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers);
  *
  * Note Protocols advertised in preference order (first preferred).
  */
-extern void SocketDTLSContext_set_alpn_protos (T ctx, const char **protos,
-                                               size_t count);
+extern void
+SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count);
 
 /* ============================================================================
  * Session Management
@@ -1061,7 +1062,8 @@ extern void SocketDTLSContext_set_alpn_protos (T ctx, const char **protos,
  * @throws SocketDTLS_Failed if cannot enable or configure
  * @threadsafe No - modifies shared context during setup
  */
-extern void SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
+extern void SocketDTLSContext_enable_session_cache (T ctx,
+                                                    size_t max_sessions,
                                                     long timeout_seconds);
 
 /**
@@ -1080,8 +1082,10 @@ extern void SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
  * @throws None
  * @threadsafe Yes
  */
-extern void SocketDTLSContext_get_cache_stats (T ctx, size_t *hits,
-                                               size_t *misses, size_t *stores);
+extern void SocketDTLSContext_get_cache_stats (T ctx,
+                                               size_t *hits,
+                                               size_t *misses,
+                                               size_t *stores);
 
 /* ============================================================================
  * Timeout Configuration

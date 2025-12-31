@@ -27,15 +27,15 @@
 #include <string.h>
 
 /* Simple test assertion macro */
-#define TEST_ASSERT(cond, msg)                                                \
-  do                                                                          \
-    {                                                                         \
-      if (!(cond))                                                            \
-        {                                                                     \
-          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);  \
-          exit (1);                                                           \
-        }                                                                     \
-    }                                                                         \
+#define TEST_ASSERT(cond, msg)                                               \
+  do                                                                         \
+    {                                                                        \
+      if (!(cond))                                                           \
+        {                                                                    \
+          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__); \
+          exit (1);                                                          \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
 /* ============================================================================
@@ -333,8 +333,7 @@ test_dynamic_table_new (void)
 
   table = SocketHPACK_Table_new (4096, arena);
   TEST_ASSERT (table != NULL, "Table should be created");
-  TEST_ASSERT (SocketHPACK_Table_size (table) == 0,
-               "Initial size should be 0");
+  TEST_ASSERT (SocketHPACK_Table_size (table) == 0, "Initial size should be 0");
   TEST_ASSERT (SocketHPACK_Table_count (table) == 0,
                "Initial count should be 0");
   TEST_ASSERT (SocketHPACK_Table_max_size (table) == 4096,
@@ -373,8 +372,7 @@ test_dynamic_table_add (void)
   /* Get the entry */
   result = SocketHPACK_Table_get (table, 1, &header);
   TEST_ASSERT (result == HPACK_OK, "Get should succeed");
-  TEST_ASSERT (strcmp (header.name, "custom-header") == 0,
-               "Name should match");
+  TEST_ASSERT (strcmp (header.name, "custom-header") == 0, "Name should match");
   TEST_ASSERT (strcmp (header.value, "value") == 0, "Value should match");
 
   SocketHPACK_Table_free (&table);
@@ -414,8 +412,7 @@ test_dynamic_table_eviction (void)
   SocketHPACK_Header header;
   result = SocketHPACK_Table_get (table, 1, &header);
   TEST_ASSERT (result == HPACK_OK, "Get should succeed");
-  TEST_ASSERT (strcmp (header.name, "header5678") == 0,
-               "Should be new header");
+  TEST_ASSERT (strcmp (header.name, "header5678") == 0, "Should be new header");
 
   SocketHPACK_Table_free (&table);
   Arena_dispose (&arena);
@@ -513,8 +510,8 @@ test_huffman_round_trip (void)
   enc_len = SocketHPACK_huffman_encode (input, 5, encoded, sizeof (encoded));
   TEST_ASSERT (enc_len > 0, "Encode should succeed");
 
-  dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded,
-                                        sizeof (decoded));
+  dec_len = SocketHPACK_huffman_decode (
+      encoded, (size_t)enc_len, decoded, sizeof (decoded));
   TEST_ASSERT (dec_len == 5, "Decoded length should be 5");
   TEST_ASSERT (memcmp (decoded, input, 5) == 0, "Decoded should match input");
 
@@ -557,8 +554,8 @@ test_huffman_full_roundtrip (void)
       enc_len
           = SocketHPACK_huffman_encode (input, 1, encoded, sizeof (encoded));
       TEST_ASSERT (enc_len > 0, "Encode byte succeeds");
-      dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded,
-                                            sizeof (decoded));
+      dec_len = SocketHPACK_huffman_decode (
+          encoded, (size_t)enc_len, decoded, sizeof (decoded));
       TEST_ASSERT (dec_len == 1, "Decode byte: 1 byte");
       TEST_ASSERT (decoded[0] == input[0], "Round-trip byte matches");
       est_size = SocketHPACK_huffman_encoded_size (input, 1);
@@ -621,8 +618,8 @@ test_encoder_encode_indexed (void)
   headers[0].value_len = 3;
   headers[0].never_index = 0;
 
-  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
-                                    sizeof (output));
+  len = SocketHPACK_Encoder_encode (
+      encoder, headers, 1, output, sizeof (output));
   TEST_ASSERT (len > 0, "Encode should succeed");
   /* Indexed header field: 1xxxxxxx with index 2 = 0x82 */
   TEST_ASSERT (output[0] == 0x82, "Should encode as indexed header 0x82");
@@ -663,14 +660,13 @@ test_encoder_lowercase_header_names (void)
   headers[0].value_len = 9;
   headers[0].never_index = 0;
 
-  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
-                                    sizeof (output));
+  len = SocketHPACK_Encoder_encode (
+      encoder, headers, 1, output, sizeof (output));
   TEST_ASSERT (len > 0, "Encode should succeed");
 
   /* Decode and verify the name is lowercase */
-  result = SocketHPACK_Decoder_decode (decoder, output, (size_t)len,
-                                       decoded_headers, 16, &header_count,
-                                       arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, output, (size_t)len, decoded_headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 1, "Should decode 1 header");
   TEST_ASSERT (strcmp (decoded_headers[0].name, "content-type") == 0,
@@ -710,8 +706,8 @@ test_encoder_uppercase_matches_static_table (void)
   headers[0].value_len = 16;
   headers[0].never_index = 0;
 
-  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
-                                    sizeof (output));
+  len = SocketHPACK_Encoder_encode (
+      encoder, headers, 1, output, sizeof (output));
   TEST_ASSERT (len > 0, "Encode should succeed");
 
   /* Should use name index from static table (literal with name index) */
@@ -754,14 +750,13 @@ test_encoder_mixed_case_header (void)
   headers[0].value_len = 9;
   headers[0].never_index = 0;
 
-  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
-                                    sizeof (output));
+  len = SocketHPACK_Encoder_encode (
+      encoder, headers, 1, output, sizeof (output));
   TEST_ASSERT (len > 0, "Encode should succeed");
 
   /* Decode and verify the name is fully lowercase */
-  result = SocketHPACK_Decoder_decode (decoder, output, (size_t)len,
-                                       decoded_headers, 16, &header_count,
-                                       arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, output, (size_t)len, decoded_headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 1, "Should decode 1 header");
   TEST_ASSERT (strcmp (decoded_headers[0].name, "x-custom-header") == 0,
@@ -826,8 +821,8 @@ test_decoder_decode_indexed (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 1, "Should decode 1 header");
   TEST_ASSERT (strcmp (headers[0].name, ":method") == 0,
@@ -864,8 +859,8 @@ test_decoder_decode_literal_indexed (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 1, "Should decode 1 header");
   TEST_ASSERT (strcmp (headers[0].name, "custom-key") == 0,
@@ -905,8 +900,8 @@ test_decoder_decode_literal_never (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 1, "Should decode 1 header");
   TEST_ASSERT (strcmp (headers[0].name, "secret") == 0,
@@ -944,8 +939,8 @@ test_decoder_decode_table_size_update (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 0, "Should decode 0 headers");
 
@@ -980,8 +975,8 @@ test_decoder_invalid_table_size_update (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_ERROR_TABLE_SIZE,
                "Should fail with TABLE_SIZE error");
 
@@ -1012,8 +1007,8 @@ test_decoder_multiple_table_size_updates (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Two updates should succeed");
   TEST_ASSERT (header_count == 0, "Should decode 0 headers");
 
@@ -1048,8 +1043,8 @@ test_decoder_exceeded_table_size_updates (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_ERROR_TABLE_SIZE,
                "Third update should fail with TABLE_SIZE error");
 
@@ -1086,8 +1081,8 @@ test_rfc7541_c2_1 (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
   TEST_ASSERT (header_count == 1, "Should have 1 header");
   TEST_ASSERT (strcmp (headers[0].name, "custom-key") == 0, "Name matches");
@@ -1129,8 +1124,8 @@ test_rfc7541_c3 (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, req1, sizeof (req1), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, req1, sizeof (req1), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_OK, "First request decode should succeed");
   TEST_ASSERT (header_count == 4, "Should have 4 headers");
 
@@ -1186,8 +1181,8 @@ test_header_size_limit (void)
 
   decoder = SocketHPACK_Decoder_new (&config, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, 203, headers, 16,
-                                       &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, 203, headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_ERROR_HEADER_SIZE,
                "Should fail with HEADER_SIZE error");
 
@@ -1217,8 +1212,8 @@ test_invalid_index (void)
   arena = Arena_new ();
   decoder = SocketHPACK_Decoder_new (NULL, arena);
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_ERROR_INVALID_INDEX,
                "Should fail with INVALID_INDEX");
 
@@ -1248,7 +1243,7 @@ test_hpack_bomb_absolute_limit (void)
 
   /* Configure with small absolute limit but high list size */
   SocketHPACK_decoder_config_defaults (&config);
-  config.max_output_bytes = 1024; /* Only allow 1KB output */
+  config.max_output_bytes = 1024;     /* Only allow 1KB output */
   config.max_expansion_ratio = 100.0; /* High ratio, but absolute limit wins */
   config.max_header_list_size = 128 * 1024; /* High list size */
 
@@ -1278,8 +1273,8 @@ test_hpack_bomb_absolute_limit (void)
       generated++;
     }
 
-  result = SocketHPACK_Decoder_decode (decoder, input, pos, headers, 256,
-                                       &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, pos, headers, 256, &header_count, arena);
   TEST_ASSERT (result == HPACK_ERROR_BOMB,
                "Should fail with BOMB error when exceeding absolute limit");
 
@@ -1309,18 +1304,19 @@ test_hpack_bomb_ratio_limit (void)
 
   /* Configure with tight ratio but high absolute limit */
   SocketHPACK_decoder_config_defaults (&config);
-  config.max_expansion_ratio = 2.0; /* Only allow 2x expansion */
+  config.max_expansion_ratio = 2.0;      /* Only allow 2x expansion */
   config.max_output_bytes = 1024 * 1024; /* High absolute limit */
 
   decoder = SocketHPACK_Decoder_new (&config, arena);
 
   /* Create input with high expansion ratio */
-  /* Use indexed header (1 byte input) which expands to ":method: GET" (11 bytes) */
+  /* Use indexed header (1 byte input) which expands to ":method: GET" (11
+   * bytes) */
   /* Ratio = 11/1 = 11x, exceeds 2x limit */
   unsigned char input[] = { 0x82 }; /* :method: GET from static table */
 
-  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
-                                       16, &header_count, arena);
+  result = SocketHPACK_Decoder_decode (
+      decoder, input, sizeof (input), headers, 16, &header_count, arena);
   TEST_ASSERT (result == HPACK_ERROR_BOMB,
                "Should fail with BOMB error when exceeding ratio");
 

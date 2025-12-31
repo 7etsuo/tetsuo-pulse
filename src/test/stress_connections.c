@@ -52,8 +52,7 @@ stress_client_thread (void *arg)
   TRY
   {
     /* Simulate client connections */
-    for (int i = 0; i < STRESS_NUM_CLIENTS / STRESS_NUM_THREADS && running;
-         i++)
+    for (int i = 0; i < STRESS_NUM_CLIENTS / STRESS_NUM_THREADS && running; i++)
       {
         Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
         if (!client)
@@ -100,7 +99,10 @@ stress_client_thread (void *arg)
   {
     fprintf (stderr, "Thread %d: Arena allocation failed\n", thread_id);
   }
-  FINALLY { Arena_dispose (&arena); }
+  FINALLY
+  {
+    Arena_dispose (&arena);
+  }
   END_TRY;
 
   return NULL;
@@ -157,8 +159,8 @@ stress_echo_server (void *arg)
                   Socket_T client = Socket_accept (server);
                   if (client)
                     {
-                      SocketPoll_add (poll, client, POLL_READ | POLL_WRITE,
-                                      client);
+                      SocketPoll_add (
+                          poll, client, POLL_READ | POLL_WRITE, client);
                     }
                 }
                 EXCEPT (Socket_Failed)
@@ -192,8 +194,14 @@ stress_echo_server (void *arg)
   {
     fprintf (stderr, "Server: Socket operation failed\n");
   }
-  EXCEPT (Arena_Failed) { fprintf (stderr, "Server: Arena failed\n"); }
-  FINALLY { Arena_dispose (&arena); }
+  EXCEPT (Arena_Failed)
+  {
+    fprintf (stderr, "Server: Arena failed\n");
+  }
+  FINALLY
+  {
+    Arena_dispose (&arena);
+  }
   END_TRY;
 
   return NULL;
@@ -204,9 +212,9 @@ main ()
 {
   signal (SIGPIPE, SIG_IGN);
 
-  printf (
-      "Starting socket library stress test: %d clients across %d threads\n",
-      STRESS_NUM_CLIENTS, STRESS_NUM_THREADS);
+  printf ("Starting socket library stress test: %d clients across %d threads\n",
+          STRESS_NUM_CLIENTS,
+          STRESS_NUM_THREADS);
 
   /* Start echo server */
   pthread_t server_thread;
@@ -236,11 +244,13 @@ main ()
   pthread_mutex_lock (&stats_mutex);
   printf ("\nStress Test Results:\n");
   printf ("Total connection attempts: %ld\n", total_connections);
-  printf ("Successful connections: %ld (%.1f%%)\n", successful_connections,
+  printf ("Successful connections: %ld (%.1f%%)\n",
+          successful_connections,
           total_connections > 0
               ? (double)successful_connections / total_connections * 100
               : 0);
-  printf ("Failed connections: %ld (%.1f%%)\n", failed_connections,
+  printf ("Failed connections: %ld (%.1f%%)\n",
+          failed_connections,
           total_connections > 0
               ? (double)failed_connections / total_connections * 100
               : 0);
@@ -249,7 +259,8 @@ main ()
   /* Check for leaks */
   if (Socket_debug_live_count () != 0)
     {
-      fprintf (stderr, "ERROR: %d socket leaks detected!\n",
+      fprintf (stderr,
+               "ERROR: %d socket leaks detected!\n",
                Socket_debug_live_count ());
       return 1;
     }

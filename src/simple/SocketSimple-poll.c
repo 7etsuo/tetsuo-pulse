@@ -32,8 +32,7 @@ struct SocketSimple_Poll
  */
 
 static int
-validate_poll_and_socket (SocketSimple_Poll_T poll,
-                           SocketSimple_Socket_T sock)
+validate_poll_and_socket (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
 {
   if (!poll || !sock)
     {
@@ -127,8 +126,7 @@ Socket_simple_poll_new (int max_events_arg)
     handle = calloc (1, sizeof (*handle));
     if (!handle)
       {
-        simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
-                          "Memory allocation failed");
+        simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
         RAISE (SocketPoll_Failed);
       }
 
@@ -138,8 +136,7 @@ Socket_simple_poll_new (int max_events_arg)
   }
   EXCEPT (SocketPoll_Failed)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_POLL,
-                      "Failed to create poll instance");
+    simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to create poll instance");
   }
   FINALLY
   {
@@ -177,8 +174,10 @@ Socket_simple_poll_free (SocketSimple_Poll_T *poll)
  */
 
 int
-Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
-                        int events, void *data)
+Socket_simple_poll_add (SocketSimple_Poll_T poll,
+                        SocketSimple_Socket_T sock,
+                        int events,
+                        void *data)
 {
   Socket_simple_clear_error ();
 
@@ -192,7 +191,10 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
 
   unsigned core_events = simple_to_core_events (events);
 
-  TRY { SocketPoll_add (poll->poll, core_sock, core_events, data); }
+  TRY
+  {
+    SocketPoll_add (poll->poll, core_sock, core_events, data);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to add socket to poll");
@@ -204,8 +206,10 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
 }
 
 int
-Socket_simple_poll_mod (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
-                        int events, void *data)
+Socket_simple_poll_mod (SocketSimple_Poll_T poll,
+                        SocketSimple_Socket_T sock,
+                        int events,
+                        void *data)
 {
   Socket_simple_clear_error ();
 
@@ -219,7 +223,10 @@ Socket_simple_poll_mod (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
 
   unsigned core_events = simple_to_core_events (events);
 
-  TRY { SocketPoll_mod (poll->poll, core_sock, core_events, data); }
+  TRY
+  {
+    SocketPoll_mod (poll->poll, core_sock, core_events, data);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL,
@@ -244,7 +251,10 @@ Socket_simple_poll_del (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
   if (!core_sock)
     return -1;
 
-  TRY { SocketPoll_del (poll->poll, core_sock); }
+  TRY
+  {
+    SocketPoll_del (poll->poll, core_sock);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL,
@@ -258,7 +268,8 @@ Socket_simple_poll_del (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
 
 int
 Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
-                                  SocketSimple_Socket_T sock, int add_events,
+                                  SocketSimple_Socket_T sock,
+                                  int add_events,
                                   int remove_events)
 {
   Socket_simple_clear_error ();
@@ -274,7 +285,10 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
   unsigned add = simple_to_core_events (add_events);
   unsigned remove = simple_to_core_events (remove_events);
 
-  TRY { SocketPoll_modify_events (poll->poll, core_sock, add, remove); }
+  TRY
+  {
+    SocketPoll_modify_events (poll->poll, core_sock, add, remove);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to modify poll events");
@@ -292,7 +306,8 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
 
 int
 Socket_simple_poll_wait (SocketSimple_Poll_T poll,
-                         SocketSimple_PollEvent *events, int max_events_arg,
+                         SocketSimple_PollEvent *events,
+                         int max_events_arg,
                          int timeout_ms_arg)
 {
   volatile int timeout_ms = timeout_ms_arg;
@@ -323,7 +338,10 @@ Socket_simple_poll_wait (SocketSimple_Poll_T poll,
   volatile int nev = 0;
   SocketEvent_T *core_events = NULL;
 
-  TRY { nev = SocketPoll_wait (poll->poll, &core_events, actual_timeout); }
+  TRY
+  {
+    nev = SocketPoll_wait (poll->poll, &core_events, actual_timeout);
+  }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Poll wait failed");

@@ -56,11 +56,13 @@ skip_ows (const char *p, const char *end)
 
 /*
  * Parse a Structured Fields Dictionary key.
- * RFC 8941: key = ( lcalpha / "*" ) *( lcalpha / DIGIT / "_" / "-" / "." / "*" )
- * For priority, we only care about "u" and "i".
+ * RFC 8941: key = ( lcalpha / "*" ) *( lcalpha / DIGIT / "_" / "-" / "." / "*"
+ * ) For priority, we only care about "u" and "i".
  */
 static int
-parse_key (const char **pp, const char *end, const char **key_start,
+parse_key (const char **pp,
+           const char *end,
+           const char **key_start,
            size_t *key_len)
 {
   const char *p = *pp;
@@ -116,7 +118,8 @@ parse_key (const char **pp, const char *end, const char **key_start,
  *   "u=3, i=?0" -> urgency=3, incremental=false (explicit false)
  */
 int
-SocketHTTP2_Priority_parse (const char *value, size_t len,
+SocketHTTP2_Priority_parse (const char *value,
+                            size_t len,
                             SocketHTTP2_Priority *priority)
 {
   const char *p;
@@ -202,8 +205,8 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
 
               if (digits > 15)
                 {
-                  SOCKET_LOG_DEBUG_MSG (
-                      "Priority parse error: invalid u value (too many digits)");
+                  SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value "
+                                        "(too many digits)");
                   return -1;
                 }
             }
@@ -287,7 +290,8 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
   /* Log parsed values for debugging */
   if (found_urgency || found_incremental)
     {
-      SOCKET_LOG_DEBUG_MSG ("Parsed Priority: u=%d, i=%d", priority->urgency,
+      SOCKET_LOG_DEBUG_MSG ("Parsed Priority: u=%d, i=%d",
+                            priority->urgency,
                             priority->incremental);
     }
 
@@ -295,7 +299,8 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
 }
 
 ssize_t
-SocketHTTP2_Priority_serialize (const SocketHTTP2_Priority *priority, char *buf,
+SocketHTTP2_Priority_serialize (const SocketHTTP2_Priority *priority,
+                                char *buf,
                                 size_t buf_size)
 {
   size_t len = 0;
@@ -364,7 +369,8 @@ SocketHTTP2_Stream_set_priority (SocketHTTP2_Stream_T stream,
 }
 
 int
-SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
+SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn,
+                                  uint32_t stream_id,
                                   const SocketHTTP2_Priority *priority)
 {
   SocketHTTP2_FrameHeader header;
@@ -380,8 +386,8 @@ SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
     return -1; /* Stream 0 cannot be reprioritized */
 
   /* Serialize priority to SF-Dictionary format */
-  priority_len
-      = SocketHTTP2_Priority_serialize (priority, priority_field, sizeof (priority_field));
+  priority_len = SocketHTTP2_Priority_serialize (
+      priority, priority_field, sizeof (priority_field));
   if (priority_len < 0)
     return -1;
 
@@ -395,7 +401,9 @@ SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
 
   /* Copy priority field value */
   if (priority_len > 0)
-    memcpy (payload + PRIORITY_UPDATE_STREAM_ID_SIZE, priority_field, (size_t)priority_len);
+    memcpy (payload + PRIORITY_UPDATE_STREAM_ID_SIZE,
+            priority_field,
+            (size_t)priority_len);
 
   /* Build frame header */
   header.length = (uint32_t)payload_len;
@@ -404,7 +412,9 @@ SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   header.stream_id = 0; /* PRIORITY_UPDATE is sent on stream 0 */
 
   SOCKET_LOG_DEBUG_MSG ("Sending PRIORITY_UPDATE: stream=%u u=%d i=%d",
-                        stream_id, priority->urgency, priority->incremental);
+                        stream_id,
+                        priority->urgency,
+                        priority->incremental);
 
   return http2_frame_send (conn, &header, payload, payload_len);
 }
@@ -425,9 +435,8 @@ http2_process_priority_update (SocketHTTP2_Conn_T conn,
   /* RFC 9218 Section 7.1: PRIORITY_UPDATE on non-zero stream is error */
   if (header->stream_id != 0)
     {
-      SOCKET_LOG_WARN_MSG (
-          "PRIORITY_UPDATE received on stream %u (must be 0)",
-          header->stream_id);
+      SOCKET_LOG_WARN_MSG ("PRIORITY_UPDATE received on stream %u (must be 0)",
+                           header->stream_id);
       http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
@@ -459,7 +468,8 @@ http2_process_priority_update (SocketHTTP2_Conn_T conn,
     {
       SOCKET_LOG_WARN_MSG (
           "PRIORITY_UPDATE for wrong-parity stream %u (role=%d)",
-          prioritized_stream_id, conn->role);
+          prioritized_stream_id,
+          conn->role);
       http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
@@ -468,15 +478,15 @@ http2_process_priority_update (SocketHTTP2_Conn_T conn,
   SocketHTTP2_Priority_init (&priority);
   if (header->length > PRIORITY_UPDATE_MIN_PAYLOAD_SIZE)
     {
-      const char *priority_value = (const char *)(payload + PRIORITY_UPDATE_STREAM_ID_SIZE);
+      const char *priority_value
+          = (const char *)(payload + PRIORITY_UPDATE_STREAM_ID_SIZE);
       size_t priority_len = header->length - PRIORITY_UPDATE_STREAM_ID_SIZE;
 
       if (SocketHTTP2_Priority_parse (priority_value, priority_len, &priority)
           < 0)
         {
           /* RFC 9218: Parse errors should use defaults, not connection error */
-          SOCKET_LOG_DEBUG_MSG (
-              "PRIORITY_UPDATE parse error, using defaults");
+          SOCKET_LOG_DEBUG_MSG ("PRIORITY_UPDATE parse error, using defaults");
           SocketHTTP2_Priority_init (&priority);
         }
     }
@@ -487,17 +497,17 @@ http2_process_priority_update (SocketHTTP2_Conn_T conn,
     {
       /* Update stream priority */
       stream->priority = priority;
-      SOCKET_LOG_DEBUG_MSG (
-          "PRIORITY_UPDATE applied: stream=%u u=%d i=%d", prioritized_stream_id,
-          priority.urgency, priority.incremental);
+      SOCKET_LOG_DEBUG_MSG ("PRIORITY_UPDATE applied: stream=%u u=%d i=%d",
+                            prioritized_stream_id,
+                            priority.urgency,
+                            priority.incremental);
     }
   else
     {
       /* RFC 9218: PRIORITY_UPDATE can arrive for streams not yet created
        * or already closed. For simplicity, we ignore unknown streams. */
-      SOCKET_LOG_DEBUG_MSG (
-          "PRIORITY_UPDATE for unknown stream %u ignored",
-          prioritized_stream_id);
+      SOCKET_LOG_DEBUG_MSG ("PRIORITY_UPDATE for unknown stream %u ignored",
+                            prioritized_stream_id);
     }
 
   return 0;

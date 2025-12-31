@@ -32,7 +32,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "tls/SocketTLSConfig.h"  /* For SOCKET_HAS_CT_SUPPORT */
+#include "tls/SocketTLSConfig.h" /* For SOCKET_HAS_CT_SUPPORT */
 #include "tls/SocketTLSContext.h"
 
 #if !SOCKET_HAS_TLS || !SOCKET_HAS_CT_SUPPORT
@@ -93,8 +93,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         char path[FUZZ_MAX_PATH + 1];
         memcpy (path, data, FUZZ_MAX_PATH);
         path[FUZZ_MAX_PATH] = '\0';
-        TRY { SocketTLSContext_set_ctlog_list_file (fuzz_ctx, path); }
-        EXCEPT (SocketTLS_Failed) { /* Expected on invalid */ }
+        TRY
+        {
+          SocketTLSContext_set_ctlog_list_file (fuzz_ctx, path);
+        }
+        EXCEPT (SocketTLS_Failed)
+        { /* Expected on invalid */
+        }
         END_TRY;
       }
 
@@ -123,8 +128,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         fuzz_ctx = NULL;
       }
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected on invalid config */ }
-  ELSE { /* Swallow any other exception for fuzzer */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected on invalid config */
+  }
+  ELSE
+  { /* Swallow any other exception for fuzzer */
+  }
   END_TRY;
 
   return 0;

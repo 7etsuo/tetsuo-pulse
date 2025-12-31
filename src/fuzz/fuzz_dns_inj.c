@@ -48,8 +48,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   hostname[host_len] = '\0';
 
   /* Test hostname validation - this is fast and doesn't do network I/O */
-  TRY { SocketCommon_validate_hostname (hostname, SocketDNS_Failed); }
-  EXCEPT (SocketDNS_Failed) { /* Expected on invalid hosts */ }
+  TRY
+  {
+    SocketCommon_validate_hostname (hostname, SocketDNS_Failed);
+  }
+  EXCEPT (SocketDNS_Failed)
+  { /* Expected on invalid hosts */
+  }
   END_TRY;
 
   /* Test IP address detection */
@@ -72,7 +77,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           validate_resolve_params (hostname, port);
       }
   }
-  EXCEPT (SocketDNS_Failed) { /* Expected for invalid hostnames */ }
+  EXCEPT (SocketDNS_Failed)
+  { /* Expected for invalid hostnames */
+  }
   END_TRY;
 
   return 0;

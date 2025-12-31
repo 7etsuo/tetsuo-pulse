@@ -64,12 +64,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (decoder)
       {
         /* Try to decode the fuzzed input */
-        SocketHPACK_Decoder_decode (decoder, data, size, headers, 32,
-                                    &header_count, g_arena);
+        SocketHPACK_Decoder_decode (
+            decoder, data, size, headers, 32, &header_count, g_arena);
         SocketHPACK_Decoder_free (&decoder);
       }
   }
-  EXCEPT (SocketHPACK_Error) { /* Expected for malformed input */ }
+  EXCEPT (SocketHPACK_Error)
+  { /* Expected for malformed input */
+  }
   END_TRY;
 
   return 0;

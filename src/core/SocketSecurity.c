@@ -96,8 +96,7 @@ populate_http2_limits (SocketSecurityLimits *limits)
   limits->http2_max_concurrent_streams
       = SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS;
   limits->http2_max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
-  limits->http2_max_header_list_size
-      = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
+  limits->http2_max_header_list_size = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
 }
 
 static void
@@ -148,12 +147,12 @@ populate_timeout_limits (SocketSecurityLimits *limits)
 }
 
 /* Set optional output parameter if not NULL */
-#define set_size_ptr(ptr, val)                                                \
-  do                                                                          \
-    {                                                                         \
-      if (ptr)                                                                \
-        *(ptr) = (val);                                                       \
-    }                                                                         \
+#define set_size_ptr(ptr, val) \
+  do                           \
+    {                          \
+      if (ptr)                 \
+        *(ptr) = (val);        \
+    }                          \
   while (0)
 
 void
@@ -182,8 +181,10 @@ SocketSecurity_get_max_allocation (void)
 }
 
 void
-SocketSecurity_get_http_limits (size_t *max_uri, size_t *max_header_size,
-                                size_t *max_headers, size_t *max_body)
+SocketSecurity_get_http_limits (size_t *max_uri,
+                                size_t *max_header_size,
+                                size_t *max_headers,
+                                size_t *max_body)
 {
   set_size_ptr (max_uri, SOCKETHTTP_MAX_URI_LEN);
   set_size_ptr (max_header_size, SOCKETHTTP_MAX_HEADER_SIZE);

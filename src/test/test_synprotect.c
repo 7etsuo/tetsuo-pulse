@@ -40,22 +40,22 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define RUN_TEST(test_func)                                                   \
-  do                                                                          \
-    {                                                                         \
-      printf ("  Running: %s... ", #test_func);                               \
-      fflush (stdout);                                                        \
-      tests_run++;                                                            \
-      if (test_func ())                                                       \
-        {                                                                     \
-          printf ("PASSED\n");                                                \
-          tests_passed++;                                                     \
-        }                                                                     \
-      else                                                                    \
-        {                                                                     \
-          printf ("FAILED\n");                                                \
-        }                                                                     \
-    }                                                                         \
+#define RUN_TEST(test_func)                     \
+  do                                            \
+    {                                           \
+      printf ("  Running: %s... ", #test_func); \
+      fflush (stdout);                          \
+      tests_run++;                              \
+      if (test_func ())                         \
+        {                                       \
+          printf ("PASSED\n");                  \
+          tests_passed++;                       \
+        }                                       \
+      else                                      \
+        {                                       \
+          printf ("FAILED\n");                  \
+        }                                       \
+    }                                           \
   while (0)
 
 /* ============================================================================
@@ -79,7 +79,10 @@ test_new_free_basic (void)
     SocketSYNProtect_free (&protect);
     success = success && (protect == NULL);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -104,7 +107,10 @@ test_new_with_arena (void)
     Arena_dispose (&arena);
     success = success && 1;
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -131,7 +137,10 @@ test_new_with_config (void)
     success = (protect != NULL);
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -151,7 +160,10 @@ test_free_null (void)
     SocketSYNProtect_free (&protect);
     SocketSYNProtect_free (NULL); /* Should not crash */
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -211,7 +223,10 @@ test_configure_runtime (void)
     success = 1;
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -238,7 +253,10 @@ test_check_null_ip (void)
     success = (action == SYN_ACTION_ALLOW);
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -260,7 +278,10 @@ test_check_empty_ip (void)
     success = (action == SYN_ACTION_ALLOW);
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -284,7 +305,10 @@ test_check_first_ip (void)
     success = (action == SYN_ACTION_ALLOW);
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -314,7 +338,10 @@ test_check_with_state (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -348,7 +375,10 @@ test_score_penalty (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -383,7 +413,10 @@ test_score_reward (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -414,7 +447,10 @@ test_score_failure_penalty (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -441,13 +477,15 @@ test_whitelist_add_single (void)
     int result = SocketSYNProtect_whitelist_add (protect, "192.168.1.1");
     success = (result == 1);
 
-    int contains
-        = SocketSYNProtect_whitelist_contains (protect, "192.168.1.1");
+    int contains = SocketSYNProtect_whitelist_contains (protect, "192.168.1.1");
     success = success && (contains == 1);
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -477,7 +515,10 @@ test_whitelist_bypass (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -496,13 +537,11 @@ test_whitelist_cidr (void)
   {
     protect = SocketSYNProtect_new (NULL, NULL);
 
-    int result
-        = SocketSYNProtect_whitelist_add_cidr (protect, "172.16.0.0/12");
+    int result = SocketSYNProtect_whitelist_add_cidr (protect, "172.16.0.0/12");
     success = (result == 1);
 
     /* IP in range should be whitelisted */
-    int contains
-        = SocketSYNProtect_whitelist_contains (protect, "172.20.5.10");
+    int contains = SocketSYNProtect_whitelist_contains (protect, "172.20.5.10");
     success = success && (contains == 1);
 
     /* IP outside range should not be whitelisted */
@@ -512,7 +551,10 @@ test_whitelist_cidr (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -570,7 +612,10 @@ test_whitelist_cidr_invalid (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -597,7 +642,10 @@ test_whitelist_remove (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -626,7 +674,10 @@ test_whitelist_clear (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -653,13 +704,15 @@ test_blacklist_add (void)
     int result = SocketSYNProtect_blacklist_add (protect, "10.10.10.10", 0);
     success = (result == 1);
 
-    int contains
-        = SocketSYNProtect_blacklist_contains (protect, "10.10.10.10");
+    int contains = SocketSYNProtect_blacklist_contains (protect, "10.10.10.10");
     success = success && (contains == 1);
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -686,7 +739,10 @@ test_blacklist_blocks (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -724,7 +780,10 @@ test_blacklist_timed (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -746,13 +805,15 @@ test_blacklist_remove (void)
     SocketSYNProtect_blacklist_add (protect, "40.40.40.40", 0);
     SocketSYNProtect_blacklist_remove (protect, "40.40.40.40");
 
-    int contains
-        = SocketSYNProtect_blacklist_contains (protect, "40.40.40.40");
+    int contains = SocketSYNProtect_blacklist_contains (protect, "40.40.40.40");
     success = (contains == 0);
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -790,7 +851,10 @@ test_stats_basic (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -819,7 +883,10 @@ test_stats_reset (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -914,7 +981,10 @@ test_cleanup (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -950,7 +1020,10 @@ test_clear_all (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -987,7 +1060,10 @@ test_reset (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1020,7 +1096,10 @@ test_get_ip_state_found (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1045,7 +1124,10 @@ test_get_ip_state_not_found (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1075,7 +1157,10 @@ test_ipv6_basic (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1101,7 +1186,10 @@ test_ipv6_whitelist (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1120,8 +1208,7 @@ test_ipv6_cidr (void)
   {
     protect = SocketSYNProtect_new (NULL, NULL);
 
-    int result
-        = SocketSYNProtect_whitelist_add_cidr (protect, "2001:db8::/32");
+    int result = SocketSYNProtect_whitelist_add_cidr (protect, "2001:db8::/32");
     success = (result == 1);
 
     int contains
@@ -1134,7 +1221,10 @@ test_ipv6_cidr (void)
 
     SocketSYNProtect_free (&protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1156,11 +1246,17 @@ thread_worker (void *arg)
 
   for (int i = 0; i < 100; i++)
     {
-      snprintf (ip, sizeof (ip), "100.%d.%d.%d", thread_id, i % 256,
-                (i * 7) % 256);
+      snprintf (
+          ip, sizeof (ip), "100.%d.%d.%d", thread_id, i % 256, (i * 7) % 256);
 
-      TRY { SocketSYNProtect_check (g_protect, ip, NULL); }
-      ELSE { g_thread_errors++; }
+      TRY
+      {
+        SocketSYNProtect_check (g_protect, ip, NULL);
+      }
+      ELSE
+      {
+        g_thread_errors++;
+      }
       END_TRY;
     }
 
@@ -1199,7 +1295,10 @@ test_thread_safety (void)
 
     SocketSYNProtect_free (&g_protect);
   }
-  ELSE { success = 0; }
+  ELSE
+  {
+    success = 0;
+  }
   END_TRY;
 
   return success;
@@ -1275,8 +1374,7 @@ main (void)
   printf ("\nThread Safety Tests:\n");
   RUN_TEST (test_thread_safety);
 
-  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed,
-          tests_run);
+  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }

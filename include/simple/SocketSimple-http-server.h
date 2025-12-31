@@ -23,14 +23,14 @@
  *     const char *path = Socket_simple_http_server_request_path(req);
  *
  *     Socket_simple_http_server_response_status(req, 200);
- *     Socket_simple_http_server_response_header(req, "Content-Type", "text/plain");
- *     Socket_simple_http_server_response_body(req, "Hello, World!", 13);
- *     Socket_simple_http_server_response_finish(req);
+ *     Socket_simple_http_server_response_header(req, "Content-Type",
+ * "text/plain"); Socket_simple_http_server_response_body(req, "Hello, World!",
+ * 13); Socket_simple_http_server_response_finish(req);
  * }
  *
  * int main(void) {
- *     SocketSimple_HTTPServer_T server = Socket_simple_http_server_new("0.0.0.0", 8080);
- *     if (!server) {
+ *     SocketSimple_HTTPServer_T server =
+ * Socket_simple_http_server_new("0.0.0.0", 8080); if (!server) {
  *         fprintf(stderr, "Error: %s\n", Socket_simple_error());
  *         return 1;
  *     }
@@ -64,7 +64,8 @@ extern "C"
 
   /* ==========================================================================
    * Types
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Opaque HTTP server handle.
@@ -77,7 +78,8 @@ extern "C"
    * Valid only during handler callback execution. Provides access to both
    * request data and response building.
    */
-  typedef struct SocketSimple_HTTPServerRequest *SocketSimple_HTTPServerRequest_T;
+  typedef struct SocketSimple_HTTPServerRequest
+      *SocketSimple_HTTPServerRequest_T;
 
   /**
    * @brief HTTP server lifecycle states.
@@ -85,7 +87,8 @@ extern "C"
   typedef enum
   {
     SOCKET_SIMPLE_SERVER_RUNNING,  /**< Normal operation */
-    SOCKET_SIMPLE_SERVER_DRAINING, /**< Draining - finishing existing requests */
+    SOCKET_SIMPLE_SERVER_DRAINING, /**< Draining - finishing existing requests
+                                    */
     SOCKET_SIMPLE_SERVER_STOPPED   /**< Stopped - all requests complete */
   } SocketSimple_HTTPServerState;
 
@@ -131,7 +134,8 @@ extern "C"
 
   /* ==========================================================================
    * Callback Types
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Request handler callback.
@@ -174,7 +178,8 @@ extern "C"
 
   /* ==========================================================================
    * Configuration
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Initialize server config with defaults.
@@ -186,7 +191,8 @@ extern "C"
 
   /* ==========================================================================
    * Server Lifecycle
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Create a new HTTP server with simple configuration.
@@ -204,15 +210,16 @@ extern "C"
    * @param config Server configuration.
    * @return Server handle, or NULL on error.
    */
-  extern SocketSimple_HTTPServer_T
-  Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config);
+  extern SocketSimple_HTTPServer_T Socket_simple_http_server_new_ex (
+      const SocketSimple_HTTPServerConfig *config);
 
   /**
    * @brief Free HTTP server and all resources.
    *
    * @param server Pointer to server handle (set to NULL).
    */
-  extern void Socket_simple_http_server_free (SocketSimple_HTTPServer_T *server);
+  extern void
+  Socket_simple_http_server_free (SocketSimple_HTTPServer_T *server);
 
   /**
    * @brief Start listening for connections.
@@ -233,7 +240,8 @@ extern "C"
 
   /* ==========================================================================
    * Handler Registration
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Set the request handler callback.
@@ -242,9 +250,10 @@ extern "C"
    * @param handler Request handler callback.
    * @param userdata User data passed to handler.
    */
-  extern void Socket_simple_http_server_set_handler (
-      SocketSimple_HTTPServer_T server, SocketSimple_HTTPServerHandler handler,
-      void *userdata);
+  extern void
+  Socket_simple_http_server_set_handler (SocketSimple_HTTPServer_T server,
+                                         SocketSimple_HTTPServerHandler handler,
+                                         void *userdata);
 
   /**
    * @brief Set request validator middleware.
@@ -255,11 +264,13 @@ extern "C"
    */
   extern void Socket_simple_http_server_set_validator (
       SocketSimple_HTTPServer_T server,
-      SocketSimple_HTTPServerValidator validator, void *userdata);
+      SocketSimple_HTTPServerValidator validator,
+      void *userdata);
 
   /* ==========================================================================
    * Event Loop
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Process server events (accept, read, write).
@@ -285,7 +296,8 @@ extern "C"
 
   /* ==========================================================================
    * Request Accessors
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Get HTTP method string (e.g., "GET", "POST").
@@ -302,8 +314,8 @@ extern "C"
    * @param req Request context.
    * @return Path string (do not free).
    */
-  extern const char *Socket_simple_http_server_request_path (
-      SocketSimple_HTTPServerRequest_T req);
+  extern const char *
+  Socket_simple_http_server_request_path (SocketSimple_HTTPServerRequest_T req);
 
   /**
    * @brief Get query string (e.g., "id=123&name=foo").
@@ -331,8 +343,9 @@ extern "C"
    * @param len Output: body length.
    * @return Body data pointer, or NULL if no body.
    */
-  extern const void *Socket_simple_http_server_request_body (
-      SocketSimple_HTTPServerRequest_T req, size_t *len);
+  extern const void *
+  Socket_simple_http_server_request_body (SocketSimple_HTTPServerRequest_T req,
+                                          size_t *len);
 
   /**
    * @brief Get client IP address.
@@ -354,7 +367,8 @@ extern "C"
 
   /* ==========================================================================
    * Response Building
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Set response HTTP status code.
@@ -373,7 +387,8 @@ extern "C"
    * @param value Header value.
    */
   extern void Socket_simple_http_server_response_header (
-      SocketSimple_HTTPServerRequest_T req, const char *name,
+      SocketSimple_HTTPServerRequest_T req,
+      const char *name,
       const char *value);
 
   /**
@@ -383,8 +398,10 @@ extern "C"
    * @param data Body data.
    * @param len Body length.
    */
-  extern void Socket_simple_http_server_response_body (
-      SocketSimple_HTTPServerRequest_T req, const void *data, size_t len);
+  extern void
+  Socket_simple_http_server_response_body (SocketSimple_HTTPServerRequest_T req,
+                                           const void *data,
+                                           size_t len);
 
   /**
    * @brief Set response body from null-terminated string.
@@ -407,7 +424,8 @@ extern "C"
 
   /* ==========================================================================
    * JSON Convenience
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Send JSON response.
@@ -418,8 +436,10 @@ extern "C"
    * @param status HTTP status code.
    * @param json JSON string.
    */
-  extern void Socket_simple_http_server_response_json (
-      SocketSimple_HTTPServerRequest_T req, int status, const char *json);
+  extern void
+  Socket_simple_http_server_response_json (SocketSimple_HTTPServerRequest_T req,
+                                           int status,
+                                           const char *json);
 
   /**
    * @brief Send error response with JSON body.
@@ -433,7 +453,8 @@ extern "C"
 
   /* ==========================================================================
    * Streaming Responses
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Begin streaming response.
@@ -468,7 +489,8 @@ extern "C"
 
   /* ==========================================================================
    * Graceful Shutdown
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Initiate graceful shutdown.
@@ -509,7 +531,8 @@ extern "C"
    */
   extern void Socket_simple_http_server_set_drain_callback (
       SocketSimple_HTTPServer_T server,
-      SocketSimple_HTTPServerDrainCallback callback, void *userdata);
+      SocketSimple_HTTPServerDrainCallback callback,
+      void *userdata);
 
   /**
    * @brief Get current server state.
@@ -522,7 +545,8 @@ extern "C"
 
   /* ==========================================================================
    * Statistics
-   * ========================================================================== */
+   * ==========================================================================
+   */
 
   /**
    * @brief Get server statistics.

@@ -38,7 +38,10 @@ TEST (except_basic_try_except)
     RAISE (TestException);
     caught = 0; /* Should not reach here */
   }
-  EXCEPT (TestException) { caught = 1; }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (caught, 1);
@@ -49,8 +52,14 @@ TEST (except_no_exception)
 {
   volatile int executed = 0;
 
-  TRY { executed = 1; }
-  EXCEPT (TestException) { executed = 0; /* Should not execute */ }
+  TRY
+  {
+    executed = 1;
+  }
+  EXCEPT (TestException)
+  {
+    executed = 0; /* Should not execute */
+  }
   END_TRY;
 
   ASSERT_EQ (executed, 1);
@@ -61,8 +70,13 @@ TEST (except_finally_always_executes)
 {
   int finally_executed = 0;
 
-  TRY { /* Normal execution */ }
-  FINALLY { finally_executed = 1; }
+  TRY
+  { /* Normal execution */
+  }
+  FINALLY
+  {
+    finally_executed = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (finally_executed, 1);
@@ -73,9 +87,17 @@ TEST (except_finally_executes_on_exception)
 {
   int finally_executed = 0;
 
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { /* Exception caught */ }
-  FINALLY { finally_executed = 1; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  { /* Exception caught */
+  }
+  FINALLY
+  {
+    finally_executed = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (finally_executed, 1);
@@ -89,7 +111,10 @@ TEST (except_reraise_propagation)
 
   TRY
   {
-    TRY { RAISE (TestException); }
+    TRY
+    {
+      RAISE (TestException);
+    }
     EXCEPT (TestException)
     {
       inner_caught = 1;
@@ -97,7 +122,10 @@ TEST (except_reraise_propagation)
     }
     END_TRY;
   }
-  EXCEPT (TestException) { outer_caught = 1; }
+  EXCEPT (TestException)
+  {
+    outer_caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (inner_caught, 1);
@@ -112,7 +140,10 @@ TEST (except_nested_exception_handling)
 
   TRY
   {
-    TRY { RAISE (TestException); }
+    TRY
+    {
+      RAISE (TestException);
+    }
     EXCEPT (TestException)
     {
       inner_caught = 1;
@@ -120,7 +151,10 @@ TEST (except_nested_exception_handling)
     }
     END_TRY;
   }
-  EXCEPT (TestException) { outer_caught = 1; /* Should not execute */ }
+  EXCEPT (TestException)
+  {
+    outer_caught = 1; /* Should not execute */
+  }
   END_TRY;
 
   ASSERT_EQ (inner_caught, 1);
@@ -136,9 +170,18 @@ TEST (except_multiple_exception_types)
   volatile int caught1 = 0;
   volatile int caught2 = 0;
 
-  TRY { RAISE (Exception1); }
-  EXCEPT (Exception1) { caught1 = 1; }
-  EXCEPT (Exception2) { caught2 = 1; /* Should not execute */ }
+  TRY
+  {
+    RAISE (Exception1);
+  }
+  EXCEPT (Exception1)
+  {
+    caught1 = 1;
+  }
+  EXCEPT (Exception2)
+  {
+    caught2 = 1; /* Should not execute */
+  }
   END_TRY;
 
   ASSERT_EQ (caught1, 1);
@@ -153,9 +196,18 @@ TEST (except_else_clause)
 
   volatile int else_caught = 0;
 
-  TRY { RAISE (Exception2); }
-  EXCEPT (Exception1) { else_caught = 0; /* Should not execute */ }
-  ELSE { else_caught = 1; /* Should catch Exception2 */ }
+  TRY
+  {
+    RAISE (Exception2);
+  }
+  EXCEPT (Exception1)
+  {
+    else_caught = 0; /* Should not execute */
+  }
+  ELSE
+  {
+    else_caught = 1; /* Should catch Exception2 */
+  }
   END_TRY;
 
   ASSERT_EQ (else_caught, 1);
@@ -166,8 +218,14 @@ TEST (except_exception_reason)
 {
   const char *reason = NULL;
 
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { reason = Except_frame.exception->reason; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  {
+    reason = Except_frame.exception->reason;
+  }
   END_TRY;
 
   ASSERT_NOT_NULL (reason);
@@ -180,7 +238,10 @@ TEST (except_exception_location_tracking)
   const char *file = NULL;
   volatile int line = 0;
 
-  TRY { RAISE (TestException); }
+  TRY
+  {
+    RAISE (TestException);
+  }
   EXCEPT (TestException)
   {
     file = Except_frame.file;
@@ -202,7 +263,10 @@ TEST (except_exception_with_return)
     RAISE (TestException);
     result = 1; /* Should not reach here */
   }
-  EXCEPT (TestException) { result = 2; }
+  EXCEPT (TestException)
+  {
+    result = 2;
+  }
   END_TRY;
 
   ASSERT_EQ (result, 2);
@@ -213,11 +277,20 @@ TEST (except_multiple_try_blocks)
 {
   volatile int count = 0;
 
-  TRY { count++; }
+  TRY
+  {
+    count++;
+  }
   END_TRY;
 
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { count++; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  {
+    count++;
+  }
   END_TRY;
 
   ASSERT_EQ (count, 2);
@@ -229,7 +302,10 @@ TEST (except_exception_no_reason)
   static const Except_T NoReasonException = { &NoReasonException, NULL };
   volatile int caught = 0;
 
-  TRY { RAISE (NoReasonException); }
+  TRY
+  {
+    RAISE (NoReasonException);
+  }
   EXCEPT (NoReasonException)
   {
     caught = 1;
@@ -247,7 +323,10 @@ TEST (except_exception_empty_reason)
   static const Except_T EmptyReasonException = { &EmptyReasonException, "" };
   volatile int caught = 0;
 
-  TRY { RAISE (EmptyReasonException); }
+  TRY
+  {
+    RAISE (EmptyReasonException);
+  }
   EXCEPT (EmptyReasonException)
   {
     caught = 1;
@@ -274,7 +353,10 @@ TEST (except_deeply_nested)
   {
     TRY
     {
-      TRY { RAISE (Level3); }
+      TRY
+      {
+        RAISE (Level3);
+      }
       EXCEPT (Level3)
       {
         level3_caught = 1;
@@ -289,7 +371,10 @@ TEST (except_deeply_nested)
     }
     END_TRY;
   }
-  EXCEPT (Level1) { level1_caught = 1; }
+  EXCEPT (Level1)
+  {
+    level1_caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (level1_caught, 1);
@@ -307,7 +392,10 @@ TEST (except_finally_on_normal_exit)
     /* Normal execution - no exception */
     (void)0;
   }
-  FINALLY { cleanup_count++; }
+  FINALLY
+  {
+    cleanup_count++;
+  }
   END_TRY;
 
   TRY
@@ -315,7 +403,10 @@ TEST (except_finally_on_normal_exit)
     /* Another normal execution */
     (void)0;
   }
-  FINALLY { cleanup_count++; }
+  FINALLY
+  {
+    cleanup_count++;
+  }
   END_TRY;
 
   ASSERT_EQ (cleanup_count, 2);
@@ -327,9 +418,18 @@ TEST (except_finally_on_exception)
   volatile int cleanup_count = 0;
   volatile int caught = 0;
 
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { caught = 1; }
-  FINALLY { cleanup_count++; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+  }
+  FINALLY
+  {
+    cleanup_count++;
+  }
   END_TRY;
 
   ASSERT_EQ (caught, 1);
@@ -344,12 +444,24 @@ TEST (except_finally_on_reraise)
 
   TRY
   {
-    TRY { RAISE (TestException); }
-    EXCEPT (TestException) { RERAISE; }
+    TRY
+    {
+      RAISE (TestException);
+    }
+    EXCEPT (TestException)
+    {
+      RERAISE;
+    }
     END_TRY;
   }
-  EXCEPT (TestException) { caught = 1; }
-  FINALLY { outer_finally = 1; }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+  }
+  FINALLY
+  {
+    outer_finally = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (caught, 1);
@@ -387,7 +499,10 @@ TEST (except_same_type_different_levels)
 
   TRY
   {
-    TRY { RAISE (TestException); }
+    TRY
+    {
+      RAISE (TestException);
+    }
     EXCEPT (TestException)
     {
       inner_caught = 1;
@@ -398,7 +513,10 @@ TEST (except_same_type_different_levels)
     /* Now raise again at outer level */
     RAISE (TestException);
   }
-  EXCEPT (TestException) { outer_caught = 1; }
+  EXCEPT (TestException)
+  {
+    outer_caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (inner_caught, 1);
@@ -423,7 +541,10 @@ TEST (except_complex_reason_string)
   volatile int caught = 0;
   const char *reason = NULL;
 
-  TRY { RAISE (ComplexException); }
+  TRY
+  {
+    RAISE (ComplexException);
+  }
   EXCEPT (ComplexException)
   {
     caught = 1;
@@ -443,7 +564,10 @@ TEST (except_frame_file_tracking)
   volatile int caught = 0;
   const char *file = NULL;
 
-  TRY { RAISE (TestException); }
+  TRY
+  {
+    RAISE (TestException);
+  }
   EXCEPT (TestException)
   {
     caught = 1;
@@ -464,7 +588,10 @@ TEST (except_frame_line_reasonable)
   volatile int caught = 0;
   volatile int line = 0;
 
-  TRY { RAISE (TestException); }
+  TRY
+  {
+    RAISE (TestException);
+  }
   EXCEPT (TestException)
   {
     caught = 1;
@@ -489,9 +616,18 @@ TEST (except_type_identity_matching)
   volatile int caught_b = 0;
 
   /* Raise ExceptionA */
-  TRY { RAISE (ExceptionA); }
-  EXCEPT (ExceptionA) { caught_a = 1; }
-  EXCEPT (ExceptionB) { caught_b = 1; }
+  TRY
+  {
+    RAISE (ExceptionA);
+  }
+  EXCEPT (ExceptionA)
+  {
+    caught_a = 1;
+  }
+  EXCEPT (ExceptionB)
+  {
+    caught_b = 1;
+  }
   END_TRY;
 
   /* Only ExceptionA handler should execute */
@@ -502,9 +638,18 @@ TEST (except_type_identity_matching)
   caught_a = 0;
   caught_b = 0;
 
-  TRY { RAISE (ExceptionB); }
-  EXCEPT (ExceptionA) { caught_a = 1; }
-  EXCEPT (ExceptionB) { caught_b = 1; }
+  TRY
+  {
+    RAISE (ExceptionB);
+  }
+  EXCEPT (ExceptionA)
+  {
+    caught_a = 1;
+  }
+  EXCEPT (ExceptionB)
+  {
+    caught_b = 1;
+  }
   END_TRY;
 
   /* Only ExceptionB handler should execute */
@@ -526,18 +671,32 @@ TEST (except_stack_integrity)
   {
     TRY
     {
-      TRY { RAISE (Inner); }
-      EXCEPT (Inner) { caught = 1; }
-      FINALLY { inner_finally = 1; }
+      TRY
+      {
+        RAISE (Inner);
+      }
+      EXCEPT (Inner)
+      {
+        caught = 1;
+      }
+      FINALLY
+      {
+        inner_finally = 1;
+      }
       END_TRY;
 
       /* Raise another exception after inner block completes */
       RAISE (Outer);
     }
-    EXCEPT (Outer) { /* Catch outer */ }
+    EXCEPT (Outer)
+    { /* Catch outer */
+    }
     END_TRY;
   }
-  FINALLY { outer_finally = 1; }
+  FINALLY
+  {
+    outer_finally = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (caught, 1);
@@ -570,7 +729,10 @@ TEST (except_raise_in_finally)
     }
     END_TRY;
   }
-  EXCEPT (FinallyException) { outer_caught = 1; }
+  EXCEPT (FinallyException)
+  {
+    outer_caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (finally_executed, 1);
@@ -587,9 +749,18 @@ TEST (except_else_catches_any)
   volatile int specific_caught = 0;
 
   /* Raise OtherException, which is not specifically handled */
-  TRY { RAISE (OtherException); }
-  EXCEPT (SpecificException) { specific_caught = 1; }
-  ELSE { else_caught = 1; }
+  TRY
+  {
+    RAISE (OtherException);
+  }
+  EXCEPT (SpecificException)
+  {
+    specific_caught = 1;
+  }
+  ELSE
+  {
+    else_caught = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (specific_caught, 0);
@@ -602,22 +773,43 @@ TEST (except_sequential_blocks)
   volatile int count = 0;
 
   /* Block 1 */
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { count++; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  {
+    count++;
+  }
   END_TRY;
 
   /* Block 2 */
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { count++; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  {
+    count++;
+  }
   END_TRY;
 
   /* Block 3 */
-  TRY { RAISE (TestException); }
-  EXCEPT (TestException) { count++; }
+  TRY
+  {
+    RAISE (TestException);
+  }
+  EXCEPT (TestException)
+  {
+    count++;
+  }
   END_TRY;
 
   /* Block 4 - no exception */
-  TRY { count++; }
+  TRY
+  {
+    count++;
+  }
   END_TRY;
 
   ASSERT_EQ (count, 4);
@@ -636,7 +828,10 @@ TEST (except_volatile_preservation)
     RAISE (TestException);
     after = 99; /* Should not execute */
   }
-  EXCEPT (TestException) { in_handler = before; /* Should be 42 */ }
+  EXCEPT (TestException)
+  {
+    in_handler = before; /* Should be 42 */
+  }
   END_TRY;
 
   ASSERT_EQ (before, 42);

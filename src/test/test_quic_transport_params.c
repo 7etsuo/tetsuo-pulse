@@ -7,8 +7,9 @@
 /**
  * test_quic_transport_params.c - QUIC Transport Parameters unit tests
  *
- * Tests encoding/decoding/validation of QUIC transport parameters (RFC 9000 Section 18).
- * Covers initialization, round-trip encoding, validation, and error conditions.
+ * Tests encoding/decoding/validation of QUIC transport parameters (RFC 9000
+ * Section 18). Covers initialization, round-trip encoding, validation, and
+ * error conditions.
  */
 
 #include <stdint.h>
@@ -101,13 +102,13 @@ TEST (quic_tp_roundtrip_minimal_client)
   original.has_initial_scid = 1;
 
   /* Encode as client */
-  encoded_len = SocketQUICTransportParams_encode (&original, QUIC_ROLE_CLIENT,
-                                                  buf, sizeof (buf));
+  encoded_len = SocketQUICTransportParams_encode (
+      &original, QUIC_ROLE_CLIENT, buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Decode as if from client */
-  res = SocketQUICTransportParams_decode (buf, encoded_len, QUIC_ROLE_CLIENT,
-                                          &decoded, &consumed);
+  res = SocketQUICTransportParams_decode (
+      buf, encoded_len, QUIC_ROLE_CLIENT, &decoded, &consumed);
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (consumed, encoded_len);
 
@@ -136,13 +137,13 @@ TEST (quic_tp_roundtrip_minimal_server)
   original.has_initial_scid = 1;
 
   /* Encode as server */
-  encoded_len = SocketQUICTransportParams_encode (&original, QUIC_ROLE_SERVER,
-                                                  buf, sizeof (buf));
+  encoded_len = SocketQUICTransportParams_encode (
+      &original, QUIC_ROLE_SERVER, buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Decode as if from server */
-  res = SocketQUICTransportParams_decode (buf, encoded_len, QUIC_ROLE_SERVER,
-                                          &decoded, &consumed);
+  res = SocketQUICTransportParams_decode (
+      buf, encoded_len, QUIC_ROLE_SERVER, &decoded, &consumed);
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (consumed, encoded_len);
 
@@ -185,13 +186,13 @@ TEST (quic_tp_roundtrip_full_client)
   original.has_max_datagram_frame_size = 1;
 
   /* Encode */
-  encoded_len = SocketQUICTransportParams_encode (&original, QUIC_ROLE_CLIENT,
-                                                  buf, sizeof (buf));
+  encoded_len = SocketQUICTransportParams_encode (
+      &original, QUIC_ROLE_CLIENT, buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Decode */
-  res = SocketQUICTransportParams_decode (buf, encoded_len, QUIC_ROLE_CLIENT,
-                                          &decoded, &consumed);
+  res = SocketQUICTransportParams_decode (
+      buf, encoded_len, QUIC_ROLE_CLIENT, &decoded, &consumed);
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (consumed, encoded_len);
 
@@ -214,8 +215,7 @@ TEST (quic_tp_roundtrip_full_client)
              original.active_connection_id_limit);
   ASSERT_EQ (decoded.disable_active_migration, 1);
   ASSERT_EQ (decoded.has_max_datagram_frame_size, 1);
-  ASSERT_EQ (decoded.max_datagram_frame_size,
-             original.max_datagram_frame_size);
+  ASSERT_EQ (decoded.max_datagram_frame_size, original.max_datagram_frame_size);
 }
 
 TEST (quic_tp_roundtrip_server_with_token)
@@ -242,13 +242,13 @@ TEST (quic_tp_roundtrip_server_with_token)
   original.has_stateless_reset_token = 1;
 
   /* Encode as server */
-  encoded_len = SocketQUICTransportParams_encode (&original, QUIC_ROLE_SERVER,
-                                                  buf, sizeof (buf));
+  encoded_len = SocketQUICTransportParams_encode (
+      &original, QUIC_ROLE_SERVER, buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Decode */
-  res = SocketQUICTransportParams_decode (buf, encoded_len, QUIC_ROLE_SERVER,
-                                          &decoded, &consumed);
+  res = SocketQUICTransportParams_decode (
+      buf, encoded_len, QUIC_ROLE_SERVER, &decoded, &consumed);
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (consumed, encoded_len);
 
@@ -291,8 +291,8 @@ TEST (quic_tp_roundtrip_preferred_address)
   original.preferred_address.ipv6_port = 4434;
 
   uint8_t pa_cid[] = { 0xAA, 0xBB, 0xCC, 0xDD };
-  SocketQUICConnectionID_set (&original.preferred_address.connection_id,
-                              pa_cid, 4);
+  SocketQUICConnectionID_set (
+      &original.preferred_address.connection_id, pa_cid, 4);
 
   for (int i = 0; i < 16; i++)
     original.preferred_address.stateless_reset_token[i] = (uint8_t)(i + 0xA0);
@@ -300,13 +300,13 @@ TEST (quic_tp_roundtrip_preferred_address)
   original.preferred_address.present = 1;
 
   /* Encode as server */
-  encoded_len = SocketQUICTransportParams_encode (&original, QUIC_ROLE_SERVER,
-                                                  buf, sizeof (buf));
+  encoded_len = SocketQUICTransportParams_encode (
+      &original, QUIC_ROLE_SERVER, buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Decode */
-  res = SocketQUICTransportParams_decode (buf, encoded_len, QUIC_ROLE_SERVER,
-                                          &decoded, &consumed);
+  res = SocketQUICTransportParams_decode (
+      buf, encoded_len, QUIC_ROLE_SERVER, &decoded, &consumed);
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (consumed, encoded_len);
 
@@ -318,8 +318,9 @@ TEST (quic_tp_roundtrip_preferred_address)
   ASSERT_EQ (decoded.preferred_address.ipv4_address[3], 100);
   ASSERT_EQ (decoded.preferred_address.ipv4_port, 4433);
   ASSERT_EQ (decoded.preferred_address.ipv6_port, 4434);
-  ASSERT (SocketQUICConnectionID_equal (&decoded.preferred_address.connection_id,
-                                        &original.preferred_address.connection_id));
+  ASSERT (
+      SocketQUICConnectionID_equal (&decoded.preferred_address.connection_id,
+                                    &original.preferred_address.connection_id));
 }
 
 /* ============================================================================
@@ -463,35 +464,34 @@ TEST (quic_tp_decode_truncated)
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_INCOMPLETE);
 }
 
 TEST (quic_tp_decode_truncated_value)
 {
   /* Parameter with length but insufficient data */
-  uint8_t data[] = { 0x01, 0x08, 0x00, 0x00 }; /* ID=1, len=8, but only 2 bytes */
+  uint8_t data[]
+      = { 0x01, 0x08, 0x00, 0x00 }; /* ID=1, len=8, but only 2 bytes */
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_INCOMPLETE);
 }
 
 TEST (quic_tp_decode_server_param_from_client)
 {
   /* Client tries to send original_destination_connection_id (server only) */
-  uint8_t data[] = { 0x00, 0x04, 0x01, 0x02, 0x03, 0x04 }; /* ID=0, len=4, CID */
+  uint8_t data[]
+      = { 0x00, 0x04, 0x01, 0x02, 0x03, 0x04 }; /* ID=0, len=4, CID */
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_ROLE);
 }
 
@@ -503,9 +503,8 @@ TEST (quic_tp_decode_invalid_reset_token_length)
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_SERVER,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_SERVER, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_INVALID_VALUE);
 }
 
@@ -519,9 +518,8 @@ TEST (quic_tp_decode_duplicate_param)
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_DUPLICATE);
 }
 
@@ -532,9 +530,8 @@ TEST (quic_tp_decode_disable_migration_nonzero_length)
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_INVALID_VALUE);
 }
 
@@ -547,15 +544,15 @@ TEST (quic_tp_decode_unknown_param_ignored)
 {
   /* Unknown parameter ID (0xFF) should be ignored */
   uint8_t data[] = {
-    0x40, 0xFF, 0x04, 0x01, 0x02, 0x03, 0x04, /* Unknown ID=0xFF (2-byte varint), len=4 */
-    0x01, 0x01, 0x0A /* max_idle_timeout = 10 */
+    0x40, 0xFF, 0x04, 0x01,
+    0x02, 0x03, 0x04, /* Unknown ID=0xFF (2-byte varint), len=4 */
+    0x01, 0x01, 0x0A  /* max_idle_timeout = 10 */
   };
   SocketQUICTransportParams_T params;
   size_t consumed;
 
-  SocketQUICTransportParams_Result res
-      = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (params.max_idle_timeout, 10);
 }
@@ -579,9 +576,8 @@ TEST (quic_tp_encoded_size_matches_encode)
 
   size_t expected_size
       = SocketQUICTransportParams_encoded_size (&params, QUIC_ROLE_CLIENT);
-  size_t actual_size
-      = SocketQUICTransportParams_encode (&params, QUIC_ROLE_CLIENT, buf,
-                                          sizeof (buf));
+  size_t actual_size = SocketQUICTransportParams_encode (
+      &params, QUIC_ROLE_CLIENT, buf, sizeof (buf));
 
   ASSERT_EQ (actual_size, expected_size);
 }
@@ -615,32 +611,37 @@ TEST (quic_tp_effective_idle_timeout)
   SocketQUICTransportParams_init (&remote);
 
   /* Both zero = disabled */
-  effective = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
+  effective
+      = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
   ASSERT_EQ (effective, 0);
 
   /* One zero = disabled */
   local.max_idle_timeout = 30000;
   remote.max_idle_timeout = 0;
-  effective = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
+  effective
+      = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
   ASSERT_EQ (effective, 0);
 
   /* Both non-zero = minimum */
   local.max_idle_timeout = 30000;
   remote.max_idle_timeout = 60000;
-  effective = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
+  effective
+      = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
   ASSERT_EQ (effective, 30000);
 
   /* Remote smaller */
   local.max_idle_timeout = 60000;
   remote.max_idle_timeout = 30000;
-  effective = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
+  effective
+      = SocketQUICTransportParams_effective_idle_timeout (&local, &remote);
   ASSERT_EQ (effective, 30000);
 }
 
 TEST (quic_tp_result_string)
 {
   ASSERT_NOT_NULL (SocketQUICTransportParams_result_string (QUIC_TP_OK));
-  ASSERT_NOT_NULL (SocketQUICTransportParams_result_string (QUIC_TP_ERROR_NULL));
+  ASSERT_NOT_NULL (
+      SocketQUICTransportParams_result_string (QUIC_TP_ERROR_NULL));
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_result_string (QUIC_TP_ERROR_BUFFER));
   ASSERT_NOT_NULL (
@@ -649,7 +650,8 @@ TEST (quic_tp_result_string)
       SocketQUICTransportParams_result_string (QUIC_TP_ERROR_INVALID_VALUE));
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_result_string (QUIC_TP_ERROR_DUPLICATE));
-  ASSERT_NOT_NULL (SocketQUICTransportParams_result_string (QUIC_TP_ERROR_ROLE));
+  ASSERT_NOT_NULL (
+      SocketQUICTransportParams_result_string (QUIC_TP_ERROR_ROLE));
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_result_string (QUIC_TP_ERROR_REQUIRED));
   ASSERT_NOT_NULL (
@@ -661,18 +663,20 @@ TEST (quic_tp_result_string)
 TEST (quic_tp_id_string)
 {
   ASSERT_NOT_NULL (SocketQUICTransportParams_id_string (QUIC_TP_ORIGINAL_DCID));
-  ASSERT_NOT_NULL (SocketQUICTransportParams_id_string (QUIC_TP_MAX_IDLE_TIMEOUT));
+  ASSERT_NOT_NULL (
+      SocketQUICTransportParams_id_string (QUIC_TP_MAX_IDLE_TIMEOUT));
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_id_string (QUIC_TP_STATELESS_RESET_TOKEN));
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_id_string (QUIC_TP_MAX_UDP_PAYLOAD_SIZE));
-  ASSERT_NOT_NULL (SocketQUICTransportParams_id_string (QUIC_TP_INITIAL_MAX_DATA));
+  ASSERT_NOT_NULL (
+      SocketQUICTransportParams_id_string (QUIC_TP_INITIAL_MAX_DATA));
   ASSERT_NOT_NULL (SocketQUICTransportParams_id_string (
       QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL));
   ASSERT_NOT_NULL (SocketQUICTransportParams_id_string (
       QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE));
-  ASSERT_NOT_NULL (
-      SocketQUICTransportParams_id_string (QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI));
+  ASSERT_NOT_NULL (SocketQUICTransportParams_id_string (
+      QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI));
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_id_string (QUIC_TP_INITIAL_MAX_STREAMS_BIDI));
   ASSERT_NOT_NULL (
@@ -725,12 +729,12 @@ TEST (quic_tp_null_encode)
 
   SocketQUICTransportParams_init (&params);
 
-  size_t len = SocketQUICTransportParams_encode (NULL, QUIC_ROLE_CLIENT, buf,
-                                                 sizeof (buf));
+  size_t len = SocketQUICTransportParams_encode (
+      NULL, QUIC_ROLE_CLIENT, buf, sizeof (buf));
   ASSERT_EQ (len, 0);
 
-  len = SocketQUICTransportParams_encode (&params, QUIC_ROLE_CLIENT, NULL,
-                                          sizeof (buf));
+  len = SocketQUICTransportParams_encode (
+      &params, QUIC_ROLE_CLIENT, NULL, sizeof (buf));
   ASSERT_EQ (len, 0);
 }
 
@@ -742,16 +746,16 @@ TEST (quic_tp_null_decode)
 
   SocketQUICTransportParams_Result res;
 
-  res = SocketQUICTransportParams_decode (NULL, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, &consumed);
+  res = SocketQUICTransportParams_decode (
+      NULL, sizeof (data), QUIC_ROLE_CLIENT, &params, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_NULL);
 
-  res = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          NULL, &consumed);
+  res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, NULL, &consumed);
   ASSERT_EQ (res, QUIC_TP_ERROR_NULL);
 
-  res = SocketQUICTransportParams_decode (data, sizeof (data), QUIC_ROLE_CLIENT,
-                                          &params, NULL);
+  res = SocketQUICTransportParams_decode (
+      data, sizeof (data), QUIC_ROLE_CLIENT, &params, NULL);
   ASSERT_EQ (res, QUIC_TP_ERROR_NULL);
 }
 

@@ -53,8 +53,8 @@ dns_stress_thread (void *arg)
     if (!dns)
       {
         Arena_dispose (&arena);
-        fprintf (stderr, "Thread %d: Failed to create DNS resolver\n",
-                 thread_id);
+        fprintf (
+            stderr, "Thread %d: Failed to create DNS resolver\n", thread_id);
         return NULL;
       }
 
@@ -66,8 +66,12 @@ dns_stress_thread (void *arg)
         Request_T req;
 
         /* Generate random hostname for stress */
-        snprintf (hostname, sizeof (hostname), "%s%d.%d.com",
-                  DNS_STRESS_HOST_PREFIX, thread_id, i);
+        snprintf (hostname,
+                  sizeof (hostname),
+                  "%s%d.%d.com",
+                  DNS_STRESS_HOST_PREFIX,
+                  thread_id,
+                  i);
 
         req = SocketDNS_resolve (dns, hostname, DNS_STRESS_PORT, NULL, NULL);
         if (!req)
@@ -123,7 +127,10 @@ dns_stress_thread (void *arg)
   {
     fprintf (stderr, "Thread %d: Arena failed\n", thread_id);
   }
-  FINALLY { Arena_dispose (&arena); }
+  FINALLY
+  {
+    Arena_dispose (&arena);
+  }
   END_TRY;
 
   return NULL;
@@ -135,7 +142,8 @@ main ()
   signal (SIGPIPE, SIG_IGN);
 
   printf ("Starting DNS stress test: %d requests across %d threads\n",
-          DNS_STRESS_NUM_REQUESTS, DNS_STRESS_NUM_THREADS);
+          DNS_STRESS_NUM_REQUESTS,
+          DNS_STRESS_NUM_THREADS);
 
   pthread_t *threads = calloc (DNS_STRESS_NUM_THREADS, sizeof (pthread_t));
   int *thread_ids = malloc (DNS_STRESS_NUM_THREADS * sizeof (int));
@@ -159,15 +167,16 @@ main ()
   pthread_mutex_lock (&dns_stats_mutex);
   printf ("\nDNS Stress Test Results:\n");
   printf ("Total requests: %ld\n", total_requests);
-  printf ("Completed: %ld (%.1f%%)\n", completed_requests,
-          total_requests > 0
-              ? (double)completed_requests / total_requests * 100
-              : 0);
-  printf ("Timed out: %ld (%.1f%%)\n", timed_out_requests,
-          total_requests > 0
-              ? (double)timed_out_requests / total_requests * 100
-              : 0);
-  printf ("Failed: %ld (%.1f%%)\n", failed_requests,
+  printf ("Completed: %ld (%.1f%%)\n",
+          completed_requests,
+          total_requests > 0 ? (double)completed_requests / total_requests * 100
+                             : 0);
+  printf ("Timed out: %ld (%.1f%%)\n",
+          timed_out_requests,
+          total_requests > 0 ? (double)timed_out_requests / total_requests * 100
+                             : 0);
+  printf ("Failed: %ld (%.1f%%)\n",
+          failed_requests,
           total_requests > 0 ? (double)failed_requests / total_requests * 100
                              : 0);
   pthread_mutex_unlock (&dns_stats_mutex);

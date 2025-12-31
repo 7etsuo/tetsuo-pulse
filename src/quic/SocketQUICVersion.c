@@ -39,9 +39,11 @@
  */
 int
 SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
-                                       const SocketQUICConnectionID_T *scid,
-                                       const uint32_t *versions, size_t count,
-                                       uint8_t *output, size_t output_size)
+                                      const SocketQUICConnectionID_T *scid,
+                                      const uint32_t *versions,
+                                      size_t count,
+                                      uint8_t *output,
+                                      size_t output_size)
 {
   /* Validate inputs */
   if (!dcid || !scid || !versions || !output)
@@ -55,11 +57,11 @@ SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
     return -QUIC_VERSION_NEG_ERROR_LENGTH;
 
   /* Calculate fixed overhead */
-  size_t fixed_overhead = 1           /* first byte */
-                          + 4         /* version (0x00000000) */
-                          + 1         /* DCID length */
-                          + dcid->len /* DCID */
-                          + 1         /* SCID length */
+  size_t fixed_overhead = 1            /* first byte */
+                          + 4          /* version (0x00000000) */
+                          + 1          /* DCID length */
+                          + dcid->len  /* DCID */
+                          + 1          /* SCID length */
                           + scid->len; /* SCID */
 
   /* Check if adding version list size would overflow (issue #778) */
@@ -122,11 +124,13 @@ SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
  * Extracts Connection IDs and the list of supported versions.
  */
 SocketQUICVersion_NegResult
-SocketQUICVersion_parse_negotiation (const uint8_t *data, size_t len,
-                                      SocketQUICConnectionID_T *dcid,
-                                      SocketQUICConnectionID_T *scid,
-                                      uint32_t *versions_out,
-                                      size_t max_versions, size_t *count_out)
+SocketQUICVersion_parse_negotiation (const uint8_t *data,
+                                     size_t len,
+                                     SocketQUICConnectionID_T *dcid,
+                                     SocketQUICConnectionID_T *scid,
+                                     uint32_t *versions_out,
+                                     size_t max_versions,
+                                     size_t *count_out)
 {
   /* Validate inputs */
   if (!data || !dcid || !scid || !versions_out || !count_out)
@@ -197,7 +201,8 @@ SocketQUICVersion_parse_negotiation (const uint8_t *data, size_t len,
     return QUIC_VERSION_NEG_ERROR_PARSE;
 
   size_t version_count = remaining / 4;
-  size_t versions_to_copy = version_count < max_versions ? version_count : max_versions;
+  size_t versions_to_copy
+      = version_count < max_versions ? version_count : max_versions;
 
   for (size_t i = 0; i < versions_to_copy; i++)
     {

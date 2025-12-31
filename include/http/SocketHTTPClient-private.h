@@ -38,7 +38,8 @@ typedef struct SocketAsync_T *SocketAsync_T;
 
 #define HTTPCLIENT_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
 #define HTTPCLIENT_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
-#define RAISE_HTTPCLIENT_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
+#define RAISE_HTTPCLIENT_ERROR(e) \
+  SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
 
 /**
  * @brief HTTP connection pool entry for host:port reuse.
@@ -217,24 +218,25 @@ struct SocketHTTPClient_CookieJar
   pthread_mutex_t mutex;
 };
 
-extern HTTPPool *httpclient_pool_new (Arena_T arena,
-                                      const SocketHTTPClient_Config *config);
+extern HTTPPool *
+httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config);
 extern void httpclient_pool_free (HTTPPool *pool);
-extern HTTPPoolEntry *httpclient_pool_get (HTTPPool *pool, const char *host,
-                                           int port, int is_secure);
+extern HTTPPoolEntry *
+httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure);
 extern HTTPPoolEntry *httpclient_pool_get_prepared (HTTPPool *pool,
                                                     const char *host,
-                                                    size_t host_len, int port,
+                                                    size_t host_len,
+                                                    int port,
                                                     int is_secure,
                                                     unsigned precomputed_hash);
 extern void httpclient_pool_release (HTTPPool *pool, HTTPPoolEntry *entry);
 extern void httpclient_pool_close (HTTPPool *pool, HTTPPoolEntry *entry);
 extern void httpclient_pool_cleanup_idle (HTTPPool *pool);
 
-extern HTTPPoolEntry *httpclient_connect (SocketHTTPClient_T client,
-                                          const SocketHTTP_URI *uri);
-extern int httpclient_send_request (HTTPPoolEntry *conn,
-                                    SocketHTTPClient_Request_T req);
+extern HTTPPoolEntry *
+httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri);
+extern int
+httpclient_send_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req);
 extern int httpclient_receive_response (HTTPPoolEntry *conn,
                                         SocketHTTPClient_Response *response,
                                         Arena_T arena);
@@ -270,26 +272,42 @@ extern int httpclient_receive_response (HTTPPoolEntry *conn,
 #define HTTPCLIENT_DIGEST_A_BUFFER_SIZE 512
 
 extern int httpclient_auth_basic_header (const char *username,
-                                         const char *password, char *output,
+                                         const char *password,
+                                         char *output,
                                          size_t output_size);
-extern int httpclient_auth_digest_response (
-    const char *username, const char *password, const char *realm,
-    const char *nonce, const char *uri, const char *method, const char *qop,
-    const char *nc, const char *cnonce, int use_sha256, char *output,
-    size_t output_size);
-extern int httpclient_auth_digest_challenge (
-    const char *www_authenticate, const char *username, const char *password,
-    const char *method, const char *uri, const char *nc_value, char *output,
-    size_t output_size);
-extern int httpclient_auth_bearer_header (const char *token, char *output,
+extern int httpclient_auth_digest_response (const char *username,
+                                            const char *password,
+                                            const char *realm,
+                                            const char *nonce,
+                                            const char *uri,
+                                            const char *method,
+                                            const char *qop,
+                                            const char *nc,
+                                            const char *cnonce,
+                                            int use_sha256,
+                                            char *output,
+                                            size_t output_size);
+extern int httpclient_auth_digest_challenge (const char *www_authenticate,
+                                             const char *username,
+                                             const char *password,
+                                             const char *method,
+                                             const char *uri,
+                                             const char *nc_value,
+                                             char *output,
+                                             size_t output_size);
+extern int httpclient_auth_bearer_header (const char *token,
+                                          char *output,
                                           size_t output_size);
 extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
 extern void httpclient_auth_clear_header (char *header, size_t header_size);
 
-extern int httpclient_cookies_for_request (
-    SocketHTTPClient_CookieJar_T jar, const SocketHTTP_URI *uri, char *output,
-    size_t output_size, int enforce_samesite);
-extern int httpclient_parse_set_cookie (const char *value, size_t len,
+extern int httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
+                                           const SocketHTTP_URI *uri,
+                                           char *output,
+                                           size_t output_size,
+                                           int enforce_samesite);
+extern int httpclient_parse_set_cookie (const char *value,
+                                        size_t len,
                                         const SocketHTTP_URI *request_uri,
                                         SocketHTTPClient_Cookie *cookie,
                                         Arena_T arena);
@@ -311,7 +329,9 @@ httpclient_host_hash (const char *host, int port, size_t table_size)
  * Used by prepared requests to avoid strlen() on every request.
  */
 static inline unsigned
-httpclient_host_hash_len (const char *host, size_t host_len, int port,
+httpclient_host_hash_len (const char *host,
+                          size_t host_len,
+                          int port,
                           size_t table_size)
 {
   unsigned host_hash
@@ -323,16 +343,21 @@ httpclient_host_hash_len (const char *host, size_t host_len, int port,
 
 extern int httpclient_should_retry_error (const SocketHTTPClient_T client,
                                           SocketHTTPClient_Error error);
-extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
-                                           int status);
-extern int httpclient_should_retry_status_with_method (
-    const SocketHTTPClient_T client, int status, SocketHTTP_Method method);
-extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client,
-                                             int attempt);
+extern int
+httpclient_should_retry_status (const SocketHTTPClient_T client, int status);
+extern int
+httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
+                                            int status,
+                                            SocketHTTP_Method method);
+extern int
+httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt);
 extern void httpclient_retry_sleep_ms (int ms);
-extern int httpclient_grow_body_buffer (Arena_T arena, char **buf,
-                                        size_t *capacity, size_t *total,
-                                        size_t needed, size_t max_size);
+extern int httpclient_grow_body_buffer (Arena_T arena,
+                                        char **buf,
+                                        size_t *capacity,
+                                        size_t *total,
+                                        size_t needed,
+                                        size_t max_size);
 extern void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
@@ -360,8 +385,10 @@ extern void httpclient_release_response_arena (Arena_T *arena_ptr);
  * @param len Number of bytes to send
  * @return Bytes sent on success, -1 on error (errno set)
  */
-extern ssize_t httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
-                                   const void *data, size_t len);
+extern ssize_t httpclient_io_send (SocketHTTPClient_T client,
+                                   Socket_T socket,
+                                   const void *data,
+                                   size_t len);
 
 /**
  * @brief Receive data using async I/O if available, otherwise sync.
@@ -375,8 +402,10 @@ extern ssize_t httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
  * @param len Maximum bytes to receive
  * @return Bytes received on success, 0 on EOF, -1 on error (errno set)
  */
-extern ssize_t httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
-                                   void *buf, size_t len);
+extern ssize_t httpclient_io_recv (SocketHTTPClient_T client,
+                                   Socket_T socket,
+                                   void *buf,
+                                   size_t len);
 
 /**
  * @brief Initialize async I/O context for HTTP client.

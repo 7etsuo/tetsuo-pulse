@@ -24,8 +24,9 @@
 #include <time.h>
 
 /* Benchmark configuration defaults
- * Note: Keep total requests low until issue #119 (HTTP client memory corruption)
- * is fixed. With high request counts (>2000 total), the HTTP client crashes.
+ * Note: Keep total requests low until issue #119 (HTTP client memory
+ * corruption) is fixed. With high request counts (>2000 total), the HTTP client
+ * crashes.
  */
 #define BENCH_HTTP_DEFAULT_REQUESTS 100
 #define BENCH_HTTP_DEFAULT_THREADS 4
@@ -229,7 +230,8 @@ bench_percentile (const uint64_t *sorted, size_t count, double pct)
  * @param out Aggregated result output.
  */
 static inline void
-bench_compute_stats (BenchHTTPThreadResult *results, int num_threads,
+bench_compute_stats (BenchHTTPThreadResult *results,
+                     int num_threads,
                      BenchHTTPResult *out)
 {
   /* Count total samples */
@@ -247,14 +249,16 @@ bench_compute_stats (BenchHTTPThreadResult *results, int num_threads,
     return;
 
   /* Merge all latency samples */
-  uint64_t *all_latencies = (uint64_t *)calloc (total_samples, sizeof (uint64_t));
+  uint64_t *all_latencies
+      = (uint64_t *)calloc (total_samples, sizeof (uint64_t));
   if (!all_latencies)
     return;
 
   size_t offset = 0;
   for (int i = 0; i < num_threads; i++)
     {
-      memcpy (all_latencies + offset, results[i].latencies_ns,
+      memcpy (all_latencies + offset,
+              results[i].latencies_ns,
               results[i].latency_count * sizeof (uint64_t));
       offset += results[i].latency_count;
     }
@@ -277,11 +281,9 @@ bench_compute_stats (BenchHTTPThreadResult *results, int num_threads,
   out->latency_p999 = bench_percentile (all_latencies, total_samples, 99.9);
 
   /* Throughput */
-  out->elapsed_sec
-      = (double)(out->end_ns - out->start_ns) / 1000000000.0;
+  out->elapsed_sec = (double)(out->end_ns - out->start_ns) / 1000000000.0;
   if (out->elapsed_sec > 0)
-    out->requests_per_sec
-        = (double)out->successful_requests / out->elapsed_sec;
+    out->requests_per_sec = (double)out->successful_requests / out->elapsed_sec;
 
   /* Connection reuse ratio */
   if (out->connections_created + out->connections_reused > 0)
@@ -300,13 +302,14 @@ bench_compute_stats (BenchHTTPThreadResult *results, int num_threads,
  * @brief Print results to console.
  */
 static inline void
-bench_print_results (const char *client_name, const BenchHTTPConfig *config,
+bench_print_results (const char *client_name,
+                     const BenchHTTPConfig *config,
                      const BenchHTTPResult *result)
 {
-  const char *version_str
-      = config->version == BENCH_HTTP_VERSION_1_1   ? "HTTP/1.1"
-        : config->version == BENCH_HTTP_VERSION_2   ? "HTTP/2"
-                                                    : "auto";
+  const char *version_str = config->version == BENCH_HTTP_VERSION_1_1
+                                ? "HTTP/1.1"
+                            : config->version == BENCH_HTTP_VERSION_2 ? "HTTP/2"
+                                                                      : "auto";
 
   printf ("\n========================================\n");
   printf ("%s Benchmark Results\n", client_name);
@@ -339,17 +342,18 @@ bench_print_results (const char *client_name, const BenchHTTPConfig *config,
  * @brief Write results to JSON file.
  */
 static inline int
-bench_write_json (const char *filename, const char *client_name,
-                  const BenchHTTPConfig *config, const BenchHTTPResult *result)
+bench_write_json (const char *filename,
+                  const char *client_name,
+                  const BenchHTTPConfig *config,
+                  const BenchHTTPResult *result)
 {
   FILE *f = fopen (filename, "w");
   if (!f)
     return -1;
 
-  const char *version_str
-      = config->version == BENCH_HTTP_VERSION_1_1   ? "h1"
-        : config->version == BENCH_HTTP_VERSION_2   ? "h2"
-                                                    : "auto";
+  const char *version_str = config->version == BENCH_HTTP_VERSION_1_1 ? "h1"
+                            : config->version == BENCH_HTTP_VERSION_2 ? "h2"
+                                                                      : "auto";
 
   fprintf (f, "{\n");
   fprintf (f, "  \"client\": \"%s\",\n", client_name);
@@ -358,20 +362,25 @@ bench_write_json (const char *filename, const char *client_name,
   fprintf (f, "  \"threads\": %d,\n", config->threads);
   fprintf (f, "  \"requests_per_thread\": %d,\n", config->requests_per_thread);
   fprintf (f, "  \"results\": {\n");
-  fprintf (f, "    \"total_requests\": %lu,\n",
+  fprintf (f,
+           "    \"total_requests\": %lu,\n",
            (unsigned long)result->total_requests);
-  fprintf (f, "    \"successful_requests\": %lu,\n",
+  fprintf (f,
+           "    \"successful_requests\": %lu,\n",
            (unsigned long)result->successful_requests);
-  fprintf (f, "    \"failed_requests\": %lu,\n",
+  fprintf (f,
+           "    \"failed_requests\": %lu,\n",
            (unsigned long)result->failed_requests);
   fprintf (f, "    \"elapsed_sec\": %.6f,\n", result->elapsed_sec);
   fprintf (f, "    \"requests_per_sec\": %.2f,\n", result->requests_per_sec);
-  fprintf (f, "    \"bytes_received\": %lu,\n",
+  fprintf (f,
+           "    \"bytes_received\": %lu,\n",
            (unsigned long)result->bytes_received);
   fprintf (f, "    \"latency_us\": {\n");
   fprintf (f, "      \"min\": %.2f,\n", bench_ns_to_us (result->latency_min));
   fprintf (f, "      \"max\": %.2f,\n", bench_ns_to_us (result->latency_max));
-  fprintf (f, "      \"mean\": %.2f,\n",
+  fprintf (f,
+           "      \"mean\": %.2f,\n",
            bench_ns_to_us ((uint64_t)result->latency_mean));
   fprintf (f, "      \"p50\": %.2f,\n", bench_ns_to_us (result->latency_p50));
   fprintf (f, "      \"p90\": %.2f,\n", bench_ns_to_us (result->latency_p90));
@@ -379,10 +388,11 @@ bench_write_json (const char *filename, const char *client_name,
   fprintf (f, "      \"p999\": %.2f\n", bench_ns_to_us (result->latency_p999));
   fprintf (f, "    },\n");
   fprintf (f, "    \"connections\": {\n");
-  fprintf (f, "      \"created\": %lu,\n",
+  fprintf (f,
+           "      \"created\": %lu,\n",
            (unsigned long)result->connections_created);
-  fprintf (f, "      \"reused\": %lu,\n",
-           (unsigned long)result->connections_reused);
+  fprintf (
+      f, "      \"reused\": %lu,\n", (unsigned long)result->connections_reused);
   fprintf (f, "      \"reuse_ratio\": %.4f\n", result->connection_reuse_ratio);
   fprintf (f, "    }\n");
   fprintf (f, "  }\n");
@@ -446,7 +456,8 @@ bench_parse_args (int argc, char **argv, BenchHTTPConfig *config)
         {
           config->keep_alive = 0;
         }
-      else if (strcmp (argv[i], "--verbose") == 0 || strcmp (argv[i], "-v") == 0)
+      else if (strcmp (argv[i], "--verbose") == 0
+               || strcmp (argv[i], "-v") == 0)
         {
           config->verbose = 1;
         }
@@ -462,9 +473,8 @@ bench_parse_args (int argc, char **argv, BenchHTTPConfig *config)
                   "http://127.0.0.1:8080/small)\n");
           printf ("  --threads=N        Number of threads (default: %d)\n",
                   BENCH_HTTP_DEFAULT_THREADS);
-          printf (
-              "  --requests=N       Requests per thread (default: %d)\n",
-              BENCH_HTTP_DEFAULT_REQUESTS);
+          printf ("  --requests=N       Requests per thread (default: %d)\n",
+                  BENCH_HTTP_DEFAULT_REQUESTS);
           printf ("  --warmup=N         Warmup requests (default: %d)\n",
                   BENCH_HTTP_DEFAULT_WARMUP);
           printf ("  --http1            Force HTTP/1.1\n");

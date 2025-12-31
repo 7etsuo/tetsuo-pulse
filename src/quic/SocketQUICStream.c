@@ -22,58 +22,61 @@
  * ============================================================================
  */
 
-static const char *type_strings[] = {
-  [QUIC_STREAM_BIDI_CLIENT] = "Client-Initiated Bidirectional",
-  [QUIC_STREAM_BIDI_SERVER] = "Server-Initiated Bidirectional",
-  [QUIC_STREAM_UNI_CLIENT] = "Client-Initiated Unidirectional",
-  [QUIC_STREAM_UNI_SERVER] = "Server-Initiated Unidirectional"
-};
-_Static_assert(sizeof(type_strings)/sizeof(type_strings[0]) == QUIC_STREAM_UNI_SERVER + 1,
-               "type_strings array size must match SocketQUICStreamType enum");
+static const char *type_strings[]
+    = { [QUIC_STREAM_BIDI_CLIENT] = "Client-Initiated Bidirectional",
+        [QUIC_STREAM_BIDI_SERVER] = "Server-Initiated Bidirectional",
+        [QUIC_STREAM_UNI_CLIENT] = "Client-Initiated Unidirectional",
+        [QUIC_STREAM_UNI_SERVER] = "Server-Initiated Unidirectional" };
+_Static_assert (sizeof (type_strings) / sizeof (type_strings[0])
+                    == QUIC_STREAM_UNI_SERVER + 1,
+                "type_strings array size must match SocketQUICStreamType enum");
 
-static const char *state_strings[] = {
-  [QUIC_STREAM_STATE_READY] = "Ready",
-  [QUIC_STREAM_STATE_SEND] = "Send",
-  [QUIC_STREAM_STATE_DATA_SENT] = "DataSent",
-  [QUIC_STREAM_STATE_RESET_SENT] = "ResetSent",
-  [QUIC_STREAM_STATE_DATA_RECVD] = "DataRecvd",
-  [QUIC_STREAM_STATE_RESET_RECVD] = "ResetRecvd",
-  [QUIC_STREAM_STATE_RECV] = "Recv",
-  [QUIC_STREAM_STATE_SIZE_KNOWN] = "SizeKnown",
-  [QUIC_STREAM_STATE_DATA_READ] = "DataRead",
-  [QUIC_STREAM_STATE_RESET_READ] = "ResetRead"
-};
-_Static_assert(sizeof(state_strings)/sizeof(state_strings[0]) == QUIC_STREAM_STATE_RESET_READ + 1,
-               "state_strings array size must match SocketQUICStreamState enum");
+static const char *state_strings[]
+    = { [QUIC_STREAM_STATE_READY] = "Ready",
+        [QUIC_STREAM_STATE_SEND] = "Send",
+        [QUIC_STREAM_STATE_DATA_SENT] = "DataSent",
+        [QUIC_STREAM_STATE_RESET_SENT] = "ResetSent",
+        [QUIC_STREAM_STATE_DATA_RECVD] = "DataRecvd",
+        [QUIC_STREAM_STATE_RESET_RECVD] = "ResetRecvd",
+        [QUIC_STREAM_STATE_RECV] = "Recv",
+        [QUIC_STREAM_STATE_SIZE_KNOWN] = "SizeKnown",
+        [QUIC_STREAM_STATE_DATA_READ] = "DataRead",
+        [QUIC_STREAM_STATE_RESET_READ] = "ResetRead" };
+_Static_assert (
+    sizeof (state_strings) / sizeof (state_strings[0])
+        == QUIC_STREAM_STATE_RESET_READ + 1,
+    "state_strings array size must match SocketQUICStreamState enum");
 
-static const char *result_strings[] = {
-  [QUIC_STREAM_OK] = "OK",
-  [QUIC_STREAM_ERROR_NULL] = "NULL pointer argument",
-  [QUIC_STREAM_ERROR_INVALID_ID] = "Stream ID exceeds maximum",
-  [QUIC_STREAM_ERROR_INVALID_TYPE] = "Invalid stream type",
-  [QUIC_STREAM_ERROR_WRONG_ROLE] = "Wrong role for stream operation",
-  [QUIC_STREAM_ERROR_STATE] = "Invalid state transition",
-  [QUIC_STREAM_ERROR_LIMIT] = "Stream limit exceeded"
-};
-_Static_assert(sizeof(result_strings)/sizeof(result_strings[0]) == QUIC_STREAM_ERROR_LIMIT + 1,
-               "result_strings array size must match SocketQUICStream_Result enum");
+static const char *result_strings[]
+    = { [QUIC_STREAM_OK] = "OK",
+        [QUIC_STREAM_ERROR_NULL] = "NULL pointer argument",
+        [QUIC_STREAM_ERROR_INVALID_ID] = "Stream ID exceeds maximum",
+        [QUIC_STREAM_ERROR_INVALID_TYPE] = "Invalid stream type",
+        [QUIC_STREAM_ERROR_WRONG_ROLE] = "Wrong role for stream operation",
+        [QUIC_STREAM_ERROR_STATE] = "Invalid state transition",
+        [QUIC_STREAM_ERROR_LIMIT] = "Stream limit exceeded" };
+_Static_assert (
+    sizeof (result_strings) / sizeof (result_strings[0])
+        == QUIC_STREAM_ERROR_LIMIT + 1,
+    "result_strings array size must match SocketQUICStream_Result enum");
 
-static const char *event_strings[] = {
-  [QUIC_STREAM_EVENT_SEND_DATA] = "Send Data",
-  [QUIC_STREAM_EVENT_SEND_FIN] = "Send FIN",
-  [QUIC_STREAM_EVENT_ALL_DATA_ACKED] = "All Data Acked",
-  [QUIC_STREAM_EVENT_SEND_RESET] = "Send Reset",
-  [QUIC_STREAM_EVENT_RESET_ACKED] = "Reset Acked",
-  [QUIC_STREAM_EVENT_RECV_DATA] = "Receive Data",
-  [QUIC_STREAM_EVENT_RECV_FIN] = "Receive FIN",
-  [QUIC_STREAM_EVENT_ALL_DATA_RECVD] = "All Data Received",
-  [QUIC_STREAM_EVENT_APP_READ_DATA] = "App Read Data",
-  [QUIC_STREAM_EVENT_RECV_RESET] = "Receive Reset",
-  [QUIC_STREAM_EVENT_APP_READ_RESET] = "App Read Reset",
-  [QUIC_STREAM_EVENT_RECV_STOP_SENDING] = "Receive Stop Sending"
-};
-_Static_assert(sizeof(event_strings)/sizeof(event_strings[0]) == QUIC_STREAM_EVENT_MAX + 1,
-               "event_strings array size must match SocketQUICStreamEvent enum");
+static const char *event_strings[]
+    = { [QUIC_STREAM_EVENT_SEND_DATA] = "Send Data",
+        [QUIC_STREAM_EVENT_SEND_FIN] = "Send FIN",
+        [QUIC_STREAM_EVENT_ALL_DATA_ACKED] = "All Data Acked",
+        [QUIC_STREAM_EVENT_SEND_RESET] = "Send Reset",
+        [QUIC_STREAM_EVENT_RESET_ACKED] = "Reset Acked",
+        [QUIC_STREAM_EVENT_RECV_DATA] = "Receive Data",
+        [QUIC_STREAM_EVENT_RECV_FIN] = "Receive FIN",
+        [QUIC_STREAM_EVENT_ALL_DATA_RECVD] = "All Data Received",
+        [QUIC_STREAM_EVENT_APP_READ_DATA] = "App Read Data",
+        [QUIC_STREAM_EVENT_RECV_RESET] = "Receive Reset",
+        [QUIC_STREAM_EVENT_APP_READ_RESET] = "App Read Reset",
+        [QUIC_STREAM_EVENT_RECV_STOP_SENDING] = "Receive Stop Sending" };
+_Static_assert (
+    sizeof (event_strings) / sizeof (event_strings[0])
+        == QUIC_STREAM_EVENT_MAX + 1,
+    "event_strings array size must match SocketQUICStreamEvent enum");
 
 /* ============================================================================
  * Stream ID Functions (RFC 9000 Section 2.1)

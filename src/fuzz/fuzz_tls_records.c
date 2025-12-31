@@ -170,7 +170,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Test buffer boundary conditions */
           /* TLS record max is 16KB */
           size_t sizes[]
-              = {1, 15, 16, 17, 255, 256, 257, 1023, 1024, 16383, 16384};
+              = { 1, 15, 16, 17, 255, 256, 257, 1023, 1024, 16383, 16384 };
           for (size_t i = 0; i < sizeof (sizes) / sizeof (sizes[0]); i++)
             {
               if (sizes[i] <= sizeof (send_buf))
@@ -182,11 +182,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) {}
-  EXCEPT (SocketTLS_HandshakeFailed) {}
-  EXCEPT (Socket_Failed) {}
-  EXCEPT (Socket_Closed) {}
-  ELSE {}
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   if (socket)

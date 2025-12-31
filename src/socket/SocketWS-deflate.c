@@ -87,8 +87,8 @@ validate_and_store_window_bits (SocketWS_T ws, int bits, const char *type_name)
   int validated = validate_window_bits (bits);
   if (validated < 0)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION, "Invalid %s: %d", type_name,
-                    bits);
+      ws_set_error (
+          ws, WS_ERROR_COMPRESSION, "Invalid %s: %d", type_name, bits);
       return -1;
     }
   return validated;
@@ -101,47 +101,61 @@ init_zlib_stream (z_stream *strm, int window_bits, int is_deflate)
   strm->zalloc = Z_NULL;
   strm->zfree = Z_NULL;
   strm->opaque = Z_NULL;
-  if (!is_deflate) {
-    strm->avail_in = 0;
-    strm->next_in = Z_NULL;
-  }
+  if (!is_deflate)
+    {
+      strm->avail_in = 0;
+      strm->next_in = Z_NULL;
+    }
 
   /* Use negative window bits to get raw deflate (no zlib header) */
-  if (is_deflate) {
-    return deflateInit2 (strm, WS_DEFLATE_LEVEL, Z_DEFLATED, -window_bits,
-                         WS_DEFLATE_MEMLEVEL, Z_DEFAULT_STRATEGY);
-  } else {
-    return inflateInit2 (strm, -window_bits);
-  }
+  if (is_deflate)
+    {
+      return deflateInit2 (strm,
+                           WS_DEFLATE_LEVEL,
+                           Z_DEFLATED,
+                           -window_bits,
+                           WS_DEFLATE_MEMLEVEL,
+                           Z_DEFAULT_STRATEGY);
+    }
+  else
+    {
+      return inflateInit2 (strm, -window_bits);
+    }
 }
-
 
 
 static size_t
 calculate_zlib_buffer_size (size_t input_len, int is_decompress)
 {
   size_t buf_size;
-  if (is_decompress) {
-    if (!SocketSecurity_check_multiply (input_len, WS_DEFLATE_EXPANSION_FACTOR,
-                                        &buf_size)) {
-      buf_size = WS_DEFLATE_OVERFLOW_FALLBACK_MAX;
+  if (is_decompress)
+    {
+      if (!SocketSecurity_check_multiply (
+              input_len, WS_DEFLATE_EXPANSION_FACTOR, &buf_size))
+        {
+          buf_size = WS_DEFLATE_OVERFLOW_FALLBACK_MAX;
+        }
     }
-  } else {
-    if (!SocketSecurity_check_add (input_len, WS_DEFLATE_HEADER_PADDING,
-                                   &buf_size)) {
-      buf_size = input_len;
+  else
+    {
+      if (!SocketSecurity_check_add (
+              input_len, WS_DEFLATE_HEADER_PADDING, &buf_size))
+        {
+          buf_size = input_len;
+        }
     }
-  }
   if (buf_size < WS_DEFLATE_INITIAL_BUF_SIZE)
     buf_size = WS_DEFLATE_INITIAL_BUF_SIZE;
   return buf_size;
 }
 
 
-
 static unsigned char *
-grow_arena_buffer (Arena_T arena, unsigned char *old_buf, size_t old_size,
-                   size_t used, size_t new_size)
+grow_arena_buffer (Arena_T arena,
+                   unsigned char *old_buf,
+                   size_t old_size,
+                   size_t used,
+                   size_t new_size)
 {
   unsigned char *new_buf;
 
@@ -166,7 +180,8 @@ remove_deflate_trailer (unsigned char *buf, size_t *len)
   assert (len);
 
   if (*len >= WS_DEFLATE_TRAILER_SIZE
-      && memcmp (buf + *len - WS_DEFLATE_TRAILER_SIZE, WS_DEFLATE_TRAILER,
+      && memcmp (buf + *len - WS_DEFLATE_TRAILER_SIZE,
+                 WS_DEFLATE_TRAILER,
                  WS_DEFLATE_TRAILER_SIZE)
              == 0)
     {
@@ -175,13 +190,16 @@ remove_deflate_trailer (unsigned char *buf, size_t *len)
 }
 
 static unsigned char *
-append_deflate_trailer (Arena_T arena, const unsigned char *input,
-                        size_t input_len, size_t *output_len)
+append_deflate_trailer (Arena_T arena,
+                        const unsigned char *input,
+                        size_t input_len,
+                        size_t *output_len)
 {
   unsigned char *buf;
 
   /* Defense-in-depth: check overflow even though caller checks (issue #2347) */
-  if (!SocketSecurity_check_add (input_len, WS_DEFLATE_TRAILER_SIZE, output_len))
+  if (!SocketSecurity_check_add (
+          input_len, WS_DEFLATE_TRAILER_SIZE, output_len))
     return NULL;
 
   buf = ALLOC (arena, *output_len);
@@ -202,26 +220,32 @@ should_reset_zlib_context (const SocketWS_T ws, int is_deflate)
   int client_no = ws->compression.client_no_context_takeover;
   int server_no = ws->compression.server_no_context_takeover;
 
-  if (ws->role == WS_ROLE_CLIENT) {
-    return is_deflate ? client_no : server_no;
-  } else {
-    return is_deflate ? server_no : client_no;
-  }
+  if (ws->role == WS_ROLE_CLIENT)
+    {
+      return is_deflate ? client_no : server_no;
+    }
+  else
+    {
+      return is_deflate ? server_no : client_no;
+    }
 }
 
 
-
 static int
-try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-                      size_t *buf_size, size_t total_out, int is_decompress)
+try_grow_zlib_buffer (SocketWS_T ws,
+                      z_stream *strm,
+                      unsigned char **buf,
+                      size_t *buf_size,
+                      size_t total_out,
+                      int is_decompress)
 {
   size_t new_size;
 
-  if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
-                                      &new_size))
+  if (!SocketSecurity_check_multiply (
+          *buf_size, WS_DEFLATE_BUF_GROWTH, &new_size))
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer growth multiplication overflow");
+      ws_set_error (
+          ws, WS_ERROR_COMPRESSION, "Buffer growth multiplication overflow");
       return -1;
     }
 
@@ -232,8 +256,8 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
         new_size = max_allowed;
       if (new_size <= *buf_size)
         {
-          ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
-                        "Decompressed message too large");
+          ws_set_error (
+              ws, WS_ERROR_MESSAGE_TOO_LARGE, "Decompressed message too large");
           return -1;
         }
     }
@@ -241,8 +265,10 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
     {
       if (!SocketSecurity_check_size (new_size))
         {
-          ws_set_error (ws, WS_ERROR_COMPRESSION,
-                        "Buffer size exceeds security limit: %zu", new_size);
+          ws_set_error (ws,
+                        WS_ERROR_COMPRESSION,
+                        "Buffer size exceeds security limit: %zu",
+                        new_size);
           return -1;
         }
     }
@@ -263,8 +289,11 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   size_t avail = *buf_size - total_out;
   if (avail > UINT_MAX)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size %zu exceeds zlib limit %u", avail, UINT_MAX);
+      ws_set_error (ws,
+                    WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u",
+                    avail,
+                    UINT_MAX);
       return -1;
     }
   strm->avail_out = (uInt)avail;
@@ -273,10 +302,13 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 }
 
 
-
 static int
-compress_flush_phase (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-                      size_t *buf_size, size_t *total_out, int flush_type)
+compress_flush_phase (SocketWS_T ws,
+                      z_stream *strm,
+                      unsigned char **buf,
+                      size_t *buf_size,
+                      size_t *total_out,
+                      int flush_type)
 {
   int ret;
   int finished = 0;
@@ -286,14 +318,14 @@ compress_flush_phase (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       ret = deflate (strm, flush_type);
       if (ret == Z_STREAM_ERROR)
         {
-          ws_set_error (ws, WS_ERROR_COMPRESSION,
-                        "deflate flush phase failed: %d", ret);
+          ws_set_error (
+              ws, WS_ERROR_COMPRESSION, "deflate flush phase failed: %d", ret);
           return -1;
         }
       if (flush_type == Z_FINISH && ret != Z_OK && ret != Z_STREAM_END)
         {
-          ws_set_error (ws, WS_ERROR_COMPRESSION,
-                        "deflate finish incomplete: %d", ret);
+          ws_set_error (
+              ws, WS_ERROR_COMPRESSION, "deflate finish incomplete: %d", ret);
           return -1;
         }
 
@@ -302,15 +334,15 @@ compress_flush_phase (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed during flush */
       if (strm->avail_out == 0)
         {
-          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 0 /* compress */)
+          if (try_grow_zlib_buffer (
+                  ws, strm, buf, buf_size, *total_out, 0 /* compress */)
               < 0)
             return -1;
         }
 
       if (flush_type == Z_FINISH && ret == Z_STREAM_END)
         finished = 1;
-      else if (flush_type == Z_SYNC_FLUSH && ret == Z_OK
-               && strm->avail_in == 0)
+      else if (flush_type == Z_SYNC_FLUSH && ret == Z_OK && strm->avail_in == 0)
         finished = 1;
       else if (ret != Z_OK)
         finished = 1;
@@ -322,8 +354,11 @@ compress_flush_phase (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
 
 static int
-compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-               size_t *buf_size, size_t *total_out)
+compress_loop (SocketWS_T ws,
+               z_stream *strm,
+               unsigned char **buf,
+               size_t *buf_size,
+               size_t *total_out)
 {
   int ret;
 
@@ -333,8 +368,8 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       ret = deflate (strm, Z_NO_FLUSH);
       if (ret == Z_STREAM_ERROR)
         {
-          ws_set_error (ws, WS_ERROR_COMPRESSION,
-                        "deflate data phase failed: %d", ret);
+          ws_set_error (
+              ws, WS_ERROR_COMPRESSION, "deflate data phase failed: %d", ret);
           return -1;
         }
 
@@ -343,7 +378,8 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed */
       if (strm->avail_out == 0 && strm->avail_in > 0)
         {
-          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 0 /* compress */)
+          if (try_grow_zlib_buffer (
+                  ws, strm, buf, buf_size, *total_out, 0 /* compress */)
               < 0)
             return -1;
         }
@@ -351,15 +387,19 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   while (strm->avail_in > 0);
 
   /* Flush phase to output remaining data and end block for BFINAL=1 */
-  int flush_type = should_reset_zlib_context (ws, 1 /* deflate */) ? Z_FINISH : Z_SYNC_FLUSH;
+  int flush_type = should_reset_zlib_context (ws, 1 /* deflate */)
+                       ? Z_FINISH
+                       : Z_SYNC_FLUSH;
   return compress_flush_phase (ws, strm, buf, buf_size, total_out, flush_type);
 }
 
 
-
 static int
-decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-                 size_t *buf_size, size_t *total_out)
+decompress_loop (SocketWS_T ws,
+                 z_stream *strm,
+                 unsigned char **buf,
+                 size_t *buf_size,
+                 size_t *total_out)
 {
   int ret;
 
@@ -369,8 +409,11 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
       if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR)
         {
-          ws_set_error (ws, WS_ERROR_COMPRESSION, "inflate failed: %d (%s)",
-                        ret, strm->msg ? strm->msg : "unknown");
+          ws_set_error (ws,
+                        WS_ERROR_COMPRESSION,
+                        "inflate failed: %d (%s)",
+                        ret,
+                        strm->msg ? strm->msg : "unknown");
           return -1;
         }
 
@@ -379,7 +422,8 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed */
       if (strm->avail_out == 0 && ret != Z_STREAM_END)
         {
-          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 1 /* decompress */)
+          if (try_grow_zlib_buffer (
+                  ws, strm, buf, buf_size, *total_out, 1 /* decompress */)
               < 0)
             return -1;
         }
@@ -391,7 +435,8 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   /* Ensure all input consumed (trailer processed) */
   if (strm->avail_in > 0)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
+      ws_set_error (ws,
+                    WS_ERROR_COMPRESSION,
                     "Incomplete decompression: remaining avail_in=%u",
                     (unsigned)strm->avail_in);
       return -1;
@@ -400,23 +445,27 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 }
 
 static unsigned char *
-prepare_decompress_input (SocketWS_T ws, const unsigned char *input,
-                          size_t input_len, size_t *output_len)
+prepare_decompress_input (SocketWS_T ws,
+                          const unsigned char *input,
+                          size_t input_len,
+                          size_t *output_len)
 {
   size_t trailer_len;
   unsigned char *input_with_trailer;
 
-  if (!SocketSecurity_check_add (input_len, WS_DEFLATE_TRAILER_SIZE,
-                                 &trailer_len)
+  if (!SocketSecurity_check_add (
+          input_len, WS_DEFLATE_TRAILER_SIZE, &trailer_len)
       || !SocketSecurity_check_size (trailer_len))
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Trailer size invalid/overflow: input_len=%zu", input_len);
+      ws_set_error (ws,
+                    WS_ERROR_COMPRESSION,
+                    "Trailer size invalid/overflow: input_len=%zu",
+                    input_len);
       return NULL;
     }
 
-  input_with_trailer = append_deflate_trailer (ws->arena, input, input_len,
-                                               output_len);
+  input_with_trailer
+      = append_deflate_trailer (ws->arena, input, input_len, output_len);
   if (!input_with_trailer || *output_len != trailer_len)
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to append trailer");
@@ -434,7 +483,8 @@ setup_decompress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
   *buf_size = calculate_zlib_buffer_size (input_len, 1 /* decompress */);
   if (!SocketSecurity_check_size (*buf_size))
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
+      ws_set_error (ws,
+                    WS_ERROR_COMPRESSION,
                     "Decompress buffer size exceeds security limit: %zu",
                     *buf_size);
       return NULL;
@@ -443,8 +493,8 @@ setup_decompress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
   buf = ALLOC (ws->arena, *buf_size);
   if (!buf)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Failed to allocate output buffer");
+      ws_set_error (
+          ws, WS_ERROR_COMPRESSION, "Failed to allocate output buffer");
       return NULL;
     }
 
@@ -452,8 +502,11 @@ setup_decompress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
 }
 
 static void
-setup_inflate_stream (z_stream *strm, const unsigned char *input,
-                     size_t input_len, unsigned char *output, size_t output_size)
+setup_inflate_stream (z_stream *strm,
+                      const unsigned char *input,
+                      size_t input_len,
+                      unsigned char *output,
+                      size_t output_size)
 {
   strm->next_in = (unsigned char *)input;
   strm->avail_in = (uInt)input_len;
@@ -492,7 +545,8 @@ ws_compression_init (SocketWS_T ws)
   ws->compression.client_max_window_bits = deflate_bits;
 
   /* Initialize deflate stream */
-  ret = init_zlib_stream (&ws->compression.deflate_stream, deflate_bits, 1 /* deflate */);
+  ret = init_zlib_stream (
+      &ws->compression.deflate_stream, deflate_bits, 1 /* deflate */);
   if (ret != Z_OK)
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION, "deflateInit2 failed: %d", ret);
@@ -501,7 +555,8 @@ ws_compression_init (SocketWS_T ws)
   ws->compression.deflate_initialized = 1;
 
   /* Initialize inflate stream */
-  ret = init_zlib_stream (&ws->compression.inflate_stream, inflate_bits, 0 /* inflate */);
+  ret = init_zlib_stream (
+      &ws->compression.inflate_stream, inflate_bits, 0 /* inflate */);
   if (ret != Z_OK)
     {
       deflateEnd (&ws->compression.deflate_stream);
@@ -514,9 +569,11 @@ ws_compression_init (SocketWS_T ws)
   /* Temporary buffers removed as unused in full-message ops; add back for
    * incremental if needed */
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
                    "Compression initialized: deflate=%d bits, inflate=%d bits",
-                   deflate_bits, inflate_bits);
+                   deflate_bits,
+                   inflate_bits);
 
   return 0;
 }
@@ -526,25 +583,33 @@ ws_compression_free (SocketWS_T ws)
 {
   assert (ws);
 
-  struct {
+  struct
+  {
     z_stream *strm;
     int *initialized;
     int is_deflate;
   } contexts[] = {
-    { &ws->compression.deflate_stream, &ws->compression.deflate_initialized, 1 },
+    { &ws->compression.deflate_stream,
+      &ws->compression.deflate_initialized,
+      1 },
     { &ws->compression.inflate_stream, &ws->compression.inflate_initialized, 0 }
   };
 
-  for (size_t i = 0; i < sizeof(contexts)/sizeof(contexts[0]); i++) {
-    if (*contexts[i].initialized) {
-      if (contexts[i].is_deflate) {
-        deflateEnd (contexts[i].strm);
-      } else {
-        inflateEnd (contexts[i].strm);
-      }
-      *contexts[i].initialized = 0;
+  for (size_t i = 0; i < sizeof (contexts) / sizeof (contexts[0]); i++)
+    {
+      if (*contexts[i].initialized)
+        {
+          if (contexts[i].is_deflate)
+            {
+              deflateEnd (contexts[i].strm);
+            }
+          else
+            {
+              inflateEnd (contexts[i].strm);
+            }
+          *contexts[i].initialized = 0;
+        }
     }
-  }
 
   /* Buffers not allocated; no action needed */
 }
@@ -554,8 +619,11 @@ check_zlib_size_limit (SocketWS_T ws, size_t size, const char *type_name)
 {
   if (size > UINT_MAX)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "%s size %zu exceeds zlib limit %u", type_name, size,
+      ws_set_error (ws,
+                    WS_ERROR_COMPRESSION,
+                    "%s size %zu exceeds zlib limit %u",
+                    type_name,
+                    size,
                     UINT_MAX);
       return -1;
     }
@@ -570,7 +638,8 @@ setup_compress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
   *buf_size = calculate_zlib_buffer_size (input_len, 0 /* compress */);
   if (!SocketSecurity_check_size (*buf_size))
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
+      ws_set_error (ws,
+                    WS_ERROR_COMPRESSION,
                     "Compress buffer size exceeds security limit: %zu",
                     *buf_size);
       return NULL;
@@ -578,15 +647,18 @@ setup_compress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
   buf = ALLOC (ws->arena, *buf_size);
   if (!buf)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Failed to allocate output buffer");
+      ws_set_error (
+          ws, WS_ERROR_COMPRESSION, "Failed to allocate output buffer");
     }
   return buf;
 }
 
 static int
-setup_deflate_stream (SocketWS_T ws, z_stream *strm, const unsigned char *input,
-                      size_t input_len, unsigned char *output,
+setup_deflate_stream (SocketWS_T ws,
+                      z_stream *strm,
+                      const unsigned char *input,
+                      size_t input_len,
+                      unsigned char *output,
                       size_t output_size)
 {
   /* Check for overflow before casting size_t to uInt (zlib limitation) */
@@ -603,8 +675,10 @@ setup_deflate_stream (SocketWS_T ws, z_stream *strm, const unsigned char *input,
 }
 
 int
-ws_compress_message (SocketWS_T ws, const unsigned char *input,
-                     size_t input_len, unsigned char **output,
+ws_compress_message (SocketWS_T ws,
+                     const unsigned char *input,
+                     size_t input_len,
+                     unsigned char **output,
                      size_t *output_len)
 {
   z_stream *strm;
@@ -651,8 +725,10 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
 }
 
 int
-ws_decompress_message (SocketWS_T ws, const unsigned char *input,
-                       size_t input_len, unsigned char **output,
+ws_decompress_message (SocketWS_T ws,
+                       const unsigned char *input,
+                       size_t input_len,
+                       unsigned char **output,
                        size_t *output_len)
 {
   z_stream *strm;
@@ -675,8 +751,8 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
   strm = &ws->compression.inflate_stream;
 
   /* Append RFC 7692 trailer */
-  input_with_trailer = prepare_decompress_input (ws, input, input_len,
-                                                 &input_with_trailer_len);
+  input_with_trailer = prepare_decompress_input (
+      ws, input, input_len, &input_with_trailer_len);
   if (!input_with_trailer)
     return -1;
 
@@ -686,14 +762,15 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
     return -1;
 
   /* Set up zlib stream */
-  /* Check for overflow before casting size_t to uInt (zlib limitation, issue #566) */
+  /* Check for overflow before casting size_t to uInt (zlib limitation, issue
+   * #566) */
   if (check_zlib_size_limit (ws, input_with_trailer_len, "Input") < 0)
     return -1;
   if (check_zlib_size_limit (ws, buf_size, "Buffer") < 0)
     return -1;
 
-  setup_inflate_stream (strm, input_with_trailer, input_with_trailer_len,
-                       buf, buf_size);
+  setup_inflate_stream (
+      strm, input_with_trailer, input_with_trailer_len, buf, buf_size);
 
   /* Decompress */
   if (decompress_loop (ws, strm, &buf, &buf_size, &total_out) < 0)
@@ -702,9 +779,11 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
   /* Check decompressed size against limit to prevent bombs */
   if (total_out > ws->config.max_message_size)
     {
-      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+      ws_set_error (ws,
+                    WS_ERROR_MESSAGE_TOO_LARGE,
                     "Decompressed message exceeds max size: %zu > %zu",
-                    total_out, ws->config.max_message_size);
+                    total_out,
+                    ws->config.max_message_size);
       return -1;
     }
 

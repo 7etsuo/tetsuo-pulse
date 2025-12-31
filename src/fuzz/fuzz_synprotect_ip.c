@@ -101,8 +101,7 @@ read_int (const uint8_t **data, size_t *remaining)
  * read_string - Read null-terminated string from fuzzer data
  */
 static size_t
-read_string (char *buf, size_t bufsize, const uint8_t **data,
-             size_t *remaining)
+read_string (char *buf, size_t bufsize, const uint8_t **data, size_t *remaining)
 {
   size_t len = 0;
 
@@ -122,7 +121,9 @@ read_string (char *buf, size_t bufsize, const uint8_t **data,
  * generate_ipv4 - Generate IPv4 address with various edge cases
  */
 static void
-generate_ipv4 (char *buf, size_t bufsize, const uint8_t **data,
+generate_ipv4 (char *buf,
+               size_t bufsize,
+               const uint8_t **data,
                size_t *remaining)
 {
   uint8_t variant = read_byte (data, remaining) % 10;
@@ -130,13 +131,19 @@ generate_ipv4 (char *buf, size_t bufsize, const uint8_t **data,
   switch (variant)
     {
     case 0: /* Standard valid */
-      snprintf (buf, bufsize, "%u.%u.%u.%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 1: /* Boundary values (0/255) */
-      snprintf (buf, bufsize, "%u.%u.%u.%u",
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u",
                 read_byte (data, remaining) % 2 ? 0 : 255,
                 read_byte (data, remaining) % 2 ? 0 : 255,
                 read_byte (data, remaining) % 2 ? 0 : 255,
@@ -144,47 +151,69 @@ generate_ipv4 (char *buf, size_t bufsize, const uint8_t **data,
       break;
 
     case 2: /* Missing octets */
-      snprintf (buf, bufsize, "%u.%u", read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%u.%u",
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 3: /* Extra octets */
-      snprintf (buf, bufsize, "%u.%u.%u.%u.%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u.%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining));
       break;
 
     case 4: /* Octet overflow (>255) */
-      snprintf (buf, bufsize, "%u.%u.%u.%u", 256 + read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u",
+                256 + read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 5: /* Leading zeros (canonical form bypass attempt) */
-      snprintf (buf, bufsize, "0%u.0%u.0%u.0%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "0%u.0%u.0%u.0%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 6: /* Hexadecimal format */
-      snprintf (buf, bufsize, "0x%x.0x%x.0x%x.0x%x",
-                read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "0x%x.0x%x.0x%x.0x%x",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining));
       break;
 
     case 7: /* Negative values */
-      snprintf (buf, bufsize, "-%u.%u.%u.%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "-%u.%u.%u.%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 8: /* Special addresses */
       {
-        const char *special[]
-            = { "0.0.0.0", "127.0.0.1", "255.255.255.255", "192.168.1.1",
-                "10.0.0.1",  "172.16.0.1" };
-        snprintf (buf, bufsize, "%s",
-                  special[read_byte (data, remaining) % 6]);
+        const char *special[] = { "0.0.0.0",     "127.0.0.1", "255.255.255.255",
+                                  "192.168.1.1", "10.0.0.1",  "172.16.0.1" };
+        snprintf (buf, bufsize, "%s", special[read_byte (data, remaining) % 6]);
       }
       break;
 
@@ -198,7 +227,9 @@ generate_ipv4 (char *buf, size_t bufsize, const uint8_t **data,
  * generate_ipv6 - Generate IPv6 address with various edge cases
  */
 static void
-generate_ipv6 (char *buf, size_t bufsize, const uint8_t **data,
+generate_ipv6 (char *buf,
+               size_t bufsize,
+               const uint8_t **data,
                size_t *remaining)
 {
   uint8_t variant = read_byte (data, remaining) % 10;
@@ -206,59 +237,92 @@ generate_ipv6 (char *buf, size_t bufsize, const uint8_t **data,
   switch (variant)
     {
     case 0: /* Full form */
-      snprintf (buf, bufsize, "%x:%x:%x:%x:%x:%x:%x:%x",
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "%x:%x:%x:%x:%x:%x:%x:%x",
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining));
       break;
 
     case 1: /* Compressed form (::) */
-      snprintf (buf, bufsize, "%x::%x", read_uint16 (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%x::%x",
+                read_uint16 (data, remaining),
                 read_uint16 (data, remaining));
       break;
 
     case 2: /* Multiple compressions (invalid) */
-      snprintf (buf, bufsize, "%x::%x::%x", read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "%x::%x::%x",
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining));
       break;
 
     case 3: /* Trailing compression */
-      snprintf (buf, bufsize, "%x:%x:%x::", read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "%x:%x:%x::",
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining));
       break;
 
     case 4: /* IPv4-mapped IPv6 */
-      snprintf (buf, bufsize, "::ffff:%u.%u.%u.%u",
-                read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "::ffff:%u.%u.%u.%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining));
       break;
 
     case 5: /* Too many groups */
-      snprintf (buf, bufsize, "%x:%x:%x:%x:%x:%x:%x:%x:%x",
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%x:%x:%x:%x:%x:%x:%x:%x:%x",
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
                 read_uint16 (data, remaining));
       break;
 
     case 6: /* Too few groups */
-      snprintf (buf, bufsize, "%x:%x", read_uint16 (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%x:%x",
+                read_uint16 (data, remaining),
                 read_uint16 (data, remaining));
       break;
 
     case 7: /* Invalid characters */
-      snprintf (buf, bufsize, "%x:%x:GGGG:%x", read_uint16 (data, remaining),
-                read_uint16 (data, remaining), read_uint16 (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "%x:%x:GGGG:%x",
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining),
+                read_uint16 (data, remaining));
       break;
 
     case 8: /* Special addresses */
       {
         const char *special[]
             = { "::", "::1", "fe80::1", "ff02::1", "2001:db8::1" };
-        snprintf (buf, bufsize, "%s",
-                  special[read_byte (data, remaining) % 5]);
+        snprintf (buf, bufsize, "%s", special[read_byte (data, remaining) % 5]);
       }
       break;
 
@@ -272,7 +336,9 @@ generate_ipv6 (char *buf, size_t bufsize, const uint8_t **data,
  * generate_cidr - Generate CIDR notation with edge cases
  */
 static void
-generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
+generate_cidr (char *buf,
+               size_t bufsize,
+               const uint8_t **data,
                size_t *remaining)
 {
   uint8_t variant = read_byte (data, remaining) % 8;
@@ -282,14 +348,14 @@ generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
     {
     case 0: /* Valid IPv4 CIDR */
       generate_ipv4 (ip_buf, sizeof (ip_buf), data, remaining);
-      snprintf (buf, bufsize, "%s/%u", ip_buf,
-                read_byte (data, remaining) % 33);
+      snprintf (
+          buf, bufsize, "%s/%u", ip_buf, read_byte (data, remaining) % 33);
       break;
 
     case 1: /* Valid IPv6 CIDR */
       generate_ipv6 (ip_buf, sizeof (ip_buf), data, remaining);
-      snprintf (buf, bufsize, "%s/%u", ip_buf,
-                read_byte (data, remaining) % 129);
+      snprintf (
+          buf, bufsize, "%s/%u", ip_buf, read_byte (data, remaining) % 129);
       break;
 
     case 2: /* Boundary prefix lengths */
@@ -320,8 +386,8 @@ generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
 
     case 3: /* Invalid prefix (out of range) */
       generate_ipv4 (ip_buf, sizeof (ip_buf), data, remaining);
-      snprintf (buf, bufsize, "%s/%u", ip_buf,
-                33 + read_byte (data, remaining));
+      snprintf (
+          buf, bufsize, "%s/%u", ip_buf, 33 + read_byte (data, remaining));
       break;
 
     case 4: /* Missing prefix */
@@ -336,7 +402,10 @@ generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
 
     case 6: /* Multiple slashes */
       generate_ipv4 (ip_buf, sizeof (ip_buf), data, remaining);
-      snprintf (buf, bufsize, "%s/%u/%u", ip_buf,
+      snprintf (buf,
+                bufsize,
+                "%s/%u/%u",
+                ip_buf,
                 read_byte (data, remaining) % 33,
                 read_byte (data, remaining) % 33);
       break;
@@ -351,8 +420,7 @@ generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
  * generate_ip - Generate IP address (IPv4, IPv6, or malformed)
  */
 static void
-generate_ip (char *buf, size_t bufsize, const uint8_t **data,
-             size_t *remaining)
+generate_ip (char *buf, size_t bufsize, const uint8_t **data, size_t *remaining)
 {
   uint8_t type = read_byte (data, remaining) % 4;
 
@@ -377,7 +445,8 @@ generate_ip (char *buf, size_t bufsize, const uint8_t **data,
  * test_ip_equality - Test IP address equality edge cases
  */
 static void
-test_ip_equality (SocketSYNProtect_T protect, const uint8_t **data,
+test_ip_equality (SocketSYNProtect_T protect,
+                  const uint8_t **data,
                   size_t *remaining)
 {
   char ip1[128], ip2[128];
@@ -402,7 +471,8 @@ test_ip_equality (SocketSYNProtect_T protect, const uint8_t **data,
  * test_cidr_boundaries - Test CIDR matching at bit boundaries
  */
 static void
-test_cidr_boundaries (SocketSYNProtect_T protect, const uint8_t **data,
+test_cidr_boundaries (SocketSYNProtect_T protect,
+                      const uint8_t **data,
                       size_t *remaining)
 {
   char cidr[128];
@@ -423,7 +493,8 @@ test_cidr_boundaries (SocketSYNProtect_T protect, const uint8_t **data,
  * test_hash_collisions - Test hash table collision handling
  */
 static void
-test_hash_collisions (SocketSYNProtect_T protect, const uint8_t **data,
+test_hash_collisions (SocketSYNProtect_T protect,
+                      const uint8_t **data,
                       size_t *remaining)
 {
   /* Add many IPs to force collisions */
@@ -455,8 +526,9 @@ test_hash_collisions (SocketSYNProtect_T protect, const uint8_t **data,
  * test_blacklist_expiration - Test blacklist expiration logic
  */
 static void
-test_blacklist_expiration (SocketSYNProtect_T protect, const uint8_t **data,
-                            size_t *remaining)
+test_blacklist_expiration (SocketSYNProtect_T protect,
+                           const uint8_t **data,
+                           size_t *remaining)
 {
   char ip_buf[128];
 
@@ -504,7 +576,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (protect == NULL)
       return 0;
   }
-  ELSE { return 0; }
+  ELSE
+  {
+    return 0;
+  }
   END_TRY;
 
   /* Execute random operations */
@@ -540,8 +615,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           case OP_BLACKLIST_ADD:
             generate_ip (ip_buf, sizeof (ip_buf), &ptr, &remaining);
-            SocketSYNProtect_blacklist_add (protect, ip_buf,
-                                            read_int (&ptr, &remaining));
+            SocketSYNProtect_blacklist_add (
+                protect, ip_buf, read_int (&ptr, &remaining));
             break;
 
           case OP_BLACKLIST_ADD_PERMANENT:
@@ -589,7 +664,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             break;
           }
       }
-      ELSE { /* Ignore exceptions during fuzzing */ }
+      ELSE
+      { /* Ignore exceptions during fuzzing */
+      }
       END_TRY;
 
       /* Early exit if running low on data */
@@ -598,8 +675,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Cleanup */
-  TRY { SocketSYNProtect_free (&protect); }
-  ELSE { /* Ignore cleanup exceptions */ }
+  TRY
+  {
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  { /* Ignore cleanup exceptions */
+  }
   END_TRY;
 
   return 0;

@@ -45,7 +45,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Test Connection ID set with arbitrary data */
         SocketQUICConnectionID_T cid;
-        size_t len = (size > 1) ? data[1] % 25 : 0; /* Include invalid lengths */
+        size_t len
+            = (size > 1) ? data[1] % 25 : 0; /* Include invalid lengths */
 
         SocketQUICConnectionID_Result res
             = SocketQUICConnectionID_set (&cid, data + 2, len);
@@ -71,9 +72,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketQUICConnectionID_T cid;
         size_t consumed = 0;
 
-        SocketQUICConnectionID_Result res
-            = SocketQUICConnectionID_decode (data + 1, size - 1, &cid,
-                                             &consumed);
+        SocketQUICConnectionID_Result res = SocketQUICConnectionID_decode (
+            data + 1, size - 1, &cid, &consumed);
 
         if (res == QUIC_CONNID_OK)
           {
@@ -83,9 +83,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             /* Verify round-trip */
             uint8_t buf[25];
-            size_t encoded
-                = SocketQUICConnectionID_encode_with_length (&cid, buf,
-                                                             sizeof (buf));
+            size_t encoded = SocketQUICConnectionID_encode_with_length (
+                &cid, buf, sizeof (buf));
             assert (encoded == consumed);
             assert (memcmp (buf, data + 1, consumed) == 0);
           }
@@ -102,8 +101,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         size_t cid_len = data[1] % 25;
 
         SocketQUICConnectionID_Result res
-            = SocketQUICConnectionID_decode_fixed (data + 2, size - 2, &cid,
-                                                   cid_len);
+            = SocketQUICConnectionID_decode_fixed (
+                data + 2, size - 2, &cid, cid_len);
 
         if (res == QUIC_CONNID_OK)
           {
@@ -185,8 +184,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICConnectionID_init (&cid);
 
         /* Test all encoding functions */
-        size_t n1 = SocketQUICConnectionID_encode_length (&cid, buf,
-                                                          sizeof (buf));
+        size_t n1
+            = SocketQUICConnectionID_encode_length (&cid, buf, sizeof (buf));
         assert (n1 == 1);
         assert (buf[0] == cid.len);
 
@@ -196,8 +195,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             assert (n2 == cid.len);
           }
 
-        size_t n3 = SocketQUICConnectionID_encode_with_length (&cid, buf,
-                                                               sizeof (buf));
+        size_t n3 = SocketQUICConnectionID_encode_with_length (
+            &cid, buf, sizeof (buf));
         assert (n3 == 1 + cid.len);
       }
       break;

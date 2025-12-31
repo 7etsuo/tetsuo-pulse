@@ -33,13 +33,13 @@ flow_update_window (int32_t *window, uint32_t increment)
     }
 
   size_t new_value;
-  if (!SocketSecurity_check_add ((size_t)*window, (size_t)increment,
-                                 &new_value)
+  if (!SocketSecurity_check_add ((size_t)*window, (size_t)increment, &new_value)
       || new_value > (size_t)SOCKETHTTP2_MAX_WINDOW_SIZE)
     {
-      SOCKET_LOG_WARN_MSG (
-          "Flow window overflow: current %u + %u > max %u",
-          (unsigned)*window, increment, SOCKETHTTP2_MAX_WINDOW_SIZE);
+      SOCKET_LOG_WARN_MSG ("Flow window overflow: current %u + %u > max %u",
+                           (unsigned)*window,
+                           increment,
+                           SOCKETHTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 
@@ -69,8 +69,10 @@ http2_flow_validate (const SocketHTTP2_Conn_T conn,
 
 /* Extract window selection logic to eliminate duplication */
 static inline void
-http2_flow_get_windows (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
-                        int is_recv, int32_t **conn_window,
+http2_flow_get_windows (SocketHTTP2_Conn_T conn,
+                        SocketHTTP2_Stream_T stream,
+                        int is_recv,
+                        int32_t **conn_window,
                         int32_t **stream_window)
 {
   *conn_window = is_recv ? &conn->recv_window : &conn->send_window;
@@ -80,8 +82,10 @@ http2_flow_get_windows (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 }
 
 static int
-http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
-                          int is_recv, size_t bytes)
+http2_flow_consume_level (SocketHTTP2_Conn_T conn,
+                          SocketHTTP2_Stream_T stream,
+                          int is_recv,
+                          size_t bytes)
 {
   if (http2_flow_validate (conn, stream) < 0)
     return -1;
@@ -99,7 +103,8 @@ http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
     {
       SOCKET_LOG_WARN_MSG (
           "Flow control violation: consume %d > connection window %d",
-          (int)consume, (int)*cwindow);
+          (int)consume,
+          (int)*cwindow);
       return -1;
     }
 
@@ -108,7 +113,8 @@ http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
     {
       SOCKET_LOG_WARN_MSG (
           "Flow control violation: consume %d > stream window %d",
-          (int)consume, (int)*swindow);
+          (int)consume,
+          (int)*swindow);
       return -1;
     }
 
@@ -121,8 +127,10 @@ http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 }
 
 static int
-http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
-                         int is_recv, uint32_t increment)
+http2_flow_update_level (SocketHTTP2_Conn_T conn,
+                         SocketHTTP2_Stream_T stream,
+                         int is_recv,
+                         uint32_t increment)
 {
   if (http2_flow_validate (conn, stream) < 0)
     return -1;
@@ -138,28 +146,32 @@ http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 }
 
 int
-http2_flow_consume_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+http2_flow_consume_recv (SocketHTTP2_Conn_T conn,
+                         SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
   return http2_flow_consume_level (conn, stream, 1, bytes);
 }
 
 int
-http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+http2_flow_update_recv (SocketHTTP2_Conn_T conn,
+                        SocketHTTP2_Stream_T stream,
                         uint32_t increment)
 {
   return http2_flow_update_level (conn, stream, 1, increment);
 }
 
 int
-http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+http2_flow_consume_send (SocketHTTP2_Conn_T conn,
+                         SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
   return http2_flow_consume_level (conn, stream, 0, bytes);
 }
 
 int
-http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+http2_flow_update_send (SocketHTTP2_Conn_T conn,
+                        SocketHTTP2_Stream_T stream,
                         uint32_t increment)
 {
   return http2_flow_update_level (conn, stream, 0, increment);
@@ -193,7 +205,8 @@ http2_flow_adjust_window (int32_t *window, int32_t delta)
     {
       SOCKET_LOG_WARN_MSG (
           "Flow window adjustment would make negative: current %d + %d",
-          (int)*window, (int)delta);
+          (int)*window,
+          (int)delta);
       return -1;
     }
 
@@ -201,7 +214,9 @@ http2_flow_adjust_window (int32_t *window, int32_t delta)
     {
       SOCKET_LOG_WARN_MSG (
           "Flow window adjustment overflow: current %d + %d > max %u",
-          (int)*window, (int)delta, (unsigned)SOCKETHTTP2_MAX_WINDOW_SIZE);
+          (int)*window,
+          (int)delta,
+          (unsigned)SOCKETHTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 

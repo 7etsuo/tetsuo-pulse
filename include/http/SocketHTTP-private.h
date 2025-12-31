@@ -49,8 +49,7 @@ struct SocketHTTP_Headers
 };
 
 static inline int
-sockethttp_name_equal (const char *a, size_t a_len, const char *b,
-                       size_t b_len)
+sockethttp_name_equal (const char *a, size_t a_len, const char *b, size_t b_len)
 {
   if (a_len != b_len)
     return 0;
@@ -76,7 +75,7 @@ extern const unsigned char sockethttp_tchar_table[256];
 #define SOCKETHTTP_IS_TCHAR(c) (sockethttp_tchar_table[(unsigned char)(c)])
 
 extern const unsigned char sockethttp_uri_unreserved[256];
-#define SOCKETHTTP_IS_UNRESERVED(c)                                           \
+#define SOCKETHTTP_IS_UNRESERVED(c) \
   (sockethttp_uri_unreserved[(unsigned char)(c)])
 
 extern const unsigned char sockethttp_hex_value[256];

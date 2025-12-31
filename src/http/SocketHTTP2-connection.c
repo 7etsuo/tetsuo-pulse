@@ -23,8 +23,7 @@
 
 const Except_T SocketHTTP2 = { NULL, "HTTP/2" };
 
-const Except_T SocketHTTP2_Failed
-    = { &SocketHTTP2, "HTTP/2 operation failed" };
+const Except_T SocketHTTP2_Failed = { &SocketHTTP2, "HTTP/2 operation failed" };
 
 const Except_T SocketHTTP2_ProtocolError
     = { &SocketHTTP2, "HTTP/2 protocol error" };
@@ -111,7 +110,8 @@ static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
 static void
 init_peer_settings (SocketHTTP2_Conn_T conn)
 {
-  memcpy (conn->peer_settings, peer_setting_defaults,
+  memcpy (conn->peer_settings,
+          peer_setting_defaults,
           sizeof (peer_setting_defaults));
 }
 
@@ -141,7 +141,8 @@ create_io_buffers (SocketHTTP2_Conn_T conn)
   SocketBuf_T recv_temp = SocketBuf_new (conn->arena, buf_size);
   if (!recv_temp)
     {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "Failed to allocate HTTP/2 recv I/O buffer");
     }
 
@@ -149,7 +150,8 @@ create_io_buffers (SocketHTTP2_Conn_T conn)
   if (!send_temp)
     {
       SocketBuf_release (&recv_temp);
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "Failed to allocate HTTP/2 send I/O buffer");
     }
 
@@ -167,13 +169,15 @@ create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
   conn->encoder = SocketHPACK_Encoder_new (&enc_config, conn->arena);
   if (!conn->encoder)
     {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "Failed to create HPACK encoder");
     }
 }
 
 static void
-create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
+create_hpack_decoder (SocketHTTP2_Conn_T conn,
+                      uint32_t header_table_size,
                       uint32_t max_header_list_size)
 {
   SocketHPACK_DecoderConfig dec_config;
@@ -184,7 +188,8 @@ create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
   conn->decoder = SocketHPACK_Decoder_new (&dec_config, conn->arena);
   if (!conn->decoder)
     {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "Failed to create HPACK decoder");
     }
 }
@@ -192,11 +197,15 @@ create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
 static void
 create_stream_hash_table (SocketHTTP2_Conn_T conn)
 {
-  conn->streams = Arena_calloc (conn->arena, HTTP2_STREAM_HASH_SIZE,
-                                sizeof (*conn->streams), __FILE__, __LINE__);
+  conn->streams = Arena_calloc (conn->arena,
+                                HTTP2_STREAM_HASH_SIZE,
+                                sizeof (*conn->streams),
+                                __FILE__,
+                                __LINE__);
   if (!conn->streams)
     {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "Failed to allocate stream hash table");
     }
 }
@@ -209,7 +218,8 @@ alloc_conn (Arena_T arena)
   conn = Arena_calloc (arena, 1, sizeof (*conn), __FILE__, __LINE__);
   if (!conn)
     {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "Failed to allocate HTTP/2 connection");
     }
 
@@ -224,8 +234,8 @@ init_connection_components (SocketHTTP2_Conn_T conn,
 
   create_hpack_encoder (conn, config->header_table_size);
 
-  create_hpack_decoder (conn, config->header_table_size,
-                        config->max_header_list_size);
+  create_hpack_decoder (
+      conn, config->header_table_size, config->max_header_list_size);
 
   create_stream_hash_table (conn);
 }
@@ -285,25 +295,26 @@ init_rate_limiting_windows (SocketHTTP2_Conn_T conn,
   int64_t now = conn->last_activity_time;
 
   /* Frame rate limiters */
-  TimeWindow_init (&conn->settings_window, SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS,
-                   now);
+  TimeWindow_init (
+      &conn->settings_window, SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS, now);
   TimeWindow_init (&conn->ping_window, SOCKETHTTP2_PING_RATE_WINDOW_MS, now);
   TimeWindow_init (&conn->rst_window, SOCKETHTTP2_RST_RATE_WINDOW_MS, now);
 
   /* Sliding window stream rate limiters (CVE-2023-44487 protection) */
-  TimeWindow_init (&conn->stream_create_window,
-                   (int)cfg->stream_window_size_ms, now);
-  TimeWindow_init (&conn->stream_burst_window,
-                   (int)cfg->stream_burst_interval_ms, now);
-  TimeWindow_init (&conn->stream_churn_window, (int)cfg->stream_window_size_ms,
-                   now);
+  TimeWindow_init (
+      &conn->stream_create_window, (int)cfg->stream_window_size_ms, now);
+  TimeWindow_init (
+      &conn->stream_burst_window, (int)cfg->stream_burst_interval_ms, now);
+  TimeWindow_init (
+      &conn->stream_churn_window, (int)cfg->stream_window_size_ms, now);
   conn->stream_max_per_window = cfg->stream_max_per_window;
   conn->stream_burst_threshold = cfg->stream_burst_threshold;
   conn->stream_churn_threshold = cfg->stream_churn_threshold;
 }
 
 SocketHTTP2_Conn_T
-SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
+SocketHTTP2_Conn_new (Socket_T socket,
+                      const SocketHTTP2_Config *config,
                       Arena_T arena)
 {
   SocketHTTP2_Conn_T conn = NULL;
@@ -318,7 +329,8 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
   if (tls_result != HTTP2_TLS_OK && tls_result != HTTP2_TLS_NOT_ENABLED)
     {
       /* TLS is enabled but doesn't meet HTTP/2 requirements */
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+      SOCKET_RAISE_MSG (SocketHTTP2,
+                        SocketHTTP2_ProtocolError,
                         "HTTP/2 TLS validation failed: %s",
                         SocketHTTP2_tls_result_string (tls_result));
     }
@@ -516,7 +528,8 @@ should_send_setting (uint16_t id, uint32_t value)
     case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
       return 1; /* Always send this one */
     case HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL:
-      return value != 0; /* RFC 8441: Send if enabled (differs from default 0) */
+      return value
+             != 0; /* RFC 8441: Send if enabled (differs from default 0) */
     default:
       return 0;
     }
@@ -563,8 +576,7 @@ send_initial_settings (SocketHTTP2_Conn_T conn)
 static int
 handshake_send_client_preface (SocketHTTP2_Conn_T conn)
 {
-  if (SocketBuf_write (conn->send_buf, HTTP2_CLIENT_PREFACE,
-                       HTTP2_PREFACE_SIZE)
+  if (SocketBuf_write (conn->send_buf, HTTP2_CLIENT_PREFACE, HTTP2_PREFACE_SIZE)
       != HTTP2_PREFACE_SIZE)
     return -1;
 
@@ -628,7 +640,8 @@ SocketHTTP2_Conn_handshake (SocketHTTP2_Conn_T conn)
 
 int
 SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
-                           const SocketHTTP2_Setting *settings, size_t count)
+                           const SocketHTTP2_Setting *settings,
+                           size_t count)
 {
   SocketHTTP2_FrameHeader header;
   unsigned char *payload;
@@ -706,7 +719,8 @@ SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn, const unsigned char opaque[8])
 int
 SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
                          SocketHTTP2_ErrorCode error_code,
-                         const void *debug_data, size_t debug_len)
+                         const void *debug_data,
+                         size_t debug_len)
 {
   SocketHTTP2_FrameHeader header;
   unsigned char *payload;
@@ -767,11 +781,13 @@ read_socket_to_buffer (SocketHTTP2_Conn_T conn)
     return 0;
 
   ssize_t n = Socket_recv (conn->socket, write_ptr, space);
-  if (n > 0) {
-    SocketBuf_written (conn->recv_buf, (size_t)n);
-    /* Update activity time on recv */
-    conn->last_activity_time = Socket_get_monotonic_ms ();
-  } else if (n < 0)
+  if (n > 0)
+    {
+      SocketBuf_written (conn->recv_buf, (size_t)n);
+      /* Update activity time on recv */
+      conn->last_activity_time = Socket_get_monotonic_ms ();
+    }
+  else if (n < 0)
     return -1;
 
   return 0;
@@ -854,36 +870,43 @@ static int
 enforce_timeouts (SocketHTTP2_Conn_T conn, int64_t now_ms)
 {
   /* SETTINGS ACK timeout */
-  if (conn->settings_ack_pending && conn->settings_timeout_ms > 0 &&
-      (now_ms - conn->settings_sent_time >= (int64_t)conn->settings_timeout_ms)) {
-    SOCKET_LOG_WARN_MSG ("HTTP/2 SETTINGS ACK timeout (%" PRId64 " ms)",
-                         now_ms - conn->settings_sent_time);
-    SocketHTTP2_Conn_goaway (conn, HTTP2_SETTINGS_TIMEOUT,
-                             "SETTINGS ACK timeout", 20);
-    return -1;
-  }
-
-  /* PING ACK timeout */
-  if (conn->ping_pending && conn->ping_timeout_ms > 0 &&
-      (now_ms - conn->ping_sent_time >= (int64_t)conn->ping_timeout_ms)) {
-    SOCKET_LOG_WARN_MSG ("HTTP/2 PING ACK timeout (%" PRId64 " ms)",
-                         now_ms - conn->ping_sent_time);
-    SocketHTTP2_Conn_goaway (conn, HTTP2_PROTOCOL_ERROR,
-                             "PING ACK timeout", 16);
-    return -1;
-  }
-
-  /* Idle timeout (only if no active streams) */
-  if (conn->idle_timeout_ms > 0) {
-    uint32_t active = SocketHTTP2_Conn_get_concurrent_streams (conn);
-    if (active == 0 &&
-        (now_ms - conn->last_activity_time >= (int64_t)conn->idle_timeout_ms)) {
-      SOCKET_LOG_INFO_MSG ("HTTP/2 idle connection timeout (%" PRId64 " ms, no active streams)",
-                           now_ms - conn->last_activity_time);
-      SocketHTTP2_Conn_goaway (conn, HTTP2_NO_ERROR, "Idle timeout", 12);
+  if (conn->settings_ack_pending && conn->settings_timeout_ms > 0
+      && (now_ms - conn->settings_sent_time
+          >= (int64_t)conn->settings_timeout_ms))
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 SETTINGS ACK timeout (%" PRId64 " ms)",
+                           now_ms - conn->settings_sent_time);
+      SocketHTTP2_Conn_goaway (
+          conn, HTTP2_SETTINGS_TIMEOUT, "SETTINGS ACK timeout", 20);
       return -1;
     }
-  }
+
+  /* PING ACK timeout */
+  if (conn->ping_pending && conn->ping_timeout_ms > 0
+      && (now_ms - conn->ping_sent_time >= (int64_t)conn->ping_timeout_ms))
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 PING ACK timeout (%" PRId64 " ms)",
+                           now_ms - conn->ping_sent_time);
+      SocketHTTP2_Conn_goaway (
+          conn, HTTP2_PROTOCOL_ERROR, "PING ACK timeout", 16);
+      return -1;
+    }
+
+  /* Idle timeout (only if no active streams) */
+  if (conn->idle_timeout_ms > 0)
+    {
+      uint32_t active = SocketHTTP2_Conn_get_concurrent_streams (conn);
+      if (active == 0
+          && (now_ms - conn->last_activity_time
+              >= (int64_t)conn->idle_timeout_ms))
+        {
+          SOCKET_LOG_INFO_MSG ("HTTP/2 idle connection timeout (%" PRId64
+                               " ms, no active streams)",
+                               now_ms - conn->last_activity_time);
+          SocketHTTP2_Conn_goaway (conn, HTTP2_NO_ERROR, "Idle timeout", 12);
+          return -1;
+        }
+    }
 
   return 0;
 }
@@ -941,11 +964,13 @@ SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
         break;
 
       ssize_t sent = Socket_send (conn->socket, data, available);
-      if (sent > 0) {
-        SocketBuf_consume (conn->send_buf, (size_t)sent);
-        /* Update activity time on send */
-        conn->last_activity_time = Socket_get_monotonic_ms ();
-      } else if (sent == 0)
+      if (sent > 0)
+        {
+          SocketBuf_consume (conn->send_buf, (size_t)sent);
+          /* Update activity time on send */
+          conn->last_activity_time = Socket_get_monotonic_ms ();
+        }
+      else if (sent == 0)
         return 1; /* Would block */
       else
         return -1;
@@ -966,9 +991,12 @@ http2_process_frame (SocketHTTP2_Conn_T conn,
     case HTTP2_FRAME_HEADERS:
       return http2_process_headers (conn, header, payload);
     case HTTP2_FRAME_PRIORITY:
-      /* Deprecated per RFC 9113 §6.3: ignore PRIORITY frame with logging for compatibility */
-      SOCKET_LOG_DEBUG_MSG ("Ignoring deprecated PRIORITY frame: stream=%u len=%u",
-                            header->stream_id, (unsigned)header->length);
+      /* Deprecated per RFC 9113 §6.3: ignore PRIORITY frame with logging for
+       * compatibility */
+      SOCKET_LOG_DEBUG_MSG (
+          "Ignoring deprecated PRIORITY frame: stream=%u len=%u",
+          header->stream_id,
+          (unsigned)header->length);
       return 0;
     case HTTP2_FRAME_RST_STREAM:
       return http2_process_rst_stream (conn, header, payload);
@@ -1018,7 +1046,8 @@ process_settings_ack (SocketHTTP2_Conn_T conn)
     }
 }
 
-/* Maps RFC 9113 setting IDs to 0-based array indices; SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8) maps to index 6 */
+/* Maps RFC 9113 setting IDs to 0-based array indices;
+ * SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8) maps to index 6 */
 static inline size_t
 setting_id_to_index (uint16_t id)
 {
@@ -1116,7 +1145,8 @@ validate_enable_connect_protocol (SocketHTTP2_Conn_T conn, uint32_t value)
 
 /* Unknown settings ignored per RFC 9113 Section 6.5.2 */
 static int
-validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
+validate_and_apply_setting (SocketHTTP2_Conn_T conn,
+                            uint16_t id,
                             uint32_t value)
 {
   /* Validate setting based on type */
@@ -1178,7 +1208,8 @@ update_conn_state_after_settings (SocketHTTP2_Conn_T conn)
 
 static int
 parse_and_apply_all_settings (SocketHTTP2_Conn_T conn,
-                              const unsigned char *payload, size_t length)
+                              const unsigned char *payload,
+                              size_t length)
 {
   if (length % HTTP2_SETTING_ENTRY_SIZE != 0)
     {
@@ -1212,9 +1243,10 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
       return 0;
     }
 
-  /* Rate limit non-ACK SETTINGS frames to prevent flood attacks (using TimeWindow) */
+  /* Rate limit non-ACK SETTINGS frames to prevent flood attacks (using
+   * TimeWindow) */
   int64_t now_ms = Socket_get_monotonic_ms ();
-  TimeWindow_record(&conn->settings_window, now_ms);
+  TimeWindow_record (&conn->settings_window, now_ms);
   if (conn->settings_window.current_count > SOCKETHTTP2_SETTINGS_RATE_LIMIT)
     {
       int64_t elapsed_ms = now_ms - conn->settings_window.window_start_ms;
@@ -1247,7 +1279,7 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
 {
   /* Rate limit PING frames to prevent flood attacks (using TimeWindow) */
   int64_t now_ms = Socket_get_monotonic_ms ();
-  TimeWindow_record(&conn->ping_window, now_ms);
+  TimeWindow_record (&conn->ping_window, now_ms);
   if (conn->ping_window.current_count > SOCKETHTTP2_PING_RATE_LIMIT)
     {
       int64_t elapsed_ms = now_ms - conn->ping_window.window_start_ms;
@@ -1311,7 +1343,8 @@ process_connection_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
 
 /* Ignores unknown streams per RFC 9113 (may be closed) */
 static int
-process_stream_window_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
+process_stream_window_update (SocketHTTP2_Conn_T conn,
+                              uint32_t stream_id,
                               uint32_t increment)
 {
   SocketHTTP2_Stream_T stream = http2_stream_lookup (conn, stream_id);
@@ -1353,7 +1386,8 @@ http2_process_window_update (SocketHTTP2_Conn_T conn,
     return process_stream_window_update (conn, header->stream_id, increment);
 }
 
-/* SECURITY: CVE-2023-44487 protection - rate limits RST_STREAM frames to prevent Rapid Reset DoS */
+/* SECURITY: CVE-2023-44487 protection - rate limits RST_STREAM frames to
+ * prevent Rapid Reset DoS */
 int
 http2_process_rst_stream (SocketHTTP2_Conn_T conn,
                           const SocketHTTP2_FrameHeader *header,
@@ -1361,9 +1395,10 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
 {
   uint32_t error_code = read_u32_be (payload);
 
-  /* CVE-2023-44487: Rate limit RST_STREAM frames to prevent Rapid Reset DoS (using TimeWindow) */
+  /* CVE-2023-44487: Rate limit RST_STREAM frames to prevent Rapid Reset DoS
+   * (using TimeWindow) */
   int64_t now_ms = Socket_get_monotonic_ms ();
-  TimeWindow_record(&conn->rst_window, now_ms);
+  TimeWindow_record (&conn->rst_window, now_ms);
   if (conn->rst_window.current_count > SOCKETHTTP2_RST_RATE_LIMIT)
     {
       int64_t elapsed_ms = now_ms - conn->rst_window.window_start_ms;
@@ -1393,7 +1428,8 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
 SocketHTTP2_Conn_T
 SocketHTTP2_Conn_upgrade_client (Socket_T socket,
                                  const unsigned char *settings_payload,
-                                 size_t settings_len, Arena_T arena)
+                                 size_t settings_len,
+                                 Arena_T arena)
 {
   SocketHTTP2_Config config;
   SocketHTTP2_Conn_T conn;
@@ -1426,7 +1462,8 @@ SocketHTTP2_Conn_T
 SocketHTTP2_Conn_upgrade_server (Socket_T socket,
                                  const SocketHTTP_Request *initial_request,
                                  const unsigned char *settings_payload,
-                                 size_t settings_len, Arena_T arena)
+                                 size_t settings_len,
+                                 Arena_T arena)
 {
   SocketHTTP2_Config config;
   SocketHTTP2_Conn_T conn;
@@ -1456,7 +1493,8 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   /* Apply the client's HTTP2-Settings (RFC 9113 / legacy RFC 7540 upgrade). */
   if (settings_payload != NULL && settings_len > 0)
     {
-      if (parse_and_apply_all_settings (conn, settings_payload, settings_len) < 0)
+      if (parse_and_apply_all_settings (conn, settings_payload, settings_len)
+          < 0)
         {
           SocketHTTP2_Conn_free (&conn);
           return NULL;

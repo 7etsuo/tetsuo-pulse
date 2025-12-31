@@ -38,34 +38,32 @@
 #define MAX_TEST_PROTOS 32
 
 /* Known valid ALPN protocol names for baseline testing */
-static const char *VALID_ALPN_PROTOS[] = {
-    "h2",          /* HTTP/2 */
-    "http/1.1",    /* HTTP/1.1 */
-    "spdy/3.1",    /* SPDY 3.1 (legacy) */
-    "h2c",         /* HTTP/2 cleartext */
-    "grpc",        /* gRPC */
-    "webrtc",      /* WebRTC */
-    "c-webrtc",    /* Confidential WebRTC */
-    "ftp",         /* FTP */
-    "imap",        /* IMAP */
-    "pop3",        /* POP3 */
-    "managesieve", /* Manage Sieve */
-    "coap",        /* CoAP */
-    "mqtt",        /* MQTT */
-    "acme-tls/1",  /* ACME TLS-ALPN challenge */
-    "dot",         /* DNS over TLS */
-    NULL
-};
+static const char *VALID_ALPN_PROTOS[]
+    = { "h2",          /* HTTP/2 */
+        "http/1.1",    /* HTTP/1.1 */
+        "spdy/3.1",    /* SPDY 3.1 (legacy) */
+        "h2c",         /* HTTP/2 cleartext */
+        "grpc",        /* gRPC */
+        "webrtc",      /* WebRTC */
+        "c-webrtc",    /* Confidential WebRTC */
+        "ftp",         /* FTP */
+        "imap",        /* IMAP */
+        "pop3",        /* POP3 */
+        "managesieve", /* Manage Sieve */
+        "coap",        /* CoAP */
+        "mqtt",        /* MQTT */
+        "acme-tls/1",  /* ACME TLS-ALPN challenge */
+        "dot",         /* DNS over TLS */
+        NULL };
 
 /* Edge case protocol names for testing */
-static const char *EDGE_CASE_PROTOS[] = {
-    "a",                             /* Single char (minimum valid) */
-    "AB",                            /* Uppercase */
-    "a-b",                           /* Hyphen */
-    "proto123",                      /* Alphanumeric */
-    "x!\"#$%&'()*+,-./:;<=>?@[\\]^", /* Special printable chars */
-    NULL
-};
+static const char *EDGE_CASE_PROTOS[]
+    = { "a",                             /* Single char (minimum valid) */
+        "AB",                            /* Uppercase */
+        "a-b",                           /* Hyphen */
+        "proto123",                      /* Alphanumeric */
+        "x!\"#$%&'()*+,-./:;<=>?@[\\]^", /* Special printable chars */
+        NULL };
 
 /* Callback state for testing */
 static volatile int callback_invoked = 0;
@@ -80,7 +78,8 @@ static volatile const char *callback_selection = NULL;
  * Returns: First client protocol or NULL
  */
 static const char *
-test_alpn_callback (const char **client_protos, size_t client_count,
+test_alpn_callback (const char **client_protos,
+                    size_t client_count,
                     void *user_data)
 {
   (void)user_data;
@@ -105,8 +104,10 @@ test_alpn_callback (const char **client_protos, size_t client_count,
  * Returns array of pointers into data (no allocation needed for strings).
  */
 static void
-parse_protocols_from_fuzz (const uint8_t *data, size_t size,
-                           const char ***protos_out, size_t *count_out)
+parse_protocols_from_fuzz (const uint8_t *data,
+                           size_t size,
+                           const char ***protos_out,
+                           size_t *count_out)
 {
   *protos_out = NULL;
   *count_out = 0;
@@ -189,7 +190,10 @@ test_valid_protocols (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
   for (i = 0; i < count; i++)
     subset[i] = VALID_ALPN_PROTOS[(start_idx + i) % num_protos];
 
-  TRY { SocketTLSContext_set_alpn_protos (ctx, subset, count); }
+  TRY
+  {
+    SocketTLSContext_set_alpn_protos (ctx, subset, count);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     /* Should not happen with valid protocols */
@@ -217,7 +221,10 @@ test_edge_cases (SocketTLSContext_T ctx)
   for (i = 0; i < count; i++)
     {
       const char *proto[1] = { EDGE_CASE_PROTOS[i] };
-      TRY { SocketTLSContext_set_alpn_protos (ctx, proto, 1); }
+      TRY
+      {
+        SocketTLSContext_set_alpn_protos (ctx, proto, 1);
+      }
       EXCEPT (SocketTLS_Failed)
       {
         /* Some edge cases may be rejected */
@@ -241,7 +248,10 @@ test_callback_registration (SocketTLSContext_T ctx)
 
   /* Set some protocols to trigger callback setup */
   const char *protos[] = { "h2", "http/1.1" };
-  TRY { SocketTLSContext_set_alpn_protos (ctx, protos, 2); }
+  TRY
+  {
+    SocketTLSContext_set_alpn_protos (ctx, protos, 2);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     /* Ignore */
@@ -259,13 +269,15 @@ test_callback_registration (SocketTLSContext_T ctx)
 static void
 test_max_protocols (SocketTLSContext_T ctx)
 {
-  const char *protos[16] = {
-    "proto1",  "proto2",  "proto3",  "proto4",  "proto5",  "proto6",
-    "proto7",  "proto8",  "proto9",  "proto10", "proto11", "proto12",
-    "proto13", "proto14", "proto15", "proto16"
-  };
+  const char *protos[16]
+      = { "proto1",  "proto2",  "proto3",  "proto4",  "proto5",  "proto6",
+          "proto7",  "proto8",  "proto9",  "proto10", "proto11", "proto12",
+          "proto13", "proto14", "proto15", "proto16" };
 
-  TRY { SocketTLSContext_set_alpn_protos (ctx, protos, 16); }
+  TRY
+  {
+    SocketTLSContext_set_alpn_protos (ctx, protos, 16);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     /* May fail if exceeds configured maximum */
@@ -280,7 +292,8 @@ test_max_protocols (SocketTLSContext_T ctx)
  * @size: Size of fuzz data
  */
 static void
-test_protocol_with_invalid_chars (SocketTLSContext_T ctx, const uint8_t *data,
+test_protocol_with_invalid_chars (SocketTLSContext_T ctx,
+                                  const uint8_t *data,
                                   size_t size)
 {
   char buffer[64];
@@ -295,7 +308,10 @@ test_protocol_with_invalid_chars (SocketTLSContext_T ctx, const uint8_t *data,
   buffer[copy_len] = '\0';
 
   const char *proto[1] = { buffer };
-  TRY { SocketTLSContext_set_alpn_protos (ctx, proto, 1); }
+  TRY
+  {
+    SocketTLSContext_set_alpn_protos (ctx, proto, 1);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     /* Expected for invalid chars (control chars, spaces, etc.) */
@@ -332,8 +348,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     ctx = SocketTLSContext_new_client (NULL);
 
     /* Parse protocols from fuzz data */
-    parse_protocols_from_fuzz (proto_data, proto_size, (const char ***)&protos,
-                               (size_t *)&count);
+    parse_protocols_from_fuzz (
+        proto_data, proto_size, (const char ***)&protos, (size_t *)&count);
 
     if (ctx)
       {
@@ -342,8 +358,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           case 0:
             /* Test set_alpn_protos with fuzzed protocol list */
             if (protos && count > 0)
-              SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx,
-                                                (const char **)protos, count);
+              SocketTLSContext_set_alpn_protos (
+                  (SocketTLSContext_T)ctx, (const char **)protos, count);
             break;
 
           case 1:
@@ -351,8 +367,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (protos && count >= 1)
               {
                 const char *single[1] = { (const char *)protos[0] };
-                SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx,
-                                                  single, 1);
+                SocketTLSContext_set_alpn_protos (
+                    (SocketTLSContext_T)ctx, single, 1);
               }
             break;
 
@@ -361,16 +377,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (protos && count > 0)
               {
                 size_t subset = (count > 2) ? count / 2 : count;
-                SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx,
-                                                  (const char **)protos,
-                                                  subset);
+                SocketTLSContext_set_alpn_protos (
+                    (SocketTLSContext_T)ctx, (const char **)protos, subset);
               }
             break;
 
           case 3:
             /* Test with known valid protocols */
-            test_valid_protocols ((SocketTLSContext_T)ctx, proto_data,
-                                  proto_size);
+            test_valid_protocols (
+                (SocketTLSContext_T)ctx, proto_data, proto_size);
             break;
 
           case 4:
@@ -390,8 +405,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           case 7:
             /* Test with potentially invalid characters */
-            test_protocol_with_invalid_chars ((SocketTLSContext_T)ctx,
-                                              proto_data, proto_size);
+            test_protocol_with_invalid_chars (
+                (SocketTLSContext_T)ctx, proto_data, proto_size);
             break;
           }
       }

@@ -90,8 +90,13 @@ load_pool_state (const T pool)
 static void
 shutdown_socket_gracefully (Socket_T sock)
 {
-  TRY { Socket_shutdown (sock, SHUT_RDWR); }
-  ELSE { /* Ignore errors - socket may already be closed */ }
+  TRY
+  {
+    Socket_shutdown (sock, SHUT_RDWR);
+  }
+  ELSE
+  { /* Ignore errors - socket may already be closed */
+  }
   END_TRY;
 }
 
@@ -118,14 +123,16 @@ allocate_closing_buffer (T pool, int *allocated_out)
     {
       if (pool->maxconns > SIZE_MAX / sizeof (Socket_T))
         {
-          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           SOCKET_LOG_COMPONENT,
                            "Integer overflow in force close buffer size");
           return NULL;
         }
       buf = malloc (pool->maxconns * sizeof (Socket_T));
       if (!buf)
         {
-          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           SOCKET_LOG_COMPONENT,
                            "Failed to allocate buffer for force close");
           return NULL;
         }
@@ -295,11 +302,13 @@ transition_to_stopped (T pool, int timed_out)
   pool->drain_deadline_ms = 0;
 
   /* Set state with release semantics to ensure all prior writes are visible */
-  atomic_store_explicit (&pool->state, POOL_STATE_STOPPED,
-                         memory_order_release);
+  atomic_store_explicit (
+      &pool->state, POOL_STATE_STOPPED, memory_order_release);
 
-  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
-                   "Pool drain complete (timed_out=%d)", timed_out);
+  SocketLog_emitf (SOCKET_LOG_INFO,
+                   SOCKET_LOG_COMPONENT,
+                   "Pool drain complete (timed_out=%d)",
+                   timed_out);
   SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_COMPLETED, 1);
 
   /* Release lock BEFORE callback to prevent deadlock */
@@ -371,8 +380,10 @@ force_close_all_connections (T pool)
   if (allocated)
     free (to_close);
 
-  SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                   "Forced close of %zu connections", close_count);
+  SocketLog_emitf (SOCKET_LOG_WARN,
+                   SOCKET_LOG_COMPONENT,
+                   "Forced close of %zu connections",
+                   close_count);
 }
 
 /* ============================================================================
@@ -403,7 +414,8 @@ SocketPool_drain (T pool, int timeout_ms)
   current_state = load_pool_state (pool);
   if (current_state != POOL_STATE_RUNNING)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
                        "Pool drain called but state is %d (not RUNNING)",
                        (int)current_state);
       POOL_UNLOCK (pool);
@@ -422,12 +434,14 @@ SocketPool_drain (T pool, int timeout_ms)
     pool->drain_deadline_ms = pool_safe_add_ms (now_ms, timeout_ms);
 
   /* Transition to DRAINING with release semantics */
-  atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
-                         memory_order_release);
+  atomic_store_explicit (
+      &pool->state, POOL_STATE_DRAINING, memory_order_release);
 
-  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+  SocketLog_emitf (SOCKET_LOG_INFO,
+                   SOCKET_LOG_COMPONENT,
                    "Pool drain initiated: %zu connections, timeout=%d ms",
-                   current_count, timeout_ms);
+                   current_count,
+                   timeout_ms);
   SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_INITIATED, 1);
 
   /* If no connections, transition immediately to STOPPED */
@@ -495,10 +509,10 @@ SocketPool_drain_poll (T pool)
     }
 
   now_ms = Socket_get_monotonic_ms ();
-  if (pool->drain_deadline_ms != INT64_MAX
-      && now_ms >= pool->drain_deadline_ms)
+  if (pool->drain_deadline_ms != INT64_MAX && now_ms >= pool->drain_deadline_ms)
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
                        "Pool drain timeout expired, forcing close of %zu "
                        "connections",
                        current_count);
@@ -592,13 +606,15 @@ SocketPool_drain_force (T pool)
 
   if (state == POOL_STATE_RUNNING)
     {
-      atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
-                             memory_order_release);
+      atomic_store_explicit (
+          &pool->state, POOL_STATE_DRAINING, memory_order_release);
       pool->drain_deadline_ms = 0;
     }
 
-  SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                   "Pool drain forced: %zu connections to close", pool->count);
+  SocketLog_emitf (SOCKET_LOG_WARN,
+                   SOCKET_LOG_COMPONENT,
+                   "Pool drain forced: %zu connections to close",
+                   pool->count);
 
   if (pool->count > 0)
     force_close_all_connections (pool);
@@ -731,8 +747,9 @@ SocketPool_idle_cleanup_due_ms (const T pool)
       return -1;
     }
 
-  remaining = pool_safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms)
-              - Socket_get_monotonic_ms ();
+  remaining
+      = pool_safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms)
+        - Socket_get_monotonic_ms ();
 
   POOL_UNLOCK (pool);
 
@@ -792,8 +809,10 @@ SocketPool_run_idle_cleanup (T pool)
       pool->stats_idle_cleanups += cleaned_count;
       POOL_UNLOCK (pool);
 
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Idle cleanup removed %zu connections", cleaned_count);
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
+                       "Idle cleanup removed %zu connections",
+                       cleaned_count);
     }
 
   return cleaned_count;

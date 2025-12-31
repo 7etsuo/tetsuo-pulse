@@ -39,7 +39,8 @@ socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
   /* Check for multiplication overflow (CWE-190) */
   if (socketevent_handler_count > SIZE_MAX / sizeof (SocketEventHandler))
     {
-      SocketLog_emit (SOCKET_LOG_ERROR, "SocketEvents",
+      SocketLog_emit (SOCKET_LOG_ERROR,
+                      "SocketEvents",
                       "Handler count causes size overflow");
       return 0;
     }
@@ -50,7 +51,8 @@ socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
 }
 
 static void
-socketevent_invoke_handlers (const SocketEventHandler *handlers, size_t count,
+socketevent_invoke_handlers (const SocketEventHandler *handlers,
+                             size_t count,
                              const SocketEventRecord *event)
 {
   size_t i;
@@ -72,13 +74,14 @@ socketevent_dispatch (const SocketEventRecord *event)
   /* Explicit NULL check (CWE-476) - not compiled out in release builds */
   if (event == NULL)
     {
-      SocketLog_emit (SOCKET_LOG_ERROR, "SocketEvents",
+      SocketLog_emit (SOCKET_LOG_ERROR,
+                      "SocketEvents",
                       "NULL event passed to socketevent_dispatch");
       return;
     }
 
-  SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
-                              SocketEvent_Failed);
+  SOCKET_MUTEX_LOCK_OR_RAISE (
+      &socketevent_mutex, SocketEvent, SocketEvent_Failed);
   count = socketevent_copy_handlers_unlocked (local_handlers);
   SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
 
@@ -124,7 +127,8 @@ socketevent_can_register_unlocked (SocketEventCallback callback,
 
   if (socketevent_handler_count >= SOCKET_EVENT_MAX_HANDLERS)
     {
-      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
+      SocketLog_emit (SOCKET_LOG_WARN,
+                      "SocketEvents",
                       "Handler limit reached; ignoring registration");
       return 0;
     }
@@ -139,13 +143,13 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
 
   if (callback == NULL)
     {
-      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
-                      "NULL callback in register ignored");
+      SocketLog_emit (
+          SOCKET_LOG_WARN, "SocketEvents", "NULL callback in register ignored");
       return -1;
     }
 
-  SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
-                              SocketEvent_Failed);
+  SOCKET_MUTEX_LOCK_OR_RAISE (
+      &socketevent_mutex, SocketEvent, SocketEvent_Failed);
 
   result = socketevent_can_register_unlocked (callback, userdata) ? 0 : -1;
   if (result == 0)
@@ -163,7 +167,8 @@ socketevent_remove_at_index_unlocked (size_t index)
 
   if (remaining > 0)
     {
-      memmove (&socketevent_handlers[index], &socketevent_handlers[index + 1],
+      memmove (&socketevent_handlers[index],
+               &socketevent_handlers[index + 1],
                remaining * sizeof (SocketEventHandler));
     }
   socketevent_handler_count--;
@@ -177,13 +182,14 @@ SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
 
   if (callback == NULL)
     {
-      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
+      SocketLog_emit (SOCKET_LOG_WARN,
+                      "SocketEvents",
                       "NULL callback in unregister ignored");
       return -1;
     }
 
-  SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
-                              SocketEvent_Failed);
+  SOCKET_MUTEX_LOCK_OR_RAISE (
+      &socketevent_mutex, SocketEvent, SocketEvent_Failed);
 
   idx = socketevent_find_handler_unlocked (callback, userdata);
   result = (idx >= 0) ? 0 : -1;
@@ -195,14 +201,19 @@ SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
 }
 
 static void
-socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
-                             const char *component, int fd,
-                             const char *peer_addr, int peer_port,
-                             const char *local_addr, int local_port)
+socketevent_init_connection (SocketEventRecord *event,
+                             SocketEventType type,
+                             const char *component,
+                             int fd,
+                             const char *peer_addr,
+                             int peer_port,
+                             const char *local_addr,
+                             int local_port)
 {
   if (event == NULL)
     {
-      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
+      SocketLog_emit (SOCKET_LOG_WARN,
+                      "SocketEvents",
                       "NULL event passed to socketevent_init_connection");
       return;
     }
@@ -217,24 +228,42 @@ socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
 }
 
 void
-SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
-                         const char *local_addr, int local_port)
+SocketEvent_emit_accept (int fd,
+                         const char *peer_addr,
+                         int peer_port,
+                         const char *local_addr,
+                         int local_port)
 {
   SocketEventRecord event;
 
-  socketevent_init_connection (&event, SOCKET_EVENT_ACCEPTED, "Socket", fd,
-                               peer_addr, peer_port, local_addr, local_port);
+  socketevent_init_connection (&event,
+                               SOCKET_EVENT_ACCEPTED,
+                               "Socket",
+                               fd,
+                               peer_addr,
+                               peer_port,
+                               local_addr,
+                               local_port);
   socketevent_dispatch (&event);
 }
 
 void
-SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
-                          const char *local_addr, int local_port)
+SocketEvent_emit_connect (int fd,
+                          const char *peer_addr,
+                          int peer_port,
+                          const char *local_addr,
+                          int local_port)
 {
   SocketEventRecord event;
 
-  socketevent_init_connection (&event, SOCKET_EVENT_CONNECTED, "Socket", fd,
-                               peer_addr, peer_port, local_addr, local_port);
+  socketevent_init_connection (&event,
+                               SOCKET_EVENT_CONNECTED,
+                               "Socket",
+                               fd,
+                               peer_addr,
+                               peer_port,
+                               local_addr,
+                               local_port);
   socketevent_dispatch (&event);
 }
 

@@ -53,23 +53,23 @@
  * } END_TRY;
  * @endcode
  */
-#define CLEANUP_DTLS_RESOURCES(ctx_ptr, dgram_ptr, exception_flag)            \
-  do                                                                           \
-    {                                                                          \
-      if (exception_flag)                                                      \
-        {                                                                      \
-          if (ctx_ptr)                                                         \
-            {                                                                  \
-              SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)(ctx_ptr);  \
-              SocketDTLSContext_free (&temp_ctx);                              \
-            }                                                                  \
-          if (dgram_ptr)                                                       \
-            {                                                                  \
-              SocketDgram_T temp_dgram = (SocketDgram_T)(dgram_ptr);          \
-              SocketDgram_free (&temp_dgram);                                  \
-            }                                                                  \
-        }                                                                      \
-    }                                                                          \
+#define CLEANUP_DTLS_RESOURCES(ctx_ptr, dgram_ptr, exception_flag)           \
+  do                                                                         \
+    {                                                                        \
+      if (exception_flag)                                                    \
+        {                                                                    \
+          if (ctx_ptr)                                                       \
+            {                                                                \
+              SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)(ctx_ptr); \
+              SocketDTLSContext_free (&temp_ctx);                            \
+            }                                                                \
+          if (dgram_ptr)                                                     \
+            {                                                                \
+              SocketDgram_T temp_dgram = (SocketDgram_T)(dgram_ptr);         \
+              SocketDgram_free (&temp_dgram);                                \
+            }                                                                \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
 /*============================================================================
@@ -110,9 +110,13 @@ Socket_simple_dtls_options_defaults (SocketSimple_DTLSOptions *opts)
  * @param alpn_count Output: Number of ALPN protocols
  */
 static void
-copy_dtls_options (const SocketSimple_DTLSOptions *opts, const char **ca_file,
-                   int *verify_cert, const char **client_cert,
-                   const char **client_key, size_t *mtu, const char ***alpn,
+copy_dtls_options (const SocketSimple_DTLSOptions *opts,
+                   const char **ca_file,
+                   int *verify_cert,
+                   const char **client_cert,
+                   const char **client_key,
+                   size_t *mtu,
+                   const char ***alpn,
                    size_t *alpn_count)
 {
   *ca_file = opts->ca_file;
@@ -141,10 +145,13 @@ copy_dtls_options (const SocketSimple_DTLSOptions *opts, const char **ca_file,
  * @return Configured DTLS context or NULL on error
  */
 static SocketDTLSContext_T
-create_and_configure_dtls_client_context (const char *ca_file, int verify_cert,
+create_and_configure_dtls_client_context (const char *ca_file,
+                                          int verify_cert,
                                           const char *client_cert,
-                                          const char *client_key, size_t mtu,
-                                          const char **alpn, size_t alpn_count)
+                                          const char *client_key,
+                                          size_t mtu,
+                                          const char **alpn,
+                                          size_t alpn_count)
 {
   SocketDTLSContext_T ctx = SocketDTLSContext_new_client (ca_file);
 
@@ -256,7 +263,8 @@ Socket_simple_dtls_connect (const char *host, int port)
 }
 
 SocketSimple_Socket_T
-Socket_simple_dtls_connect_ex (const char *host, int port,
+Socket_simple_dtls_connect_ex (const char *host,
+                               int port,
                                const SocketSimple_DTLSOptions *opts_param)
 {
   volatile SocketDgram_T dgram = NULL;
@@ -289,8 +297,14 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
 
   /* Copy all values before TRY block */
   timeout_ms = opts_param->timeout_ms;
-  copy_dtls_options (opts_param, &ca_file, &verify_cert, &client_cert,
-                     &client_key, &mtu, &alpn, &alpn_count);
+  copy_dtls_options (opts_param,
+                     &ca_file,
+                     &verify_cert,
+                     &client_cert,
+                     &client_key,
+                     &mtu,
+                     &alpn,
+                     &alpn_count);
 
   TRY
   {
@@ -299,9 +313,8 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
     SocketDgram_connect (dgram, host, port);
 
     /* Create and configure DTLS context */
-    ctx = create_and_configure_dtls_client_context (ca_file, verify_cert,
-                                                     client_cert, client_key,
-                                                     mtu, alpn, alpn_count);
+    ctx = create_and_configure_dtls_client_context (
+        ca_file, verify_cert, client_cert, client_key, mtu, alpn, alpn_count);
 
     /* Enable DTLS on socket */
     SocketDTLS_enable (dgram, ctx);
@@ -354,7 +367,8 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
 }
 
 int
-Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
+Socket_simple_dtls_enable (SocketSimple_Socket_T sock,
+                           const char *hostname,
                            const SocketSimple_DTLSOptions *opts_param)
 {
   volatile SocketDTLSContext_T ctx = NULL;
@@ -399,15 +413,20 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
     }
 
   /* Copy all values before TRY block */
-  copy_dtls_options (opts_param, &ca_file, &verify_cert, &client_cert,
-                     &client_key, &mtu, &alpn, &alpn_count);
+  copy_dtls_options (opts_param,
+                     &ca_file,
+                     &verify_cert,
+                     &client_cert,
+                     &client_key,
+                     &mtu,
+                     &alpn,
+                     &alpn_count);
 
   TRY
   {
     /* Create and configure client context */
-    ctx = create_and_configure_dtls_client_context (ca_file, verify_cert,
-                                                     client_cert, client_key,
-                                                     mtu, alpn, alpn_count);
+    ctx = create_and_configure_dtls_client_context (
+        ca_file, verify_cert, client_cert, client_key, mtu, alpn, alpn_count);
 
     /* Enable DTLS */
     SocketDTLS_enable (sock->dgram, ctx);
@@ -452,14 +471,16 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
 static SocketDTLSContext_T
 create_dtls_server_context (const char *cert_file, const char *key_file)
 {
-  SocketDTLSContext_T ctx = SocketDTLSContext_new_server (cert_file, key_file,
-                                                          NULL);
+  SocketDTLSContext_T ctx
+      = SocketDTLSContext_new_server (cert_file, key_file, NULL);
   SocketDTLSContext_enable_cookie_exchange (ctx);
   return ctx;
 }
 
 SocketSimple_Socket_T
-Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
+Socket_simple_dtls_listen (const char *host,
+                           int port,
+                           const char *cert_file,
                            const char *key_file)
 {
   volatile SocketDgram_T dgram = NULL;
@@ -504,7 +525,8 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
   }
   EXCEPT (SocketDgram_Failed)
   {
-    simple_set_error_errno (SOCKET_SIMPLE_ERR_BIND, "Failed to bind UDP socket");
+    simple_set_error_errno (SOCKET_SIMPLE_ERR_BIND,
+                            "Failed to bind UDP socket");
     exception_occurred = 1;
   }
   FINALLY
@@ -563,13 +585,15 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
 
     if (state == DTLS_HANDSHAKE_ERROR)
       {
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Failed to receive ClientHello");
+        simple_set_error (SOCKET_SIMPLE_ERR_TLS,
+                          "Failed to receive ClientHello");
         return NULL;
       }
 
     /* Complete handshake */
-    state = SocketDTLS_handshake_loop (server_sock->dgram,
-                                       timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
+    state = SocketDTLS_handshake_loop (
+        server_sock->dgram,
+        timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
 
     if (state != DTLS_HANDSHAKE_COMPLETE)
       {
@@ -612,7 +636,8 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
  *============================================================================*/
 
 ssize_t
-Socket_simple_dtls_send (SocketSimple_Socket_T sock, const void *data,
+Socket_simple_dtls_send (SocketSimple_Socket_T sock,
+                         const void *data,
                          size_t len)
 {
   Socket_simple_clear_error ();
@@ -643,7 +668,10 @@ Socket_simple_dtls_send (SocketSimple_Socket_T sock, const void *data,
     }
 
   ssize_t sent = 0;
-  TRY { sent = SocketDTLS_send (sock->dgram, data, len); }
+  TRY
+  {
+    sent = SocketDTLS_send (sock->dgram, data, len);
+  }
   EXCEPT (SocketDTLS_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SEND, "DTLS send failed");
@@ -685,7 +713,10 @@ Socket_simple_dtls_recv (SocketSimple_Socket_T sock, void *buf, size_t len)
     }
 
   ssize_t received = 0;
-  TRY { received = SocketDTLS_recv (sock->dgram, buf, len); }
+  TRY
+  {
+    received = SocketDTLS_recv (sock->dgram, buf, len);
+  }
   EXCEPT (SocketDTLS_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_RECV, "DTLS recv failed");
@@ -697,27 +728,31 @@ Socket_simple_dtls_recv (SocketSimple_Socket_T sock, void *buf, size_t len)
 }
 
 ssize_t
-Socket_simple_dtls_sendto (SocketSimple_Socket_T sock, const void *data,
-                           size_t len, const char *host, int port)
+Socket_simple_dtls_sendto (SocketSimple_Socket_T sock,
+                           const void *data,
+                           size_t len,
+                           const char *host,
+                           int port)
 {
   Socket_simple_clear_error ();
 
   if (!sock || !sock->dgram || !sock->is_tls)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid DTLS socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
       return -1;
     }
 
   if (!host || port <= 0 || port > SOCKET_MAX_PORT)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid destination");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid destination");
       return -1;
     }
 
   ssize_t sent = 0;
-  TRY { sent = SocketDTLS_sendto (sock->dgram, data, len, host, port); }
+  TRY
+  {
+    sent = SocketDTLS_sendto (sock->dgram, data, len, host, port);
+  }
   EXCEPT (SocketDTLS_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SEND, "DTLS sendto failed");
@@ -729,22 +764,26 @@ Socket_simple_dtls_sendto (SocketSimple_Socket_T sock, const void *data,
 }
 
 ssize_t
-Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock, void *buf, size_t len,
-                             char *host, size_t host_len, int *port)
+Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock,
+                             void *buf,
+                             size_t len,
+                             char *host,
+                             size_t host_len,
+                             int *port)
 {
   Socket_simple_clear_error ();
 
   if (!sock || !sock->dgram || !sock->is_tls)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid DTLS socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
       return -1;
     }
 
   ssize_t received = 0;
   TRY
   {
-    received = SocketDTLS_recvfrom (sock->dgram, buf, len, host, host_len, port);
+    received
+        = SocketDTLS_recvfrom (sock->dgram, buf, len, host, host_len, port);
   }
   EXCEPT (SocketDTLS_Failed)
   {
@@ -767,8 +806,7 @@ Socket_simple_dtls_handshake (SocketSimple_Socket_T sock, int timeout_ms)
 
   if (!sock || !sock->dgram || !sock->is_tls)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid DTLS socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
       return -1;
     }
 
@@ -779,9 +817,9 @@ Socket_simple_dtls_handshake (SocketSimple_Socket_T sock, int timeout_ms)
 
   TRY
   {
-    DTLSHandshakeState state
-        = SocketDTLS_handshake_loop (sock->dgram,
-                                     timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
+    DTLSHandshakeState state = SocketDTLS_handshake_loop (
+        sock->dgram,
+        timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
 
     if (state != DTLS_HANDSHAKE_COMPLETE)
       {
@@ -824,12 +862,14 @@ Socket_simple_dtls_shutdown (SocketSimple_Socket_T sock)
 
   if (!sock || !sock->dgram || !sock->is_tls)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid DTLS socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
       return -1;
     }
 
-  TRY { SocketDTLS_shutdown (sock->dgram); }
+  TRY
+  {
+    SocketDTLS_shutdown (sock->dgram);
+  }
   EXCEPT (SocketDTLS_ShutdownFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS shutdown failed");
@@ -853,12 +893,14 @@ Socket_simple_dtls_set_mtu (SocketSimple_Socket_T sock, size_t mtu)
 
   if (!sock || !sock->dgram || !sock->is_tls)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid DTLS socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
       return -1;
     }
 
-  TRY { SocketDTLS_set_mtu (sock->dgram, mtu); }
+  TRY
+  {
+    SocketDTLS_set_mtu (sock->dgram, mtu);
+  }
   EXCEPT (SocketDTLS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid MTU value");
@@ -960,10 +1002,10 @@ Socket_simple_dtls_connect (const char *host __attribute__ ((unused)),
 }
 
 SocketSimple_Socket_T
-Socket_simple_dtls_connect_ex (
-    const char *host __attribute__ ((unused)),
-    int port __attribute__ ((unused)),
-    const SocketSimple_DTLSOptions *opts __attribute__ ((unused)))
+Socket_simple_dtls_connect_ex (const char *host __attribute__ ((unused)),
+                               int port __attribute__ ((unused)),
+                               const SocketSimple_DTLSOptions *opts
+                               __attribute__ ((unused)))
 {
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "DTLS not available (TLS support disabled)");
@@ -971,10 +1013,10 @@ Socket_simple_dtls_connect_ex (
 }
 
 int
-Socket_simple_dtls_enable (
-    SocketSimple_Socket_T sock __attribute__ ((unused)),
-    const char *hostname __attribute__ ((unused)),
-    const SocketSimple_DTLSOptions *opts __attribute__ ((unused)))
+Socket_simple_dtls_enable (SocketSimple_Socket_T sock __attribute__ ((unused)),
+                           const char *hostname __attribute__ ((unused)),
+                           const SocketSimple_DTLSOptions *opts
+                           __attribute__ ((unused)))
 {
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "DTLS not available (TLS support disabled)");
@@ -993,9 +1035,9 @@ Socket_simple_dtls_listen (const char *host __attribute__ ((unused)),
 }
 
 SocketSimple_Socket_T
-Socket_simple_dtls_accept (
-    SocketSimple_Socket_T server_sock __attribute__ ((unused)),
-    int timeout_ms __attribute__ ((unused)))
+Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock
+                           __attribute__ ((unused)),
+                           int timeout_ms __attribute__ ((unused)))
 {
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "DTLS not available (TLS support disabled)");
@@ -1035,7 +1077,8 @@ Socket_simple_dtls_sendto (SocketSimple_Socket_T sock __attribute__ ((unused)),
 }
 
 ssize_t
-Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock __attribute__ ((unused)),
+Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock
+                             __attribute__ ((unused)),
                              void *buf __attribute__ ((unused)),
                              size_t len __attribute__ ((unused)),
                              char *host __attribute__ ((unused)),
@@ -1048,9 +1091,9 @@ Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock __attribute__ ((unused))
 }
 
 int
-Socket_simple_dtls_handshake (
-    SocketSimple_Socket_T sock __attribute__ ((unused)),
-    int timeout_ms __attribute__ ((unused)))
+Socket_simple_dtls_handshake (SocketSimple_Socket_T sock
+                              __attribute__ ((unused)),
+                              int timeout_ms __attribute__ ((unused)))
 {
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "DTLS not available (TLS support disabled)");
@@ -1058,7 +1101,8 @@ Socket_simple_dtls_handshake (
 }
 
 int
-Socket_simple_dtls_shutdown (SocketSimple_Socket_T sock __attribute__ ((unused)))
+Socket_simple_dtls_shutdown (SocketSimple_Socket_T sock
+                             __attribute__ ((unused)))
 {
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "DTLS not available (TLS support disabled)");
@@ -1081,8 +1125,8 @@ Socket_simple_is_dtls (SocketSimple_Socket_T sock __attribute__ ((unused)))
 }
 
 int
-Socket_simple_dtls_is_handshake_done (
-    SocketSimple_Socket_T sock __attribute__ ((unused)))
+Socket_simple_dtls_is_handshake_done (SocketSimple_Socket_T sock
+                                      __attribute__ ((unused)))
 {
   return -1;
 }
@@ -1112,8 +1156,8 @@ Socket_simple_dtls_alpn (SocketSimple_Socket_T sock __attribute__ ((unused)))
 }
 
 int
-Socket_simple_dtls_is_session_reused (
-    SocketSimple_Socket_T sock __attribute__ ((unused)))
+Socket_simple_dtls_is_session_reused (SocketSimple_Socket_T sock
+                                      __attribute__ ((unused)))
 {
   return -1;
 }

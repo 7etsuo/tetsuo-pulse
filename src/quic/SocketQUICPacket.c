@@ -74,8 +74,8 @@ SocketQUICPacketHeader_init (SocketQUICPacketHeader_T *header)
  */
 
 /* Big-endian pack/unpack helpers - using shared utilities from SocketUtil.h */
-#define unpack_be32(data) socket_util_unpack_be32(data)
-#define pack_be32(data, value) socket_util_pack_be32(data, value)
+#define unpack_be32(data) socket_util_unpack_be32 (data)
+#define pack_be32(data, value) socket_util_pack_be32 (data, value)
 
 /* Variable-length packet number encoding - QUIC specific */
 static inline uint32_t
@@ -102,31 +102,41 @@ pack_pn (uint8_t *data, uint32_t pn, uint8_t pn_length)
  */
 
 static SocketQUICPacket_Result
-parse_initial_header (const uint8_t *data, size_t len,
-                      SocketQUICPacketHeader_T *header, size_t *offset,
+parse_initial_header (const uint8_t *data,
+                      size_t len,
+                      SocketQUICPacketHeader_T *header,
+                      size_t *offset,
                       size_t *consumed);
 
 static SocketQUICPacket_Result
-parse_protected_header (const uint8_t *data, size_t len,
-                        SocketQUICPacketHeader_T *header, size_t *offset,
+parse_protected_header (const uint8_t *data,
+                        size_t len,
+                        SocketQUICPacketHeader_T *header,
+                        size_t *offset,
                         size_t *consumed);
 
 static SocketQUICPacket_Result
-parse_retry_header (const uint8_t *data, size_t len,
-                    SocketQUICPacketHeader_T *header, size_t *offset,
+parse_retry_header (const uint8_t *data,
+                    size_t len,
+                    SocketQUICPacketHeader_T *header,
+                    size_t *offset,
                     size_t *consumed);
 
-static size_t
-serialize_initial_fields (const SocketQUICPacketHeader_T *header,
-                          uint8_t *output, size_t output_size, size_t offset);
+static size_t serialize_initial_fields (const SocketQUICPacketHeader_T *header,
+                                        uint8_t *output,
+                                        size_t output_size,
+                                        size_t offset);
 
 static size_t
 serialize_protected_fields (const SocketQUICPacketHeader_T *header,
-                            uint8_t *output, size_t output_size, size_t offset);
+                            uint8_t *output,
+                            size_t output_size,
+                            size_t offset);
 
-static size_t
-serialize_retry_fields (const SocketQUICPacketHeader_T *header,
-                        uint8_t *output, size_t output_size, size_t offset);
+static size_t serialize_retry_fields (const SocketQUICPacketHeader_T *header,
+                                      uint8_t *output,
+                                      size_t output_size,
+                                      size_t offset);
 
 /* ============================================================================
  * Long Header Parsing (RFC 9000 Section 17.2)
@@ -134,8 +144,10 @@ serialize_retry_fields (const SocketQUICPacketHeader_T *header,
  */
 
 static SocketQUICPacket_Result
-parse_long_header (const uint8_t *data, size_t len,
-                   SocketQUICPacketHeader_T *header, size_t *consumed)
+parse_long_header (const uint8_t *data,
+                   size_t len,
+                   SocketQUICPacketHeader_T *header,
+                   size_t *consumed)
 {
   size_t offset = 0;
   SocketQUICConnectionID_Result cid_result;
@@ -156,8 +168,8 @@ parse_long_header (const uint8_t *data, size_t len,
   offset += 4;
 
   /* Destination Connection ID */
-  cid_result = SocketQUICConnectionID_decode (data + offset, len - offset,
-                                               &header->dcid, &cid_consumed);
+  cid_result = SocketQUICConnectionID_decode (
+      data + offset, len - offset, &header->dcid, &cid_consumed);
   if (cid_result == QUIC_CONNID_ERROR_INCOMPLETE)
     return QUIC_PACKET_ERROR_TRUNCATED;
   if (cid_result != QUIC_CONNID_OK)
@@ -165,8 +177,8 @@ parse_long_header (const uint8_t *data, size_t len,
   offset += cid_consumed;
 
   /* Source Connection ID */
-  cid_result = SocketQUICConnectionID_decode (data + offset, len - offset,
-                                               &header->scid, &cid_consumed);
+  cid_result = SocketQUICConnectionID_decode (
+      data + offset, len - offset, &header->scid, &cid_consumed);
   if (cid_result == QUIC_CONNID_ERROR_INCOMPLETE)
     return QUIC_PACKET_ERROR_TRUNCATED;
   if (cid_result != QUIC_CONNID_OK)
@@ -192,8 +204,10 @@ parse_long_header (const uint8_t *data, size_t len,
 }
 
 static SocketQUICPacket_Result
-parse_initial_header (const uint8_t *data, size_t len,
-                      SocketQUICPacketHeader_T *header, size_t *offset,
+parse_initial_header (const uint8_t *data,
+                      size_t len,
+                      SocketQUICPacketHeader_T *header,
+                      size_t *offset,
                       size_t *consumed)
 {
   SocketQUICVarInt_Result vi_result;
@@ -201,8 +215,8 @@ parse_initial_header (const uint8_t *data, size_t len,
   size_t vi_consumed;
 
   /* Token length (varint) */
-  vi_result = SocketQUICVarInt_decode (data + *offset, len - *offset,
-                                        &token_len, &vi_consumed);
+  vi_result = SocketQUICVarInt_decode (
+      data + *offset, len - *offset, &token_len, &vi_consumed);
   if (vi_result == QUIC_VARINT_INCOMPLETE)
     return QUIC_PACKET_ERROR_TRUNCATED;
   if (vi_result != QUIC_VARINT_OK)
@@ -223,16 +237,18 @@ parse_initial_header (const uint8_t *data, size_t len,
 }
 
 static SocketQUICPacket_Result
-parse_protected_header (const uint8_t *data, size_t len,
-                        SocketQUICPacketHeader_T *header, size_t *offset,
+parse_protected_header (const uint8_t *data,
+                        size_t len,
+                        SocketQUICPacketHeader_T *header,
+                        size_t *offset,
                         size_t *consumed)
 {
   SocketQUICVarInt_Result vi_result;
   size_t vi_consumed;
 
   /* Length field (varint) */
-  vi_result = SocketQUICVarInt_decode (data + *offset, len - *offset,
-                                        &header->length, &vi_consumed);
+  vi_result = SocketQUICVarInt_decode (
+      data + *offset, len - *offset, &header->length, &vi_consumed);
   if (vi_result == QUIC_VARINT_INCOMPLETE)
     return QUIC_PACKET_ERROR_TRUNCATED;
   if (vi_result != QUIC_VARINT_OK)
@@ -252,8 +268,10 @@ parse_protected_header (const uint8_t *data, size_t len,
 }
 
 static SocketQUICPacket_Result
-parse_retry_header (const uint8_t *data, size_t len,
-                    SocketQUICPacketHeader_T *header, size_t *offset,
+parse_retry_header (const uint8_t *data,
+                    size_t len,
+                    SocketQUICPacketHeader_T *header,
+                    size_t *offset,
                     size_t *consumed)
 {
   /* Retry packet has no Length or Packet Number fields */
@@ -269,7 +287,9 @@ parse_retry_header (const uint8_t *data, size_t len,
   *offset += retry_token_len;
 
   /* Copy the 16-byte Retry Integrity Tag */
-  memcpy (header->retry_integrity_tag, data + *offset, QUIC_RETRY_INTEGRITY_TAG_LEN);
+  memcpy (header->retry_integrity_tag,
+          data + *offset,
+          QUIC_RETRY_INTEGRITY_TAG_LEN);
   header->has_retry_integrity_tag = 1;
   *offset += QUIC_RETRY_INTEGRITY_TAG_LEN;
 
@@ -284,8 +304,10 @@ parse_retry_header (const uint8_t *data, size_t len,
  */
 
 static SocketQUICPacket_Result
-parse_short_header (const uint8_t *data, size_t len,
-                    SocketQUICPacketHeader_T *header, size_t *consumed)
+parse_short_header (const uint8_t *data,
+                    size_t len,
+                    SocketQUICPacketHeader_T *header,
+                    size_t *consumed)
 {
   size_t offset = 0;
   SocketQUICConnectionID_Result cid_result;
@@ -332,7 +354,8 @@ parse_short_header (const uint8_t *data, size_t len,
  */
 
 SocketQUICPacket_Result
-SocketQUICPacketHeader_parse (const uint8_t *data, size_t len,
+SocketQUICPacketHeader_parse (const uint8_t *data,
+                              size_t len,
                               SocketQUICPacketHeader_T *header,
                               size_t *consumed)
 {
@@ -423,13 +446,15 @@ SocketQUICPacketHeader_size (const SocketQUICPacketHeader_T *header)
 
 static size_t
 serialize_initial_fields (const SocketQUICPacketHeader_T *header,
-                          uint8_t *output, size_t output_size, size_t offset)
+                          uint8_t *output,
+                          size_t output_size,
+                          size_t offset)
 {
   size_t written;
 
   /* Token length (varint) */
-  written = SocketQUICVarInt_encode (header->token_length, output + offset,
-                                      output_size - offset);
+  written = SocketQUICVarInt_encode (
+      header->token_length, output + offset, output_size - offset);
   if (written == 0)
     return 0;
   offset += written;
@@ -449,13 +474,15 @@ serialize_initial_fields (const SocketQUICPacketHeader_T *header,
 
 static size_t
 serialize_protected_fields (const SocketQUICPacketHeader_T *header,
-                            uint8_t *output, size_t output_size, size_t offset)
+                            uint8_t *output,
+                            size_t output_size,
+                            size_t offset)
 {
   size_t written;
 
   /* Length field (varint) */
-  written = SocketQUICVarInt_encode (header->length, output + offset,
-                                      output_size - offset);
+  written = SocketQUICVarInt_encode (
+      header->length, output + offset, output_size - offset);
   if (written == 0)
     return 0;
   offset += written;
@@ -471,22 +498,24 @@ serialize_protected_fields (const SocketQUICPacketHeader_T *header,
 
 static size_t
 serialize_retry_fields (const SocketQUICPacketHeader_T *header,
-                        uint8_t *output, size_t output_size, size_t offset)
+                        uint8_t *output,
+                        size_t output_size,
+                        size_t offset)
 {
   /* Retry Token */
   if (header->retry_token_length > 0 && header->retry_token != NULL)
     {
       if (output_size - offset < header->retry_token_length)
         return 0;
-      memcpy (output + offset, header->retry_token,
-              header->retry_token_length);
+      memcpy (output + offset, header->retry_token, header->retry_token_length);
       offset += header->retry_token_length;
     }
 
   /* Retry Integrity Tag (16 bytes) */
   if (output_size - offset < QUIC_RETRY_INTEGRITY_TAG_LEN)
     return 0;
-  memcpy (output + offset, header->retry_integrity_tag,
+  memcpy (output + offset,
+          header->retry_integrity_tag,
           QUIC_RETRY_INTEGRITY_TAG_LEN);
   offset += QUIC_RETRY_INTEGRITY_TAG_LEN;
 
@@ -500,7 +529,8 @@ serialize_retry_fields (const SocketQUICPacketHeader_T *header,
 
 static size_t
 serialize_long_header (const SocketQUICPacketHeader_T *header,
-                       uint8_t *output, size_t output_size)
+                       uint8_t *output,
+                       size_t output_size)
 {
   size_t offset = 0;
   size_t required = SocketQUICPacketHeader_size (header);
@@ -521,17 +551,15 @@ serialize_long_header (const SocketQUICPacketHeader_T *header,
   offset += 4;
 
   /* DCID with length prefix */
-  written = SocketQUICConnectionID_encode_with_length (&header->dcid,
-                                                        output + offset,
-                                                        output_size - offset);
+  written = SocketQUICConnectionID_encode_with_length (
+      &header->dcid, output + offset, output_size - offset);
   if (written == 0 && header->dcid.len > 0)
     return 0;
   offset += (written > 0) ? written : 1; /* At least length byte */
 
   /* SCID with length prefix */
-  written = SocketQUICConnectionID_encode_with_length (&header->scid,
-                                                        output + offset,
-                                                        output_size - offset);
+  written = SocketQUICConnectionID_encode_with_length (
+      &header->scid, output + offset, output_size - offset);
   if (written == 0 && header->scid.len > 0)
     return 0;
   offset += (written > 0) ? written : 1;
@@ -561,7 +589,8 @@ serialize_long_header (const SocketQUICPacketHeader_T *header,
 
 static size_t
 serialize_short_header (const SocketQUICPacketHeader_T *header,
-                        uint8_t *output, size_t output_size)
+                        uint8_t *output,
+                        size_t output_size)
 {
   size_t offset = 0;
   size_t required = SocketQUICPacketHeader_size (header);
@@ -570,7 +599,8 @@ serialize_short_header (const SocketQUICPacketHeader_T *header,
   if (output_size < required)
     return 0;
 
-  /* First byte: Form(0) | Fixed(1) | Spin(1) | Reserved(2) | KeyPhase(1) | PN_Len(2) */
+  /* First byte: Form(0) | Fixed(1) | Spin(1) | Reserved(2) | KeyPhase(1) |
+   * PN_Len(2) */
   first_byte = QUIC_PACKET_FIXED_BIT;
   if (header->spin_bit)
     first_byte |= QUIC_PACKET_SHORT_SPIN_BIT;
@@ -600,7 +630,8 @@ serialize_short_header (const SocketQUICPacketHeader_T *header,
 
 size_t
 SocketQUICPacketHeader_serialize (const SocketQUICPacketHeader_T *header,
-                                  uint8_t *output, size_t output_size)
+                                  uint8_t *output,
+                                  size_t output_size)
 {
   if (header == NULL || output == NULL)
     return 0;
@@ -630,8 +661,10 @@ SocketQUICPacketHeader_build_initial (SocketQUICPacketHeader_T *header,
                                       uint32_t version,
                                       const SocketQUICConnectionID_T *dcid,
                                       const SocketQUICConnectionID_T *scid,
-                                      const uint8_t *token, size_t token_len,
-                                      uint8_t pn_length, uint32_t pn)
+                                      const uint8_t *token,
+                                      size_t token_len,
+                                      uint8_t pn_length,
+                                      uint32_t pn)
 {
   SocketQUICPacket_Result result;
 
@@ -669,7 +702,8 @@ SocketQUICPacketHeader_build_handshake (SocketQUICPacketHeader_T *header,
                                         uint32_t version,
                                         const SocketQUICConnectionID_T *dcid,
                                         const SocketQUICConnectionID_T *scid,
-                                        uint8_t pn_length, uint32_t pn)
+                                        uint8_t pn_length,
+                                        uint32_t pn)
 {
   SocketQUICPacket_Result result;
 
@@ -701,7 +735,8 @@ SocketQUICPacketHeader_build_0rtt (SocketQUICPacketHeader_T *header,
                                    uint32_t version,
                                    const SocketQUICConnectionID_T *dcid,
                                    const SocketQUICConnectionID_T *scid,
-                                   uint8_t pn_length, uint32_t pn)
+                                   uint8_t pn_length,
+                                   uint32_t pn)
 {
   SocketQUICPacket_Result result;
 
@@ -731,8 +766,10 @@ SocketQUICPacketHeader_build_0rtt (SocketQUICPacketHeader_T *header,
 SocketQUICPacket_Result
 SocketQUICPacketHeader_build_short (SocketQUICPacketHeader_T *header,
                                     const SocketQUICConnectionID_T *dcid,
-                                    int spin_bit, int key_phase,
-                                    uint8_t pn_length, uint32_t pn)
+                                    int spin_bit,
+                                    int key_phase,
+                                    uint8_t pn_length,
+                                    uint32_t pn)
 {
   SocketQUICPacket_Result result;
 
@@ -804,7 +841,8 @@ SocketQUICPacket_encode_pn (uint64_t pn, uint8_t pn_length)
 }
 
 uint64_t
-SocketQUICPacket_decode_pn (uint32_t truncated_pn, uint8_t pn_length,
+SocketQUICPacket_decode_pn (uint32_t truncated_pn,
+                            uint8_t pn_length,
                             uint64_t largest_pn)
 {
   uint64_t expected_pn;

@@ -48,22 +48,22 @@
 typedef enum
 {
   QUIC_TP_ORIGINAL_DCID = 0x00, /**< Server only: original DCID from client */
-  QUIC_TP_MAX_IDLE_TIMEOUT = 0x01,           /**< Max idle timeout (ms) */
-  QUIC_TP_STATELESS_RESET_TOKEN = 0x02,      /**< Server only: reset token */
-  QUIC_TP_MAX_UDP_PAYLOAD_SIZE = 0x03,       /**< Max UDP payload size */
-  QUIC_TP_INITIAL_MAX_DATA = 0x04,           /**< Initial connection flow ctrl */
+  QUIC_TP_MAX_IDLE_TIMEOUT = 0x01,      /**< Max idle timeout (ms) */
+  QUIC_TP_STATELESS_RESET_TOKEN = 0x02, /**< Server only: reset token */
+  QUIC_TP_MAX_UDP_PAYLOAD_SIZE = 0x03,  /**< Max UDP payload size */
+  QUIC_TP_INITIAL_MAX_DATA = 0x04,      /**< Initial connection flow ctrl */
   QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL = 0x05,  /**< Local bidi stream */
   QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE = 0x06, /**< Remote bidi stream */
-  QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI = 0x07,         /**< Unidirectional stream */
-  QUIC_TP_INITIAL_MAX_STREAMS_BIDI = 0x08,   /**< Max bidi streams */
-  QUIC_TP_INITIAL_MAX_STREAMS_UNI = 0x09,    /**< Max uni streams */
-  QUIC_TP_ACK_DELAY_EXPONENT = 0x0a,         /**< ACK delay scaling */
-  QUIC_TP_MAX_ACK_DELAY = 0x0b,              /**< Max ACK delay (ms) */
-  QUIC_TP_DISABLE_ACTIVE_MIGRATION = 0x0c,   /**< Disable migration */
-  QUIC_TP_PREFERRED_ADDRESS = 0x0d,          /**< Server only: preferred addr */
-  QUIC_TP_ACTIVE_CONNID_LIMIT = 0x0e,        /**< Active CID limit */
-  QUIC_TP_INITIAL_SCID = 0x0f,               /**< Initial source CID */
-  QUIC_TP_RETRY_SCID = 0x10,                 /**< Retry source CID (server) */
+  QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI = 0x07, /**< Unidirectional stream */
+  QUIC_TP_INITIAL_MAX_STREAMS_BIDI = 0x08,    /**< Max bidi streams */
+  QUIC_TP_INITIAL_MAX_STREAMS_UNI = 0x09,     /**< Max uni streams */
+  QUIC_TP_ACK_DELAY_EXPONENT = 0x0a,          /**< ACK delay scaling */
+  QUIC_TP_MAX_ACK_DELAY = 0x0b,               /**< Max ACK delay (ms) */
+  QUIC_TP_DISABLE_ACTIVE_MIGRATION = 0x0c,    /**< Disable migration */
+  QUIC_TP_PREFERRED_ADDRESS = 0x0d,   /**< Server only: preferred addr */
+  QUIC_TP_ACTIVE_CONNID_LIMIT = 0x0e, /**< Active CID limit */
+  QUIC_TP_INITIAL_SCID = 0x0f,        /**< Initial source CID */
+  QUIC_TP_RETRY_SCID = 0x10,          /**< Retry source CID (server) */
 
   /* QUIC v2 and extensions */
   QUIC_TP_VERSION_INFO = 0x11, /**< RFC 9369: Version Information */
@@ -165,11 +165,11 @@ typedef enum
  */
 typedef struct SocketQUICPreferredAddress
 {
-  uint8_t ipv4_address[4];                              /**< IPv4 address */
-  uint16_t ipv4_port;                                   /**< IPv4 port */
-  uint8_t ipv6_address[16];                             /**< IPv6 address */
-  uint16_t ipv6_port;                                   /**< IPv6 port */
-  SocketQUICConnectionID_T connection_id;               /**< CID for migration */
+  uint8_t ipv4_address[4];                /**< IPv4 address */
+  uint16_t ipv4_port;                     /**< IPv4 port */
+  uint8_t ipv6_address[16];               /**< IPv6 address */
+  uint16_t ipv6_port;                     /**< IPv6 port */
+  SocketQUICConnectionID_T connection_id; /**< CID for migration */
   uint8_t stateless_reset_token[QUIC_STATELESS_RESET_TOKEN_LEN]; /**< Token */
   int present; /**< Non-zero if preferred address is set */
 } SocketQUICPreferredAddress_T;
@@ -193,16 +193,16 @@ typedef struct SocketQUICTransportParams
   SocketQUICConnectionID_T retry_scid;    /**< Retry source CID */
 
   /* Flags for presence of optional parameters */
-  int has_original_dcid;           /**< original_dcid is set */
-  int has_initial_scid;            /**< initial_scid is set */
-  int has_retry_scid;              /**< retry_scid is set */
-  int has_stateless_reset_token;   /**< stateless_reset_token is set */
+  int has_original_dcid;         /**< original_dcid is set */
+  int has_initial_scid;          /**< initial_scid is set */
+  int has_retry_scid;            /**< retry_scid is set */
+  int has_stateless_reset_token; /**< stateless_reset_token is set */
 
   /* Stateless reset token (server only) */
   uint8_t stateless_reset_token[QUIC_STATELESS_RESET_TOKEN_LEN];
 
   /* Connection limits */
-  uint64_t max_idle_timeout;   /**< Max idle timeout in ms (0 = disabled) */
+  uint64_t max_idle_timeout;     /**< Max idle timeout in ms (0 = disabled) */
   uint64_t max_udp_payload_size; /**< Max UDP payload (min 1200) */
 
   /* Flow control limits */
@@ -244,15 +244,15 @@ typedef struct SocketQUICTransportParams
  */
 typedef enum
 {
-  QUIC_TP_OK = 0,               /**< Operation succeeded */
-  QUIC_TP_ERROR_NULL,           /**< NULL pointer argument */
-  QUIC_TP_ERROR_BUFFER,         /**< Buffer too small */
-  QUIC_TP_ERROR_INCOMPLETE,     /**< Need more input data */
-  QUIC_TP_ERROR_INVALID_VALUE,  /**< Invalid parameter value */
-  QUIC_TP_ERROR_DUPLICATE,      /**< Duplicate parameter */
-  QUIC_TP_ERROR_ROLE,           /**< Parameter not allowed for role */
-  QUIC_TP_ERROR_REQUIRED,       /**< Required parameter missing */
-  QUIC_TP_ERROR_ENCODING        /**< Encoding error */
+  QUIC_TP_OK = 0,              /**< Operation succeeded */
+  QUIC_TP_ERROR_NULL,          /**< NULL pointer argument */
+  QUIC_TP_ERROR_BUFFER,        /**< Buffer too small */
+  QUIC_TP_ERROR_INCOMPLETE,    /**< Need more input data */
+  QUIC_TP_ERROR_INVALID_VALUE, /**< Invalid parameter value */
+  QUIC_TP_ERROR_DUPLICATE,     /**< Duplicate parameter */
+  QUIC_TP_ERROR_ROLE,          /**< Parameter not allowed for role */
+  QUIC_TP_ERROR_REQUIRED,      /**< Required parameter missing */
+  QUIC_TP_ERROR_ENCODING       /**< Encoding error */
 } SocketQUICTransportParams_Result;
 
 /**
@@ -309,9 +309,8 @@ SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
  *
  * @return Number of bytes needed, or 0 on error.
  */
-extern size_t
-SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *params,
-                                        SocketQUICRole role);
+extern size_t SocketQUICTransportParams_encoded_size (
+    const SocketQUICTransportParams_T *params, SocketQUICRole role);
 
 /**
  * @brief Encode transport parameters to wire format.
@@ -328,7 +327,8 @@ SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *param
  */
 extern size_t
 SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
-                                  SocketQUICRole role, uint8_t *output,
+                                  SocketQUICRole role,
+                                  uint8_t *output,
                                   size_t output_size);
 
 /* ============================================================================
@@ -351,7 +351,8 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
  * @return QUIC_TP_OK on success, error code otherwise.
  */
 extern SocketQUICTransportParams_Result
-SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
+SocketQUICTransportParams_decode (const uint8_t *data,
+                                  size_t len,
                                   SocketQUICRole peer_role,
                                   SocketQUICTransportParams_T *params,
                                   size_t *consumed);
@@ -414,8 +415,8 @@ SocketQUICTransportParams_copy (SocketQUICTransportParams_T *dst,
  *
  * @return Human-readable string describing the result.
  */
-extern const char *
-SocketQUICTransportParams_result_string (SocketQUICTransportParams_Result result);
+extern const char *SocketQUICTransportParams_result_string (
+    SocketQUICTransportParams_Result result);
 
 /**
  * @brief Get string representation of transport parameter ID.
@@ -438,8 +439,7 @@ SocketQUICTransportParams_id_string (SocketQUICTransportParamID id);
  *
  * @return Effective idle timeout in milliseconds, or 0 if disabled.
  */
-extern uint64_t
-SocketQUICTransportParams_effective_idle_timeout (
+extern uint64_t SocketQUICTransportParams_effective_idle_timeout (
     const SocketQUICTransportParams_T *local,
     const SocketQUICTransportParams_T *remote);
 

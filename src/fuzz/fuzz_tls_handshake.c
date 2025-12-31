@@ -129,9 +129,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Extended handshake loop with poll interval */
           int poll_interval = (size > 3) ? (data[3] % 50) : 10;
-          TLSHandshakeState state
-              = SocketTLS_handshake_loop_ex (socket, (int)timeout_ms,
-                                             poll_interval);
+          TLSHandshakeState state = SocketTLS_handshake_loop_ex (
+              socket, (int)timeout_ms, poll_interval);
           (void)state;
         }
         break;
@@ -169,12 +168,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) {}
-  EXCEPT (SocketTLS_HandshakeFailed) {}
-  EXCEPT (SocketTLS_VerifyFailed) {}
-  EXCEPT (Socket_Failed) {}
-  EXCEPT (Socket_Closed) {}
-  ELSE {}
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   if (socket)

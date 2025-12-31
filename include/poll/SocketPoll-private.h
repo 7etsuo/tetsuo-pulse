@@ -431,19 +431,22 @@ struct T
 /* ==================== Hash Chain Removal Macro ==================== */
 
 /**
- * @brief Generic linked-list removal from hash chain (double-pointer traversal).
+ * @brief Generic linked-list removal from hash chain (double-pointer
+ * traversal).
  * @ingroup event_system
  * @internal
- * @param head Pointer to head pointer of chain (e.g., &poll->socket_data_map[hash])
+ * @param head Pointer to head pointer of chain (e.g.,
+ * &poll->socket_data_map[hash])
  * @param entry_type Type of entries in chain (e.g., SocketData)
  * @param key_field Field name to match (e.g., socket)
  * @param key_value Value to match against key_field
  * @param next_field Field name for next pointer (e.g., next)
  *
- * Removes first matching entry from a hash chain by updating pointer-to-pointer.
- * Uses double-pointer traversal for clean removal without special head case.
- * Consolidates duplicate removal logic in remove_socket_data_entry and
- * remove_fd_socket_entry which had identical patterns.
+ * Removes first matching entry from a hash chain by updating
+ * pointer-to-pointer. Uses double-pointer traversal for clean removal without
+ * special head case. Consolidates duplicate removal logic in
+ * remove_socket_data_entry and remove_fd_socket_entry which had identical
+ * patterns.
  *
  * Thread-safe: No (caller must hold mutex)
  * Complexity: O(n) where n = chain length
@@ -462,19 +465,19 @@ struct T
  * @see remove_fd_socket_entry() for usage in FD socket removal
  */
 #define HASH_CHAIN_REMOVE(head, entry_type, key_field, key_value, next_field) \
-  do                                                                           \
-    {                                                                          \
-      entry_type **_pp = (head);                                               \
-      while (*_pp)                                                             \
-        {                                                                      \
-          if ((*_pp)->key_field == (key_value))                                \
-            {                                                                  \
-              *_pp = (*_pp)->next_field;                                       \
-              break;                                                           \
-            }                                                                  \
-          _pp = &(*_pp)->next_field;                                           \
-        }                                                                      \
-    }                                                                          \
+  do                                                                          \
+    {                                                                         \
+      entry_type **_pp = (head);                                              \
+      while (*_pp)                                                            \
+        {                                                                     \
+          if ((*_pp)->key_field == (key_value))                               \
+            {                                                                 \
+              *_pp = (*_pp)->next_field;                                      \
+              break;                                                          \
+            }                                                                 \
+          _pp = &(*_pp)->next_field;                                          \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 /* ==================== Exception Handling ==================== */

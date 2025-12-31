@@ -21,8 +21,8 @@
  * - Edge cases in offload status queries
  * - Memory safety during enable/disable cycles
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_tls_ktls
- * Run:   ./fuzz_tls_ktls corpus/tls_ktls/ -fork=16 -max_len=256
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_tls_ktls Run:   ./fuzz_tls_ktls corpus/tls_ktls/ -fork=16 -max_len=256
  */
 
 #if SOCKET_HAS_TLS
@@ -65,15 +65,18 @@ verify_ktls_constants (void)
   assert (SOCKET_TLS_KTLS_ENABLED == 0 || SOCKET_TLS_KTLS_ENABLED == 1);
 
   /* Kernel version requirements (hex-encoded) */
-  assert (SOCKET_TLS_KTLS_MIN_KERNEL_TX == 0x040D00);   /* 4.13.0 */
-  assert (SOCKET_TLS_KTLS_MIN_KERNEL_RX == 0x041100);   /* 4.17.0 */
+  assert (SOCKET_TLS_KTLS_MIN_KERNEL_TX == 0x040D00);     /* 4.13.0 */
+  assert (SOCKET_TLS_KTLS_MIN_KERNEL_RX == 0x041100);     /* 4.17.0 */
   assert (SOCKET_TLS_KTLS_MIN_KERNEL_CHACHA == 0x050B00); /* 5.11.0 */
 
   /* Sendfile buffer size - reasonable bounds */
   assert (SOCKET_TLS_KTLS_SENDFILE_BUFSIZE >= 4096);
   assert (SOCKET_TLS_KTLS_SENDFILE_BUFSIZE <= (1024 * 1024));
-  assert ((SOCKET_TLS_KTLS_SENDFILE_BUFSIZE & (SOCKET_TLS_KTLS_SENDFILE_BUFSIZE - 1)) == 0
-          || SOCKET_TLS_KTLS_SENDFILE_BUFSIZE == 64 * 1024); /* Power of 2 or 64KB */
+  assert ((SOCKET_TLS_KTLS_SENDFILE_BUFSIZE
+           & (SOCKET_TLS_KTLS_SENDFILE_BUFSIZE - 1))
+              == 0
+          || SOCKET_TLS_KTLS_SENDFILE_BUFSIZE
+                 == 64 * 1024); /* Power of 2 or 64KB */
 }
 
 /* Test availability detection */

@@ -25,8 +25,8 @@
  * - Race conditions in auto-refresh
  * - Invalid CRL file formats
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_tls_crl
- * Run:   ./fuzz_tls_crl corpus/tls_crl/ -fork=16 -max_len=65536
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_tls_crl Run:   ./fuzz_tls_crl corpus/tls_crl/ -fork=16 -max_len=65536
  */
 
 #if SOCKET_HAS_TLS
@@ -69,7 +69,9 @@ enum CrlOp
 
 /* Mock CRL refresh callback for testing */
 static void
-mock_crl_callback (SocketTLSContext_T ctx, const char *path, int success,
+mock_crl_callback (SocketTLSContext_T ctx,
+                   const char *path,
+                   int success,
                    void *user_data)
 {
   (void)ctx;
@@ -226,8 +228,8 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
                                               op_size - sizeof (long));
             if (temp_path)
               {
-                SocketTLSContext_set_crl_auto_refresh (ctx, temp_path, interval,
-                                                       mock_crl_callback, NULL);
+                SocketTLSContext_set_crl_auto_refresh (
+                    ctx, temp_path, interval, mock_crl_callback, NULL);
               }
           }
         break;
@@ -274,7 +276,8 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
               if (zeros)
                 {
                   for (size_t written = 0;
-                       written < oversize && written < SOCKET_TLS_MAX_CRL_SIZE + 4096;
+                       written < oversize
+                       && written < SOCKET_TLS_MAX_CRL_SIZE + 4096;
                        written += 4096)
                     {
                       write (fd, zeros, 4096);
@@ -327,12 +330,19 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
             if (temp_path)
               {
                 /* Test various interval values */
-                long intervals[]
-                    = {0,   -1,  59, 60, 61, 3600, SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL,
-                       SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL + 1, LONG_MAX};
-                size_t idx = op_data[0] % (sizeof (intervals) / sizeof (intervals[0]));
-                SocketTLSContext_set_crl_auto_refresh (ctx, temp_path, intervals[idx],
-                                                       mock_crl_callback, NULL);
+                long intervals[] = { 0,
+                                     -1,
+                                     59,
+                                     60,
+                                     61,
+                                     3600,
+                                     SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL,
+                                     SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL + 1,
+                                     LONG_MAX };
+                size_t idx
+                    = op_data[0] % (sizeof (intervals) / sizeof (intervals[0]));
+                SocketTLSContext_set_crl_auto_refresh (
+                    ctx, temp_path, intervals[idx], mock_crl_callback, NULL);
               }
           }
         break;

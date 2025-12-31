@@ -23,8 +23,8 @@
  * ============================================================================
  */
 
-const Except_T SocketQUICMigration_Failed = { &SocketQUICMigration_Failed,
-                                              "SocketQUICMigration failed" };
+const Except_T SocketQUICMigration_Failed
+    = { &SocketQUICMigration_Failed, "SocketQUICMigration failed" };
 
 /* ============================================================================
  * Helper Functions (Forward Declarations)
@@ -32,11 +32,13 @@ const Except_T SocketQUICMigration_Failed = { &SocketQUICMigration_Failed,
  */
 
 static int sockaddr_equal (const struct sockaddr_storage *a,
-                          const struct sockaddr_storage *b);
-static int sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
+                           const struct sockaddr_storage *b);
+static int sockaddr_to_string (const struct sockaddr_storage *addr,
+                               char *buf,
                                size_t size);
-static SocketQUICPath_T *find_path_by_challenge (
-    SocketQUICMigration_T *migration, const uint8_t challenge[8]);
+static SocketQUICPath_T *
+find_path_by_challenge (SocketQUICMigration_T *migration,
+                        const uint8_t challenge[8]);
 static SocketQUICPath_T *allocate_path_slot (SocketQUICMigration_T *migration);
 static size_t find_path_index (const SocketQUICMigration_T *migration,
                                const SocketQUICPath_T *path);
@@ -47,7 +49,8 @@ static size_t find_path_index (const SocketQUICMigration_T *migration,
  */
 
 SocketQUICMigration_T *
-SocketQUICMigration_new (Arena_T arena, SocketQUICConnection_T connection,
+SocketQUICMigration_new (Arena_T arena,
+                         SocketQUICConnection_T connection,
                          SocketQUICMigration_Role role)
 {
   SocketQUICMigration_T *migration;
@@ -198,15 +201,18 @@ SocketQUICMigration_probe_path (SocketQUICMigration_T *migration,
       memcpy (&path->peer_addr, peer_addr, sizeof (path->peer_addr));
 
       /* Copy local address from active path */
-      const SocketQUICPath_T *active = SocketQUICMigration_get_active_path (migration);
+      const SocketQUICPath_T *active
+          = SocketQUICMigration_get_active_path (migration);
       if (active != NULL)
-        memcpy (&path->local_addr, &active->local_addr, sizeof (path->local_addr));
+        memcpy (
+            &path->local_addr, &active->local_addr, sizeof (path->local_addr));
 
       migration->path_count++;
     }
 
   /* Generate random challenge data */
-  if (SocketCrypto_random_bytes (path->challenge, QUIC_PATH_CHALLENGE_SIZE) != 0)
+  if (SocketCrypto_random_bytes (path->challenge, QUIC_PATH_CHALLENGE_SIZE)
+      != 0)
     return QUIC_MIGRATION_ERROR_RANDOM;
 
   /* Set validation state */
@@ -266,9 +272,9 @@ SocketQUICMigration_handle_path_response (SocketQUICMigration_T *migration,
 }
 
 SocketQUICMigration_Result
-SocketQUICMigration_handle_path_challenge (
-    SocketQUICMigration_T *migration, const uint8_t challenge_data[8],
-    uint8_t response_out[8])
+SocketQUICMigration_handle_path_challenge (SocketQUICMigration_T *migration,
+                                           const uint8_t challenge_data[8],
+                                           uint8_t response_out[8])
 {
   if (migration == NULL || challenge_data == NULL || response_out == NULL)
     return QUIC_MIGRATION_ERROR_NULL;
@@ -315,8 +321,7 @@ SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
       path->challenge_count++;
       path->challenge_sent_time = current_time_ms;
 
-      if (SocketCrypto_random_bytes (path->challenge,
-                                    QUIC_PATH_CHALLENGE_SIZE)
+      if (SocketCrypto_random_bytes (path->challenge, QUIC_PATH_CHALLENGE_SIZE)
           != 0)
         {
           /* RNG failure - mark path as permanently failed */
@@ -394,7 +399,8 @@ SocketQUICMigration_initiate (SocketQUICMigration_T *migration,
 SocketQUICMigration_Result
 SocketQUICMigration_handle_peer_address_change (
     SocketQUICMigration_T *migration,
-    const struct sockaddr_storage *peer_addr, uint64_t current_time_ms)
+    const struct sockaddr_storage *peer_addr,
+    uint64_t current_time_ms)
 {
   const SocketQUICPath_T *active_path;
   uint64_t time_since_last_change;
@@ -411,7 +417,8 @@ SocketQUICMigration_handle_peer_address_change (
     return QUIC_MIGRATION_OK; /* No change */
 
   /* Calculate time since last address change */
-  time_since_last_change = current_time_ms - migration->last_peer_addr_change_time;
+  time_since_last_change
+      = current_time_ms - migration->last_peer_addr_change_time;
 
   /* Detect NAT rebinding vs intentional migration */
   if (time_since_last_change < QUIC_NAT_REBIND_WINDOW_MS)
@@ -481,7 +488,8 @@ SocketQUICMigration_update_rtt (SocketQUICPath_T *path, uint64_t rtt_us)
   else
     {
       /* Smoothed RTT = (7 * SRTT + rtt_sample) / 8 */
-      path->rtt_us = (QUIC_RTT_SMOOTH_WEIGHT * path->rtt_us + rtt_us) / QUIC_RTT_SMOOTH_DENOM;
+      path->rtt_us = (QUIC_RTT_SMOOTH_WEIGHT * path->rtt_us + rtt_us)
+                     / QUIC_RTT_SMOOTH_DENOM;
     }
 }
 
@@ -560,7 +568,8 @@ SocketQUICMigration_result_string (SocketQUICMigration_Result result)
 }
 
 int
-SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
+SocketQUICMigration_path_to_string (const SocketQUICPath_T *path,
+                                    char *buf,
                                     size_t size)
 {
   char local_str[QUIC_SOCKADDR_STRING_MAX];
@@ -578,10 +587,13 @@ SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
     return -1;
   SocketQUICConnectionID_to_hex (&path->cid, cid_str, sizeof (cid_str));
 
-  written = snprintf (buf, size,
+  written = snprintf (buf,
+                      size,
                       "Path[%s -> %s, CID=%s, state=%s, cwnd=%lu, "
                       "rtt=%lu us]",
-                      local_str, peer_str, cid_str,
+                      local_str,
+                      peer_str,
+                      cid_str,
                       SocketQUICMigration_state_string (path->state),
                       (unsigned long)path->cwnd,
                       (unsigned long)path->rtt_us);
@@ -630,8 +642,7 @@ sockaddr_equal (const struct sockaddr_storage *a,
       a6 = (const struct sockaddr_in6 *)a;
       b6 = (const struct sockaddr_in6 *)b;
 
-      return (memcmp (&a6->sin6_addr, &b6->sin6_addr,
-                     sizeof (a6->sin6_addr))
+      return (memcmp (&a6->sin6_addr, &b6->sin6_addr, sizeof (a6->sin6_addr))
                   == 0
               && a6->sin6_port == b6->sin6_port);
     }
@@ -700,8 +711,7 @@ format_ipv6_address (const struct sockaddr_in6 *addr6, char *buf, size_t size)
  * @return 0 on success, -1 on error or truncation.
  */
 static int
-sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
-                    size_t size)
+sockaddr_to_string (const struct sockaddr_storage *addr, char *buf, size_t size)
 {
   int written;
 
@@ -744,7 +754,8 @@ find_path_by_challenge (SocketQUICMigration_T *migration,
 
   for (i = 0; i < migration->path_count; i++)
     {
-      if (SocketCrypto_secure_compare (migration->paths[i].challenge, challenge,
+      if (SocketCrypto_secure_compare (migration->paths[i].challenge,
+                                       challenge,
                                        QUIC_PATH_CHALLENGE_SIZE)
           == 0)
         {

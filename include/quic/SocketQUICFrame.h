@@ -33,130 +33,208 @@
 #define QUIC_REASON_MAX_LENGTH 1024
 
 /* Conservative buffer size estimates for QUIC frame encoding.
- * These assume maximum varint encoding (8 bytes) for all variable-length fields.
- * Used for pre-flight buffer size checks in frame encoding functions.
+ * These assume maximum varint encoding (8 bytes) for all variable-length
+ * fields. Used for pre-flight buffer size checks in frame encoding functions.
  */
-#define QUIC_FRAME_MIN_SIZE_RESET_STREAM (1 + 8 + 8 + 8)  /* frame_type + stream_id + error_code + final_size */
-#define QUIC_FRAME_MIN_SIZE_STOP_SENDING (1 + 8 + 8)      /* frame_type + stream_id + error_code */
-#define QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT (1 + 8 + 8 + 8)  /* frame_type + error_code + frame_type_field + reason_len */
-#define QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP (1 + 8 + 8)           /* frame_type + error_code + reason_len */
+#define QUIC_FRAME_MIN_SIZE_RESET_STREAM \
+  (1 + 8 + 8 + 8) /* frame_type + stream_id + error_code + final_size */
+#define QUIC_FRAME_MIN_SIZE_STOP_SENDING \
+  (1 + 8 + 8) /* frame_type + stream_id + error_code */
+#define QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT                       \
+  (1 + 8 + 8 + 8) /* frame_type + error_code + frame_type_field + reason_len \
+                   */
+#define QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP \
+  (1 + 8 + 8) /* frame_type + error_code + reason_len */
 
-typedef enum {
-  QUIC_FRAME_PADDING = 0x00, QUIC_FRAME_PING = 0x01,
-  QUIC_FRAME_ACK = 0x02, QUIC_FRAME_ACK_ECN = 0x03,
-  QUIC_FRAME_RESET_STREAM = 0x04, QUIC_FRAME_STOP_SENDING = 0x05,
-  QUIC_FRAME_CRYPTO = 0x06, QUIC_FRAME_NEW_TOKEN = 0x07,
-  QUIC_FRAME_STREAM = 0x08, QUIC_FRAME_STREAM_MAX = 0x0f,
-  QUIC_FRAME_MAX_DATA = 0x10, QUIC_FRAME_MAX_STREAM_DATA = 0x11,
-  QUIC_FRAME_MAX_STREAMS_BIDI = 0x12, QUIC_FRAME_MAX_STREAMS_UNI = 0x13,
-  QUIC_FRAME_DATA_BLOCKED = 0x14, QUIC_FRAME_STREAM_DATA_BLOCKED = 0x15,
-  QUIC_FRAME_STREAMS_BLOCKED_BIDI = 0x16, QUIC_FRAME_STREAMS_BLOCKED_UNI = 0x17,
-  QUIC_FRAME_NEW_CONNECTION_ID = 0x18, QUIC_FRAME_RETIRE_CONNECTION_ID = 0x19,
-  QUIC_FRAME_PATH_CHALLENGE = 0x1a, QUIC_FRAME_PATH_RESPONSE = 0x1b,
-  QUIC_FRAME_CONNECTION_CLOSE = 0x1c, QUIC_FRAME_CONNECTION_CLOSE_APP = 0x1d,
+typedef enum
+{
+  QUIC_FRAME_PADDING = 0x00,
+  QUIC_FRAME_PING = 0x01,
+  QUIC_FRAME_ACK = 0x02,
+  QUIC_FRAME_ACK_ECN = 0x03,
+  QUIC_FRAME_RESET_STREAM = 0x04,
+  QUIC_FRAME_STOP_SENDING = 0x05,
+  QUIC_FRAME_CRYPTO = 0x06,
+  QUIC_FRAME_NEW_TOKEN = 0x07,
+  QUIC_FRAME_STREAM = 0x08,
+  QUIC_FRAME_STREAM_MAX = 0x0f,
+  QUIC_FRAME_MAX_DATA = 0x10,
+  QUIC_FRAME_MAX_STREAM_DATA = 0x11,
+  QUIC_FRAME_MAX_STREAMS_BIDI = 0x12,
+  QUIC_FRAME_MAX_STREAMS_UNI = 0x13,
+  QUIC_FRAME_DATA_BLOCKED = 0x14,
+  QUIC_FRAME_STREAM_DATA_BLOCKED = 0x15,
+  QUIC_FRAME_STREAMS_BLOCKED_BIDI = 0x16,
+  QUIC_FRAME_STREAMS_BLOCKED_UNI = 0x17,
+  QUIC_FRAME_NEW_CONNECTION_ID = 0x18,
+  QUIC_FRAME_RETIRE_CONNECTION_ID = 0x19,
+  QUIC_FRAME_PATH_CHALLENGE = 0x1a,
+  QUIC_FRAME_PATH_RESPONSE = 0x1b,
+  QUIC_FRAME_CONNECTION_CLOSE = 0x1c,
+  QUIC_FRAME_CONNECTION_CLOSE_APP = 0x1d,
   QUIC_FRAME_HANDSHAKE_DONE = 0x1e,
-  QUIC_FRAME_DATAGRAM = 0x30, QUIC_FRAME_DATAGRAM_LEN = 0x31
+  QUIC_FRAME_DATAGRAM = 0x30,
+  QUIC_FRAME_DATAGRAM_LEN = 0x31
 } SocketQUICFrame_Type;
 
 #define QUIC_FRAME_STREAM_FIN 0x01
 #define QUIC_FRAME_STREAM_LEN 0x02
 #define QUIC_FRAME_STREAM_OFF 0x04
 
-typedef enum {
-  QUIC_FRAME_OK = 0, QUIC_FRAME_ERROR_NULL, QUIC_FRAME_ERROR_TRUNCATED,
-  QUIC_FRAME_ERROR_INVALID, QUIC_FRAME_ERROR_TYPE, QUIC_FRAME_ERROR_PACKET_TYPE,
-  QUIC_FRAME_ERROR_VARINT, QUIC_FRAME_ERROR_STREAM_ID,
-  QUIC_FRAME_ERROR_OVERFLOW, QUIC_FRAME_ERROR_ACK_RANGE
+typedef enum
+{
+  QUIC_FRAME_OK = 0,
+  QUIC_FRAME_ERROR_NULL,
+  QUIC_FRAME_ERROR_TRUNCATED,
+  QUIC_FRAME_ERROR_INVALID,
+  QUIC_FRAME_ERROR_TYPE,
+  QUIC_FRAME_ERROR_PACKET_TYPE,
+  QUIC_FRAME_ERROR_VARINT,
+  QUIC_FRAME_ERROR_STREAM_ID,
+  QUIC_FRAME_ERROR_OVERFLOW,
+  QUIC_FRAME_ERROR_ACK_RANGE
 } SocketQUICFrame_Result;
 
-typedef enum {
-  QUIC_PKT_INITIAL = 0x01, QUIC_PKT_0RTT = 0x02,
-  QUIC_PKT_HANDSHAKE = 0x04, QUIC_PKT_1RTT = 0x08
+typedef enum
+{
+  QUIC_PKT_INITIAL = 0x01,
+  QUIC_PKT_0RTT = 0x02,
+  QUIC_PKT_HANDSHAKE = 0x04,
+  QUIC_PKT_1RTT = 0x08
 } SocketQUICFrame_PacketFlag;
 
-typedef struct SocketQUICFrameAckRange {
-  uint64_t gap; uint64_t length;
+typedef struct SocketQUICFrameAckRange
+{
+  uint64_t gap;
+  uint64_t length;
 } SocketQUICFrameAckRange_T;
 
-typedef struct SocketQUICFrameAck {
-  uint64_t largest_ack; uint64_t ack_delay; uint64_t range_count;
-  uint64_t first_range; uint64_t ect0_count; uint64_t ect1_count;
-  uint64_t ecn_ce_count; SocketQUICFrameAckRange_T *ranges;
+typedef struct SocketQUICFrameAck
+{
+  uint64_t largest_ack;
+  uint64_t ack_delay;
+  uint64_t range_count;
+  uint64_t first_range;
+  uint64_t ect0_count;
+  uint64_t ect1_count;
+  uint64_t ecn_ce_count;
+  SocketQUICFrameAckRange_T *ranges;
   size_t ranges_capacity;
 } SocketQUICFrameAck_T;
 
-typedef struct SocketQUICFrameStream {
-  uint64_t stream_id; uint64_t offset; uint64_t length;
-  const uint8_t *data; int has_fin; int has_length; int has_offset;
+typedef struct SocketQUICFrameStream
+{
+  uint64_t stream_id;
+  uint64_t offset;
+  uint64_t length;
+  const uint8_t *data;
+  int has_fin;
+  int has_length;
+  int has_offset;
 } SocketQUICFrameStream_T;
 
-typedef struct SocketQUICFrameCrypto {
-  uint64_t offset; uint64_t length; const uint8_t *data;
+typedef struct SocketQUICFrameCrypto
+{
+  uint64_t offset;
+  uint64_t length;
+  const uint8_t *data;
 } SocketQUICFrameCrypto_T;
 
-typedef struct SocketQUICFrameResetStream {
-  uint64_t stream_id; uint64_t error_code; uint64_t final_size;
+typedef struct SocketQUICFrameResetStream
+{
+  uint64_t stream_id;
+  uint64_t error_code;
+  uint64_t final_size;
 } SocketQUICFrameResetStream_T;
 
-typedef struct SocketQUICFrameStopSending {
-  uint64_t stream_id; uint64_t error_code;
+typedef struct SocketQUICFrameStopSending
+{
+  uint64_t stream_id;
+  uint64_t error_code;
 } SocketQUICFrameStopSending_T;
 
-typedef struct SocketQUICFrameNewToken {
-  uint64_t token_length; const uint8_t *token;
+typedef struct SocketQUICFrameNewToken
+{
+  uint64_t token_length;
+  const uint8_t *token;
 } SocketQUICFrameNewToken_T;
 
-typedef struct SocketQUICFrameMaxData {
+typedef struct SocketQUICFrameMaxData
+{
   uint64_t max_data;
 } SocketQUICFrameMaxData_T;
 
-typedef struct SocketQUICFrameMaxStreamData {
-  uint64_t stream_id; uint64_t max_data;
+typedef struct SocketQUICFrameMaxStreamData
+{
+  uint64_t stream_id;
+  uint64_t max_data;
 } SocketQUICFrameMaxStreamData_T;
 
-typedef struct SocketQUICFrameMaxStreams {
-  uint64_t max_streams; int is_bidi;
+typedef struct SocketQUICFrameMaxStreams
+{
+  uint64_t max_streams;
+  int is_bidi;
 } SocketQUICFrameMaxStreams_T;
 
-typedef struct SocketQUICFrameDataBlocked {
+typedef struct SocketQUICFrameDataBlocked
+{
   uint64_t limit;
 } SocketQUICFrameDataBlocked_T;
 
-typedef struct SocketQUICFrameStreamDataBlocked {
-  uint64_t stream_id; uint64_t limit;
+typedef struct SocketQUICFrameStreamDataBlocked
+{
+  uint64_t stream_id;
+  uint64_t limit;
 } SocketQUICFrameStreamDataBlocked_T;
 
-typedef struct SocketQUICFrameStreamsBlocked {
-  uint64_t limit; int is_bidi;
+typedef struct SocketQUICFrameStreamsBlocked
+{
+  uint64_t limit;
+  int is_bidi;
 } SocketQUICFrameStreamsBlocked_T;
 
-typedef struct SocketQUICFrameNewConnectionID {
-  uint64_t sequence; uint64_t retire_prior_to; uint8_t cid_length;
-  uint8_t cid[20]; uint8_t stateless_reset_token[16];
+typedef struct SocketQUICFrameNewConnectionID
+{
+  uint64_t sequence;
+  uint64_t retire_prior_to;
+  uint8_t cid_length;
+  uint8_t cid[20];
+  uint8_t stateless_reset_token[16];
 } SocketQUICFrameNewConnectionID_T;
 
-typedef struct SocketQUICFrameRetireConnectionID {
+typedef struct SocketQUICFrameRetireConnectionID
+{
   uint64_t sequence;
 } SocketQUICFrameRetireConnectionID_T;
 
-typedef struct SocketQUICFramePathChallenge {
+typedef struct SocketQUICFramePathChallenge
+{
   uint8_t data[QUIC_PATH_DATA_SIZE];
 } SocketQUICFramePathChallenge_T;
 
-typedef struct SocketQUICFramePathResponse {
+typedef struct SocketQUICFramePathResponse
+{
   uint8_t data[QUIC_PATH_DATA_SIZE];
 } SocketQUICFramePathResponse_T;
 
-typedef struct SocketQUICFrameConnectionClose {
-  uint64_t error_code; uint64_t frame_type; uint64_t reason_length;
-  const uint8_t *reason; int is_app_error;
+typedef struct SocketQUICFrameConnectionClose
+{
+  uint64_t error_code;
+  uint64_t frame_type;
+  uint64_t reason_length;
+  const uint8_t *reason;
+  int is_app_error;
 } SocketQUICFrameConnectionClose_T;
 
-typedef struct SocketQUICFrameDatagram {
-  uint64_t length; const uint8_t *data; int has_length;
+typedef struct SocketQUICFrameDatagram
+{
+  uint64_t length;
+  const uint8_t *data;
+  int has_length;
 } SocketQUICFrameDatagram_T;
 
-typedef union SocketQUICFrameData {
+typedef union SocketQUICFrameData
+{
   SocketQUICFrameAck_T ack;
   SocketQUICFrameStream_T stream;
   SocketQUICFrameCrypto_T crypto;
@@ -177,81 +255,157 @@ typedef union SocketQUICFrameData {
   SocketQUICFrameDatagram_T datagram;
 } SocketQUICFrameData_T;
 
-typedef struct SocketQUICFrame {
-  uint64_t type; SocketQUICFrameData_T data; size_t wire_length;
+typedef struct SocketQUICFrame
+{
+  uint64_t type;
+  SocketQUICFrameData_T data;
+  size_t wire_length;
 } SocketQUICFrame_T;
 
-extern void SocketQUICFrame_init(SocketQUICFrame_T *frame);
-extern SocketQUICFrame_Result SocketQUICFrame_parse(const uint8_t *data, size_t len, SocketQUICFrame_T *frame, size_t *consumed);
-extern SocketQUICFrame_Result SocketQUICFrame_parse_arena(Arena_T arena, const uint8_t *data, size_t len, SocketQUICFrame_T *frame, size_t *consumed);
-extern void SocketQUICFrame_free(SocketQUICFrame_T *frame);
-extern SocketQUICFrame_Result SocketQUICFrame_validate(const SocketQUICFrame_T *frame, int pkt_flags);
-extern int SocketQUICFrame_packet_type_to_flags(SocketQUICPacket_Type pkt_type);
-extern int SocketQUICFrame_is_ack_eliciting(uint64_t frame_type);
-static inline int SocketQUICFrame_is_stream(uint64_t frame_type) {
+extern void SocketQUICFrame_init (SocketQUICFrame_T *frame);
+extern SocketQUICFrame_Result SocketQUICFrame_parse (const uint8_t *data,
+                                                     size_t len,
+                                                     SocketQUICFrame_T *frame,
+                                                     size_t *consumed);
+extern SocketQUICFrame_Result
+SocketQUICFrame_parse_arena (Arena_T arena,
+                             const uint8_t *data,
+                             size_t len,
+                             SocketQUICFrame_T *frame,
+                             size_t *consumed);
+extern void SocketQUICFrame_free (SocketQUICFrame_T *frame);
+extern SocketQUICFrame_Result
+SocketQUICFrame_validate (const SocketQUICFrame_T *frame, int pkt_flags);
+extern int
+SocketQUICFrame_packet_type_to_flags (SocketQUICPacket_Type pkt_type);
+extern int SocketQUICFrame_is_ack_eliciting (uint64_t frame_type);
+static inline int
+SocketQUICFrame_is_stream (uint64_t frame_type)
+{
   return frame_type >= QUIC_FRAME_STREAM && frame_type <= QUIC_FRAME_STREAM_MAX;
 }
-static inline int SocketQUICFrame_stream_flags(uint64_t frame_type) {
+static inline int
+SocketQUICFrame_stream_flags (uint64_t frame_type)
+{
   return (int)(frame_type & 0x07);
 }
-extern const char *SocketQUICFrame_type_string(uint64_t frame_type);
-extern const char *SocketQUICFrame_result_string(SocketQUICFrame_Result result);
-extern int SocketQUICFrame_allowed_packets(uint64_t frame_type);
+extern const char *SocketQUICFrame_type_string (uint64_t frame_type);
+extern const char *
+SocketQUICFrame_result_string (SocketQUICFrame_Result result);
+extern int SocketQUICFrame_allowed_packets (uint64_t frame_type);
 
 /* Flow Control Frame Encoding (RFC 9000 Sections 19.9-19.11) */
-extern size_t SocketQUICFrame_encode_max_data(uint64_t max_data, uint8_t *out, size_t out_size);
-extern size_t SocketQUICFrame_encode_max_stream_data(uint64_t stream_id, uint64_t max_data, uint8_t *out, size_t out_size);
-extern size_t SocketQUICFrame_encode_max_streams(int bidirectional, uint64_t max_streams, uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_max_data (uint64_t max_data,
+                                               uint8_t *out,
+                                               size_t out_size);
+extern size_t SocketQUICFrame_encode_max_stream_data (uint64_t stream_id,
+                                                      uint64_t max_data,
+                                                      uint8_t *out,
+                                                      size_t out_size);
+extern size_t SocketQUICFrame_encode_max_streams (int bidirectional,
+                                                  uint64_t max_streams,
+                                                  uint8_t *out,
+                                                  size_t out_size);
 /* CONNECTION_CLOSE frame encoding (RFC 9000 Section 19.19) */
-extern size_t SocketQUICFrame_encode_connection_close_transport(
-    uint64_t error_code, uint64_t frame_type,
-    const char *reason, uint8_t *out, size_t out_len);
+extern size_t
+SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
+                                                   uint64_t frame_type,
+                                                   const char *reason,
+                                                   uint8_t *out,
+                                                   size_t out_len);
 
-extern size_t SocketQUICFrame_encode_connection_close_app(
-    uint64_t error_code, const char *reason,
-    uint8_t *out, size_t out_len);
+extern size_t SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
+                                                           const char *reason,
+                                                           uint8_t *out,
+                                                           size_t out_len);
 /* Encoding functions (RFC 9000 Section 19.15-19.16) */
-extern size_t SocketQUICFrame_encode_new_connection_id(
-    uint64_t sequence, uint64_t retire_prior_to,
-    uint8_t cid_length, const uint8_t *cid,
-    const uint8_t reset_token[16], uint8_t *out, size_t out_size);
+extern size_t
+SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
+                                          uint64_t retire_prior_to,
+                                          uint8_t cid_length,
+                                          const uint8_t *cid,
+                                          const uint8_t reset_token[16],
+                                          uint8_t *out,
+                                          size_t out_size);
 
-extern size_t SocketQUICFrame_encode_retire_connection_id(
-    uint64_t sequence, uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_retire_connection_id (uint64_t sequence,
+                                                           uint8_t *out,
+                                                           size_t out_size);
 /* Encoding functions (RFC 9000 Sections 19.12-19.14) */
-extern size_t SocketQUICFrame_encode_data_blocked(uint64_t max_data, uint8_t *out, size_t out_size);
-extern size_t SocketQUICFrame_encode_stream_data_blocked(uint64_t stream_id, uint64_t max_data, uint8_t *out, size_t out_size);
-extern size_t SocketQUICFrame_encode_streams_blocked(int bidirectional, uint64_t max_streams, uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_data_blocked (uint64_t max_data,
+                                                   uint8_t *out,
+                                                   size_t out_size);
+extern size_t SocketQUICFrame_encode_stream_data_blocked (uint64_t stream_id,
+                                                          uint64_t max_data,
+                                                          uint8_t *out,
+                                                          size_t out_size);
+extern size_t SocketQUICFrame_encode_streams_blocked (int bidirectional,
+                                                      uint64_t max_streams,
+                                                      uint8_t *out,
+                                                      size_t out_size);
 /* PATH frame encoding/decoding (RFC 9000 §19.17-19.18) */
-extern size_t SocketQUICFrame_encode_path_challenge(const uint8_t data[QUIC_PATH_DATA_SIZE], uint8_t *out, size_t out_size);
-extern size_t SocketQUICFrame_encode_path_response(const uint8_t data[QUIC_PATH_DATA_SIZE], uint8_t *out, size_t out_size);
-extern int SocketQUICFrame_decode_path_challenge(const uint8_t *in, size_t len, uint8_t data[QUIC_PATH_DATA_SIZE]);
-extern int SocketQUICFrame_decode_path_response(const uint8_t *in, size_t len, uint8_t data[QUIC_PATH_DATA_SIZE]);
+extern size_t
+SocketQUICFrame_encode_path_challenge (const uint8_t data[QUIC_PATH_DATA_SIZE],
+                                       uint8_t *out,
+                                       size_t out_size);
+extern size_t
+SocketQUICFrame_encode_path_response (const uint8_t data[QUIC_PATH_DATA_SIZE],
+                                      uint8_t *out,
+                                      size_t out_size);
+extern int
+SocketQUICFrame_decode_path_challenge (const uint8_t *in,
+                                       size_t len,
+                                       uint8_t data[QUIC_PATH_DATA_SIZE]);
+extern int
+SocketQUICFrame_decode_path_response (const uint8_t *in,
+                                      size_t len,
+                                      uint8_t data[QUIC_PATH_DATA_SIZE]);
 
 /* STREAM frame encoding/decoding (RFC 9000 §19.8) */
-extern size_t SocketQUICFrame_encode_stream(uint64_t stream_id, uint64_t offset,
-                                             const uint8_t *data, size_t len,
-                                             int fin, uint8_t *out, size_t out_len);
-extern ssize_t SocketQUICFrame_decode_stream(const uint8_t *data, size_t len,
+extern size_t SocketQUICFrame_encode_stream (uint64_t stream_id,
+                                             uint64_t offset,
+                                             const uint8_t *data,
+                                             size_t len,
+                                             int fin,
+                                             uint8_t *out,
+                                             size_t out_len);
+extern ssize_t SocketQUICFrame_decode_stream (const uint8_t *data,
+                                              size_t len,
                                               SocketQUICFrameStream_T *frame);
 
 /* Stream termination frame encoding (RFC 9000 §19.4-19.5) */
-extern size_t SocketQUICFrame_encode_reset_stream(uint64_t stream_id, uint64_t error_code, uint64_t final_size, uint8_t *out, size_t out_size);
-extern size_t SocketQUICFrame_encode_stop_sending(uint64_t stream_id, uint64_t error_code, uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_reset_stream (uint64_t stream_id,
+                                                   uint64_t error_code,
+                                                   uint64_t final_size,
+                                                   uint8_t *out,
+                                                   size_t out_size);
+extern size_t SocketQUICFrame_encode_stop_sending (uint64_t stream_id,
+                                                   uint64_t error_code,
+                                                   uint8_t *out,
+                                                   size_t out_size);
 
 /* HANDSHAKE_DONE frame encoding (RFC 9000 §19.20) */
-extern size_t SocketQUICFrame_encode_handshake_done(uint8_t *out, size_t out_size);
+extern size_t
+SocketQUICFrame_encode_handshake_done (uint8_t *out, size_t out_size);
 
 /* NEW_TOKEN frame encoding/decoding (RFC 9000 §19.7) */
-extern size_t SocketQUICFrame_encode_new_token(const uint8_t *token, size_t token_len,
-                                                uint8_t *out, size_t out_len);
-extern int SocketQUICFrame_decode_new_token(const uint8_t *data, size_t len,
-                                             uint8_t *token_out, size_t *token_len);
+extern size_t SocketQUICFrame_encode_new_token (const uint8_t *token,
+                                                size_t token_len,
+                                                uint8_t *out,
+                                                size_t out_len);
+extern int SocketQUICFrame_decode_new_token (const uint8_t *data,
+                                             size_t len,
+                                             uint8_t *token_out,
+                                             size_t *token_len);
 
 /* CRYPTO frame encoding/decoding (RFC 9000 §19.6) */
-extern size_t SocketQUICFrame_encode_crypto(uint64_t offset, const uint8_t *data,
-                                             size_t len, uint8_t *out, size_t out_len);
-extern ssize_t SocketQUICFrame_decode_crypto(const uint8_t *data, size_t len,
+extern size_t SocketQUICFrame_encode_crypto (uint64_t offset,
+                                             const uint8_t *data,
+                                             size_t len,
+                                             uint8_t *out,
+                                             size_t out_len);
+extern ssize_t SocketQUICFrame_decode_crypto (const uint8_t *data,
+                                              size_t len,
                                               SocketQUICFrameCrypto_T *frame);
 
 #endif /* SOCKETQUICFRAME_INCLUDED */

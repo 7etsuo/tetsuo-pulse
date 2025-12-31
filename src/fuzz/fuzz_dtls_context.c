@@ -57,17 +57,17 @@ ignore_sigpipe (void)
 /* Operation types - covers Section 5.1 and additional tests */
 typedef enum
 {
-  OP_CREATE_CLIENT_NO_CA = 0,   /* 5.1: Client without CA file */
-  OP_CREATE_CLIENT_WITH_CA,     /* 5.1: Client with CA file (self-signed) */
-  OP_CREATE_SERVER,             /* 5.1: Server with cert/key loading */
-  OP_SERVER_VERIFY_DTLS12,      /* 5.1: Verify DTLS 1.2 enforcement */
-  OP_SET_MTU,                   /* MTU configuration */
-  OP_SET_ALPN,                  /* ALPN configuration */
-  OP_ENABLE_CACHE,              /* Session cache */
-  OP_SET_CIPHER,                /* Cipher list */
-  OP_SET_TIMEOUT,               /* Timeout configuration */
-  OP_COOKIE_EXCHANGE,           /* 5.1: Cookie exchange and cleanup */
-  OP_FULL_SERVER_LIFECYCLE,     /* 5.1: Full server lifecycle with cleanup */
+  OP_CREATE_CLIENT_NO_CA = 0, /* 5.1: Client without CA file */
+  OP_CREATE_CLIENT_WITH_CA,   /* 5.1: Client with CA file (self-signed) */
+  OP_CREATE_SERVER,           /* 5.1: Server with cert/key loading */
+  OP_SERVER_VERIFY_DTLS12,    /* 5.1: Verify DTLS 1.2 enforcement */
+  OP_SET_MTU,                 /* MTU configuration */
+  OP_SET_ALPN,                /* ALPN configuration */
+  OP_ENABLE_CACHE,            /* Session cache */
+  OP_SET_CIPHER,              /* Cipher list */
+  OP_SET_TIMEOUT,             /* Timeout configuration */
+  OP_COOKIE_EXCHANGE,         /* 5.1: Cookie exchange and cleanup */
+  OP_FULL_SERVER_LIFECYCLE,   /* 5.1: Full server lifecycle with cleanup */
   OP_COUNT
 } DTLSContextOp;
 
@@ -89,9 +89,13 @@ create_temp_cert_files (void)
   if (tmp_files_created)
     return 0;
 
-  snprintf (tmp_cert_path, sizeof (tmp_cert_path), "/tmp/fuzz_dtls_cert_%d.pem",
+  snprintf (tmp_cert_path,
+            sizeof (tmp_cert_path),
+            "/tmp/fuzz_dtls_cert_%d.pem",
             getpid ());
-  snprintf (tmp_key_path, sizeof (tmp_key_path), "/tmp/fuzz_dtls_key_%d.pem",
+  snprintf (tmp_key_path,
+            sizeof (tmp_key_path),
+            "/tmp/fuzz_dtls_key_%d.pem",
             getpid ());
 
   f = fopen (tmp_cert_path, "w");
@@ -201,7 +205,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0;
 
   volatile uint8_t op = get_op (data, size);
-  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety) */
+  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety)
+   */
   SocketDTLSContext_T volatile ctx = NULL;
 
   /* Single TRY block - no nesting */
@@ -237,8 +242,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_CREATE_SERVER:
         if (create_temp_cert_files () == 0)
           {
-            ctx = SocketDTLSContext_new_server (tmp_cert_path, tmp_key_path,
-                                                NULL);
+            ctx = SocketDTLSContext_new_server (
+                tmp_cert_path, tmp_key_path, NULL);
             if (ctx)
               {
                 /* Verify server is properly configured */
@@ -255,8 +260,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_SERVER_VERIFY_DTLS12:
         if (create_temp_cert_files () == 0)
           {
-            ctx = SocketDTLSContext_new_server (tmp_cert_path, tmp_key_path,
-                                                NULL);
+            ctx = SocketDTLSContext_new_server (
+                tmp_cert_path, tmp_key_path, NULL);
             if (ctx)
               {
                 int verified = verify_dtls12_enforcement (ctx);
@@ -306,8 +311,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             size_t max_sessions = (data[1] << 8) | data[2];
             long timeout = (data[3] << 8) | data[4];
-            SocketDTLSContext_enable_session_cache (ctx, max_sessions,
-                                                    timeout);
+            SocketDTLSContext_enable_session_cache (ctx, max_sessions, timeout);
             /* Verify cache stats are available */
             size_t hits = 0, misses = 0, stores = 0;
             SocketDTLSContext_get_cache_stats (ctx, &hits, &misses, &stores);
@@ -340,8 +344,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_COOKIE_EXCHANGE:
         if (create_temp_cert_files () == 0)
           {
-            ctx = SocketDTLSContext_new_server (tmp_cert_path, tmp_key_path,
-                                                NULL);
+            ctx = SocketDTLSContext_new_server (
+                tmp_cert_path, tmp_key_path, NULL);
             if (ctx)
               {
                 test_cookie_secret_cleanup (ctx);
@@ -355,8 +359,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_FULL_SERVER_LIFECYCLE:
         if (create_temp_cert_files () == 0)
           {
-            ctx = SocketDTLSContext_new_server (tmp_cert_path, tmp_key_path,
-                                                tmp_cert_path);
+            ctx = SocketDTLSContext_new_server (
+                tmp_cert_path, tmp_key_path, tmp_cert_path);
             if (ctx)
               {
                 /* Verify all configuration */
@@ -395,13 +399,27 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketDTLS_Failed) {}
-  EXCEPT (SocketDTLS_HandshakeFailed) {}
-  EXCEPT (SocketDTLS_VerifyFailed) {}
-  EXCEPT (SocketDTLS_CookieFailed) {}
-  EXCEPT (SocketDTLS_TimeoutExpired) {}
-  EXCEPT (SocketDTLS_ShutdownFailed) {}
-  ELSE {}
+  EXCEPT (SocketDTLS_Failed)
+  {
+  }
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_CookieFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_TimeoutExpired)
+  {
+  }
+  EXCEPT (SocketDTLS_ShutdownFailed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   /* Cleanup */

@@ -49,10 +49,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -109,8 +111,14 @@ TEST (dtls_cookie_enable_on_client_fails)
     ASSERT_NOT_NULL (ctx);
 
     /* Cookie exchange on client should fail */
-    TRY { SocketDTLSContext_enable_cookie_exchange (ctx); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLSContext_enable_cookie_exchange (ctx);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -175,8 +183,14 @@ TEST (dtls_cookie_secret_wrong_length_fails)
     unsigned char short_secret[16];
     memset (short_secret, 0x42, 16);
 
-    TRY { SocketDTLSContext_set_cookie_secret (ctx, short_secret, 16); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLSContext_set_cookie_secret (ctx, short_secret, 16);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -323,8 +337,14 @@ TEST (dtls_cookie_secret_null_fails)
     ASSERT_NOT_NULL (ctx);
 
     /* NULL secret should fail */
-    TRY { SocketDTLSContext_set_cookie_secret (ctx, NULL, 32); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLSContext_set_cookie_secret (ctx, NULL, 32);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -338,7 +358,8 @@ TEST (dtls_cookie_secret_null_fails)
   END_TRY;
 }
 
-/* ==================== Server Listening with Cookie Tests ==================== */
+/* ==================== Server Listening with Cookie Tests ====================
+ */
 
 TEST (dtls_listen_with_cookie)
 {
@@ -375,8 +396,12 @@ TEST (dtls_listen_with_cookie)
               || state == DTLS_HANDSHAKE_COOKIE_EXCHANGE
               || state == DTLS_HANDSHAKE_ERROR);
     }
-    EXCEPT (SocketDTLS_Failed) { /* Expected without client */ }
-    EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+    EXCEPT (SocketDTLS_Failed)
+    { /* Expected without client */
+    }
+    EXCEPT (SocketDTLS_HandshakeFailed)
+    { /* Expected */
+    }
     END_TRY;
   }
   FINALLY

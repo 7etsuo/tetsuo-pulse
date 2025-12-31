@@ -37,8 +37,7 @@ simple_set_error (SocketSimple_ErrorCode code, const char *msg)
   simple_error.errno_value = errno;
   if (msg)
     {
-      snprintf (simple_error.message, sizeof (simple_error.message), "%s",
-                msg);
+      snprintf (simple_error.message, sizeof (simple_error.message), "%s", msg);
     }
   else
     {
@@ -51,8 +50,11 @@ simple_set_error_errno (SocketSimple_ErrorCode code, const char *prefix)
 {
   simple_error.code = code;
   simple_error.errno_value = errno;
-  snprintf (simple_error.message, sizeof (simple_error.message), "%s: %s",
-            prefix, Socket_safe_strerror (errno));
+  snprintf (simple_error.message,
+            sizeof (simple_error.message),
+            "%s: %s",
+            prefix,
+            Socket_safe_strerror (errno));
 }
 
 /* ============================================================================

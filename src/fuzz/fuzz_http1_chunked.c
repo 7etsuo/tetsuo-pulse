@@ -46,11 +46,10 @@
 #include <string.h>
 
 /* Request prefix for chunked encoding tests */
-static const char *chunked_request_prefix
-    = "POST / HTTP/1.1\r\n"
-      "Host: test.com\r\n"
-      "Transfer-Encoding: chunked\r\n"
-      "\r\n";
+static const char *chunked_request_prefix = "POST / HTTP/1.1\r\n"
+                                            "Host: test.com\r\n"
+                                            "Transfer-Encoding: chunked\r\n"
+                                            "\r\n";
 
 /* Request with trailer headers declared */
 static const char *chunked_with_trailer_prefix
@@ -64,24 +63,33 @@ static const char *chunked_with_trailer_prefix
  * Test chunked body reading with variable buffer sizes
  */
 static void
-test_chunked_reading (SocketHTTP1_Parser_T parser, const char *body,
-                      size_t body_len, size_t buf_size)
+test_chunked_reading (SocketHTTP1_Parser_T parser,
+                      const char *body,
+                      size_t body_len,
+                      size_t buf_size)
 {
   char body_buf[8192];
   size_t body_consumed, body_written;
   size_t total_consumed = 0;
 
-  size_t actual_buf_size = buf_size > sizeof (body_buf) ? sizeof (body_buf) : buf_size;
+  size_t actual_buf_size
+      = buf_size > sizeof (body_buf) ? sizeof (body_buf) : buf_size;
 
   while (total_consumed < body_len
          && !SocketHTTP1_Parser_body_complete (parser))
     {
       size_t remaining = body_len - total_consumed;
-      size_t to_read = remaining > actual_buf_size ? actual_buf_size : remaining;
+      size_t to_read
+          = remaining > actual_buf_size ? actual_buf_size : remaining;
 
-      SocketHTTP1_Result result = SocketHTTP1_Parser_read_body (
-          parser, body + total_consumed, to_read, &body_consumed, body_buf,
-          actual_buf_size, &body_written);
+      SocketHTTP1_Result result
+          = SocketHTTP1_Parser_read_body (parser,
+                                          body + total_consumed,
+                                          to_read,
+                                          &body_consumed,
+                                          body_buf,
+                                          actual_buf_size,
+                                          &body_written);
 
       if (body_consumed == 0)
         break;
@@ -98,8 +106,11 @@ test_chunked_reading (SocketHTTP1_Parser_T parser, const char *body,
  * Parse chunked request and read body
  */
 static void
-test_chunked_request (Arena_T arena, const char *body_data, size_t body_len,
-                      const char *prefix, int strict)
+test_chunked_request (Arena_T arena,
+                      const char *body_data,
+                      size_t body_len,
+                      const char *prefix,
+                      int strict)
 {
   SocketHTTP1_Config cfg;
   SocketHTTP1_config_defaults (&cfg);
@@ -126,14 +137,14 @@ test_chunked_request (Arena_T arena, const char *body_data, size_t body_len,
 
           /* Reset and try with larger buffer */
           SocketHTTP1_Parser_reset (parser);
-          SocketHTTP1_Parser_execute (parser, prefix, strlen (prefix),
-                                      &consumed);
+          SocketHTTP1_Parser_execute (
+              parser, prefix, strlen (prefix), &consumed);
           test_chunked_reading (parser, body_data, body_len, 64);
 
           /* Reset and try with even larger buffer */
           SocketHTTP1_Parser_reset (parser);
-          SocketHTTP1_Parser_execute (parser, prefix, strlen (prefix),
-                                      &consumed);
+          SocketHTTP1_Parser_execute (
+              parser, prefix, strlen (prefix), &consumed);
           test_chunked_reading (parser, body_data, body_len, 4096);
         }
     }
@@ -162,16 +173,15 @@ test_chunk_encoding (const uint8_t *data, size_t size)
       size_t required = SocketHTTP1_chunk_encode_size (encode_size);
       if (required <= sizeof (encode_buf))
         {
-          ssize_t encoded = SocketHTTP1_chunk_encode (data, encode_size,
-                                                      encode_buf,
-                                                      sizeof (encode_buf));
+          ssize_t encoded = SocketHTTP1_chunk_encode (
+              data, encode_size, encode_buf, sizeof (encode_buf));
           (void)encoded;
         }
     }
 
   /* Test final chunk */
-  ssize_t final_len = SocketHTTP1_chunk_final (encode_buf, sizeof (encode_buf),
-                                               NULL);
+  ssize_t final_len
+      = SocketHTTP1_chunk_final (encode_buf, sizeof (encode_buf), NULL);
   (void)final_len;
 }
 
@@ -193,10 +203,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* ====================================================================
      * Test 1: Direct fuzzed chunked body parsing
      * ==================================================================== */
-    test_chunked_request (arena, (const char *)data, size,
-                          chunked_request_prefix, 0);
-    test_chunked_request (arena, (const char *)data, size,
-                          chunked_request_prefix, 1);
+    test_chunked_request (
+        arena, (const char *)data, size, chunked_request_prefix, 0);
+    test_chunked_request (
+        arena, (const char *)data, size, chunked_request_prefix, 1);
 
     /* ====================================================================
      * Test 2: Valid chunked encodings
@@ -236,21 +246,27 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         "00005\r\nhello\r\n0\r\n\r\n",
 
         /* Mixed case hex */
-        "aB\r\n" "01234567890" "\r\n0\r\n\r\n",
+        "aB\r\n"
+        "01234567890"
+        "\r\n0\r\n\r\n",
 
         /* Many small chunks */
         "1\r\na\r\n1\r\nb\r\n1\r\nc\r\n1\r\nd\r\n1\r\ne\r\n0\r\n\r\n",
       };
 
-      for (size_t i = 0;
-           i < sizeof (valid_chunked) / sizeof (valid_chunked[0]); i++)
+      for (size_t i = 0; i < sizeof (valid_chunked) / sizeof (valid_chunked[0]);
+           i++)
         {
-          test_chunked_request (arena, valid_chunked[i],
+          test_chunked_request (arena,
+                                valid_chunked[i],
                                 strlen (valid_chunked[i]),
-                                chunked_request_prefix, 0);
-          test_chunked_request (arena, valid_chunked[i],
+                                chunked_request_prefix,
+                                0);
+          test_chunked_request (arena,
+                                valid_chunked[i],
                                 strlen (valid_chunked[i]),
-                                chunked_request_prefix, 1);
+                                chunked_request_prefix,
+                                1);
         }
     }
 
@@ -326,14 +342,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (malformed_chunked) / sizeof (malformed_chunked[0]); i++)
+           i < sizeof (malformed_chunked) / sizeof (malformed_chunked[0]);
+           i++)
         {
-          test_chunked_request (arena, malformed_chunked[i],
+          test_chunked_request (arena,
+                                malformed_chunked[i],
                                 strlen (malformed_chunked[i]),
-                                chunked_request_prefix, 0);
-          test_chunked_request (arena, malformed_chunked[i],
+                                chunked_request_prefix,
+                                0);
+          test_chunked_request (arena,
+                                malformed_chunked[i],
                                 strlen (malformed_chunked[i]),
-                                chunked_request_prefix, 1);
+                                chunked_request_prefix,
+                                1);
         }
     }
 
@@ -369,14 +390,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (chunked_trailers) / sizeof (chunked_trailers[0]); i++)
+           i < sizeof (chunked_trailers) / sizeof (chunked_trailers[0]);
+           i++)
         {
-          test_chunked_request (arena, chunked_trailers[i],
+          test_chunked_request (arena,
+                                chunked_trailers[i],
                                 strlen (chunked_trailers[i]),
-                                chunked_with_trailer_prefix, 0);
-          test_chunked_request (arena, chunked_trailers[i],
+                                chunked_with_trailer_prefix,
+                                0);
+          test_chunked_request (arena,
+                                chunked_trailers[i],
                                 strlen (chunked_trailers[i]),
-                                chunked_with_trailer_prefix, 1);
+                                chunked_with_trailer_prefix,
+                                1);
         }
     }
 
@@ -402,7 +428,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Very long extension */
         ("5;name=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-        "\r\nhello\r\n0\r\n\r\n"),
+         "\r\nhello\r\n0\r\n\r\n"),
 
         /* Many extensions */
         "5;a;b;c;d;e;f;g;h;i;j\r\nhello\r\n0\r\n\r\n",
@@ -412,11 +438,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (extension_tests) / sizeof (extension_tests[0]); i++)
+           i < sizeof (extension_tests) / sizeof (extension_tests[0]);
+           i++)
         {
-          test_chunked_request (arena, extension_tests[i],
+          test_chunked_request (arena,
+                                extension_tests[i],
                                 strlen (extension_tests[i]),
-                                chunked_request_prefix, 0);
+                                chunked_request_prefix,
+                                0);
         }
     }
 
@@ -451,8 +480,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       for (size_t i = 0; i < sizeof (size_tests) / sizeof (size_tests[0]); i++)
         {
-          test_chunked_request (arena, size_tests[i], strlen (size_tests[i]),
-                                chunked_request_prefix, 0);
+          test_chunked_request (arena,
+                                size_tests[i],
+                                strlen (size_tests[i]),
+                                chunked_request_prefix,
+                                0);
         }
     }
 
@@ -487,8 +519,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             /* Write chunk size */
             int written = snprintf (chunked_body + offset,
-                                   sizeof (chunked_body) - offset, "%zx\r\n",
-                                   chunk_size);
+                                    sizeof (chunked_body) - offset,
+                                    "%zx\r\n",
+                                    chunk_size);
             if (written <= 0)
               break;
             offset += written;
@@ -514,10 +547,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             memcpy (chunked_body + offset, "0\r\n\r\n", 5);
             offset += 5;
 
-            test_chunked_request (arena, chunked_body, offset,
-                                  chunked_request_prefix, 0);
-            test_chunked_request (arena, chunked_body, offset,
-                                  chunked_request_prefix, 1);
+            test_chunked_request (
+                arena, chunked_body, offset, chunked_request_prefix, 0);
+            test_chunked_request (
+                arena, chunked_body, offset, chunked_request_prefix, 1);
           }
       }
 
@@ -537,9 +570,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Parse headers first */
           size_t consumed;
-          SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
-              parser, chunked_request_prefix, strlen (chunked_request_prefix),
-              &consumed);
+          SocketHTTP1_Result result
+              = SocketHTTP1_Parser_execute (parser,
+                                            chunked_request_prefix,
+                                            strlen (chunked_request_prefix),
+                                            &consumed);
 
           if (result == HTTP1_OK)
             {
@@ -551,9 +586,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               while (total < test_len
                      && !SocketHTTP1_Parser_body_complete (parser))
                 {
-                  SocketHTTP1_Result body_result = SocketHTTP1_Parser_read_body (
-                      parser, test_body + total, 1, &body_consumed, body_buf, 1,
-                      &body_written);
+                  SocketHTTP1_Result body_result
+                      = SocketHTTP1_Parser_read_body (parser,
+                                                      test_body + total,
+                                                      1,
+                                                      &body_consumed,
+                                                      body_buf,
+                                                      1,
+                                                      &body_written);
 
                   if (body_consumed == 0)
                     break;

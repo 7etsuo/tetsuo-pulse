@@ -52,8 +52,9 @@
 
 #define TEST_PORT_BASE 19000
 #define TEST_HOST "127.0.0.1"
-#define LOAD_TEST_CONNECTIONS 100 /* Reduced for unit test (actual: 10000+)   \
-                                   */
+#define LOAD_TEST_CONNECTIONS                   \
+  100 /* Reduced for unit test (actual: 10000+) \
+       */
 #define LOAD_TEST_CONCURRENT 50
 #define LOAD_TEST_REQUESTS_PER_CONN 10
 #define CLIENT_THREADS 4
@@ -149,7 +150,8 @@ streaming_handler (SocketHTTPServer_Request_T req, void *userdata)
  */
 
 static int
-validation_callback (SocketHTTPServer_Request_T req, int *reject_status,
+validation_callback (SocketHTTPServer_Request_T req,
+                     int *reject_status,
                      void *userdata)
 {
   (void)userdata;
@@ -210,12 +212,14 @@ client_thread (void *arg)
       /* Send requests on this connection */
       for (int r = 0; r < args->requests_per_conn; r++)
         {
-          snprintf (request, sizeof (request),
+          snprintf (request,
+                    sizeof (request),
                     "GET /test HTTP/1.1\r\n"
                     "Host: %s:%d\r\n"
                     "Connection: keep-alive\r\n"
                     "\r\n",
-                    TEST_HOST, args->port);
+                    TEST_HOST,
+                    args->port);
 
           if (send (fd, request, strlen (request), 0) < 0)
             break;
@@ -443,9 +447,8 @@ TEST (httpserver_streaming_response)
       char response[2048];
       size_t total = 0;
       ssize_t n;
-      while (
-          (n = recv (fd, response + total, sizeof (response) - total - 1, 0))
-          > 0)
+      while ((n = recv (fd, response + total, sizeof (response) - total - 1, 0))
+             > 0)
         {
           total += (size_t)n;
           if (total >= sizeof (response) - 1)
@@ -741,8 +744,7 @@ TEST (httpserver_concurrent_connections)
   SocketHTTPServer_config_defaults (&config);
   config.port = port;
   config.max_connections = LOAD_TEST_CONNECTIONS * 2;
-  config.max_connections_per_client
-      = 0; /* Disable per-client limit for test */
+  config.max_connections_per_client = 0; /* Disable per-client limit for test */
 
   SocketHTTPServer_T server = SocketHTTPServer_new (&config);
   ASSERT_NOT_NULL (server);
@@ -859,8 +861,7 @@ TEST (httpserver_per_client_limit)
 
   /* Should have been limited (some may still connect due to timing) */
   /* The limit is enforced server-side when connection is added to pool */
-  printf ("  Per-client connections allowed: %d (limit: 3)\n",
-          connected_count);
+  printf ("  Per-client connections allowed: %d (limit: 3)\n", connected_count);
   ASSERT (connected_count <= 10); /* Server-side rejection may lag */
 
   SocketHTTPServer_free (&server);

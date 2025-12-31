@@ -97,12 +97,13 @@ upgrade_server_handle_http (UpgradeTestServer *server)
         {
           /* Send simple upgrade response (just test HTTP parsing) */
           char response[256];
-          snprintf (response, sizeof (response),
-                   "HTTP/1.1 101 Switching Protocols\r\n"
-                   "Upgrade: websocket\r\n"
-                   "Connection: Upgrade\r\n"
-                   "Sec-WebSocket-Accept: test_key\r\n"
-                   "\r\n");
+          snprintf (response,
+                    sizeof (response),
+                    "HTTP/1.1 101 Switching Protocols\r\n"
+                    "Upgrade: websocket\r\n"
+                    "Connection: Upgrade\r\n"
+                    "Sec-WebSocket-Accept: test_key\r\n"
+                    "\r\n");
 
           Socket_send (server->client_socket, response, strlen (response));
 
@@ -124,7 +125,8 @@ upgrade_server_thread (void *arg)
       /* Accept client connection */
       if (!server->client_socket)
         {
-          server->client_socket = Socket_accept_timeout (server->listen_socket, 100);
+          server->client_socket
+              = Socket_accept_timeout (server->listen_socket, 100);
           if (server->client_socket)
             {
               Socket_setnonblocking (server->client_socket);
@@ -159,7 +161,8 @@ upgrade_test_server_start (UpgradeTestServer *server)
   ASSERT_NOT_NULL (server->listen_socket);
 
   /* Start server thread */
-  ASSERT_EQ (pthread_create (&server->thread, NULL, upgrade_server_thread, server), 0);
+  ASSERT_EQ (
+      pthread_create (&server->thread, NULL, upgrade_server_thread, server), 0);
 }
 
 static void
@@ -217,7 +220,9 @@ dual_stack_server_thread (void *arg)
               struct sockaddr_storage addr;
               socklen_t addr_len = sizeof (addr);
 
-              if (getpeername (Socket_fd (accepted), (struct sockaddr *)&addr, &addr_len) == 0)
+              if (getpeername (
+                      Socket_fd (accepted), (struct sockaddr *)&addr, &addr_len)
+                  == 0)
                 {
                   if (addr.ss_family == AF_INET)
                     {
@@ -268,7 +273,9 @@ dual_stack_server_start (DualStackServer *server)
   Socket_listen (server->listen_socket_ipv6, 10);
 
   /* Start server thread */
-  ASSERT_EQ (pthread_create (&server->thread, NULL, dual_stack_server_thread, server), 0);
+  ASSERT_EQ (
+      pthread_create (&server->thread, NULL, dual_stack_server_thread, server),
+      0);
 
   /* Give server time to start */
   usleep (50000);
@@ -305,16 +312,17 @@ TEST (integration_http_websocket_upgrade_handshake)
   ASSERT_NOT_NULL (client);
 
   /* Send WebSocket upgrade request */
-  const char *upgrade_request =
-    "GET /ws HTTP/1.1\r\n"
-    "Host: localhost\r\n"
-    "Upgrade: websocket\r\n"
-    "Connection: Upgrade\r\n"
-    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-    "Sec-WebSocket-Version: 13\r\n"
-    "\r\n";
+  const char *upgrade_request
+      = "GET /ws HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+        "Sec-WebSocket-Version: 13\r\n"
+        "\r\n";
 
-  ssize_t sent = Socket_send (client, upgrade_request, strlen (upgrade_request));
+  ssize_t sent
+      = Socket_send (client, upgrade_request, strlen (upgrade_request));
   ASSERT_EQ (sent, (ssize_t)strlen (upgrade_request));
 
   /* Give server time to process and respond */
@@ -324,7 +332,7 @@ TEST (integration_http_websocket_upgrade_handshake)
   ASSERT_EQ (server.upgrade_complete, 1);
 
   /* Read the upgrade response */
-  char response_buf[1024] = {0};
+  char response_buf[1024] = { 0 };
   ssize_t received = Socket_recv (client, response_buf, sizeof (response_buf));
   ASSERT (received > 0);
 
@@ -358,7 +366,7 @@ TEST (integration_ipv6_dual_stack)
   ASSERT_EQ (sent, (ssize_t)strlen (ipv4_msg));
 
   /* Receive echo */
-  char ipv4_buf[1024] = {0};
+  char ipv4_buf[1024] = { 0 };
   ssize_t received = Socket_recv (ipv4_client, ipv4_buf, sizeof (ipv4_buf));
   ASSERT_EQ (received, sent);
   ASSERT_EQ (strcmp (ipv4_buf, ipv4_msg), 0);
@@ -376,7 +384,7 @@ TEST (integration_ipv6_dual_stack)
   ASSERT_EQ (sent, (ssize_t)strlen (ipv6_msg));
 
   /* Receive echo */
-  char ipv6_buf[1024] = {0};
+  char ipv6_buf[1024] = { 0 };
   received = Socket_recv (ipv6_client, ipv6_buf, sizeof (ipv6_buf));
   ASSERT_EQ (received, sent);
   ASSERT_EQ (strcmp (ipv6_buf, ipv6_msg), 0);

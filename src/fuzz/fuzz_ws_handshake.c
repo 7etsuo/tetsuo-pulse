@@ -48,8 +48,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Parse the fuzzed input as HTTP response */
-  result = SocketHTTP1_Parser_execute (parser, (const char *)data, size,
-                                       &consumed);
+  result = SocketHTTP1_Parser_execute (
+      parser, (const char *)data, size, &consumed);
 
   /* If parsing succeeded, validate WebSocket-specific headers */
   if (result == HTTP1_OK)

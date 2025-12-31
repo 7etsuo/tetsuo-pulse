@@ -68,7 +68,8 @@ TEST (connid_pool_add_basic)
 
   SocketQUICConnectionID_T cid;
   ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-  ASSERT_EQ (SocketQUICConnectionID_generate_reset_token (&cid), QUIC_CONNID_OK);
+  ASSERT_EQ (SocketQUICConnectionID_generate_reset_token (&cid),
+             QUIC_CONNID_OK);
 
   SocketQUICConnectionIDPool_Result result
       = SocketQUICConnectionIDPool_add (pool, &cid);
@@ -112,7 +113,8 @@ TEST (connid_pool_add_multiple)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   ASSERT_EQ (SocketQUICConnectionIDPool_active_count (pool), 5);
@@ -132,7 +134,8 @@ TEST (connid_pool_add_respects_peer_limit)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   ASSERT (!SocketQUICConnectionIDPool_can_add (pool));
@@ -203,7 +206,8 @@ TEST (connid_pool_lookup_by_sequence)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   /* Should find sequences 0-4 */
@@ -271,7 +275,8 @@ TEST (connid_pool_remove_not_found)
 TEST (connid_pool_retire_prior_to_basic)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Add 5 CIDs with sequences 0-4 */
@@ -279,7 +284,8 @@ TEST (connid_pool_retire_prior_to_basic)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   ASSERT_EQ (SocketQUICConnectionIDPool_active_count (pool), 5);
@@ -317,7 +323,8 @@ TEST (connid_pool_retire_prior_to_basic)
 TEST (connid_pool_retire_prior_to_cannot_decrease)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Set retire_prior_to to 5 */
@@ -338,7 +345,8 @@ TEST (connid_pool_retire_prior_to_cannot_decrease)
 TEST (connid_pool_retire_sequence)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Add 3 CIDs */
@@ -346,7 +354,8 @@ TEST (connid_pool_retire_sequence)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   ASSERT_EQ (SocketQUICConnectionIDPool_active_count (pool), 3);
@@ -368,7 +377,8 @@ TEST (connid_pool_retire_sequence)
 TEST (connid_pool_purge_retired)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Add 5 CIDs */
@@ -376,7 +386,8 @@ TEST (connid_pool_purge_retired)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   /* Retire first 3 */
@@ -418,7 +429,8 @@ count_iterator (SocketQUICConnectionIDEntry_T *entry, void *context)
 TEST (connid_pool_foreach_skips_retired)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Add 5 CIDs, retire 2 */
@@ -426,7 +438,8 @@ TEST (connid_pool_foreach_skips_retired)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   ASSERT_EQ (SocketQUICConnectionIDPool_retire_prior_to (pool, 2, NULL),
@@ -434,7 +447,8 @@ TEST (connid_pool_foreach_skips_retired)
 
   /* Count via foreach - should only count non-retired */
   int count = 0;
-  int visited = SocketQUICConnectionIDPool_foreach (pool, count_iterator, &count);
+  int visited
+      = SocketQUICConnectionIDPool_foreach (pool, count_iterator, &count);
   ASSERT_EQ (visited, 3);
   ASSERT_EQ (count, 3);
 
@@ -444,7 +458,8 @@ TEST (connid_pool_foreach_skips_retired)
 TEST (connid_pool_get_available)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Add 3 CIDs */
@@ -452,7 +467,8 @@ TEST (connid_pool_get_available)
     {
       SocketQUICConnectionID_T cid;
       ASSERT_EQ (SocketQUICConnectionID_generate (&cid, 8), QUIC_CONNID_OK);
-      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid), QUIC_CONNID_POOL_OK);
+      ASSERT_EQ (SocketQUICConnectionIDPool_add (pool, &cid),
+                 QUIC_CONNID_POOL_OK);
     }
 
   /* Get available - should return first one */
@@ -484,7 +500,8 @@ TEST (connid_pool_get_available)
 TEST (connid_pool_needs_more)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnectionIDPool_T pool = SocketQUICConnectionIDPool_new (arena, 10);
+  SocketQUICConnectionIDPool_T pool
+      = SocketQUICConnectionIDPool_new (arena, 10);
   ASSERT_NOT_NULL (pool);
 
   /* Empty pool needs more for migration (needs at least 2) */

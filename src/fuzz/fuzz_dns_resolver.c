@@ -81,8 +81,10 @@ static volatile int callback_invoked = 0;
 
 /* Test callback - must be async-signal-safe */
 static void
-test_callback (SocketDNSResolver_Query_T query, const SocketDNSResolver_Result *result,
-               int error, void *userdata)
+test_callback (SocketDNSResolver_Query_T query,
+               const SocketDNSResolver_Result *result,
+               int error,
+               void *userdata)
 {
   (void)query;
   (void)userdata;
@@ -154,7 +156,11 @@ get_flags (const uint8_t *data, size_t offset, size_t size)
 
 /* Extract hostname from fuzz data */
 static void
-get_hostname (const uint8_t *data, size_t offset, size_t size, char *hostname, size_t max_len)
+get_hostname (const uint8_t *data,
+              size_t offset,
+              size_t size,
+              char *hostname,
+              size_t max_len)
 {
   size_t avail = 0;
   if (offset < size)
@@ -288,7 +294,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   (void)qname;
 
                   /* Process for a bit */
-                  for (int i = 0; i < 5 && SocketDNSResolver_pending_count (resolver) > 0; i++)
+                  for (int i = 0;
+                       i < 5 && SocketDNSResolver_pending_count (resolver) > 0;
+                       i++)
                     {
                       SocketDNSResolver_process (resolver, 10);
                     }
@@ -319,8 +327,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   int flags = get_flags (data, offset, size);
                   offset++;
 
-                  SocketDNSResolver_Query_T q = SocketDNSResolver_resolve (
-                      resolver, hostname, flags, test_callback, (void *)(uintptr_t)i);
+                  SocketDNSResolver_Query_T q
+                      = SocketDNSResolver_resolve (resolver,
+                                                   hostname,
+                                                   flags,
+                                                   test_callback,
+                                                   (void *)(uintptr_t)i);
 
                   if (q)
                     {
@@ -331,7 +343,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           /* Process all queries */
           int iterations = 0;
-          while (SocketDNSResolver_pending_count (resolver) > 0 && iterations < 20)
+          while (SocketDNSResolver_pending_count (resolver) > 0
+                 && iterations < 20)
             {
               SocketDNSResolver_process (resolver, 10);
               iterations++;
@@ -389,13 +402,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           if (hostname[0] != '\0')
             {
-              SocketDNSResolver_resolve (resolver, hostname, RESOLVER_FLAG_BOTH,
-                                         test_callback, NULL);
+              SocketDNSResolver_resolve (
+                  resolver, hostname, RESOLVER_FLAG_BOTH, test_callback, NULL);
 
               /* Process with varying timeout */
               int timeout = get_timeout (data, 1, size);
 
-              for (int i = 0; i < 10 && SocketDNSResolver_pending_count (resolver) > 0; i++)
+              for (int i = 0;
+                   i < 10 && SocketDNSResolver_pending_count (resolver) > 0;
+                   i++)
                 {
                   int completed = SocketDNSResolver_process (resolver, timeout);
                   (void)completed;
@@ -431,19 +446,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (hostname[0] != '\0')
             {
               /* First query - cache miss */
-              SocketDNSResolver_resolve (resolver, hostname, RESOLVER_FLAG_BOTH,
-                                         test_callback, NULL);
+              SocketDNSResolver_resolve (
+                  resolver, hostname, RESOLVER_FLAG_BOTH, test_callback, NULL);
               SocketDNSResolver_process (resolver, 10);
 
               /* Second query - should be cache hit if first succeeded */
-              SocketDNSResolver_resolve (resolver, hostname, RESOLVER_FLAG_BOTH,
-                                         test_callback, NULL);
+              SocketDNSResolver_resolve (
+                  resolver, hostname, RESOLVER_FLAG_BOTH, test_callback, NULL);
               SocketDNSResolver_process (resolver, 10);
 
               /* Query with NO_CACHE flag */
-              SocketDNSResolver_resolve (resolver, hostname,
-                                         RESOLVER_FLAG_BOTH | RESOLVER_FLAG_NO_CACHE,
-                                         test_callback, NULL);
+              SocketDNSResolver_resolve (resolver,
+                                         hostname,
+                                         RESOLVER_FLAG_BOTH
+                                             | RESOLVER_FLAG_NO_CACHE,
+                                         test_callback,
+                                         NULL);
               SocketDNSResolver_process (resolver, 10);
             }
 
@@ -476,9 +494,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               char addr[64];
               if (offset + 4 <= size)
                 {
-                  snprintf (addr, sizeof (addr), "%u.%u.%u.%u",
-                           data[offset], data[offset + 1],
-                           data[offset + 2], data[offset + 3]);
+                  snprintf (addr,
+                            sizeof (addr),
+                            "%u.%u.%u.%u",
+                            data[offset],
+                            data[offset + 1],
+                            data[offset + 2],
+                            data[offset + 3]);
                   offset += 4;
 
                   int port = ((int)data[offset] << 8) | data[offset + 1];
@@ -526,8 +548,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           if (hostname[0] != '\0')
             {
-              SocketDNSResolver_resolve (resolver, hostname, RESOLVER_FLAG_BOTH,
-                                         test_callback, NULL);
+              SocketDNSResolver_resolve (
+                  resolver, hostname, RESOLVER_FLAG_BOTH, test_callback, NULL);
 
               /* Process briefly */
               for (int i = 0; i < 5; i++)
@@ -548,27 +570,27 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           /* Test localhost */
           callback_invoked = 0;
-          SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_BOTH,
-                                     test_callback, NULL);
+          SocketDNSResolver_resolve (
+              resolver, "localhost", RESOLVER_FLAG_BOTH, test_callback, NULL);
           /* Localhost should invoke callback immediately */
           (void)callback_invoked;
 
           /* Test numeric IPv4 */
           callback_invoked = 0;
-          SocketDNSResolver_resolve (resolver, "192.168.1.1", RESOLVER_FLAG_BOTH,
-                                     test_callback, NULL);
+          SocketDNSResolver_resolve (
+              resolver, "192.168.1.1", RESOLVER_FLAG_BOTH, test_callback, NULL);
           (void)callback_invoked;
 
           /* Test numeric IPv6 */
           callback_invoked = 0;
-          SocketDNSResolver_resolve (resolver, "2001:db8::1", RESOLVER_FLAG_BOTH,
-                                     test_callback, NULL);
+          SocketDNSResolver_resolve (
+              resolver, "2001:db8::1", RESOLVER_FLAG_BOTH, test_callback, NULL);
           (void)callback_invoked;
 
           /* Test IPv6 with zone ID */
           callback_invoked = 0;
-          SocketDNSResolver_resolve (resolver, "fe80::1%lo", RESOLVER_FLAG_BOTH,
-                                     test_callback, NULL);
+          SocketDNSResolver_resolve (
+              resolver, "fe80::1%lo", RESOLVER_FLAG_BOTH, test_callback, NULL);
           (void)callback_invoked;
 
           /* Process any pending */
@@ -587,8 +609,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Configure based on fuzz data */
           if (size > 10)
             {
-              SocketDNSResolver_set_timeout (resolver, get_timeout (data, 1, size));
-              SocketDNSResolver_set_retries (resolver, get_retries (data, 3, size));
+              SocketDNSResolver_set_timeout (resolver,
+                                             get_timeout (data, 1, size));
+              SocketDNSResolver_set_retries (resolver,
+                                             get_retries (data, 3, size));
 
               size_t max_cache = ((size_t)data[4] << 8) | data[5];
               SocketDNSResolver_cache_set_max (resolver, max_cache % 500 + 10);
@@ -607,14 +631,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   int flags = get_flags (data, offset, size);
                   offset++;
 
-                  SocketDNSResolver_resolve (resolver, hostname, flags,
-                                             test_callback, (void *)(uintptr_t)i);
+                  SocketDNSResolver_resolve (resolver,
+                                             hostname,
+                                             flags,
+                                             test_callback,
+                                             (void *)(uintptr_t)i);
                 }
             }
 
           /* Process queries */
           int iterations = 0;
-          while (SocketDNSResolver_pending_count (resolver) > 0 && iterations < 15)
+          while (SocketDNSResolver_pending_count (resolver) > 0
+                 && iterations < 15)
             {
               SocketDNSResolver_process (resolver, 10);
               iterations++;

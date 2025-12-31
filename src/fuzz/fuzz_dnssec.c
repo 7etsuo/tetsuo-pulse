@@ -93,8 +93,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       if (result == 0)
         {
           /* Parse succeeded - verify key tag calculation */
-          uint16_t calc_tag
-              = SocketDNSSEC_calculate_keytag (data, rr.rdlength);
+          uint16_t calc_tag = SocketDNSSEC_calculate_keytag (data, rr.rdlength);
           (void)(calc_tag == dnskey.key_tag);
 
           /* Test algorithm support check */
@@ -138,11 +137,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               time_t test_time
                   = ((time_t)data[DNS_HEADER_SIZE + DNSSEC_RRSIG_FIXED_SIZE]
                      << 24)
-                    | ((time_t)data[DNS_HEADER_SIZE + DNSSEC_RRSIG_FIXED_SIZE
-                                    + 1]
+                    | ((time_t)
+                           data[DNS_HEADER_SIZE + DNSSEC_RRSIG_FIXED_SIZE + 1]
                        << 16)
-                    | ((time_t)data[DNS_HEADER_SIZE + DNSSEC_RRSIG_FIXED_SIZE
-                                    + 2]
+                    | ((time_t)
+                           data[DNS_HEADER_SIZE + DNSSEC_RRSIG_FIXED_SIZE + 2]
                        << 8)
                     | data[DNS_HEADER_SIZE + DNSSEC_RRSIG_FIXED_SIZE + 3];
 
@@ -193,8 +192,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       if (result == 0)
         {
           /* Test digest type support */
-          int digest_supported
-              = SocketDNSSEC_digest_supported (ds.digest_type);
+          int digest_supported = SocketDNSSEC_digest_supported (ds.digest_type);
           (void)digest_supported;
 
           /* Test algorithm support */
@@ -299,7 +297,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           int opt_out = (nsec3.flags & NSEC3_FLAG_OPT_OUT) != 0;
           (void)opt_out;
 
-          /* Test iterations count (should be reasonable, RFC 5155 recommends <= 100) */
+          /* Test iterations count (should be reasonable, RFC 5155 recommends <=
+           * 100) */
           (void)(nsec3.iterations <= 2500);
 
           /* Test salt length */
@@ -333,8 +332,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       size_t half = size / 2;
       size_t len1 = (half > MAX_NAME_LEN - 1) ? MAX_NAME_LEN - 1 : half;
-      size_t len2 = (size - half > MAX_NAME_LEN - 1) ? MAX_NAME_LEN - 1
-                                                      : size - half;
+      size_t len2
+          = (size - half > MAX_NAME_LEN - 1) ? MAX_NAME_LEN - 1 : size - half;
 
       memcpy (name1, data, len1);
       name1[len1] = '\0';

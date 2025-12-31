@@ -499,8 +499,8 @@ extern void SocketPoll_free (T *poll);
  * patterns.
  * @see docs/ASYNC_IO.md for full event-driven examples.
  */
-extern void SocketPoll_add (T poll, Socket_T socket, unsigned events,
-                            void *data);
+extern void
+SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data);
 
 /**
  * @brief Update event monitoring and/or user data for a registered socket.
@@ -523,8 +523,8 @@ extern void SocketPoll_add (T poll, Socket_T socket, unsigned events,
  * @see SocketPoll_Events for event bitmask options.
  * @see SocketEvent_T::data for how user data is delivered in events.
  */
-extern void SocketPoll_mod (T poll, Socket_T socket, unsigned events,
-                            void *data);
+extern void
+SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data);
 
 /**
  * @brief Deregister a socket from the poll's event monitoring set.
@@ -834,8 +834,8 @@ extern const char *SocketPoll_get_backend_name (T poll);
  * @see SocketPoll_getregisteredcount() for just the count.
  * @see SocketPoll_del() to remove specific sockets.
  */
-extern int SocketPoll_get_registered_sockets (T poll, Socket_T *sockets,
-                                              int max);
+extern int
+SocketPoll_get_registered_sockets (T poll, Socket_T *sockets, int max);
 
 /**
  * @brief Modify event mask for a registered socket (add or remove flags).
@@ -869,7 +869,8 @@ extern int SocketPoll_get_registered_sockets (T poll, Socket_T *sockets,
  * @see SocketPoll_mod() for setting exact event mask with data.
  * @see SocketPoll_Events for available event flags.
  */
-extern void SocketPoll_modify_events (T poll, Socket_T socket,
+extern void SocketPoll_modify_events (T poll,
+                                      Socket_T socket,
                                       unsigned add_events,
                                       unsigned remove_events);
 

@@ -200,14 +200,30 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) {}
-  EXCEPT (SocketTLS_HandshakeFailed) {}
-  EXCEPT (SocketTLS_VerifyFailed) {}
-  EXCEPT (SocketTLS_ProtocolError) {}
-  EXCEPT (SocketTLS_ShutdownFailed) {}
-  EXCEPT (Socket_Failed) {}
-  EXCEPT (Socket_Closed) {}
-  ELSE {}
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketTLS_ProtocolError)
+  {
+  }
+  EXCEPT (SocketTLS_ShutdownFailed)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   /* Cleanup */

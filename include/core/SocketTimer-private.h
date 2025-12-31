@@ -47,14 +47,14 @@ SocketTimer_heap_T *SocketTimer_heap_new (Arena_T arena);
 
 void SocketTimer_heap_free (SocketTimer_heap_T **heap);
 
-void SocketTimer_heap_push (SocketTimer_heap_T *heap,
-                            struct SocketTimer_T *timer);
+void
+SocketTimer_heap_push (SocketTimer_heap_T *heap, struct SocketTimer_T *timer);
 struct SocketTimer_T *SocketTimer_heap_pop (SocketTimer_heap_T *heap);
 struct SocketTimer_T *SocketTimer_heap_peek (SocketTimer_heap_T *heap);
 int64_t SocketTimer_heap_peek_delay (SocketTimer_heap_T *heap);
 int SocketTimer_process_expired (SocketTimer_heap_T *heap);
-int SocketTimer_heap_cancel (SocketTimer_heap_T *heap,
-                             struct SocketTimer_T *timer);
+int
+SocketTimer_heap_cancel (SocketTimer_heap_T *heap, struct SocketTimer_T *timer);
 int64_t SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
                                     const struct SocketTimer_T *timer);
 

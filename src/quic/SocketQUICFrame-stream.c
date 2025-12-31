@@ -42,8 +42,10 @@
  */
 
 size_t
-SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
-                                     uint64_t final_size, uint8_t *out,
+SocketQUICFrame_encode_reset_stream (uint64_t stream_id,
+                                     uint64_t error_code,
+                                     uint64_t final_size,
+                                     uint8_t *out,
                                      size_t out_size)
 {
   size_t pos;
@@ -98,21 +100,24 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
  * being discarded on receipt per application request. STOP_SENDING requests
  * that a peer cease transmission on a stream.
  *
- * A STOP_SENDING frame can be sent for streams in the Recv or Size Known states.
- * Receiving a STOP_SENDING frame for a locally initiated stream that has not
- * yet been created MUST be treated as a connection error of type STREAM_STATE_ERROR.
+ * A STOP_SENDING frame can be sent for streams in the Recv or Size Known
+ * states. Receiving a STOP_SENDING frame for a locally initiated stream that
+ * has not yet been created MUST be treated as a connection error of type
+ * STREAM_STATE_ERROR.
  *
  * An endpoint that receives a STOP_SENDING frame MUST send a RESET_STREAM frame
- * if the stream is in the Ready or Send state. If the stream is in the Data Sent
- * state, the endpoint MAY defer sending the RESET_STREAM frame until the packets
- * containing outstanding data are acknowledged or declared lost. If any outstanding
- * data is declared lost, the endpoint SHOULD send a RESET_STREAM frame instead of
- * retransmitting the data.
+ * if the stream is in the Ready or Send state. If the stream is in the Data
+ * Sent state, the endpoint MAY defer sending the RESET_STREAM frame until the
+ * packets containing outstanding data are acknowledged or declared lost. If any
+ * outstanding data is declared lost, the endpoint SHOULD send a RESET_STREAM
+ * frame instead of retransmitting the data.
  */
 
 size_t
-SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
-                                     uint8_t *out, size_t out_size)
+SocketQUICFrame_encode_stop_sending (uint64_t stream_id,
+                                     uint64_t error_code,
+                                     uint8_t *out,
+                                     size_t out_size)
 {
   size_t pos;
 
@@ -177,9 +182,13 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
  */
 
 size_t
-SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
-                               const uint8_t *data, size_t len, int fin,
-                               uint8_t *out, size_t out_len)
+SocketQUICFrame_encode_stream (uint64_t stream_id,
+                               uint64_t offset,
+                               const uint8_t *data,
+                               size_t len,
+                               int fin,
+                               uint8_t *out,
+                               size_t out_len)
 {
   size_t pos;
 
@@ -196,7 +205,8 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
   if (fin)
     frame_type |= QUIC_FRAME_STREAM_FIN; /* Bit 0: FIN */
 
-  frame_type |= QUIC_FRAME_STREAM_LEN; /* Bit 1: LEN (always set for encoding) */
+  frame_type
+      |= QUIC_FRAME_STREAM_LEN; /* Bit 1: LEN (always set for encoding) */
 
   if (offset > 0)
     frame_type |= QUIC_FRAME_STREAM_OFF; /* Bit 2: OFF */
@@ -271,8 +281,8 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
  * @param len    Length of input buffer
  * @param frame  Output: decoded stream frame structure
  *
- * @return Number of bytes consumed on success, or negative error code on failure:
- *         -QUIC_FRAME_ERROR_NULL      (NULL pointer or zero length)
+ * @return Number of bytes consumed on success, or negative error code on
+ * failure: -QUIC_FRAME_ERROR_NULL      (NULL pointer or zero length)
  *         -QUIC_FRAME_ERROR_TYPE      (not a STREAM frame)
  *         -QUIC_FRAME_ERROR_TRUNCATED (incomplete frame data)
  *         -QUIC_FRAME_ERROR_VARINT    (invalid varint encoding)
@@ -280,7 +290,8 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
  */
 
 ssize_t
-SocketQUICFrame_decode_stream (const uint8_t *data, size_t len,
+SocketQUICFrame_decode_stream (const uint8_t *data,
+                               size_t len,
                                SocketQUICFrameStream_T *frame)
 {
   if (!data || !frame || len == 0)

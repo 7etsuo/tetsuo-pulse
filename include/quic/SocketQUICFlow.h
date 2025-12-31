@@ -76,11 +76,11 @@
  */
 typedef enum
 {
-  QUIC_FLOW_OK = 0,              /**< Operation succeeded */
-  QUIC_FLOW_ERROR_NULL,          /**< NULL pointer argument */
-  QUIC_FLOW_ERROR_BLOCKED,       /**< Flow control window exhausted */
-  QUIC_FLOW_ERROR_OVERFLOW,      /**< Value would exceed maximum */
-  QUIC_FLOW_ERROR_INVALID        /**< Invalid parameter value */
+  QUIC_FLOW_OK = 0,         /**< Operation succeeded */
+  QUIC_FLOW_ERROR_NULL,     /**< NULL pointer argument */
+  QUIC_FLOW_ERROR_BLOCKED,  /**< Flow control window exhausted */
+  QUIC_FLOW_ERROR_OVERFLOW, /**< Value would exceed maximum */
+  QUIC_FLOW_ERROR_INVALID   /**< Invalid parameter value */
 } SocketQUICFlow_Result;
 
 /**
@@ -92,18 +92,18 @@ typedef enum
 struct SocketQUICFlowControl
 {
   /* Send direction (data we send to peer) */
-  uint64_t send_max_data;        /**< Peer's advertised MAX_DATA limit */
-  uint64_t send_consumed;        /**< Total bytes sent so far */
+  uint64_t send_max_data; /**< Peer's advertised MAX_DATA limit */
+  uint64_t send_consumed; /**< Total bytes sent so far */
 
   /* Receive direction (data peer sends to us) */
-  uint64_t recv_max_data;        /**< Our advertised MAX_DATA limit */
-  uint64_t recv_consumed;        /**< Total bytes received so far */
+  uint64_t recv_max_data; /**< Our advertised MAX_DATA limit */
+  uint64_t recv_consumed; /**< Total bytes received so far */
 
   /* Stream limits */
-  uint64_t max_streams_bidi;     /**< Max concurrent bidirectional streams */
-  uint64_t max_streams_uni;      /**< Max concurrent unidirectional streams */
-  uint64_t streams_bidi_count;   /**< Current bidirectional stream count */
-  uint64_t streams_uni_count;    /**< Current unidirectional stream count */
+  uint64_t max_streams_bidi;   /**< Max concurrent bidirectional streams */
+  uint64_t max_streams_uni;    /**< Max concurrent unidirectional streams */
+  uint64_t streams_bidi_count; /**< Current bidirectional stream count */
+  uint64_t streams_uni_count;  /**< Current unidirectional stream count */
 };
 
 /**
@@ -113,15 +113,15 @@ struct SocketQUICFlowControl
  */
 struct SocketQUICFlowStream
 {
-  uint64_t stream_id;            /**< Stream ID this flow control applies to */
+  uint64_t stream_id; /**< Stream ID this flow control applies to */
 
   /* Send direction */
-  uint64_t send_max_data;        /**< Peer's MAX_STREAM_DATA limit */
-  uint64_t send_consumed;        /**< Bytes sent on this stream */
+  uint64_t send_max_data; /**< Peer's MAX_STREAM_DATA limit */
+  uint64_t send_consumed; /**< Bytes sent on this stream */
 
   /* Receive direction */
-  uint64_t recv_max_data;        /**< Our MAX_STREAM_DATA limit */
-  uint64_t recv_consumed;        /**< Bytes received on this stream */
+  uint64_t recv_max_data; /**< Our MAX_STREAM_DATA limit */
+  uint64_t recv_consumed; /**< Bytes received on this stream */
 };
 
 /**
@@ -161,12 +161,11 @@ extern SocketQUICFlow_T SocketQUICFlow_new (Arena_T arena);
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_init (
-    SocketQUICFlow_T fc,
-    uint64_t recv_max_data,
-    uint64_t send_max_data,
-    uint64_t max_streams_bidi,
-    uint64_t max_streams_uni);
+extern SocketQUICFlow_Result SocketQUICFlow_init (SocketQUICFlow_T fc,
+                                                  uint64_t recv_max_data,
+                                                  uint64_t send_max_data,
+                                                  uint64_t max_streams_bidi,
+                                                  uint64_t max_streams_uni);
 
 /**
  * @brief Check if we can send data within connection flow control limits.
@@ -188,8 +187,8 @@ extern int SocketQUICFlow_can_send (const SocketQUICFlow_T fc, size_t bytes);
  *
  * @return QUIC_FLOW_OK on success, QUIC_FLOW_ERROR_BLOCKED if over limit.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_consume_send (
-    SocketQUICFlow_T fc, size_t bytes);
+extern SocketQUICFlow_Result
+SocketQUICFlow_consume_send (SocketQUICFlow_T fc, size_t bytes);
 
 /**
  * @brief Consume receive window (data received from peer).
@@ -202,8 +201,8 @@ extern SocketQUICFlow_Result SocketQUICFlow_consume_send (
  *
  * @return QUIC_FLOW_OK on success, QUIC_FLOW_ERROR_BLOCKED if over limit.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_consume_recv (
-    SocketQUICFlow_T fc, size_t bytes);
+extern SocketQUICFlow_Result
+SocketQUICFlow_consume_recv (SocketQUICFlow_T fc, size_t bytes);
 
 /**
  * @brief Update peer's MAX_DATA limit (from received MAX_DATA frame).
@@ -216,8 +215,8 @@ extern SocketQUICFlow_Result SocketQUICFlow_consume_recv (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_update_send_max (
-    SocketQUICFlow_T fc, uint64_t max_data);
+extern SocketQUICFlow_Result
+SocketQUICFlow_update_send_max (SocketQUICFlow_T fc, uint64_t max_data);
 
 /**
  * @brief Update our MAX_DATA limit (to send in MAX_DATA frame).
@@ -229,8 +228,8 @@ extern SocketQUICFlow_Result SocketQUICFlow_update_send_max (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_update_recv_max (
-    SocketQUICFlow_T fc, uint64_t max_data);
+extern SocketQUICFlow_Result
+SocketQUICFlow_update_recv_max (SocketQUICFlow_T fc, uint64_t max_data);
 
 /**
  * @brief Get available send window.
@@ -263,8 +262,8 @@ extern uint64_t SocketQUICFlow_recv_window (const SocketQUICFlow_T fc);
  *
  * @return New stream flow control handle, or NULL on allocation failure.
  */
-extern SocketQUICFlowStream_T SocketQUICFlowStream_new (
-    Arena_T arena, uint64_t stream_id);
+extern SocketQUICFlowStream_T
+SocketQUICFlowStream_new (Arena_T arena, uint64_t stream_id);
 
 /**
  * @brief Initialize stream flow control with custom window sizes.
@@ -276,11 +275,11 @@ extern SocketQUICFlowStream_T SocketQUICFlowStream_new (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlowStream_init (
-    SocketQUICFlowStream_T fs,
-    uint64_t stream_id,
-    uint64_t recv_max_data,
-    uint64_t send_max_data);
+extern SocketQUICFlow_Result
+SocketQUICFlowStream_init (SocketQUICFlowStream_T fs,
+                           uint64_t stream_id,
+                           uint64_t recv_max_data,
+                           uint64_t send_max_data);
 
 /**
  * @brief Check if we can send data on stream within flow control limits.
@@ -290,8 +289,8 @@ extern SocketQUICFlow_Result SocketQUICFlowStream_init (
  *
  * @return 1 if send is allowed, 0 if blocked by flow control.
  */
-extern int SocketQUICFlowStream_can_send (
-    const SocketQUICFlowStream_T fs, size_t bytes);
+extern int
+SocketQUICFlowStream_can_send (const SocketQUICFlowStream_T fs, size_t bytes);
 
 /**
  * @brief Consume send window for stream (data sent to peer).
@@ -301,8 +300,8 @@ extern int SocketQUICFlowStream_can_send (
  *
  * @return QUIC_FLOW_OK on success, QUIC_FLOW_ERROR_BLOCKED if over limit.
  */
-extern SocketQUICFlow_Result SocketQUICFlowStream_consume_send (
-    SocketQUICFlowStream_T fs, size_t bytes);
+extern SocketQUICFlow_Result
+SocketQUICFlowStream_consume_send (SocketQUICFlowStream_T fs, size_t bytes);
 
 /**
  * @brief Consume receive window for stream (data received from peer).
@@ -312,8 +311,8 @@ extern SocketQUICFlow_Result SocketQUICFlowStream_consume_send (
  *
  * @return QUIC_FLOW_OK on success, QUIC_FLOW_ERROR_BLOCKED if over limit.
  */
-extern SocketQUICFlow_Result SocketQUICFlowStream_consume_recv (
-    SocketQUICFlowStream_T fs, size_t bytes);
+extern SocketQUICFlow_Result
+SocketQUICFlowStream_consume_recv (SocketQUICFlowStream_T fs, size_t bytes);
 
 /**
  * @brief Update peer's MAX_STREAM_DATA (from received frame).
@@ -323,8 +322,9 @@ extern SocketQUICFlow_Result SocketQUICFlowStream_consume_recv (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlowStream_update_send_max (
-    SocketQUICFlowStream_T fs, uint64_t max_data);
+extern SocketQUICFlow_Result
+SocketQUICFlowStream_update_send_max (SocketQUICFlowStream_T fs,
+                                      uint64_t max_data);
 
 /**
  * @brief Update our MAX_STREAM_DATA (to send in frame).
@@ -334,8 +334,9 @@ extern SocketQUICFlow_Result SocketQUICFlowStream_update_send_max (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlowStream_update_recv_max (
-    SocketQUICFlowStream_T fs, uint64_t max_data);
+extern SocketQUICFlow_Result
+SocketQUICFlowStream_update_recv_max (SocketQUICFlowStream_T fs,
+                                      uint64_t max_data);
 
 /**
  * @brief Get available send window for stream.
@@ -344,8 +345,8 @@ extern SocketQUICFlow_Result SocketQUICFlowStream_update_recv_max (
  *
  * @return Number of bytes available to send, or 0 if blocked/NULL.
  */
-extern uint64_t SocketQUICFlowStream_send_window (
-    const SocketQUICFlowStream_T fs);
+extern uint64_t
+SocketQUICFlowStream_send_window (const SocketQUICFlowStream_T fs);
 
 /**
  * @brief Get available receive window for stream.
@@ -354,8 +355,8 @@ extern uint64_t SocketQUICFlowStream_send_window (
  *
  * @return Number of bytes available to receive, or 0 if NULL.
  */
-extern uint64_t SocketQUICFlowStream_recv_window (
-    const SocketQUICFlowStream_T fs);
+extern uint64_t
+SocketQUICFlowStream_recv_window (const SocketQUICFlowStream_T fs);
 
 /* ============================================================================
  * Stream Count Management
@@ -370,8 +371,9 @@ extern uint64_t SocketQUICFlowStream_recv_window (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_update_max_streams_bidi (
-    SocketQUICFlow_T fc, uint64_t max_streams);
+extern SocketQUICFlow_Result
+SocketQUICFlow_update_max_streams_bidi (SocketQUICFlow_T fc,
+                                        uint64_t max_streams);
 
 /**
  * @brief Update MAX_STREAMS limit for unidirectional streams.
@@ -381,8 +383,9 @@ extern SocketQUICFlow_Result SocketQUICFlow_update_max_streams_bidi (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_update_max_streams_uni (
-    SocketQUICFlow_T fc, uint64_t max_streams);
+extern SocketQUICFlow_Result
+SocketQUICFlow_update_max_streams_uni (SocketQUICFlow_T fc,
+                                       uint64_t max_streams);
 
 /**
  * @brief Check if a new bidirectional stream can be created.
@@ -411,8 +414,8 @@ extern int SocketQUICFlow_can_open_stream_uni (const SocketQUICFlow_T fc);
  *
  * @return QUIC_FLOW_OK on success, QUIC_FLOW_ERROR_BLOCKED if limit reached.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_open_stream_bidi (
-    SocketQUICFlow_T fc);
+extern SocketQUICFlow_Result
+SocketQUICFlow_open_stream_bidi (SocketQUICFlow_T fc);
 
 /**
  * @brief Increment unidirectional stream count.
@@ -423,8 +426,8 @@ extern SocketQUICFlow_Result SocketQUICFlow_open_stream_bidi (
  *
  * @return QUIC_FLOW_OK on success, QUIC_FLOW_ERROR_BLOCKED if limit reached.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_open_stream_uni (
-    SocketQUICFlow_T fc);
+extern SocketQUICFlow_Result
+SocketQUICFlow_open_stream_uni (SocketQUICFlow_T fc);
 
 /**
  * @brief Decrement bidirectional stream count.
@@ -435,8 +438,8 @@ extern SocketQUICFlow_Result SocketQUICFlow_open_stream_uni (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_close_stream_bidi (
-    SocketQUICFlow_T fc);
+extern SocketQUICFlow_Result
+SocketQUICFlow_close_stream_bidi (SocketQUICFlow_T fc);
 
 /**
  * @brief Decrement unidirectional stream count.
@@ -447,8 +450,8 @@ extern SocketQUICFlow_Result SocketQUICFlow_close_stream_bidi (
  *
  * @return QUIC_FLOW_OK on success, error code otherwise.
  */
-extern SocketQUICFlow_Result SocketQUICFlow_close_stream_uni (
-    SocketQUICFlow_T fc);
+extern SocketQUICFlow_Result
+SocketQUICFlow_close_stream_uni (SocketQUICFlow_T fc);
 
 /* ============================================================================
  * Utility Functions

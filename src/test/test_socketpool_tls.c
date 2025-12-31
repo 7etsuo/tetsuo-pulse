@@ -71,8 +71,7 @@ TEST (socketpool_tls_session_persistence)
 {
 #if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
-  SocketPool_T pool
-      = SocketPool_new (arena, 1, 1024); /* Small to reuse slot */
+  SocketPool_T pool = SocketPool_new (arena, 1, 1024); /* Small to reuse slot */
   Socket_T socket1 = Socket_new (AF_INET, SOCK_STREAM, 0);
 
   /* Mock TLS enabled and session */

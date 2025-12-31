@@ -46,15 +46,15 @@ static pthread_once_t exdata_init_once = PTHREAD_ONCE_INIT;
  * and on failure: frees the SSL_CTX, formats OpenSSL error, and raises
  * SocketTLS_Failed. Reduces repetitive error handling in TLS configuration.
  */
-#define SSL_CTX_CONFIGURE(ssl_ctx, call, error_msg)                           \
-  do                                                                          \
-    {                                                                         \
-      if ((call) != 1)                                                        \
-        {                                                                     \
-          SSL_CTX_free (ssl_ctx);                                             \
-          ctx_raise_openssl_error (error_msg);                                \
-        }                                                                     \
-    }                                                                         \
+#define SSL_CTX_CONFIGURE(ssl_ctx, call, error_msg) \
+  do                                                \
+    {                                               \
+      if ((call) != 1)                              \
+        {                                           \
+          SSL_CTX_free (ssl_ctx);                   \
+          ctx_raise_openssl_error (error_msg);      \
+        }                                           \
+    }                                               \
   while (0)
 
 /**
@@ -79,8 +79,8 @@ init_exdata_idx (void)
 static void
 raise_system_error (const char *context)
 {
-  SOCKET_ERROR_MSG ("%s: %s (errno=%d)", context, Socket_safe_strerror (errno),
-                    errno);
+  SOCKET_ERROR_MSG (
+      "%s: %s (errno=%d)", context, Socket_safe_strerror (errno), errno);
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
 
@@ -139,7 +139,7 @@ ctx_raise_openssl_error (const char *context)
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
 
-typedef void (*TLSContextSetupFunc)(T ctx, void *user_data);
+typedef void (*TLSContextSetupFunc) (T ctx, void *user_data);
 
 /**
  * init_sni_certs - Initialize SNI certificate structure
@@ -229,36 +229,37 @@ init_crl_mutex (T ctx)
 static void
 configure_tls13_only (SSL_CTX *ssl_ctx)
 {
-  SSL_CTX_CONFIGURE (ssl_ctx,
-                     SSL_CTX_set_min_proto_version (ssl_ctx,
-                                                    SOCKET_TLS_MIN_VERSION),
-                     "Failed to set TLS min version");
+  SSL_CTX_CONFIGURE (
+      ssl_ctx,
+      SSL_CTX_set_min_proto_version (ssl_ctx, SOCKET_TLS_MIN_VERSION),
+      "Failed to set TLS min version");
 
-  SSL_CTX_CONFIGURE (ssl_ctx,
-                     SSL_CTX_set_max_proto_version (ssl_ctx,
-                                                    SOCKET_TLS_MAX_VERSION),
-                     "Failed to set TLS max version");
+  SSL_CTX_CONFIGURE (
+      ssl_ctx,
+      SSL_CTX_set_max_proto_version (ssl_ctx, SOCKET_TLS_MAX_VERSION),
+      "Failed to set TLS max version");
 
   /* TLS 1.3 cipher suites (only used for TLS 1.3 connections) */
-  SSL_CTX_CONFIGURE (ssl_ctx,
-                     SSL_CTX_set_ciphersuites (ssl_ctx,
-                                               SOCKET_TLS13_CIPHERSUITES),
-                     "Failed to set TLS 1.3 ciphersuites");
+  SSL_CTX_CONFIGURE (
+      ssl_ctx,
+      SSL_CTX_set_ciphersuites (ssl_ctx, SOCKET_TLS13_CIPHERSUITES),
+      "Failed to set TLS 1.3 ciphersuites");
 
   /* TLS 1.2 cipher suites: ECDHE + AEAD only for forward secrecy
    * Excludes CBC modes (Lucky13), RSA key exchange (no PFS), weak ciphers */
-  SSL_CTX_CONFIGURE (ssl_ctx,
-                     SSL_CTX_set_cipher_list (ssl_ctx,
-                         "ECDHE+AESGCM:ECDHE+CHACHA20:!aNULL:!MD5:!RC4"),
-                     "Failed to set TLS 1.2 ciphers");
+  SSL_CTX_CONFIGURE (
+      ssl_ctx,
+      SSL_CTX_set_cipher_list (ssl_ctx,
+                               "ECDHE+AESGCM:ECDHE+CHACHA20:!aNULL:!MD5:!RC4"),
+      "Failed to set TLS 1.2 ciphers");
 
   /* Security options:
    * - NO_RENEGOTIATION: Prevents CVE-2009-3555, Triple Handshake, DoS
    * - CIPHER_SERVER_PREFERENCE: Server chooses cipher (for servers)
    * - NO_COMPRESSION: Defensive against CRIME-like attacks */
-  SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION
-                                    | SSL_OP_CIPHER_SERVER_PREFERENCE
-                                    | SSL_OP_NO_COMPRESSION);
+  SSL_CTX_set_options (ssl_ctx,
+                       SSL_OP_NO_RENEGOTIATION | SSL_OP_CIPHER_SERVER_PREFERENCE
+                           | SSL_OP_NO_COMPRESSION);
 
   /* Set maximum certificate chain depth to prevent DoS from excessively
    * long chains. SOCKET_TLS_MAX_CERT_CHAIN_DEPTH (default 10) allows
@@ -294,7 +295,8 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
  *   SocketTLSContext_load_certificate(ctx, ((struct MyData*)data)->cert, ...);
  * }
  *
- * T ctx = tls_context_new_with_setup(TLS_server_method(), 1, my_setup, &my_data);
+ * T ctx = tls_context_new_with_setup(TLS_server_method(), 1, my_setup,
+ * &my_data);
  * @endcode
  *
  * @note Setup callback must not free or dispose the context.
@@ -306,26 +308,28 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
  * @internal
  */
 static T
-tls_context_new_with_setup(const SSL_METHOD *method, int is_server,
-                           TLSContextSetupFunc setup, void *user_data)
+tls_context_new_with_setup (const SSL_METHOD *method,
+                            int is_server,
+                            TLSContextSetupFunc setup,
+                            void *user_data)
 {
   T ctx_local;
   volatile T *ctx_ptr = &ctx_local;
 
   TRY
   {
-    *ctx_ptr = ctx_alloc_and_init(method, is_server);
+    *ctx_ptr = ctx_alloc_and_init (method, is_server);
     if (setup != NULL)
-    {
-      setup(*ctx_ptr, user_data);
-    }
+      {
+        setup (*ctx_ptr, user_data);
+      }
   }
   EXCEPT (SocketTLS_Failed)
   {
     if (*ctx_ptr != NULL)
-    {
-      SocketTLSContext_free((T *)ctx_ptr);
-    }
+      {
+        SocketTLSContext_free ((T *)ctx_ptr);
+      }
     RERAISE;
   }
   END_TRY;
@@ -538,19 +542,21 @@ try_load_user_ca (T ctx, const char *ca_file)
   {
     SocketTLSContext_load_ca (ctx, ca_file);
     SOCKET_LOG_INFO_MSG ("Loaded user-provided CA '%s' for client context %p",
-                         ca_file, (void *)ctx);
+                         ca_file,
+                         (void *)ctx);
     RETURN 1;
   }
   EXCEPT (SocketTLS_Failed)
   {
     SOCKET_LOG_WARN_MSG ("Failed to load user-provided CA '%s' for client "
                          "context %p - attempting system CA fallback",
-                         ca_file, (void *)ctx);
+                         ca_file,
+                         (void *)ctx);
     RETURN 0;
   }
   END_TRY;
 
-  return 0;  /* Unreachable, but required for -Werror=return-type */
+  return 0; /* Unreachable, but required for -Werror=return-type */
 }
 
 /**
@@ -632,7 +638,10 @@ SocketTLSContext_new (const SocketTLSConfig_T *config)
 
   ctx = ctx_alloc_and_init (TLS_client_method (), 0);
 
-  TRY { apply_custom_protocol_config (ctx, &local_config); }
+  TRY
+  {
+    apply_custom_protocol_config (ctx, &local_config);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     SocketTLSContext_free (&ctx);
@@ -644,33 +653,38 @@ SocketTLSContext_new (const SocketTLSConfig_T *config)
 }
 
 /* Named struct for server setup data */
-struct ServerSetupData {
+struct ServerSetupData
+{
   const char *cert_file;
   const char *key_file;
   const char *ca_file;
 };
 
 static void
-setup_new_server(T ctx, void *data)
+setup_new_server (T ctx, void *data)
 {
-  struct ServerSetupData *setup_data = (struct ServerSetupData *) data;
+  struct ServerSetupData *setup_data = (struct ServerSetupData *)data;
 
-  SocketTLSContext_load_certificate(ctx, setup_data->cert_file, setup_data->key_file);
-  if (setup_data->ca_file != NULL) {
-    SocketTLSContext_load_ca(ctx, setup_data->ca_file);
-  }
+  SocketTLSContext_load_certificate (
+      ctx, setup_data->cert_file, setup_data->key_file);
+  if (setup_data->ca_file != NULL)
+    {
+      SocketTLSContext_load_ca (ctx, setup_data->ca_file);
+    }
 }
 
 T
-SocketTLSContext_new_server (const char *cert_file, const char *key_file,
+SocketTLSContext_new_server (const char *cert_file,
+                             const char *key_file,
                              const char *ca_file)
 {
   assert (cert_file);
   assert (key_file);
 
-  struct ServerSetupData setup_data = {cert_file, key_file, ca_file};
+  struct ServerSetupData setup_data = { cert_file, key_file, ca_file };
 
-  return tls_context_new_with_setup(TLS_server_method(), 1, setup_new_server, &setup_data);
+  return tls_context_new_with_setup (
+      TLS_server_method (), 1, setup_new_server, &setup_data);
 }
 
 T

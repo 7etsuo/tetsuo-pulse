@@ -541,15 +541,15 @@ struct Socket_T
    * @see docs/TIMEOUTS.md for tls_timeouts details
    * @see core/SocketConfig.h for base timeout inheritance
    */
-  void *tls_ctx; /**< Opaque pointer to SSL_CTX: shared TLS context (certs,
-                  * keys, protocols, ciphers). Set by SocketTLS_enable();
-                  * shared across sockets from same context.
-                  * @private @note Reference-counted; freed on context destroy.
-                  */
-  void *tls_ssl; /**< Opaque pointer to SSL: per-socket TLS session and crypto
-                  * state. Manages handshake, records, alerts, and resumption.
-                  * @private @warning Never NULL after enable without proper
-                  * cleanup. */
+  void *tls_ctx;   /**< Opaque pointer to SSL_CTX: shared TLS context (certs,
+                    * keys, protocols, ciphers). Set by SocketTLS_enable();
+                    * shared across sockets from same context.
+                    * @private @note Reference-counted; freed on context destroy.
+                    */
+  void *tls_ssl;   /**< Opaque pointer to SSL: per-socket TLS session and crypto
+                    * state. Manages handshake, records, alerts, and resumption.
+                    * @private @warning Never NULL after enable without proper
+                    * cleanup. */
   int tls_enabled; /**< Flag indicating TLS is enabled/activated (1=yes, 0=no).
                     * Set by SocketTLS_enable(); checked before TLS operations.
                     * @private @threadsafe Atomic access recommended. */
@@ -569,20 +569,20 @@ struct Socket_T
                                  * enum.
                                  * @private @note Helps diagnose partial
                                  * handshakes in non-blocking mode. */
-  char *
-      tls_sni_hostname; /**< Arena-allocated SNI hostname string for
-                         * server-side virtual hosting. Set via
-                         * SocketTLS_set_hostname(); used in client hello.
-                         * @private @note Validated UTF-8; freed with arena. */
-  void *
-      tls_read_buf; /**< Buffer holding decrypted inbound TLS data or pending
-                     * reads. Managed during recv to handle partial records.
-                     * @private @warning Secure-clear on free; size dynamic. */
-  void *tls_write_buf;     /**< Buffer holding encrypted outbound TLS data or
-                            * pending writes.     Managed during send for partial
-                            * records/handshakes.
-                            * @private @warning Secure-clear on free; size dynamic.
-                            */
+  char
+      *tls_sni_hostname; /**< Arena-allocated SNI hostname string for
+                          * server-side virtual hosting. Set via
+                          * SocketTLS_set_hostname(); used in client hello.
+                          * @private @note Validated UTF-8; freed with arena. */
+  void
+      *tls_read_buf;   /**< Buffer holding decrypted inbound TLS data or pending
+                        * reads. Managed during recv to handle partial records.
+                        * @private @warning Secure-clear on free; size dynamic. */
+  void *tls_write_buf; /**< Buffer holding encrypted outbound TLS data or
+                        * pending writes.     Managed during send for partial
+                        * records/handshakes.
+                        * @private @warning Secure-clear on free; size dynamic.
+                        */
   size_t tls_read_buf_len; /**< Length of usable data in tls_read_buf.
                             * Updated after decryption; consumed by app recv.
                             * @private @note 0 when empty/full processed. */
@@ -617,22 +617,23 @@ struct Socket_T
    * OpenSSL handles the kernel offload internally through its BIO layer.
    *
    * @see SocketTLS_enable_ktls() for activation
-   * @see SocketTLS_is_ktls_tx_active() / SocketTLS_is_ktls_rx_active() for status
+   * @see SocketTLS_is_ktls_tx_active() / SocketTLS_is_ktls_rx_active() for
+   * status
    */
-  int tls_ktls_enabled; /**< kTLS offload requested by user (1=yes, 0=no).
-                         * Set by SocketTLS_enable_ktls(); actual activation
-                         * depends on kernel/OpenSSL support and cipher.
-                         * @private */
-  int tls_ktls_tx_active; /**< kTLS TX (transmit) offload currently active.
-                           * Set after successful handshake if kTLS enabled
-                           * and kernel accepted TX offload.
-                           * Check with BIO_get_ktls_send().
-                           * @private */
-  int tls_ktls_rx_active; /**< kTLS RX (receive) offload currently active.
-                           * Set after successful handshake if kTLS enabled
-                           * and kernel accepted RX offload.
-                           * Check with BIO_get_ktls_recv().
-                           * @private */
+  int tls_ktls_enabled;     /**< kTLS offload requested by user (1=yes, 0=no).
+                             * Set by SocketTLS_enable_ktls(); actual activation
+                             * depends on kernel/OpenSSL support and cipher.
+                             * @private */
+  int tls_ktls_tx_active;   /**< kTLS TX (transmit) offload currently active.
+                             * Set after successful handshake if kTLS enabled
+                             * and kernel accepted TX offload.
+                             * Check with BIO_get_ktls_send().
+                             * @private */
+  int tls_ktls_rx_active;   /**< kTLS RX (receive) offload currently active.
+                             * Set after successful handshake if kTLS enabled
+                             * and kernel accepted RX offload.
+                             * Check with BIO_get_ktls_recv().
+                             * @private */
   int tls_key_update_count; /**< Counter for TLS 1.3 KeyUpdate operations on
                              * this socket. Used for monitoring key rotation
                              * frequency on long-lived connections. Increments

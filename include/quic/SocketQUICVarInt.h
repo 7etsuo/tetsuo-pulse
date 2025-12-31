@@ -89,7 +89,8 @@ typedef enum
  * const uint8_t data[] = {0x40, 0x25}; // Encodes 37
  * uint64_t value;
  * size_t consumed;
- * SocketQUICVarInt_Result res = SocketQUICVarInt_decode(data, 2, &value, &consumed);
+ * SocketQUICVarInt_Result res = SocketQUICVarInt_decode(data, 2, &value,
+ * &consumed);
  * // value = 37, consumed = 2
  * @endcode
  */
@@ -117,8 +118,8 @@ extern SocketQUICVarInt_Result SocketQUICVarInt_decode (const uint8_t *data,
  * // len = 4, buf = {0x80, 0x00, 0x40, 0x00}
  * @endcode
  */
-extern size_t SocketQUICVarInt_encode (uint64_t value, uint8_t *output,
-                                       size_t output_size);
+extern size_t
+SocketQUICVarInt_encode (uint64_t value, uint8_t *output, size_t output_size);
 
 /**
  * @brief Calculate encoded size for a value.
@@ -167,8 +168,7 @@ SocketQUICVarInt_result_string (SocketQUICVarInt_Result result);
  * @endcode
  */
 static inline int
-encode_varint_field (uint64_t value, uint8_t *out, size_t *pos,
-                     size_t out_size)
+encode_varint_field (uint64_t value, uint8_t *out, size_t *pos, size_t out_size)
 {
   size_t encoded = SocketQUICVarInt_encode (value, out + *pos, out_size - *pos);
   if (encoded == 0)
@@ -188,7 +188,8 @@ encode_varint_field (uint64_t value, uint8_t *out, size_t *pos,
  * This reduces code duplication across frame encoding functions that need
  * to validate multiple varint-encoded fields before calculating total size.
  *
- * @param ... Variable number of size_t values to validate (from SocketQUICVarInt_size).
+ * @param ... Variable number of size_t values to validate (from
+ * SocketQUICVarInt_size).
  *
  * @return 1 if all sizes are non-zero (valid), 0 if any size is zero (invalid).
  *
@@ -202,19 +203,19 @@ encode_varint_field (uint64_t value, uint8_t *out, size_t *pos,
  *   return 0; // One or more values exceed varint maximum
  * @endcode
  */
-#define VALIDATE_VARINT_SIZES(...)                                            \
-  ({                                                                          \
-    const size_t sizes[] = { __VA_ARGS__ };                                   \
-    int valid = 1;                                                            \
-    for (size_t i = 0; i < sizeof (sizes) / sizeof (sizes[0]); i++)          \
-      {                                                                       \
-        if (sizes[i] == 0)                                                    \
-          {                                                                   \
-            valid = 0;                                                        \
-            break;                                                            \
-          }                                                                   \
-      }                                                                       \
-    valid;                                                                    \
+#define VALIDATE_VARINT_SIZES(...)                                  \
+  ({                                                                \
+    const size_t sizes[] = { __VA_ARGS__ };                         \
+    int valid = 1;                                                  \
+    for (size_t i = 0; i < sizeof (sizes) / sizeof (sizes[0]); i++) \
+      {                                                             \
+        if (sizes[i] == 0)                                          \
+          {                                                         \
+            valid = 0;                                              \
+            break;                                                  \
+          }                                                         \
+      }                                                             \
+    valid;                                                          \
   })
 
 /** @} */

@@ -65,8 +65,8 @@ extern const Except_T SocketRateLimit_Failed;
  *
  * @threadsafe Yes
  */
-extern T SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec,
-                              size_t bucket_size);
+extern T
+SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size);
 
 /**
  * @brief Dispose of a rate limiter instance.
@@ -94,7 +94,8 @@ extern int SocketRateLimit_try_acquire (T limiter, size_t tokens);
  *
  * @param limiter The rate limiter instance
  * @param tokens  Number of tokens required
- * Returns: Milliseconds to wait (0 = available now, -1 if tokens exceed bucket capacity)
+ * Returns: Milliseconds to wait (0 = available now, -1 if tokens exceed bucket
+ * capacity)
  *
  * @threadsafe Yes
  */
@@ -104,7 +105,8 @@ extern int64_t SocketRateLimit_wait_time_ms (T limiter, size_t tokens);
  * @brief Get the number of currently available tokens in the bucket.
  *
  * @param limiter The rate limiter instance
- * Returns: Number of tokens available after time-based refill (capped at bucket_size)
+ * Returns: Number of tokens available after time-based refill (capped at
+ * bucket_size)
  *
  * @threadsafe Yes
  */
@@ -131,7 +133,8 @@ extern void SocketRateLimit_reset (T limiter);
  *
  * @threadsafe Yes
  */
-extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
+extern void SocketRateLimit_configure (T limiter,
+                                       size_t tokens_per_sec,
                                        size_t bucket_size);
 
 /**

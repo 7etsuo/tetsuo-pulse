@@ -70,8 +70,14 @@ TEST (socketpoll_add_socket)
   setup_signals ();
   SocketPoll_T poll = SocketPoll_new (100);
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-  TRY { SocketPoll_add (poll, socket, POLL_READ, NULL); }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  TRY
+  {
+    SocketPoll_add (poll, socket, POLL_READ, NULL);
+  }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
   SocketPoll_free (&poll);
   Socket_free (&socket);
@@ -84,8 +90,14 @@ TEST (socketpoll_add_with_user_data)
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
   int user_data = 42;
 
-  TRY { SocketPoll_add (poll, socket, POLL_READ, &user_data); }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  TRY
+  {
+    SocketPoll_add (poll, socket, POLL_READ, &user_data);
+  }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -106,7 +118,10 @@ TEST (socketpoll_add_multiple_sockets)
     SocketPoll_add (poll, sock2, POLL_READ, NULL);
     SocketPoll_add (poll, sock3, POLL_READ | POLL_WRITE, NULL);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -126,7 +141,10 @@ TEST (socketpoll_remove_socket)
     SocketPoll_add (poll, socket, POLL_READ, NULL);
     SocketPoll_del (poll, socket);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -147,7 +165,10 @@ TEST (socketpoll_remove_multiple_sockets)
     SocketPoll_del (poll, sock1);
     SocketPoll_del (poll, sock2);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -169,7 +190,10 @@ TEST (socketpoll_mod_events)
     SocketPoll_mod (poll, socket, POLL_WRITE, NULL);
     SocketPoll_mod (poll, socket, POLL_READ | POLL_WRITE, NULL);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -188,7 +212,10 @@ TEST (socketpoll_mod_user_data)
     SocketPoll_add (poll, socket, POLL_READ, &data1);
     SocketPoll_mod (poll, socket, POLL_READ, &data2);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -207,7 +234,10 @@ TEST (socketpoll_wait_timeout)
     int nfds = SocketPoll_wait (poll, &events, 10);
     ASSERT_EQ (nfds, 0);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -245,7 +275,10 @@ TEST (socketpoll_wait_read_event)
         ASSERT_NE (events[0].events & POLL_READ, 0);
       }
   }
-  EXCEPT (SocketPoll_Failed) { (void)0; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    (void)0;
+  }
   FINALLY
   {
     SocketPoll_free (&poll);
@@ -255,8 +288,9 @@ TEST (socketpoll_wait_read_event)
   END_TRY;
 }
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
-       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in    \
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. \
+       */
 
 TEST(socketpoll_wait_write_event)
 {
@@ -366,7 +400,10 @@ TEST (socketpoll_wait_with_user_data)
         ASSERT_EQ (*(int *)events[0].data, user_data);
       }
   }
-  EXCEPT (SocketPoll_Failed) { (void)0; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    (void)0;
+  }
   FINALLY
   {
     SocketPoll_free (&poll);
@@ -388,14 +425,18 @@ TEST (socketpoll_wait_empty_poll)
     int nfds = SocketPoll_wait (poll, &events, 10);
     ASSERT_EQ (nfds, 0);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
 }
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
-       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in    \
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. \
+       */
 
 TEST(socketpoll_wait_negative_timeout)
 {
@@ -447,7 +488,10 @@ TEST (socketpoll_add_remove_readd)
     SocketPoll_del (poll, socket);
     SocketPoll_add (poll, socket, POLL_WRITE, NULL);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -466,7 +510,10 @@ TEST (socketpoll_mod_after_add)
     SocketPoll_mod (poll, socket, POLL_WRITE, NULL);
     SocketPoll_mod (poll, socket, POLL_READ | POLL_WRITE, NULL);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -508,7 +555,10 @@ TEST (socketpoll_accept_via_poll)
           Socket_free (&accepted);
       }
   }
-  EXCEPT (SocketPoll_Failed) { (void)0; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    (void)0;
+  }
   FINALLY
   {
     SocketPoll_free (&poll);
@@ -564,7 +614,10 @@ TEST (socketpoll_data_ready_event)
         Socket_free (&accepted);
       }
   }
-  EXCEPT (SocketPoll_Failed) { (void)0; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    (void)0;
+  }
   FINALLY
   {
     SocketPoll_free (&poll);
@@ -574,7 +627,7 @@ TEST (socketpoll_data_ready_event)
   END_TRY;
 }
 
-#if 0 /* KNOWN_ISSUE: Exception frame corruption after poll completion.
+#if 0 /* KNOWN_ISSUE: Exception frame corruption after poll completion. \
        * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketpoll_multiple_ready_sockets)
 {
@@ -621,8 +674,9 @@ TEST(socketpoll_multiple_ready_sockets)
 
 /* ==================== Event Loop Simulation Tests ==================== */
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
-       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in    \
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. \
+       */
 
 TEST(socketpoll_event_loop_simulation)
 {
@@ -665,7 +719,10 @@ TEST (socketpoll_many_sockets)
   setup_signals ();
   SocketPoll_T poll = NULL;
   TRY poll = SocketPoll_new (10);
-  EXCEPT (SocketPoll_Failed) { return; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    return;
+  }
   END_TRY;
   Socket_T sockets[10] = { NULL };
 
@@ -676,8 +733,12 @@ TEST (socketpoll_many_sockets)
       {
         TRY sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
         SocketPoll_add (poll, sockets[i], POLL_READ, NULL);
-        EXCEPT (Socket_Failed) {}
-        EXCEPT (SocketPoll_Failed) {}
+        EXCEPT (Socket_Failed)
+        {
+        }
+        EXCEPT (SocketPoll_Failed)
+        {
+        }
         END_TRY;
         i++;
       }
@@ -686,12 +747,17 @@ TEST (socketpoll_many_sockets)
     while (i < 10)
       {
         TRY SocketPoll_del (poll, sockets[i]);
-        EXCEPT (SocketPoll_Failed) {}
+        EXCEPT (SocketPoll_Failed)
+        {
+        }
         END_TRY;
         i++;
       }
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   FINALLY
   {
     for (int i = 0; i < 10; i++)
@@ -717,7 +783,10 @@ TEST (socketpoll_rapid_add_remove)
         SocketPoll_del (poll, socket);
       }
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -726,7 +795,7 @@ TEST (socketpoll_rapid_add_remove)
 
 /* ==================== Thread Safety Tests ==================== */
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp thread safety
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp thread safety \
        * issues. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 static void *thread_poll_operations(void *arg)
@@ -800,7 +869,10 @@ TEST (socketpoll_mod_nonexistent_socket)
       SocketPoll_mod (poll, socket, POLL_READ, NULL);
       ASSERT (0); /* Should have raised exception */
     }
-    EXCEPT (Test_Failed) { RERAISE; }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
     ELSE
     {
       ASSERT_NOT_NULL (Except_frame.exception);
@@ -843,7 +915,10 @@ TEST (socketpoll_del_nonexistent_socket)
     SocketPoll_del (poll, socket);
     /* Should succeed silently */
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -865,7 +940,10 @@ TEST (socketpoll_add_duplicate_socket)
       SocketPoll_add (poll, socket, POLL_READ, NULL);
       ASSERT (0); /* Second add should raise exception */
     }
-    EXCEPT (Test_Failed) { RERAISE; }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
     ELSE
     {
       ASSERT_NOT_NULL (Except_frame.exception);
@@ -885,8 +963,9 @@ TEST (socketpoll_add_duplicate_socket)
   ASSERT (caught);
 }
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
-       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in    \
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. \
+       */
 
 TEST(socketpoll_wait_zero_timeout)
 {
@@ -942,7 +1021,7 @@ TEST (socketpoll_data_association_persistence)
   Socket_free (&socket);
 }
 
-#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - segfault during event type
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - segfault during event type \
        * handling. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 TEST(socketpoll_multiple_event_types)
@@ -995,7 +1074,10 @@ TEST (socketpoll_remove_and_re_add)
     SocketPoll_del (poll, socket);
     SocketPoll_add (poll, socket, POLL_READ, &data2);
   }
-  EXCEPT (SocketPoll_Failed) { ASSERT (0); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPoll_free (&poll);
@@ -1041,7 +1123,10 @@ TEST (sockettimer_add_oneshot)
     timer = SocketTimer_add (poll, 10, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
+  EXCEPT (SocketTimer_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Wait for timer to fire */
@@ -1067,7 +1152,10 @@ TEST (sockettimer_add_repeating)
     timer = SocketTimer_add_repeating (poll, 5, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
+  EXCEPT (SocketTimer_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Wait for multiple firings */
@@ -1097,7 +1185,10 @@ TEST (sockettimer_cancel)
     timer = SocketTimer_add (poll, 50, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
+  EXCEPT (SocketTimer_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Cancel timer before it fires */
@@ -1136,7 +1227,10 @@ TEST (sockettimer_multiple_timers_order)
     ASSERT_NOT_NULL (timer2);
     ASSERT_NOT_NULL (timer3);
   }
-  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
+  EXCEPT (SocketTimer_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Wait for all timers to fire - may take multiple poll calls */
@@ -1165,7 +1259,10 @@ TEST (sockettimer_zero_delay)
     SocketTimer_T timer = SocketTimer_add (poll, 0, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
+  EXCEPT (SocketTimer_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Timer with 0 delay should fire immediately */
@@ -1195,7 +1292,10 @@ TEST (sockettimer_remaining_time)
     ASSERT (remaining >= 0);
     ASSERT (remaining <= 100);
   }
-  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
+  EXCEPT (SocketTimer_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* After timer fires, remaining should be -1 */

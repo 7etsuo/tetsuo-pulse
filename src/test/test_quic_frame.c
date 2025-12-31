@@ -122,15 +122,16 @@ TEST (frame_stream_overflow_32bit)
    * Frame format: type (1 byte) | stream_id (varint) | length (varint)
    * Type 0x0a = STREAM with LEN flag set
    * Stream ID = 0 (1 byte: 0x00)
-   * Length = 0x100000000 (5 bytes as 8-byte varint: 0xc0 0x00 0x00 0x01 0x00 0x00 0x00 0x00)
+   * Length = 0x100000000 (5 bytes as 8-byte varint: 0xc0 0x00 0x00 0x01 0x00
+   * 0x00 0x00 0x00)
    *
    * This value is 2^32, which exceeds SIZE_MAX (0xFFFFFFFF) on 32-bit systems
    * but fits in uint64_t. This tests the overflow check added for issue #741.
    */
   uint8_t data[] = {
-    0x0a,                                           /* STREAM with LEN flag */
-    0x00,                                           /* stream_id = 0 */
-    0xc0, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00  /* length = 2^32 */
+    0x0a,                                          /* STREAM with LEN flag */
+    0x00,                                          /* stream_id = 0 */
+    0xc0, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 /* length = 2^32 */
   };
   SocketQUICFrame_T frame;
   size_t consumed;
@@ -190,7 +191,9 @@ TEST (frame_path_challenge)
   ASSERT_EQ (QUIC_FRAME_OK, res);
   ASSERT_EQ (QUIC_FRAME_PATH_CHALLENGE, frame.type);
   ASSERT (memcmp (frame.data.path_challenge.data,
-                  "\x01\x02\x03\x04\x05\x06\x07\x08", 8) == 0);
+                  "\x01\x02\x03\x04\x05\x06\x07\x08",
+                  8)
+          == 0);
 }
 
 TEST (frame_path_response)
@@ -205,17 +208,20 @@ TEST (frame_path_response)
   ASSERT_EQ (QUIC_FRAME_OK, res);
   ASSERT_EQ (QUIC_FRAME_PATH_RESPONSE, frame.type);
   ASSERT (memcmp (frame.data.path_response.data,
-                  "\x11\x22\x33\x44\x55\x66\x77\x88", 8) == 0);
+                  "\x11\x22\x33\x44\x55\x66\x77\x88",
+                  8)
+          == 0);
   ASSERT_EQ (9, consumed);
 }
 
 TEST (frame_path_challenge_encode)
 {
-  uint8_t challenge_data[8] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
+  uint8_t challenge_data[8]
+      = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
   uint8_t encoded[9];
 
-  size_t len = SocketQUICFrame_encode_path_challenge (challenge_data, encoded,
-                                                       sizeof (encoded));
+  size_t len = SocketQUICFrame_encode_path_challenge (
+      challenge_data, encoded, sizeof (encoded));
 
   ASSERT_EQ (9, len);
   ASSERT_EQ (0x1a, encoded[0]);
@@ -227,8 +233,8 @@ TEST (frame_path_response_encode)
   uint8_t response_data[8] = { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0 };
   uint8_t encoded[9];
 
-  size_t len = SocketQUICFrame_encode_path_response (response_data, encoded,
-                                                      sizeof (encoded));
+  size_t len = SocketQUICFrame_encode_path_response (
+      response_data, encoded, sizeof (encoded));
 
   ASSERT_EQ (9, len);
   ASSERT_EQ (0x1b, encoded[0]);
@@ -237,10 +243,12 @@ TEST (frame_path_response_encode)
 
 TEST (frame_path_challenge_decode)
 {
-  uint8_t wire_data[] = { 0x1a, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  uint8_t wire_data[]
+      = { 0x1a, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
   uint8_t decoded[8];
 
-  int consumed = SocketQUICFrame_decode_path_challenge (wire_data, sizeof (wire_data), decoded);
+  int consumed = SocketQUICFrame_decode_path_challenge (
+      wire_data, sizeof (wire_data), decoded);
 
   ASSERT_EQ (9, consumed);
   ASSERT (memcmp (decoded, "\x01\x02\x03\x04\x05\x06\x07\x08", 8) == 0);
@@ -248,10 +256,12 @@ TEST (frame_path_challenge_decode)
 
 TEST (frame_path_response_decode)
 {
-  uint8_t wire_data[] = { 0x1b, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
+  uint8_t wire_data[]
+      = { 0x1b, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
   uint8_t decoded[8];
 
-  int consumed = SocketQUICFrame_decode_path_response (wire_data, sizeof (wire_data), decoded);
+  int consumed = SocketQUICFrame_decode_path_response (
+      wire_data, sizeof (wire_data), decoded);
 
   ASSERT_EQ (9, consumed);
   ASSERT (memcmp (decoded, "\xaa\xbb\xcc\xdd\xee\xff\x00\x11", 8) == 0);
@@ -264,12 +274,13 @@ TEST (frame_path_encode_decode_roundtrip)
   uint8_t decoded[8];
 
   /* Encode */
-  size_t enc_len = SocketQUICFrame_encode_path_challenge (original, encoded,
-                                                           sizeof (encoded));
+  size_t enc_len = SocketQUICFrame_encode_path_challenge (
+      original, encoded, sizeof (encoded));
   ASSERT_EQ (9, enc_len);
 
   /* Decode */
-  int dec_len = SocketQUICFrame_decode_path_challenge (encoded, enc_len, decoded);
+  int dec_len
+      = SocketQUICFrame_decode_path_challenge (encoded, enc_len, decoded);
   ASSERT_EQ (9, dec_len);
 
   /* Verify roundtrip */
@@ -282,10 +293,9 @@ TEST (frame_path_encode_null_checks)
   uint8_t out[9];
 
   /* Null data pointer */
-  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (NULL, out,
-                                                        sizeof (out)));
-  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (NULL, out,
-                                                       sizeof (out)));
+  ASSERT_EQ (0,
+             SocketQUICFrame_encode_path_challenge (NULL, out, sizeof (out)));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (NULL, out, sizeof (out)));
 
   /* Null output pointer */
   ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (data, NULL, 9));
@@ -312,7 +322,8 @@ TEST (frame_path_decode_null_checks)
 
 TEST (frame_path_decode_wrong_type)
 {
-  uint8_t wrong_type[9] = { 0x1b, 0, 0, 0, 0, 0, 0, 0, 0 };  /* PATH_RESPONSE type */
+  uint8_t wrong_type[9]
+      = { 0x1b, 0, 0, 0, 0, 0, 0, 0, 0 }; /* PATH_RESPONSE type */
   uint8_t data[8];
 
   /* Try to decode PATH_RESPONSE as PATH_CHALLENGE */
@@ -358,7 +369,8 @@ TEST (frame_handshake_done_encode)
 {
   uint8_t encoded[1];
 
-  size_t len = SocketQUICFrame_encode_handshake_done (encoded, sizeof (encoded));
+  size_t len
+      = SocketQUICFrame_encode_handshake_done (encoded, sizeof (encoded));
 
   ASSERT_EQ (1, len);
   ASSERT_EQ (0x1e, encoded[0]);
@@ -376,12 +388,10 @@ TEST (frame_validation_padding)
 
   ASSERT_EQ (QUIC_FRAME_OK,
              SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
   ASSERT_EQ (QUIC_FRAME_OK,
              SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 }
 
 TEST (frame_validation_ack)
@@ -394,8 +404,7 @@ TEST (frame_validation_ack)
              SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
   ASSERT_EQ (QUIC_FRAME_OK,
              SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 }
 
 TEST (frame_validation_stream)
@@ -404,12 +413,10 @@ TEST (frame_validation_stream)
 
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 }
 
 TEST (frame_validation_new_token)
@@ -422,8 +429,7 @@ TEST (frame_validation_new_token)
              SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 }
 
 TEST (frame_ack_eliciting)
@@ -434,17 +440,19 @@ TEST (frame_ack_eliciting)
   ASSERT_EQ (0, SocketQUICFrame_is_ack_eliciting (QUIC_FRAME_ACK_ECN));
   ASSERT_EQ (1, SocketQUICFrame_is_ack_eliciting (QUIC_FRAME_STREAM));
   ASSERT_EQ (1, SocketQUICFrame_is_ack_eliciting (QUIC_FRAME_CRYPTO));
-  ASSERT_EQ (0,
-             SocketQUICFrame_is_ack_eliciting (QUIC_FRAME_CONNECTION_CLOSE));
+  ASSERT_EQ (0, SocketQUICFrame_is_ack_eliciting (QUIC_FRAME_CONNECTION_CLOSE));
 }
 
 TEST (frame_type_string)
 {
-  ASSERT (strcmp ("PADDING", SocketQUICFrame_type_string (QUIC_FRAME_PADDING)) == 0);
+  ASSERT (strcmp ("PADDING", SocketQUICFrame_type_string (QUIC_FRAME_PADDING))
+          == 0);
   ASSERT (strcmp ("PING", SocketQUICFrame_type_string (QUIC_FRAME_PING)) == 0);
   ASSERT (strcmp ("ACK", SocketQUICFrame_type_string (QUIC_FRAME_ACK)) == 0);
-  ASSERT (strcmp ("STREAM", SocketQUICFrame_type_string (QUIC_FRAME_STREAM)) == 0);
-  ASSERT (strcmp ("CRYPTO", SocketQUICFrame_type_string (QUIC_FRAME_CRYPTO)) == 0);
+  ASSERT (strcmp ("STREAM", SocketQUICFrame_type_string (QUIC_FRAME_STREAM))
+          == 0);
+  ASSERT (strcmp ("CRYPTO", SocketQUICFrame_type_string (QUIC_FRAME_CRYPTO))
+          == 0);
 }
 
 TEST (frame_error_truncated)
@@ -601,8 +609,8 @@ TEST (frame_encode_max_stream_data_large_stream_id)
   uint64_t stream_id = 0x123456;
   uint64_t max_data = 0xABCDEF;
 
-  len = SocketQUICFrame_encode_max_stream_data (stream_id, max_data, buf,
-                                                 sizeof (buf));
+  len = SocketQUICFrame_encode_max_stream_data (
+      stream_id, max_data, buf, sizeof (buf));
   ASSERT (len > 0);
 
   /* Verify round-trip */
@@ -734,7 +742,8 @@ TEST (frame_encode_connection_close_transport_basic)
       0x0a,   /* error_code: PROTOCOL_VIOLATION */
       0x06,   /* frame_type: CRYPTO */
       "test", /* reason */
-      buf, sizeof (buf));
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -758,10 +767,11 @@ TEST (frame_encode_connection_close_transport_no_reason)
 {
   uint8_t buf[256];
   size_t len = SocketQUICFrame_encode_connection_close_transport (
-      0x01,  /* error_code: INTERNAL_ERROR */
-      0x00,  /* frame_type: none */
-      NULL,  /* no reason */
-      buf, sizeof (buf));
+      0x01, /* error_code: INTERNAL_ERROR */
+      0x00, /* frame_type: none */
+      NULL, /* no reason */
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -786,9 +796,11 @@ TEST (frame_encode_connection_close_transport_long_reason)
                        "variable-length reason phrases in CONNECTION_CLOSE";
 
   size_t len = SocketQUICFrame_encode_connection_close_transport (
-      0x0c,   /* error_code: FLOW_CONTROL_ERROR */
-      0x10,   /* frame_type: MAX_DATA */
-      reason, buf, sizeof (buf));
+      0x0c, /* error_code: FLOW_CONTROL_ERROR */
+      0x10, /* frame_type: MAX_DATA */
+      reason,
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -799,19 +811,20 @@ TEST (frame_encode_connection_close_transport_long_reason)
       = SocketQUICFrame_parse (buf, len, &frame, &consumed);
 
   ASSERT_EQ (QUIC_FRAME_OK, res);
-  ASSERT_EQ (strlen (reason), (size_t)frame.data.connection_close.reason_length);
-  ASSERT (
-      memcmp (frame.data.connection_close.reason, reason, strlen (reason))
-      == 0);
+  ASSERT_EQ (strlen (reason),
+             (size_t)frame.data.connection_close.reason_length);
+  ASSERT (memcmp (frame.data.connection_close.reason, reason, strlen (reason))
+          == 0);
 }
 
 TEST (frame_encode_connection_close_app_basic)
 {
   uint8_t buf[256];
   size_t len = SocketQUICFrame_encode_connection_close_app (
-      1000,          /* error_code: application-defined */
-      "user abort",  /* reason */
-      buf, sizeof (buf));
+      1000,         /* error_code: application-defined */
+      "user abort", /* reason */
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -832,10 +845,11 @@ TEST (frame_encode_connection_close_app_basic)
 TEST (frame_encode_connection_close_app_no_reason)
 {
   uint8_t buf[256];
-  size_t len = SocketQUICFrame_encode_connection_close_app (
-      42,   /* error_code */
-      NULL, /* no reason */
-      buf, sizeof (buf));
+  size_t len
+      = SocketQUICFrame_encode_connection_close_app (42,   /* error_code */
+                                                     NULL, /* no reason */
+                                                     buf,
+                                                     sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -856,8 +870,7 @@ TEST (frame_encode_connection_close_buffer_too_small)
 {
   uint8_t buf[8]; /* Too small */
   size_t len = SocketQUICFrame_encode_connection_close_transport (
-      0x01, 0x00, "this reason is too long for the buffer", buf,
-      sizeof (buf));
+      0x01, 0x00, "this reason is too long for the buffer", buf, sizeof (buf));
 
   /* Should fail gracefully */
   ASSERT_EQ (0, len);
@@ -878,8 +891,11 @@ TEST (frame_encode_connection_close_large_error_code)
   uint64_t large_code = 0x123456;
 
   size_t len = SocketQUICFrame_encode_connection_close_transport (
-      large_code, 0x1a, /* PATH_CHALLENGE */
-      "large code", buf, sizeof (buf));
+      large_code,
+      0x1a, /* PATH_CHALLENGE */
+      "large code",
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -907,11 +923,13 @@ TEST (frame_new_connection_id_encode_basic)
   size_t len;
 
   /* Encode NEW_CONNECTION_ID frame */
-  len = SocketQUICFrame_encode_new_connection_id (
-      5,    /* sequence */
-      2,    /* retire_prior_to */
-      4,    /* cid_length */
-      cid, token, buf, sizeof (buf));
+  len = SocketQUICFrame_encode_new_connection_id (5, /* sequence */
+                                                  2, /* retire_prior_to */
+                                                  4, /* cid_length */
+                                                  cid,
+                                                  token,
+                                                  buf,
+                                                  sizeof (buf));
 
   ASSERT (len > 0);
   ASSERT_EQ (0x18, buf[0]); /* Frame type */
@@ -928,8 +946,8 @@ TEST (frame_new_connection_id_encode_basic)
   ASSERT_EQ (2, frame.data.new_connection_id.retire_prior_to);
   ASSERT_EQ (4, frame.data.new_connection_id.cid_length);
   ASSERT (memcmp (frame.data.new_connection_id.cid, cid, 4) == 0);
-  ASSERT (memcmp (frame.data.new_connection_id.stateless_reset_token, token,
-                  16) == 0);
+  ASSERT (memcmp (frame.data.new_connection_id.stateless_reset_token, token, 16)
+          == 0);
   ASSERT_EQ (len, consumed);
 }
 
@@ -996,12 +1014,14 @@ TEST (frame_new_connection_id_encode_invalid_length)
   uint8_t buf[128];
 
   /* CID length 0 is invalid for NEW_CONNECTION_ID */
-  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
-                    0, 0, 0, cid, token, buf, sizeof (buf)));
+  ASSERT_EQ (0,
+             SocketQUICFrame_encode_new_connection_id (
+                 0, 0, 0, cid, token, buf, sizeof (buf)));
 
   /* CID length > 20 is invalid */
-  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
-                    0, 0, 21, cid, token, buf, sizeof (buf)));
+  ASSERT_EQ (0,
+             SocketQUICFrame_encode_new_connection_id (
+                 0, 0, 21, cid, token, buf, sizeof (buf)));
 }
 
 TEST (frame_new_connection_id_encode_retire_validation)
@@ -1011,13 +1031,20 @@ TEST (frame_new_connection_id_encode_retire_validation)
   uint8_t buf[128];
 
   /* retire_prior_to must be <= sequence */
-  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
-                    5, 10, /* retire > sequence */
-                    1, cid, token, buf, sizeof (buf)));
+  ASSERT_EQ (
+      0,
+      SocketQUICFrame_encode_new_connection_id (5,
+                                                10, /* retire > sequence */
+                                                1,
+                                                cid,
+                                                token,
+                                                buf,
+                                                sizeof (buf)));
 
   /* Equal is valid */
   ASSERT (SocketQUICFrame_encode_new_connection_id (
-              5, 5, 1, cid, token, buf, sizeof (buf)) > 0);
+              5, 5, 1, cid, token, buf, sizeof (buf))
+          > 0);
 }
 
 TEST (frame_new_connection_id_encode_buffer_size)
@@ -1027,8 +1054,9 @@ TEST (frame_new_connection_id_encode_buffer_size)
   uint8_t buf[10];
 
   /* Buffer too small should return 0 */
-  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
-                    0, 0, 1, cid, token, buf, 5));
+  ASSERT_EQ (
+      0,
+      SocketQUICFrame_encode_new_connection_id (0, 0, 1, cid, token, buf, 5));
 }
 
 TEST (frame_retire_connection_id_encode_basic)
@@ -1079,8 +1107,9 @@ TEST (frame_retire_connection_id_encode_buffer_size)
   uint8_t buf[2];
 
   /* Buffer too small should return 0 */
-  ASSERT_EQ (0, SocketQUICFrame_encode_retire_connection_id (
-                    1000000, buf, sizeof (buf)));
+  ASSERT_EQ (
+      0,
+      SocketQUICFrame_encode_retire_connection_id (1000000, buf, sizeof (buf)));
 }
 
 TEST (frame_connection_id_validation)
@@ -1091,23 +1120,19 @@ TEST (frame_connection_id_validation)
   frame.type = QUIC_FRAME_NEW_CONNECTION_ID;
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 
   /* RETIRE_CONNECTION_ID allowed in 0-RTT and 1-RTT */
   frame.type = QUIC_FRAME_RETIRE_CONNECTION_ID;
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
   ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
              SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
-  ASSERT_EQ (QUIC_FRAME_OK,
-             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 }
 
 /* ============================================================================
@@ -1209,8 +1234,8 @@ TEST (frame_encode_stream_data_blocked_large_stream_id)
   /* Encode with large stream ID and max_data */
   uint64_t stream_id = 1000000;
   uint64_t max_data = 5000000;
-  len = SocketQUICFrame_encode_stream_data_blocked (stream_id, max_data, buf,
-                                                     sizeof (buf));
+  len = SocketQUICFrame_encode_stream_data_blocked (
+      stream_id, max_data, buf, sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -1296,7 +1321,8 @@ TEST (frame_encode_streams_blocked_large)
 
   /* Encode with large max_streams value */
   uint64_t max_streams = 1000000;
-  len = SocketQUICFrame_encode_streams_blocked (1, max_streams, buf, sizeof (buf));
+  len = SocketQUICFrame_encode_streams_blocked (
+      1, max_streams, buf, sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -1337,7 +1363,8 @@ TEST (frame_crypto_overflow_32bit)
   /* On 32-bit systems, a uint64_t length > SIZE_MAX should be rejected.
    * We simulate this by creating a frame with length that would overflow
    * when cast to size_t on 32-bit (SIZE_MAX = 0xFFFFFFFF).
-   * On 64-bit systems this test will pass trivially since SIZE_MAX == UINT64_MAX.
+   * On 64-bit systems this test will pass trivially since SIZE_MAX ==
+   * UINT64_MAX.
    */
   uint8_t buf[512];
   size_t pos = 0;
@@ -1352,15 +1379,15 @@ TEST (frame_crypto_overflow_32bit)
    * Format: 11xxxxxx ... (8 bytes total)
    * Value: 0x0000000100000000 (4GB + 1)
    */
-  buf[pos++] = 0xc0;  /* 11000000 - 8-byte varint marker */
+  buf[pos++] = 0xc0; /* 11000000 - 8-byte varint marker */
   buf[pos++] = 0x00;
   buf[pos++] = 0x00;
   buf[pos++] = 0x00;
-  buf[pos++] = 0x01;  /* High 32 bits = 1 */
+  buf[pos++] = 0x01; /* High 32 bits = 1 */
   buf[pos++] = 0x00;
   buf[pos++] = 0x00;
   buf[pos++] = 0x00;
-  buf[pos++] = 0x00;  /* Low 32 bits = 0 */
+  buf[pos++] = 0x00; /* Low 32 bits = 0 */
 
   SocketQUICFrame_T frame;
   size_t consumed;
@@ -1390,7 +1417,7 @@ TEST (frame_new_token_overflow_32bit)
   buf[pos++] = 0x07;
 
   /* Encode token_length as 8-byte varint > SIZE_MAX on 32-bit */
-  buf[pos++] = 0xc0;  /* 8-byte varint */
+  buf[pos++] = 0xc0; /* 8-byte varint */
   buf[pos++] = 0x00;
   buf[pos++] = 0x00;
   buf[pos++] = 0x00;
@@ -1545,8 +1572,8 @@ TEST (frame_encode_connection_close_transport_overflow_protection)
    * such a string in memory, so we simulate by checking edge cases.
    *
    * The protection code is:
-   *   size_t fixed_size = type_len + error_code_len + frame_type_len + reason_len_size;
-   *   if (reason_len > SIZE_MAX - fixed_size) return 0;
+   *   size_t fixed_size = type_len + error_code_len + frame_type_len +
+   * reason_len_size; if (reason_len > SIZE_MAX - fixed_size) return 0;
    *
    * Maximum fixed_size = 1 + 8 + 8 + 8 = 25 bytes
    * So if reason_len is close to SIZE_MAX, the check should trigger.
@@ -1556,18 +1583,20 @@ TEST (frame_encode_connection_close_transport_overflow_protection)
    * handles large buffer requirements correctly by testing with a buffer
    * that's too small for a large (but not overflow-inducing) reason.
    */
-  const char *large_reason = "This is a test reason phrase that is fairly long "
-                             "to test buffer size validation in CONNECTION_CLOSE "
-                             "encoding without actually causing overflow. "
-                             "The real overflow protection prevents wrapping "
-                             "when reason_len approaches SIZE_MAX.";
+  const char *large_reason
+      = "This is a test reason phrase that is fairly long "
+        "to test buffer size validation in CONNECTION_CLOSE "
+        "encoding without actually causing overflow. "
+        "The real overflow protection prevents wrapping "
+        "when reason_len approaches SIZE_MAX.";
 
   /* Try to encode into a buffer that's too small */
   size_t len = SocketQUICFrame_encode_connection_close_transport (
       0x0a,         /* error_code */
       0x06,         /* frame_type */
       large_reason, /* reason that won't fit in tiny buffer */
-      buf, 10       /* buffer too small */
+      buf,
+      10 /* buffer too small */
   );
 
   /* Should return 0 (failure) due to buffer too small */
@@ -1592,11 +1621,12 @@ TEST (frame_encode_connection_close_app_overflow_protection)
                              "reason phrase to test buffer validation.";
 
   /* Try encoding into too-small buffer */
-  size_t len = SocketQUICFrame_encode_connection_close_app (
-      1000,         /* error_code */
-      large_reason, /* reason */
-      buf, 10       /* buffer too small */
-  );
+  size_t len
+      = SocketQUICFrame_encode_connection_close_app (1000, /* error_code */
+                                                     large_reason, /* reason */
+                                                     buf,
+                                                     10 /* buffer too small */
+      );
 
   /* Should return 0 (failure) */
   ASSERT_EQ (0, len);
@@ -1615,8 +1645,8 @@ TEST (frame_encode_connection_close_transport_max_varint)
    * the overflow check handles the worst-case fixed_size.
    *
    * Maximum varint encoding length is 8 bytes.
-   * fixed_size = type_len(1) + error_code_len(8) + frame_type_len(8) + reason_len_size(8)
-   *            = 25 bytes maximum
+   * fixed_size = type_len(1) + error_code_len(8) + frame_type_len(8) +
+   * reason_len_size(8) = 25 bytes maximum
    */
   uint8_t buf[256];
 
@@ -1625,10 +1655,11 @@ TEST (frame_encode_connection_close_transport_max_varint)
 
   /* Encode with max values and short reason */
   size_t len = SocketQUICFrame_encode_connection_close_transport (
-      max_varint,   /* error_code: max 62-bit value */
-      max_varint,   /* frame_type: max 62-bit value */
-      "ok",         /* small reason */
-      buf, sizeof (buf));
+      max_varint, /* error_code: max 62-bit value */
+      max_varint, /* frame_type: max 62-bit value */
+      "ok",       /* small reason */
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 
@@ -1651,9 +1682,10 @@ TEST (frame_encode_connection_close_app_max_varint)
   uint64_t max_varint = 0x3FFFFFFFFFFFFFFF;
 
   size_t len = SocketQUICFrame_encode_connection_close_app (
-      max_varint,   /* error_code: max 62-bit value */
-      "ok",         /* small reason */
-      buf, sizeof (buf));
+      max_varint, /* error_code: max 62-bit value */
+      "ok",       /* small reason */
+      buf,
+      sizeof (buf));
 
   ASSERT (len > 0);
 

@@ -1077,13 +1077,12 @@ hpack_decode_literal_value (SocketHPACK_Decode_Ctx *ctx)
   size_t value_len;
   size_t consumed;
 
-  SocketHPACK_Result result
-      = hpack_decode_string (ctx->input + *ctx->pos,
-                             ctx->input_len - *ctx->pos,
-                             &value,
-                             &value_len,
-                             &consumed,
-                             ctx->arena);
+  SocketHPACK_Result result = hpack_decode_string (ctx->input + *ctx->pos,
+                                                   ctx->input_len - *ctx->pos,
+                                                   &value,
+                                                   &value_len,
+                                                   &consumed,
+                                                   ctx->arena);
   if (result != HPACK_OK)
     return result;
 
@@ -1310,16 +1309,15 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
   while (pos < input_len)
     {
       SocketHPACK_Header header = { 0 };
-      SocketHPACK_Decode_Params params = {
-        .ctx = { .input = input,
-                 .input_len = input_len,
-                 .pos = &pos,
-                 .header = &header,
-                 .arena = arena },
-        .decoder = decoder,
-        .table_update_allowed = &table_update_allowed,
-        .table_update_count = &table_update_count
-      };
+      SocketHPACK_Decode_Params params
+          = { .ctx = { .input = input,
+                       .input_len = input_len,
+                       .pos = &pos,
+                       .header = &header,
+                       .arena = arena },
+              .decoder = decoder,
+              .table_update_allowed = &table_update_allowed,
+              .table_update_count = &table_update_count };
 
       result = decode_field_by_type (&params);
       if (result != HPACK_OK)

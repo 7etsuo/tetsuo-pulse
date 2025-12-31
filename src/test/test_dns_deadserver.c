@@ -5,7 +5,8 @@
  */
 
 /*
- * test_dns_deadserver.c - Unit tests for DNS Dead Server Tracking (RFC 2308 Section 7.2)
+ * test_dns_deadserver.c - Unit tests for DNS Dead Server Tracking (RFC 2308
+ * Section 7.2)
  *
  * Tests RFC 2308 Section 7.2 compliant dead server tracking with:
  * - Per-nameserver tracking (not per-query)
@@ -52,8 +53,7 @@ TEST (deadserver_initially_not_dead)
   is_dead = SocketDNSDeadServer_is_dead (tracker, "8.8.4.4", NULL);
   ASSERT_EQ (is_dead, false);
 
-  is_dead
-      = SocketDNSDeadServer_is_dead (tracker, "2001:4860:4860::8888", NULL);
+  is_dead = SocketDNSDeadServer_is_dead (tracker, "2001:4860:4860::8888", NULL);
   ASSERT_EQ (is_dead, false);
 
   SocketDNS_DeadServerStats stats;

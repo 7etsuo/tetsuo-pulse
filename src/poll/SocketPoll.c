@@ -34,7 +34,8 @@
 
 #include "poll/SocketPoll-private.h"
 #include "poll/SocketPoll_backend.h"
-/* Arena.h, Except.h, Socket.h, SocketAsync.h, SocketUtil.h included via SocketPoll-private.h */
+/* Arena.h, Except.h, Socket.h, SocketAsync.h, SocketUtil.h included via
+ * SocketPoll-private.h */
 
 /* Override default log component (SocketUtil.h sets "Socket") */
 #undef SOCKET_LOG_COMPONENT
@@ -73,13 +74,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketPoll);
  * Returns the field value with proper mutex protection.
  * Reduces boilerplate in SocketPoll_getdefaulttimeout, getmaxregistered, etc.
  */
-#define LOCKED_INT_GETTER(poll, field)                                        \
-  ({                                                                          \
-    int _value;                                                               \
-    pthread_mutex_lock (&(poll)->mutex);                                      \
-    _value = (poll)->field;                                                   \
-    pthread_mutex_unlock (&(poll)->mutex);                                    \
-    _value;                                                                   \
+#define LOCKED_INT_GETTER(poll, field)     \
+  ({                                       \
+    int _value;                            \
+    pthread_mutex_lock (&(poll)->mutex);   \
+    _value = (poll)->field;                \
+    pthread_mutex_unlock (&(poll)->mutex); \
+    _value;                                \
   })
 
 /* ==================== Forward Declarations ==================== */
@@ -100,18 +101,17 @@ static void cleanup_poll_partial (T poll);
  * Reduces code duplication between allocate_socket_data_entry and
  * allocate_fd_socket_entry which had identical logic except for type.
  */
-#define ALLOCATE_HASH_ENTRY(poll, type, desc)                                 \
-  ({                                                                          \
-    type *volatile _entry = NULL;                                             \
-    TRY                                                                       \
-    _entry = CALLOC ((poll)->arena, 1, sizeof (type));                        \
-    EXCEPT (Arena_Failed)                                                     \
-    {                                                                         \
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate " desc);             \
-      RAISE_POLL_ERROR (SocketPoll_Failed);                                   \
-    }                                                                         \
-    END_TRY;                                                                  \
-    (type *)_entry;                                                           \
+#define ALLOCATE_HASH_ENTRY(poll, type, desc)                     \
+  ({                                                              \
+    type *volatile _entry = NULL;                                 \
+    TRY _entry = CALLOC ((poll)->arena, 1, sizeof (type));        \
+    EXCEPT (Arena_Failed)                                         \
+    {                                                             \
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate " desc); \
+      RAISE_POLL_ERROR (SocketPoll_Failed);                       \
+    }                                                             \
+    END_TRY;                                                      \
+    (type *)_entry;                                               \
   })
 
 /**
@@ -124,7 +124,7 @@ static void cleanup_poll_partial (T poll);
 static inline unsigned
 poll_fd_hash (const T poll, int fd)
 {
-  unsigned key = (unsigned) fd ^ poll->hash_seed;
+  unsigned key = (unsigned)fd ^ poll->hash_seed;
   return socket_util_hash_uint (key, SOCKET_DATA_HASH_SIZE);
 }
 
@@ -143,12 +143,12 @@ poll_fd_hash (const T poll, int fd)
  *
  * Thread-safe: Caller must hold mutex.
  */
-#define HASH_TABLE_INSERT(table, hash, entry, next_field)                     \
-  do                                                                          \
-    {                                                                         \
-      (entry)->next_field = (table)[hash];                                    \
-      (table)[hash] = (entry);                                                \
-    }                                                                         \
+#define HASH_TABLE_INSERT(table, hash, entry, next_field) \
+  do                                                      \
+    {                                                     \
+      (entry)->next_field = (table)[hash];                \
+      (table)[hash] = (entry);                            \
+    }                                                     \
   while (0)
 
 /**
@@ -190,7 +190,8 @@ insert_fd_socket_entry (T poll, unsigned fd_hash, FdSocketEntry *entry)
  * Core lookup function - O(1) average case with hash chain traversal.
  */
 static SocketData *
-find_socket_data_entry (const T poll, const unsigned hash,
+find_socket_data_entry (const T poll,
+                        const unsigned hash,
                         const Socket_T socket)
 {
   SocketData *entry = poll->socket_data_map[hash];
@@ -249,8 +250,8 @@ socket_data_lookup_unlocked (const T poll, const Socket_T socket)
 static void
 remove_socket_data_entry (T poll, unsigned hash, Socket_T socket)
 {
-  HASH_CHAIN_REMOVE (&poll->socket_data_map[hash], SocketData, socket, socket,
-                     next);
+  HASH_CHAIN_REMOVE (
+      &poll->socket_data_map[hash], SocketData, socket, socket, next);
 }
 
 /**
@@ -265,8 +266,8 @@ remove_socket_data_entry (T poll, unsigned hash, Socket_T socket)
 static void
 remove_fd_socket_entry (T poll, unsigned fd_hash, int fd)
 {
-  HASH_CHAIN_REMOVE (&poll->fd_to_socket_map[fd_hash], FdSocketEntry, fd, fd,
-                     next);
+  HASH_CHAIN_REMOVE (
+      &poll->fd_to_socket_map[fd_hash], FdSocketEntry, fd, fd, next);
 }
 
 /* ==================== Unlocked Hash Table Operations ==================== */
@@ -284,7 +285,7 @@ static void
 socket_data_add_unlocked (T poll, Socket_T socket, void *data)
 {
   int fd = Socket_fd (socket);
-  unsigned hash = poll_fd_hash (poll, fd);  /* Use seeded hash consistently */
+  unsigned hash = poll_fd_hash (poll, fd); /* Use seeded hash consistently */
   SocketData *data_entry
       = ALLOCATE_HASH_ENTRY (poll, SocketData, "socket data mapping");
   FdSocketEntry *fd_entry
@@ -311,7 +312,7 @@ static void
 socket_data_remove_unlocked (T poll, Socket_T socket)
 {
   int fd = Socket_fd (socket);
-  unsigned hash = poll_fd_hash (poll, fd);  /* Use seeded hash consistently */
+  unsigned hash = poll_fd_hash (poll, fd); /* Use seeded hash consistently */
 
   /* Only decrement if socket was actually in the map */
   if (find_socket_data_entry (poll, hash, socket) != NULL)
@@ -330,22 +331,22 @@ socket_data_remove_unlocked (T poll, Socket_T socket)
  * INIT_FAIL - Cleanup and raise exception during init
  * Reduces repeated error handling pattern in init functions.
  */
-#define INIT_FAIL(msg)                                                         \
-  do                                                                           \
-    {                                                                          \
-      SOCKET_ERROR_MSG (msg);                                                  \
-      cleanup_poll_partial (poll);                                             \
-      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
-    }                                                                          \
+#define INIT_FAIL(msg)                      \
+  do                                        \
+    {                                       \
+      SOCKET_ERROR_MSG (msg);               \
+      cleanup_poll_partial (poll);          \
+      RAISE_POLL_ERROR (SocketPoll_Failed); \
+    }                                       \
   while (0)
 
-#define INIT_FAIL_FMT(fmt, ...)                                                \
-  do                                                                           \
-    {                                                                          \
-      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                   \
-      cleanup_poll_partial (poll);                                             \
-      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
-    }                                                                          \
+#define INIT_FAIL_FMT(fmt, ...)              \
+  do                                         \
+    {                                        \
+      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__); \
+      cleanup_poll_partial (poll);           \
+      RAISE_POLL_ERROR (SocketPoll_Failed);  \
+    }                                        \
   while (0)
 
 /**
@@ -434,7 +435,8 @@ allocate_poll_event_arrays (T poll, int maxevents)
     INIT_FAIL ("Invalid maxevents value");
 
   /* Check for multiplication overflow before allocation
-   * Security: Standard pattern using SIZE_MAX / sizeof for overflow detection */
+   * Security: Standard pattern using SIZE_MAX / sizeof for overflow detection
+   */
   if ((size_t)maxevents > SIZE_MAX / sizeof (*poll->socketevents))
     INIT_FAIL ("Array size overflow");
 
@@ -492,8 +494,7 @@ initialize_poll_async (T poll)
   int notify_fd;
 
   /* async starts NULL from calloc; only set if init succeeds */
-  TRY
-  poll->async = SocketAsync_new (poll->arena);
+  TRY poll->async = SocketAsync_new (poll->arena);
   EXCEPT (SocketAsync_Failed)
   {
     poll->async = NULL; /* Graceful degradation - async is optional */
@@ -533,8 +534,7 @@ initialize_poll_hash_seed (T poll)
     return;
 
   /* Fallback: monotonic time XOR'd with PID */
-  poll->hash_seed
-      = (unsigned)Socket_get_monotonic_ms () ^ (unsigned)getpid ();
+  poll->hash_seed = (unsigned)Socket_get_monotonic_ms () ^ (unsigned)getpid ();
 }
 
 /* ==================== Combined FD Lookup (Optimized) ==================== */
@@ -553,8 +553,10 @@ initialize_poll_hash_seed (T poll)
  * Both fd_to_socket_map and socket_data_map use fd-based hashing.
  */
 static void
-lookup_socket_and_data_by_fd (const T poll, const int fd,
-                              const unsigned fd_hash, Socket_T *socket_out,
+lookup_socket_and_data_by_fd (const T poll,
+                              const int fd,
+                              const unsigned fd_hash,
+                              Socket_T *socket_out,
                               void **data_out)
 {
   FdSocketEntry *fd_entry;
@@ -643,7 +645,8 @@ translate_backend_events_to_socket_events (T poll, int nfds)
 
       /* Compute hash once, use for both lookups.
        * CRITICAL: Must use poll_fd_hash() to match socket_data_add_unlocked().
-       * Using socket_util_hash_fd() here would break lookups due to hash mismatch. */
+       * Using socket_util_hash_fd() here would break lookups due to hash
+       * mismatch. */
       fd_hash = poll_fd_hash (poll, fd);
       lookup_socket_and_data_by_fd (poll, fd, fd_hash, &socket, &data);
 
@@ -839,10 +842,12 @@ validate_socket_fd_for_add (const Socket_T socket)
 static void
 check_registration_limit (T poll)
 {
-  if (poll->max_registered > 0 && poll->registered_count >= poll->max_registered)
+  if (poll->max_registered > 0
+      && poll->registered_count >= poll->max_registered)
     {
       SOCKET_ERROR_FMT ("Registration limit exceeded (%d/%d)",
-                        poll->registered_count, poll->max_registered);
+                        poll->registered_count,
+                        poll->max_registered);
       RAISE_POLL_ERROR (SocketPoll_Failed);
     }
 }
@@ -875,12 +880,13 @@ check_socket_not_duplicate (T poll, unsigned hash, Socket_T socket)
       entry = entry->next;
     }
 
-  /* Defense-in-depth: Reject if hash chain is too long (DoS mitigation) */
+    /* Defense-in-depth: Reject if hash chain is too long (DoS mitigation) */
 #if SOCKET_MAX_HASH_CHAIN_LENGTH > 0
   if (chain_length >= SOCKET_MAX_HASH_CHAIN_LENGTH)
     {
       SOCKET_ERROR_FMT ("Hash chain length %d exceeds limit %d (possible DoS)",
-                        chain_length, SOCKET_MAX_HASH_CHAIN_LENGTH);
+                        chain_length,
+                        SOCKET_MAX_HASH_CHAIN_LENGTH);
       RAISE_POLL_ERROR (SocketPoll_Failed);
     }
 #endif
@@ -916,11 +922,12 @@ add_socket_to_backend (T poll, int fd, unsigned events)
  * Thread-safe: No (caller must hold mutex)
  */
 static void
-add_socket_to_data_map_with_rollback (T poll, Socket_T socket, void *data,
+add_socket_to_data_map_with_rollback (T poll,
+                                      Socket_T socket,
+                                      void *data,
                                       int fd)
 {
-  TRY
-  socket_data_add_unlocked (poll, socket, data);
+  TRY socket_data_add_unlocked (poll, socket, data);
   EXCEPT (SocketPoll_Failed)
   {
     backend_del (poll->backend, fd);
@@ -1025,7 +1032,7 @@ SocketPoll_del (T poll, Socket_T socket)
 
   int fd = Socket_fd (socket);
   if (fd < 0)
-    return;  /* Invalid FD, nothing to remove */
+    return; /* Invalid FD, nothing to remove */
 
   pthread_mutex_lock (&poll->mutex);
 
@@ -1047,9 +1054,11 @@ SocketPoll_del (T poll, Socket_T socket)
 
   pthread_mutex_unlock (&poll->mutex);
 
-  if (backend_result < 0)  /* ENOENT case */
+  if (backend_result < 0) /* ENOENT case */
     {
-      SOCKET_LOG_WARN_MSG ("Cleaned data map for fd=%d (backend ENOENT; possible prior inconsistency)", fd);
+      SOCKET_LOG_WARN_MSG ("Cleaned data map for fd=%d (backend ENOENT; "
+                           "possible prior inconsistency)",
+                           fd);
     }
 }
 
@@ -1155,8 +1164,8 @@ handle_backend_wait_error (int timeout)
   if (errno == EINTR)
     return 0;
 
-  SOCKET_ERROR_FMT ("%s backend wait failed (timeout=%d)", backend_name (),
-                    timeout);
+  SOCKET_ERROR_FMT (
+      "%s backend wait failed (timeout=%d)", backend_name (), timeout);
   RAISE_POLL_ERROR (SocketPoll_Failed);
   return -1; /* NOTREACHED - satisfies compiler warning */
 }
@@ -1273,8 +1282,10 @@ SocketPoll_setmaxregistered (T poll, int max)
   if (max > 0 && poll->registered_count > max)
     {
       pthread_mutex_unlock (&poll->mutex);
-      SOCKET_ERROR_FMT ("Cannot set max_registered (%d) below current count (%d)",
-                        max, poll->registered_count);
+      SOCKET_ERROR_FMT (
+          "Cannot set max_registered (%d) below current count (%d)",
+          max,
+          poll->registered_count);
       RAISE_POLL_ERROR (SocketPoll_Failed);
     }
 
@@ -1334,7 +1345,9 @@ SocketPoll_get_registered_sockets (T poll, Socket_T *sockets, int max)
 }
 
 void
-SocketPoll_modify_events (T poll, Socket_T socket, unsigned add_events,
+SocketPoll_modify_events (T poll,
+                          Socket_T socket,
+                          unsigned add_events,
                           unsigned remove_events)
 {
   unsigned new_events;

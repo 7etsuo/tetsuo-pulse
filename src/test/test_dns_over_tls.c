@@ -26,8 +26,11 @@ static volatile int g_callback_error = -999;
 static volatile size_t g_response_len = 0;
 
 static void
-test_callback (SocketDNSoverTLS_Query_T query, const unsigned char *response,
-               size_t len, int error, void *userdata)
+test_callback (SocketDNSoverTLS_Query_T query,
+               const unsigned char *response,
+               size_t len,
+               int error,
+               void *userdata)
 {
   (void)query;
   (void)userdata;
@@ -145,8 +148,10 @@ TEST (dot_query_no_server)
   SocketDNS_question_init (&question, "example.com", DNS_TYPE_A);
 
   size_t written;
-  int ret = SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                                       sizeof (query) - DNS_HEADER_SIZE, &written);
+  int ret = SocketDNS_question_encode (&question,
+                                       query + DNS_HEADER_SIZE,
+                                       sizeof (query) - DNS_HEADER_SIZE,
+                                       &written);
   ASSERT_EQ (ret, 0);
   query_len = DNS_HEADER_SIZE + written;
 
@@ -183,9 +188,11 @@ TEST (dot_error_strings)
   ASSERT_NOT_NULL (SocketDNSoverTLS_strerror (-100));
 
   /* Specific string checks */
-  ASSERT (strcmp (SocketDNSoverTLS_strerror (DOT_ERROR_SUCCESS), "Success") == 0);
+  ASSERT (strcmp (SocketDNSoverTLS_strerror (DOT_ERROR_SUCCESS), "Success")
+          == 0);
   ASSERT (strcmp (SocketDNSoverTLS_strerror (DOT_ERROR_NXDOMAIN),
-                  "Domain does not exist") == 0);
+                  "Domain does not exist")
+          == 0);
 }
 
 /* Test: DoT port constant */
@@ -270,8 +277,10 @@ TEST (dot_cancel_query)
   SocketDNS_question_init (&question, "example.com", DNS_TYPE_A);
 
   size_t written;
-  SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                             sizeof (query) - DNS_HEADER_SIZE, &written);
+  SocketDNS_question_encode (&question,
+                             query + DNS_HEADER_SIZE,
+                             sizeof (query) - DNS_HEADER_SIZE,
+                             &written);
   query_len = DNS_HEADER_SIZE + written;
 
   reset_callback_state ();
@@ -337,13 +346,12 @@ TEST (dot_invalid_address)
   SocketDNSoverTLS_T dot = SocketDNSoverTLS_new (arena);
 
   /* Invalid address should fail */
-  SocketDNSoverTLS_Config config
-      = { .server_address = "not-an-ip-address",
-          .port = 853,
-          .server_name = "test",
-          .mode = DOT_MODE_STRICT,
-          .spki_pin = NULL,
-          .spki_pin_backup = NULL };
+  SocketDNSoverTLS_Config config = { .server_address = "not-an-ip-address",
+                                     .port = 853,
+                                     .server_name = "test",
+                                     .mode = DOT_MODE_STRICT,
+                                     .spki_pin = NULL,
+                                     .spki_pin_backup = NULL };
 
   int ret = SocketDNSoverTLS_configure (dot, &config);
   ASSERT_EQ (ret, -1);
@@ -383,15 +391,14 @@ TEST (dot_spki_config)
   SocketDNSoverTLS_T dot = SocketDNSoverTLS_new (arena);
 
   /* Configure with SPKI pins */
-  SocketDNSoverTLS_Config config = {
-    .server_address = "8.8.8.8",
-    .port = 853,
-    .server_name = "dns.google",
-    .mode = DOT_MODE_STRICT,
-    /* Example SPKI pin (not real) */
-    .spki_pin = "sha256//example_pin_not_real_just_for_testing",
-    .spki_pin_backup = "sha256//backup_pin_not_real_just_for_testing"
-  };
+  SocketDNSoverTLS_Config config
+      = { .server_address = "8.8.8.8",
+          .port = 853,
+          .server_name = "dns.google",
+          .mode = DOT_MODE_STRICT,
+          /* Example SPKI pin (not real) */
+          .spki_pin = "sha256//example_pin_not_real_just_for_testing",
+          .spki_pin_backup = "sha256//backup_pin_not_real_just_for_testing" };
 
   int ret = SocketDNSoverTLS_configure (dot, &config);
   ASSERT_EQ (ret, 0);
@@ -423,8 +430,10 @@ TEST (dot_query_id)
   SocketDNS_question_init (&question, "test.com", DNS_TYPE_A);
 
   size_t written;
-  SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                             sizeof (query) - DNS_HEADER_SIZE, &written);
+  SocketDNS_question_encode (&question,
+                             query + DNS_HEADER_SIZE,
+                             sizeof (query) - DNS_HEADER_SIZE,
+                             &written);
   query_len = DNS_HEADER_SIZE + written;
 
   reset_callback_state ();
@@ -458,7 +467,7 @@ TEST (dot_memory_limit)
    * We'll try to allocate 11MB worth of queries to exceed the limit
    */
   const size_t large_query_size = 60000; /* ~60KB per query */
-  const int num_queries = 180; /* 180 * 60KB = 10.8MB */
+  const int num_queries = 180;           /* 180 * 60KB = 10.8MB */
 
   int queries_accepted = 0;
   int queries_rejected = 0;
@@ -478,8 +487,10 @@ TEST (dot_memory_limit)
       SocketDNS_Question question;
       SocketDNS_question_init (&question, "example.com", DNS_TYPE_A);
       size_t written;
-      SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
-                                 large_query_size - DNS_HEADER_SIZE, &written);
+      SocketDNS_question_encode (&question,
+                                 query + DNS_HEADER_SIZE,
+                                 large_query_size - DNS_HEADER_SIZE,
+                                 &written);
 
       reset_callback_state ();
       SocketDNSoverTLS_Query_T q = SocketDNSoverTLS_query (
@@ -517,8 +528,10 @@ TEST (dot_memory_limit)
   SocketDNS_Question question;
   SocketDNS_question_init (&question, "test.com", DNS_TYPE_A);
   size_t written;
-  SocketDNS_question_encode (&question, small_query + DNS_HEADER_SIZE,
-                             sizeof (small_query) - DNS_HEADER_SIZE, &written);
+  SocketDNS_question_encode (&question,
+                             small_query + DNS_HEADER_SIZE,
+                             sizeof (small_query) - DNS_HEADER_SIZE,
+                             &written);
   size_t small_query_len = DNS_HEADER_SIZE + written;
 
   reset_callback_state ();

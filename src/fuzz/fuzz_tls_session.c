@@ -96,8 +96,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case SESSION_ENABLE_CACHE:
         {
           /* Test session cache enabling with fuzzed params */
-          SocketTLSContext_enable_session_cache (ctx, max_sessions,
-                                                 (long)timeout);
+          SocketTLSContext_enable_session_cache (
+              ctx, max_sessions, (long)timeout);
         }
         break;
 
@@ -117,14 +117,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* OpenSSL requires exactly 80 bytes for ticket key */
           if (key_size >= TICKET_KEY_SIZE)
             {
-              SocketTLSContext_enable_session_tickets (ctx, key_data,
-                                                       TICKET_KEY_SIZE);
+              SocketTLSContext_enable_session_tickets (
+                  ctx, key_data, TICKET_KEY_SIZE);
             }
           else if (key_size > 0)
             {
               /* Test with wrong key size - should fail */
-              SocketTLSContext_enable_session_tickets (ctx, key_data,
-                                                       key_size);
+              SocketTLSContext_enable_session_tickets (ctx, key_data, key_size);
             }
         }
         break;
@@ -169,20 +168,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* First enable tickets, then try rotation */
           unsigned char initial_key[TICKET_KEY_SIZE];
           memset (initial_key, 0xAA, TICKET_KEY_SIZE);
-          SocketTLSContext_enable_session_tickets (ctx, initial_key,
-                                                   TICKET_KEY_SIZE);
+          SocketTLSContext_enable_session_tickets (
+              ctx, initial_key, TICKET_KEY_SIZE);
 
           if (key_size >= TICKET_KEY_SIZE)
             {
               /* Valid rotation */
-              SocketTLSContext_rotate_session_ticket_key (ctx, key_data,
-                                                          TICKET_KEY_SIZE);
+              SocketTLSContext_rotate_session_ticket_key (
+                  ctx, key_data, TICKET_KEY_SIZE);
             }
           else if (key_size > 0)
             {
               /* Invalid key size - should fail */
-              SocketTLSContext_rotate_session_ticket_key (ctx, key_data,
-                                                          key_size);
+              SocketTLSContext_rotate_session_ticket_key (
+                  ctx, key_data, key_size);
             }
         }
         break;
@@ -203,8 +202,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Can we re-enable after disable? */
           if (key_size >= TICKET_KEY_SIZE)
             {
-              SocketTLSContext_enable_session_tickets (ctx, key_data,
-                                                       TICKET_KEY_SIZE);
+              SocketTLSContext_enable_session_tickets (
+                  ctx, key_data, TICKET_KEY_SIZE);
             }
         }
         break;
@@ -230,7 +229,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected for invalid parameters */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected for invalid parameters */
+  }
   FINALLY
   {
     if (ctx)

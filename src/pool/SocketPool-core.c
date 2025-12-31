@@ -110,8 +110,10 @@ socketpool_hash (const Socket_T socket)
   if (fd < 0)
     {
       SocketLog_emitf (
-          SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-          "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
+          SOCKET_LOG_WARN,
+          SOCKET_LOG_COMPONENT,
+          "Attempt to hash closed/invalid socket (fd=%d); returning 0",
+          fd);
       return 0;
     }
 
@@ -207,18 +209,22 @@ static void *
 pool_alloc (Arena_T arena, size_t count, size_t elem_size, const char *what)
 {
   void *ptr;
-  if (arena != NULL) {
-    ptr = CALLOC (arena, count, elem_size);
-  } else {
-    /* Check for multiplication overflow before calloc */
-    if (count > 0 && elem_size > SIZE_MAX / count)
-      RAISE_POOL_MSG (SocketPool_Failed,
-                      "Integer overflow in allocation size for %s", what);
-    ptr = calloc (count, elem_size);
-  }
+  if (arena != NULL)
+    {
+      ptr = CALLOC (arena, count, elem_size);
+    }
+  else
+    {
+      /* Check for multiplication overflow before calloc */
+      if (count > 0 && elem_size > SIZE_MAX / count)
+        RAISE_POOL_MSG (SocketPool_Failed,
+                        "Integer overflow in allocation size for %s",
+                        what);
+      ptr = calloc (count, elem_size);
+    }
   if (!ptr)
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    SOCKET_ENOMEM ": Cannot allocate %s", what);
+    RAISE_POOL_MSG (
+        SocketPool_Failed, SOCKET_ENOMEM ": Cannot allocate %s", what);
   return ptr;
 }
 
@@ -234,7 +240,8 @@ pool_alloc (Arena_T arena, size_t count, size_t elem_size, const char *what)
 struct Connection *
 SocketPool_connections_allocate_array (size_t maxconns)
 {
-  return pool_alloc (NULL, maxconns, sizeof (struct Connection), "connections array");
+  return pool_alloc (
+      NULL, maxconns, sizeof (struct Connection), "connections array");
 }
 
 /**
@@ -249,7 +256,8 @@ SocketPool_connections_allocate_array (size_t maxconns)
 Connection_T *
 SocketPool_connections_allocate_hash_table (Arena_T arena)
 {
-  return pool_alloc (arena, SOCKET_HASH_SIZE, sizeof (Connection_T), "hash table");
+  return pool_alloc (
+      arena, SOCKET_HASH_SIZE, sizeof (Connection_T), "hash table");
 }
 
 /**
@@ -313,7 +321,8 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
  * Returns: 0 on success, -1 on failure (with cleanup)
  */
 int
-SocketPool_connections_alloc_buffers (Arena_T arena, size_t bufsize,
+SocketPool_connections_alloc_buffers (Arena_T arena,
+                                      size_t bufsize,
                                       Connection_T conn)
 {
   conn->inbuf = SocketBuf_new (arena, bufsize);
@@ -411,7 +420,8 @@ allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
 
 /* initialize_pool_reconnect inlined into construct_pool */
 
-/* initialize_pool_idle_cleanup inlined into construct_pool (time call consolidated) */
+/* initialize_pool_idle_cleanup inlined into construct_pool (time call
+ * consolidated) */
 
 /* initialize_pool_callbacks inlined into construct_pool */
 
@@ -429,17 +439,17 @@ static void
 validate_pool_params (Arena_T arena, size_t maxconns, size_t bufsize)
 {
   if (!arena)
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    "Invalid NULL arena for SocketPool_new");
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL arena for SocketPool_new");
 
   if (!SOCKET_VALID_CONNECTION_COUNT (maxconns))
     RAISE_POOL_MSG (SocketPool_Failed,
                     "Invalid maxconns %zu for SocketPool_new (must be 1-%zu)",
-                    maxconns, SOCKET_MAX_CONNECTIONS);
+                    maxconns,
+                    SOCKET_MAX_CONNECTIONS);
 
   if (!SOCKET_VALID_BUFFER_SIZE (bufsize))
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    "Invalid bufsize %zu for SocketPool_new", bufsize);
+    RAISE_POOL_MSG (
+        SocketPool_Failed, "Invalid bufsize %zu for SocketPool_new", bufsize);
 }
 
 /**
@@ -457,7 +467,8 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   T pool = allocate_pool_structure (arena);
   allocate_pool_components (arena, maxconns, pool);
 
-  /* Inline simple field initializations to reduce redundant wrapper functions */
+  /* Inline simple field initializations to reduce redundant wrapper functions
+   */
 
   /* From initialize_pool_fields */
   pool->maxconns = maxconns;
@@ -502,7 +513,8 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   /* Health checking subsystem (disabled by default) */
   pool->health = NULL;
 
-  /* From initialize_pool_stats + consolidate monotonic time call with idle_cleanup */
+  /* From initialize_pool_stats + consolidate monotonic time call with
+   * idle_cleanup */
   int64_t now_ms = Socket_get_monotonic_ms ();
   pool->last_cleanup_ms = now_ms;
   pool->stats_start_time_ms = now_ms;
@@ -717,7 +729,8 @@ update_connection_socket (Connection_T conn, SocketReconnect_T conn_r)
     {
       conn->socket = new_socket;
       conn->last_activity = safe_time ();
-      SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_INFO,
+                       SOCKET_LOG_COMPONENT,
                        "Connection reconnected successfully");
     }
 }
@@ -734,7 +747,8 @@ update_connection_socket (Connection_T conn, SocketReconnect_T conn_r)
 static void
 reconnect_state_callback (SocketReconnect_T conn_r,
                           SocketReconnect_State old_state,
-                          SocketReconnect_State new_state, void *userdata)
+                          SocketReconnect_State new_state,
+                          void *userdata)
 {
   Connection_T conn = (Connection_T)userdata;
 
@@ -780,11 +794,13 @@ get_reconnect_policy (T pool)
  * Raises: SocketReconnect_Failed on error
  */
 static void
-create_reconnect_context (Connection_T conn, const char *host, int port,
+create_reconnect_context (Connection_T conn,
+                          const char *host,
+                          int port,
                           const SocketReconnect_Policy_T *policy)
 {
-  conn->reconnect = SocketReconnect_new (host, port, policy,
-                                         reconnect_state_callback, conn);
+  conn->reconnect = SocketReconnect_new (
+      host, port, policy, reconnect_state_callback, conn);
 }
 
 /**
@@ -795,8 +811,10 @@ create_reconnect_context (Connection_T conn, const char *host, int port,
 static void
 log_reconnect_enabled (const char *host, int port)
 {
-  SocketLog_emitf (SOCKET_LOG_DEBUG, "SocketPool",
-                   "Enabled auto-reconnect for connection to %s:%d", host,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   "SocketPool",
+                   "Enabled auto-reconnect for connection to %s:%d",
+                   host,
                    port);
 }
 
@@ -813,8 +831,7 @@ log_reconnect_enabled (const char *host, int port)
  * Thread-safe: Yes
  */
 void
-SocketPool_set_reconnect_policy (T pool,
-                                 const SocketReconnect_Policy_T *policy)
+SocketPool_set_reconnect_policy (T pool, const SocketReconnect_Policy_T *policy)
 {
   assert (pool);
 
@@ -845,7 +862,8 @@ SocketPool_set_reconnect_policy (T pool,
  * to clear cached Connection_T pointers before they become invalid.
  */
 void
-SocketPool_set_pre_resize_callback (T pool, SocketPool_PreResizeCallback cb,
+SocketPool_set_pre_resize_callback (T pool,
+                                    SocketPool_PreResizeCallback cb,
                                     void *data)
 {
   assert (pool);
@@ -867,7 +885,9 @@ SocketPool_set_pre_resize_callback (T pool, SocketPool_PreResizeCallback cb,
  * Raises: SocketReconnect_Failed on error
  */
 void
-SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
+SocketPool_enable_reconnect (T pool,
+                             Connection_T conn,
+                             const char *host,
                              int port)
 {
   assert (pool);
@@ -879,7 +899,10 @@ SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
   free_existing_reconnect (conn);
   const SocketReconnect_Policy_T *policy = get_reconnect_policy (pool);
 
-  TRY { create_reconnect_context (conn, host, port, policy); }
+  TRY
+  {
+    create_reconnect_context (conn, host, port, policy);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     POOL_UNLOCK (pool);
@@ -1054,7 +1077,8 @@ Connection_has_reconnect (const Connection_T conn)
  * Thread-safe: Yes
  */
 void
-SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
+SocketPool_set_validation_callback (T pool,
+                                    SocketPool_ValidationCallback cb,
                                     void *data)
 {
   assert (pool);
@@ -1074,7 +1098,8 @@ SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
  * Thread-safe: Yes
  */
 void
-SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
+SocketPool_set_resize_callback (T pool,
+                                SocketPool_ResizeCallback cb,
                                 void *data)
 {
   assert (pool);
@@ -1111,7 +1136,8 @@ safe_u64_add (uint64_t a, uint64_t b)
       if (!logged_saturation)
         {
           logged_saturation = 1;
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+          SocketLog_emitf (SOCKET_LOG_WARN,
+                           SOCKET_LOG_COMPONENT,
                            "Statistics counter saturated at UINT64_MAX "
                            "(long-running server or extremely high churn)");
         }
@@ -1338,7 +1364,8 @@ SocketPool_get_hit_rate (T pool)
   assert (pool);
 
   POOL_LOCK (pool);
-  rate = calculate_reuse_rate (pool->stats_total_added, pool->stats_total_reused);
+  rate = calculate_reuse_rate (pool->stats_total_added,
+                               pool->stats_total_reused);
   POOL_UNLOCK (pool);
 
   return rate;

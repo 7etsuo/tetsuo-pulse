@@ -4,7 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/* SocketHTTPServer.c - HTTP/1.1 and HTTP/2 server with TLS, rate limiting, and connection pooling */
+/* SocketHTTPServer.c - HTTP/1.1 and HTTP/2 server with TLS, rate limiting, and
+ * connection pooling */
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -36,7 +37,7 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer"
 
-#define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG(fmt, ##__VA_ARGS__)
+#define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG (fmt, ##__VA_ARGS__)
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
@@ -306,8 +307,11 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
   if (socket_family == AF_INET6)
     {
       int v6only = 0;
-      if (setsockopt (Socket_fd (server->listen_socket), IPPROTO_IPV6,
-                      IPV6_V6ONLY, &v6only, sizeof (v6only))
+      if (setsockopt (Socket_fd (server->listen_socket),
+                      IPPROTO_IPV6,
+                      IPV6_V6ONLY,
+                      &v6only,
+                      sizeof (v6only))
           < 0)
         {
           HTTPSERVER_ERROR_MSG ("Failed to disable IPv6-only mode: %s",
@@ -317,7 +321,10 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
     }
 #endif
 
-  TRY { Socket_bind (server->listen_socket, bind_addr, server->config.port); }
+  TRY
+  {
+    Socket_bind (server->listen_socket, bind_addr, server->config.port);
+  }
   EXCEPT (Socket_Failed)
   {
     if (socket_family == AF_INET6 && strcmp (bind_addr, "::") == 0)
@@ -338,8 +345,8 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
     else
       {
         Socket_free (&server->listen_socket);
-        HTTPSERVER_ERROR_FMT ("Failed to bind to %s:%d", bind_addr,
-                              server->config.port);
+        HTTPSERVER_ERROR_FMT (
+            "Failed to bind to %s:%d", bind_addr, server->config.port);
         return -1;
       }
   }
@@ -373,7 +380,8 @@ SocketHTTPServer_stop (SocketHTTPServer_T server)
 
 void
 SocketHTTPServer_set_handler (SocketHTTPServer_T server,
-                              SocketHTTPServer_Handler handler, void *userdata)
+                              SocketHTTPServer_Handler handler,
+                              void *userdata)
 {
   assert (server != NULL);
   server->handler = handler;
@@ -414,7 +422,8 @@ server_accept_clients (SocketHTTPServer_T server)
 
 #if SOCKET_HAS_TLS
 static int
-server_process_tls_handshake (SocketHTTPServer_T server, ServerConnection *conn,
+server_process_tls_handshake (SocketHTTPServer_T server,
+                              ServerConnection *conn,
                               unsigned events)
 {
   volatile TLSHandshakeState hs = TLS_HANDSHAKE_NOT_STARTED;
@@ -424,7 +433,10 @@ server_process_tls_handshake (SocketHTTPServer_T server, ServerConnection *conn,
   assert (server != NULL);
   assert (conn != NULL);
 
-  TRY { hs = SocketTLS_handshake (conn->socket); }
+  TRY
+  {
+    hs = SocketTLS_handshake (conn->socket);
+  }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     conn->state = CONN_STATE_CLOSED;
@@ -459,7 +471,8 @@ server_process_tls_handshake (SocketHTTPServer_T server, ServerConnection *conn,
             }
           conn->is_http2 = 1;
           conn->state = CONN_STATE_HTTP2;
-          SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+          SocketPoll_mod (
+              server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
         }
       else
         {
@@ -484,7 +497,8 @@ server_process_tls_handshake (SocketHTTPServer_T server, ServerConnection *conn,
 #endif
 
 static int
-server_process_http2 (SocketHTTPServer_T server, ServerConnection *conn,
+server_process_http2 (SocketHTTPServer_T server,
+                      ServerConnection *conn,
                       unsigned events)
 {
   volatile int r = 0;
@@ -500,7 +514,10 @@ server_process_http2 (SocketHTTPServer_T server, ServerConnection *conn,
         return -1;
     }
 
-  TRY { r = SocketHTTP2_Conn_process (conn->http2_conn, events); }
+  TRY
+  {
+    r = SocketHTTP2_Conn_process (conn->http2_conn, events);
+  }
   EXCEPT (SocketHTTP2_ProtocolError)
   {
     return -1;
@@ -513,7 +530,8 @@ server_process_http2 (SocketHTTPServer_T server, ServerConnection *conn,
   {
     /* Stream-level error: non-fatal for the connection (RFC 9113).
      * The core resets the offending stream; other streams may continue. */
-    if (Except_frame.exception != NULL && Except_frame.exception->reason != NULL)
+    if (Except_frame.exception != NULL
+        && Except_frame.exception->reason != NULL)
       SOCKET_LOG_WARN_MSG ("HTTP/2 stream error: %s",
                            Except_frame.exception->reason);
     stream_error = 1;
@@ -528,7 +546,10 @@ server_process_http2 (SocketHTTPServer_T server, ServerConnection *conn,
   if (!stream_error && r < 0)
     return -1;
 
-  TRY { f = SocketHTTP2_Conn_flush (conn->http2_conn); }
+  TRY
+  {
+    f = SocketHTTP2_Conn_flush (conn->http2_conn);
+  }
   EXCEPT (Socket_Failed)
   {
     return -1;
@@ -588,8 +609,10 @@ server_header_has_token_ci (const char *value, const char *token)
 }
 
 static int
-server_decode_http2_settings (Arena_T arena, const char *b64url,
-                              unsigned char **out, size_t *out_len)
+server_decode_http2_settings (Arena_T arena,
+                              const char *b64url,
+                              unsigned char **out,
+                              size_t *out_len)
 {
   size_t in_len;
   char *tmp;
@@ -636,7 +659,8 @@ server_decode_http2_settings (Arena_T arena, const char *b64url,
   decoded_len = -1;
   TRY
   {
-    decoded_len = SocketCrypto_base64_decode (tmp, tmp_len, decoded, decoded_max);
+    decoded_len
+        = SocketCrypto_base64_decode (tmp, tmp_len, decoded, decoded_max);
   }
   EXCEPT (SocketCrypto_Failed)
   {
@@ -660,8 +684,7 @@ should_copy_header_to_h2 (const char *name, const char *value)
     return 0;
 
   /* RFC 9113 §8.3.1: Connection-specific headers must be removed */
-  if (strcasecmp (name, "Connection") == 0
-      || strcasecmp (name, "Upgrade") == 0
+  if (strcasecmp (name, "Connection") == 0 || strcasecmp (name, "Upgrade") == 0
       || strcasecmp (name, "HTTP2-Settings") == 0
       || strcasecmp (name, "Keep-Alive") == 0
       || strcasecmp (name, "Proxy-Connection") == 0)
@@ -725,16 +748,18 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
     return 0;
 
   /* Count HTTP2-Settings headers - there must be exactly one */
-  const char *settings_values[10];  /* Max 10 headers should be sufficient */
-  size_t settings_count = SocketHTTP_Headers_get_all (headers, "HTTP2-Settings",
-                                                       settings_values,
-                                                       sizeof(settings_values)/sizeof(settings_values[0]));
+  const char *settings_values[10]; /* Max 10 headers should be sufficient */
+  size_t settings_count = SocketHTTP_Headers_get_all (
+      headers,
+      "HTTP2-Settings",
+      settings_values,
+      sizeof (settings_values) / sizeof (settings_values[0]));
 
   if (settings_count != 1)
     return 0;
 
-  if (server_decode_http2_settings (conn->arena, settings_b64, &settings_payload,
-                                    &settings_len)
+  if (server_decode_http2_settings (
+          conn->arena, settings_b64, &settings_payload, &settings_len)
       < 0)
     {
       connection_send_error (server, conn, 400, "Bad Request");
@@ -763,7 +788,8 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
     resp.status_code = 101;
     resp.headers = resp_headers;
 
-    resp_len = SocketHTTP1_serialize_response (&resp, resp_buf, sizeof (resp_buf));
+    resp_len
+        = SocketHTTP1_serialize_response (&resp, resp_buf, sizeof (resp_buf));
     if (resp_len < 0
         || connection_send_data (server, conn, resp_buf, (size_t)resp_len) < 0)
       {
@@ -772,9 +798,8 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
       }
   }
 
-  conn->http2_conn
-      = SocketHTTP2_Conn_upgrade_server (conn->socket, req, settings_payload,
-                                         settings_len, conn->arena);
+  conn->http2_conn = SocketHTTP2_Conn_upgrade_server (
+      conn->socket, req, settings_payload, settings_len, conn->arena);
   if (conn->http2_conn == NULL)
     {
       conn->state = CONN_STATE_CLOSED;
@@ -804,10 +829,12 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
       SocketBuf_consume (conn->inbuf, avail);
     }
 
-  SocketHTTP2_Stream_T stream1 = SocketHTTP2_Conn_get_stream (conn->http2_conn, 1);
+  SocketHTTP2_Stream_T stream1
+      = SocketHTTP2_Conn_get_stream (conn->http2_conn, 1);
   if (stream1 != NULL)
     {
-      ServerHTTP2Stream *s = server_http2_stream_get_or_create (server, conn, stream1);
+      ServerHTTP2Stream *s
+          = server_http2_stream_get_or_create (server, conn, stream1);
       if (s != NULL && s->request == NULL)
         {
           SocketHTTP_Request *h2req;
@@ -824,15 +851,19 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
               h2req->method = req->method;
               h2req->version = HTTP_VERSION_2;
               h2req->scheme = "http";
-              h2req->authority = host ? socket_util_arena_strdup (s->arena, host) : "";
-              h2req->path = req->path ? socket_util_arena_strdup (s->arena, req->path) : "/";
+              h2req->authority
+                  = host ? socket_util_arena_strdup (s->arena, host) : "";
+              h2req->path = req->path
+                                ? socket_util_arena_strdup (s->arena, req->path)
+                                : "/";
               h2req->headers = h2h;
               h2req->content_length = -1;
               h2req->has_body = 0;
 
               for (size_t i = 0; i < SocketHTTP_Headers_count (headers); i++)
                 {
-                  const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (headers, i);
+                  const SocketHTTP_Header *hdr
+                      = SocketHTTP_Headers_at (headers, i);
                   if (hdr == NULL)
                     continue;
                   if (should_copy_header_to_h2 (hdr->name, hdr->value))
@@ -856,7 +887,8 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
 }
 
 static int
-server_try_http2_prior_knowledge (SocketHTTPServer_T server, ServerConnection *conn,
+server_try_http2_prior_knowledge (SocketHTTPServer_T server,
+                                  ServerConnection *conn,
                                   unsigned events)
 {
   unsigned char preface[HTTP2_PREFACE_SIZE];
@@ -904,7 +936,8 @@ server_try_http2_prior_knowledge (SocketHTTPServer_T server, ServerConnection *c
   return 1;
 }
 
-/* Check rate limit for request path. Returns 1 if allowed, 0 if rate limited (sends 429) */
+/* Check rate limit for request path. Returns 1 if allowed, 0 if rate limited
+ * (sends 429) */
 static int
 server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -912,8 +945,8 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
       = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,
-                          rate_limited);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED, rate_limited);
       connection_send_error (server, conn, 429, "Too Many Requests");
       return 0;
     }
@@ -936,8 +969,7 @@ server_run_validator_impl (SocketHTTPServer_T server, ServerConnection *conn)
   req_ctx.arena = conn->arena;
   req_ctx.start_time_ms = conn->request_start_ms;
 
-  if (!server->validator (&req_ctx, &reject_status,
-                          server->validator_userdata))
+  if (!server->validator (&req_ctx, &reject_status, server->validator_userdata))
     {
       if (reject_status == 0)
         reject_status = 403;
@@ -961,14 +993,16 @@ server_run_validator (SocketHTTPServer_T server, ServerConnection *conn)
   return server_run_validator_impl (server, conn);
 }
 
-/* Run validator early (after headers, before body). Allows setting up body streaming */
+/* Run validator early (after headers, before body). Allows setting up body
+ * streaming */
 int
 server_run_validator_early (SocketHTTPServer_T server, ServerConnection *conn)
 {
   return server_run_validator_impl (server, conn);
 }
 
-/* Invoke middleware chain and request handler. Middleware can short-circuit by returning non-zero */
+/* Invoke middleware chain and request handler. Middleware can short-circuit by
+ * returning non-zero */
 static int
 server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -995,8 +1029,8 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
         {
           /* Middleware handled the request - stop chain */
           SOCKET_LOG_DEBUG_MSG ("Middleware handled request, stopping chain");
-          SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
-                              requests_total);
+          SERVER_METRICS_INC (
+              server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
           return 1;
         }
     }
@@ -1008,8 +1042,8 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
     }
 
   /* Update request counter (global + per-server) */
-  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
-                      requests_total);
+  SERVER_METRICS_INC (
+      server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
 
   return 1;
 }
@@ -1062,8 +1096,8 @@ server_try_static_file (SocketHTTPServer_T server, ServerConnection *conn)
   if (result == 1)
     {
       /* File was served (or 304/416 sent) */
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
-                          requests_total);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
       return 1;
     }
 
@@ -1081,8 +1115,7 @@ server_try_static_file (SocketHTTPServer_T server, ServerConnection *conn)
  * Orchestrates rate limiting, validation, handler invocation, and response.
  */
 static int
-server_handle_parsed_request (SocketHTTPServer_T server,
-                              ServerConnection *conn)
+server_handle_parsed_request (SocketHTTPServer_T server, ServerConnection *conn)
 {
   const SocketHTTP_Request *req = conn->request;
   if (req == NULL)
@@ -1149,16 +1182,21 @@ server_handle_parsed_request (SocketHTTPServer_T server,
  */
 static int
 server_process_streaming_body (SocketHTTPServer_T server,
-                                ServerConnection *conn, const void *input,
-                                size_t input_len)
+                               ServerConnection *conn,
+                               const void *input,
+                               size_t input_len)
 {
   char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
   size_t temp_avail = sizeof (temp_buf);
   size_t consumed, written;
   SocketHTTP1_Result r;
 
-  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                    input_len, &consumed, temp_buf, temp_avail,
+  r = SocketHTTP1_Parser_read_body (conn->parser,
+                                    (const char *)input,
+                                    input_len,
+                                    &consumed,
+                                    temp_buf,
+                                    temp_avail,
                                     &written);
 
   SocketBuf_consume (conn->inbuf, consumed);
@@ -1177,9 +1215,8 @@ server_process_streaming_body (SocketHTTPServer_T server,
       req_ctx.arena = conn->arena;
       req_ctx.start_time_ms = conn->request_start_ms;
 
-      int cb_result = conn->body_callback (&req_ctx, temp_buf, written,
-                                           is_final,
-                                           conn->body_callback_userdata);
+      int cb_result = conn->body_callback (
+          &req_ctx, temp_buf, written, is_final, conn->body_callback_userdata);
       if (cb_result != 0)
         {
           /* Callback aborted - send 400 and close */
@@ -1217,7 +1254,8 @@ server_process_streaming_body (SocketHTTPServer_T server,
  * Returns: 1 if request processed, 0 otherwise
  */
 static int
-server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
+server_process_client_event (SocketHTTPServer_T server,
+                             ServerConnection *conn,
                              unsigned events)
 {
   int requests_processed = 0;
@@ -1236,7 +1274,8 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
   if (events & POLL_READ)
     {
       /* TLS handshake must complete before any application reads. */
-      if (conn->state != CONN_STATE_TLS_HANDSHAKE && conn->state != CONN_STATE_HTTP2)
+      if (conn->state != CONN_STATE_TLS_HANDSHAKE
+          && conn->state != CONN_STATE_HTTP2)
         connection_read (server, conn);
     }
 
@@ -1284,8 +1323,8 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
       /* Handle streaming mode: deliver body data via callback */
       if (conn->body_streaming && conn->body_callback)
         {
-          int result = server_process_streaming_body (server, conn, input,
-                                                       input_len);
+          int result
+              = server_process_streaming_body (server, conn, input, input_len);
           if (result < 0)
             return requests_processed;
           if (result > 0)
@@ -1304,8 +1343,10 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
               input_len = max_body - current_len;
               if (input_len == 0)
                 {
-                  SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-                  connection_send_error (server, conn, 413, "Payload Too Large");
+                  SocketMetrics_counter_inc (
+                      SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+                  connection_send_error (
+                      server, conn, 413, "Payload Too Large");
                   conn->state = CONN_STATE_CLOSED;
                   return requests_processed;
                 }
@@ -1329,9 +1370,12 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
               return requests_processed;
             }
 
-          r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                            input_len, &consumed,
-                                            (char *)write_ptr, write_avail,
+          r = SocketHTTP1_Parser_read_body (conn->parser,
+                                            (const char *)input,
+                                            input_len,
+                                            &consumed,
+                                            (char *)write_ptr,
+                                            write_avail,
                                             &written);
 
           SocketBuf_consume (conn->inbuf, consumed);
@@ -1356,9 +1400,13 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
           char *output = (char *)conn->body + conn->body_len;
           size_t output_avail = conn->body_capacity - conn->body_len;
 
-          r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                            input_len, &consumed, output,
-                                            output_avail, &written);
+          r = SocketHTTP1_Parser_read_body (conn->parser,
+                                            (const char *)input,
+                                            input_len,
+                                            &consumed,
+                                            output,
+                                            output_avail,
+                                            &written);
 
           SocketBuf_consume (conn->inbuf, consumed);
           conn->body_len += written;
@@ -1414,7 +1462,8 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
  */
 static int
 server_check_connection_timeout (SocketHTTPServer_T server,
-                                 ServerConnection *conn, int64_t now)
+                                 ServerConnection *conn,
+                                 int64_t now)
 {
   int64_t idle_ms = now - conn->last_activity_ms;
   int64_t connection_age_ms = now - conn->created_at_ms;
@@ -1429,8 +1478,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
           "Connection lifetime exceeded (%lld ms > %d ms), closing connection",
           (long long)connection_age_ms,
           server->config.max_connection_lifetime_ms);
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1444,9 +1493,10 @@ server_check_connection_timeout (SocketHTTPServer_T server,
     {
       SOCKET_LOG_WARN_MSG (
           "TLS handshake timeout (%lld ms > %d ms), closing connection",
-          (long long)idle_ms, server->config.tls_handshake_timeout_ms);
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+          (long long)idle_ms,
+          server->config.tls_handshake_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1455,8 +1505,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_REQUEST
       && idle_ms > server->config.keepalive_timeout_ms)
     {
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1473,8 +1523,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
           "Header parsing timeout (%lld ms > %d ms), closing connection",
           (long long)(now - conn->request_start_ms),
           server->config.request_read_timeout_ms);
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1484,8 +1534,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->request_start_ms)
              > server->config.request_read_timeout_ms)
     {
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1496,8 +1546,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1508,11 +1558,12 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_HTTP2
       && idle_ms > server->config.keepalive_timeout_ms)
     {
-      SOCKET_LOG_WARN_MSG (
-          "HTTP/2 connection idle timeout (%lld ms > %d ms), closing connection",
-          (long long)idle_ms, server->config.keepalive_timeout_ms);
-      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
-                          requests_timeout);
+      SOCKET_LOG_WARN_MSG ("HTTP/2 connection idle timeout (%lld ms > %d ms), "
+                           "closing connection",
+                           (long long)idle_ms,
+                           server->config.keepalive_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1785,7 +1836,8 @@ SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code)
 
 void
 SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
-                                 const char *name, const char *value)
+                                 const char *name,
+                                 const char *value)
 {
   SocketHTTP_Headers_T *headers_ptr;
   const char *p;
@@ -1820,7 +1872,8 @@ SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
 
 int
 SocketHTTPServer_Request_trailer (SocketHTTPServer_Request_T req,
-                                  const char *name, const char *value)
+                                  const char *name,
+                                  const char *value)
 {
   assert (req != NULL);
   assert (name != NULL);
@@ -1847,7 +1900,8 @@ SocketHTTPServer_Request_trailer (SocketHTTPServer_Request_T req,
 
 void
 SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
-                                    const void *data, size_t len)
+                                    const void *data,
+                                    size_t len)
 {
   void **body_ptr;
   size_t *body_len_ptr;
@@ -1925,8 +1979,7 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req)
   assert (req != NULL);
   if (req->h2_stream != NULL)
     return 0;
-  return SocketHTTP1_Parser_body_mode (req->conn->parser)
-         == HTTP1_BODY_CHUNKED;
+  return SocketHTTP1_Parser_body_mode (req->conn->parser) == HTTP1_BODY_CHUNKED;
 }
 
 
@@ -1963,8 +2016,8 @@ SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
     return -1;
 
   /* Add Transfer-Encoding: chunked header */
-  SocketHTTP_Headers_set (req->conn->response_headers, "Transfer-Encoding",
-                          "chunked");
+  SocketHTTP_Headers_set (
+      req->conn->response_headers, "Transfer-Encoding", "chunked");
 
   /* Build and send headers */
   char buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
@@ -1991,7 +2044,8 @@ SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
 
 int
 SocketHTTPServer_Request_send_chunk (SocketHTTPServer_Request_T req,
-                                     const void *data, size_t len)
+                                     const void *data,
+                                     size_t len)
 {
   assert (req != NULL);
 
@@ -2014,12 +2068,14 @@ SocketHTTPServer_Request_send_chunk (SocketHTTPServer_Request_T req,
       if ((size_t)accepted < len)
         {
           if (s->response_outbuf == NULL)
-            s->response_outbuf = SocketBuf_new (s->arena, HTTPSERVER_IO_BUFFER_SIZE);
+            s->response_outbuf
+                = SocketBuf_new (s->arena, HTTPSERVER_IO_BUFFER_SIZE);
           if (s->response_outbuf == NULL)
             return -1;
           if (!SocketBuf_ensure (s->response_outbuf, len - (size_t)accepted))
             return -1;
-          SocketBuf_write (s->response_outbuf, p + accepted, len - (size_t)accepted);
+          SocketBuf_write (
+              s->response_outbuf, p + accepted, len - (size_t)accepted);
         }
 
       /* Try to flush any buffered remainder immediately. */
@@ -2040,8 +2096,8 @@ SocketHTTPServer_Request_send_chunk (SocketHTTPServer_Request_T req,
   if (chunk_len < 0)
     return -1;
 
-  return connection_send_data (req->server, req->conn, chunk_buf,
-                               (size_t)chunk_len);
+  return connection_send_data (
+      req->server, req->conn, chunk_buf, (size_t)chunk_len);
 }
 
 int
@@ -2082,8 +2138,8 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
   if (final_len < 0)
     return -1;
 
-  if (connection_send_data (req->server, req->conn, final_buf,
-                            (size_t)final_len)
+  if (connection_send_data (
+          req->server, req->conn, final_buf, (size_t)final_len)
       < 0)
     return -1;
 
@@ -2094,7 +2150,8 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
 
 int
 SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
-                               const char *path, SocketHTTP_Headers_T headers)
+                               const char *path,
+                               SocketHTTP_Headers_T headers)
 {
   assert (req != NULL);
   assert (path != NULL);
@@ -2106,7 +2163,7 @@ SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
 
   /* Peer can disable push via SETTINGS_ENABLE_PUSH=0 */
   if (SocketHTTP2_Conn_get_setting (req->conn->http2_conn,
-                                   HTTP2_SETTINGS_ENABLE_PUSH)
+                                    HTTP2_SETTINGS_ENABLE_PUSH)
       == 0)
     return -1;
 
@@ -2175,7 +2232,8 @@ SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
   if (promised == NULL)
     return -1;
 
-  /* Build synthetic request on promised stream and run normal handler pipeline. */
+  /* Build synthetic request on promised stream and run normal handler pipeline.
+   */
   ServerHTTP2Stream *ps
       = server_http2_stream_get_or_create (req->server, req->conn, promised);
   if (ps == NULL)
@@ -2233,8 +2291,8 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
   SocketWS_T ws = NULL;
   TRY
   {
-    ws = SocketWS_server_accept (req->conn->socket, req->conn->request,
-                                 ws_config);
+    ws = SocketWS_server_accept (
+        req->conn->socket, req->conn->request, ws_config);
     if (ws == NULL)
       {
         RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
@@ -2273,9 +2331,10 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
 }
 
 SocketHTTP2_Stream_T
-SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
-                                              SocketHTTPServer_BodyCallback callback,
-                                              void *userdata)
+SocketHTTPServer_Request_accept_websocket_h2 (
+    SocketHTTPServer_Request_T req,
+    SocketHTTPServer_BodyCallback callback,
+    void *userdata)
 {
   ServerHTTP2Stream *s;
   const char *version;
@@ -2297,7 +2356,8 @@ SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
   if (s->h2_protocol == NULL || strcmp (s->h2_protocol, "websocket") != 0)
     return NULL;
 
-  version = SocketHTTP_Headers_get (s->request->headers, "Sec-WebSocket-Version");
+  version
+      = SocketHTTP_Headers_get (s->request->headers, "Sec-WebSocket-Version");
   if (version != NULL && strcmp (version, "13") != 0)
     return NULL;
 
@@ -2335,7 +2395,8 @@ SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
   s->response_streaming = 1;
   s->response_headers_sent = 1;
 
-  /* Deliver future DATA bytes via callback (WebSocket frames on DATA stream). */
+  /* Deliver future DATA bytes via callback (WebSocket frames on DATA stream).
+   */
   s->body_streaming = 1;
   s->body_callback = callback;
   s->body_callback_userdata = userdata;
@@ -2419,7 +2480,8 @@ SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms)
     }
 
   /* For HTTP/2 connections, send GOAWAY so clients stop opening new streams. */
-  for (ServerConnection *conn = server->connections; conn != NULL; conn = conn->next)
+  for (ServerConnection *conn = server->connections; conn != NULL;
+       conn = conn->next)
     {
       if (conn->state == CONN_STATE_HTTP2 && conn->http2_conn != NULL)
         {
@@ -2483,8 +2545,8 @@ SocketHTTPServer_drain_poll (SocketHTTPServer_T server)
 
           if (server->drain_callback != NULL)
             {
-              server->drain_callback (server, 1,
-                                      server->drain_callback_userdata);
+              server->drain_callback (
+                  server, 1, server->drain_callback_userdata);
             }
           return -1;
         }
@@ -2588,8 +2650,8 @@ SocketHTTPServer_stats (SocketHTTPServer_T server,
       /* Global metrics - thread-safe via SocketMetrics */
       stats->active_connections = (size_t)SocketMetrics_gauge_get (
           SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
-      stats->total_connections
-          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
+      stats->total_connections = SocketMetrics_counter_get (
+          SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
       stats->total_requests
           = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
       stats->total_bytes_sent
@@ -2900,7 +2962,9 @@ parse_http_date (const char *date_str)
  * Returns: 1 if valid range parsed, 0 if invalid/unsatisfiable
  */
 static int
-parse_range_header (const char *range_str, off_t file_size, off_t *start,
+parse_range_header (const char *range_str,
+                    off_t file_size,
+                    off_t *start,
                     off_t *end)
 {
   const char *p;

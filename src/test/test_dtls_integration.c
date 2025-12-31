@@ -49,10 +49,12 @@ generate_dtls_test_certs (const char *cert_file, const char *key_file)
   /* Generate self-signed certificate for testing.
    * Use a simple command compatible with all OpenSSL versions (1.0.2+).
    * Avoid -addext which has inconsistent behavior across versions. */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     goto fail;
 
@@ -473,8 +475,14 @@ TEST (dtls_double_enable_error)
     ASSERT_EQ (failed_after, before_failed);
 
     /* Second enable should fail */
-    TRY { SocketDTLS_enable (socket, ctx); }
-    EXCEPT (SocketDTLS_Failed) { caught_error = 1; }
+    TRY
+    {
+      SocketDTLS_enable (socket, ctx);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught_error, 1);
@@ -513,16 +521,28 @@ TEST (dtls_io_before_handshake_error)
 
     /* Send before handshake should fail */
     char buf[] = "test";
-    TRY { SocketDTLS_send (socket, buf, sizeof (buf)); }
-    EXCEPT (SocketDTLS_Failed) { caught_error = 1; }
+    TRY
+    {
+      SocketDTLS_send (socket, buf, sizeof (buf));
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught_error, 1);
 
     /* Recv before handshake should fail */
     caught_error = 0;
-    TRY { SocketDTLS_recv (socket, buf, sizeof (buf)); }
-    EXCEPT (SocketDTLS_Failed) { caught_error = 1; }
+    TRY
+    {
+      SocketDTLS_recv (socket, buf, sizeof (buf));
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught_error, 1);
@@ -557,8 +577,14 @@ TEST (dtls_cookie_exchange_client_error)
     ctx = SocketDTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (ctx);
 
-    TRY { SocketDTLSContext_enable_cookie_exchange (ctx); }
-    EXCEPT (SocketDTLS_Failed) { caught_error = 1; }
+    TRY
+    {
+      SocketDTLSContext_enable_cookie_exchange (ctx);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught_error, 1);
@@ -592,15 +618,27 @@ TEST (dtls_invalid_mtu_error)
 
     /* MTU too small */
     caught_error = 0;
-    TRY { SocketDTLSContext_set_mtu (ctx, 100); }
-    EXCEPT (SocketDTLS_Failed) { caught_error = 1; }
+    TRY
+    {
+      SocketDTLSContext_set_mtu (ctx, 100);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_error, 1);
 
     /* MTU too large */
     caught_error = 0;
-    TRY { SocketDTLSContext_set_mtu (ctx, 100000); }
-    EXCEPT (SocketDTLS_Failed) { caught_error = 1; }
+    TRY
+    {
+      SocketDTLSContext_set_mtu (ctx, 100000);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught_error = 1;
+    }
     END_TRY;
     ASSERT_EQ (caught_error, 1);
   }
@@ -631,7 +669,10 @@ TEST (dtls_shutdown_before_handshake)
     /* Context is reference-counted - we still hold our reference */
 
     /* Shutdown before handshake - should not crash */
-    TRY { SocketDTLS_shutdown (socket); }
+    TRY
+    {
+      SocketDTLS_shutdown (socket);
+    }
     EXCEPT (SocketDTLS_ShutdownFailed)
     {
       /* Expected - handshake not complete */
@@ -766,17 +807,21 @@ TEST (dtls_handshake_loop_zero_timeout)
     state = SocketDTLS_handshake_loop (socket, 0);
 
     /* Should return without blocking, state should be valid */
-    ASSERT (state == DTLS_HANDSHAKE_IN_PROGRESS
-            || state == DTLS_HANDSHAKE_WANT_READ
-            || state == DTLS_HANDSHAKE_WANT_WRITE
-            || state == DTLS_HANDSHAKE_ERROR);
+    ASSERT (
+        state == DTLS_HANDSHAKE_IN_PROGRESS || state == DTLS_HANDSHAKE_WANT_READ
+        || state == DTLS_HANDSHAKE_WANT_WRITE || state == DTLS_HANDSHAKE_ERROR);
 
     /* Should NOT be COMPLETE on unconnected socket */
     ASSERT (state != DTLS_HANDSHAKE_COMPLETE);
   }
-  EXCEPT (SocketDTLS_Failed) { /* Expected on unconnected socket */ }
-  EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
-  EXCEPT (SocketDTLS_TimeoutExpired) { /* Should NOT happen with timeout=0 */
+  EXCEPT (SocketDTLS_Failed)
+  { /* Expected on unconnected socket */
+  }
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  { /* Expected */
+  }
+  EXCEPT (SocketDTLS_TimeoutExpired)
+  { /* Should NOT happen with timeout=0 */
     ASSERT (0 && "Timeout should not be raised with timeout=0");
   }
   FINALLY
@@ -806,12 +851,20 @@ TEST (dtls_handshake_loop_short_timeout)
     /* Context is reference-counted - we still hold our reference */
 
     /* Short timeout - should fail or timeout quickly */
-    TRY { SocketDTLS_handshake_loop (socket, 10); }
-    EXCEPT (SocketDTLS_TimeoutExpired) { /* Expected timeout */ }
-    EXCEPT (SocketDTLS_HandshakeFailed) { /* Also acceptable */ }
+    TRY
+    {
+      SocketDTLS_handshake_loop (socket, 10);
+    }
+    EXCEPT (SocketDTLS_TimeoutExpired)
+    { /* Expected timeout */
+    }
+    EXCEPT (SocketDTLS_HandshakeFailed)
+    { /* Also acceptable */
+    }
     END_TRY;
 
-    /* With unconnected socket, either timeout or handshake failure is expected */
+    /* With unconnected socket, either timeout or handshake failure is expected
+     */
     /* Just verify it returns without hanging */
   }
   FINALLY
@@ -847,8 +900,12 @@ TEST (dtls_handshake_single_step)
     /* State should be tracked */
     ASSERT_EQ (SocketDTLS_get_last_state (socket), state);
   }
-  EXCEPT (SocketDTLS_Failed) { /* Expected on unconnected socket */ }
-  EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+  EXCEPT (SocketDTLS_Failed)
+  { /* Expected on unconnected socket */
+  }
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  { /* Expected */
+  }
   FINALLY
   {
     if (socket)
@@ -885,8 +942,12 @@ TEST (dtls_listen_without_connection)
             || state == DTLS_HANDSHAKE_COOKIE_EXCHANGE
             || state == DTLS_HANDSHAKE_ERROR);
   }
-  EXCEPT (SocketDTLS_Failed) { /* Expected */ }
-  EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+  EXCEPT (SocketDTLS_Failed)
+  { /* Expected */
+  }
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  { /* Expected */
+  }
   FINALLY
   {
     if (socket)
@@ -1094,8 +1155,12 @@ TEST (dtls_handshake_state_transitions)
       /* State should be tracked */
       ASSERT_EQ (SocketDTLS_get_last_state (socket), step_state);
     }
-    EXCEPT (SocketDTLS_Failed) { /* Expected */ }
-    EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+    EXCEPT (SocketDTLS_Failed)
+    { /* Expected */
+    }
+    EXCEPT (SocketDTLS_HandshakeFailed)
+    { /* Expected */
+    }
     END_TRY;
   }
   FINALLY
@@ -1223,7 +1288,8 @@ TEST (dtls_socket_mtu_inheritance)
     SocketDTLS_set_mtu (socket, 1100);
     ASSERT_EQ (SocketDTLS_get_mtu (socket), 1100);
 
-    /* Note: Context MTU check removed - context ownership was transferred to socket */
+    /* Note: Context MTU check removed - context ownership was transferred to
+     * socket */
   }
   FINALLY
   {

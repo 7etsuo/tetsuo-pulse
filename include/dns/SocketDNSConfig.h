@@ -13,7 +13,8 @@
  * @ingroup dns
  *
  * Parses resolver configuration from /etc/resolv.conf per the resolv.conf(5)
- * manpage. Provides access to nameservers, search domains, and resolver options.
+ * manpage. Provides access to nameservers, search domains, and resolver
+ * options.
  *
  * ## Supported Directives
  *
@@ -124,7 +125,7 @@ typedef enum
 typedef struct
 {
   char address[DNS_ADDR_STR_MAX]; /**< IPv4 or IPv6 address string */
-  int family;                     /**< AF_INET or AF_INET6 (0 if not detected) */
+  int family; /**< AF_INET or AF_INET6 (0 if not detected) */
 } SocketDNSConfig_Nameserver;
 
 /**
@@ -189,8 +190,8 @@ extern int SocketDNSConfig_load (SocketDNSConfig_T *config);
  * @param path Path to resolv.conf-format file.
  * @return 0 on success, -1 if file couldn't be opened (defaults applied).
  */
-extern int SocketDNSConfig_load_file (SocketDNSConfig_T *config,
-                                      const char *path);
+extern int
+SocketDNSConfig_load_file (SocketDNSConfig_T *config, const char *path);
 
 /**
  * @brief Parse configuration from a string buffer.
@@ -203,8 +204,8 @@ extern int SocketDNSConfig_load_file (SocketDNSConfig_T *config,
  * @param content Null-terminated resolv.conf content.
  * @return 0 on success.
  */
-extern int SocketDNSConfig_parse (SocketDNSConfig_T *config,
-                                  const char *content);
+extern int
+SocketDNSConfig_parse (SocketDNSConfig_T *config, const char *content);
 
 /**
  * @brief Add a nameserver to the configuration.
@@ -214,8 +215,8 @@ extern int SocketDNSConfig_parse (SocketDNSConfig_T *config,
  * @param address IPv4 or IPv6 address string.
  * @return 0 on success, -1 if max nameservers reached or invalid address.
  */
-extern int SocketDNSConfig_add_nameserver (SocketDNSConfig_T *config,
-                                           const char *address);
+extern int
+SocketDNSConfig_add_nameserver (SocketDNSConfig_T *config, const char *address);
 
 /**
  * @brief Add a search domain to the configuration.
@@ -225,8 +226,8 @@ extern int SocketDNSConfig_add_nameserver (SocketDNSConfig_T *config,
  * @param domain Search domain to add.
  * @return 0 on success, -1 if max search domains reached or invalid.
  */
-extern int SocketDNSConfig_add_search (SocketDNSConfig_T *config,
-                                       const char *domain);
+extern int
+SocketDNSConfig_add_search (SocketDNSConfig_T *config, const char *domain);
 
 /**
  * @brief Check if configuration has the rotate option.
@@ -265,8 +266,8 @@ extern int SocketDNSConfig_use_tcp (const SocketDNSConfig_T *config);
  * @param config Configuration structure.
  * @return Local domain name or empty string if not set.
  */
-extern const char *SocketDNSConfig_local_domain (
-    const SocketDNSConfig_T *config);
+extern const char *
+SocketDNSConfig_local_domain (const SocketDNSConfig_T *config);
 
 /**
  * @brief Print configuration for debugging.

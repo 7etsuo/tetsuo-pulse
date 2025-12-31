@@ -100,7 +100,8 @@ validate_content_type (const char *content_type)
   if (strncmp (content_type, DOH_CONTENT_TYPE, strlen (DOH_CONTENT_TYPE)) == 0)
     {
       const char *semicolon = strchr (content_type, ';');
-      if (semicolon && (semicolon - content_type) == (int)strlen (DOH_CONTENT_TYPE))
+      if (semicolon
+          && (semicolon - content_type) == (int)strlen (DOH_CONTENT_TYPE))
         return 0;
     }
 
@@ -198,8 +199,8 @@ parse_doh_response (const uint8_t *data, size_t size, uint8_t control_byte)
         for (int i = 0; i < hdr.qdcount && offset < body_len; i++)
           {
             consumed = 0;
-            if (SocketDNS_question_decode (body, body_len, offset, &question,
-                                           &consumed)
+            if (SocketDNS_question_decode (
+                    body, body_len, offset, &question, &consumed)
                 != 0)
               break;
             offset += consumed;
@@ -232,7 +233,7 @@ parse_doh_response (const uint8_t *data, size_t size, uint8_t control_byte)
         const char *bad_ct = "text/html";
         if (validate_content_type (bad_ct) == 0)
           return -7; /* Should have failed */
-        return 0;     /* Expected failure */
+        return 0;    /* Expected failure */
       }
 
     case 2: /* Truncated response */
@@ -291,7 +292,8 @@ parse_doh_response (const uint8_t *data, size_t size, uint8_t control_byte)
             /* Test base64url decoding */
             char decoded[MAX_DNS_MSG_SIZE];
             ssize_t dec_len
-                = SocketCrypto_base64_decode ((const char *)body, body_len,
+                = SocketCrypto_base64_decode ((const char *)body,
+                                              body_len,
                                               (unsigned char *)decoded,
                                               sizeof (decoded));
 
@@ -299,8 +301,8 @@ parse_doh_response (const uint8_t *data, size_t size, uint8_t control_byte)
               {
                 /* Parse decoded DNS query */
                 SocketDNS_Header hdr;
-                (void)SocketDNS_header_decode ((unsigned char *)decoded,
-                                               dec_len, &hdr);
+                (void)SocketDNS_header_decode (
+                    (unsigned char *)decoded, dec_len, &hdr);
               }
           }
         break;
@@ -353,8 +355,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                    i++)
                 {
                   consumed = 0;
-                  if (SocketDNS_question_decode (body, body_len, offset, &q,
-                                                 &consumed)
+                  if (SocketDNS_question_decode (
+                          body, body_len, offset, &q, &consumed)
                       != 0)
                     break;
                   offset += consumed;
@@ -369,8 +371,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               for (int i = 0; i < total_rrs && offset < body_len; i++)
                 {
                   consumed = 0;
-                  if (SocketDNS_rr_decode (body, body_len, offset, &rr,
-                                           &consumed)
+                  if (SocketDNS_rr_decode (
+                          body, body_len, offset, &rr, &consumed)
                       != 0)
                     break;
 
@@ -394,23 +396,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     case DNS_TYPE_PTR:
                       {
                         char name[DNS_MAX_NAME_LEN];
-                        (void)SocketDNS_rdata_parse_cname (body, body_len, &rr,
-                                                           name, sizeof (name));
+                        (void)SocketDNS_rdata_parse_cname (
+                            body, body_len, &rr, name, sizeof (name));
                         break;
                       }
                     case DNS_TYPE_SOA:
                       {
                         SocketDNS_SOA soa;
-                        (void)SocketDNS_rdata_parse_soa (body, body_len, &rr,
-                                                         &soa);
+                        (void)SocketDNS_rdata_parse_soa (
+                            body, body_len, &rr, &soa);
                         break;
                       }
                     case DNS_TYPE_OPT:
                       {
                         /* OPT record (EDNS0) */
                         SocketDNS_OPT opt;
-                        (void)SocketDNS_opt_decode (body + offset,
-                                                    body_len - offset, &opt);
+                        (void)SocketDNS_opt_decode (
+                            body + offset, body_len - offset, &opt);
                         break;
                       }
                     default:
@@ -431,9 +433,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (encoded_size < 8192)
             {
               char encoded[8192];
-              ssize_t enc_len
-                  = SocketCrypto_base64_encode (body, body_len, encoded,
-                                                sizeof (encoded));
+              ssize_t enc_len = SocketCrypto_base64_encode (
+                  body, body_len, encoded, sizeof (encoded));
 
               if (enc_len > 0)
                 {
@@ -452,8 +453,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                   /* Test decoding back */
                   unsigned char decoded[4096];
-                  (void)SocketCrypto_base64_decode (encoded, enc_len, decoded,
-                                                    sizeof (decoded));
+                  (void)SocketCrypto_base64_decode (
+                      encoded, enc_len, decoded, sizeof (decoded));
                 }
             }
         }

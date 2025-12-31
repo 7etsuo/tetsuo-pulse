@@ -87,7 +87,8 @@ typedef void (*SocketEventCallback) (void *userdata,
  * @ingroup foundation
  * @param callback Callback function to register
  * @param userdata User data passed to callback
- * @return 0 on success, -1 on failure (NULL callback, duplicate, or limit reached)
+ * @return 0 on success, -1 on failure (NULL callback, duplicate, or limit
+ * reached)
  * @threadsafe Yes
  */
 int SocketEvent_register (SocketEventCallback callback, void *userdata);
@@ -100,8 +101,7 @@ int SocketEvent_register (SocketEventCallback callback, void *userdata);
  * @return 0 on success, -1 on failure (NULL callback or handler not found)
  * @threadsafe Yes
  */
-int SocketEvent_unregister (SocketEventCallback callback,
-                             const void *userdata);
+int SocketEvent_unregister (SocketEventCallback callback, const void *userdata);
 
 /**
  * @brief Emit connection accept event.
@@ -115,8 +115,11 @@ int SocketEvent_unregister (SocketEventCallback callback,
  *
  * @threadsafe Yes
  */
-void SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
-                              const char *local_addr, int local_port);
+void SocketEvent_emit_accept (int fd,
+                              const char *peer_addr,
+                              int peer_port,
+                              const char *local_addr,
+                              int local_port);
 
 /**
  * @brief Emit outbound connection event.
@@ -130,8 +133,11 @@ void SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
  *
  * @threadsafe Yes
  */
-void SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
-                               const char *local_addr, int local_port);
+void SocketEvent_emit_connect (int fd,
+                               const char *peer_addr,
+                               int peer_port,
+                               const char *local_addr,
+                               int local_port);
 
 /**
  * @brief Emit DNS resolution timeout event.

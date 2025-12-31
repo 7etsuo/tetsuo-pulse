@@ -105,7 +105,9 @@ detect_address_family (const char *address)
  * @return 1 if successfully parsed and clamped, 0 on error.
  */
 static int
-parse_int_option (const char *value_str, int min_val, int max_val,
+parse_int_option (const char *value_str,
+                  int min_val,
+                  int max_val,
                   int *out_value)
 {
   char *endptr;
@@ -115,8 +117,8 @@ parse_int_option (const char *value_str, int min_val, int max_val,
   value = strtol (value_str, &endptr, 10);
 
   /* Validate parsing: check for conversion errors and range */
-  if (errno != 0 || endptr == value_str || *endptr != '\0'
-      || value < INT_MIN || value > INT_MAX)
+  if (errno != 0 || endptr == value_str || *endptr != '\0' || value < INT_MIN
+      || value > INT_MAX)
     {
       return 0;
     }
@@ -152,14 +154,14 @@ parse_options (SocketDNSConfig_T *config, char *line)
           *colon = '\0';
 
           if (strcmp (token, "timeout") == 0)
-            parse_int_option (colon + 1, 1, DNS_CONFIG_MAX_TIMEOUT,
-                              &config->timeout_secs);
+            parse_int_option (
+                colon + 1, 1, DNS_CONFIG_MAX_TIMEOUT, &config->timeout_secs);
           else if (strcmp (token, "attempts") == 0)
-            parse_int_option (colon + 1, 1, DNS_CONFIG_MAX_ATTEMPTS,
-                              &config->attempts);
+            parse_int_option (
+                colon + 1, 1, DNS_CONFIG_MAX_ATTEMPTS, &config->attempts);
           else if (strcmp (token, "ndots") == 0)
-            parse_int_option (colon + 1, 0, DNS_CONFIG_MAX_NDOTS,
-                              &config->ndots);
+            parse_int_option (
+                colon + 1, 0, DNS_CONFIG_MAX_NDOTS, &config->ndots);
         }
       else
         {
@@ -341,7 +343,8 @@ SocketDNSConfig_add_nameserver (SocketDNSConfig_T *config, const char *address)
   if (len >= sizeof (config->nameservers[0].address))
     return -1;
 
-  strncpy (config->nameservers[config->nameserver_count].address, address,
+  strncpy (config->nameservers[config->nameserver_count].address,
+           address,
            sizeof (config->nameservers[0].address) - 1);
   config->nameservers[config->nameserver_count]
       .address[sizeof (config->nameservers[0].address) - 1]
@@ -416,8 +419,8 @@ SocketDNSConfig_add_search (SocketDNSConfig_T *config, const char *domain)
   if (!is_valid_domain_name (domain))
     return -1;
 
-  strncpy (config->search[config->search_count], domain,
-           DNS_CONFIG_MAX_DOMAIN_LEN);
+  strncpy (
+      config->search[config->search_count], domain, DNS_CONFIG_MAX_DOMAIN_LEN);
   config->search[config->search_count][DNS_CONFIG_MAX_DOMAIN_LEN] = '\0';
   config->search_count++;
 
@@ -470,7 +473,9 @@ SocketDNSConfig_dump (const SocketDNSConfig_T *config)
   fprintf (stderr, "  Nameservers (%d):\n", config->nameserver_count);
   for (i = 0; i < config->nameserver_count; i++)
     {
-      fprintf (stderr, "    [%d] %s (IPv%d)\n", i,
+      fprintf (stderr,
+               "    [%d] %s (IPv%d)\n",
+               i,
                config->nameservers[i].address,
                config->nameservers[i].family == AF_INET6 ? 6 : 4);
     }
@@ -485,11 +490,14 @@ SocketDNSConfig_dump (const SocketDNSConfig_T *config)
   fprintf (stderr, "    timeout: %d seconds\n", config->timeout_secs);
   fprintf (stderr, "    attempts: %d\n", config->attempts);
   fprintf (stderr, "    ndots: %d\n", config->ndots);
-  fprintf (stderr, "    rotate: %s\n",
+  fprintf (stderr,
+           "    rotate: %s\n",
            SocketDNSConfig_has_rotate (config) ? "yes" : "no");
-  fprintf (stderr, "    edns0: %s\n",
+  fprintf (stderr,
+           "    edns0: %s\n",
            SocketDNSConfig_has_edns0 (config) ? "yes" : "no");
-  fprintf (stderr, "    use-vc (TCP): %s\n",
+  fprintf (stderr,
+           "    use-vc (TCP): %s\n",
            SocketDNSConfig_use_tcp (config) ? "yes" : "no");
 
   if (config->local_domain[0] != '\0')

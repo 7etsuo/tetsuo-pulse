@@ -145,8 +145,14 @@ TEST (dtls_mtu_context_too_small_fails)
     ASSERT_NOT_NULL (ctx);
 
     /* MTU below minimum should fail */
-    TRY { SocketDTLSContext_set_mtu (ctx, 100); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLSContext_set_mtu (ctx, 100);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -170,8 +176,14 @@ TEST (dtls_mtu_context_too_large_fails)
     ASSERT_NOT_NULL (ctx);
 
     /* MTU above maximum should fail */
-    TRY { SocketDTLSContext_set_mtu (ctx, 100000); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLSContext_set_mtu (ctx, 100000);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);

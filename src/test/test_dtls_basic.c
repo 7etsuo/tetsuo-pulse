@@ -49,10 +49,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -107,8 +109,14 @@ TEST (dtls_enable_null_socket_fails)
     ctx = SocketDTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (ctx);
 
-    TRY { SocketDTLS_enable (NULL, ctx); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLS_enable (NULL, ctx);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -131,8 +139,14 @@ TEST (dtls_enable_null_context_fails)
     socket = SocketDgram_new (AF_INET, 0);
     ASSERT_NOT_NULL (socket);
 
-    TRY { SocketDTLS_enable (socket, NULL); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLS_enable (socket, NULL);
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -289,13 +303,16 @@ TEST (dtls_handshake_single_step)
     {
       DTLSHandshakeState state = SocketDTLS_handshake (socket);
       /* On unconnected socket, should get error or want state */
-      ASSERT (state == DTLS_HANDSHAKE_ERROR
-              || state == DTLS_HANDSHAKE_WANT_READ
+      ASSERT (state == DTLS_HANDSHAKE_ERROR || state == DTLS_HANDSHAKE_WANT_READ
               || state == DTLS_HANDSHAKE_WANT_WRITE
               || state == DTLS_HANDSHAKE_IN_PROGRESS);
     }
-    EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
-    EXCEPT (SocketDTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketDTLS_HandshakeFailed)
+    { /* Expected */
+    }
+    EXCEPT (SocketDTLS_Failed)
+    { /* Expected */
+    }
     END_TRY;
   }
   FINALLY
@@ -327,8 +344,12 @@ TEST (dtls_handshake_loop_zero_timeout)
       /* Should return immediately without blocking */
       ASSERT (state != DTLS_HANDSHAKE_COMPLETE);
     }
-    EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
-    EXCEPT (SocketDTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketDTLS_HandshakeFailed)
+    { /* Expected */
+    }
+    EXCEPT (SocketDTLS_Failed)
+    { /* Expected */
+    }
     END_TRY;
   }
   FINALLY
@@ -357,8 +378,14 @@ TEST (dtls_send_before_handshake_fails)
     /* Context is reference-counted - we still hold our reference */
 
     char buf[] = "test";
-    TRY { SocketDTLS_send (socket, buf, sizeof (buf)); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLS_send (socket, buf, sizeof (buf));
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -387,8 +414,14 @@ TEST (dtls_recv_before_handshake_fails)
     /* Context is reference-counted - we still hold our reference */
 
     char buf[64];
-    TRY { SocketDTLS_recv (socket, buf, sizeof (buf)); }
-    EXCEPT (SocketDTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketDTLS_recv (socket, buf, sizeof (buf));
+    }
+    EXCEPT (SocketDTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -418,8 +451,13 @@ TEST (dtls_shutdown_before_handshake)
     /* Context is reference-counted - we still hold our reference */
 
     /* Shutdown before handshake */
-    TRY { SocketDTLS_shutdown (socket); }
-    EXCEPT (SocketDTLS_ShutdownFailed) { /* Expected */ }
+    TRY
+    {
+      SocketDTLS_shutdown (socket);
+    }
+    EXCEPT (SocketDTLS_ShutdownFailed)
+    { /* Expected */
+    }
     END_TRY;
   }
   FINALLY

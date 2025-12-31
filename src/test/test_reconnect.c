@@ -48,8 +48,10 @@ static volatile int health_fail_calls = 0;
 
 /* Health check that fails a limited number of times then succeeds */
 static int
-always_fail_health_check (SocketReconnect_T conn, Socket_T socket,
-                          int timeout_ms, void *userdata)
+always_fail_health_check (SocketReconnect_T conn,
+                          Socket_T socket,
+                          int timeout_ms,
+                          void *userdata)
 {
   (void)conn;
   (void)socket;
@@ -65,8 +67,10 @@ static volatile int health_check_fail_count = 0;
 static volatile int health_check_should_fail = 1;
 
 static int
-controlled_health_check (SocketReconnect_T conn, Socket_T socket,
-                         int timeout_ms, void *userdata)
+controlled_health_check (SocketReconnect_T conn,
+                         Socket_T socket,
+                         int timeout_ms,
+                         void *userdata)
 {
   (void)conn;
   (void)socket;
@@ -157,17 +161,16 @@ TEST (rc_state_names)
   ASSERT (
       strcmp (SocketReconnect_state_name (RECONNECT_CONNECTING), "CONNECTING")
       == 0);
-  ASSERT (
-      strcmp (SocketReconnect_state_name (RECONNECT_CONNECTED), "CONNECTED")
-      == 0);
+  ASSERT (strcmp (SocketReconnect_state_name (RECONNECT_CONNECTED), "CONNECTED")
+          == 0);
   ASSERT (strcmp (SocketReconnect_state_name (RECONNECT_BACKOFF), "BACKOFF")
           == 0);
   ASSERT (strcmp (SocketReconnect_state_name (RECONNECT_CIRCUIT_OPEN),
                   "CIRCUIT_OPEN")
           == 0);
-  ASSERT (strcmp (SocketReconnect_state_name ((SocketReconnect_State)99),
-                  "UNKNOWN")
-          == 0);
+  ASSERT (
+      strcmp (SocketReconnect_state_name ((SocketReconnect_State)99), "UNKNOWN")
+      == 0);
 }
 
 /* ============================================================================
@@ -181,7 +184,10 @@ TEST (rc_create_basic)
 
   signal (SIGPIPE, SIG_IGN);
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0); /* Should not fail */
@@ -211,7 +217,10 @@ TEST (rc_create_with_policy)
   policy.max_attempts = 3;
   policy.initial_delay_ms = 50;
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -234,8 +243,10 @@ static SocketReconnect_State last_old_state = RECONNECT_DISCONNECTED;
 static SocketReconnect_State last_new_state = RECONNECT_DISCONNECTED;
 
 static void
-test_callback (SocketReconnect_T conn, SocketReconnect_State old_state,
-               SocketReconnect_State new_state, void *userdata)
+test_callback (SocketReconnect_T conn,
+               SocketReconnect_State old_state,
+               SocketReconnect_State new_state,
+               void *userdata)
 {
   (void)conn;
   (void)userdata;
@@ -262,8 +273,8 @@ TEST (rc_callback_invoked)
   TRY
   {
     /* Use localhost for fast failure */
-    conn = SocketReconnect_new ("127.0.0.1", 59996, &policy, test_callback,
-                                NULL);
+    conn = SocketReconnect_new (
+        "127.0.0.1", 59996, &policy, test_callback, NULL);
   }
   EXCEPT (SocketReconnect_Failed)
   {
@@ -330,7 +341,10 @@ TEST (rc_connect_to_server)
 
   SocketReconnect_policy_defaults (&policy);
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -527,7 +541,10 @@ TEST (rc_pollfd_disconnected)
 
   signal (SIGPIPE, SIG_IGN);
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -567,7 +584,10 @@ TEST (rc_multiple_connect_calls)
   }
   END_TRY;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -605,7 +625,10 @@ TEST (rc_send_not_connected)
 
   signal (SIGPIPE, SIG_IGN);
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -627,7 +650,10 @@ TEST (rc_recv_not_connected)
 
   signal (SIGPIPE, SIG_IGN);
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -682,7 +708,10 @@ TEST (rc_circuit_breaker_opens)
   policy.max_delay_ms = 10;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -748,7 +777,10 @@ TEST (rc_circuit_breaker_half_open)
   policy.initial_delay_ms = 5;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -785,7 +817,9 @@ static int health_check_call_count = 0;
 static int health_check_return_value = 1;
 
 static int
-test_health_check (SocketReconnect_T conn, Socket_T socket, int timeout_ms,
+test_health_check (SocketReconnect_T conn,
+                   Socket_T socket,
+                   int timeout_ms,
                    void *userdata)
 {
   (void)conn;
@@ -830,7 +864,10 @@ TEST (rc_custom_health_check)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 50; /* Short interval for testing */
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -901,7 +938,10 @@ TEST (rc_health_check_failure)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 50;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -961,7 +1001,10 @@ TEST (rc_max_attempts_reached)
   policy.max_attempts = 2;
   policy.initial_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59988, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59988, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -1029,7 +1072,10 @@ TEST (rc_send_recv_connected)
 
   SocketReconnect_policy_defaults (&policy);
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1049,8 +1095,13 @@ TEST (rc_send_recv_connected)
         SocketReconnect_process (conn);
         SocketReconnect_tick (conn);
         /* Accept any pending connections on server */
-        TRY { client = Socket_accept (server); }
-        EXCEPT (Socket_Failed) { /* Ignore */ }
+        TRY
+        {
+          client = Socket_accept (server);
+        }
+        EXCEPT (Socket_Failed)
+        { /* Ignore */
+        }
         END_TRY;
         usleep (50000);
       }
@@ -1060,8 +1111,7 @@ TEST (rc_send_recv_connected)
     {
       /* Send data through reconnect wrapper */
       ssize_t sent = SocketReconnect_send (conn, send_buf, strlen (send_buf));
-      ASSERT (sent > 0
-              || sent == -1); /* May succeed or fail based on timing */
+      ASSERT (sent > 0 || sent == -1); /* May succeed or fail based on timing */
 
       if (sent > 0)
         {
@@ -1076,8 +1126,12 @@ TEST (rc_send_recv_connected)
                 ASSERT (memcmp (recv_buf, send_buf, (size_t)recvd) == 0);
               }
           }
-          EXCEPT (Socket_Failed) { /* Ignore */ }
-          EXCEPT (Socket_Closed) { /* Ignore */ }
+          EXCEPT (Socket_Failed)
+          { /* Ignore */
+          }
+          EXCEPT (Socket_Closed)
+          { /* Ignore */
+          }
           END_TRY;
         }
     }
@@ -1099,7 +1153,10 @@ TEST (rc_next_timeout_disconnected)
 
   signal (SIGPIPE, SIG_IGN);
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -1144,7 +1201,10 @@ TEST (rc_next_timeout_connected)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 1000;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1197,7 +1257,10 @@ TEST (rc_circuit_breaker_recovery)
   policy.initial_delay_ms = 10;
 
   /* First, create context without server (will fail) */
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59987, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59987, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -1237,7 +1300,10 @@ TEST (rc_circuit_breaker_recovery)
 
   /* Create new reconnect context for the working server */
   SocketReconnect_free (&conn);
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1278,7 +1344,10 @@ TEST (rc_backoff_calculation_jitter)
   policy.jitter = 0.25; /* 25% jitter */
   policy.max_attempts = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59986, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59986, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -1350,7 +1419,10 @@ TEST (rc_io_triggers_reconnect)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 50;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1367,8 +1439,13 @@ TEST (rc_io_triggers_reconnect)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
-      TRY { accepted = Socket_accept (server); }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      TRY
+      {
+        accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -1437,7 +1514,10 @@ TEST (rc_no_health_check_interval)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 0; /* Disable health checks */
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1513,7 +1593,10 @@ TEST (rc_backoff_hits_max_delay)
   policy.max_attempts = 3;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1577,7 +1660,10 @@ TEST (rc_backoff_very_small_delay)
   policy.max_attempts = 3;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1645,7 +1731,10 @@ TEST (rc_circuit_breaker_full_cycle)
   policy.max_delay_ms = 10;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1713,7 +1802,10 @@ TEST (rc_circuit_half_open_probe_fail)
   policy.max_delay_ms = 10;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1779,7 +1871,10 @@ TEST (rc_default_health_check_used)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 30; /* Short interval for testing */
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1797,8 +1892,13 @@ TEST (rc_default_health_check_used)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
-      TRY { accepted = Socket_accept (server); }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      TRY
+      {
+        accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -1853,7 +1953,10 @@ TEST (rc_default_health_check_eof)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 30;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1875,7 +1978,9 @@ TEST (rc_default_health_check_eof)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -1920,8 +2025,14 @@ TEST (rc_hostname_too_long)
   memset (long_hostname, 'a', sizeof (long_hostname) - 1);
   long_hostname[sizeof (long_hostname) - 1] = '\0';
 
-  TRY { conn = SocketReconnect_new (long_hostname, 8080, NULL, NULL, NULL); }
-  EXCEPT (SocketReconnect_Failed) { raised = 1; }
+  TRY
+  {
+    conn = SocketReconnect_new (long_hostname, 8080, NULL, NULL, NULL);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT (raised);
@@ -1976,7 +2087,10 @@ TEST (rc_max_attempts_stops_retries)
   policy.initial_delay_ms = 5;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2048,7 +2162,10 @@ TEST (rc_tick_backoff_retry)
   policy.max_delay_ms = 30;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2131,7 +2248,10 @@ TEST (rc_timeout_circuit_open)
   policy.initial_delay_ms = 5;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2199,7 +2319,10 @@ TEST (rc_pollfd_connected)
   }
   END_TRY;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, NULL, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, NULL, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2261,7 +2384,10 @@ TEST (rc_send_recv_full_data_flow)
 
   SocketReconnect_policy_defaults (&policy);
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2273,8 +2399,7 @@ TEST (rc_send_recv_full_data_flow)
   SocketReconnect_connect (conn);
 
   /* Connect and accept - wait for BOTH client connected AND server accepted */
-  for (i = 0; i < 30 && (!SocketReconnect_isconnected (conn) || !accepted);
-       i++)
+  for (i = 0; i < 30 && (!SocketReconnect_isconnected (conn) || !accepted); i++)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
@@ -2283,7 +2408,9 @@ TEST (rc_send_recv_full_data_flow)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -2307,8 +2434,12 @@ TEST (rc_send_recv_full_data_flow)
                 ASSERT (strcmp (recv_buf, send_buf) == 0);
               }
           }
-          EXCEPT (Socket_Failed) { /* Ignore */ }
-          EXCEPT (Socket_Closed) { /* Ignore */ }
+          EXCEPT (Socket_Failed)
+          { /* Ignore */
+          }
+          EXCEPT (Socket_Closed)
+          { /* Ignore */
+          }
           END_TRY;
         }
 
@@ -2326,8 +2457,8 @@ TEST (rc_send_recv_full_data_flow)
         if (sock)
           {
             Socket_setnonblocking (sock);
-            ssize_t r = SocketReconnect_recv (conn, client_recv,
-                                              sizeof (client_recv) - 1);
+            ssize_t r = SocketReconnect_recv (
+                conn, client_recv, sizeof (client_recv) - 1);
             if (r > 0)
               {
                 client_recv[r] = '\0';
@@ -2335,8 +2466,12 @@ TEST (rc_send_recv_full_data_flow)
               }
           }
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
-      EXCEPT (Socket_Closed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
+      EXCEPT (Socket_Closed)
+      { /* Ignore */
+      }
       END_TRY;
     }
 
@@ -2379,7 +2514,10 @@ TEST (rc_send_triggers_reconnect)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 20;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2399,7 +2537,9 @@ TEST (rc_send_triggers_reconnect)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -2470,7 +2610,10 @@ TEST (rc_recv_eof_triggers_reconnect)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 20;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2490,7 +2633,9 @@ TEST (rc_recv_eof_triggers_reconnect)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -2562,7 +2707,10 @@ TEST (rc_process_connecting)
   SocketReconnect_policy_defaults (&policy);
   policy.max_attempts = 2;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -2784,7 +2932,10 @@ TEST (rc_backoff_minimum_delay)
   policy.circuit_failure_threshold = 10;
 
   /* Note: Port 1 was used previously but causes long timeouts on macOS */
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59984, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59984, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -2844,7 +2995,10 @@ TEST (rc_circuit_open_blocks_attempts)
   policy.max_delay_ms = 10;
 
   /* Note: Port 1 was used previously but causes long timeouts on macOS */
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59985, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59985, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -2902,7 +3056,10 @@ TEST (rc_circuit_open_to_half_open_transition)
   policy.max_delay_ms = 10;
 
   /* Note: Port 1 was used previously but causes long timeouts on macOS */
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59989, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59989, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -2982,7 +3139,10 @@ TEST (rc_circuit_closes_on_success)
   policy.max_attempts = 0;
   policy.circuit_failure_threshold = 2;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3046,7 +3206,10 @@ TEST (rc_send_with_broken_pipe)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3058,8 +3221,7 @@ TEST (rc_send_with_broken_pipe)
   SocketReconnect_connect (conn);
 
   /* Wait for BOTH client connected AND server accepted */
-  for (i = 0; i < 30 && (!SocketReconnect_isconnected (conn) || !accepted);
-       i++)
+  for (i = 0; i < 30 && (!SocketReconnect_isconnected (conn) || !accepted); i++)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
@@ -3068,7 +3230,9 @@ TEST (rc_send_with_broken_pipe)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -3141,7 +3305,10 @@ TEST (rc_recv_peer_closed)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3153,8 +3320,7 @@ TEST (rc_recv_peer_closed)
   SocketReconnect_connect (conn);
 
   /* Wait for BOTH client connected AND server accepted */
-  for (i = 0; i < 30 && (!SocketReconnect_isconnected (conn) || !accepted);
-       i++)
+  for (i = 0; i < 30 && (!SocketReconnect_isconnected (conn) || !accepted); i++)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
@@ -3163,7 +3329,9 @@ TEST (rc_recv_peer_closed)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -3238,7 +3406,10 @@ TEST (rc_default_health_check_with_pending_data)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 20; /* Short interval */
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3259,7 +3430,9 @@ TEST (rc_default_health_check_with_pending_data)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -3272,8 +3445,12 @@ TEST (rc_default_health_check_with_pending_data)
         char data[] = "test data";
         Socket_send (accepted, data, strlen (data));
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
-      EXCEPT (Socket_Closed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
+      EXCEPT (Socket_Closed)
+      { /* Ignore */
+      }
       END_TRY;
 
       /* Wait for health check interval and trigger */
@@ -3300,7 +3477,10 @@ TEST (rc_health_check_not_connected)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("localhost", 8080, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("localhost", 8080, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -3353,7 +3533,10 @@ TEST (rc_health_check_poll_error_path)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 20;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3374,7 +3557,9 @@ TEST (rc_health_check_poll_error_path)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -3429,7 +3614,10 @@ TEST (rc_circuit_opens_via_failures)
   policy.initial_delay_ms = 5;
   policy.max_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59130, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59130, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -3474,7 +3662,10 @@ TEST (rc_circuit_half_open_probe)
   policy.initial_delay_ms = 5;
   policy.max_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59131, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59131, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -3517,7 +3708,10 @@ TEST (rc_max_attempts_reached_stops)
   policy.initial_delay_ms = 5;
   policy.max_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59132, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59132, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -3578,7 +3772,10 @@ TEST (rc_backoff_max_delay)
   policy.circuit_failure_threshold = 10;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3620,7 +3817,10 @@ TEST (rc_async_process_flow)
   policy.initial_delay_ms = 50;
   policy.circuit_failure_threshold = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59133, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59133, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -3682,7 +3882,10 @@ TEST (rc_circuit_half_open_success)
   policy.max_delay_ms = 10;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3750,7 +3953,10 @@ TEST (rc_backoff_sub_ms_clamp)
   policy.circuit_failure_threshold = 20;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3795,7 +4001,10 @@ TEST (rc_backoff_timeout_in_state)
   policy.max_delay_ms = 500;
   policy.circuit_failure_threshold = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59134, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59134, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -3861,7 +4070,10 @@ TEST (rc_tick_circuit_timeout)
   policy.max_delay_ms = 10;
   policy.health_check_interval_ms = 5;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3927,7 +4139,10 @@ TEST (rc_send_error_path)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 100;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -3947,7 +4162,9 @@ TEST (rc_send_error_path)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -4011,7 +4228,10 @@ TEST (rc_recv_eof_path)
   SocketReconnect_policy_defaults (&policy);
   policy.initial_delay_ms = 100;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -4031,7 +4251,9 @@ TEST (rc_recv_eof_path)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -4090,7 +4312,10 @@ TEST (rc_health_check_with_data)
   SocketReconnect_policy_defaults (&policy);
   policy.health_check_interval_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -4110,7 +4335,9 @@ TEST (rc_health_check_with_data)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -4122,8 +4349,12 @@ TEST (rc_health_check_with_data)
         char data[] = "test";
         Socket_send (accepted, data, strlen (data));
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
-      EXCEPT (Socket_Closed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
+      EXCEPT (Socket_Closed)
+      { /* Ignore */
+      }
       END_TRY;
 
       usleep (50000);

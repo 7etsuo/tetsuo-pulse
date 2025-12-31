@@ -47,40 +47,43 @@
  *
  * Each level has independent packet protection keys.
  */
-typedef enum {
-  QUIC_CRYPTO_LEVEL_INITIAL = 0,    /**< Initial packets (known secret) */
-  QUIC_CRYPTO_LEVEL_0RTT,            /**< 0-RTT early data (client only) */
-  QUIC_CRYPTO_LEVEL_HANDSHAKE,       /**< Handshake packets */
-  QUIC_CRYPTO_LEVEL_APPLICATION,     /**< 1-RTT application data */
+typedef enum
+{
+  QUIC_CRYPTO_LEVEL_INITIAL = 0, /**< Initial packets (known secret) */
+  QUIC_CRYPTO_LEVEL_0RTT,        /**< 0-RTT early data (client only) */
+  QUIC_CRYPTO_LEVEL_HANDSHAKE,   /**< Handshake packets */
+  QUIC_CRYPTO_LEVEL_APPLICATION, /**< 1-RTT application data */
   QUIC_CRYPTO_LEVEL_COUNT
 } SocketQUICCryptoLevel;
 
 /**
  * @brief Handshake state machine states.
  */
-typedef enum {
-  QUIC_HANDSHAKE_STATE_IDLE = 0,       /**< Not started */
-  QUIC_HANDSHAKE_STATE_INITIAL,        /**< Sending/receiving Initial */
-  QUIC_HANDSHAKE_STATE_HANDSHAKE,      /**< TLS handshake in progress */
-  QUIC_HANDSHAKE_STATE_COMPLETE,       /**< Handshake complete */
-  QUIC_HANDSHAKE_STATE_CONFIRMED,      /**< Handshake confirmed */
-  QUIC_HANDSHAKE_STATE_FAILED          /**< Handshake failed */
+typedef enum
+{
+  QUIC_HANDSHAKE_STATE_IDLE = 0,  /**< Not started */
+  QUIC_HANDSHAKE_STATE_INITIAL,   /**< Sending/receiving Initial */
+  QUIC_HANDSHAKE_STATE_HANDSHAKE, /**< TLS handshake in progress */
+  QUIC_HANDSHAKE_STATE_COMPLETE,  /**< Handshake complete */
+  QUIC_HANDSHAKE_STATE_CONFIRMED, /**< Handshake confirmed */
+  QUIC_HANDSHAKE_STATE_FAILED     /**< Handshake failed */
 } SocketQUICHandshakeState;
 
 /**
  * @brief Result codes for handshake operations.
  */
-typedef enum {
-  QUIC_HANDSHAKE_OK = 0,              /**< Success */
-  QUIC_HANDSHAKE_ERROR_NULL,          /**< NULL argument */
-  QUIC_HANDSHAKE_ERROR_STATE,         /**< Invalid state */
-  QUIC_HANDSHAKE_ERROR_CRYPTO,        /**< Cryptographic error */
-  QUIC_HANDSHAKE_ERROR_TLS,           /**< TLS error */
-  QUIC_HANDSHAKE_ERROR_BUFFER,        /**< Buffer overflow */
-  QUIC_HANDSHAKE_ERROR_OFFSET,        /**< Invalid offset */
-  QUIC_HANDSHAKE_ERROR_DUPLICATE,     /**< Duplicate data */
-  QUIC_HANDSHAKE_ERROR_TRANSPORT,     /**< Transport parameter error */
-  QUIC_HANDSHAKE_ERROR_MEMORY         /**< Memory allocation failure */
+typedef enum
+{
+  QUIC_HANDSHAKE_OK = 0,          /**< Success */
+  QUIC_HANDSHAKE_ERROR_NULL,      /**< NULL argument */
+  QUIC_HANDSHAKE_ERROR_STATE,     /**< Invalid state */
+  QUIC_HANDSHAKE_ERROR_CRYPTO,    /**< Cryptographic error */
+  QUIC_HANDSHAKE_ERROR_TLS,       /**< TLS error */
+  QUIC_HANDSHAKE_ERROR_BUFFER,    /**< Buffer overflow */
+  QUIC_HANDSHAKE_ERROR_OFFSET,    /**< Invalid offset */
+  QUIC_HANDSHAKE_ERROR_DUPLICATE, /**< Duplicate data */
+  QUIC_HANDSHAKE_ERROR_TRANSPORT, /**< Transport parameter error */
+  QUIC_HANDSHAKE_ERROR_MEMORY     /**< Memory allocation failure */
 } SocketQUICHandshake_Result;
 
 /**
@@ -88,10 +91,11 @@ typedef enum {
  *
  * Used for reassembling out-of-order CRYPTO data.
  */
-typedef struct SocketQUICCryptoSegment {
-  uint64_t offset;                    /**< Offset in CRYPTO stream */
-  uint64_t length;                    /**< Data length */
-  uint8_t *data;                      /**< Data buffer */
+typedef struct SocketQUICCryptoSegment
+{
+  uint64_t offset;                      /**< Offset in CRYPTO stream */
+  uint64_t length;                      /**< Data length */
+  uint8_t *data;                        /**< Data buffer */
   struct SocketQUICCryptoSegment *next; /**< Next segment in list */
 } SocketQUICCryptoSegment_T;
 
@@ -100,13 +104,14 @@ typedef struct SocketQUICCryptoSegment {
  *
  * Tracks sent and received CRYPTO data.
  */
-typedef struct {
-  uint64_t send_offset;               /**< Next byte to send */
-  uint64_t recv_offset;               /**< Next expected byte */
-  uint8_t *recv_buffer;               /**< Reassembly buffer */
-  size_t recv_buffer_size;            /**< Buffer allocation size */
+typedef struct
+{
+  uint64_t send_offset;                /**< Next byte to send */
+  uint64_t recv_offset;                /**< Next expected byte */
+  uint8_t *recv_buffer;                /**< Reassembly buffer */
+  size_t recv_buffer_size;             /**< Buffer allocation size */
   SocketQUICCryptoSegment_T *segments; /**< Out-of-order segments */
-  int segment_count;                  /**< Number of buffered segments */
+  int segment_count;                   /**< Number of buffered segments */
 } SocketQUICCryptoStream_T;
 
 /**
@@ -117,31 +122,32 @@ typedef struct SocketQUICHandshake *SocketQUICHandshake_T;
 /**
  * @brief Handshake structure.
  */
-struct SocketQUICHandshake {
-  Arena_T arena;                      /**< Memory arena */
-  SocketQUICConnection_T conn;         /**< Associated connection */
-  SocketQUICConnection_Role role;      /**< Client or server */
-  SocketQUICHandshakeState state;      /**< Current state */
+struct SocketQUICHandshake
+{
+  Arena_T arena;                  /**< Memory arena */
+  SocketQUICConnection_T conn;    /**< Associated connection */
+  SocketQUICConnection_Role role; /**< Client or server */
+  SocketQUICHandshakeState state; /**< Current state */
 
   /* TLS integration (opaque pointer to avoid OpenSSL dependency in header) */
-  void *tls_ctx;                      /**< TLS context (SSL_CTX*) */
-  void *tls_ssl;                      /**< TLS connection (SSL*) */
+  void *tls_ctx; /**< TLS context (SSL_CTX*) */
+  void *tls_ssl; /**< TLS connection (SSL*) */
 
   /* Transport parameters */
-  SocketQUICTransportParams_T local_params;  /**< Our parameters */
-  SocketQUICTransportParams_T peer_params;   /**< Peer's parameters */
-  int params_received;                /**< Peer params received flag */
+  SocketQUICTransportParams_T local_params; /**< Our parameters */
+  SocketQUICTransportParams_T peer_params;  /**< Peer's parameters */
+  int params_received;                      /**< Peer params received flag */
 
   /* CRYPTO streams per encryption level */
   SocketQUICCryptoStream_T crypto_streams[QUIC_CRYPTO_LEVEL_COUNT];
 
   /* Key material (opaque to allow different crypto backends) */
-  void *keys[QUIC_CRYPTO_LEVEL_COUNT]; /**< Packet protection keys */
+  void *keys[QUIC_CRYPTO_LEVEL_COUNT];         /**< Packet protection keys */
   int keys_available[QUIC_CRYPTO_LEVEL_COUNT]; /**< Key availability flags */
 
   /* Error tracking */
-  uint64_t error_code;                /**< TLS alert or crypto error */
-  char error_reason[256];             /**< Human-readable error */
+  uint64_t error_code;    /**< TLS alert or crypto error */
+  char error_reason[256]; /**< Human-readable error */
 };
 
 /* ============================================================================
@@ -166,16 +172,16 @@ extern const Except_T SocketQUICHandshake_Failed;
  * @return Handshake context, or NULL on allocation failure.
  */
 extern SocketQUICHandshake_T
-SocketQUICHandshake_new(Arena_T arena, SocketQUICConnection_T conn,
-                        SocketQUICConnection_Role role);
+SocketQUICHandshake_new (Arena_T arena,
+                         SocketQUICConnection_T conn,
+                         SocketQUICConnection_Role role);
 
 /**
  * @brief Free handshake context and associated resources.
  *
  * @param handshake Pointer to handshake context (set to NULL after).
  */
-extern void
-SocketQUICHandshake_free(SocketQUICHandshake_T *handshake);
+extern void SocketQUICHandshake_free (SocketQUICHandshake_T *handshake);
 
 /* ============================================================================
  * Initialization Functions
@@ -193,8 +199,8 @@ SocketQUICHandshake_free(SocketQUICHandshake_T *handshake);
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
 extern SocketQUICHandshake_Result
-SocketQUICHandshake_init(SocketQUICConnection_T conn,
-                         SocketQUICConnection_Role role);
+SocketQUICHandshake_init (SocketQUICConnection_T conn,
+                          SocketQUICConnection_Role role);
 
 /**
  * @brief Configure handshake with transport parameters.
@@ -206,9 +212,8 @@ SocketQUICHandshake_init(SocketQUICConnection_T conn,
  *
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
-extern SocketQUICHandshake_Result
-SocketQUICHandshake_set_transport_params(SocketQUICHandshake_T handshake,
-                                         const SocketQUICTransportParams_T *params);
+extern SocketQUICHandshake_Result SocketQUICHandshake_set_transport_params (
+    SocketQUICHandshake_T handshake, const SocketQUICTransportParams_T *params);
 
 /* ============================================================================
  * Handshake Operations
@@ -226,7 +231,7 @@ SocketQUICHandshake_set_transport_params(SocketQUICHandshake_T handshake,
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
 extern SocketQUICHandshake_Result
-SocketQUICHandshake_send_initial(SocketQUICConnection_T conn);
+SocketQUICHandshake_send_initial (SocketQUICConnection_T conn);
 
 /**
  * @brief Process received CRYPTO frame.
@@ -241,9 +246,9 @@ SocketQUICHandshake_send_initial(SocketQUICConnection_T conn);
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
 extern SocketQUICHandshake_Result
-SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
-                                   const SocketQUICFrameCrypto_T *frame,
-                                   SocketQUICCryptoLevel level);
+SocketQUICHandshake_process_crypto (SocketQUICConnection_T conn,
+                                    const SocketQUICFrameCrypto_T *frame,
+                                    SocketQUICCryptoLevel level);
 
 /**
  * @brief Derive packet protection keys for encryption level.
@@ -256,8 +261,8 @@ SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
 extern SocketQUICHandshake_Result
-SocketQUICHandshake_derive_keys(SocketQUICConnection_T conn,
-                                SocketQUICCryptoLevel level);
+SocketQUICHandshake_derive_keys (SocketQUICConnection_T conn,
+                                 SocketQUICCryptoLevel level);
 
 /**
  * @brief Process TLS messages and generate outgoing CRYPTO frames.
@@ -269,7 +274,7 @@ SocketQUICHandshake_derive_keys(SocketQUICConnection_T conn,
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
 extern SocketQUICHandshake_Result
-SocketQUICHandshake_process(SocketQUICHandshake_T handshake);
+SocketQUICHandshake_process (SocketQUICHandshake_T handshake);
 
 /* ============================================================================
  * Key Management Functions
@@ -284,9 +289,8 @@ SocketQUICHandshake_process(SocketQUICHandshake_T handshake);
  *
  * @return Non-zero if keys are available, 0 otherwise.
  */
-extern int
-SocketQUICHandshake_has_keys(SocketQUICHandshake_T handshake,
-                             SocketQUICCryptoLevel level);
+extern int SocketQUICHandshake_has_keys (SocketQUICHandshake_T handshake,
+                                         SocketQUICCryptoLevel level);
 
 /**
  * @brief Get packet protection keys for encryption level.
@@ -296,9 +300,8 @@ SocketQUICHandshake_has_keys(SocketQUICHandshake_T handshake,
  *
  * @return Opaque key structure, or NULL if not available.
  */
-extern void *
-SocketQUICHandshake_get_keys(SocketQUICHandshake_T handshake,
-                             SocketQUICCryptoLevel level);
+extern void *SocketQUICHandshake_get_keys (SocketQUICHandshake_T handshake,
+                                           SocketQUICCryptoLevel level);
 
 /**
  * @brief Discard keys for encryption level.
@@ -308,9 +311,8 @@ SocketQUICHandshake_get_keys(SocketQUICHandshake_T handshake,
  * @param handshake Handshake context.
  * @param level     Encryption level to discard.
  */
-extern void
-SocketQUICHandshake_discard_keys(SocketQUICHandshake_T handshake,
-                                 SocketQUICCryptoLevel level);
+extern void SocketQUICHandshake_discard_keys (SocketQUICHandshake_T handshake,
+                                              SocketQUICCryptoLevel level);
 
 /* ============================================================================
  * State Query Functions
@@ -325,7 +327,7 @@ SocketQUICHandshake_discard_keys(SocketQUICHandshake_T handshake,
  * @return Current handshake state.
  */
 extern SocketQUICHandshakeState
-SocketQUICHandshake_get_state(SocketQUICHandshake_T handshake);
+SocketQUICHandshake_get_state (SocketQUICHandshake_T handshake);
 
 /**
  * @brief Check if handshake is complete.
@@ -334,8 +336,7 @@ SocketQUICHandshake_get_state(SocketQUICHandshake_T handshake);
  *
  * @return Non-zero if complete, 0 otherwise.
  */
-extern int
-SocketQUICHandshake_is_complete(SocketQUICHandshake_T handshake);
+extern int SocketQUICHandshake_is_complete (SocketQUICHandshake_T handshake);
 
 /**
  * @brief Check if handshake is confirmed.
@@ -346,8 +347,7 @@ SocketQUICHandshake_is_complete(SocketQUICHandshake_T handshake);
  *
  * @return Non-zero if confirmed, 0 otherwise.
  */
-extern int
-SocketQUICHandshake_is_confirmed(SocketQUICHandshake_T handshake);
+extern int SocketQUICHandshake_is_confirmed (SocketQUICHandshake_T handshake);
 
 /**
  * @brief Get peer transport parameters.
@@ -359,7 +359,7 @@ SocketQUICHandshake_is_confirmed(SocketQUICHandshake_T handshake);
  * @return Pointer to peer parameters, or NULL if not yet received.
  */
 extern const SocketQUICTransportParams_T *
-SocketQUICHandshake_get_peer_params(SocketQUICHandshake_T handshake);
+SocketQUICHandshake_get_peer_params (SocketQUICHandshake_T handshake);
 
 /* ============================================================================
  * Utility Functions
@@ -374,7 +374,7 @@ SocketQUICHandshake_get_peer_params(SocketQUICHandshake_T handshake);
  * @return Human-readable string.
  */
 extern const char *
-SocketQUICHandshake_crypto_level_string(SocketQUICCryptoLevel level);
+SocketQUICHandshake_crypto_level_string (SocketQUICCryptoLevel level);
 
 /**
  * @brief Get string representation of handshake state.
@@ -384,7 +384,7 @@ SocketQUICHandshake_crypto_level_string(SocketQUICCryptoLevel level);
  * @return Human-readable string.
  */
 extern const char *
-SocketQUICHandshake_state_string(SocketQUICHandshakeState state);
+SocketQUICHandshake_state_string (SocketQUICHandshakeState state);
 
 /**
  * @brief Get string representation of result code.
@@ -394,6 +394,6 @@ SocketQUICHandshake_state_string(SocketQUICHandshakeState state);
  * @return Human-readable string.
  */
 extern const char *
-SocketQUICHandshake_result_string(SocketQUICHandshake_Result result);
+SocketQUICHandshake_result_string (SocketQUICHandshake_Result result);
 
 #endif /* SOCKETQUICHANDSHAKE_INCLUDED */

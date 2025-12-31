@@ -46,7 +46,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketReconnect, e)
 
-#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...)                        \
+#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...) \
   SOCKET_RAISE_FMT (SocketReconnect, exception, fmt, ##__VA_ARGS__)
 
 #ifndef SOCKET_RECONNECT_MIN_HEALTH_POLL_MS
@@ -68,8 +68,11 @@ static void
 reconnect_set_socket_error (T conn, const char *operation, int err)
 {
   conn->last_error = err;
-  snprintf (conn->error_buf, sizeof (conn->error_buf),
-            "%s: %s", operation, Socket_safe_strerror (err));
+  snprintf (conn->error_buf,
+            sizeof (conn->error_buf),
+            "%s: %s",
+            operation,
+            Socket_safe_strerror (err));
 }
 
 static void
@@ -90,8 +93,11 @@ static void
 reconnect_set_tls_error (T conn, const char *operation)
 {
   conn->last_error = errno;
-  snprintf (conn->error_buf, sizeof (conn->error_buf),
-            "%s: %s", operation, Socket_GetLastError ());
+  snprintf (conn->error_buf,
+            sizeof (conn->error_buf),
+            "%s: %s",
+            operation,
+            Socket_GetLastError ());
 }
 #endif
 
@@ -139,8 +145,11 @@ transition_state (T conn, SocketReconnect_State new_state)
   conn->state = new_state;
   conn->state_start_time_ms = socketreconnect_now_ms ();
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d state transition: %s -> %s", conn->host, conn->port,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d state transition: %s -> %s",
+                   conn->host,
+                   conn->port,
                    SocketReconnect_state_name (old_state),
                    SocketReconnect_state_name (new_state));
 
@@ -166,8 +175,7 @@ calculate_backoff_delay (T conn)
   if (conn->policy.jitter > 0.0)
     {
       double jitter_range = delay * conn->policy.jitter;
-      double jitter_offset
-          = jitter_range * (2.0 * reconnect_jitter () - 1.0);
+      double jitter_offset = jitter_range * (2.0 * reconnect_jitter () - 1.0);
       delay += jitter_offset;
     }
 
@@ -191,9 +199,11 @@ update_circuit_breaker (T conn, int success)
       if (conn->circuit_state != CIRCUIT_CLOSED)
         {
           SocketLog_emitf (
-              SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+              SOCKET_LOG_INFO,
+              SOCKET_LOG_COMPONENT,
               "%s:%d circuit breaker closed after successful connection",
-              conn->host, conn->port);
+              conn->host,
+              conn->port);
           conn->circuit_state = CIRCUIT_CLOSED;
         }
     }
@@ -206,10 +216,11 @@ update_circuit_breaker (T conn, int success)
           /* Probe failed, reopen circuit */
           conn->circuit_state = CIRCUIT_OPEN;
           conn->circuit_open_time_ms = socketreconnect_now_ms ();
-          SocketLog_emitf (
-              SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-              "%s:%d circuit breaker reopened after probe failure", conn->host,
-              conn->port);
+          SocketLog_emitf (SOCKET_LOG_WARN,
+                           SOCKET_LOG_COMPONENT,
+                           "%s:%d circuit breaker reopened after probe failure",
+                           conn->host,
+                           conn->port);
         }
       else if (conn->consecutive_failures
                    >= conn->policy.circuit_failure_threshold
@@ -219,9 +230,12 @@ update_circuit_breaker (T conn, int success)
           conn->circuit_state = CIRCUIT_OPEN;
           conn->circuit_open_time_ms = socketreconnect_now_ms ();
           SocketLog_emitf (
-              SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+              SOCKET_LOG_WARN,
+              SOCKET_LOG_COMPONENT,
               "%s:%d circuit breaker opened after %d consecutive failures",
-              conn->host, conn->port, conn->consecutive_failures);
+              conn->host,
+              conn->port,
+              conn->consecutive_failures);
         }
     }
 }
@@ -234,15 +248,16 @@ circuit_allows_attempt (T conn)
 
   if (conn->circuit_state == CIRCUIT_OPEN)
     {
-      int64_t elapsed
-          = socketreconnect_elapsed_ms (conn->circuit_open_time_ms);
+      int64_t elapsed = socketreconnect_elapsed_ms (conn->circuit_open_time_ms);
       if (elapsed >= conn->policy.circuit_reset_timeout_ms)
         {
           /* Allow probe attempt */
           conn->circuit_state = CIRCUIT_HALF_OPEN;
-          SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+          SocketLog_emitf (SOCKET_LOG_INFO,
+                           SOCKET_LOG_COMPONENT,
                            "%s:%d circuit breaker half-open, allowing probe",
-                           conn->host, conn->port);
+                           conn->host,
+                           conn->port);
           return 1;
         }
       return 0;
@@ -263,12 +278,17 @@ close_socket (T conn)
           && conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE)
         {
           /* Best-effort TLS shutdown - ignore errors */
-          TRY { SocketTLS_shutdown_send (conn->socket); }
+          TRY
+          {
+            SocketTLS_shutdown_send (conn->socket);
+          }
           EXCEPT (SocketTLS_ShutdownFailed)
           {
             /* Ignore - peer may have already closed */
-            SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                             "%s:%d TLS shutdown failed (ignored)", conn->host,
+            SocketLog_emitf (SOCKET_LOG_DEBUG,
+                             SOCKET_LOG_COMPONENT,
+                             "%s:%d TLS shutdown failed (ignored)",
+                             conn->host,
                              conn->port);
           }
           EXCEPT (SocketTLS_Failed)
@@ -300,11 +320,16 @@ check_can_attempt (T conn)
   if (conn->policy.max_attempts > 0
       && conn->attempt_count >= conn->policy.max_attempts)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
+      snprintf (conn->error_buf,
+                sizeof (conn->error_buf),
                 "Maximum reconnection attempts (%d) reached",
                 conn->policy.max_attempts);
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, "%s:%d %s",
-                       conn->host, conn->port, conn->error_buf);
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "%s:%d %s",
+                       conn->host,
+                       conn->port,
+                       conn->error_buf);
       return 0;
     }
 
@@ -325,7 +350,10 @@ create_nonblocking_socket (T conn)
 
   /* Create new socket - use AF_INET for IPv4, resolve actual address family
    * later */
-  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  }
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
@@ -362,9 +390,12 @@ initiate_async_connect (T conn)
   conn->total_attempts++;
   conn->last_attempt_time_ms = socketreconnect_now_ms ();
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d starting connection attempt %d", conn->host,
-                   conn->port, conn->attempt_count);
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d starting connection attempt %d",
+                   conn->host,
+                   conn->port,
+                   conn->attempt_count);
 
   /* Start connect - use Socket_connect which handles DNS */
   TRY
@@ -474,7 +505,8 @@ check_connect_completion (T conn)
   if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
     {
       /* getsockopt itself failed, use errno */
-      reconnect_set_socket_error (conn, "Connect check getsockopt failed", errno);
+      reconnect_set_socket_error (
+          conn, "Connect check getsockopt failed", errno);
       return -1;
     }
 
@@ -516,8 +548,10 @@ start_tls_handshake (T conn)
     conn->tls_handshake_started = 1;
     conn->tls_handshake_state = TLS_HANDSHAKE_NOT_STARTED;
 
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "%s:%d TLS enabled, starting handshake", conn->host,
+    SocketLog_emitf (SOCKET_LOG_DEBUG,
+                     SOCKET_LOG_COMPONENT,
+                     "%s:%d TLS enabled, starting handshake",
+                     conn->host,
                      conn->port);
     return 1;
   }
@@ -536,7 +570,10 @@ perform_tls_handshake_step (T conn)
 {
   volatile TLSHandshakeState state = TLS_HANDSHAKE_NOT_STARTED;
 
-  TRY { state = SocketTLS_handshake (conn->socket); }
+  TRY
+  {
+    state = SocketTLS_handshake (conn->socket);
+  }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     reconnect_set_tls_error (conn, "TLS handshake failed");
@@ -562,9 +599,12 @@ perform_tls_handshake_step (T conn)
   switch (state)
     {
     case TLS_HANDSHAKE_COMPLETE:
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "%s:%d TLS handshake complete (cipher: %s)", conn->host,
-                       conn->port, SocketTLS_get_cipher (conn->socket));
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
+                       "%s:%d TLS handshake complete (cipher: %s)",
+                       conn->host,
+                       conn->port,
+                       SocketTLS_get_cipher (conn->socket));
 
       /* Save session for future resumption */
       save_tls_session (conn);
@@ -607,8 +647,10 @@ complete_tls_connection (T conn)
 {
   record_connection_success (conn);
 
-  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
-                   "%s:%d TLS connection established successfully", conn->host,
+  SocketLog_emitf (SOCKET_LOG_INFO,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d TLS connection established successfully",
+                   conn->host,
                    conn->port);
 }
 #endif /* SOCKET_HAS_TLS */
@@ -622,8 +664,10 @@ handle_tls_connect (T conn)
     return -1;
 
   /* Stay in CONNECTING state while TLS handshake proceeds */
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d TCP connected, TLS handshake pending", conn->host,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d TCP connected, TLS handshake pending",
+                   conn->host,
                    conn->port);
 
   /* Immediately try first handshake step */
@@ -663,8 +707,11 @@ handle_connect_success (T conn)
   /* Plain TCP connection success */
   record_connection_success (conn);
 
-  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
-                   "%s:%d connected successfully", conn->host, conn->port);
+  SocketLog_emitf (SOCKET_LOG_INFO,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d connected successfully",
+                   conn->host,
+                   conn->port);
 }
 
 static void
@@ -673,9 +720,13 @@ handle_connect_failure (T conn)
   close_socket (conn);
   update_circuit_breaker (conn, 0);
 
-  SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                   "%s:%d connection attempt %d failed: %s", conn->host,
-                   conn->port, conn->attempt_count, conn->error_buf);
+  SocketLog_emitf (SOCKET_LOG_WARN,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d connection attempt %d failed: %s",
+                   conn->host,
+                   conn->port,
+                   conn->attempt_count,
+                   conn->error_buf);
 
   /* Check if circuit breaker tripped */
   if (conn->circuit_state == CIRCUIT_OPEN)
@@ -697,8 +748,11 @@ handle_connect_failure (T conn)
   conn->backoff_until_ms
       = socketreconnect_now_ms () + conn->current_backoff_delay_ms;
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d backing off for %d ms", conn->host, conn->port,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d backing off for %d ms",
+                   conn->host,
+                   conn->port,
                    conn->current_backoff_delay_ms);
 
   transition_state (conn, RECONNECT_BACKOFF);
@@ -712,7 +766,8 @@ socket_peek_for_eof (Socket_T socket)
 
   TRY
   {
-    peek_res = socket_recv_internal (socket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);
+    peek_res
+        = socket_recv_internal (socket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);
   }
   EXCEPT (Socket_Failed)
   {
@@ -734,7 +789,9 @@ socket_peek_for_eof (Socket_T socket)
 }
 
 static int
-default_health_check (const T conn, const Socket_T socket, int timeout_ms,
+default_health_check (const T conn,
+                      const Socket_T socket,
+                      int timeout_ms,
                       void *userdata)
 {
   struct pollfd pfd;
@@ -784,15 +841,17 @@ perform_health_check (T conn)
     return;
 
   check = conn->health_check ? conn->health_check : default_health_check;
-  healthy = check (conn, conn->socket, conn->policy.health_check_timeout_ms,
-                   conn->userdata);
+  healthy = check (
+      conn, conn->socket, conn->policy.health_check_timeout_ms, conn->userdata);
 
   conn->last_health_check_ms = socketreconnect_now_ms ();
 
   if (!healthy)
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "%s:%d health check failed, reconnecting", conn->host,
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "%s:%d health check failed, reconnecting",
+                       conn->host,
                        conn->port);
       close_socket (conn);
       handle_connect_failure (conn);
@@ -849,7 +908,8 @@ socketreconnect_copy_hostname (const char *host, Arena_T arena)
     }
   if (host_len > SOCKET_ERROR_MAX_HOSTNAME + 1)
     {
-      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)", host_len - 1,
+      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)",
+                        host_len - 1,
                         SOCKET_ERROR_MAX_HOSTNAME);
       RAISE_MODULE_ERROR (SocketReconnect_Failed);
     }
@@ -865,9 +925,11 @@ socketreconnect_copy_hostname (const char *host, Arena_T arena)
 }
 
 T
-SocketReconnect_new (const char *host, int port,
+SocketReconnect_new (const char *host,
+                     int port,
                      const SocketReconnect_Policy_T *policy,
-                     SocketReconnect_Callback callback, void *userdata)
+                     SocketReconnect_Callback callback,
+                     void *userdata)
 {
   T conn;
 
@@ -930,8 +992,11 @@ SocketReconnect_new (const char *host, int port,
   conn->circuit_state = CIRCUIT_CLOSED;
   conn->state_start_time_ms = socketreconnect_now_ms ();
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Created reconnection context for %s:%d", host, port);
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "Created reconnection context for %s:%d",
+                   host,
+                   port);
 
   return conn;
 }
@@ -1000,8 +1065,11 @@ SocketReconnect_disconnect (T conn)
   conn->attempt_count = 0;
   transition_state (conn, RECONNECT_DISCONNECTED);
 
-  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, "%s:%d disconnected",
-                   conn->host, conn->port);
+  SocketLog_emitf (SOCKET_LOG_INFO,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d disconnected",
+                   conn->host,
+                   conn->port);
 }
 
 void
@@ -1015,8 +1083,10 @@ SocketReconnect_reset (T conn)
   conn->error_buf[0] = '\0';
   conn->last_error = 0;
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d reset backoff and circuit breaker state", conn->host,
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d reset backoff and circuit breaker state",
+                   conn->host,
                    conn->port);
 }
 
@@ -1138,9 +1208,9 @@ SocketReconnect_next_timeout_ms (T conn)
       break;
 
     case RECONNECT_CIRCUIT_OPEN:
-      remaining = (conn->circuit_open_time_ms
-                   + conn->policy.circuit_reset_timeout_ms)
-                  - now;
+      remaining
+          = (conn->circuit_open_time_ms + conn->policy.circuit_reset_timeout_ms)
+            - now;
       if (remaining <= 0)
         return 0;
       timeout = (int)remaining;
@@ -1201,8 +1271,8 @@ SocketReconnect_tick (T conn)
       break;
 
     case RECONNECT_CIRCUIT_OPEN:
-      if (now >= conn->circuit_open_time_ms
-                     + conn->policy.circuit_reset_timeout_ms)
+      if (now
+          >= conn->circuit_open_time_ms + conn->policy.circuit_reset_timeout_ms)
         {
           /* Try probe connection */
           conn->circuit_state = CIRCUIT_HALF_OPEN;
@@ -1400,9 +1470,12 @@ SocketReconnect_set_tls (T conn, SocketTLSContext_T ctx, const char *hostname)
   conn->tls_handshake_state = TLS_HANDSHAKE_NOT_STARTED;
   conn->tls_handshake_started = 0;
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d TLS configured with hostname '%s'", conn->host,
-                   conn->port, hostname);
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "%s:%d TLS configured with hostname '%s'",
+                   conn->host,
+                   conn->port,
+                   hostname);
 }
 
 void
@@ -1412,8 +1485,11 @@ SocketReconnect_disable_tls (T conn)
 
   if (conn->tls_ctx)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "%s:%d TLS disabled", conn->host, conn->port);
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
+                       "%s:%d TLS disabled",
+                       conn->host,
+                       conn->port);
     }
 
   conn->tls_ctx = NULL;
@@ -1494,9 +1570,12 @@ save_tls_session (T conn)
       = Arena_alloc (conn->arena, required_len, __FILE__, __LINE__);
   if (!session_buf)
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
                        "%s:%d failed to allocate session buffer (%zu bytes)",
-                       conn->host, conn->port, required_len);
+                       conn->host,
+                       conn->port,
+                       required_len);
       return;
     }
 
@@ -1506,9 +1585,12 @@ save_tls_session (T conn)
     {
       conn->tls_session_data = session_buf;
       conn->tls_session_data_len = actual_len;
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "%s:%d saved TLS session (%zu bytes)", conn->host,
-                       conn->port, actual_len);
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
+                       "%s:%d saved TLS session (%zu bytes)",
+                       conn->host,
+                       conn->port,
+                       actual_len);
     }
 }
 
@@ -1519,19 +1601,23 @@ restore_tls_session (T conn)
       || conn->tls_session_data_len == 0)
     return 0;
 
-  int result = SocketTLS_session_restore (conn->socket, conn->tls_session_data,
-                                          conn->tls_session_data_len);
+  int result = SocketTLS_session_restore (
+      conn->socket, conn->tls_session_data, conn->tls_session_data_len);
   if (result == 1)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "%s:%d restored TLS session for resumption", conn->host,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
+                       "%s:%d restored TLS session for resumption",
+                       conn->host,
                        conn->port);
     }
   else
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
                        "%s:%d TLS session restore failed (full handshake)",
-                       conn->host, conn->port);
+                       conn->host,
+                       conn->port);
     }
 
   return result == 1 ? 1 : 0;

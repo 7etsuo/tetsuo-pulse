@@ -29,7 +29,8 @@
  * - Null byte handling
  * - CRLF injection
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_http_cookies_simple
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_http_cookies_simple
  * ./fuzz_http_cookies_simple corpus/http_cookies/ -fork=16 -max_len=8192
  */
 
@@ -159,12 +160,14 @@ test_via_http1_parser (const char *cookie_value, size_t len, Arena_T arena)
   int req_len;
 
   /* Build HTTP request with Cookie header */
-  req_len = snprintf (request, sizeof (request),
+  req_len = snprintf (request,
+                      sizeof (request),
                       "GET / HTTP/1.1\r\n"
                       "Host: example.com\r\n"
                       "Cookie: %.*s\r\n"
                       "\r\n",
-                      (int)len, cookie_value);
+                      (int)len,
+                      cookie_value);
 
   if (req_len <= 0 || (size_t)req_len >= sizeof (request))
     return;
@@ -268,13 +271,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         "special=!#$%&'()*+-./:<=>?@[]^_`{|}~",
       };
 
-      for (size_t i = 0;
-           i < sizeof (valid_cookies) / sizeof (valid_cookies[0]); i++)
+      for (size_t i = 0; i < sizeof (valid_cookies) / sizeof (valid_cookies[0]);
+           i++)
         {
-          parse_cookie_header (valid_cookies[i], strlen (valid_cookies[i]),
-                               arena);
-          test_via_http1_parser (valid_cookies[i], strlen (valid_cookies[i]),
-                                 arena);
+          parse_cookie_header (
+              valid_cookies[i], strlen (valid_cookies[i]), arena);
+          test_via_http1_parser (
+              valid_cookies[i], strlen (valid_cookies[i]), arena);
         }
     }
 
@@ -283,35 +286,36 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     {
       const char *malformed_cookies[] = {
-        "",                     /* Empty */
-        ";",                    /* Just separator */
-        "=",                    /* Just equals */
-        "=value",               /* Missing name */
-        "name",                 /* Missing equals and value */
-        "name=",                /* Empty value (actually valid per RFC 6265) */
-        "name=value;",          /* Trailing semicolon */
-        "name=value; ",         /* Trailing space */
+        "",             /* Empty */
+        ";",            /* Just separator */
+        "=",            /* Just equals */
+        "=value",       /* Missing name */
+        "name",         /* Missing equals and value */
+        "name=",        /* Empty value (actually valid per RFC 6265) */
+        "name=value;",  /* Trailing semicolon */
+        "name=value; ", /* Trailing space */
         "name=value;;name2=value2", /* Double semicolon */
-        "name =value",          /* Space in name */
-        "name= value",          /* Leading space in value */
-        "name=va lue",          /* Space in value */
-        "name=value\t",         /* Tab in value */
-        "name\t=value",         /* Tab in name */
-        "name=value\x00extra",  /* Null byte (should be sanitized) */
-        "name=\"unclosed",      /* Unclosed quote */
-        "name=value\"",         /* Trailing quote */
-        "\"name\"=value",       /* Quoted name (invalid) */
-        "na;me=value",          /* Semicolon in name */
-        "name=val;ue",          /* Would split incorrectly */
-        "name\\=value",         /* Escaped equals */
-        "name=val\\;ue",        /* Escaped semicolon */
+        "name =value",              /* Space in name */
+        "name= value",              /* Leading space in value */
+        "name=va lue",              /* Space in value */
+        "name=value\t",             /* Tab in value */
+        "name\t=value",             /* Tab in name */
+        "name=value\x00extra",      /* Null byte (should be sanitized) */
+        "name=\"unclosed",          /* Unclosed quote */
+        "name=value\"",             /* Trailing quote */
+        "\"name\"=value",           /* Quoted name (invalid) */
+        "na;me=value",              /* Semicolon in name */
+        "name=val;ue",              /* Would split incorrectly */
+        "name\\=value",             /* Escaped equals */
+        "name=val\\;ue",            /* Escaped semicolon */
       };
 
       for (size_t i = 0;
-           i < sizeof (malformed_cookies) / sizeof (malformed_cookies[0]); i++)
+           i < sizeof (malformed_cookies) / sizeof (malformed_cookies[0]);
+           i++)
         {
-          parse_cookie_header (malformed_cookies[i],
-                               strlen (malformed_cookies[i]), arena);
+          parse_cookie_header (
+              malformed_cookies[i], strlen (malformed_cookies[i]), arena);
         }
     }
 
@@ -339,7 +343,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Many cookies */
         ("a=1; b=2; c=3; d=4; e=5; f=6; g=7; h=8; i=9; j=10; k=11; l=12; m=13; "
-        "n=14; o=15"),
+         "n=14; o=15"),
 
         /* Unicode in value */
         "name=\xc3\xa9\xc3\xa0\xc3\xb9", /* UTF-8 éàù */
@@ -355,10 +359,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (attack_cookies) / sizeof (attack_cookies[0]); i++)
+           i < sizeof (attack_cookies) / sizeof (attack_cookies[0]);
+           i++)
         {
-          parse_cookie_header (attack_cookies[i], strlen (attack_cookies[i]),
-                               arena);
+          parse_cookie_header (
+              attack_cookies[i], strlen (attack_cookies[i]), arena);
         }
     }
 
@@ -395,7 +400,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               }
 
             /* Copy name (sanitize to alphanum) */
-            for (size_t i = 0; i < name_len && offset < sizeof (built_cookie) - 10;
+            for (size_t i = 0;
+                 i < name_len && offset < sizeof (built_cookie) - 10;
                  i++)
               {
                 char c = data[fuzz_offset + i];
@@ -412,7 +418,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               built_cookie[offset++] = '=';
 
             /* Copy value (sanitize) */
-            for (size_t i = 0; i < value_len && offset < sizeof (built_cookie) - 2;
+            for (size_t i = 0;
+                 i < value_len && offset < sizeof (built_cookie) - 2;
                  i++)
               {
                 char c = data[fuzz_offset + i];
@@ -454,8 +461,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               many_cookies[pos++] = ';';
               many_cookies[pos++] = ' ';
             }
-          int len = snprintf (many_cookies + pos, sizeof (many_cookies) - pos,
-                             "c%d=v%d", i, i);
+          int len = snprintf (
+              many_cookies + pos, sizeof (many_cookies) - pos, "c%d=v%d", i, i);
           if (len > 0)
             pos += len;
         }

@@ -122,10 +122,10 @@ typedef struct SocketSecurityLimits
   size_t ratelimit_conn_per_sec;
   size_t ratelimit_burst;
   size_t ratelimit_max_per_ip;
-  int    timeout_connect_ms;
-  int    timeout_dns_ms;
-  int    timeout_idle_ms;
-  int    timeout_request_ms;
+  int timeout_connect_ms;
+  int timeout_dns_ms;
+  int timeout_idle_ms;
+  int timeout_request_ms;
 } SocketSecurityLimits;
 
 /**
@@ -164,9 +164,9 @@ extern size_t SocketSecurity_get_max_allocation (void);
  * @complexity O(1)
  */
 extern void SocketSecurity_get_http_limits (size_t *max_uri,
-                                             size_t *max_header_size,
-                                             size_t *max_headers,
-                                             size_t *max_body);
+                                            size_t *max_header_size,
+                                            size_t *max_headers,
+                                            size_t *max_body);
 
 /**
  * @brief Query WebSocket-specific security limits for frame and message sizes.
@@ -177,8 +177,8 @@ extern void SocketSecurity_get_http_limits (size_t *max_uri,
  * @threadsafe Yes
  * @complexity O(1)
  */
-extern void SocketSecurity_get_ws_limits (size_t *max_frame,
-                                           size_t *max_message);
+extern void
+SocketSecurity_get_ws_limits (size_t *max_frame, size_t *max_message);
 
 /**
  * @brief Query the maximum allocation size limit for arenas.

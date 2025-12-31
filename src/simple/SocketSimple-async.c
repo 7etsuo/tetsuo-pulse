@@ -99,7 +99,10 @@ Socket_simple_async_new (void)
 
   Socket_simple_clear_error ();
 
-  TRY { arena = Arena_new (); }
+  TRY
+  {
+    arena = Arena_new ();
+  }
   EXCEPT (Arena_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
@@ -108,11 +111,15 @@ Socket_simple_async_new (void)
   }
   END_TRY;
 
-  TRY { async = SocketAsync_new (arena); }
+  TRY
+  {
+    async = SocketAsync_new (arena);
+  }
   EXCEPT (SocketAsync_Failed)
   {
     Arena_dispose ((Arena_T *)&arena);
-    simple_set_error (SOCKET_SIMPLE_ERR_ASYNC, "Failed to create async context");
+    simple_set_error (SOCKET_SIMPLE_ERR_ASYNC,
+                      "Failed to create async context");
     return NULL;
   }
   END_TRY;
@@ -152,14 +159,20 @@ Socket_simple_async_free (SocketSimple_Async_T *async)
 /**
  * Function pointer types for core async operations.
  */
-typedef unsigned (*AsyncOpFunc) (SocketAsync_T async, Socket_T socket,
-                                 void *buf, size_t len,
-                                 SocketAsync_Callback cb, void *user_data,
+typedef unsigned (*AsyncOpFunc) (SocketAsync_T async,
+                                 Socket_T socket,
+                                 void *buf,
+                                 size_t len,
+                                 SocketAsync_Callback cb,
+                                 void *user_data,
                                  SocketAsync_Flags flags);
 
-typedef unsigned (*AsyncOpTimeoutFunc) (SocketAsync_T async, Socket_T socket,
-                                        void *buf, size_t len,
-                                        SocketAsync_Callback cb, void *user_data,
+typedef unsigned (*AsyncOpTimeoutFunc) (SocketAsync_T async,
+                                        Socket_T socket,
+                                        void *buf,
+                                        size_t len,
+                                        SocketAsync_Callback cb,
+                                        void *user_data,
                                         SocketAsync_Flags flags,
                                         int64_t timeout_ms);
 
@@ -172,7 +185,8 @@ typedef unsigned (*AsyncOpTimeoutFunc) (SocketAsync_T async, Socket_T socket,
  * @return 0 on success, -1 on error (sets error via simple_set_error)
  */
 static int
-validate_async_params (SocketSimple_Async_T async, SocketSimple_Socket_T socket,
+validate_async_params (SocketSimple_Async_T async,
+                       SocketSimple_Socket_T socket,
                        SocketSimple_AsyncCallback cb)
 {
   if (!async || !async->async)
@@ -207,7 +221,8 @@ validate_async_params (SocketSimple_Async_T async, SocketSimple_Socket_T socket,
  * @return Allocated context on success, NULL on error (sets error)
  */
 static struct CallbackContext *
-allocate_callback_context (SocketSimple_AsyncCallback cb, void *user_data,
+allocate_callback_context (SocketSimple_AsyncCallback cb,
+                           void *user_data,
                            SocketSimple_Socket_T simple_socket)
 {
   struct CallbackContext *ctx = calloc (1, sizeof (*ctx));
@@ -241,11 +256,16 @@ allocate_callback_context (SocketSimple_AsyncCallback cb, void *user_data,
  * @return Request ID on success, 0 on failure (sets error)
  */
 static unsigned
-submit_async_operation (SocketAsync_T async, Socket_T core_socket, void *buf,
-                       size_t len, struct CallbackContext *ctx,
-                       SocketSimple_AsyncFlags flags, int64_t timeout_ms,
-                       AsyncOpFunc op_func, AsyncOpTimeoutFunc op_timeout_func,
-                       const char *error_msg)
+submit_async_operation (SocketAsync_T async,
+                        Socket_T core_socket,
+                        void *buf,
+                        size_t len,
+                        struct CallbackContext *ctx,
+                        SocketSimple_AsyncFlags flags,
+                        int64_t timeout_ms,
+                        AsyncOpFunc op_func,
+                        AsyncOpTimeoutFunc op_timeout_func,
+                        const char *error_msg)
 {
   volatile unsigned request_id = 0;
 
@@ -253,15 +273,23 @@ submit_async_operation (SocketAsync_T async, Socket_T core_socket, void *buf,
   {
     if (timeout_ms > 0)
       {
-        request_id
-            = op_timeout_func (async, core_socket, buf, len,
-                               core_callback_wrapper, ctx,
-                               simple_to_core_flags (flags), timeout_ms);
+        request_id = op_timeout_func (async,
+                                      core_socket,
+                                      buf,
+                                      len,
+                                      core_callback_wrapper,
+                                      ctx,
+                                      simple_to_core_flags (flags),
+                                      timeout_ms);
       }
     else
       {
-        request_id = op_func (async, core_socket, buf, len,
-                              core_callback_wrapper, ctx,
+        request_id = op_func (async,
+                              core_socket,
+                              buf,
+                              len,
+                              core_callback_wrapper,
+                              ctx,
                               simple_to_core_flags (flags));
       }
   }
@@ -295,10 +323,15 @@ submit_async_operation (SocketAsync_T async, Socket_T core_socket, void *buf,
  */
 static unsigned
 async_operation_common (SocketSimple_Async_T async,
-                        SocketSimple_Socket_T socket, void *buf, size_t len,
-                        SocketSimple_AsyncCallback cb, void *user_data,
-                        SocketSimple_AsyncFlags flags, int64_t timeout_ms,
-                        AsyncOpFunc op_func, AsyncOpTimeoutFunc op_timeout_func,
+                        SocketSimple_Socket_T socket,
+                        void *buf,
+                        size_t len,
+                        SocketSimple_AsyncCallback cb,
+                        void *user_data,
+                        SocketSimple_AsyncFlags flags,
+                        int64_t timeout_ms,
+                        AsyncOpFunc op_func,
+                        AsyncOpTimeoutFunc op_timeout_func,
                         const char *error_msg)
 {
   /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
@@ -307,51 +340,74 @@ async_operation_common (SocketSimple_Async_T async,
   Socket_simple_clear_error ();
 
   /* Step 1: Validate parameters */
-  if (validate_async_params (async, (SocketSimple_Socket_T)safe_socket, cb) != 0)
+  if (validate_async_params (async, (SocketSimple_Socket_T)safe_socket, cb)
+      != 0)
     return 0;
 
   /* Step 2: Allocate callback context */
-  struct CallbackContext *ctx
-      = allocate_callback_context (cb, user_data,
-                                   (SocketSimple_Socket_T)safe_socket);
+  struct CallbackContext *ctx = allocate_callback_context (
+      cb, user_data, (SocketSimple_Socket_T)safe_socket);
   if (!ctx)
     return 0;
 
   /* Step 3: Submit async operation */
   Socket_T core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
-  return submit_async_operation (async->async, core_socket, buf, len, ctx, flags,
-                                 timeout_ms, op_func, op_timeout_func, error_msg);
+  return submit_async_operation (async->async,
+                                 core_socket,
+                                 buf,
+                                 len,
+                                 ctx,
+                                 flags,
+                                 timeout_ms,
+                                 op_func,
+                                 op_timeout_func,
+                                 error_msg);
 }
 
 unsigned
 Socket_simple_async_send (SocketSimple_Async_T async,
-                          SocketSimple_Socket_T socket, const void *buf,
-                          size_t len, SocketSimple_AsyncCallback cb,
-                          void *user_data, SocketSimple_AsyncFlags flags)
+                          SocketSimple_Socket_T socket,
+                          const void *buf,
+                          size_t len,
+                          SocketSimple_AsyncCallback cb,
+                          void *user_data,
+                          SocketSimple_AsyncFlags flags)
 {
-  return Socket_simple_async_send_timeout (async, socket, buf, len, cb,
-                                           user_data, flags, 0);
+  return Socket_simple_async_send_timeout (
+      async, socket, buf, len, cb, user_data, flags, 0);
 }
 
 unsigned
 Socket_simple_async_recv (SocketSimple_Async_T async,
-                          SocketSimple_Socket_T socket, void *buf, size_t len,
-                          SocketSimple_AsyncCallback cb, void *user_data,
+                          SocketSimple_Socket_T socket,
+                          void *buf,
+                          size_t len,
+                          SocketSimple_AsyncCallback cb,
+                          void *user_data,
                           SocketSimple_AsyncFlags flags)
 {
-  return Socket_simple_async_recv_timeout (async, socket, buf, len, cb,
-                                           user_data, flags, 0);
+  return Socket_simple_async_recv_timeout (
+      async, socket, buf, len, cb, user_data, flags, 0);
 }
 
 unsigned
 Socket_simple_async_send_timeout (SocketSimple_Async_T async,
-                                  SocketSimple_Socket_T socket, const void *buf,
-                                  size_t len, SocketSimple_AsyncCallback cb,
-                                  void *user_data, SocketSimple_AsyncFlags flags,
+                                  SocketSimple_Socket_T socket,
+                                  const void *buf,
+                                  size_t len,
+                                  SocketSimple_AsyncCallback cb,
+                                  void *user_data,
+                                  SocketSimple_AsyncFlags flags,
                                   int64_t timeout_ms)
 {
-  return async_operation_common (async, socket, (void *)buf, len, cb, user_data,
-                                 flags, timeout_ms,
+  return async_operation_common (async,
+                                 socket,
+                                 (void *)buf,
+                                 len,
+                                 cb,
+                                 user_data,
+                                 flags,
+                                 timeout_ms,
                                  (AsyncOpFunc)SocketAsync_send,
                                  (AsyncOpTimeoutFunc)SocketAsync_send_timeout,
                                  "Failed to submit async send");
@@ -359,13 +415,23 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
 
 unsigned
 Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
-                                  SocketSimple_Socket_T socket, void *buf,
-                                  size_t len, SocketSimple_AsyncCallback cb,
-                                  void *user_data, SocketSimple_AsyncFlags flags,
+                                  SocketSimple_Socket_T socket,
+                                  void *buf,
+                                  size_t len,
+                                  SocketSimple_AsyncCallback cb,
+                                  void *user_data,
+                                  SocketSimple_AsyncFlags flags,
                                   int64_t timeout_ms)
 {
-  return async_operation_common (async, socket, buf, len, cb, user_data, flags,
-                                 timeout_ms, (AsyncOpFunc)SocketAsync_recv,
+  return async_operation_common (async,
+                                 socket,
+                                 buf,
+                                 len,
+                                 cb,
+                                 user_data,
+                                 flags,
+                                 timeout_ms,
+                                 (AsyncOpFunc)SocketAsync_recv,
                                  (AsyncOpTimeoutFunc)SocketAsync_recv_timeout,
                                  "Failed to submit async recv");
 }
@@ -429,7 +495,8 @@ Socket_simple_async_cancel_all (SocketSimple_Async_T async)
 
 int
 Socket_simple_async_get_progress (SocketSimple_Async_T async,
-                                  unsigned request_id, size_t *completed,
+                                  unsigned request_id,
+                                  size_t *completed,
                                   size_t *total)
 {
   if (completed)

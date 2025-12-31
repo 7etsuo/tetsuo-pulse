@@ -28,7 +28,6 @@
 #define T SocketTLSContext_T
 
 
-
 /* CT support detection is now in SocketTLSConfig.h (included via private.h) */
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
@@ -48,8 +47,9 @@ SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "CT verification is for clients only");
 
-  int openssl_mode = (mode == CT_VALIDATION_STRICT) ? SSL_CT_VALIDATION_STRICT
-                                                    : SSL_CT_VALIDATION_PERMISSIVE;
+  int openssl_mode = (mode == CT_VALIDATION_STRICT)
+                         ? SSL_CT_VALIDATION_STRICT
+                         : SSL_CT_VALIDATION_PERMISSIVE;
 
   if (SSL_CTX_enable_ct (ctx->ssl_ctx, openssl_mode) != 1)
     ctx_raise_openssl_error ("Failed to enable Certificate Transparency");
@@ -59,7 +59,8 @@ SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
 }
 
 /**
- * @note Implementation of SocketTLSContext_ct_enabled(). See header for details.
+ * @note Implementation of SocketTLSContext_ct_enabled(). See header for
+ * details.
  */
 int
 SocketTLSContext_ct_enabled (T ctx)
@@ -69,7 +70,8 @@ SocketTLSContext_ct_enabled (T ctx)
 }
 
 /**
- * @note Implementation of SocketTLSContext_get_ct_mode(). See header for details.
+ * @note Implementation of SocketTLSContext_get_ct_mode(). See header for
+ * details.
  */
 CTValidationMode
 SocketTLSContext_get_ct_mode (T ctx)
@@ -79,7 +81,8 @@ SocketTLSContext_get_ct_mode (T ctx)
 }
 
 /**
- * @note Implementation of SocketTLSContext_set_ctlog_list_file(). See header for details.
+ * @note Implementation of SocketTLSContext_set_ctlog_list_file(). See header
+ * for details.
  */
 void
 SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
@@ -95,8 +98,8 @@ SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CT log file path cannot be empty");
 
   if (!tls_validate_file_path (log_file))
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid CT log file path: %s",
-                         log_file);
+    RAISE_CTX_ERROR_MSG (
+        SocketTLS_Failed, "Invalid CT log file path: %s", log_file);
 
   if (SSL_CTX_set_ctlog_list_file (ctx->ssl_ctx, log_file) != 1)
     ctx_raise_openssl_error ("Failed to load custom CT log list file");
@@ -107,10 +110,12 @@ SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
 #else /* !SOCKET_HAS_CT_SUPPORT */
 
 static void
-raise_ct_not_supported(T ctx, const char *feature)
+raise_ct_not_supported (T ctx, const char *feature)
 {
-  assert(ctx);
-  RAISE_CTX_ERROR_MSG(SocketTLS_Failed, "%s not supported (requires OpenSSL 1.1.0+ with CT)", feature);
+  assert (ctx);
+  RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                       "%s not supported (requires OpenSSL 1.1.0+ with CT)",
+                       feature);
 }
 
 /**
@@ -119,8 +124,8 @@ raise_ct_not_supported(T ctx, const char *feature)
 void
 SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
 {
-  TLS_UNUSED(mode);
-  raise_ct_not_supported(ctx, "Certificate Transparency");
+  TLS_UNUSED (mode);
+  raise_ct_not_supported (ctx, "Certificate Transparency");
 }
 
 /**
@@ -149,8 +154,8 @@ SocketTLSContext_get_ct_mode (T ctx)
 void
 SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
 {
-  TLS_UNUSED(log_file);
-  raise_ct_not_supported(ctx, "Custom CT log list");
+  TLS_UNUSED (log_file);
+  raise_ct_not_supported (ctx, "Custom CT log list");
 }
 
 #endif /* SOCKET_HAS_CT_SUPPORT */

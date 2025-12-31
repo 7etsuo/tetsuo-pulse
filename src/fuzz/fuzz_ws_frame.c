@@ -38,8 +38,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Feed data incrementally */
   while (total_consumed < size)
     {
-      err = ws_frame_parse_header (&frame, data + total_consumed,
-                                   size - total_consumed, &consumed);
+      err = ws_frame_parse_header (
+          &frame, data + total_consumed, size - total_consumed, &consumed);
 
       if (consumed == 0)
         break; /* No progress */

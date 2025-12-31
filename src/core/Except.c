@@ -45,9 +45,9 @@
 #endif
 
 #define EXCEPT_UNCAUGHT_FMT "Uncaught exception"
-#define EXCEPT_NULL_PTR_FMT                                                   \
+#define EXCEPT_NULL_PTR_FMT \
   "FATAL: Except_raise called with NULL exception pointer"
-#define EXCEPT_PROG_ERROR_FMT                                                 \
+#define EXCEPT_PROG_ERROR_FMT \
   "This indicates a programming error in exception usage"
 #define EXCEPT_ABORTING_FMT "aborting..."
 
@@ -79,8 +79,8 @@ static void
 except_emit_reason (const Except_T *e)
 {
   assert (e != NULL);
-  fprintf (stderr, ": %s",
-           e->reason != NULL ? e->reason : "(no reason provided)");
+  fprintf (
+      stderr, ": %s", e->reason != NULL ? e->reason : "(no reason provided)");
 }
 
 static const char *
@@ -150,9 +150,9 @@ except_validate_not_null (const Except_T *e)
   except_finish_abort ();
 }
 
-EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (
-    1) static void except_abort_uncaught (const Except_T *e, const char *file,
-                                          int line)
+EXCEPT_COLD
+    EXCEPT_NORETURN EXCEPT_NONNULL (1) static void except_abort_uncaught (
+        const Except_T *e, const char *file, int line)
 {
   fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
   except_emit_reason (e);
@@ -162,8 +162,10 @@ EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (
 
 EXCEPT_NONNULL (1, 2)
 static inline void
-except_store_exception (Except_Frame *frame, const Except_T *e,
-                        const char *file, int line)
+except_store_exception (Except_Frame *frame,
+                        const Except_T *e,
+                        const char *file,
+                        int line)
 {
   assert (frame != NULL);
   assert (e != NULL);
@@ -182,7 +184,7 @@ except_pop_frame (Except_Frame *frame)
 }
 
 EXCEPT_NORETURN
-    EXCEPT_NONNULL (1) static void except_jump_to_handler (Except_Frame *frame)
+EXCEPT_NONNULL (1) static void except_jump_to_handler (Except_Frame *frame)
 {
   assert (frame != NULL);
 

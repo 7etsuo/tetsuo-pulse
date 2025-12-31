@@ -33,20 +33,19 @@
  * ============================================================================
  */
 
-static const char *event_strings[] = {
-  [QUIC_STREAM_EVENT_SEND_DATA] = "SendData",
-  [QUIC_STREAM_EVENT_SEND_FIN] = "SendFin",
-  [QUIC_STREAM_EVENT_ALL_DATA_ACKED] = "AllDataAcked",
-  [QUIC_STREAM_EVENT_SEND_RESET] = "SendReset",
-  [QUIC_STREAM_EVENT_RESET_ACKED] = "ResetAcked",
-  [QUIC_STREAM_EVENT_RECV_DATA] = "RecvData",
-  [QUIC_STREAM_EVENT_RECV_FIN] = "RecvFin",
-  [QUIC_STREAM_EVENT_ALL_DATA_RECVD] = "AllDataRecvd",
-  [QUIC_STREAM_EVENT_APP_READ_DATA] = "AppReadData",
-  [QUIC_STREAM_EVENT_RECV_RESET] = "RecvReset",
-  [QUIC_STREAM_EVENT_APP_READ_RESET] = "AppReadReset",
-  [QUIC_STREAM_EVENT_RECV_STOP_SENDING] = "RecvStopSending"
-};
+static const char *event_strings[]
+    = { [QUIC_STREAM_EVENT_SEND_DATA] = "SendData",
+        [QUIC_STREAM_EVENT_SEND_FIN] = "SendFin",
+        [QUIC_STREAM_EVENT_ALL_DATA_ACKED] = "AllDataAcked",
+        [QUIC_STREAM_EVENT_SEND_RESET] = "SendReset",
+        [QUIC_STREAM_EVENT_RESET_ACKED] = "ResetAcked",
+        [QUIC_STREAM_EVENT_RECV_DATA] = "RecvData",
+        [QUIC_STREAM_EVENT_RECV_FIN] = "RecvFin",
+        [QUIC_STREAM_EVENT_ALL_DATA_RECVD] = "AllDataRecvd",
+        [QUIC_STREAM_EVENT_APP_READ_DATA] = "AppReadData",
+        [QUIC_STREAM_EVENT_RECV_RESET] = "RecvReset",
+        [QUIC_STREAM_EVENT_APP_READ_RESET] = "AppReadReset",
+        [QUIC_STREAM_EVENT_RECV_STOP_SENDING] = "RecvStopSending" };
 
 const char *
 SocketQUICStream_event_string (SocketQUICStreamEvent event)
@@ -163,10 +162,13 @@ typedef void (*StateUpdateFn) (SocketQUICStream_T stream,
  *         transition exists.
  */
 static SocketQUICStream_Result
-do_state_transition (SocketQUICStream_T stream, SocketQUICStreamState current,
+do_state_transition (SocketQUICStream_T stream,
+                     SocketQUICStreamState current,
                      SocketQUICStreamEvent event,
-                     const SocketQUICStreamTransition *table, size_t table_size,
-                     SocketQUICStreamState *state_field, StateUpdateFn update_fn)
+                     const SocketQUICStreamTransition *table,
+                     size_t table_size,
+                     SocketQUICStreamState *state_field,
+                     StateUpdateFn update_fn)
 {
   /* Search transition table for valid transition */
   for (size_t i = 0; i < table_size; i++)
@@ -212,33 +214,44 @@ do_state_transition (SocketQUICStream_T stream, SocketQUICStreamState current,
  */
 static const SocketQUICStreamTransition send_transitions[] = {
   /* From Ready */
-  { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_SEND_DATA,
+  { QUIC_STREAM_STATE_READY,
+    QUIC_STREAM_EVENT_SEND_DATA,
     QUIC_STREAM_STATE_SEND },
-  { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_SEND_RESET,
+  { QUIC_STREAM_STATE_READY,
+    QUIC_STREAM_EVENT_SEND_RESET,
     QUIC_STREAM_STATE_RESET_SENT },
-  { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_RECV_STOP_SENDING,
+  { QUIC_STREAM_STATE_READY,
+    QUIC_STREAM_EVENT_RECV_STOP_SENDING,
     QUIC_STREAM_STATE_RESET_SENT },
 
   /* From Send */
-  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_SEND_DATA,
+  { QUIC_STREAM_STATE_SEND,
+    QUIC_STREAM_EVENT_SEND_DATA,
     QUIC_STREAM_STATE_SEND }, /* Stay in Send */
-  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_SEND_FIN,
+  { QUIC_STREAM_STATE_SEND,
+    QUIC_STREAM_EVENT_SEND_FIN,
     QUIC_STREAM_STATE_DATA_SENT },
-  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_SEND_RESET,
+  { QUIC_STREAM_STATE_SEND,
+    QUIC_STREAM_EVENT_SEND_RESET,
     QUIC_STREAM_STATE_RESET_SENT },
-  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_RECV_STOP_SENDING,
+  { QUIC_STREAM_STATE_SEND,
+    QUIC_STREAM_EVENT_RECV_STOP_SENDING,
     QUIC_STREAM_STATE_RESET_SENT },
 
   /* From DataSent */
-  { QUIC_STREAM_STATE_DATA_SENT, QUIC_STREAM_EVENT_ALL_DATA_ACKED,
+  { QUIC_STREAM_STATE_DATA_SENT,
+    QUIC_STREAM_EVENT_ALL_DATA_ACKED,
     QUIC_STREAM_STATE_DATA_RECVD },
-  { QUIC_STREAM_STATE_DATA_SENT, QUIC_STREAM_EVENT_SEND_RESET,
+  { QUIC_STREAM_STATE_DATA_SENT,
+    QUIC_STREAM_EVENT_SEND_RESET,
     QUIC_STREAM_STATE_RESET_SENT },
-  { QUIC_STREAM_STATE_DATA_SENT, QUIC_STREAM_EVENT_RECV_STOP_SENDING,
+  { QUIC_STREAM_STATE_DATA_SENT,
+    QUIC_STREAM_EVENT_RECV_STOP_SENDING,
     QUIC_STREAM_STATE_RESET_SENT },
 
   /* From ResetSent */
-  { QUIC_STREAM_STATE_RESET_SENT, QUIC_STREAM_EVENT_RESET_ACKED,
+  { QUIC_STREAM_STATE_RESET_SENT,
+    QUIC_STREAM_EVENT_RESET_ACKED,
     QUIC_STREAM_STATE_RESET_RECVD }
 };
 
@@ -299,8 +312,12 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
     }
 
   /* Delegate to common transition logic */
-  return do_state_transition (stream, current, event, send_transitions,
-                              SEND_TRANSITIONS_COUNT, &stream->send_state,
+  return do_state_transition (stream,
+                              current,
+                              event,
+                              send_transitions,
+                              SEND_TRANSITIONS_COUNT,
+                              &stream->send_state,
                               update_send_state);
 }
 
@@ -323,27 +340,34 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
  *   DataRecvd -> DataRead (on APP_READ_DATA, terminal)
  *   ResetRecvd -> ResetRead (on APP_READ_RESET, terminal)
  */
-static const SocketQUICStreamTransition recv_transitions[] = {
-  {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_DATA,
-   QUIC_STREAM_STATE_RECV},
-  {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_FIN,
-   QUIC_STREAM_STATE_SIZE_KNOWN},
-  {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_RESET,
-   QUIC_STREAM_STATE_RESET_RECVD},
+static const SocketQUICStreamTransition recv_transitions[]
+    = { { QUIC_STREAM_STATE_RECV,
+          QUIC_STREAM_EVENT_RECV_DATA,
+          QUIC_STREAM_STATE_RECV },
+        { QUIC_STREAM_STATE_RECV,
+          QUIC_STREAM_EVENT_RECV_FIN,
+          QUIC_STREAM_STATE_SIZE_KNOWN },
+        { QUIC_STREAM_STATE_RECV,
+          QUIC_STREAM_EVENT_RECV_RESET,
+          QUIC_STREAM_STATE_RESET_RECVD },
 
-  {QUIC_STREAM_STATE_SIZE_KNOWN, QUIC_STREAM_EVENT_RECV_DATA,
-   QUIC_STREAM_STATE_SIZE_KNOWN},
-  {QUIC_STREAM_STATE_SIZE_KNOWN, QUIC_STREAM_EVENT_ALL_DATA_RECVD,
-   QUIC_STREAM_STATE_DATA_RECVD},
-  {QUIC_STREAM_STATE_SIZE_KNOWN, QUIC_STREAM_EVENT_RECV_RESET,
-   QUIC_STREAM_STATE_RESET_RECVD},
+        { QUIC_STREAM_STATE_SIZE_KNOWN,
+          QUIC_STREAM_EVENT_RECV_DATA,
+          QUIC_STREAM_STATE_SIZE_KNOWN },
+        { QUIC_STREAM_STATE_SIZE_KNOWN,
+          QUIC_STREAM_EVENT_ALL_DATA_RECVD,
+          QUIC_STREAM_STATE_DATA_RECVD },
+        { QUIC_STREAM_STATE_SIZE_KNOWN,
+          QUIC_STREAM_EVENT_RECV_RESET,
+          QUIC_STREAM_STATE_RESET_RECVD },
 
-  {QUIC_STREAM_STATE_DATA_RECVD, QUIC_STREAM_EVENT_APP_READ_DATA,
-   QUIC_STREAM_STATE_DATA_READ},
+        { QUIC_STREAM_STATE_DATA_RECVD,
+          QUIC_STREAM_EVENT_APP_READ_DATA,
+          QUIC_STREAM_STATE_DATA_READ },
 
-  {QUIC_STREAM_STATE_RESET_RECVD, QUIC_STREAM_EVENT_APP_READ_RESET,
-   QUIC_STREAM_STATE_RESET_READ}
-};
+        { QUIC_STREAM_STATE_RESET_RECVD,
+          QUIC_STREAM_EVENT_APP_READ_RESET,
+          QUIC_STREAM_STATE_RESET_READ } };
 
 #define RECV_TRANSITIONS_COUNT ARRAY_LENGTH (recv_transitions)
 
@@ -395,7 +419,11 @@ SocketQUICStream_transition_recv (SocketQUICStream_T stream,
     }
 
   /* Delegate to common transition logic */
-  return do_state_transition (stream, current, event, recv_transitions,
-                              RECV_TRANSITIONS_COUNT, &stream->recv_state,
+  return do_state_transition (stream,
+                              current,
+                              event,
+                              recv_transitions,
+                              RECV_TRANSITIONS_COUNT,
+                              &stream->recv_state,
                               update_recv_state);
 }

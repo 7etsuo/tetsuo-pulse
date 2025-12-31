@@ -183,8 +183,7 @@ server_accept_websocket (WSTestServer *server)
   config.role = WS_ROLE_SERVER;
   config.validate_utf8 = 1;
 
-  server->ws
-      = SocketWS_server_accept (server->client_socket, request, &config);
+  server->ws = SocketWS_server_accept (server->client_socket, request, &config);
   SocketHTTP1_Parser_free (&parser);
 
   if (server->ws == NULL)
@@ -244,8 +243,8 @@ ws_server_thread_func (void *arg)
           if (SocketWS_recv_message (server->ws, &msg) == 0)
             {
               if (msg.type == WS_OPCODE_TEXT)
-                SocketWS_send_text (server->ws, (const char *)msg.data,
-                                    msg.len);
+                SocketWS_send_text (
+                    server->ws, (const char *)msg.data, msg.len);
               else if (msg.type == WS_OPCODE_BINARY)
                 SocketWS_send_binary (server->ws, msg.data, msg.len);
               free (msg.data);
@@ -304,8 +303,8 @@ ws_server_start (WSTestServer *server)
 
   /* Get actual port */
   len = sizeof (addr);
-  getsockname (Socket_fd (server->listen_socket), (struct sockaddr *)&addr,
-               &len);
+  getsockname (
+      Socket_fd (server->listen_socket), (struct sockaddr *)&addr, &len);
   server->port = ntohs (addr.sin_port);
 
   server->running = 1;

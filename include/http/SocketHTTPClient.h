@@ -162,38 +162,47 @@ extern SocketHTTPClient_T
 SocketHTTPClient_new (const SocketHTTPClient_Config *config);
 extern void SocketHTTPClient_free (SocketHTTPClient_T *client);
 
-extern int SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
+extern int SocketHTTPClient_get (SocketHTTPClient_T client,
+                                 const char *url,
                                  SocketHTTPClient_Response *response);
-extern int SocketHTTPClient_head (SocketHTTPClient_T client, const char *url,
+extern int SocketHTTPClient_head (SocketHTTPClient_T client,
+                                  const char *url,
                                   SocketHTTPClient_Response *response);
-extern int SocketHTTPClient_post (SocketHTTPClient_T client, const char *url,
-                                  const char *content_type, const void *body,
+extern int SocketHTTPClient_post (SocketHTTPClient_T client,
+                                  const char *url,
+                                  const char *content_type,
+                                  const void *body,
                                   size_t body_len,
                                   SocketHTTPClient_Response *response);
-extern int SocketHTTPClient_put (SocketHTTPClient_T client, const char *url,
-                                 const char *content_type, const void *body,
+extern int SocketHTTPClient_put (SocketHTTPClient_T client,
+                                 const char *url,
+                                 const char *content_type,
+                                 const void *body,
                                  size_t body_len,
                                  SocketHTTPClient_Response *response);
-extern int SocketHTTPClient_delete (SocketHTTPClient_T client, const char *url,
+extern int SocketHTTPClient_delete (SocketHTTPClient_T client,
+                                    const char *url,
                                     SocketHTTPClient_Response *response);
 extern void
 SocketHTTPClient_Response_free (SocketHTTPClient_Response *response);
 
 extern SocketHTTPClient_Request_T
 SocketHTTPClient_Request_new (SocketHTTPClient_T client,
-                              SocketHTTP_Method method, const char *url);
+                              SocketHTTP_Method method,
+                              const char *url);
 extern void SocketHTTPClient_Request_free (SocketHTTPClient_Request_T *req);
 extern int SocketHTTPClient_Request_header (SocketHTTPClient_Request_T req,
                                             const char *name,
                                             const char *value);
 extern int SocketHTTPClient_Request_body (SocketHTTPClient_Request_T req,
-                                          const void *data, size_t len);
+                                          const void *data,
+                                          size_t len);
 extern int SocketHTTPClient_Request_body_stream (
     SocketHTTPClient_Request_T req,
     ssize_t (*read_cb) (void *buf, size_t len, void *userdata),
     void *userdata);
-extern void SocketHTTPClient_Request_timeout (SocketHTTPClient_Request_T req,
-                                              int ms);
+extern void
+SocketHTTPClient_Request_timeout (SocketHTTPClient_Request_T req, int ms);
 extern void SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
                                            const SocketHTTPClient_Auth *auth);
 extern int
@@ -221,7 +230,8 @@ typedef struct SocketHTTPClient_PreparedRequest
  * @return Prepared request handle, or NULL on error
  */
 extern SocketHTTPClient_PreparedRequest_T
-SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
+SocketHTTPClient_prepare (SocketHTTPClient_T client,
+                          SocketHTTP_Method method,
                           const char *url);
 
 /**
@@ -233,9 +243,9 @@ SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
  * @param response Output response (caller must free)
  * @return 0 on success, -1 on error
  */
-extern int SocketHTTPClient_execute_prepared (
-    SocketHTTPClient_PreparedRequest_T prep,
-    SocketHTTPClient_Response *response);
+extern int
+SocketHTTPClient_execute_prepared (SocketHTTPClient_PreparedRequest_T prep,
+                                   SocketHTTPClient_Response *response);
 
 /**
  * @brief Free a prepared request.
@@ -265,8 +275,7 @@ typedef struct
 } SocketHTTPClient_Cookie;
 
 extern SocketHTTPClient_CookieJar_T SocketHTTPClient_CookieJar_new (void);
-extern void
-SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar);
+extern void SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar);
 extern void SocketHTTPClient_set_cookie_jar (SocketHTTPClient_T client,
                                              SocketHTTPClient_CookieJar_T jar);
 extern SocketHTTPClient_CookieJar_T
@@ -276,10 +285,10 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTPClient_Cookie *cookie);
 extern const SocketHTTPClient_Cookie *
 SocketHTTPClient_CookieJar_get (SocketHTTPClient_CookieJar_T jar,
-                                const char *domain, const char *path,
+                                const char *domain,
+                                const char *path,
                                 const char *name);
-extern void
-SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar);
+extern void SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar);
 extern void
 SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar);
 extern int SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
@@ -309,18 +318,23 @@ extern void SocketHTTPClient_pool_clear (SocketHTTPClient_T client);
 
 extern SocketHTTPClient_Error
 SocketHTTPClient_last_error (SocketHTTPClient_T client);
-extern const char *
-SocketHTTPClient_error_string (SocketHTTPClient_Error error);
+extern const char *SocketHTTPClient_error_string (SocketHTTPClient_Error error);
 
-extern int SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
+extern int SocketHTTPClient_download (SocketHTTPClient_T client,
+                                      const char *url,
                                       const char *filepath);
-extern int SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
+extern int SocketHTTPClient_upload (SocketHTTPClient_T client,
+                                    const char *url,
                                     const char *filepath);
-extern int SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
-                                      char **json_out, size_t *json_len);
+extern int SocketHTTPClient_json_get (SocketHTTPClient_T client,
+                                      const char *url,
+                                      char **json_out,
+                                      size_t *json_len);
 extern int SocketHTTPClient_json_post (SocketHTTPClient_T client,
-                                       const char *url, const char *json_body,
-                                       char **json_out, size_t *json_len);
+                                       const char *url,
+                                       const char *json_body,
+                                       char **json_out,
+                                       size_t *json_len);
 
 /** @} */
 

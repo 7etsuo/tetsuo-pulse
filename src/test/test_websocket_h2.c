@@ -70,10 +70,10 @@ create_temp_cert_files (void)
 {
   FILE *f;
 
-  snprintf (cert_file, sizeof (cert_file), "/tmp/test_wsh2_cert_%d.pem",
-            getpid ());
-  snprintf (key_file, sizeof (key_file), "/tmp/test_wsh2_key_%d.pem",
-            getpid ());
+  snprintf (
+      cert_file, sizeof (cert_file), "/tmp/test_wsh2_cert_%d.pem", getpid ());
+  snprintf (
+      key_file, sizeof (key_file), "/tmp/test_wsh2_key_%d.pem", getpid ());
 
   f = fopen (cert_file, "w");
   if (f == NULL)
@@ -142,8 +142,7 @@ TEST (wsh2_transport_socket_factory)
     ASSERT_EQ (got_socket, socket);
 
     /* Verify H2 stream accessor returns NULL for socket transport */
-    SocketHTTP2_Stream_T h2stream
-        = SocketWS_Transport_get_h2stream (transport);
+    SocketHTTP2_Stream_T h2stream = SocketWS_Transport_get_h2stream (transport);
     ASSERT_NULL (h2stream);
   }
   FINALLY
@@ -383,13 +382,22 @@ wsh2_server_thread_func (void *arg)
     {
       /* Send server SETTINGS with ENABLE_CONNECT_PROTOCOL=1 (RFC 8441) */
       unsigned char settings_frame[] = {
-        0x00, 0x00, 0x06,      /* Length: 6 (one setting) */
-        0x04,                  /* Type: SETTINGS */
-        0x00,                  /* Flags: 0 */
-        0x00, 0x00, 0x00, 0x00, /* Stream ID: 0 */
+        0x00,
+        0x00,
+        0x06, /* Length: 6 (one setting) */
+        0x04, /* Type: SETTINGS */
+        0x00, /* Flags: 0 */
+        0x00,
+        0x00,
+        0x00,
+        0x00, /* Stream ID: 0 */
         /* SETTINGS_ENABLE_CONNECT_PROTOCOL = 1 */
-        0x00, 0x08, /* ID: ENABLE_CONNECT_PROTOCOL (0x08) */
-        0x00, 0x00, 0x00, 0x01  /* Value: 1 */
+        0x00,
+        0x08, /* ID: ENABLE_CONNECT_PROTOCOL (0x08) */
+        0x00,
+        0x00,
+        0x00,
+        0x01 /* Value: 1 */
       };
       SocketTLS_send (client, settings_frame, sizeof (settings_frame));
       server->enable_connect_protocol_sent = 1;
@@ -410,11 +418,11 @@ wsh2_server_thread_func (void *arg)
         {
           /* Send 200 response (not 101) per RFC 8441 */
           unsigned char response_headers[] = {
-            0x00, 0x00, 0x01,      /* Length: 1 */
-            0x01,                  /* Type: HEADERS */
-            0x04,                  /* Flags: END_HEADERS (no END_STREAM) */
+            0x00, 0x00, 0x01,       /* Length: 1 */
+            0x01,                   /* Type: HEADERS */
+            0x04,                   /* Flags: END_HEADERS (no END_STREAM) */
             0x00, 0x00, 0x00, 0x01, /* Stream ID: 1 */
-            0x88                   /* :status: 200 (HPACK index 8) */
+            0x88                    /* :status: 200 (HPACK index 8) */
           };
           SocketTLS_send (client, response_headers, sizeof (response_headers));
         }
@@ -442,8 +450,7 @@ wsh2_server_start (WSH2TestServer *server)
   server->port = port;
 
   /* Create TLS context */
-  TRY server->tls_ctx
-      = SocketTLSContext_new_server (cert_file, key_file, NULL);
+  TRY server->tls_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
   EXCEPT (SocketTLS_Failed)
   return -1;
   END_TRY;
@@ -474,8 +481,8 @@ wsh2_server_start (WSH2TestServer *server)
 
   /* Get actual port */
   len = sizeof (addr);
-  getsockname (Socket_fd (server->listen_socket), (struct sockaddr *)&addr,
-               &len);
+  getsockname (
+      Socket_fd (server->listen_socket), (struct sockaddr *)&addr, &len);
   server->port = ntohs (addr.sin_port);
 
   server->running = 1;

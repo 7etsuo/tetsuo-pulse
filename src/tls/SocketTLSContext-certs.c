@@ -61,7 +61,8 @@ validate_cert_key_paths (const char *cert_file, const char *key_file)
 }
 
 void
-SocketTLSContext_load_certificate (T ctx, const char *cert_file,
+SocketTLSContext_load_certificate (T ctx,
+                                   const char *cert_file,
                                    const char *key_file)
 {
   assert (ctx);
@@ -193,8 +194,8 @@ sni_callback (SSL *ssl, int *ad, void *arg)
   if (idx < 0)
     return SSL_TLSEXT_ERR_NOACK;
 
-  return apply_sni_cert (ssl, ctx->sni_certs.chains[idx],
-                         ctx->sni_certs.pkeys[idx]);
+  return apply_sni_cert (
+      ssl, ctx->sni_certs.chains[idx], ctx->sni_certs.pkeys[idx]);
 }
 
 static void
@@ -269,7 +270,9 @@ validate_and_copy_hostname (T ctx, const char *hostname)
 }
 
 static void
-store_sni_metadata (T ctx, const char *hostname, const char *cert_file,
+store_sni_metadata (T ctx,
+                    const char *hostname,
+                    const char *cert_file,
                     const char *key_file)
 {
   size_t idx = ctx->sni_certs.count;
@@ -304,7 +307,9 @@ check_pem_file_size (FILE *fp, const char *path, const char *obj_type)
     {
       fclose (fp);
       ctx_raise_error_fmt ("%s file '%s' too large: %ld bytes (max %zu)",
-                           obj_type, path, fsize,
+                           obj_type,
+                           path,
+                           fsize,
                            (size_t)SOCKET_TLS_MAX_CERT_FILE_SIZE);
     }
 }
@@ -314,8 +319,8 @@ open_pem_file (const char *path, const char *obj_type)
 {
   FILE *fp = fopen (path, "r");
   if (!fp)
-    ctx_raise_error_fmt ("Cannot open %s file '%s': %s", obj_type, path,
-                         strerror (errno));
+    ctx_raise_error_fmt (
+        "Cannot open %s file '%s': %s", obj_type, path, strerror (errno));
 
   check_pem_file_size (fp, path, obj_type);
   return fp;
@@ -343,9 +348,8 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
           X509_free (cert);
           fclose (fp);
           sk_X509_pop_free (chain, X509_free);
-          ctx_raise_error_fmt (
-              "Certificate chain exceeds maximum depth of %d",
-              SOCKET_TLS_MAX_CERT_CHAIN_DEPTH);
+          ctx_raise_error_fmt ("Certificate chain exceeds maximum depth of %d",
+                               SOCKET_TLS_MAX_CERT_CHAIN_DEPTH);
         }
 
       if (sk_X509_push (chain, cert) > 0)
@@ -402,8 +406,10 @@ verify_keypair_match (STACK_OF (X509) * chain, EVP_PKEY *pkey)
 }
 
 static void
-load_and_verify_keypair (const char *cert_file, const char *key_file,
-                         STACK_OF (X509) * *chain_out, EVP_PKEY **pkey_out)
+load_and_verify_keypair (const char *cert_file,
+                         const char *key_file,
+                         STACK_OF (X509) * *chain_out,
+                         EVP_PKEY **pkey_out)
 {
   STACK_OF (X509) *chain = load_chain_from_file (cert_file);
   EVP_PKEY *pkey = NULL;
@@ -453,7 +459,8 @@ register_sni_callback_if_needed (T ctx, const char *hostname)
 }
 
 static void
-validate_hostname_matches_cert (STACK_OF (X509) * chain, EVP_PKEY *pkey,
+validate_hostname_matches_cert (STACK_OF (X509) * chain,
+                                EVP_PKEY *pkey,
                                 const char *hostname)
 {
   X509 *leaf = sk_X509_value (chain, 0);
@@ -470,8 +477,10 @@ validate_hostname_matches_cert (STACK_OF (X509) * chain, EVP_PKEY *pkey,
 }
 
 static void
-validate_and_prepare_sni_slot (T ctx, const char *hostname,
-                               const char *cert_file, const char *key_file)
+validate_and_prepare_sni_slot (T ctx,
+                               const char *hostname,
+                               const char *cert_file,
+                               const char *key_file)
 {
   validate_cert_key_paths (cert_file, key_file);
   validate_server_context (ctx);
@@ -481,7 +490,9 @@ validate_and_prepare_sni_slot (T ctx, const char *hostname,
 }
 
 static void
-load_and_commit_sni_entry (T ctx, const char *hostname, const char *cert_file,
+load_and_commit_sni_entry (T ctx,
+                           const char *hostname,
+                           const char *cert_file,
                            const char *key_file)
 {
   STACK_OF (X509) *chain = NULL;
@@ -503,8 +514,10 @@ load_and_commit_sni_entry (T ctx, const char *hostname, const char *cert_file,
 }
 
 void
-SocketTLSContext_add_certificate (T ctx, const char *hostname,
-                                  const char *cert_file, const char *key_file)
+SocketTLSContext_add_certificate (T ctx,
+                                  const char *hostname,
+                                  const char *cert_file,
+                                  const char *key_file)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);

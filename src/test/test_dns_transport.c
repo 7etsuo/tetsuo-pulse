@@ -65,8 +65,8 @@ TEST (dns_transport_add_nameserver_ipv6)
   SocketDNSTransport_T transport = SocketDNSTransport_new (arena, NULL);
   int ret;
 
-  ret = SocketDNSTransport_add_nameserver (transport, "2001:4860:4860::8888",
-                                           DNS_PORT);
+  ret = SocketDNSTransport_add_nameserver (
+      transport, "2001:4860:4860::8888", DNS_PORT);
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (SocketDNSTransport_nameserver_count (transport), 1);
 
@@ -129,13 +129,13 @@ TEST (dns_transport_add_nameserver_invalid)
   int ret;
 
   /* Invalid IPv4 */
-  ret = SocketDNSTransport_add_nameserver (transport, "999.999.999.999",
-                                           DNS_PORT);
+  ret = SocketDNSTransport_add_nameserver (
+      transport, "999.999.999.999", DNS_PORT);
   ASSERT_EQ (ret, -1);
 
   /* Not an address */
-  ret = SocketDNSTransport_add_nameserver (transport, "not-an-address",
-                                           DNS_PORT);
+  ret = SocketDNSTransport_add_nameserver (
+      transport, "not-an-address", DNS_PORT);
   ASSERT_EQ (ret, -1);
 
   /* Empty string */
@@ -174,8 +174,11 @@ static volatile int callback_invoked = 0;
 static volatile int callback_error = 0;
 
 static void
-test_callback (SocketDNSQuery_T query, const unsigned char *response,
-               size_t len, int error, void *userdata)
+test_callback (SocketDNSQuery_T query,
+               const unsigned char *response,
+               size_t len,
+               int error,
+               void *userdata)
 {
   (void)query;
   (void)response;
@@ -205,8 +208,8 @@ TEST (dns_transport_query_returns_handle)
   hdr.qdcount = 1;
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
 
-  query = SocketDNSTransport_query_udp (transport, query_buf, len,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_udp (
+      transport, query_buf, len, test_callback, NULL);
   ASSERT_NOT_NULL (query);
   ASSERT_EQ (SocketDNSQuery_get_id (query), 0x1234);
   ASSERT_EQ (SocketDNSQuery_get_retry_count (query), 0);
@@ -238,8 +241,8 @@ TEST (dns_transport_query_no_nameserver)
   hdr.rd = 1;
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
 
-  query = SocketDNSTransport_query_udp (transport, query_buf, DNS_HEADER_SIZE,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_udp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
   ASSERT_NULL (query);
   ASSERT_EQ (callback_invoked, 1);
   ASSERT_EQ (callback_error, DNS_ERROR_NONS);
@@ -265,8 +268,8 @@ TEST (dns_transport_cancel_removes_query)
   hdr.rd = 1;
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
 
-  query = SocketDNSTransport_query_udp (transport, query_buf, DNS_HEADER_SIZE,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_udp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
   ASSERT_NOT_NULL (query);
   ASSERT_EQ (SocketDNSTransport_pending_count (transport), 1);
 
@@ -372,13 +375,13 @@ TEST (dns_transport_query_size_validation)
 
   /* Query too large */
   memset (query_buf, 0, sizeof (query_buf));
-  query = SocketDNSTransport_query_udp (transport, query_buf, sizeof (query_buf),
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_udp (
+      transport, query_buf, sizeof (query_buf), test_callback, NULL);
   ASSERT_NULL (query);
 
   /* Query at exact limit should be accepted */
-  query = SocketDNSTransport_query_udp (transport, query_buf, DNS_UDP_MAX_SIZE,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_udp (
+      transport, query_buf, DNS_UDP_MAX_SIZE, test_callback, NULL);
   ASSERT_NOT_NULL (query);
 
   SocketDNSTransport_cancel (transport, query);
@@ -419,13 +422,13 @@ TEST (dns_transport_free_cancels_queries)
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
 
   callback_invoked = 0;
-  SocketDNSTransport_query_udp (transport, query_buf, DNS_HEADER_SIZE,
-                                test_callback, NULL);
+  SocketDNSTransport_query_udp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
 
   hdr.id = 0x2222;
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
-  SocketDNSTransport_query_udp (transport, query_buf, DNS_HEADER_SIZE,
-                                test_callback, NULL);
+  SocketDNSTransport_query_udp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
 
   ASSERT_EQ (SocketDNSTransport_pending_count (transport), 2);
 
@@ -460,8 +463,8 @@ TEST (dns_transport_tcp_query_no_nameserver)
   hdr.rd = 1;
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
 
-  query = SocketDNSTransport_query_tcp (transport, query_buf, DNS_HEADER_SIZE,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_tcp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
   ASSERT_NULL (query);
   ASSERT_EQ (callback_invoked, 1);
   ASSERT_EQ (callback_error, DNS_ERROR_NONS);
@@ -516,8 +519,8 @@ TEST (dns_transport_tcp_query_size_validation)
 
   /* This will try to connect which may fail, but the size is valid */
   callback_invoked = 0;
-  query = SocketDNSTransport_query_tcp (transport, large_query, 1024,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_tcp (
+      transport, large_query, 1024, test_callback, NULL);
   /* Query may return NULL if connection fails, but that's OK */
   /* The important thing is we didn't reject it for size */
 
@@ -583,11 +586,12 @@ TEST (dns_transport_tcp_query_starts_connect)
   SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
 
   callback_invoked = 0;
-  query = SocketDNSTransport_query_tcp (transport, query_buf, DNS_HEADER_SIZE,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_tcp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
 
   /* Query may fail to connect (no DNS server on 127.0.0.1:53) */
-  /* But the function should have attempted and either returned handle or failed */
+  /* But the function should have attempted and either returned handle or failed
+   */
   if (query)
     {
       ASSERT_EQ (SocketDNSQuery_get_id (query), 0x1234);
@@ -629,8 +633,8 @@ TEST (dns_transport_tcp_overflow_protection)
    * But we verify that normal large queries work correctly.
    */
   callback_invoked = 0;
-  query = SocketDNSTransport_query_tcp (transport, query_buf, DNS_HEADER_SIZE,
-                                        test_callback, NULL);
+  query = SocketDNSTransport_query_tcp (
+      transport, query_buf, DNS_HEADER_SIZE, test_callback, NULL);
 
   /* Query should either succeed or fail with connection error, not crash */
   if (query)
