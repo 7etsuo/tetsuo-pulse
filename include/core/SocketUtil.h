@@ -271,8 +271,13 @@
  *   char lower = ASCII_TOLOWER('H');  // Returns 'h'
  *   char same = ASCII_TOLOWER('5');   // Returns '5'
  */
-#define ASCII_TOLOWER(c) \
-  (((c) >= 'A' && (c) <= 'Z') ? ((c) + ASCII_CASE_OFFSET) : (c))
+/** @cond INTERNAL */
+/* Branchless: if c in A-Z, (c - 'A') is 0-25, unsigned < 26 is true (1),
+ * shift left 5 gives 32 (ASCII_CASE_OFFSET), add to c converts to lowercase.
+ * For non-letters, (c - 'A') wraps or >= 26, comparison is false (0),
+ * 0 << 5 = 0, c unchanged. */
+/** @endcond */
+#define ASCII_TOLOWER(c) ((c) + (((unsigned)(c) - 'A' < 26U) << 5))
 
 /**
  * @brief DJB2_STEP - One step of DJB2 hash algorithm (addition variant)
@@ -724,8 +729,19 @@ socket_util_hash_bytes_prime31 (const unsigned char *data,
 {
   unsigned hash = 0;
   size_t limit = (len < max_len) ? len : max_len;
+  size_t i = 0;
 
-  for (size_t i = 0; i < limit; i++)
+  /* 4-way unrolled for better instruction-level parallelism */
+  for (; i + 4 <= limit; i += 4)
+    {
+      hash = hash * HASH_PRIME_31 + data[i];
+      hash = hash * HASH_PRIME_31 + data[i + 1];
+      hash = hash * HASH_PRIME_31 + data[i + 2];
+      hash = hash * HASH_PRIME_31 + data[i + 3];
+    }
+
+  /* Handle remaining 0-3 bytes */
+  for (; i < limit; i++)
     hash = hash * HASH_PRIME_31 + data[i];
 
   return hash;
@@ -744,8 +760,22 @@ socket_util_hash_bytes_prime31 (const unsigned char *data,
 static inline size_t
 socket_util_round_up_pow2 (size_t n)
 {
-  if (n == 0)
+  if (n <= 1)
     return 1;
+
+#if defined(__GNUC__) || defined(__clang__)
+  /* Use CLZ intrinsic for single-instruction implementation.
+   * __builtin_clzll returns leading zero count, so:
+   *   64 - clz(n-1) = position of highest set bit + 1 = log2(n) rounded up
+   *   1 << that = next power of 2 */
+#if SIZE_MAX > 0xFFFFFFFF
+  return (size_t)1 << (64 - __builtin_clzll ((unsigned long long)(n - 1)));
+#else
+  return (size_t)1 << (32 - __builtin_clz ((unsigned)(n - 1)));
+#endif
+
+#else
+  /* Fallback: bit-smearing approach */
   n--;
   n |= n >> 1;
   n |= n >> 2;
@@ -756,6 +786,7 @@ socket_util_round_up_pow2 (size_t n)
   n |= n >> 32;
 #endif
   return n + 1;
+#endif
 }
 
 /* ============================================================================
