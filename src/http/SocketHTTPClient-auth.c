@@ -604,3 +604,10 @@ httpclient_auth_is_stale_nonce (const char *www_authenticate)
   parse_http_auth_params(www_authenticate, 0, check_stale_cb, &is_stale);
   return is_stale;
 }
+
+void
+httpclient_auth_clear_header (char *header, size_t header_size)
+{
+  if (header != NULL && header_size > 0)
+    SocketCrypto_secure_clear (header, header_size);
+}
