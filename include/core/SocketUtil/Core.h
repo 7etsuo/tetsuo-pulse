@@ -64,10 +64,13 @@
  * Creates a bitmask with the lowest N bits set to 1.
  * For n=0 returns 0, for n=8 returns 0xFF, for n=32 returns 0xFFFFFFFF.
  *
- * @warning n must be in range 0-32; undefined behavior for n > 32
+ * Uses right-shift of all-ones to avoid undefined behavior when n equals
+ * the type width (left-shifting by 32 bits is UB for uint32_t).
+ *
+ * @warning n must be in range 0-32
  * @see BITMASK64 for 64-bit version
  */
-#define BITMASK32(n) ((1U << (n)) - 1U)
+#define BITMASK32(n) ((n) == 0 ? 0U : ~0U >> (32 - (n)))
 
 /**
  * @brief BITMASK64 - Create a 64-bit mask with N lowest bits set
@@ -75,12 +78,15 @@
  * @ingroup foundation
  *
  * Creates a 64-bit bitmask with the lowest N bits set to 1.
- * For n=0 returns 0, for n=30 returns 0x3FFFFFFF.
+ * For n=0 returns 0, for n=30 returns 0x3FFFFFFF, for n=64 returns all ones.
  *
- * @warning n must be in range 0-64; undefined behavior for n > 64
+ * Uses right-shift of all-ones to avoid undefined behavior when n equals
+ * the type width (left-shifting by 64 bits is UB for uint64_t).
+ *
+ * @warning n must be in range 0-64
  * @see BITMASK32 for 32-bit version
  */
-#define BITMASK64(n) ((1ULL << (n)) - 1ULL)
+#define BITMASK64(n) ((n) == 0 ? 0ULL : ~0ULL >> (64 - (n)))
 
 /**
  * @brief BITS_APPEND - Append N bits to a bit accumulator
@@ -222,6 +228,253 @@
  * Compiler optimizes 31*x as (x << 5) - x.
  */
 #define HASH_PRIME_31 31
+
+/* ============================================================================
+ * POWER-OF-2 UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief IS_POWER_OF_2 - Check if value is a power of 2
+ * @param x Value to check (must be unsigned integer type)
+ * @return Non-zero if x is a power of 2, zero otherwise
+ * @ingroup foundation
+ *
+ * Uses the classic bithack: powers of 2 have exactly one bit set,
+ * so (x & (x-1)) clears that bit, resulting in zero.
+ * Special case: 0 is not a power of 2.
+ */
+#define IS_POWER_OF_2(x) ((x) != 0 && (((x) & ((x) - 1)) == 0))
+
+/**
+ * @brief ALIGN_UP - Round up to next alignment boundary
+ * @param x Value to align
+ * @param align Alignment (MUST be power of 2)
+ * @return x rounded up to next multiple of align
+ * @ingroup foundation
+ *
+ * @warning align MUST be a power of 2, otherwise results are undefined
+ */
+#define ALIGN_UP(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
+
+/**
+ * @brief ALIGN_DOWN - Round down to alignment boundary
+ * @param x Value to align
+ * @param align Alignment (MUST be power of 2)
+ * @return x rounded down to previous multiple of align
+ * @ingroup foundation
+ *
+ * @warning align MUST be a power of 2, otherwise results are undefined
+ */
+#define ALIGN_DOWN(x, align) ((x) & ~((align) - 1))
+
+/* ============================================================================
+ * COMPILER INTRINSICS - BIT COUNTING
+ * ============================================================================
+ */
+
+#if defined(__GNUC__) || defined(__clang__)
+
+/**
+ * @brief CLZ32 - Count leading zeros in 32-bit value
+ * @param x Value to count (MUST be non-zero)
+ * @return Number of leading zero bits (0-31)
+ * @ingroup foundation
+ *
+ * @warning x MUST be non-zero; result is undefined for x=0
+ */
+#define CLZ32(x) __builtin_clz (x)
+
+/**
+ * @brief CLZ64 - Count leading zeros in 64-bit value
+ * @param x Value to count (MUST be non-zero)
+ * @return Number of leading zero bits (0-63)
+ * @ingroup foundation
+ *
+ * @warning x MUST be non-zero; result is undefined for x=0
+ */
+#define CLZ64(x) __builtin_clzll (x)
+
+/**
+ * @brief CTZ32 - Count trailing zeros in 32-bit value
+ * @param x Value to count (MUST be non-zero)
+ * @return Number of trailing zero bits (0-31)
+ * @ingroup foundation
+ *
+ * @warning x MUST be non-zero; result is undefined for x=0
+ */
+#define CTZ32(x) __builtin_ctz (x)
+
+/**
+ * @brief CTZ64 - Count trailing zeros in 64-bit value
+ * @param x Value to count (MUST be non-zero)
+ * @return Number of trailing zero bits (0-63)
+ * @ingroup foundation
+ *
+ * @warning x MUST be non-zero; result is undefined for x=0
+ */
+#define CTZ64(x) __builtin_ctzll (x)
+
+/**
+ * @brief POPCOUNT32 - Count set bits in 32-bit value
+ * @param x Value to count
+ * @return Number of bits set to 1 (0-32)
+ * @ingroup foundation
+ */
+#define POPCOUNT32(x) __builtin_popcount (x)
+
+/**
+ * @brief POPCOUNT64 - Count set bits in 64-bit value
+ * @param x Value to count
+ * @return Number of bits set to 1 (0-64)
+ * @ingroup foundation
+ */
+#define POPCOUNT64(x) __builtin_popcountll (x)
+
+/**
+ * @brief NEXT_POW2_32 - Round up to next power of 2 (32-bit)
+ * @param x Value to round up (0 < x <= 2^31)
+ * @return Smallest power of 2 >= x
+ * @ingroup foundation
+ *
+ * Uses CLZ to find the position of the highest set bit.
+ * For x=0, returns 1. For x already a power of 2, returns x.
+ *
+ * @warning For x > 2^31, result overflows
+ */
+#define NEXT_POW2_32(x) ((x) <= 1 ? 1U : 1U << (32 - CLZ32 ((x) - 1)))
+
+/**
+ * @brief NEXT_POW2_64 - Round up to next power of 2 (64-bit)
+ * @param x Value to round up (0 < x <= 2^63)
+ * @return Smallest power of 2 >= x
+ * @ingroup foundation
+ *
+ * Uses CLZ to find the position of the highest set bit.
+ * For x=0, returns 1. For x already a power of 2, returns x.
+ *
+ * @warning For x > 2^63, result overflows
+ */
+#define NEXT_POW2_64(x) ((x) <= 1 ? 1ULL : 1ULL << (64 - CLZ64 ((x) - 1)))
+
+#endif /* __GNUC__ || __clang__ */
+
+/* ============================================================================
+ * BIT ROTATION
+ * ============================================================================
+ */
+
+/**
+ * @brief ROTL32 - Rotate 32-bit value left
+ * @param x Value to rotate
+ * @param n Number of bits to rotate (0-31)
+ * @return Rotated value
+ * @ingroup foundation
+ *
+ * Bits shifted out on the left wrap around to the right.
+ * Modern compilers recognize this pattern and emit single ROL instruction.
+ */
+#define ROTL32(x, n) \
+  ((uint32_t)(x) << ((n) & 31) | (uint32_t)(x) >> (32 - ((n) & 31)))
+
+/**
+ * @brief ROTR32 - Rotate 32-bit value right
+ * @param x Value to rotate
+ * @param n Number of bits to rotate (0-31)
+ * @return Rotated value
+ * @ingroup foundation
+ *
+ * Bits shifted out on the right wrap around to the left.
+ * Modern compilers recognize this pattern and emit single ROR instruction.
+ */
+#define ROTR32(x, n) \
+  ((uint32_t)(x) >> ((n) & 31) | (uint32_t)(x) << (32 - ((n) & 31)))
+
+/**
+ * @brief ROTL64 - Rotate 64-bit value left
+ * @param x Value to rotate
+ * @param n Number of bits to rotate (0-63)
+ * @return Rotated value
+ * @ingroup foundation
+ */
+#define ROTL64(x, n) \
+  ((uint64_t)(x) << ((n) & 63) | (uint64_t)(x) >> (64 - ((n) & 63)))
+
+/**
+ * @brief ROTR64 - Rotate 64-bit value right
+ * @param x Value to rotate
+ * @param n Number of bits to rotate (0-63)
+ * @return Rotated value
+ * @ingroup foundation
+ */
+#define ROTR64(x, n) \
+  ((uint64_t)(x) >> ((n) & 63) | (uint64_t)(x) << (64 - ((n) & 63)))
+
+/* ============================================================================
+ * BYTE EXTRACTION
+ * ============================================================================
+ */
+
+/**
+ * @brief BYTE0 - Extract byte 0 (least significant) from value
+ * @param x Value to extract from
+ * @return Bits 0-7 as uint8_t
+ * @ingroup foundation
+ */
+#define BYTE0(x) ((uint8_t)((x) & 0xFF))
+
+/**
+ * @brief BYTE1 - Extract byte 1 from value
+ * @param x Value to extract from
+ * @return Bits 8-15 as uint8_t
+ * @ingroup foundation
+ */
+#define BYTE1(x) ((uint8_t)(((x) >> 8) & 0xFF))
+
+/**
+ * @brief BYTE2 - Extract byte 2 from value
+ * @param x Value to extract from
+ * @return Bits 16-23 as uint8_t
+ * @ingroup foundation
+ */
+#define BYTE2(x) ((uint8_t)(((x) >> 16) & 0xFF))
+
+/**
+ * @brief BYTE3 - Extract byte 3 (most significant of 32-bit) from value
+ * @param x Value to extract from
+ * @return Bits 24-31 as uint8_t
+ * @ingroup foundation
+ */
+#define BYTE3(x) ((uint8_t)(((x) >> 24) & 0xFF))
+
+/* ============================================================================
+ * SIGN EXTENSION
+ * ============================================================================
+ */
+
+/**
+ * @brief SIGN_EXTEND - Sign-extend a value from N bits to 32 bits
+ * @param x Value to sign-extend (N-bit signed value in low bits)
+ * @param bits Number of bits in original value (1-31)
+ * @return Sign-extended 32-bit value
+ * @ingroup foundation
+ *
+ * Uses arithmetic right shift to replicate the sign bit.
+ * Example: SIGN_EXTEND(0x80, 8) -> 0xFFFFFF80 (-128)
+ *          SIGN_EXTEND(0x7F, 8) -> 0x0000007F (+127)
+ */
+#define SIGN_EXTEND(x, bits) \
+  (((int32_t)((uint32_t)(x) << (32 - (bits)))) >> (32 - (bits)))
+
+/**
+ * @brief SIGN_EXTEND64 - Sign-extend a value from N bits to 64 bits
+ * @param x Value to sign-extend (N-bit signed value in low bits)
+ * @param bits Number of bits in original value (1-63)
+ * @return Sign-extended 64-bit value
+ * @ingroup foundation
+ */
+#define SIGN_EXTEND64(x, bits) \
+  (((int64_t)((uint64_t)(x) << (64 - (bits)))) >> (64 - (bits)))
 
 /* ============================================================================
  * MIN/MAX UTILITIES
