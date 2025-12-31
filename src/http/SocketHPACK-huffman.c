@@ -38,6 +38,36 @@
 #define DECODE_EOS 2
 
 /* ============================================================================
+ * Decode State Structures
+ * ============================================================================
+ */
+
+/* Bit accumulator state - used by decode functions */
+typedef struct
+{
+  uint64_t bits;  /* Bit accumulator */
+  int bits_avail; /* Available bits in accumulator */
+} HuffmanBitState;
+
+/* Output buffer context - used by decode/emit functions */
+typedef struct
+{
+  unsigned char *buffer; /* Output buffer pointer */
+  size_t *pos;           /* Current write position */
+  size_t size;           /* Total buffer capacity */
+} HuffmanOutputBuf;
+
+/* Full decode state - combines all for main decode loop */
+typedef struct
+{
+  HuffmanBitState bit;        /* Bit accumulator state */
+  HuffmanOutputBuf out;       /* Output buffer context */
+  const unsigned char *input; /* Input buffer */
+  size_t *in_pos;             /* Input read position */
+  size_t input_len;           /* Input buffer length */
+} HuffmanDecodeState;
+
+/* ============================================================================
  * Huffman Encode Table (RFC 7541 Appendix B)
  * ============================================================================
  */
@@ -741,15 +771,12 @@ find_symbol_by_code (int bitlen, uint64_t code)
 }
 
 static int
-emit_decoded_byte (unsigned char *output,
-                   size_t *out_pos,
-                   size_t output_size,
-                   unsigned char byte)
+emit_decoded_byte (HuffmanOutputBuf *out, unsigned char byte)
 {
-  if (*out_pos >= output_size)
+  if (*out->pos >= out->size)
     return -1;
 
-  output[(*out_pos)++] = byte;
+  out->buffer[(*out->pos)++] = byte;
   return 0;
 }
 
@@ -759,9 +786,7 @@ static int
 try_decode_nbit (const HuffmanDecodeConfig *cfg,
                  uint64_t bits,
                  int bits_avail,
-                 unsigned char *output,
-                 size_t *out_pos,
-                 size_t output_size)
+                 HuffmanOutputBuf *out)
 {
   uint32_t code;
 
@@ -777,9 +802,9 @@ try_decode_nbit (const HuffmanDecodeConfig *cfg,
       if (idx
           >= sizeof (hpack_decode_symbols) / sizeof (hpack_decode_symbols[0]))
         return -1;
-      if (*out_pos >= output_size)
+      if (*out->pos >= out->size)
         return -1;
-      output[(*out_pos)++] = (unsigned char)hpack_decode_symbols[idx];
+      out->buffer[(*out->pos)++] = (unsigned char)hpack_decode_symbols[idx];
       return 1;
     }
 
@@ -789,20 +814,16 @@ try_decode_nbit (const HuffmanDecodeConfig *cfg,
 /* Decode long codes (9-30 bits) and EOS. Returns 1=symbol, 2=EOS, 0=no match.
  */
 static int
-try_full_decode (uint64_t bits,
-                 int *bits_avail,
-                 unsigned char *output,
-                 size_t *out_pos,
-                 size_t output_size)
+try_full_decode (HuffmanBitState *bit, HuffmanOutputBuf *out)
 {
-  int max_code_len = (*bits_avail > HPACK_HUFFMAN_MAX_BITS)
+  int max_code_len = (bit->bits_avail > HPACK_HUFFMAN_MAX_BITS)
                          ? HPACK_HUFFMAN_MAX_BITS
-                         : *bits_avail;
+                         : bit->bits_avail;
   int code_len;
 
   for (code_len = 9; code_len <= max_code_len; code_len++)
     {
-      uint64_t code = extract_code_bits (bits, *bits_avail, code_len);
+      uint64_t code = extract_code_bits (bit->bits, bit->bits_avail, code_len);
       int sym = find_symbol_by_code (code_len, code);
 
       if (sym < 0)
@@ -810,20 +831,19 @@ try_full_decode (uint64_t bits,
 
       if (sym == HPACK_HUFFMAN_EOS)
         {
-          int pad_bits = *bits_avail - code_len;
+          int pad_bits = bit->bits_avail - code_len;
           if (pad_bits < 0 || pad_bits > HUFFMAN_MAX_PAD_BITS)
             return 0;
-          if (pad_bits > 0 && !is_valid_eos_padding (bits, pad_bits))
+          if (pad_bits > 0 && !is_valid_eos_padding (bit->bits, pad_bits))
             return 0;
-          *bits_avail = 0;
+          bit->bits_avail = 0;
           return 2;
         }
 
-      if (emit_decoded_byte (output, out_pos, output_size, (unsigned char)sym)
-          < 0)
+      if (emit_decoded_byte (out, (unsigned char)sym) < 0)
         return -1;
 
-      *bits_avail -= code_len;
+      bit->bits_avail -= code_len;
       return 1;
     }
 
@@ -832,11 +852,7 @@ try_full_decode (uint64_t bits,
 
 /* Try to decode one symbol. Returns 1=decoded, 2=EOS, 0=no match, -1=error. */
 static int
-try_decode_symbol (uint64_t bits,
-                   int *bits_avail,
-                   unsigned char *output,
-                   size_t *out_pos,
-                   size_t output_size)
+try_decode_symbol (HuffmanBitState *bit, HuffmanOutputBuf *out)
 {
   size_t i;
   int res;
@@ -845,20 +861,19 @@ try_decode_symbol (uint64_t bits,
   for (i = 0; i < NUM_DECODE_CONFIGS; i++)
     {
       const HuffmanDecodeConfig *cfg = &hpack_decode_configs[i];
-      res = try_decode_nbit (
-          cfg, bits, *bits_avail, output, out_pos, output_size);
+      res = try_decode_nbit (cfg, bit->bits, bit->bits_avail, out);
       if (res != 0)
         {
           if (res > 0)
-            *bits_avail -= cfg->bitlen;
+            bit->bits_avail -= cfg->bitlen;
           return res;
         }
     }
 
   /* Slow path: longer codes (9-30 bits) */
-  if (*bits_avail >= 9)
+  if (bit->bits_avail >= 9)
     {
-      res = try_full_decode (bits, bits_avail, output, out_pos, output_size);
+      res = try_full_decode (bit, out);
       if (res != 0)
         return res;
     }
@@ -868,16 +883,14 @@ try_decode_symbol (uint64_t bits,
 
 /* Refill bit buffer from input stream until threshold or input exhausted */
 static inline void
-refill_bit_buffer (uint64_t *bits,
-                   int *bits_avail,
-                   const unsigned char *input,
-                   size_t *in_pos,
-                   size_t input_len)
+refill_bit_buffer (HuffmanDecodeState *state)
 {
-  while (*bits_avail < HUFFMAN_REFILL_THRESHOLD && *in_pos < input_len)
+  while (state->bit.bits_avail < HUFFMAN_REFILL_THRESHOLD
+         && *state->in_pos < state->input_len)
     {
-      *bits = (*bits << HUFFMAN_BITS_PER_BYTE) | input[(*in_pos)++];
-      *bits_avail += HUFFMAN_BITS_PER_BYTE;
+      state->bit.bits = (state->bit.bits << HUFFMAN_BITS_PER_BYTE)
+                        | state->input[(*state->in_pos)++];
+      state->bit.bits_avail += HUFFMAN_BITS_PER_BYTE;
     }
 }
 
@@ -916,46 +929,26 @@ validate_huffman_inputs (const unsigned char *input,
   return 1;
 }
 
-static void
-init_huffman_state (size_t *out_pos,
-                    uint64_t *bits,
-                    int *bits_avail,
-                    size_t *in_pos)
-{
-  *out_pos = 0;
-  *bits = 0;
-  *bits_avail = 0;
-  *in_pos = 0;
-}
-
 static int
-process_next_huffman_symbol (uint64_t *bits,
-                             int *bits_avail,
-                             size_t *in_pos,
-                             size_t input_len,
-                             const unsigned char *input,
-                             size_t *out_pos,
-                             size_t output_size,
-                             unsigned char *output)
+process_next_huffman_symbol (HuffmanDecodeState *state)
 {
-  refill_bit_buffer (bits, bits_avail, input, in_pos, input_len);
+  refill_bit_buffer (state);
 
-  if (*bits_avail < HUFFMAN_MIN_CODE_BITS)
+  if (state->bit.bits_avail < HUFFMAN_MIN_CODE_BITS)
     return DECODE_NO_MATCH;
 
-  int result
-      = try_decode_symbol (*bits, bits_avail, output, out_pos, output_size);
+  int result = try_decode_symbol (&state->bit, &state->out);
   if (result == DECODE_ERROR)
     return DECODE_ERROR;
 
   if (result != DECODE_SYMBOL)
     {
-      if (is_valid_termination (*bits, *bits_avail))
+      if (is_valid_termination (state->bit.bits, state->bit.bits_avail))
         return DECODE_EOS;
       return DECODE_ERROR;
     }
 
-  clear_consumed_bits (bits, *bits_avail);
+  clear_consumed_bits (&state->bit.bits, state->bit.bits_avail);
   return DECODE_SYMBOL;
 }
 
@@ -992,44 +985,40 @@ validate_and_apply_eos_padding (uint64_t bits,
  * *bits_avail_out), DECODE_ERROR (-1) on emit failure, 0 on no match.
  */
 static int
-scan_for_long_code_match (uint64_t bits,
-                          int bits_avail,
-                          unsigned char *output,
-                          size_t *out_pos,
-                          size_t output_size,
+scan_for_long_code_match (HuffmanBitState *bit,
+                          HuffmanOutputBuf *out,
                           int *bits_avail_out)
 {
-  int max_code_len = (bits_avail > HPACK_HUFFMAN_MAX_BITS)
+  int max_code_len = (bit->bits_avail > HPACK_HUFFMAN_MAX_BITS)
                          ? HPACK_HUFFMAN_MAX_BITS
-                         : bits_avail;
+                         : bit->bits_avail;
 
   for (int code_len = 9; code_len <= max_code_len; code_len++)
     {
-      uint64_t code = extract_code_bits (bits, bits_avail, code_len);
+      uint64_t code = extract_code_bits (bit->bits, bit->bits_avail, code_len);
       int sym = find_symbol_by_code (code_len, code);
       if (sym < 0)
-        continue; // No match, try next length
+        continue; /* No match, try next length */
 
-      // Match found
+      /* Match found */
       int local_avail;
       if (sym == HPACK_HUFFMAN_EOS)
         {
           if (!validate_and_apply_eos_padding (
-                  bits, bits_avail, code_len, &local_avail))
-            return 0; // Invalid padding: fail entire attempt (per original)
+                  bit->bits, bit->bits_avail, code_len, &local_avail))
+            return 0; /* Invalid padding: fail entire attempt (per original) */
           *bits_avail_out = local_avail;
           return DECODE_EOS;
         }
 
-      // Regular symbol
-      if (emit_decoded_byte (output, out_pos, output_size, (unsigned char)sym)
-          < 0)
+      /* Regular symbol */
+      if (emit_decoded_byte (out, (unsigned char)sym) < 0)
         return DECODE_ERROR;
-      *bits_avail_out = bits_avail - code_len;
+      *bits_avail_out = bit->bits_avail - code_len;
       return DECODE_SYMBOL;
     }
 
-  return 0; // No match across all lengths
+  return 0; /* No match across all lengths */
 }
 
 /* ============================================================================
@@ -1119,30 +1108,27 @@ SocketHPACK_huffman_decode (const unsigned char *input,
   if (input_len == 0)
     return 0;
 
-  size_t out_pos;
-  uint64_t bits;
-  int bits_avail;
-  size_t in_pos;
+  size_t out_pos = 0;
+  size_t in_pos = 0;
 
-  init_huffman_state (&out_pos, &bits, &bits_avail, &in_pos);
+  HuffmanDecodeState state
+      = { .bit = { .bits = 0, .bits_avail = 0 },
+          .out = { .buffer = output, .pos = &out_pos, .size = output_size },
+          .input = input,
+          .in_pos = &in_pos,
+          .input_len = input_len };
 
-  while (in_pos < input_len || bits_avail >= HUFFMAN_MIN_CODE_BITS)
+  while (in_pos < input_len || state.bit.bits_avail >= HUFFMAN_MIN_CODE_BITS)
     {
-      int res = process_next_huffman_symbol (&bits,
-                                             &bits_avail,
-                                             &in_pos,
-                                             input_len,
-                                             input,
-                                             &out_pos,
-                                             output_size,
-                                             output);
+      int res = process_next_huffman_symbol (&state);
       if (res == DECODE_ERROR)
         return -1;
       if (res != DECODE_SYMBOL)
         break;
     }
 
-  if (!validate_decode_termination (bits, bits_avail, in_pos, input_len))
+  if (!validate_decode_termination (
+          state.bit.bits, state.bit.bits_avail, in_pos, input_len))
     return -1;
 
   return (ssize_t)out_pos;
