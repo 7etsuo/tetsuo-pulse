@@ -912,6 +912,27 @@ SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
  * full message context for resolution.
  */
 
+/*
+ * Parse SOA fixed 32-bit fields (SERIAL, REFRESH, RETRY, EXPIRE, MINIMUM)
+ *
+ * Extracts the five fixed-size fields from SOA RDATA, starting at the
+ * specified offset. All fields are 32-bit values in network byte order.
+ */
+static void
+parse_soa_fixed_fields (const unsigned char *msg, size_t offset,
+                        SocketDNS_SOA *soa)
+{
+  soa->serial = dns_unpack_be32 (msg + offset);
+  offset += 4;
+  soa->refresh = dns_unpack_be32 (msg + offset);
+  offset += 4;
+  soa->retry = dns_unpack_be32 (msg + offset);
+  offset += 4;
+  soa->expire = dns_unpack_be32 (msg + offset);
+  offset += 4;
+  soa->minimum = dns_unpack_be32 (msg + offset);
+}
+
 int
 SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
                            const SocketDNS_RR *rr, SocketDNS_SOA *soa)
@@ -963,24 +984,8 @@ SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
   if (offset + DNS_SOA_FIXED_SIZE > msglen)
     return -1;
 
-  /* Extract SERIAL (32-bit, network byte order) */
-  soa->serial = dns_unpack_be32(msg + offset);
-  offset += 4;
-
-  /* Extract REFRESH (32-bit, network byte order) */
-  soa->refresh = dns_unpack_be32(msg + offset);
-  offset += 4;
-
-  /* Extract RETRY (32-bit, network byte order) */
-  soa->retry = dns_unpack_be32(msg + offset);
-  offset += 4;
-
-  /* Extract EXPIRE (32-bit, network byte order) */
-  soa->expire = dns_unpack_be32(msg + offset);
-  offset += 4;
-
-  /* Extract MINIMUM (32-bit, network byte order) */
-  soa->minimum = dns_unpack_be32(msg + offset);
+  /* Parse the five 32-bit fixed fields */
+  parse_soa_fixed_fields (msg, offset, soa);
 
   return 0;
 }
