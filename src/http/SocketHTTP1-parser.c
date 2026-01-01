@@ -1471,6 +1471,48 @@ scan_header_name (const char *p, const char *end)
   return end;
 }
 
+/* Process a chunk of header name data with length checks
+ * Returns HTTP1_OK on success (caller should update p and continue)
+ * Returns error code on failure (caller should return immediately)
+ */
+static inline SocketHTTP1_Result
+process_header_name_chunk (SocketHTTP1_Parser_T parser,
+                            const char *data,
+                            const char *chunk_start,
+                            size_t chunk_len,
+                            size_t *consumed)
+{
+  /* Guard clause: empty chunk - nothing to process */
+  if (chunk_len == 0)
+    return HTTP1_OK;
+
+  /* Guard clause: line length limit exceeded */
+  if (parser->header_line_length + chunk_len > parser->config.max_header_line)
+    {
+      set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+      *consumed = (size_t)(chunk_start - data);
+      return parser->error;
+    }
+
+  /* Append chunk to name buffer */
+  if (http1_tokenbuf_append_block (&parser->name_buf,
+                                   parser->arena,
+                                   chunk_start,
+                                   chunk_len,
+                                   parser->config.max_header_name)
+      < 0)
+    {
+      set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
+      *consumed = (size_t)(chunk_start - data);
+      return parser->error;
+    }
+
+  /* Update counters */
+  parser->line_length += chunk_len;
+  parser->header_line_length += chunk_len;
+  return HTTP1_OK;
+}
+
 static SocketHTTP1_Result
 parse_headers_loop (SocketHTTP1_Parser_T parser,
                     const char *data,
@@ -1546,31 +1588,14 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
         {
           const char *name_end = scan_header_name (p, end);
           size_t chunk_len = (size_t)(name_end - p);
+          SocketHTTP1_Result result;
+
+          result = process_header_name_chunk (parser, data, p, chunk_len, consumed);
+          if (result != HTTP1_OK)
+            return result;
 
           if (chunk_len > 0)
             {
-              if (parser->header_line_length + chunk_len
-                  > parser->config.max_header_line)
-                {
-                  set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-                  *consumed = (size_t)(p - data);
-                  return parser->error;
-                }
-
-              if (http1_tokenbuf_append_block (&parser->name_buf,
-                                               parser->arena,
-                                               p,
-                                               chunk_len,
-                                               parser->config.max_header_name)
-                  < 0)
-                {
-                  set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
-                  *consumed = (size_t)(p - data);
-                  return parser->error;
-                }
-
-              parser->line_length += chunk_len;
-              parser->header_line_length += chunk_len;
               p = name_end;
               continue;
             }
