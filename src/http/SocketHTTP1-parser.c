@@ -659,10 +659,17 @@ parse_content_length (SocketHTTP_Headers_T headers)
   return cl_val;
 }
 
+/* HTTP/1.1 token delimiter predicate (space, tab, comma per RFC 9110) */
+static inline int
+http1_is_token_delimiter (char c)
+{
+  return c == ' ' || c == '\t' || c == ',';
+}
+
 static const char *
 http1_skip_token_delimiters (const char *p)
 {
-  while (*p == ' ' || *p == '\t' || *p == ',')
+  while (http1_is_token_delimiter (*p))
     p++;
   return p;
 }
@@ -671,7 +678,7 @@ static size_t
 http1_extract_token_bounds (const char *start, const char **end)
 {
   const char *p = start;
-  while (*p && *p != ',' && *p != ' ' && *p != '\t')
+  while (*p && !http1_is_token_delimiter (*p))
     p++;
   *end = p;
   return (size_t)(p - start);
