@@ -287,6 +287,15 @@ int
 connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn);
 void connection_close (SocketHTTPServer_T server, ServerConnection *conn);
 void connection_free_pending (SocketHTTPServer_T server);
+ServerConnection *connection_new (SocketHTTPServer_T server, Socket_T socket);
+
+/* Event loop helpers (SocketHTTPServer.c) */
+int server_check_connection_timeout (SocketHTTPServer_T server,
+                                     ServerConnection *conn,
+                                     int64_t now);
+int server_process_client_event (SocketHTTPServer_T server,
+                                 ServerConnection *conn,
+                                 unsigned events);
 
 int
 server_run_validator_early (SocketHTTPServer_T server, ServerConnection *conn);
