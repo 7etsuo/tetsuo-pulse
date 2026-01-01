@@ -53,6 +53,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 /* Range header prefix constant */
 #define RANGE_HEADER_PREFIX "bytes="
 
+/* HTTP date format buffer size (RFC 7231) */
+#ifndef HTTP_DATE_BUFFER_SIZE
+#define HTTP_DATE_BUFFER_SIZE 30
+#endif
+
 /* MIME type mappings */
 static const struct
 {
@@ -198,7 +203,7 @@ validate_static_path (const char *path)
 /**
  * format_http_date - Format time as HTTP-date (RFC 7231)
  * @t: Time to format
- * @buf: Output buffer (must be at least 30 bytes)
+ * @buf: Output buffer (must be at least HTTP_DATE_BUFFER_SIZE bytes)
  *
  * Returns: Pointer to buf
  */
@@ -207,7 +212,7 @@ format_http_date (time_t t, char *buf)
 {
   struct tm tm;
   gmtime_r (&t, &tm);
-  strftime (buf, 30, "%a, %d %b %Y %H:%M:%S GMT", &tm);
+  strftime (buf, HTTP_DATE_BUFFER_SIZE, "%a, %d %b %Y %H:%M:%S GMT", &tm);
   return buf;
 }
 
