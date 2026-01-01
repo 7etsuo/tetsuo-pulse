@@ -623,19 +623,21 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
     }
 
   /* Set Content-Length for non-streaming responses */
-  if (conn->response_body_len > 0 && !conn->response_streaming)
+  if (conn->response_body_len <= 0 || conn->response_streaming)
+    goto serialize_response;
+
+  char cl[HTTPSERVER_CONTENT_LENGTH_BUF_SIZE];
+  int ret = snprintf (cl, sizeof (cl), "%zu", conn->response_body_len);
+  if (ret < 0 || ret >= (int)sizeof (cl))
     {
-      char cl[HTTPSERVER_CONTENT_LENGTH_BUF_SIZE];
-      int ret = snprintf (cl, sizeof (cl), "%zu", conn->response_body_len);
-      if (ret < 0 || ret >= (int)sizeof (cl))
-        {
-          /* Defensive check: should never happen with 32-byte buffer for
-           * size_t, but handle gracefully if buffer size assumptions change. */
-          conn->state = CONN_STATE_CLOSED;
-          return;
-        }
-      SocketHTTP_Headers_set (conn->response_headers, "Content-Length", cl);
+      /* Defensive check: should never happen with 32-byte buffer for
+       * size_t, but handle gracefully if buffer size assumptions change. */
+      conn->state = CONN_STATE_CLOSED;
+      return;
     }
+  SocketHTTP_Headers_set (conn->response_headers, "Content-Length", cl);
+
+serialize_response:
 
   len = SocketHTTP1_serialize_response (&response, buf, sizeof (buf));
   if (len < 0)
