@@ -787,6 +787,26 @@ has_other_transfer_coding (SocketHTTP_Headers_T headers)
   return 0;
 }
 
+/* Validate chunked is last in all Transfer-Encoding headers */
+static int
+validate_chunked_is_last (SocketHTTP_Headers_T headers)
+{
+  const char *te_values[SOCKETHTTP_MAX_HEADERS];
+  size_t count = SocketHTTP_Headers_get_all_n (headers,
+                                               "Transfer-Encoding",
+                                               STRLEN_LIT ("Transfer-Encoding"),
+                                               te_values,
+                                               SOCKETHTTP_MAX_HEADERS);
+
+  for (size_t i = 0; i < count; i++)
+    {
+      if (!te_chunked_is_last (te_values[i]))
+        return 0;
+    }
+
+  return 1;
+}
+
 static void
 set_body_mode_chunked (SocketHTTP1_Parser_T parser)
 {
@@ -849,34 +869,25 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
    * validation */
   if (has_te)
     {
+      /* Early return: no chunked encoding */
       if (!has_chunked_encoding (parser->headers))
         {
           if (parser->config.strict_mode)
             return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
           set_body_mode_until_close (parser);
+          return HTTP1_OK;
         }
-      else
-        {
-          if (parser->config.strict_mode
-              && has_other_transfer_coding (parser->headers))
-            return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
 
-          /* Validate chunked is last per RFC 9112 */
-          const char *te_values[SOCKETHTTP_MAX_HEADERS];
-          size_t count
-              = SocketHTTP_Headers_get_all_n (parser->headers,
-                                              "Transfer-Encoding",
-                                              STRLEN_LIT ("Transfer-Encoding"),
-                                              te_values,
-                                              SOCKETHTTP_MAX_HEADERS);
-          for (size_t i = 0; i < count; i++)
-            {
-              if (!te_chunked_is_last (te_values[i]))
-                return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
-            }
+      /* Early return: unsupported transfer codings in strict mode */
+      if (parser->config.strict_mode
+          && has_other_transfer_coding (parser->headers))
+        return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
 
-          set_body_mode_chunked (parser);
-        }
+      /* Early return: chunked not last per RFC 9112 */
+      if (!validate_chunked_is_last (parser->headers))
+        return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+
+      set_body_mode_chunked (parser);
       return HTTP1_OK;
     }
 
