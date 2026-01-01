@@ -94,6 +94,11 @@ typedef struct
 
 #define HPACK_LITERAL_WITHOUT_INDEX_VAL 0x00
 
+/* HPACK decompression bomb protection limits (RFC 7541 §7.1) */
+#define HPACK_DEFAULT_EXPANSION_RATIO      10.0
+#define HPACK_DEFAULT_EXPANSION_MULTIPLIER 10
+#define HPACK_DEFAULT_MAX_OUTPUT_BYTES     (1024 * 1024)  /* 1MB */
+
 /* Field type enumeration for decode dispatch */
 typedef enum
 {
@@ -900,12 +905,13 @@ SocketHPACK_decoder_config_defaults (SocketHPACK_DecoderConfig *config)
   config->max_table_size = SOCKETHPACK_DEFAULT_TABLE_SIZE;
   config->max_header_size = SOCKETHPACK_MAX_HEADER_SIZE;
   config->max_header_list_size = SOCKETHPACK_MAX_HEADER_LIST_SIZE;
-  config->max_expansion_ratio = 10.0;
+  config->max_expansion_ratio = HPACK_DEFAULT_EXPANSION_RATIO;
   /* Default: 1MB or 10x header_list_size, whichever is smaller */
   config->max_output_bytes
-      = (SOCKETHPACK_MAX_HEADER_LIST_SIZE * 10 < (1024 * 1024))
-            ? SOCKETHPACK_MAX_HEADER_LIST_SIZE * 10
-            : (1024 * 1024);
+      = (SOCKETHPACK_MAX_HEADER_LIST_SIZE * HPACK_DEFAULT_EXPANSION_MULTIPLIER
+         < HPACK_DEFAULT_MAX_OUTPUT_BYTES)
+            ? SOCKETHPACK_MAX_HEADER_LIST_SIZE * HPACK_DEFAULT_EXPANSION_MULTIPLIER
+            : HPACK_DEFAULT_MAX_OUTPUT_BYTES;
 }
 
 /* ============================================================================
