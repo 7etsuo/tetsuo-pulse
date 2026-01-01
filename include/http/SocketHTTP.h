@@ -138,6 +138,31 @@
 #define HTTPS_DEFAULT_PORT 443
 
 /**
+ * @brief ASCII character constants for HTTP validation.
+ *
+ * Used for header validation and protocol parsing per RFC 9110/9113.
+ */
+#define HTTP_CHAR_NUL   0x00 /**< Null character (prohibited in headers) */
+#define HTTP_CHAR_CR    0x0D /**< Carriage return (prohibited in headers) */
+#define HTTP_CHAR_LF    0x0A /**< Line feed (prohibited in headers) */
+#define HTTP_CHAR_SPACE 0x20 /**< Space character */
+#define HTTP_CHAR_DEL   0x7F /**< Delete character (prohibited in headers) */
+
+/**
+ * @brief Uppercase letter range (ASCII).
+ *
+ * Used for case validation in HTTP/2 field names (RFC 9113 §8.2.1).
+ */
+#define HTTP_CHAR_UPPER_A 0x41 /**< 'A' */
+#define HTTP_CHAR_UPPER_Z 0x5A /**< 'Z' */
+
+/**
+ * @brief HTTP status code constraints per RFC 9110.
+ */
+#define HTTP_STATUS_CODE_MIN 100 /**< Minimum valid HTTP status code */
+#define HTTP_STATUS_CODE_MAX 599 /**< Maximum valid HTTP status code */
+
+/**
  * @brief Generic HTTP module failure.
  *
  * Use for general errors in HTTP core utilities. Specific errors should use

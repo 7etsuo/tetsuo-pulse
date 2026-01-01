@@ -27,8 +27,11 @@
 #define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* HTTP/2 header validation constants */
-#define HTTP2_TE_HEADER_LEN 2
-#define DECIMAL_BASE 10
+#define HTTP2_TE_HEADER_LEN     2
+#define HTTP2_STATUS_CODE_LEN   3
+#define HTTP2_TRAILERS_LEN      STRLEN_LIT ("trailers")
+#define HTTP2_CONNECT_METHOD_LEN STRLEN_LIT ("CONNECT")
+#define DECIMAL_BASE            10
 
 /*
  * RFC 9113 §8.2.2: Connection-Specific Header Fields
@@ -87,7 +90,7 @@ http2_field_has_uppercase (const char *name, size_t len)
   for (size_t i = 0; i < len; i++)
     {
       unsigned char c = (unsigned char)name[i];
-      if (c >= 'A' && c <= 'Z')
+      if (c >= HTTP_CHAR_UPPER_A && c <= HTTP_CHAR_UPPER_Z)
         return 1;
     }
   return 0;
@@ -99,8 +102,8 @@ http2_field_has_prohibited_chars (const char *data, size_t len)
   for (size_t i = 0; i < len; i++)
     {
       unsigned char c = (unsigned char)data[i];
-      /* NUL (0x00), CR (0x0D), LF (0x0A) are prohibited */
-      if (c == 0x00 || c == 0x0D || c == 0x0A)
+      /* NUL, CR, LF are prohibited */
+      if (c == HTTP_CHAR_NUL || c == HTTP_CHAR_CR || c == HTTP_CHAR_LF)
         return 1;
     }
   return 0;
@@ -125,15 +128,15 @@ http2_field_name_has_prohibited_chars (const char *name, size_t len)
       unsigned char c = (unsigned char)name[i];
 
       /* 0x00-0x20: NUL, control characters (including TAB), and space */
-      if (c <= 0x20)
+      if (c <= HTTP_CHAR_SPACE)
         return 1;
 
       /* 0x41-0x5A: Uppercase A-Z */
-      if (c >= 0x41 && c <= 0x5A)
+      if (c >= HTTP_CHAR_UPPER_A && c <= HTTP_CHAR_UPPER_Z)
         return 1;
 
       /* 0x7F-0xFF: DEL and extended ASCII */
-      if (c >= 0x7F)
+      if (c >= HTTP_CHAR_DEL)
         return 1;
 
       /* Colon only allowed as first character (pseudo-headers) */
@@ -199,7 +202,7 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
     size_t len;
   } *entry = found;
 
-  if (entry->len == 2) /* "te" */
+  if (entry->len == HTTP2_TE_HEADER_LEN) /* "te" */
     return 0;
 
   return 1; /* Forbidden */
@@ -213,7 +216,8 @@ http2_validate_te_header (const char *value, size_t len)
     return 0;
 
   /* TE must be exactly "trailers" */
-  if (len == 8 && memcmp (value, "trailers", 8) == 0)
+  if (len == HTTP2_TRAILERS_LEN
+      && memcmp (value, "trailers", HTTP2_TRAILERS_LEN) == 0)
     return 0;
 
   /* Any other value is invalid in HTTP/2 */
@@ -245,7 +249,8 @@ http2_validate_regular_header (const SocketHPACK_Header *header)
     return -1;
 
   /* Special TE header validation */
-  if (header->name_len == 2 && memcmp (header->name, "te", 2) == 0)
+  if (header->name_len == STRLEN_LIT ("te")
+      && memcmp (header->name, "te", STRLEN_LIT ("te")) == 0)
     {
       if (http2_validate_te_header (header->value, header->value_len) != 0)
         return -1;
@@ -460,15 +465,15 @@ int
 http2_parse_status_code (const char *value, size_t len, int *status)
 {
   /* RFC 9113 §8.3.2: :status must be a 3-digit code */
-  if (status == NULL || len != 3)
+  if (status == NULL || len != HTTP2_STATUS_CODE_LEN)
     return -1;
 
   uint64_t code;
-  if (parse_decimal_uint64 (value, len, &code, 599) < 0)
+  if (parse_decimal_uint64 (value, len, &code, HTTP_STATUS_CODE_MAX) < 0)
     return -1;
 
   /* Valid HTTP status codes are 100-599 */
-  if (code < 100)
+  if (code < HTTP_STATUS_CODE_MIN)
     return -1;
 
   *status = (int)code;
@@ -505,7 +510,8 @@ http2_validate_method_header (const SocketHPACK_Header *h,
   state->has_method = 1;
 
   /* Track CONNECT method for RFC 9113/8441 pseudo-header rules */
-  if (h->value_len == 7 && memcmp (h->value, "CONNECT", 7) == 0)
+  if (h->value_len == HTTP2_CONNECT_METHOD_LEN
+      && memcmp (h->value, "CONNECT", HTTP2_CONNECT_METHOD_LEN) == 0)
     state->is_connect_method = 1;
 
   /* Method must be valid HTTP method for requests */
