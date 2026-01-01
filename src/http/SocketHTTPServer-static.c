@@ -339,10 +339,10 @@ server_serve_static_file (SocketHTTPServer_T server,
 {
   char full_path[HTTPSERVER_STATIC_MAX_PATH];
   char resolved_path[HTTPSERVER_STATIC_MAX_PATH];
-  char date_buf[32];
-  char last_modified_buf[32];
+  char date_buf[SOCKETHTTP_DATE_BUFSIZE];
+  char last_modified_buf[SOCKETHTTP_DATE_BUFSIZE];
   char content_length_buf[32];
-  char content_range_buf[64];
+  char content_range_buf[SOCKETHTTP_CONTENT_RANGE_BUFSIZE];
   struct stat st;
   const char *mime_type;
   const char *if_modified_since;

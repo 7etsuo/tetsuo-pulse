@@ -124,6 +124,15 @@
 #define SOCKETHTTP_DATE_BUFSIZE 30
 
 /**
+ * @brief Recommended buffer size for Content-Range header formatting.
+ *
+ * Supports "bytes START-END/TOTAL" format with up to 20-digit numbers.
+ * Format: "bytes " (6) + START (20) + "-" (1) + END (20) + "/" (1) + TOTAL
+ * (20) = 68 bytes + null terminator requires 69, rounded to 80 for safety.
+ */
+#define SOCKETHTTP_CONTENT_RANGE_BUFSIZE 80
+
+/**
  * @brief Default HTTP port per RFC 9110 Section 4.2.3.
  *
  * Standard port for http:// scheme. Used when port is omitted in URI.
