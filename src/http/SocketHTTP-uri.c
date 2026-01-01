@@ -923,7 +923,7 @@ SocketHTTP_URI_decode (const char *input,
           unsigned char hi = SOCKETHTTP_HEX_VALUE (input[i + 1]);
           unsigned char lo = SOCKETHTTP_HEX_VALUE (input[i + 2]);
 
-          if (hi == 255 || lo == 255)
+          if (hi == HEX_INVALID || lo == HEX_INVALID)
             return -1;
 
           if (out_len + 1 > output_size)
@@ -1093,7 +1093,7 @@ validate_pct_encoded (const char *s, size_t len)
             return URI_PARSE_ERROR;
           unsigned char hi = SOCKETHTTP_HEX_VALUE (s[i + 1]);
           unsigned char lo = SOCKETHTTP_HEX_VALUE (s[i + 2]);
-          if (hi == 255 || lo == 255)
+          if (hi == HEX_INVALID || lo == HEX_INVALID)
             return URI_PARSE_ERROR;
           i += 3;
         }
@@ -1335,7 +1335,7 @@ parse_quoted_value (const char *p,
 
       p++;
       unsigned char esc = (unsigned char)*p;
-      if (esc < 0x20 || esc == 0x7F)
+      if (is_control_char (esc))
         {
           *value_start = NULL;
           *value_len = 0;
