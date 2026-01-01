@@ -136,10 +136,22 @@
  *   }
  */
 
-/** Mutex initialization states */
-#define SOCKET_MUTEX_UNINITIALIZED 0
-#define SOCKET_MUTEX_INITIALIZED 1
-#define SOCKET_MUTEX_SHUTDOWN (-1)
+/**
+ * @brief Mutex initialization states.
+ * @ingroup foundation
+ *
+ * Tracks the lifecycle of a mutex to ensure safe cleanup.
+ * Using an enum instead of #defines provides:
+ * - Type safety (compiler catches mismatched types)
+ * - Debugger visibility (shows state names, not raw integers)
+ * - Self-documentation (groups related constants)
+ */
+typedef enum
+{
+  SOCKET_MUTEX_SHUTDOWN = -1,     /**< Mutex destroyed, module shutting down */
+  SOCKET_MUTEX_UNINITIALIZED = 0, /**< Mutex not yet initialized */
+  SOCKET_MUTEX_INITIALIZED = 1    /**< Mutex ready for use */
+} SocketMutexState;
 
 /**
  * @brief SOCKET_MUTEX_ARENA_FIELDS - Fields to embed in managed structs.
@@ -152,7 +164,7 @@
 #define SOCKET_MUTEX_ARENA_FIELDS \
   pthread_mutex_t mutex;          \
   Arena_T arena;                  \
-  int initialized
+  SocketMutexState initialized
 
 /**
  * @brief SOCKET_MUTEX_ARENA_INIT - Initialize mutex and set state.
