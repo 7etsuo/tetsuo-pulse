@@ -147,7 +147,7 @@ validate_static_path (const char *path)
   p = path;
   while (*p != '\0')
     {
-      /* Check for ".." component */
+      /* Not a dot - skip to next component */
       if (p[0] != '.')
         {
           p = skip_to_next_component (p);
@@ -158,13 +158,19 @@ validate_static_path (const char *path)
       if (p[1] == '.' && (p[2] == '/' || p[2] == '\0'))
         return 0;
 
-      /* Handle "." (valid, skip it) */
-      if (p[1] == '/' || p[1] == '\0')
+      /* Handle "." (valid, skip it) - flatten nesting with direct calculation */
+      if (p[1] == '/')
         {
-          p += (p[1] == '/') ? 2 : 1;
+          p += 2;
+          continue;
+        }
+      if (p[1] == '\0')
+        {
+          p += 1;
           continue;
         }
 
+      /* Dot followed by other characters (e.g., ".gitignore") */
       p = skip_to_next_component (p);
     }
 
