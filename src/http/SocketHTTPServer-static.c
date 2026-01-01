@@ -205,6 +205,88 @@ format_http_date (time_t t, char *buf)
   return buf;
 }
 
+/**
+ * parse_http_date - Parse HTTP-date string per RFC 7231
+ * @date_str: Date string from HTTP header
+ *
+ * Tries three formats in order:
+ * 1. RFC 7231: "Sun, 06 Nov 1994 08:49:37 GMT"
+ * 2. RFC 850:  "Sunday, 06-Nov-94 08:49:37 GMT"
+ * 3. ANSI C:   "Sun Nov  6 08:49:37 1994"
+ *
+ * Returns: Parsed timestamp, or -1 if parsing fails
+ */
+static time_t
+parse_http_date (const char *date_str)
+{
+  struct tm tm;
+
+  if (date_str == NULL)
+    return -1;
+
+  memset (&tm, 0, sizeof (tm));
+
+  /* Try RFC 7231 format: "Sun, 06 Nov 1994 08:49:37 GMT" */
+  if (strptime (date_str, "%a, %d %b %Y %H:%M:%S GMT", &tm) != NULL)
+    return timegm (&tm);
+
+  memset (&tm, 0, sizeof (tm));
+
+  /* Try RFC 850 format: "Sunday, 06-Nov-94 08:49:37 GMT" */
+  if (strptime (date_str, "%A, %d-%b-%y %H:%M:%S GMT", &tm) != NULL)
+    return timegm (&tm);
+
+  memset (&tm, 0, sizeof (tm));
+
+  /* Try ANSI C format: "Sun Nov  6 08:49:37 1994" */
+  if (strptime (date_str, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
+    return timegm (&tm);
+
+  return -1;
+}
+
+/**
+ * handle_conditional_get - Process If-Modified-Since and send 304 if needed
+ * @conn: Connection to respond on
+ * @if_modified_since: If-Modified-Since header value
+ * @file_mtime: File modification time
+ * @date_buf: Buffer for Date header (at least 32 bytes)
+ * @last_modified_buf: Buffer for Last-Modified header (at least 32 bytes)
+ *
+ * Returns: 1 if 304 Not Modified sent, 0 if file should be sent
+ */
+static int
+handle_conditional_get (ServerConnection *conn,
+                        const char *if_modified_since,
+                        time_t file_mtime,
+                        char *date_buf,
+                        char *last_modified_buf)
+{
+  time_t if_modified_time;
+
+  if (if_modified_since == NULL)
+    return 0;
+
+  if_modified_time = parse_http_date (if_modified_since);
+  if (if_modified_time <= 0)
+    return 0;
+
+  if (file_mtime > if_modified_time)
+    return 0;
+
+  /* File not modified since - return 304 */
+  conn->response_status = 304;
+  conn->response_body = NULL;
+  conn->response_body_len = 0;
+  SocketHTTP_Headers_set (conn->response_headers,
+                          "Date",
+                          format_http_date (time (NULL), date_buf));
+  SocketHTTP_Headers_set (conn->response_headers,
+                          "Last-Modified",
+                          format_http_date (file_mtime, last_modified_buf));
+  return 1;
+}
+
 
 /**
  * get_mime_type - Determine MIME type from file path extension
@@ -391,7 +473,6 @@ server_serve_static_file (SocketHTTPServer_T server,
   const char *mime_type;
   const char *if_modified_since;
   const char *range_header;
-  time_t if_modified_time;
   off_t range_start = 0;
   off_t range_end = 0;
   int use_range = 0;
@@ -450,48 +531,10 @@ server_serve_static_file (SocketHTTPServer_T server,
   /* Check If-Modified-Since header */
   if_modified_since
       = SocketHTTP_Headers_get (conn->request->headers, "If-Modified-Since");
-  if (if_modified_since != NULL)
+  if (handle_conditional_get (
+          conn, if_modified_since, st.st_mtime, date_buf, last_modified_buf))
     {
-      /* Parse HTTP date (try multiple formats per RFC 7231) */
-      struct tm tm;
-      memset (&tm, 0, sizeof (tm));
-
-      if_modified_time = -1;
-
-      /* Try RFC 7231 format: "Sun, 06 Nov 1994 08:49:37 GMT" */
-      if (strptime (if_modified_since, "%a, %d %b %Y %H:%M:%S GMT", &tm)
-          != NULL)
-        {
-          if_modified_time = timegm (&tm);
-        }
-      /* Try RFC 850 format: "Sunday, 06-Nov-94 08:49:37 GMT" */
-      else if (strptime (if_modified_since, "%A, %d-%b-%y %H:%M:%S GMT", &tm)
-               != NULL)
-        {
-          if_modified_time = timegm (&tm);
-        }
-      /* Try ANSI C format: "Sun Nov  6 08:49:37 1994" */
-      else if (strptime (if_modified_since, "%a %b %d %H:%M:%S %Y", &tm)
-               != NULL)
-        {
-          if_modified_time = timegm (&tm);
-        }
-
-      if (if_modified_time > 0 && st.st_mtime <= if_modified_time)
-        {
-          /* File not modified since - return 304 */
-          conn->response_status = 304;
-          conn->response_body = NULL;
-          conn->response_body_len = 0;
-          SocketHTTP_Headers_set (conn->response_headers,
-                                  "Date",
-                                  format_http_date (time (NULL), date_buf));
-          SocketHTTP_Headers_set (
-              conn->response_headers,
-              "Last-Modified",
-              format_http_date (st.st_mtime, last_modified_buf));
-          return 1; /* Handled */
-        }
+      return 1; /* 304 Not Modified sent */
     }
 
   /* Check Range header for partial content */
