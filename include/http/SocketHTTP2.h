@@ -140,6 +140,12 @@
 /* Frame/Protocol Constants */
 
 #define HTTP2_FRAME_HEADER_SIZE 9
+
+/* Frame header field offsets (RFC 9113 Section 4.1) */
+#define HTTP2_FRAME_OFFSET_LENGTH 0     /* 3-byte length field */
+#define HTTP2_FRAME_OFFSET_TYPE 3       /* 1-byte type field */
+#define HTTP2_FRAME_OFFSET_FLAGS 4      /* 1-byte flags field */
+#define HTTP2_FRAME_OFFSET_STREAM_ID 5  /* 4-byte stream ID field */
 #define HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE 4
 #define HTTP2_PUSH_PROMISE_ID_SIZE 4
 #define HTTP2_PRIORITY_PAYLOAD_SIZE 5

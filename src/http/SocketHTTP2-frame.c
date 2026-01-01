@@ -167,13 +167,13 @@ SocketHTTP2_frame_header_parse (const unsigned char *data,
     return -1;
 
   /* Length: 24-bit big-endian */
-  header->length = http2_unpack_be24 (data + 0);
+  header->length = http2_unpack_be24 (data + HTTP2_FRAME_OFFSET_LENGTH);
 
-  header->type = data[3];
-  header->flags = data[4];
+  header->type = data[HTTP2_FRAME_OFFSET_TYPE];
+  header->flags = data[HTTP2_FRAME_OFFSET_FLAGS];
 
   /* Stream ID: 31-bit big-endian (R bit is reserved, must be masked) */
-  header->stream_id = http2_unpack_stream_id (data + 5);
+  header->stream_id = http2_unpack_stream_id (data + HTTP2_FRAME_OFFSET_STREAM_ID);
 
   return 0;
 }
@@ -186,13 +186,13 @@ SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
     return;
 
   /* Length: 24-bit big-endian */
-  http2_pack_be24 (data + 0, header->length);
+  http2_pack_be24 (data + HTTP2_FRAME_OFFSET_LENGTH, header->length);
 
-  data[3] = header->type;
-  data[4] = header->flags;
+  data[HTTP2_FRAME_OFFSET_TYPE] = header->type;
+  data[HTTP2_FRAME_OFFSET_FLAGS] = header->flags;
 
   /* Stream ID: 31-bit big-endian (R bit always 0) */
-  http2_pack_stream_id (data + 5, header->stream_id);
+  http2_pack_stream_id (data + HTTP2_FRAME_OFFSET_STREAM_ID, header->stream_id);
 }
 
 static SocketHTTP2_ErrorCode
