@@ -228,9 +228,21 @@ Report saved to: <directory>/TODO_ANALYSIS.md
 
 Analyze code for readability improvements focusing on:
 1. **Nested if statements** that should be flattened to guard clauses
-2. **Single-use subroutines** that are candidates for inlining
+2. **Single-use subroutines** that violate function design principles (see criteria below)
+3. **Magic numbers** that should be extracted to named constants/MACROs
 
-**Creates GitHub issues for all verified findings.**
+**Creates GitHub issues for all verified findings** (same pattern as TODO mode).
+
+## Function Design Criteria (from CLAUDE.md)
+
+When evaluating functions for extraction or inlining, apply these criteria:
+
+1. **Does it do ONE cohesive thing?** A function should have a single, clear purpose
+2. **Can you name it clearly without "and" or "or"?** If the name requires conjunctions, it's doing too much
+3. **Is it at a consistent abstraction level?** Don't mix high-level logic with low-level bit manipulation
+4. **Would extracting improve readability, or just move code?** Extract when it adds clarity, not to hit arbitrary line counts
+
+Use function length as a smell detector ("this is long, is it doing too much?"), not as a target. A well-written 20-line function that does one cohesive thing is better than 4 tiny functions where you bounce around to follow the logic.
 
 ## Refactor Mode Architecture
 
@@ -322,7 +334,7 @@ Task:
     Repository: 7etsuo/tetsuo-socket
     Analysis Type: REFACTOR (readability issues only)
 
-    Focus ONLY on these two issue types:
+    Focus on these THREE issue types:
 
     1. NESTED IF STATEMENTS (3+ depth)
        - Find deeply nested conditionals (if/else chains)
@@ -330,11 +342,24 @@ Task:
        - Pattern: DEEP_NESTING_[depth]
        - Recommendation: Flatten with guard clauses/early returns
 
-    2. SINGLE-USE SUBROUTINES
-       - Find static functions called exactly once
-       - Severity: HIGH (<30 lines, inline candidate), MEDIUM (30-100 lines, review needed)
-       - Pattern: SINGLE_USE_INLINE or SINGLE_USE_REVIEW
-       - Recommendation: Inline small functions, document justification for larger ones
+    2. SINGLE-USE SUBROUTINES (apply Function Design Criteria)
+       - Find static functions that FAIL the 4 criteria:
+         a) Does NOT do one cohesive thing
+         b) Name requires "and" or "or" to describe
+         c) Mixes abstraction levels (high-level + low-level in same function)
+         d) Extraction moved code without adding clarity
+       - Also flag: functions called exactly once AND <20 lines (inline candidates)
+       - Severity: HIGH (violates criteria), MEDIUM (inline candidate)
+       - Pattern: FUNCTION_DESIGN_VIOLATION or SINGLE_USE_INLINE
+       - Do NOT flag: well-designed single-use helpers that improve readability
+
+    3. MAGIC NUMBERS (extract to MACRO/constant)
+       - Find hardcoded numeric literals that should be named constants
+       - Examples: buffer sizes, timeouts, retry counts, bit masks, array indices
+       - Severity: HIGH (security-related: sizes, limits), MEDIUM (other constants)
+       - Pattern: MAGIC_NUMBER
+       - Recommendation: Extract to MACRO in SocketConfig.h or module header
+       - Reference: CLAUDE.md "Magic Numbers" anti-pattern section
 
     Your workflow:
     1. Analyze the file for ONLY the above readability issues
@@ -400,12 +425,25 @@ Save to: `<target>/REFACTOR_ANALYSIS.md`
 | #200 | SocketHTTP2.c:100-180 | 5 | CRITICAL |
 | #201 | SocketHTTP2.c:300-350 | 4 | HIGH |
 
-### Single-Use Subroutines ([count])
+### Function Design Violations ([count])
+
+| Issue # | File | Function | Violation | Severity |
+|---------|------|----------|-----------|----------|
+| #202 | SocketHTTP2.c | parse_and_validate | Multiple responsibilities | HIGH |
+| #203 | SocketHTTP2.c | do_work | Mixes abstraction levels | HIGH |
+
+### Single-Use Inline Candidates ([count])
 
 | Issue # | File | Function | Lines | Severity |
 |---------|------|----------|-------|----------|
-| #202 | SocketHTTP2.c | parse_value | 12 | HIGH (inline) |
-| #203 | SocketHTTP2.c | process_block | 45 | MEDIUM (review) |
+| #204 | SocketHTTP2.c | get_value | 8 | MEDIUM (inline) |
+
+### Magic Numbers ([count])
+
+| Issue # | File:Line | Value | Suggested Name | Severity |
+|---------|-----------|-------|----------------|----------|
+| #205 | SocketHTTP2.c:42 | 1024 | SOCKET_BUFFER_SIZE | HIGH |
+| #206 | SocketHTTP2.c:100 | 5 | MAX_RETRY_COUNT | MEDIUM |
 
 ## Per-File Breakdown
 
@@ -440,7 +478,11 @@ Analysis report saved to: <target>/REFACTOR_ANALYSIS.md
 
 - #200: refactor(http2): Flatten 5-level nesting in process_frame
 - #201: refactor(http2): Flatten 4-level nesting in validate_headers
-- #202: refactor(http2): Inline single-use parse_value function
+- #202: refactor(http2): Split parse_and_validate into separate functions
+- #203: refactor(http2): Separate abstraction levels in do_work
+- #204: refactor(http2): Inline single-use get_value function
+- #205: refactor(http2): Extract SOCKET_BUFFER_SIZE constant
+- #206: refactor(http2): Extract MAX_RETRY_COUNT constant
 
 **Refactor pipeline complete.**
 ```
