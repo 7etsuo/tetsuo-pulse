@@ -207,6 +207,44 @@ format_http_date (time_t t, char *buf)
 
 
 /**
+ * get_mime_type - Determine MIME type from file path extension
+ * @file_path: Path to file (extension will be extracted)
+ *
+ * Performs case-insensitive lookup of file extension against known MIME types.
+ *
+ * Returns: MIME type string, or "application/octet-stream" if unknown
+ */
+static const char *
+get_mime_type (const char *file_path)
+{
+  const char *ext;
+  size_t path_len;
+  size_t ext_len;
+
+  if (file_path == NULL)
+    return "application/octet-stream";
+
+  ext = strrchr (file_path, '.');
+  if (ext == NULL)
+    return "application/octet-stream";
+
+  path_len = strlen (file_path);
+  ext_len = path_len - (size_t)(ext - file_path);
+
+  /* Check against known extensions (case-insensitive) */
+  for (int i = 0; mime_types[i].extension != NULL; i++)
+    {
+      if (strlen (mime_types[i].extension) == ext_len
+          && strcasecmp (ext, mime_types[i].extension) == 0)
+        {
+          return mime_types[i].mime_type;
+        }
+    }
+
+  return "application/octet-stream";
+}
+
+/**
  * parse_range_header - Parse Range header for partial content
  * @range_str: Range header value (e.g., "bytes=0-499")
  * @file_size: Total file size
@@ -407,26 +445,7 @@ server_serve_static_file (SocketHTTPServer_T server,
     }
 
   /* Determine MIME type from file extension */
-  mime_type = "application/octet-stream"; /* Default for unknown types */
-  {
-    const char *ext = strrchr (resolved_path, '.');
-    if (ext != NULL)
-      {
-        size_t path_len = strlen (resolved_path);
-        size_t ext_len = path_len - (size_t)(ext - resolved_path);
-
-        /* Check against known extensions (case-insensitive) */
-        for (int i = 0; mime_types[i].extension != NULL; i++)
-          {
-            if (strlen (mime_types[i].extension) == ext_len
-                && strcasecmp (ext, mime_types[i].extension) == 0)
-              {
-                mime_type = mime_types[i].mime_type;
-                break;
-              }
-          }
-      }
-  }
+  mime_type = get_mime_type (resolved_path);
 
   /* Check If-Modified-Since header */
   if_modified_since
