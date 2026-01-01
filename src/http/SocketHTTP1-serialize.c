@@ -304,6 +304,43 @@ add_response_extras (const SocketHTTP_Response *response,
   return safe_append_crlf (buf, remaining);
 }
 
+static int
+append_host_header (const SocketHTTP_Request *request,
+                    char **buf,
+                    size_t *remaining)
+{
+  size_t auth_len;
+
+  /* Early return: no authority */
+  if (!request->authority || request->authority[0] == '\0')
+    return 0;
+
+  /* Early return: Host header already set */
+  if (request->headers && SocketHTTP_Headers_has (request->headers, "Host"))
+    return 0;
+
+  /* Append "Host: " prefix */
+  if (safe_append (buf, remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN) < 0)
+    return -1;
+
+  /* Validate authority value */
+  auth_len = strlen (request->authority);
+  if (!SocketHTTP_header_value_valid (request->authority, auth_len))
+    {
+      SOCKET_RAISE_MSG (SocketHTTP1,
+                        SocketHTTP1_SerializeError,
+                        "Invalid authority contains forbidden "
+                        "characters (CR/LF/NUL)");
+    }
+
+  /* Append authority value */
+  if (safe_append (buf, remaining, request->authority, auth_len) < 0)
+    return -1;
+
+  /* Append CRLF */
+  return safe_append_crlf (buf, remaining);
+}
+
 ssize_t
 SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
                                char *output,
@@ -328,32 +365,8 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
     return -1;
 
   /* Add optional Host header if authority present and no Host header set */
-  if (request->authority && request->authority[0] != '\0')
-    {
-      if (!request->headers
-          || !SocketHTTP_Headers_has (request->headers, "Host"))
-        {
-          if (safe_append (
-                  &p, &remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN)
-              < 0)
-            return -1;
-
-          size_t auth_len = strlen (request->authority);
-          if (!SocketHTTP_header_value_valid (request->authority, auth_len))
-            {
-              SOCKET_RAISE_MSG (SocketHTTP1,
-                                SocketHTTP1_SerializeError,
-                                "Invalid authority contains forbidden "
-                                "characters (CR/LF/NUL)");
-            }
-
-          if (safe_append (&p, &remaining, request->authority, auth_len) < 0)
-            return -1;
-
-          if (safe_append_crlf (&p, &remaining) < 0)
-            return -1;
-        }
-    }
+  if (append_host_header (request, &p, &remaining) < 0)
+    return -1;
 
   /* Add Content-Length header if needed */
   if (append_content_length_header (&p,
