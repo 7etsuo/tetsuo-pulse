@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include "core/SocketConfig.h"
+
 /**
  * @brief Check if a TTL-based entry has expired.
  * @ingroup foundation
@@ -40,7 +42,7 @@ socket_util_ttl_expired (int64_t insert_time_ms,
     return 0;
 
   int64_t age_ms = now_ms - insert_time_ms;
-  int64_t ttl_ms = (int64_t)ttl_sec * 1000;
+  int64_t ttl_ms = (int64_t)ttl_sec * SOCKET_MS_PER_SECOND;
   return age_ms >= ttl_ms;
 }
 
@@ -65,13 +67,13 @@ socket_util_ttl_remaining (int64_t insert_time_ms,
     return ttl_sec;
 
   int64_t age_ms = now_ms - insert_time_ms;
-  int64_t ttl_ms = (int64_t)ttl_sec * 1000;
+  int64_t ttl_ms = (int64_t)ttl_sec * SOCKET_MS_PER_SECOND;
   int64_t remaining_ms = ttl_ms - age_ms;
 
   if (remaining_ms <= 0)
     return 0;
 
-  return (uint32_t)(remaining_ms / 1000);
+  return (uint32_t)(remaining_ms / SOCKET_MS_PER_SECOND);
 }
 
 #endif /* SOCKETUTIL_TTL_H */

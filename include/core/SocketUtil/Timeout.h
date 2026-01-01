@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <stdint.h>
 
+#include "core/SocketUtil/Core.h"
 #include "core/SocketUtil/Time.h"
 
 /**
@@ -117,8 +118,7 @@ SocketTimeout_poll_timeout (int current_timeout_ms, int64_t deadline_ms)
   if (current_timeout_ms < 0)
     return (int)remaining;
 
-  return (current_timeout_ms < (int)remaining) ? current_timeout_ms
-                                               : (int)remaining;
+  return MIN (current_timeout_ms, (int)remaining);
 }
 
 /**
