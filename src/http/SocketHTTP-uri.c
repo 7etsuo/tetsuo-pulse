@@ -47,6 +47,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 #define MEDIATYPE_CHARSET_LEN 7
 #define MEDIATYPE_BOUNDARY_LEN 8
 
+/* RFC 7231 §5.3.1 Quality Value Constants */
+#define QUALITY_DECIMAL_BASE 10.0f /* RFC 7231 §5.3.1 decimal parsing */
+#define QUALITY_MIN 0.0f           /* RFC 7231 §5.3.1 minimum qvalue */
+#define QUALITY_MAX 1.0f           /* RFC 7231 §5.3.1 maximum qvalue */
+
 /* ============================================================================
  * Validation Forward Declarations
  * ============================================================================
@@ -1552,33 +1557,33 @@ qvalue_compare (const void *a, const void *b)
 static float
 accept_parse_quality (const char *p, const char *end, const char **out_pos)
 {
-  float quality = 0.0f;
+  float quality = QUALITY_MIN;
   const char *start = p;
 
   while (p < end && *p >= '0' && *p <= '9')
     {
-      quality = quality * 10.0f + (*p - '0');
+      quality = quality * QUALITY_DECIMAL_BASE + (*p - '0');
       p++;
     }
 
   if (p < end && *p == '.')
     {
       p++;
-      float divisor = 10.0f;
+      float divisor = QUALITY_DECIMAL_BASE;
       while (p < end && *p >= '0' && *p <= '9')
         {
           quality += (*p - '0') / divisor;
-          divisor *= 10.0f;
+          divisor *= QUALITY_DECIMAL_BASE;
           p++;
         }
     }
 
   *out_pos = (p > start) ? p : start;
 
-  if (quality < 0.0f)
-    quality = 0.0f;
-  if (quality > 1.0f)
-    quality = 1.0f;
+  if (quality < QUALITY_MIN)
+    quality = QUALITY_MIN;
+  if (quality > QUALITY_MAX)
+    quality = QUALITY_MAX;
 
   return quality;
 }
