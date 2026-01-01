@@ -20,6 +20,9 @@
 /* Compile-time string literal length (avoids strlen at runtime) */
 #define STRLEN_LIT(s) (sizeof (s) - 1)
 
+/* Decimal base for numeric conversion */
+#define HTTP1_DECIMAL_BASE 10
+
 /* clang-format off */
 
 /* Common row macros for state tables to reduce duplication */
@@ -599,9 +602,9 @@ parse_cl_value (const char *str, size_t len)
   while (i < len && http1_is_digit (p[i]))
     {
       int digit = p[i] - '0';
-      if (value > (INT64_MAX - digit) / 10)
+      if (value > (INT64_MAX - digit) / HTTP1_DECIMAL_BASE)
         return -1;
-      value = value * 10 + digit;
+      value = value * HTTP1_DECIMAL_BASE + digit;
       i++;
     }
 
