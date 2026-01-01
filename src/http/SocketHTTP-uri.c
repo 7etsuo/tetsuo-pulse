@@ -134,60 +134,6 @@ uri_alloc_component (Arena_T arena,
   return URI_PARSE_OK;
 }
 
-typedef SocketHTTP_URIResult (*ComponentValidator) (const char *s, size_t len);
-
-static SocketHTTP_URIResult
-alloc_and_validate (Arena_T arena,
-                    const char *start,
-                    const char *end,
-                    size_t max_len,
-                    ComponentValidator validator,
-                    void (*post_process) (char *str, size_t len),
-                    const char **out_str,
-                    size_t *out_len,
-                    int alloc_empty)
-{
-  *out_str = NULL;
-  *out_len = 0;
-
-  /* Handle empty input */
-  if (!start || end <= start)
-    {
-      if (!alloc_empty)
-        return URI_PARSE_OK;
-
-      char *empty = arena_strndup (arena, "", 0);
-      if (!empty)
-        return URI_PARSE_ERROR;
-
-      *out_str = empty;
-      *out_len = 0;
-      return URI_PARSE_OK;
-    }
-
-  size_t len = (size_t)(end - start);
-  if (len > max_len)
-    return URI_PARSE_TOO_LONG;
-
-  if (validator)
-    {
-      SocketHTTP_URIResult vr = validator (start, len);
-      if (vr != URI_PARSE_OK)
-        return vr;
-    }
-
-  char *copy = arena_strndup (arena, start, len);
-  if (!copy)
-    return URI_PARSE_ERROR;
-
-  if (post_process)
-    post_process (copy, len);
-
-  *out_str = copy;
-  *out_len = len;
-  return URI_PARSE_OK;
-}
-
 /* ============================================================================
  * URI Parser State Machine
  * ============================================================================
