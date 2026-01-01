@@ -100,6 +100,66 @@ parse_key (const char **pp,
 }
 
 /*
+ * Parse urgency value from Priority header (RFC 9218, RFC 8941).
+ * Parses integer in range [0-7] following RFC 8941 integer grammar.
+ * Returns parsed urgency value on success, -1 on error.
+ */
+static int
+parse_urgency_value (const char **pp, const char *end)
+{
+  const char *p = *pp;
+  int urgency = 0;
+  int digits = 0;
+
+  if (p >= end)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value");
+      return -1;
+    }
+
+  /* Parse digits (RFC 8941: integer = ["-"] 1*15DIGIT) */
+  while (p < end && *p >= '0' && *p <= '9')
+    {
+      int digit = *p - '0';
+
+      /* Check BEFORE multiplication to prevent integer overflow */
+      if (urgency > (INT_MAX - digit) / 10)
+        {
+          SOCKET_LOG_DEBUG_MSG ("Priority parse error: u value would overflow");
+          return -1;
+        }
+
+      urgency = urgency * 10 + digit;
+      digits++;
+      p++;
+
+      /* Bounds check for valid urgency range [0-7] */
+      if (urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)
+        {
+          SOCKET_LOG_DEBUG_MSG (
+              "Priority parse error: u=%d out of range [0-7]", urgency);
+          return -1;
+        }
+
+      if (digits > 15)
+        {
+          SOCKET_LOG_DEBUG_MSG (
+              "Priority parse error: invalid u value (too many digits)");
+          return -1;
+        }
+    }
+
+  if (digits == 0)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value");
+      return -1;
+    }
+
+  *pp = p;
+  return urgency;
+}
+
+/*
  * Parse Priority header field value (RFC 9218 Section 4).
  *
  * Grammar (subset of SF-Dictionary):
@@ -159,6 +219,8 @@ SocketHTTP2_Priority_parse (const char *value,
       if (key_len == 1 && *key_start == 'u')
         {
           /* Urgency parameter */
+          int urgency;
+
           p = skip_ows (p, end);
           if (p >= end || *p != '=')
             {
@@ -168,54 +230,9 @@ SocketHTTP2_Priority_parse (const char *value,
           p++; /* Skip '=' */
           p = skip_ows (p, end);
 
-          /* Parse urgency value (RFC 8941: integer = ["-"] 1*15DIGIT) */
-          int urgency = 0;
-          int digits = 0;
-
-          if (p >= end)
-            {
-              SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value");
-              return -1;
-            }
-
-          /* Parse digits */
-          while (p < end && *p >= '0' && *p <= '9')
-            {
-              int digit = *p - '0';
-
-              /* Check BEFORE multiplication to prevent integer overflow */
-              if (urgency > (INT_MAX - digit) / 10)
-                {
-                  SOCKET_LOG_DEBUG_MSG (
-                      "Priority parse error: u value would overflow");
-                  return -1;
-                }
-
-              urgency = urgency * 10 + digit;
-              digits++;
-              p++;
-
-              /* Bounds check for valid urgency range [0-7] */
-              if (urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)
-                {
-                  SOCKET_LOG_DEBUG_MSG (
-                      "Priority parse error: u=%d out of range [0-7]", urgency);
-                  return -1;
-                }
-
-              if (digits > 15)
-                {
-                  SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value "
-                                        "(too many digits)");
-                  return -1;
-                }
-            }
-
-          if (digits == 0)
-            {
-              SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value");
-              return -1;
-            }
+          urgency = parse_urgency_value (&p, end);
+          if (urgency < 0)
+            return -1;
 
           priority->urgency = (uint8_t)urgency;
           found_urgency = 1;
