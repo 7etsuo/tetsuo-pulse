@@ -33,6 +33,9 @@
 /* Stream ID size in PRIORITY_UPDATE payload (always 4 bytes) */
 #define PRIORITY_UPDATE_STREAM_ID_SIZE 4
 
+/* RFC 8941 Section 3.3.1: integer = ["-"] 1*15DIGIT */
+#define SF_INTEGER_MAX_DIGITS 15
+
 void
 SocketHTTP2_Priority_init (SocketHTTP2_Priority *priority)
 {
@@ -203,10 +206,11 @@ SocketHTTP2_Priority_parse (const char *value,
                   return -1;
                 }
 
-              if (digits > 15)
+              if (digits > SF_INTEGER_MAX_DIGITS)
                 {
                   SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value "
-                                        "(too many digits)");
+                                        "(exceeds RFC 8941 max %d digits)",
+                                        SF_INTEGER_MAX_DIGITS);
                   return -1;
                 }
             }
