@@ -203,28 +203,29 @@ httpclient_async_init (SocketHTTPClient_T client)
   TRY
   {
     client->async = SocketAsync_new (client->arena);
-    if (client->async != NULL)
+    if (client->async == NULL)
+      goto cleanup;
+
+    client->async_available = SocketAsync_is_available (client->async);
+    const char *backend = SocketAsync_backend_name (client->async);
+
+    if (client->async_available)
+      SocketLog_emitf (SOCKET_LOG_INFO,
+                       "HTTPClient",
+                       "Async I/O enabled (backend: %s)",
+                       backend);
+    else
       {
-        client->async_available = SocketAsync_is_available (client->async);
-        if (client->async_available)
-          {
-            SocketLog_emitf (SOCKET_LOG_INFO,
-                             "HTTPClient",
-                             "Async I/O enabled (backend: %s)",
-                             SocketAsync_backend_name (client->async));
-            result = 0;
-          }
-        else
-          {
-            SocketLog_emitf (
-                SOCKET_LOG_DEBUG,
-                "HTTPClient",
-                "Async I/O requested but not available (backend: %s)",
-                SocketAsync_backend_name (client->async));
-            /* Keep async context for potential fallback use */
-            result = 0;
-          }
+        SocketLog_emitf (SOCKET_LOG_DEBUG,
+                         "HTTPClient",
+                         "Async I/O requested but not available (backend: %s)",
+                         backend);
+        /* Keep async context for potential fallback use */
       }
+
+    result = 0;
+
+  cleanup:; /* Empty statement for label */
   }
   EXCEPT (SocketAsync_Failed)
   {
