@@ -655,15 +655,7 @@ SocketHTTPServer_add_static_dir (SocketHTTPServer_T server,
 
   if (route->prefix == NULL || route->directory == NULL
       || route->resolved_directory == NULL)
-    {
-      free (route->prefix);
-      free (route->directory);
-      free (route->resolved_directory);
-      free (route);
-      HTTPSERVER_ERROR_MSG ("Failed to allocate static route strings");
-      RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-      return -1;
-    }
+    goto cleanup;
 
   route->prefix_len = strlen (prefix);
   route->resolved_dir_len = strlen (resolved);
@@ -673,4 +665,13 @@ SocketHTTPServer_add_static_dir (SocketHTTPServer_T server,
   SOCKET_LOG_INFO_MSG ("Added static route: %s -> %s", prefix, directory);
 
   return 0;
+
+cleanup:
+  free (route->prefix);
+  free (route->directory);
+  free (route->resolved_directory);
+  free (route);
+  HTTPSERVER_ERROR_MSG ("Failed to allocate static route strings");
+  RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
+  return -1;
 }
