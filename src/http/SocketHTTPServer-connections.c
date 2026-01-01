@@ -59,6 +59,8 @@ static size_t connection_check_body_size_limit (size_t max_body,
 static void connection_init_request_ctx (SocketHTTPServer_T server,
                                          ServerConnection *conn,
                                          struct SocketHTTPServer_Request *ctx);
+static void connection_setup_tls (ServerConnection *conn,
+                                  SocketTLSContext_T tls_context);
 
 /* Read data from socket into connection buffer. Returns >0 bytes read, 0 on
  * EAGAIN, -1 on error/close */
@@ -769,6 +771,24 @@ connection_cleanup_partial (ServerConnection *conn, int resources_initialized)
   free (conn);
 }
 
+/* Configure TLS on connection socket. Sets up handshake state. Raises
+ * exception if TLS requested but not available at compile time. */
+static void
+connection_setup_tls (ServerConnection *conn, SocketTLSContext_T tls_context)
+{
+#if SOCKET_HAS_TLS
+  conn->tls_enabled = 1;
+  conn->tls_handshake_done = 0;
+  SocketTLS_enable (conn->socket, tls_context);
+  conn->state = CONN_STATE_TLS_HANDSHAKE;
+#else
+  (void)conn;
+  (void)tls_context;
+  HTTPSERVER_ERROR_MSG ("TLS requested but SOCKET_HAS_TLS=0");
+  RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
+#endif
+}
+
 /* Allocate and initialize new connection. On failure, cleans up and closes
  * socket */
 ServerConnection *
@@ -813,17 +833,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 
     /* Optional TLS enable: handshake is driven by server event loop. */
     if (server->config.tls_context != NULL)
-      {
-#if SOCKET_HAS_TLS
-        conn->tls_enabled = 1;
-        conn->tls_handshake_done = 0;
-        SocketTLS_enable (conn->socket, server->config.tls_context);
-        conn->state = CONN_STATE_TLS_HANDSHAKE;
-#else
-        HTTPSERVER_ERROR_MSG ("TLS requested but SOCKET_HAS_TLS=0");
-        RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-#endif
-      }
+      connection_setup_tls (conn, server->config.tls_context);
 
     resources_ok = 1;
 
