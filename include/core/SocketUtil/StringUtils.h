@@ -83,6 +83,9 @@ socket_util_arena_strdup (Arena_T arena, const char *str)
  * @param maxlen Maximum characters to copy (excluding null terminator).
  * @return Duplicated string in arena, or NULL if str is NULL or alloc fails.
  * @threadsafe Yes (if arena is thread-safe)
+ *
+ * Uses strnlen() instead of strlen() to avoid scanning beyond maxlen,
+ * which is important when str may be very long but only a prefix is needed.
  */
 static inline char *
 socket_util_arena_strndup (Arena_T arena, const char *str, size_t maxlen)
@@ -93,9 +96,7 @@ socket_util_arena_strndup (Arena_T arena, const char *str, size_t maxlen)
   if (str == NULL)
     return NULL;
 
-  len = strlen (str);
-  if (len > maxlen)
-    len = maxlen;
+  len = strnlen (str, maxlen);
 
   copy = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
   if (copy != NULL)
