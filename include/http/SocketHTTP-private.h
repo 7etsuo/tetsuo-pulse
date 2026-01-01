@@ -80,6 +80,7 @@ extern const unsigned char sockethttp_uri_unreserved[256];
 
 extern const unsigned char sockethttp_hex_value[256];
 #define SOCKETHTTP_HEX_VALUE(c) (sockethttp_hex_value[(unsigned char)(c)])
+#define HEX_INVALID 255 /* Invalid hex digit sentinel from SOCKETHTTP_HEX_VALUE */
 
 static inline const char *
 sockethttp_skip_whitespace (const char *p)
