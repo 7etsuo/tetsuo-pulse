@@ -723,7 +723,7 @@ te_chunked_is_last (const char *te_value)
     return 1; /* No chunked - valid */
 
   /* Check nothing follows "chunked" except whitespace/comma */
-  const char *after = chunked + 7;
+  const char *after = chunked + STRLEN_LIT ("chunked");
   while (*after)
     {
       if (*after == ',')
