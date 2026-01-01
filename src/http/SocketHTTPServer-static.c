@@ -47,6 +47,12 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 #define HTTPSERVER_STATIC_MAX_PATH 4096
 #endif
 
+/* String literal length macro (compile-time) */
+#define STRLEN_LIT(s) (sizeof(s) - 1)
+
+/* Range header prefix constant */
+#define RANGE_HEADER_PREFIX "bytes="
+
 /* MIME type mappings */
 static const struct
 {
@@ -223,10 +229,10 @@ parse_range_header (const char *range_str,
     return 0;
 
   /* Must start with "bytes=" */
-  if (strncmp (range_str, "bytes=", 6) != 0)
+  if (strncmp (range_str, RANGE_HEADER_PREFIX, STRLEN_LIT (RANGE_HEADER_PREFIX)) != 0)
     return 0;
 
-  p = range_str + 6;
+  p = range_str + STRLEN_LIT (RANGE_HEADER_PREFIX);
 
   /* Skip whitespace */
   while (*p == ' ')
