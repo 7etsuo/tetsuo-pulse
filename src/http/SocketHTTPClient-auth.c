@@ -331,7 +331,7 @@ httpclient_auth_basic_header (const char *username,
     {
       SOCKET_LOG_WARN_MSG (
           "Basic auth credentials too long: username='%.*s' password_len=%zu",
-          (int)strnlen (username, 32),
+          (int)strnlen (username, HTTPCLIENT_USERNAME_DISPLAY_MAX),
           username,
           strlen (password));
       return -1;
