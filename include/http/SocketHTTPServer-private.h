@@ -236,6 +236,7 @@ struct SocketHTTPServer
   void *error_handler_userdata;
 
   MiddlewareEntry *middleware_chain;
+  MiddlewareEntry *middleware_tail;
 
   ServerConnection *connections;
   size_t connection_count;
