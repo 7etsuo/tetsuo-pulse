@@ -813,6 +813,7 @@ set(TEST_SOURCES
     test_timer
     test_metrics
     test_httpserver
+    test_httpserver_websocket
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error

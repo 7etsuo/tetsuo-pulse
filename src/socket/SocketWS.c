@@ -1977,7 +1977,8 @@ SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
   /* Reset message assembly for next message */
   ws_message_reset (&ws->message);
 
-  return 0;
+  /* Return 1 on success per API contract */
+  return 1;
 }
 
 void

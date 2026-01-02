@@ -240,7 +240,7 @@ ws_server_thread_func (void *arg)
       if (SocketWS_recv_available (server->ws) > 0)
         {
           SocketWS_Message msg = { 0 };
-          if (SocketWS_recv_message (server->ws, &msg) == 0)
+          if (SocketWS_recv_message (server->ws, &msg) == 1)
             {
               if (msg.type == WS_OPCODE_TEXT)
                 SocketWS_send_text (
@@ -477,7 +477,7 @@ TEST (ws_integration_send_text)
       timeout_ms -= 50;
     }
 
-  ASSERT_EQ (recv_result, 0);
+  ASSERT_EQ (recv_result, 1);
   ASSERT_EQ (msg.type, WS_OPCODE_TEXT);
   ASSERT_EQ (msg.len, strlen (test_message));
   ASSERT_EQ (memcmp (msg.data, test_message, msg.len), 0);
@@ -565,7 +565,7 @@ TEST (ws_integration_send_binary)
       timeout_ms -= 50;
     }
 
-  ASSERT_EQ (recv_result, 0);
+  ASSERT_EQ (recv_result, 1);
   ASSERT_EQ (msg.type, WS_OPCODE_BINARY);
   ASSERT_EQ (msg.len, sizeof (binary_data));
   ASSERT_EQ (memcmp (msg.data, binary_data, msg.len), 0);
@@ -652,7 +652,7 @@ TEST (ws_integration_ping)
       timeout_ms -= 50;
     }
 
-  ASSERT_EQ (recv_result, 0);
+  ASSERT_EQ (recv_result, 1);
   ASSERT_EQ (msg.type, WS_OPCODE_TEXT);
   ASSERT_EQ (msg.len, strlen (text));
   ASSERT_EQ (memcmp (msg.data, text, msg.len), 0);
