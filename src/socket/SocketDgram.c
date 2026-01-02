@@ -640,6 +640,33 @@ dgram_setup_dual_stack (int fd, int family, int socket_family, DgramOpType op)
 }
 
 static int
+dgram_cache_address (T socket, const struct addrinfo *rp, DgramOpType op)
+{
+  /* Guard clause: validate address length first */
+  if (rp->ai_addrlen > sizeof (struct sockaddr_storage))
+    {
+      SOCKET_ERROR_MSG ("Address length %u exceeds storage size %zu",
+                        rp->ai_addrlen,
+                        sizeof (struct sockaddr_storage));
+      return -1;
+    }
+
+  /* Cache in appropriate field based on operation */
+  if (op == DGRAM_OP_CONNECT)
+    {
+      memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
+      socket->base->remote_addrlen = rp->ai_addrlen;
+    }
+  else
+    {
+      memcpy (&socket->base->local_addr, rp->ai_addr, rp->ai_addrlen);
+      socket->base->local_addrlen = rp->ai_addrlen;
+    }
+
+  return 0;
+}
+
+static int
 dgram_try_addresses (T socket,
                      struct addrinfo *res,
                      int socket_family,
@@ -650,43 +677,24 @@ dgram_try_addresses (T socket,
 
   for (rp = res; rp != NULL; rp = rp->ai_next)
     {
+      /* Guard clause: skip incompatible address families */
       if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
         continue;
 
       dgram_setup_dual_stack (fd, rp->ai_family, socket_family, op);
 
-      if (dgram_try_single_address (fd, rp, op) == 0)
-        {
-          /* Cache address in appropriate field based on operation type */
-          if (op == DGRAM_OP_CONNECT)
-            {
-              if (rp->ai_addrlen > sizeof (struct sockaddr_storage))
-                {
-                  SOCKET_ERROR_MSG (
-                      "Address length %u exceeds storage size %zu",
-                      rp->ai_addrlen,
-                      sizeof (struct sockaddr_storage));
-                  continue; /* Try next address */
-                }
-              memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
-              socket->base->remote_addrlen = rp->ai_addrlen;
-            }
-          else
-            {
-              if (rp->ai_addrlen > sizeof (struct sockaddr_storage))
-                {
-                  SOCKET_ERROR_MSG (
-                      "Address length %u exceeds storage size %zu",
-                      rp->ai_addrlen,
-                      sizeof (struct sockaddr_storage));
-                  continue; /* Try next address */
-                }
-              memcpy (&socket->base->local_addr, rp->ai_addr, rp->ai_addrlen);
-              socket->base->local_addrlen = rp->ai_addrlen;
-            }
-          return 0;
-        }
+      /* Guard clause: skip failed connections/binds */
+      if (dgram_try_single_address (fd, rp, op) != 0)
+        continue;
+
+      /* Try to cache the address - continue on validation failure */
+      if (dgram_cache_address (socket, rp, op) != 0)
+        continue;
+
+      /* Success - address cached */
+      return 0;
     }
+
   return -1;
 }
 
