@@ -81,6 +81,65 @@ check_connect_result (int fd, const char *context_path)
 }
 
 static int
+init_unix_addr (struct sockaddr_un *addr, const char *path)
+{
+  size_t path_len;
+
+  assert (addr != NULL);
+  assert (path != NULL);
+
+  path_len = strlen (path);
+
+  if (path_len == 0 || path_len >= sizeof (addr->sun_path))
+    {
+      SOCKET_ERROR_MSG ("Invalid Unix socket path length: %zu", path_len);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  memset (addr, 0, sizeof (*addr));
+  addr->sun_family = AF_UNIX;
+
+  if (path[0] == '@')
+    {
+      addr->sun_path[0] = '\0';
+      memcpy (addr->sun_path + 1, path + 1, path_len - 1);
+    }
+  else
+    {
+      memcpy (addr->sun_path, path, path_len);
+    }
+
+  return 0;
+}
+
+static void
+await_unix_connect_ready (int fd, int timeout_ms, const char *path)
+{
+  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+  int poll_result;
+
+  poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
+
+  if (poll_result < 0)
+    {
+      SOCKET_ERROR_FMT ("poll() failed during Unix connect");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  if (poll_result == 0)
+    {
+      errno = ETIMEDOUT;
+      SOCKET_ERROR_MSG ("%s: Unix connect to %.*s",
+                        SOCKET_ETIMEDOUT,
+                        SOCKET_ERROR_MAX_HOSTNAME,
+                        path);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  check_connect_result (fd, path);
+}
+
+static int
 parse_ip_address (const char *ip_address,
                   struct sockaddr_storage *addr,
                   socklen_t *addrlen,
@@ -339,7 +398,6 @@ void
 Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
 {
   struct sockaddr_un addr;
-  size_t path_len;
   int fd;
   volatile int original_flags = 0;
   volatile int need_restore = 0;
@@ -350,38 +408,11 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
   assert (timeout_ms >= 0);
 
   fd = Socket_fd (socket);
-  path_len = strlen (path);
-
-  if (path_len == 0 || path_len >= sizeof (addr.sun_path))
-    {
-      SOCKET_ERROR_MSG ("Invalid Unix socket path length: %zu", path_len);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  memset (&addr, 0, sizeof (addr));
-  addr.sun_family = AF_UNIX;
-
-  if (path[0] == '@')
-    {
-      addr.sun_path[0] = '\0';
-      memcpy (addr.sun_path + 1, path + 1, path_len - 1);
-    }
-  else
-    {
-      memcpy (addr.sun_path, path, path_len);
-    }
+  init_unix_addr (&addr, path);
 
   if (timeout_ms == 0)
     {
-      TRY
-      {
-        Socket_connect_unix (socket, path);
-      }
-      EXCEPT (Socket_Failed)
-      {
-        RERAISE;
-      }
-      END_TRY;
+      Socket_connect_unix (socket, path);
       return;
     }
 
@@ -405,26 +436,7 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
 
   TRY
   {
-    struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
-    int poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
-
-    if (poll_result < 0)
-      {
-        SOCKET_ERROR_FMT ("poll() failed during Unix connect");
-        RAISE_MODULE_ERROR (Socket_Failed);
-      }
-
-    if (poll_result == 0)
-      {
-        errno = ETIMEDOUT;
-        SOCKET_ERROR_MSG ("%s: Unix connect to %.*s",
-                          SOCKET_ETIMEDOUT,
-                          SOCKET_ERROR_MAX_HOSTNAME,
-                          path);
-        RAISE_MODULE_ERROR (Socket_Failed);
-      }
-
-    check_connect_result (fd, path);
+    await_unix_connect_ready (fd, timeout_ms, path);
   }
   FINALLY
   {
