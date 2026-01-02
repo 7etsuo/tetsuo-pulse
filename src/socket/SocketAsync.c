@@ -1490,6 +1490,58 @@ calculate_request_deadline (const struct AsyncRequest *req,
 }
 
 
+/* Helper: Add request to expired list */
+static void
+append_expired_request (struct AsyncRequest *req,
+                        struct AsyncRequest **expired_list,
+                        struct AsyncRequest **expired_tail,
+                        int *count)
+{
+  req->next = NULL;
+
+  if (*expired_tail)
+    (*expired_tail)->next = req;
+  else
+    *expired_list = req;
+
+  *expired_tail = req;
+  (*count)++;
+}
+
+
+/* Helper: Process single request in chain */
+static bool
+process_request_timeout (struct AsyncRequest **pp,
+                         int64_t now_ms,
+                         int64_t global_timeout,
+                         struct AsyncRequest **expired_list,
+                         struct AsyncRequest **expired_tail,
+                         int *expired_count)
+{
+  struct AsyncRequest *req = *pp;
+  int64_t deadline = calculate_request_deadline (req, global_timeout);
+
+  /* No deadline set - skip to next */
+  if (deadline == 0)
+    {
+      *pp = req->next;
+      return true; /* continue processing */
+    }
+
+  /* Not expired yet - skip to next */
+  if (now_ms < deadline)
+    {
+      *pp = req->next;
+      return true; /* continue processing */
+    }
+
+  /* Request expired - remove from chain and add to expired list */
+  *pp = req->next;
+  append_expired_request (req, expired_list, expired_tail, expired_count);
+  return true; /* continue processing */
+}
+
+
 static struct AsyncRequest *
 collect_expired_requests (T async,
                           int64_t now_ms,
@@ -1506,31 +1558,12 @@ collect_expired_requests (T async,
 
       while (*pp)
         {
-          struct AsyncRequest *req = *pp;
-          int64_t deadline = calculate_request_deadline (req, global_timeout);
-
-          if (deadline == 0)
-            {
-              pp = &req->next;
-              continue;
-            }
-
-          if (now_ms >= deadline)
-            {
-              *pp = req->next;
-
-              req->next = NULL;
-              if (expired_tail)
-                expired_tail->next = req;
-              else
-                expired_list = req;
-              expired_tail = req;
-              expired_count++;
-            }
-          else
-            {
-              pp = &req->next;
-            }
+          process_request_timeout (pp,
+                                   now_ms,
+                                   global_timeout,
+                                   &expired_list,
+                                   &expired_tail,
+                                   &expired_count);
         }
     }
 
