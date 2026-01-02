@@ -401,6 +401,32 @@ void setup_ws_over_h2_streaming (ServerHTTP2Stream *s,
                                  SocketHTTPServer_BodyCallback callback,
                                  void *userdata);
 
+/* HTTP/2 streaming helpers (SocketHTTPServer-h2.c) */
+int server_h2_begin_stream (ServerConnection *conn, ServerHTTP2Stream *s);
+int server_h2_send_chunk (ServerConnection *conn,
+                          ServerHTTP2Stream *s,
+                          const void *data,
+                          size_t len);
+int server_h2_end_stream (ServerConnection *conn, ServerHTTP2Stream *s);
+
+/* HTTP/2 server push helpers (SocketHTTPServer-h2.c) */
+int server_h2_validate_push (SocketHTTPServer_Request_T req, const char *path);
+SocketHPACK_Header *
+server_h2_build_push_headers (Arena_T arena,
+                              const SocketHTTP_Request *parent,
+                              const char *path,
+                              SocketHTTP_Headers_T extra_headers,
+                              size_t *out_count);
+
+/* HTTP/1.1 streaming helpers (SocketHTTPServer-http1.c) */
+int
+server_http1_begin_stream (SocketHTTPServer_T server, ServerConnection *conn);
+int server_http1_send_chunk (SocketHTTPServer_T server,
+                             ServerConnection *conn,
+                             const void *data,
+                             size_t len);
+int server_http1_end_stream (SocketHTTPServer_T server, ServerConnection *conn);
+
 /* Rate limiting and validation (SocketHTTPServer-http1.c) */
 int server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn);
 int server_run_validator (SocketHTTPServer_T server, ServerConnection *conn);
