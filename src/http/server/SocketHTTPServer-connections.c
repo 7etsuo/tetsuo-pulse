@@ -7,14 +7,18 @@
 /* SocketHTTPServer-connections.c - Connection management for HTTP/1.1 and
  * HTTP/2 */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTPServer-http1.h"
 #include "http/SocketHTTPServer-private.h"
+#include "poll/SocketPoll.h"
 #include "socket/Socket.h"
+#include "socket/SocketWS.h"
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #endif
@@ -963,4 +967,480 @@ connection_free_pending (SocketHTTPServer_T server)
       conn = next;
     }
   server->pending_close_list = NULL;
+}
+
+/**
+ * check_global_lifetime_timeout - Check global connection lifetime limit
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Defense-in-depth against connections held indefinitely.
+ * Applies to all states. Set to 0 to disable.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_global_lifetime_timeout (SocketHTTPServer_T server,
+                               ServerConnection *conn,
+                               int64_t now)
+{
+  if (server->config.max_connection_lifetime_ms <= 0)
+    return 0;
+
+  int64_t connection_age_ms = now - conn->created_at_ms;
+  if (connection_age_ms > server->config.max_connection_lifetime_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Connection lifetime exceeded (%lld ms > %d ms), closing connection",
+          (long long)connection_age_ms,
+          server->config.max_connection_lifetime_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * check_tls_handshake_timeout - Check TLS handshake timeout
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Prevents slowloris attacks during TLS negotiation phase.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_tls_handshake_timeout (SocketHTTPServer_T server,
+                             ServerConnection *conn,
+                             int64_t now)
+{
+  if (conn->state != CONN_STATE_TLS_HANDSHAKE)
+    return 0;
+  if (server->config.tls_handshake_timeout_ms <= 0)
+    return 0;
+
+  int64_t idle_ms = now - conn->last_activity_ms;
+  if (idle_ms > server->config.tls_handshake_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "TLS handshake timeout (%lld ms > %d ms), closing connection",
+          (long long)idle_ms,
+          server->config.tls_handshake_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * check_request_timeout - Check request parsing and body reading timeouts
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Prevents slowloris attacks where headers/body are sent slowly.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_request_timeout (SocketHTTPServer_T server,
+                       ServerConnection *conn,
+                       int64_t now)
+{
+  int64_t idle_ms = now - conn->last_activity_ms;
+
+  /* Keepalive timeout for idle connections */
+  if (conn->state == CONN_STATE_READING_REQUEST
+      && idle_ms > server->config.keepalive_timeout_ms)
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* Header parsing timeout */
+  if (conn->state == CONN_STATE_READING_REQUEST && conn->request_start_ms > 0
+      && (now - conn->request_start_ms)
+             > server->config.request_read_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Header parsing timeout (%lld ms > %d ms), closing connection",
+          (long long)(now - conn->request_start_ms),
+          server->config.request_read_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* Request body reading timeout */
+  if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
+      && (now - conn->request_start_ms)
+             > server->config.request_read_timeout_ms)
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * check_response_timeout - Check response write timeout
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_response_timeout (SocketHTTPServer_T server,
+                        ServerConnection *conn,
+                        int64_t now)
+{
+  if (conn->state != CONN_STATE_STREAMING_RESPONSE)
+    return 0;
+  if (conn->response_start_ms <= 0)
+    return 0;
+
+  if ((now - conn->response_start_ms)
+      > server->config.response_write_timeout_ms)
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * check_http2_timeout - Check HTTP/2 idle connection timeout
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Prevents resource exhaustion from idle HTTP/2 connections.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_http2_timeout (SocketHTTPServer_T server,
+                     ServerConnection *conn,
+                     int64_t now)
+{
+  if (conn->state != CONN_STATE_HTTP2)
+    return 0;
+
+  int64_t idle_ms = now - conn->last_activity_ms;
+  if (idle_ms > server->config.keepalive_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 connection idle timeout (%lld ms > %d ms), "
+                           "closing connection",
+                           (long long)idle_ms,
+                           server->config.keepalive_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * server_check_connection_timeout - Check if connection has timed out
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Enhanced timeout enforcement to prevent Slowloris attacks
+ * - TLS handshake timeout (CONN_STATE_TLS_HANDSHAKE)
+ * - HTTP/2 idle connection timeout (CONN_STATE_HTTP2)
+ * - Header parsing timeout (CONN_STATE_READING_REQUEST with partial data)
+ * - Global connection lifetime limit (defense-in-depth)
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+int
+server_check_connection_timeout (SocketHTTPServer_T server,
+                                 ServerConnection *conn,
+                                 int64_t now)
+{
+  if (check_global_lifetime_timeout (server, conn, now))
+    return 1;
+  if (check_tls_handshake_timeout (server, conn, now))
+    return 1;
+  if (check_request_timeout (server, conn, now))
+    return 1;
+  if (check_response_timeout (server, conn, now))
+    return 1;
+  if (check_http2_timeout (server, conn, now))
+    return 1;
+
+  return 0;
+}
+
+#if SOCKET_HAS_TLS
+/**
+ * server_process_tls_handshake - Process TLS handshake for connection
+ * @server: HTTP server
+ * @conn: Connection in TLS handshake state
+ * @events: Poll events (unused, handshake determines next step)
+ *
+ * Continues TLS handshake, transitioning to HTTP/2 or HTTP/1.1 on completion.
+ *
+ * Returns: 0 on success (handshake continuing or complete), -1 on error
+ */
+static int
+server_process_tls_handshake (SocketHTTPServer_T server,
+                              ServerConnection *conn,
+                              unsigned events)
+{
+  volatile TLSHandshakeState hs = TLS_HANDSHAKE_NOT_STARTED;
+
+  (void)events;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  TRY
+  {
+    hs = SocketTLS_handshake (conn->socket);
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    conn->state = CONN_STATE_CLOSED;
+    return -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    conn->state = CONN_STATE_CLOSED;
+    return -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    conn->state = CONN_STATE_CLOSED;
+    return -1;
+  }
+  END_TRY;
+
+  if (hs == TLS_HANDSHAKE_COMPLETE)
+    {
+      conn->tls_handshake_done = 1;
+
+      /* Decide protocol by ALPN. If not negotiated, fall back to HTTP/1.1. */
+      const char *alpn = SocketTLS_get_alpn_selected (conn->socket);
+      if (alpn != NULL && strcmp (alpn, "h2") == 0
+          && server->config.max_version >= HTTP_VERSION_2)
+        {
+          /* Enable HTTP/2 - use early return to reduce nesting. */
+          if (server_http2_enable (server, conn) < 0)
+            {
+              conn->state = CONN_STATE_CLOSED;
+              return -1;
+            }
+          conn->is_http2 = 1;
+          conn->state = CONN_STATE_HTTP2;
+          SocketPoll_mod (
+              server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+        }
+      else
+        {
+          conn->is_http2 = 0;
+          conn->state = CONN_STATE_READING_REQUEST;
+          SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+        }
+
+      return 0;
+    }
+
+  /* Continue handshake: narrow poll interest to avoid busy loops. */
+  if (hs == TLS_HANDSHAKE_WANT_READ)
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+  else if (hs == TLS_HANDSHAKE_WANT_WRITE)
+    SocketPoll_mod (server->poll, conn->socket, POLL_WRITE, conn);
+  else
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+
+  return 0;
+}
+#endif
+
+/**
+ * server_process_websocket - Process WebSocket connection events
+ * @server: HTTP server
+ * @conn: WebSocket connection
+ * @events: Poll events
+ *
+ * Processes WebSocket I/O and delivers received messages via callback.
+ *
+ * Returns: 0 on success, -1 on error (connection should be closed)
+ */
+static int
+server_process_websocket (SocketHTTPServer_T server,
+                          ServerConnection *conn,
+                          unsigned events)
+{
+  volatile int status = 0;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+  assert (conn->websocket != NULL);
+
+  TRY
+  {
+    status = SocketWS_process (conn->websocket, events);
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    return -1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  if (status < 0)
+    return -1;
+
+  /* Process received messages via callback */
+  while (SocketWS_recv_available (conn->websocket) > 0)
+    {
+      SocketWS_Message msg;
+      int result = SocketWS_recv_message (conn->websocket, &msg);
+      if (result > 0 && conn->ws_callback != NULL)
+        {
+          int is_final
+              = (SocketWS_state (conn->websocket) == WS_STATE_CLOSING
+                 || SocketWS_state (conn->websocket) == WS_STATE_CLOSED)
+                    ? 1
+                    : 0;
+          conn->ws_callback (
+              NULL, msg.data, msg.len, is_final, conn->ws_callback_userdata);
+          free (msg.data);
+        }
+      else if (result <= 0)
+        {
+          return -1;
+        }
+    }
+
+  /* Check if connection closed */
+  if (SocketWS_state (conn->websocket) == WS_STATE_CLOSED)
+    return -1;
+
+  /* Update poll events */
+  unsigned ws_events = SocketWS_poll_events (conn->websocket);
+  SocketPoll_mod (server->poll, conn->socket, ws_events, conn);
+
+  return 0;
+}
+
+/**
+ * server_process_client_event - Process a single client event
+ * @server: HTTP server
+ * @conn: Client connection
+ * @events: Event flags (POLL_READ, POLL_WRITE, etc.)
+ *
+ * Main event dispatcher for client connections. Routes events to appropriate
+ * protocol handler based on connection state.
+ *
+ * Returns: 1 if request processed, 0 otherwise
+ */
+int
+server_process_client_event (SocketHTTPServer_T server,
+                             ServerConnection *conn,
+                             unsigned events)
+{
+  int requests_processed = 0;
+
+  if (server_try_http2_prior_knowledge (server, conn, events))
+    return 0;
+
+  /* Handle disconnect/error events first */
+  if (events & (POLL_HANGUP | POLL_ERROR))
+    {
+      conn->state = CONN_STATE_CLOSED;
+      connection_close (server, conn);
+      return 0;
+    }
+
+  if (events & POLL_READ)
+    {
+      /* TLS handshake, HTTP/2, and WebSocket handle their own I/O.
+       * Only read into HTTP/1.1 buffer for request parsing states. */
+      if (conn->state != CONN_STATE_TLS_HANDSHAKE
+          && conn->state != CONN_STATE_HTTP2
+          && conn->state != CONN_STATE_WEBSOCKET)
+        connection_read (server, conn);
+    }
+
+  if (conn->state == CONN_STATE_TLS_HANDSHAKE)
+    {
+#if SOCKET_HAS_TLS
+      if (server_process_tls_handshake (server, conn, events) < 0)
+        conn->state = CONN_STATE_CLOSED;
+#else
+      conn->state = CONN_STATE_CLOSED;
+#endif
+    }
+
+  if (conn->state == CONN_STATE_HTTP2)
+    {
+      if (server_process_http2 (server, conn, events) < 0)
+        conn->state = CONN_STATE_CLOSED;
+      if (conn->state == CONN_STATE_CLOSED)
+        {
+          connection_close (server, conn);
+        }
+      return 0;
+    }
+
+  if (conn->state == CONN_STATE_WEBSOCKET)
+    {
+      if (server_process_websocket (server, conn, events) < 0)
+        conn->state = CONN_STATE_CLOSED;
+      if (conn->state == CONN_STATE_CLOSED)
+        {
+          connection_close (server, conn);
+        }
+      return 0;
+    }
+
+  if (conn->state == CONN_STATE_READING_REQUEST)
+    {
+      if (connection_parse_request (server, conn) == 1)
+        {
+          requests_processed = server_handle_parsed_request (server, conn);
+        }
+    }
+
+  /* Continue reading request body using centralized parser API */
+  if (conn->state == CONN_STATE_READING_BODY)
+    {
+      int result = server_process_body_reading (server, conn);
+      if (result > 0)
+        requests_processed = result;
+    }
+
+  if (conn->state == CONN_STATE_CLOSED)
+    {
+      connection_close (server, conn);
+    }
+
+  return requests_processed;
 }

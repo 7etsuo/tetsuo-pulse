@@ -350,11 +350,88 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
   return 1;
 }
 
-/* Forward declarations for functions defined in SocketHTTPServer.c */
-extern int server_check_rate_limit (SocketHTTPServer_T server,
-                                    ServerConnection *conn);
-extern int server_run_validator (SocketHTTPServer_T server,
-                                 ServerConnection *conn);
+/**
+ * server_check_rate_limit - Check rate limit for request path
+ * @server: HTTP server
+ * @conn: Connection with request
+ *
+ * Returns: 1 if allowed, 0 if rate limited (sends 429 response)
+ */
+int
+server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  SocketRateLimit_T limiter
+      = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
+  if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED, rate_limited);
+      connection_send_error (server, conn, 429, "Too Many Requests");
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * server_run_validator_impl - Run validator callback implementation
+ * @server: HTTP server
+ * @conn: Connection with parsed request
+ *
+ * Returns: 1 if allowed, 0 if rejected (sends error response)
+ */
+static int
+server_run_validator_impl (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  int reject_status = 0;
+  struct SocketHTTPServer_Request req_ctx;
+
+  if (server->validator == NULL)
+    return 1;
+
+  req_ctx.server = server;
+  req_ctx.conn = conn;
+  req_ctx.h2_stream = NULL;
+  req_ctx.arena = conn->arena;
+  req_ctx.start_time_ms = conn->request_start_ms;
+
+  if (!server->validator (&req_ctx, &reject_status, server->validator_userdata))
+    {
+      if (reject_status == 0)
+        reject_status = 403;
+      connection_send_error (server, conn, reject_status, "Request Rejected");
+      return 0;
+    }
+
+  return 1;
+}
+
+/**
+ * server_run_validator - Run request validator callback
+ * @server: HTTP server
+ * @conn: Connection with parsed request
+ *
+ * Returns: 1 if allowed, 0 if rejected (sends error)
+ */
+int
+server_run_validator (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  return server_run_validator_impl (server, conn);
+}
+
+/**
+ * server_run_validator_early - Run validator early (after headers, before body)
+ * @server: HTTP server
+ * @conn: Connection with parsed request
+ *
+ * Allows setting up body streaming mode before body buffering begins.
+ *
+ * Returns: 1 if allowed, 0 if rejected (sends error)
+ */
+int
+server_run_validator_early (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  return server_run_validator_impl (server, conn);
+}
 
 /* Invoke middleware chain and request handler. Middleware can short-circuit by
  * returning non-zero */
