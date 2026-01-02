@@ -227,6 +227,20 @@ Fuzzer coverage mapping and attack vector documentation.
 
 **Use when**: Understanding what fuzzers exist, what they test, identifying coverage gaps, adding new fuzzers.
 
+### 10. http-module-structure.md
+HTTP module organization and public/private separation guidelines.
+
+**Contents**:
+- Directory structure overview (main folder vs subfolders)
+- Public vs private separation principles
+- Helper function placement guidelines
+- Function naming patterns (public vs internal)
+- Include patterns (public headers vs private headers)
+- Decision tree for where to put new code
+- Examples and anti-patterns
+
+**Use when**: Adding code to the HTTP module, understanding where helpers should go, reviewing HTTP code organization.
+
 ## Usage in Commands
 
 Command files can now reference these shared materials instead of duplicating content:
@@ -242,6 +256,7 @@ For style guidelines, see `.claude/references/style-guide.md`
 For fuzzing patterns, see `.claude/references/fuzzing-patterns.md`
 For fuzzing harness templates, see `.claude/references/fuzzing-harnesses.md`
 For fuzzing coverage map, see `.claude/references/fuzzing-coverage.md`
+For HTTP module organization, see `.claude/references/http-module-structure.md`
 ```
 
 ## Benefits
@@ -272,5 +287,6 @@ When updating shared content:
 - `fuzzing-patterns.md`: ~16KB (fuzzer implementation patterns)
 - `fuzzing-harnesses.md`: ~38KB (complete harness templates)
 - `fuzzing-coverage.md`: ~16KB (coverage mapping and attack vectors)
+- `http-module-structure.md`: ~6KB (HTTP module organization)
 
-Total: ~214KB of shared reference material
+Total: ~220KB of shared reference material
