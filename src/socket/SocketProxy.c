@@ -1499,20 +1499,23 @@ proxy_socks5_handle_method_response (struct SocketProxy_Conn_T *conn)
 static SocketProxy_Result
 proxy_socks5_process_recv (struct SocketProxy_Conn_T *conn)
 {
-  SocketProxy_Result res;
-
+  /* Handle auth receive state with guard clauses */
   if (conn->state == PROXY_STATE_AUTH_RECV)
     {
-      res = proxy_socks5_recv_auth (conn);
-      if (res == PROXY_OK)
-        {
-          if (proxy_socks5_send_connect_request (conn) < 0)
-            return PROXY_ERROR_PROTOCOL;
-          return PROXY_IN_PROGRESS;
-        }
-      return res;
+      SocketProxy_Result res = proxy_socks5_recv_auth (conn);
+
+      /* Early return on non-OK results */
+      if (res != PROXY_OK)
+        return res;
+
+      /* Success path at normal indentation */
+      if (proxy_socks5_send_connect_request (conn) < 0)
+        return PROXY_ERROR_PROTOCOL;
+
+      return PROXY_IN_PROGRESS;
     }
 
+  /* Dispatch based on protocol state */
   switch (conn->proto_state)
     {
     case PROTO_STATE_SOCKS5_GREETING_SENT:
