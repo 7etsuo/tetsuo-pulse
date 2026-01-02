@@ -131,6 +131,25 @@ src/
 └── fuzz/       # Fuzzing harnesses (fuzz_*.c)
 ```
 
+### HTTP Module Organization
+
+The `src/http/` folder separates public API from private implementation:
+
+| Location | Purpose | Headers |
+|----------|---------|---------|
+| `src/http/*.c` | Public API implementations | `include/http/Socket*.h` |
+| `src/http/client/` | Client-specific internals | `SocketHTTPClient-private.h` |
+| `src/http/server/` | Server-specific internals | `SocketHTTPServer-private.h` |
+| `src/http/h2/` | HTTP/2 protocol internals | `SocketHTTP2-private.h` |
+| `src/http/hpack/` | HPACK codec internals | `SocketHPACK-private.h` |
+
+**Helper function placement:**
+- Single-file helpers → `static` in that file
+- Subsystem-shared helpers → appropriate subfolder (`client/`, `server/`, `h2/`, `hpack/`)
+- Protocol-agnostic utilities → main folder (`SocketHTTP-core.c`, `SocketHTTP-headers.c`, etc.)
+
+For detailed guidelines, see `.claude/references/http-module-structure.md`.
+
 ### Key Design Patterns
 
 **Exception-Based Error Handling** - Variables modified in TRY blocks must be `volatile`:
