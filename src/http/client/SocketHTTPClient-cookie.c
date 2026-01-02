@@ -1239,6 +1239,115 @@ parse_cookie_attributes (const char **p,
   *p = ptr;
 }
 
+/* Validate cookie domain length (RFC 6265 implementation constraint) */
+static int
+validate_cookie_domain_length (const char *domain)
+{
+  size_t domain_len;
+
+  assert (domain != NULL);
+
+  domain_len = strlen (domain);
+  if (domain_len == 0 || domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "Set-Cookie rejected: invalid domain length %zu",
+                       domain_len);
+      return -1;
+    }
+  return 0;
+}
+
+/* Validate cookie path format (RFC 6265 §5.1.4) */
+static int
+validate_cookie_path_format (const char *path)
+{
+  size_t path_len;
+
+  if (path == NULL)
+    return 0;
+
+  path_len = strlen (path);
+  if (path_len == 0 || path_len > HTTPCLIENT_COOKIE_MAX_PATH_LEN
+      || path[0] != '/')
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "Set-Cookie rejected: invalid path '%s' (len=%zu)",
+                       path,
+                       path_len);
+      return -1;
+    }
+  return 0;
+}
+
+/* Validate cookie domain matches request URI (RFC 6265 §5.3 step 5) */
+static int
+validate_cookie_domain_match (const SocketHTTP_URI *request_uri,
+                              const char *cookie_domain)
+{
+  if (request_uri == NULL || request_uri->host == NULL)
+    return 0;
+
+  if (!domain_matches (request_uri->host, cookie_domain))
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "Set-Cookie rejected: Domain '%s' does not "
+                       "domain-match request host '%s'",
+                       cookie_domain,
+                       request_uri->host);
+      return -1;
+    }
+  return 0;
+}
+
+/* Validate all required cookie fields are present */
+static int
+validate_parsed_cookie_fields (const SocketHTTPClient_Cookie *cookie,
+                               const SocketHTTP_URI *request_uri)
+{
+  time_t now;
+
+  assert (cookie != NULL);
+
+  if (cookie->name == NULL || cookie->value == NULL)
+    {
+      HTTPCLIENT_ERROR_MSG (
+          "Invalid Set-Cookie: missing required name or value");
+      return -1;
+    }
+
+  if (cookie->domain == NULL)
+    {
+      HTTPCLIENT_ERROR_MSG ("Invalid Set-Cookie: missing required domain "
+                            "after applying defaults");
+      return -1;
+    }
+
+  if (validate_cookie_domain_length (cookie->domain) != 0)
+    return -1;
+
+  if (validate_cookie_path_format (cookie->path) != 0)
+    return -1;
+
+  now = time (NULL);
+  if (cookie->expires != 0 && !cookie_expiry_is_valid (cookie->expires, now))
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "Set-Cookie rejected: unreasonable expires %lld",
+                       (long long)cookie->expires);
+      return -1;
+    }
+
+  if (validate_cookie_domain_match (request_uri, cookie->domain) != 0)
+    return -1;
+
+  return 0;
+}
+
 int
 httpclient_parse_set_cookie (const char *value,
                              size_t len,
@@ -1286,65 +1395,5 @@ httpclient_parse_set_cookie (const char *value,
         }
     }
 
-  if (cookie->name == NULL || cookie->value == NULL)
-    {
-      HTTPCLIENT_ERROR_MSG (
-          "Invalid Set-Cookie: missing required name or value");
-      return -1;
-    }
-  if (cookie->domain == NULL)
-    {
-      HTTPCLIENT_ERROR_MSG ("Invalid Set-Cookie: missing required domain "
-                            "after applying defaults");
-      return -1;
-    }
-
-  size_t domain_len = strlen (cookie->domain);
-  if (domain_len == 0 || domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN)
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN,
-                       SOCKET_LOG_COMPONENT,
-                       "Set-Cookie rejected: invalid domain length %zu",
-                       domain_len);
-      return -1;
-    }
-
-  if (cookie->path != NULL)
-    {
-      size_t path_len = strlen (cookie->path);
-      if (path_len == 0 || path_len > HTTPCLIENT_COOKIE_MAX_PATH_LEN
-          || cookie->path[0] != '/')
-        {
-          SocketLog_emitf (SOCKET_LOG_WARN,
-                           SOCKET_LOG_COMPONENT,
-                           "Set-Cookie rejected: invalid path '%s' (len=%zu)",
-                           cookie->path,
-                           path_len);
-          return -1;
-        }
-    }
-
-  time_t now = time (NULL);
-  if (cookie->expires != 0 && !cookie_expiry_is_valid (cookie->expires, now))
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN,
-                       SOCKET_LOG_COMPONENT,
-                       "Set-Cookie rejected: unreasonable expires %lld",
-                       (long long)cookie->expires);
-      return -1;
-    }
-
-  if (request_uri != NULL && request_uri->host != NULL
-      && !domain_matches (request_uri->host, cookie->domain))
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN,
-                       SOCKET_LOG_COMPONENT,
-                       "Set-Cookie rejected: Domain '%s' does not "
-                       "domain-match request host '%s'",
-                       cookie->domain,
-                       request_uri->host);
-      return -1;
-    }
-
-  return 0;
+  return validate_parsed_cookie_fields (cookie, request_uri);
 }
