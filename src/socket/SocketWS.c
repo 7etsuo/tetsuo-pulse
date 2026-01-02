@@ -461,53 +461,56 @@ ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
   if (ws->transport)
     {
       sent = SocketWS_Transport_send (ws->transport, ptr, available);
-      if (sent < 0)
+
+      /* Guard clause: handle success case */
+      if (sent >= 0)
+        goto check_sent_bytes;
+
+      /* Handle would-block (non-error case) */
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-              /* Would block - not an error */
-              sent = 0;
-            }
-          else if (errno == EPIPE)
-            {
-              ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-              ws->state = WS_STATE_CLOSED;
-              ws->close_code = WS_CLOSE_ABNORMAL;
-              return -1;
-            }
-          else
-            {
-              ws_set_error (ws, WS_ERROR, "Transport send failed");
-              return -1;
-            }
+          sent = 0;
+          goto check_sent_bytes;
         }
-    }
-  else
-    {
-      /* Fallback to direct socket I/O for backward compatibility */
-      TRY
-      {
-        sent = Socket_send (ws->socket, ptr, available);
-      }
-      EXCEPT (Socket_Closed)
-      {
-        /* Normal/expected close path: don't spam error logs. */
-        ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-        ws->state = WS_STATE_CLOSED;
-        ws->close_code = WS_CLOSE_ABNORMAL;
-        failed = 1;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        ws_set_error (ws, WS_ERROR, "Socket send failed");
-        failed = 1;
-      }
-      END_TRY;
 
-      if (failed)
-        return -1;
+      /* Handle EPIPE (connection broken) */
+      if (errno == EPIPE)
+        {
+          ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+          ws->state = WS_STATE_CLOSED;
+          ws->close_code = WS_CLOSE_ABNORMAL;
+          return -1;
+        }
+
+      /* Handle all other errors */
+      ws_set_error (ws, WS_ERROR, "Transport send failed");
+      return -1;
     }
 
+  /* Fallback to direct socket I/O for backward compatibility */
+  TRY
+  {
+    sent = Socket_send (ws->socket, ptr, available);
+  }
+  EXCEPT (Socket_Closed)
+  {
+    /* Normal/expected close path: don't spam error logs. */
+    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+    ws->state = WS_STATE_CLOSED;
+    ws->close_code = WS_CLOSE_ABNORMAL;
+    failed = 1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ws_set_error (ws, WS_ERROR, "Socket send failed");
+    failed = 1;
+  }
+  END_TRY;
+
+  if (failed)
+    return -1;
+
+check_sent_bytes:
   if (sent <= 0)
     return 0; /* Would block / no progress */
 
