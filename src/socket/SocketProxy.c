@@ -85,47 +85,81 @@ SocketProxy_config_defaults (SocketProxy_Config *config)
   config->handshake_timeout_ms = SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS;
 }
 
+/**
+ * proxy_alloc_from_arena - Allocate string from arena with overflow checks
+ */
+static char *
+proxy_alloc_from_arena (Arena_T arena, size_t len)
+{
+  size_t total_size;
+
+  if (!SocketSecurity_check_add (len, 1, &total_size)
+      || !SocketSecurity_check_size (total_size))
+    {
+      RAISE_PROXY_ERROR_MSG (SocketProxy_Failed,
+                             "Proxy URL component too long");
+    }
+
+  return Arena_alloc (arena, total_size, __FILE__, __LINE__);
+}
+
+/**
+ * proxy_alloc_from_static - Allocate string from static buffer with
+ * wrap-around
+ */
+static char *
+proxy_alloc_from_static (size_t needed)
+{
+  /* Guard: Check total buffer overflow */
+  if (proxy_static_total_used + needed > SOCKET_PROXY_STATIC_BUFFER_SIZE)
+    {
+      PROXY_ERROR_MSG ("Static buffer overflow in URL parsing (total used "
+                       "%zu + %zu > %d)",
+                       proxy_static_total_used,
+                       needed,
+                       SOCKET_PROXY_STATIC_BUFFER_SIZE);
+      return NULL;
+    }
+
+  /* Wrap around if needed */
+  if (proxy_static_offset + needed > SOCKET_PROXY_STATIC_BUFFER_SIZE)
+    {
+      proxy_static_offset = 0;
+    }
+
+  char *dst = proxy_static_buf + proxy_static_offset;
+  proxy_static_offset += needed;
+  proxy_static_total_used += needed;
+
+  return dst;
+}
+
+/**
+ * proxy_alloc_string - Allocate and copy string from arena or static buffer
+ *
+ * FLATTENED VERSION - Guard clauses at top level
+ */
 static char *
 proxy_alloc_string (const char *src, size_t len, Arena_T arena)
 {
   char *dst;
 
+  /* Dispatch to appropriate allocator */
   if (arena != NULL)
     {
-      size_t total_size;
-      if (!SocketSecurity_check_add (len, 1, &total_size)
-          || !SocketSecurity_check_size (total_size))
-        {
-          RAISE_PROXY_ERROR_MSG (SocketProxy_Failed,
-                                 "Proxy URL component too long");
-        }
-      dst = Arena_alloc (arena, total_size, __FILE__, __LINE__);
+      dst = proxy_alloc_from_arena (arena, len);
     }
   else
     {
       size_t needed = len + 1;
-      if (proxy_static_total_used + needed > SOCKET_PROXY_STATIC_BUFFER_SIZE)
-        {
-          PROXY_ERROR_MSG ("Static buffer overflow in URL parsing (total used "
-                           "%zu + %zu > %d)",
-                           proxy_static_total_used,
-                           needed,
-                           SOCKET_PROXY_STATIC_BUFFER_SIZE);
-          return NULL;
-        }
-
-      if (proxy_static_offset + needed > SOCKET_PROXY_STATIC_BUFFER_SIZE)
-        {
-          proxy_static_offset = 0;
-        }
-      dst = proxy_static_buf + proxy_static_offset;
-      proxy_static_offset += needed;
-      proxy_static_total_used += needed;
+      dst = proxy_alloc_from_static (needed);
     }
 
+  /* Guard: Early return on allocation failure */
   if (dst == NULL)
     return NULL;
 
+  /* Success path at normal indentation */
   memcpy (dst, src, len);
   dst[len] = '\0';
   return dst;
