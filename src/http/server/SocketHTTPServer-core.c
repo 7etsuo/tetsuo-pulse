@@ -383,6 +383,7 @@ SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
           return;
         }
 
+      entry->prefix_len = strlen (path_prefix);
       entry->limiter = limiter;
       entry->next = server->rate_limiters;
       server->rate_limiters = entry;

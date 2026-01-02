@@ -79,6 +79,7 @@ typedef struct SocketHTTPServer_InstanceMetrics
 typedef struct RateLimitEntry
 {
   char *path_prefix;
+  size_t prefix_len;
   SocketRateLimit_T limiter;
   struct RateLimitEntry *next;
 } RateLimitEntry;
