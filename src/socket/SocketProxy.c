@@ -884,9 +884,7 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
     {
       /* Check timeout before each attempt */
       if (proxy_check_timeout (conn) < 0)
-        {
-          return -1;
-        }
+        return -1;
 
       TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
 
@@ -895,7 +893,8 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
           conn->tls_enabled = 1;
           return 0;
         }
-      else if (hs == TLS_HANDSHAKE_ERROR)
+
+      if (hs == TLS_HANDSHAKE_ERROR)
         {
           socketproxy_set_error (conn,
                                  PROXY_ERROR_PROTOCOL,
@@ -904,6 +903,7 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
           return -1;
         }
 
+      /* Handshake wants I/O - prepare to poll */
       unsigned events
           = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
       short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
@@ -915,10 +915,14 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
       int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
 
       int ret = poll (&pfd, 1, poll_to);
+
+      /* Early continue for EINTR - reduces nesting */
+      if (ret < 0 && errno == EINTR)
+        continue;
+
+      /* Handle poll errors */
       if (ret < 0)
         {
-          if (errno == EINTR)
-            continue;
           socketproxy_set_error (
               conn,
               PROXY_ERROR,
@@ -926,6 +930,8 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
               strerror (errno));
           return -1;
         }
+
+      /* Handle poll timeout */
       if (ret == 0)
         {
           socketproxy_set_error (conn,
@@ -934,6 +940,8 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
                                  conn->handshake_timeout_ms);
           return -1;
         }
+
+      /* Socket ready, loop to retry handshake */
     }
 #else
   return -1;
