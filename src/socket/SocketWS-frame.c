@@ -399,6 +399,21 @@ ws_process_mask_key_state (SocketWS_FrameParse *frame,
   return WS_OK;
 }
 
+/** State handler function type for frame parsing dispatch table */
+typedef SocketWS_Error (*StateHandler) (SocketWS_FrameParse *frame,
+                                        const unsigned char **data,
+                                        size_t *len,
+                                        size_t *consumed);
+
+/** Dispatch table for frame parsing state machine (O(1) state lookup) */
+static const StateHandler state_handlers[WS_FRAME_STATE_COUNT] = {
+  [WS_FRAME_STATE_HEADER] = ws_process_header_state,
+  [WS_FRAME_STATE_EXTENDED_LEN] = ws_process_extended_len_state,
+  [WS_FRAME_STATE_MASK_KEY] = ws_process_mask_key_state,
+  [WS_FRAME_STATE_PAYLOAD] = NULL,
+  [WS_FRAME_STATE_COMPLETE] = NULL,
+};
+
 SocketWS_Error
 ws_frame_parse_header (SocketWS_FrameParse *frame,
                        const unsigned char *data,
@@ -417,30 +432,20 @@ ws_frame_parse_header (SocketWS_FrameParse *frame,
 
   while (len > 0)
     {
-      switch (frame->state)
-        {
-        case WS_FRAME_STATE_HEADER:
-          err = ws_process_header_state (frame, &data, &len, consumed);
-          if (err != WS_ERROR_WOULD_BLOCK)
-            return err;
-          break;
+      /* Terminal states - header parsing complete */
+      if (frame->state == WS_FRAME_STATE_PAYLOAD
+          || frame->state == WS_FRAME_STATE_COMPLETE)
+        return WS_OK;
 
-        case WS_FRAME_STATE_EXTENDED_LEN:
-          err = ws_process_extended_len_state (frame, &data, &len, consumed);
-          if (err != WS_ERROR_WOULD_BLOCK)
-            return err;
-          break;
+      /* Invalid state - bounds check */
+      if (frame->state >= WS_FRAME_STATE_COUNT
+          || state_handlers[frame->state] == NULL)
+        return WS_ERROR_PROTOCOL;
 
-        case WS_FRAME_STATE_MASK_KEY:
-          err = ws_process_mask_key_state (frame, &data, &len, consumed);
-          if (err != WS_ERROR_WOULD_BLOCK)
-            return err;
-          break;
-
-        case WS_FRAME_STATE_PAYLOAD:
-        case WS_FRAME_STATE_COMPLETE:
-          return WS_OK;
-        }
+      /* Process current state via dispatch table */
+      err = state_handlers[frame->state] (frame, &data, &len, consumed);
+      if (err != WS_ERROR_WOULD_BLOCK)
+        return err;
     }
 
   return WS_ERROR_WOULD_BLOCK;

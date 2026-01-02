@@ -322,7 +322,8 @@ typedef enum
                                 */
   WS_FRAME_STATE_MASK_KEY, /**< Reading 4-byte mask key (client frames only) */
   WS_FRAME_STATE_PAYLOAD,  /**< Reading payload data */
-  WS_FRAME_STATE_COMPLETE  /**< Frame fully parsed */
+  WS_FRAME_STATE_COMPLETE, /**< Frame fully parsed */
+  WS_FRAME_STATE_COUNT     /**< Number of states (for dispatch table bounds) */
 } SocketWS_FrameState;
 
 /**
