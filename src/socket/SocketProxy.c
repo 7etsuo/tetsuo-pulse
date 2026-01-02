@@ -509,15 +509,19 @@ socketproxy_do_send (struct SocketProxy_Conn_T *conn)
       caught_closed = 1;
       END_TRY;
 
+      /* Guard clause: handle connection closed */
       if (caught_closed)
         return -1;
 
+      /* Guard clause: handle EAGAIN/EWOULDBLOCK (would block) */
+      if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        return 1;
+
+      /* Guard clause: handle other errors */
       if (n < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 1;
-          return -1;
-        }
+        return -1;
+
+      /* Main work: advance offset */
       conn->send_offset += (size_t)n;
     }
 
