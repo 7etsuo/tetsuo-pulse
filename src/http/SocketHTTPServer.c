@@ -227,9 +227,6 @@ server_process_http2 (SocketHTTPServer_T server,
 }
 
 
-
-
-
 static int
 server_try_http2_prior_knowledge (SocketHTTPServer_T server,
                                   ServerConnection *conn,
@@ -346,9 +343,6 @@ server_run_validator_early (SocketHTTPServer_T server, ServerConnection *conn)
 }
 
 
-
-
-
 /**
  * server_process_client_event - Process a single client event
  * @server: HTTP server
@@ -441,8 +435,8 @@ server_process_client_event (SocketHTTPServer_T server,
  */
 static int
 check_global_lifetime_timeout (SocketHTTPServer_T server,
-                                ServerConnection *conn,
-                                int64_t now)
+                               ServerConnection *conn,
+                               int64_t now)
 {
   if (server->config.max_connection_lifetime_ms <= 0)
     return 0;
@@ -474,8 +468,8 @@ check_global_lifetime_timeout (SocketHTTPServer_T server,
  */
 static int
 check_tls_handshake_timeout (SocketHTTPServer_T server,
-                              ServerConnection *conn,
-                              int64_t now)
+                             ServerConnection *conn,
+                             int64_t now)
 {
   if (conn->state != CONN_STATE_TLS_HANDSHAKE)
     return 0;
@@ -487,7 +481,8 @@ check_tls_handshake_timeout (SocketHTTPServer_T server,
     {
       SOCKET_LOG_WARN_MSG (
           "TLS handshake timeout (%lld ms > %d ms), closing connection",
-          (long long)idle_ms, server->config.tls_handshake_timeout_ms);
+          (long long)idle_ms,
+          server->config.tls_handshake_timeout_ms);
       SERVER_METRICS_INC (
           server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
       connection_close (server, conn);
