@@ -375,6 +375,11 @@ set(LIB_SOURCES
     src/http/client/SocketHTTPClient-retry.c
     src/http/client/SocketHTTPClient-arena.c
     src/http/client/SocketHTTPClient-async.c
+    src/http/client/SocketHTTPClient-io.c
+    src/http/client/SocketHTTPClient-body.c
+    src/http/client/SocketHTTPClient-headers.c
+    src/http/client/SocketHTTPClient-http1.c
+    src/http/client/SocketHTTPClient-http2.c
 
     # HTTP Server API
     src/http/SocketHTTPServer.c
