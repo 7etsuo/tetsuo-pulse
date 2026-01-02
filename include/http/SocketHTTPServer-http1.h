@@ -104,4 +104,22 @@ int server_process_streaming_body (SocketHTTPServer_T server,
                                    const void *input,
                                    size_t input_len);
 
+/**
+ * server_process_body_reading - Process HTTP/1.1 request body reading
+ * @server: HTTP server
+ * @conn: Connection in CONN_STATE_READING_BODY state
+ *
+ * Returns: Number of requests processed (0 or 1)
+ *
+ * Handles both streaming and buffering modes for HTTP/1.1 request bodies:
+ * - Streaming mode: Invokes callback for each chunk via server_process_streaming_body
+ * - Chunked/until-close: Uses dynamic SocketBuf_T with size limit enforcement
+ * - Content-Length: Uses fixed buffer with DoS prevention
+ *
+ * Enforces max_body_size limit and sends 413 Payload Too Large if exceeded.
+ * Transitions to CONN_STATE_HANDLING when body is complete.
+ */
+int server_process_body_reading (SocketHTTPServer_T server,
+                                 ServerConnection *conn);
+
 #endif /* SOCKETHTTPSERVER_HTTP1_INCLUDED */
