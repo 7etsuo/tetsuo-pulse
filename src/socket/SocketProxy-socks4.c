@@ -343,57 +343,93 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
  * when the client shouldn't be making DNS queries.
  */
 
+/**
+ * socks4a_is_ipv4_target - Check if target is an IPv4 address
+ * @host: Target hostname
+ *
+ * Returns: 1 if IPv4 address, 0 otherwise
+ */
+static int
+socks4a_is_ipv4_target (const char *host)
+{
+  struct in_addr ipv4;
+  return inet_pton (AF_INET, host, &ipv4) == 1;
+}
+
+/**
+ * socks4a_write_marker_ip - Write SOCKS4a marker IP (0.0.0.1)
+ * @conn: Proxy connection
+ * @buf: Buffer to write to
+ * @len: Current buffer offset (updated)
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+socks4a_write_marker_ip (struct SocketProxy_Conn_T *conn,
+                         unsigned char *buf,
+                         size_t *len)
+{
+  if (socks4_ensure_buffer_space (conn, *len, 4) < 0)
+    return -1;
+
+  memcpy (buf + *len, SOCKS4A_MARKER_IP, 4);
+  *len += 4;
+  return 0;
+}
+
+/**
+ * socks4a_write_hostname - Write hostname with null terminator
+ * @conn: Proxy connection
+ * @buf: Buffer to write to
+ * @len: Current buffer offset (updated)
+ * @host: Hostname to write
+ * @host_len: Length of hostname
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+socks4a_write_hostname (struct SocketProxy_Conn_T *conn,
+                        unsigned char *buf,
+                        size_t *len,
+                        const char *host,
+                        size_t host_len)
+{
+  if (socks4_ensure_buffer_space (conn, *len, host_len + 1) < 0)
+    return -1;
+
+  memcpy (buf + *len, host, host_len);
+  *len += host_len;
+  buf[(*len)++] = 0x00;
+  return 0;
+}
+
 int
 proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
 {
   unsigned char *buf = conn->send_buf;
   size_t len = 0;
-  struct in_addr ipv4;
   size_t userid_written;
   size_t host_len;
 
   assert (conn != NULL);
 
-  /* Validate inputs and cache hostname length (avoids redundant strlen) */
   if (socks4_validate_inputs (conn, &host_len) < 0)
     return -1;
 
-  /* Check if target is already an IPv4 address - delegate to plain SOCKS4 */
-  if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
+  /* Delegate to plain SOCKS4 if target is already IPv4 */
+  if (socks4a_is_ipv4_target (conn->target_host))
     return proxy_socks4_send_connect (conn);
 
-  /* host_len already computed by socks4_validate_inputs() above */
-  /* Additional validation (UTF-8, etc.) already performed in
-   * socks4_validate_inputs() */
-
-  /* Validate buffer space for header (4 bytes) */
+  /* Write header */
   if (socks4_ensure_buffer_space (conn, len, 4) < 0)
     return -1;
-
-  /* Write header: version + command + port */
-  if (len + 4 > sizeof (conn->send_buf))
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL, "SOCKS4a request too large");
-      return -1;
-    }
   len += socks4_write_header (buf + len, conn->target_port);
 
-  /* Validate buffer space for SOCKS4a marker IP (4 bytes) */
-  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
+  /* Write SOCKS4a marker IP */
+  if (socks4a_write_marker_ip (conn, buf, &len) < 0)
     return -1;
 
-  /* Write SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
-  if (len + 4 > sizeof (conn->send_buf))
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL, "SOCKS4a request too large");
-      return -1;
-    }
-  memcpy (buf + len, SOCKS4A_MARKER_IP, 4);
-  len += 4;
-
-  /* Write userid with null terminator */
+  /* Write userid */
   if (socks4_write_userid (buf + len,
                            sizeof (conn->send_buf) - len,
                            conn->username,
@@ -406,19 +442,13 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
     }
   len += userid_written;
 
-  /* Validate buffer space for hostname + null terminator */
-  if (socks4_ensure_buffer_space (conn, len, host_len + 1) < 0)
+  /* Write hostname */
+  if (socks4a_write_hostname (conn, buf, &len, conn->target_host, host_len) < 0)
     return -1;
-
-  /* Write hostname with null terminator */
-  memcpy (buf + len, conn->target_host, host_len);
-  len += host_len;
-  buf[len++] = 0x00;
 
   conn->send_len = len;
   conn->send_offset = 0;
   conn->proto_state = PROTO_STATE_SOCKS4_CONNECT_SENT;
-
   return 0;
 }
 

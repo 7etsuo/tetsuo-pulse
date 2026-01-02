@@ -157,34 +157,82 @@ path_matches (const char *request_path, const char *cookie_path)
   return 0;
 }
 
+/**
+ * Skip leading whitespace in a string.
+ */
+static const char *
+maxage_skip_whitespace (const char *str, size_t *remaining)
+{
+  while (*remaining > 0 && (*str == ' ' || *str == '\t'))
+    {
+      str++;
+      (*remaining)--;
+    }
+  return str;
+}
+
+/**
+ * Parse digits from string with overflow protection.
+ * Returns 1 on success with age set, 0 on failure.
+ */
+static int
+maxage_parse_digits (const char **str, size_t *remaining, long *age)
+{
+  int has_digit = 0;
+  *age = 0;
+
+  while (*remaining > 0 && **str >= '0' && **str <= '9')
+    {
+      has_digit = 1;
+      /* SECURITY: Check overflow before multiplication and addition */
+      if (*age > (LONG_MAX - (**str - '0')) / 10)
+        return 0;
+      *age = *age * 10 + (**str - '0');
+      (*str)++;
+      (*remaining)--;
+    }
+
+  return has_digit && *remaining == 0;
+}
+
+/**
+ * Calculate cookie expiration time with overflow protection.
+ */
+static time_t
+maxage_calculate_expiry (long age)
+{
+  if (age > HTTPCLIENT_MAX_COOKIE_AGE_SEC)
+    age = HTTPCLIENT_MAX_COOKIE_AGE_SEC;
+
+  time_t now = time (NULL);
+  if (now == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      return 0;
+    }
+
+  size_t temp;
+  if (!SocketSecurity_check_add ((size_t)now, (size_t)age, &temp))
+    return 1; /* Overflow - treat as expired */
+
+  return (time_t)temp;
+}
+
 /* Parse Max-Age with overflow protection */
 static time_t
 parse_max_age (const char *value, const size_t len)
 {
-  const char *start;
-  size_t remaining;
-  int negative = 0;
-  long age = 0;
-  int has_digit = 0;
-  time_t now, expires;
-  size_t temp;
-
   if (value == NULL || len == 0)
     return 0;
 
-  start = value;
-  remaining = len;
+  const char *start = value;
+  size_t remaining = len;
 
-  /* Skip leading whitespace */
-  while (remaining > 0 && (*start == ' ' || *start == '\t'))
-    {
-      start++;
-      remaining--;
-    }
+  start = maxage_skip_whitespace (start, &remaining);
   if (remaining == 0)
     return 0;
 
-  /* Check for negative sign */
+  int negative = 0;
   if (*start == '-')
     {
       negative = 1;
@@ -194,46 +242,19 @@ parse_max_age (const char *value, const size_t len)
         return 0;
     }
 
-  /* Parse digits with overflow protection */
-  while (remaining > 0 && *start >= '0' && *start <= '9')
-    {
-      has_digit = 1;
-      /* SECURITY: Check overflow before multiplication and addition */
-      if (age > (LONG_MAX - (*start - '0')) / 10)
-        return 0; /* Overflow detected */
-      age = age * 10 + (*start - '0');
-      start++;
-      remaining--;
-    }
-
-  if (!has_digit || remaining > 0)
+  long age;
+  if (!maxage_parse_digits (&start, &remaining, &age))
     return 0;
 
-  /* SECURITY: Check that negation won't overflow before applying sign */
   if (negative)
     {
-      /* For negative values, check against abs(LONG_MIN) = LONG_MAX + 1 */
+      /* SECURITY: Check that negation won't overflow */
       if ((unsigned long long)age > (unsigned long long)LONG_MAX + 1)
-        return 0; /* Would overflow on negation */
-      return 1;   /* Negative Max-Age means expired immediately */
+        return 0;
+      return 1; /* Negative Max-Age means expired immediately */
     }
 
-  /* Cap at maximum allowed age */
-  if (age > HTTPCLIENT_MAX_COOKIE_AGE_SEC)
-    age = HTTPCLIENT_MAX_COOKIE_AGE_SEC;
-
-  /* Calculate expiration time with overflow protection */
-  now = time (NULL);
-  if (now == (time_t)-1)
-    {
-      HTTPCLIENT_ERROR_MSG ("time() failed");
-      return 0; /* Time failure - reject cookie */
-    }
-  if (!SocketSecurity_check_add ((size_t)now, (size_t)age, &temp))
-    return 1; /* Overflow in time calculation - treat as expired */
-  expires = (time_t)temp;
-
-  return expires;
+  return maxage_calculate_expiry (age);
 }
 
 /* Parse SameSite attribute (defaults to LAX per RFC 6265bis) */
@@ -272,12 +293,13 @@ validate_cookie_required_fields (const SocketHTTPClient_Cookie *cookie)
 {
   if (cookie->name == NULL || cookie->value == NULL || cookie->domain == NULL)
     {
-      SocketLog_emitf (SOCKET_LOG_ERROR,
-                       SOCKET_LOG_COMPONENT,
-                       "Invalid NULL fields in cookie: name=%s value=%s domain=%s",
-                       cookie->name ? cookie->name : "NULL",
-                       cookie->value ? cookie->value : "NULL",
-                       cookie->domain ? cookie->domain : "NULL");
+      SocketLog_emitf (
+          SOCKET_LOG_ERROR,
+          SOCKET_LOG_COMPONENT,
+          "Invalid NULL fields in cookie: name=%s value=%s domain=%s",
+          cookie->name ? cookie->name : "NULL",
+          cookie->value ? cookie->value : "NULL",
+          cookie->domain ? cookie->domain : "NULL");
       return -1;
     }
   return 0;

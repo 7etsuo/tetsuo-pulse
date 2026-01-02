@@ -995,6 +995,78 @@ build_uncompressed_point (unsigned char *out,
   memcpy (out + 1, pubkey, 2 * coord_size);
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+/**
+ * Create ECDSA key using OpenSSL 3.0+ EVP_PKEY_fromdata API.
+ */
+static EVP_PKEY *
+create_ecdsa_pkey_ossl3 (const ECDSAParams *params,
+                         const unsigned char *pubkey_uncompressed,
+                         int *status)
+{
+  OSSL_PARAM ossl_params[3];
+  ossl_params[0] = OSSL_PARAM_construct_utf8_string (
+      "group", (char *)params->group_name, 0);
+  ossl_params[1] = OSSL_PARAM_construct_octet_string (
+      "pub", (unsigned char *)pubkey_uncompressed, 1 + 2 * params->coord_size);
+  ossl_params[2] = OSSL_PARAM_construct_end ();
+
+  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "EC", NULL);
+  if (pctx == NULL)
+    {
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  EVP_PKEY *pkey = NULL;
+  if (EVP_PKEY_fromdata_init (pctx) <= 0
+      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, ossl_params) <= 0)
+    {
+      EVP_PKEY_CTX_free (pctx);
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  EVP_PKEY_CTX_free (pctx);
+  return pkey;
+}
+#else
+/**
+ * Create ECDSA key using legacy EC_KEY API (OpenSSL < 3.0).
+ */
+static EVP_PKEY *
+create_ecdsa_pkey_legacy (const ECDSAParams *params,
+                          const unsigned char *pubkey_uncompressed,
+                          int *status)
+{
+  EC_KEY *ec = EC_KEY_new_by_curve_name (params->nid);
+  if (ec == NULL)
+    {
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  const unsigned char *pp = pubkey_uncompressed;
+  if (o2i_ECPublicKey (&ec, &pp, 1 + 2 * params->coord_size) == NULL)
+    {
+      EC_KEY_free (ec);
+      *status = DNSSEC_BOGUS;
+      return NULL;
+    }
+
+  EVP_PKEY *pkey = EVP_PKEY_new ();
+  if (pkey == NULL)
+    {
+      EC_KEY_free (ec);
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  EVP_PKEY_assign_EC_KEY (pkey, ec);
+  return pkey;
+}
+#endif
+
 /*
  * Create ECDSA public key from DNSKEY
  * Returns pkey on success, NULL on error
@@ -1021,59 +1093,17 @@ create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
   build_uncompressed_point (
       pubkey_uncompressed, dnskey->pubkey, params.coord_size);
 
-  EVP_PKEY *pkey = NULL;
-
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-  /* OpenSSL 3.0+ */
-  OSSL_PARAM ossl_params[3];
-  ossl_params[0] = OSSL_PARAM_construct_utf8_string (
-      "group", (char *)params.group_name, 0);
-  ossl_params[1] = OSSL_PARAM_construct_octet_string (
-      "pub", pubkey_uncompressed, 1 + 2 * params.coord_size);
-  ossl_params[2] = OSSL_PARAM_construct_end ();
-
-  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "EC", NULL);
-  if (pctx == NULL)
-    {
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-
-  if (EVP_PKEY_fromdata_init (pctx) <= 0
-      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, ossl_params) <= 0)
-    {
-      EVP_PKEY_CTX_free (pctx);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-  EVP_PKEY_CTX_free (pctx);
+  EVP_PKEY *pkey
+      = create_ecdsa_pkey_ossl3 (&params, pubkey_uncompressed, status);
 #else
-  EC_KEY *ec = EC_KEY_new_by_curve_name (params.nid);
-  if (ec == NULL)
-    {
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-
-  const unsigned char *pp = pubkey_uncompressed;
-  if (o2i_ECPublicKey (&ec, &pp, 1 + 2 * params.coord_size) == NULL)
-    {
-      EC_KEY_free (ec);
-      *status = DNSSEC_BOGUS;
-      return NULL;
-    }
-
-  pkey = EVP_PKEY_new ();
-  if (pkey == NULL)
-    {
-      EC_KEY_free (ec);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-  EVP_PKEY_assign_EC_KEY (pkey, ec);
+  EVP_PKEY *pkey
+      = create_ecdsa_pkey_legacy (&params, pubkey_uncompressed, status);
 #endif
 
-  *status = DNSSEC_SECURE;
+  if (pkey != NULL)
+    *status = DNSSEC_SECURE;
+
   return pkey;
 }
 

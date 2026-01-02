@@ -531,23 +531,81 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
     return connection_read_body_fixed (server, conn, input, input_len);
 }
 
+/**
+ * Execute HTTP/1.1 parser on buffered input.
+ * Returns parser result via output params.
+ */
+static SocketHTTP1_Result
+connection_execute_parser (ServerConnection *conn, int *need_more)
+{
+  const void *data;
+  size_t len, consumed;
+
+  data = SocketBuf_readptr (conn->inbuf, &len);
+  if (len == 0)
+    {
+      *need_more = 1;
+      return HTTP1_OK;
+    }
+
+  *need_more = 0;
+  SocketHTTP1_Result result
+      = SocketHTTP1_Parser_execute (conn->parser, data, len, &consumed);
+
+  if (consumed > 0)
+    SocketBuf_consume (conn->inbuf, consumed);
+
+  return result;
+}
+
+/**
+ * Handle request body setup after headers are complete.
+ * Returns 0 need more data, 1 ready, -1 error.
+ */
+static int
+connection_handle_body (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  if (!conn->request->has_body)
+    {
+      conn->state = CONN_STATE_HANDLING;
+      return 1;
+    }
+
+  if (!conn->body_streaming)
+    {
+      if (connection_setup_body_buffer (server, conn) < 0)
+        return -1;
+
+      if (conn->body_capacity > 0)
+        {
+          int body_result = connection_read_initial_body (server, conn);
+          if (body_result <= 0)
+            return body_result;
+        }
+
+      conn->state = CONN_STATE_HANDLING;
+      return 1;
+    }
+
+  /* Streaming mode enabled by validator */
+  int body_result = connection_read_initial_body (server, conn);
+  if (body_result <= 0)
+    return body_result;
+
+  conn->state = CONN_STATE_HANDLING;
+  return 1;
+}
+
 /* Parse HTTP request. Runs validator on headers complete, sets up body
  * handling. Returns 0 need more data, 1 ready, -1 error */
 int
 connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
 {
-  const void *data;
-  size_t len, consumed;
-  SocketHTTP1_Result result;
+  int need_more;
+  SocketHTTP1_Result result = connection_execute_parser (conn, &need_more);
 
-  data = SocketBuf_readptr (conn->inbuf, &len);
-  if (len == 0)
+  if (need_more)
     return 0;
-
-  result = SocketHTTP1_Parser_execute (conn->parser, data, len, &consumed);
-
-  if (consumed > 0)
-    SocketBuf_consume (conn->inbuf, consumed);
 
   if (result == HTTP1_ERROR || result >= HTTP1_ERROR_LINE_TOO_LONG)
     {
@@ -563,46 +621,10 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
   conn->body_mode = SocketHTTP1_Parser_body_mode (conn->parser);
   conn->request_start_ms = Socket_get_monotonic_ms ();
 
-  /* Run validator early to allow streaming mode setup before body buffering.
-   * The validator can call SocketHTTPServer_Request_body_stream() to enable
-   * streaming mode for the request body. */
   if (!server_run_validator_early (server, conn))
-    {
-      /* Validator rejected - error already sent */
-      return -1;
-    }
+    return -1;
 
-  /* Handle request body if present - use early returns to reduce nesting */
-  if (!conn->request->has_body)
-    {
-      conn->state = CONN_STATE_HANDLING;
-      return 1;
-    }
-
-  if (!conn->body_streaming)
-    {
-      /* Normal buffered mode: allocate body buffer */
-      if (connection_setup_body_buffer (server, conn) < 0)
-        return -1;
-
-      if (conn->body_capacity > 0)
-        {
-          int body_result = connection_read_initial_body (server, conn);
-          if (body_result <= 0)
-            return body_result;
-        }
-
-      conn->state = CONN_STATE_HANDLING;
-      return 1;
-    }
-
-  /* Streaming mode enabled by validator - read initial body with callback */
-  int body_result = connection_read_initial_body (server, conn);
-  if (body_result <= 0)
-    return body_result;
-
-  conn->state = CONN_STATE_HANDLING;
-  return 1;
+  return connection_handle_body (server, conn);
 }
 
 /* Serialize and send HTTP response with headers and body */
@@ -864,6 +886,77 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 }
 
 /**
+ * Free WebSocket and HTTP/2 protocol-specific resources.
+ */
+static void
+connection_close_protocols (ServerConnection *conn)
+{
+  if (conn->websocket != NULL)
+    SocketWS_free (&conn->websocket);
+
+  if (conn->http2_conn != NULL)
+    SocketHTTP2_Conn_free (&conn->http2_conn);
+
+  while (conn->http2_streams != NULL)
+    {
+      ServerHTTP2Stream *next = conn->http2_streams->next;
+      if (conn->http2_streams->arena != NULL)
+        Arena_dispose (&conn->http2_streams->arena);
+      conn->http2_streams = next;
+    }
+}
+
+/**
+ * Close socket and remove from poll.
+ */
+static void
+connection_close_socket (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
+    SocketIPTracker_release (server->ip_tracker, conn->client_addr);
+
+  if (server->poll != NULL && conn->socket != NULL)
+    SocketPoll_del (server->poll, conn->socket);
+
+  if (conn->socket != NULL)
+    Socket_free (&conn->socket);
+}
+
+/**
+ * Remove connection from server's linked list.
+ */
+static void
+connection_unlink (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  if (conn->prev != NULL)
+    conn->prev->next = conn->next;
+  else
+    server->connections = conn->next;
+
+  if (conn->next != NULL)
+    conn->next->prev = conn->prev;
+
+  conn->next = NULL;
+  conn->prev = NULL;
+}
+
+/**
+ * Release connection's allocated buffers and arena.
+ */
+static void
+connection_release_resources (ServerConnection *conn)
+{
+  if (conn->body_uses_buf && conn->body_buf != NULL)
+    {
+      SocketBuf_release (&conn->body_buf);
+      conn->body_uses_buf = 0;
+    }
+
+  if (conn->arena != NULL)
+    Arena_dispose (&conn->arena);
+}
+
+/**
  * connection_close - Mark connection for deferred deletion
  *
  * Releases all resources (socket, arena, buffers) but defers the actual
@@ -876,75 +969,20 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 void
 connection_close (SocketHTTPServer_T server, ServerConnection *conn)
 {
-  if (conn == NULL)
+  if (conn == NULL || conn->pending_close)
     return;
 
-  /* Already marked for close - prevent double cleanup */
-  if (conn->pending_close)
-    return;
-
-  /* Mark as pending close FIRST to prevent use-after-free.
-   * This flag is checked before processing any event for this connection. */
   conn->pending_close = 1;
 
-  /* Free WebSocket handle if upgraded */
-  if (conn->websocket != NULL)
-    SocketWS_free (&conn->websocket);
+  connection_close_protocols (conn);
+  connection_close_socket (server, conn);
+  connection_unlink (server, conn);
 
-  /* Free HTTP/2 connection (does not close underlying socket). */
-  if (conn->http2_conn != NULL)
-    SocketHTTP2_Conn_free (&conn->http2_conn);
-
-  /* Dispose any per-stream arenas that may still be linked (defensive). */
-  while (conn->http2_streams != NULL)
-    {
-      ServerHTTP2Stream *next = conn->http2_streams->next;
-      if (conn->http2_streams->arena != NULL)
-        Arena_dispose (&conn->http2_streams->arena);
-      conn->http2_streams = next;
-    }
-
-  /* Release IP tracking */
-  if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
-    SocketIPTracker_release (server->ip_tracker, conn->client_addr);
-
-  /* Remove from poll */
-  if (server->poll != NULL && conn->socket != NULL)
-    SocketPoll_del (server->poll, conn->socket);
-
-  /* Close socket */
-  if (conn->socket != NULL)
-    Socket_free (&conn->socket);
-
-  /* Remove from connection list */
-  if (conn->prev != NULL)
-    conn->prev->next = conn->next;
-  else
-    server->connections = conn->next;
-
-  if (conn->next != NULL)
-    conn->next->prev = conn->prev;
-
-  /* Clear list pointers to prevent accidental traversal */
-  conn->next = NULL;
-  conn->prev = NULL;
-
-  /* Update global + per-server metrics */
   SERVER_GAUGE_DEC (
       server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS, active_connections);
 
-  /* Release body buffer if allocated */
-  if (conn->body_uses_buf && conn->body_buf != NULL)
-    {
-      SocketBuf_release (&conn->body_buf);
-      conn->body_uses_buf = 0;
-    }
+  connection_release_resources (conn);
 
-  /* Free arena */
-  if (conn->arena != NULL)
-    Arena_dispose (&conn->arena);
-
-  /* Add to pending close list for deferred free() at end of event loop */
   conn->next_pending = server->pending_close_list;
   server->pending_close_list = conn;
 }
