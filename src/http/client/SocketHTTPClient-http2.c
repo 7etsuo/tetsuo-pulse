@@ -22,6 +22,10 @@
 #include "http/SocketHTTP2.h"
 #include "http/SocketHTTPClient-private.h"
 
+/* HTTP/2 pseudo-header constants */
+#define PSEUDO_HEADER_STATUS ":status"
+#define PSEUDO_HEADER_STATUS_LEN 7
+
 void
 httpclient_http2_build_request (const SocketHTTPClient_Request_T req,
                                 SocketHTTP_Request *http_req)
@@ -51,8 +55,10 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
   /* Find :status pseudo-header first */
   for (i = 0; i < header_count; i++)
     {
-      if (headers[i].name_len == 7
-          && memcmp (headers[i].name, ":status", 7) == 0)
+      if (headers[i].name_len == PSEUDO_HEADER_STATUS_LEN
+          && memcmp (headers[i].name, PSEUDO_HEADER_STATUS,
+                     PSEUDO_HEADER_STATUS_LEN)
+             == 0)
         {
           /* Parse status code */
           response->status_code = (int)strtol (headers[i].value, NULL, 10);
