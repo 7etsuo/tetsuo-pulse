@@ -1,8 +1,0 @@
-{
-  "number": 2352,
-  "title": "refactor(tls): replace magic timeout 1000ms with named constant",
-  "body": "## Summary\n\nHardcoded magic number `1000` for minimum shutdown timeout in `SocketTLS_disable()` should be replaced with a named constant for maintainability.\n\n## Location\n\n**File**: `src/tls/SocketTLS.c`\n**Line**: 547\n**Function**: `SocketTLS_disable()`\n\n## Issue\n\n```c\nint timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS / 4;\nif (timeout_ms < 1000)\n    timeout_ms = 1000; /* Minimum 1 second for disable */\n```\n\nThe value `1000` (1 second in milliseconds) is hardcoded without a symbolic constant.\n\n## Recommendation\n\nDefine a constant in the appropriate header:\n\n```c\n#define SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS 1000\n```\n\nThen use it in the code:\n\n```c\nif (timeout_ms < SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS)\n    timeout_ms = SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS;\n```\n\n## Impact\n\n- **Severity**: LOW\n- **Category**: Refactoring\n- **Pattern**: MAGIC_TIMEOUT_1000\n\n## Labels\n\n- `refactoring`\n- `low-priority`\n- `code-quality`",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

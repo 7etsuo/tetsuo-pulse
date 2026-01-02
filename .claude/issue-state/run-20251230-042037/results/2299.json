@@ -1,5 +1,0 @@
-{
-  "issue": 2299,
-  "status": "already_resolved",
-  "resolution": "Feature already implemented via commit 9a48fdce (fix(simple-poll): add consistent UDP socket validation #2425). The get_core_socket() helper function exists at src/simple/SocketSimple-poll.c:34-49 and is used in all 4 functions mentioned in the issue (Socket_simple_poll_add, Socket_simple_poll_mod, Socket_simple_poll_del, Socket_simple_poll_modify_events). The helper also addresses the dgram validation mentioned in related issue #2292."
-}

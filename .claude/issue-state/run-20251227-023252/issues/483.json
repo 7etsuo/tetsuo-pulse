@@ -1,8 +1,0 @@
-{
-  "number": 483,
-  "title": "fix(socket): add debug log for Arena_alloc failure in SocketBuf compact",
-  "body": "## Problem\nIn `SocketBuf_compact()`, when Arena_alloc fails to allocate a temporary buffer, the code silently falls back to in-place rotation without logging. This makes debugging memory pressure situations difficult.\n\n## Location\n- File: src/socket/SocketBuf.c\n- Line: 596-607\n\n## Current Code\n```c\nchar *temp = Arena_alloc (buf->arena, buf->size, __FILE__, __LINE__);\nif (temp)\n  {\n    memmove (temp, buf->data + buf->head, first_part);\n    memmove (temp + first_part, buf->data, second_part);\n    memmove (buf->data, temp, buf->size);\n  }\nelse\n  {\n    compact_rotate_in_place (buf->data, buf->capacity, buf->head,\n                             buf->size);\n  }\n```\n\n## Suggested Fix\nAdd a debug-level log when falling back to in-place rotation:\n```c\nelse\n  {\n    SOCKET_LOG_DEBUG_MSG(\"Arena_alloc failed in compact, using in-place rotation (size=%zu)\", buf->size);\n    compact_rotate_in_place (buf->data, buf->capacity, buf->head,\n                             buf->size);\n  }\n```\n\n## Category\nObservability - Low\n\n## Notes\n- This is not a security issue - the fallback path is correct and safe\n- The fallback (in-place rotation) is O(n) vs O(1) with temp buffer\n- Debug logging helps identify memory pressure situations",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

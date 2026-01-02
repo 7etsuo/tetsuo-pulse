@@ -1,8 +1,0 @@
-{
-  "number": 1725,
-  "title": "refactor(http-server-connections): extract overflow check in streaming mode to helper function",
-  "body": "## Summary\n\nThe connection_read_body_streaming() function contains 4-level nested if statements (lines 262-273) for overflow checking.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_read_body_streaming\nLines: 262-273\n\n## Pattern\nDEEP_NESTING_4 (HIGH severity)",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

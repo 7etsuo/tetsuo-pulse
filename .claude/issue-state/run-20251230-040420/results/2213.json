@@ -1,9 +1,0 @@
-{
-  "issue": 2213,
-  "status": "already_resolved",
-  "resolution": "The redundant memset after CALLOC in create_async_request() was resolved when the entire stub async request API was removed in PR #2428 (commit 45c2aee6, merged 2025-12-30 10:24:00). The function create_async_request() and all related stub async API code no longer exists in the codebase. A previous attempt via PR #2406 was closed, but the issue was ultimately fixed by removing the non-functional stub code entirely.",
-  "resolving_pr": "https://github.com/7etsuo/tetsuo-socket/pull/2428",
-  "resolving_commit": "45c2aee626ebdc5981b801cee6a3382e86a7e9f0",
-  "verification": "Confirmed via grep that create_async_request() does not exist in current codebase. The file src/http/SocketHTTPClient-async.c now contains only functional io_uring async I/O code, not the stub async request API.",
-  "previous_pr": "https://github.com/7etsuo/tetsuo-socket/pull/2406"
-}

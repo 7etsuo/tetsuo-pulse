@@ -1,8 +1,0 @@
-{
-  "number": 1704,
-  "title": "refactor(hpack-huffman): flatten 4-level nesting in try_full_decode",
-  "body": "## Issue\n4-level nested if statements in `try_full_decode` function reduce readability.\n\n**File:** `src/http/SocketHPACK-huffman.c`  \n**Line:** 483  \n**Severity:** HIGH  \n**Pattern:** DEEP_NESTING_4  \n**Category:** Readability Refactor\n\n## Current Code\n```c\nfor (cl = 9; cl <= maxcl; cl++)\n  {\n    // depth 1: loop\n    if (sym >= 0)\n      {\n        // depth 2\n        if (sym == HPACK_HUFFMAN_EOS)\n          {\n            // depth 3\n            if (pad_b > HUFFMAN_MAX_PAD_BITS || pad_b < 0)\n              return 0;  // depth 4\n            \n            if (pad != pad_mask)\n              return 0;  // depth 4\n          }\n      }\n  }\n```\n\n## Recommendation\nFlatten with early return guard clauses:\n\n```c\nfor (cl = 9; cl <= maxcl; cl++)\n  {\n    int sym = hpack_find_symbol(thiscode, cl);\n    if (sym < 0)\n      continue;\n    \n    if (sym != HPACK_HUFFMAN_EOS)\n      {\n        // handle normal symbol\n        if (*out_pos >= output_size)\n          return -1;\n        output[(*out_pos)++] = (unsigned char) sym;\n        *bits_avail -= cl;\n        return 1;\n      }\n    \n    // Handle EOS\n    int pad_b = *bits_avail - cl;\n    if (pad_b > HUFFMAN_MAX_PAD_BITS || pad_b < 0)\n      return 0;\n    \n    uint64_t pad_mask = (1ULL << pad_b) - 1ULL;\n    uint64_t pad = bits & pad_mask;\n    if (pad != pad_mask)\n      return 0;\n    \n    *bits_avail = 0;\n    return 2;\n  }\n```\n\n## Impact\n- Reduces nesting from 4 levels to 2 levels\n- Improves code readability\n- Reduces cognitive complexity\n- Makes control flow easier to follow",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

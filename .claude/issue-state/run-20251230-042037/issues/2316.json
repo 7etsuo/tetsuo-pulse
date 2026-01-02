@@ -1,8 +1,0 @@
-{
-  "number": 2316,
-  "title": "refactor(simple-security): remove volatile cast in Socket_simple_syn_new",
-  "body": "## Summary\n\nIn `Socket_simple_syn_new` and `Socket_simple_ip_tracker_new`, the code casts away `volatile` when freeing resources on error paths, which could hide optimization bugs.\n\n## Location\n\n- File: `/home/tetsuo/git/tetsuo-socket/src/simple/SocketSimple-security.c`\n- Lines: 111, 441\n\n## Current Code\n\n```c\nvolatile SocketSYNProtect_T protect = NULL;\n// ...\nhandle = calloc (1, sizeof (*handle));\nif (!handle)\n  {\n    simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, \"Memory allocation failed\");\n    SocketSYNProtect_free ((SocketSYNProtect_T *)&protect);  // Cast away volatile\n    return NULL;\n  }\n```\n\n## Issue\n\nCasting away `volatile` can:\n1. Hide compiler optimization issues\n2. Violate strict aliasing rules in some cases\n3. Mask unintended behavior\n\n## Recommendation\n\nUse a temporary non-volatile variable:\n\n```c\nvolatile SocketSYNProtect_T protect = NULL;\n// ...\nhandle = calloc (1, sizeof (*handle));\nif (!handle)\n  {\n    simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, \"Memory allocation failed\");\n    SocketSYNProtect_T tmp = protect;\n    SocketSYNProtect_free (&tmp);\n    return NULL;\n  }\n```\n\n## Pattern ID\n\n`CASTING_AWAY_VOLATILE`\n\n## Severity\n\nMEDIUM - Code correctness issue, not a security vulnerability\n\n## Category\n\nrefactor",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

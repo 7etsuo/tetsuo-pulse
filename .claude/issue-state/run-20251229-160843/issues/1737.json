@@ -1,8 +1,0 @@
-{
-  "number": 1737,
-  "title": "refactor(http2-stream): inline single-use function clear_pending_header_block",
-  "body": "## Issue\nSingle-use helper function adds unnecessary indirection.\n\n**File**: `src/http/SocketHTTP2-stream.c`  \n**Lines**: 1286-1292  \n**Function**: `clear_pending_header_block`  \n**Pattern**: SINGLE_USE_INLINE  \n**Severity**: HIGH  \n**Size**: 6 lines  \n**Usage**: Called once from `http2_process_continuation` at line 2401\n\n## Current Code\n\\`\\`\\`c\nstatic void\nclear_pending_header_block (SocketHTTP2_Stream_T stream)\n{\n  stream->header_block = NULL;\n  stream->header_block_len = 0;\n  stream->header_block_capacity = 0;\n}\n\\`\\`\\`\n\n## Recommendation\nInline at the single call site in `http2_process_continuation`:\n\\`\\`\\`c\n/* Clear pending header block */\nstream->header_block = NULL;\nstream->header_block_len = 0;\nstream->header_block_capacity = 0;\n\\`\\`\\`\n\n## Benefits\n- Eliminates unnecessary function call overhead\n- Reduces code indirection\n- Makes cleanup logic more visible\n- Simplifies codebase (one less function to maintain)",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}
