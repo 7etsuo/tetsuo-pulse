@@ -1926,12 +1926,14 @@ SocketProxy_tunnel (Socket_T socket,
   int fd;
   int was_nonblocking;
   int flags;
+  SocketProxy_Result result = PROXY_OK;
 
   assert (socket != NULL);
   assert (proxy != NULL);
   assert (target_host != NULL);
   assert (target_port > 0 && target_port <= 65535);
 
+  /* Early validation guards */
   if (proxy->type == SOCKET_PROXY_NONE)
     return PROXY_ERROR_UNSUPPORTED;
 
@@ -1953,32 +1955,33 @@ SocketProxy_tunnel (Socket_T socket,
   if (!was_nonblocking)
     Socket_setnonblocking (socket);
 
+  /* TLS handshake if needed */
 #if SOCKET_HAS_TLS
   if (conn->type == SOCKET_PROXY_HTTPS)
     {
-      SocketProxy_Result tls_result = proxy_tunnel_tls_handshake (conn, fd);
-      if (tls_result != PROXY_OK)
-        {
-          if (!was_nonblocking)
-            proxy_clear_nonblocking (fd);
-          return tls_result;
-        }
+      result = proxy_tunnel_tls_handshake (conn, fd);
+      if (result != PROXY_OK)
+        goto cleanup;
     }
 #endif
 
+  /* Build and send initial request */
   if (proxy_build_initial_request (conn) < 0)
     {
-      if (!was_nonblocking)
-        proxy_clear_nonblocking (fd);
-      return conn->result;
+      result = conn->result;
+      goto cleanup;
     }
 
+  /* Run the main poll loop */
   proxy_run_poll_loop (conn, fd);
+  result = conn->result;
 
+cleanup:
+  /* Single cleanup point - restore blocking state */
   if (!was_nonblocking)
     proxy_clear_nonblocking (fd);
 
-  return conn->result;
+  return result;
 }
 
 static int
