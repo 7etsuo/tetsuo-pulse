@@ -695,27 +695,30 @@ ws_send_data_frame (SocketWS_T ws,
       unsigned char *compressed = NULL;
       size_t compressed_len = 0;
 
+      /* Skip compression if it fails */
       if (ws_compress_message (ws, data, len, &compressed, &compressed_len)
-          == 0)
-        {
-          data = compressed;
-          len = compressed_len;
+          != 0)
+        goto skip_compression;
 
-          /* Check if compression caused expansion beyond frame size limit.
-           * DEFLATE can slightly expand incompressible data. */
-          if (len > ws->config.max_frame_size)
-            {
-              ws_set_error (
-                  ws,
-                  WS_ERROR_FRAME_TOO_LARGE,
-                  "Compressed frame too large: %zu > %zu (original %zu)",
-                  len,
-                  ws->config.max_frame_size,
-                  original_len);
-              return -1;
-            }
+      /* Compression succeeded - use compressed data */
+      data = compressed;
+      len = compressed_len;
+
+      /* Check if compression caused expansion beyond frame size limit.
+       * DEFLATE can slightly expand incompressible data. */
+      if (len > ws->config.max_frame_size)
+        {
+          ws_set_error (ws,
+                        WS_ERROR_FRAME_TOO_LARGE,
+                        "Compressed frame too large: %zu > %zu (original %zu)",
+                        len,
+                        ws->config.max_frame_size,
+                        original_len);
+          return -1;
         }
     }
+
+skip_compression:
 #endif
 
   if (ws_write_frame_header (ws, fin, opcode, masked, mask_key, len) < 0)
