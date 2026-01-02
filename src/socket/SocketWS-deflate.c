@@ -303,6 +303,19 @@ try_grow_zlib_buffer (SocketWS_T ws,
 
 
 static int
+is_flush_complete (int flush_type, int ret, const z_stream *strm)
+{
+  if (flush_type == Z_FINISH && ret == Z_STREAM_END)
+    return 1;
+  if (flush_type == Z_SYNC_FLUSH && ret == Z_OK && strm->avail_in == 0)
+    return 1;
+  if (ret != Z_OK)
+    return 1;
+  return 0;
+}
+
+
+static int
 compress_flush_phase (SocketWS_T ws,
                       z_stream *strm,
                       unsigned char **buf,
@@ -311,11 +324,11 @@ compress_flush_phase (SocketWS_T ws,
                       int flush_type)
 {
   int ret;
-  int finished = 0;
 
-  while (!finished)
+  while (1)
     {
       ret = deflate (strm, flush_type);
+
       if (ret == Z_STREAM_ERROR)
         {
           ws_set_error (
@@ -331,7 +344,6 @@ compress_flush_phase (SocketWS_T ws,
 
       *total_out = *buf_size - strm->avail_out;
 
-      /* Grow buffer if needed during flush */
       if (strm->avail_out == 0)
         {
           if (try_grow_zlib_buffer (
@@ -340,12 +352,8 @@ compress_flush_phase (SocketWS_T ws,
             return -1;
         }
 
-      if (flush_type == Z_FINISH && ret == Z_STREAM_END)
-        finished = 1;
-      else if (flush_type == Z_SYNC_FLUSH && ret == Z_OK && strm->avail_in == 0)
-        finished = 1;
-      else if (ret != Z_OK)
-        finished = 1;
+      if (is_flush_complete (flush_type, ret, strm))
+        break;
     }
 
   *total_out = *buf_size - strm->avail_out;
