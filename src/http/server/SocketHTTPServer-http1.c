@@ -163,34 +163,48 @@ should_copy_header_to_h2 (const char *name, const char *value)
   return 1;
 }
 
-int
-server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
+/**
+ * h2c_validate_config - Check if h2c upgrade is enabled and allowed
+ * @server: HTTP server
+ * @conn: Connection to check
+ *
+ * Returns: 1 if h2c upgrade is allowed, 0 otherwise
+ */
+static int
+h2c_validate_config (SocketHTTPServer_T server, ServerConnection *conn)
 {
-  const SocketHTTP_Request *req;
-  SocketHTTP_Headers_T headers;
-  const char *upgrade;
-  const char *connection;
-  const char *settings_b64;
-  unsigned char *settings_payload = NULL;
-  size_t settings_len = 0;
-
-  assert (server != NULL);
-  assert (conn != NULL);
-
   if (!server->config.enable_h2c_upgrade)
     return 0;
   if (server->config.max_version < HTTP_VERSION_2)
     return 0;
   if (server->config.tls_context != NULL)
     return 0; /* h2c is cleartext */
-
-  req = conn->request;
-  if (req == NULL || req->headers == NULL)
+  if (conn->request == NULL || conn->request->headers == NULL)
     return 0;
+  /* RFC 9113 §3.2.1: If the upgrade request contains a payload body, it must
+   * be fully received before switching to HTTP/2 frames. */
+  if (conn->request->has_body)
+    return 0;
+  return 1;
+}
 
-  headers = req->headers;
+/**
+ * h2c_validate_headers - Validate upgrade headers and extract settings
+ * @headers: Request headers
+ * @settings_b64_out: Output for HTTP2-Settings header value
+ *
+ * Returns: 1 if headers are valid for h2c upgrade, 0 otherwise
+ */
+static int
+h2c_validate_headers (SocketHTTP_Headers_T headers,
+                      const char **settings_b64_out)
+{
+  const char *upgrade;
+  const char *connection;
+  const char *settings_b64;
+  const char *settings_values[10];
+  size_t settings_count;
 
-  /* Use Headers_get_n with STRLEN_LIT for performance */
   upgrade
       = SocketHTTP_Headers_get_n (headers, "Upgrade", STRLEN_LIT ("Upgrade"));
   connection = SocketHTTP_Headers_get_n (
@@ -205,24 +219,169 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
       || !server_header_has_token_ci (connection, "HTTP2-Settings"))
     return 0;
 
-  /* RFC 9113 §3.2.1: If the upgrade request contains a payload body, it must
-   * be fully received before switching to HTTP/2 frames. */
-  if (req->has_body)
-    return 0;
-
   /* RFC 9113 §3.2.1: There MUST be exactly one HTTP2-Settings header */
   if (settings_b64 == NULL)
     return 0;
 
-  /* Count HTTP2-Settings headers - there must be exactly one */
-  const char *settings_values[10]; /* Max 10 headers should be sufficient */
-  size_t settings_count = SocketHTTP_Headers_get_all (
+  settings_count = SocketHTTP_Headers_get_all (
       headers,
       "HTTP2-Settings",
       settings_values,
       sizeof (settings_values) / sizeof (settings_values[0]));
 
   if (settings_count != 1)
+    return 0;
+
+  *settings_b64_out = settings_b64;
+  return 1;
+}
+
+/**
+ * h2c_send_101_response - Send 101 Switching Protocols response
+ * @server: HTTP server
+ * @conn: Connection to upgrade
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+h2c_send_101_response (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  char resp_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
+  SocketHTTP_Headers_T resp_headers = SocketHTTP_Headers_new (conn->arena);
+  SocketHTTP_Response resp;
+  ssize_t resp_len;
+
+  if (resp_headers == NULL)
+    return -1;
+
+  SocketHTTP_Headers_set (resp_headers, "Connection", "Upgrade");
+  SocketHTTP_Headers_set (resp_headers, "Upgrade", "h2c");
+
+  memset (&resp, 0, sizeof (resp));
+  resp.version = HTTP_VERSION_1_1;
+  resp.status_code = 101;
+  resp.headers = resp_headers;
+
+  resp_len
+      = SocketHTTP1_serialize_response (&resp, resp_buf, sizeof (resp_buf));
+  if (resp_len < 0
+      || connection_send_data (server, conn, resp_buf, (size_t)resp_len) < 0)
+    return -1;
+
+  return 0;
+}
+
+/**
+ * h2c_transfer_buffered_data - Transfer buffered bytes to HTTP/2 recv buffer
+ * @conn: Connection with buffered data
+ *
+ * Moves any already-buffered bytes (read by HTTP/1 parser) into HTTP/2
+ * recv buffer so we don't drop frames sent immediately after upgrade.
+ */
+static void
+h2c_transfer_buffered_data (ServerConnection *conn)
+{
+  while (SocketBuf_available (conn->inbuf) > 0)
+    {
+      size_t avail = 0;
+      const void *ptr = SocketBuf_readptr (conn->inbuf, &avail);
+      if (avail == 0 || ptr == NULL)
+        break;
+      if (!SocketBuf_ensure (conn->http2_conn->recv_buf, avail))
+        break;
+      SocketBuf_write (conn->http2_conn->recv_buf, ptr, avail);
+      SocketBuf_consume (conn->inbuf, avail);
+    }
+}
+
+/**
+ * h2c_copy_request_to_stream1 - Copy HTTP/1 request to HTTP/2 stream 1
+ * @server: HTTP server
+ * @conn: Connection with HTTP/2 enabled
+ * @headers: Original HTTP/1 headers
+ * @req: Original HTTP/1 request
+ *
+ * RFC 9113 §3.2: The first HTTP/2 stream uses stream ID 1 and carries
+ * the upgraded HTTP/1 request.
+ */
+static void
+h2c_copy_request_to_stream1 (SocketHTTPServer_T server,
+                             ServerConnection *conn,
+                             SocketHTTP_Headers_T headers,
+                             const SocketHTTP_Request *req)
+{
+  SocketHTTP2_Stream_T stream1
+      = SocketHTTP2_Conn_get_stream (conn->http2_conn, 1);
+  ServerHTTP2Stream *s;
+  SocketHTTP_Request *h2req;
+  SocketHTTP_Headers_T h2h;
+  const char *host;
+
+  if (stream1 == NULL)
+    return;
+
+  s = server_http2_stream_get_or_create (server, conn, stream1);
+  if (s == NULL || s->request != NULL)
+    return;
+
+  h2req = Arena_alloc (s->arena, sizeof (*h2req), __FILE__, __LINE__);
+  h2h = SocketHTTP_Headers_new (s->arena);
+  if (h2req == NULL || h2h == NULL)
+    return;
+
+  memset (h2req, 0, sizeof (*h2req));
+
+  host = SocketHTTP_Headers_get (headers, "Host");
+  h2req->method = req->method;
+  h2req->version = HTTP_VERSION_2;
+  h2req->scheme = "http";
+  h2req->authority = host ? socket_util_arena_strdup (s->arena, host) : "";
+  h2req->path
+      = req->path ? socket_util_arena_strdup (s->arena, req->path) : "/";
+  h2req->headers = h2h;
+  h2req->content_length = -1;
+  h2req->has_body = 0;
+
+  for (size_t i = 0; i < SocketHTTP_Headers_count (headers); i++)
+    {
+      const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (headers, i);
+      if (hdr == NULL)
+        continue;
+      if (should_copy_header_to_h2 (hdr->name, hdr->value))
+        SocketHTTP_Headers_add (h2h, hdr->name, hdr->value);
+    }
+
+  s->request = h2req;
+  s->request_complete = 1;
+  s->request_end_stream = 1;
+
+  {
+    HTTP2ServerCallbackCtx tmp;
+    tmp.server = server;
+    tmp.conn = conn;
+    server_http2_handle_request (&tmp, s);
+  }
+}
+
+int
+server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  const SocketHTTP_Request *req;
+  SocketHTTP_Headers_T headers;
+  const char *settings_b64 = NULL;
+  unsigned char *settings_payload = NULL;
+  size_t settings_len = 0;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (!h2c_validate_config (server, conn))
+    return 0;
+
+  req = conn->request;
+  headers = req->headers;
+
+  if (!h2c_validate_headers (headers, &settings_b64))
     return 0;
 
   if (server_decode_http2_settings (
@@ -234,36 +393,11 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
       return 1;
     }
 
-  /* Send 101 Switching Protocols for h2c upgrade. */
-  {
-    char resp_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
-    SocketHTTP_Headers_T resp_headers = SocketHTTP_Headers_new (conn->arena);
-    SocketHTTP_Response resp;
-    ssize_t resp_len;
-
-    if (resp_headers == NULL)
-      {
-        conn->state = CONN_STATE_CLOSED;
-        return 1;
-      }
-
-    SocketHTTP_Headers_set (resp_headers, "Connection", "Upgrade");
-    SocketHTTP_Headers_set (resp_headers, "Upgrade", "h2c");
-
-    memset (&resp, 0, sizeof (resp));
-    resp.version = HTTP_VERSION_1_1;
-    resp.status_code = 101;
-    resp.headers = resp_headers;
-
-    resp_len
-        = SocketHTTP1_serialize_response (&resp, resp_buf, sizeof (resp_buf));
-    if (resp_len < 0
-        || connection_send_data (server, conn, resp_buf, (size_t)resp_len) < 0)
-      {
-        conn->state = CONN_STATE_CLOSED;
-        return 1;
-      }
-  }
+  if (h2c_send_101_response (server, conn) < 0)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return 1;
+    }
 
   conn->http2_conn = SocketHTTP2_Conn_upgrade_server (
       conn->socket, req, settings_payload, settings_len, conn->arena);
@@ -282,72 +416,8 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
       return 1;
     }
 
-  /* Transfer any already-buffered bytes (read by HTTP/1 parser) into HTTP/2
-   * recv buffer so we don't drop frames sent immediately after upgrade. */
-  while (SocketBuf_available (conn->inbuf) > 0)
-    {
-      size_t avail = 0;
-      const void *ptr = SocketBuf_readptr (conn->inbuf, &avail);
-      if (avail == 0 || ptr == NULL)
-        break;
-      if (!SocketBuf_ensure (conn->http2_conn->recv_buf, avail))
-        break;
-      SocketBuf_write (conn->http2_conn->recv_buf, ptr, avail);
-      SocketBuf_consume (conn->inbuf, avail);
-    }
-
-  SocketHTTP2_Stream_T stream1
-      = SocketHTTP2_Conn_get_stream (conn->http2_conn, 1);
-  if (stream1 != NULL)
-    {
-      ServerHTTP2Stream *s
-          = server_http2_stream_get_or_create (server, conn, stream1);
-      if (s != NULL && s->request == NULL)
-        {
-          SocketHTTP_Request *h2req;
-          SocketHTTP_Headers_T h2h;
-          const char *host;
-
-          h2req = Arena_alloc (s->arena, sizeof (*h2req), __FILE__, __LINE__);
-          h2h = SocketHTTP_Headers_new (s->arena);
-          if (h2req != NULL && h2h != NULL)
-            {
-              memset (h2req, 0, sizeof (*h2req));
-
-              host = SocketHTTP_Headers_get (headers, "Host");
-              h2req->method = req->method;
-              h2req->version = HTTP_VERSION_2;
-              h2req->scheme = "http";
-              h2req->authority
-                  = host ? socket_util_arena_strdup (s->arena, host) : "";
-              h2req->path = req->path
-                                ? socket_util_arena_strdup (s->arena, req->path)
-                                : "/";
-              h2req->headers = h2h;
-              h2req->content_length = -1;
-              h2req->has_body = 0;
-
-              for (size_t i = 0; i < SocketHTTP_Headers_count (headers); i++)
-                {
-                  const SocketHTTP_Header *hdr
-                      = SocketHTTP_Headers_at (headers, i);
-                  if (hdr == NULL)
-                    continue;
-                  if (should_copy_header_to_h2 (hdr->name, hdr->value))
-                    SocketHTTP_Headers_add (h2h, hdr->name, hdr->value);
-                }
-
-              s->request = h2req;
-              s->request_complete = 1;
-              s->request_end_stream = 1;
-
-              HTTP2ServerCallbackCtx tmp;
-              tmp.server = server;
-              tmp.conn = conn;
-              server_http2_handle_request (&tmp, s);
-            }
-        }
-    }
+  h2c_transfer_buffered_data (conn);
+  h2c_copy_request_to_stream1 (server, conn, headers, req);
 
   SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
   return 1;
@@ -661,13 +731,139 @@ server_process_streaming_body (SocketHTTPServer_T server,
   return 0;
 }
 
+/**
+ * body_read_chunked_mode - Read body in chunked/until-close mode
+ * @server: HTTP server
+ * @conn: Connection with body buffer
+ * @input: Input data pointer
+ * @input_len: Input data length (may be modified if truncated)
+ * @result: Output parse result
+ *
+ * Returns: 0 on success, -1 on error (connection closed)
+ */
+static int
+body_read_chunked_mode (SocketHTTPServer_T server,
+                        ServerConnection *conn,
+                        const void *input,
+                        size_t input_len,
+                        SocketHTTP1_Result *result)
+{
+  size_t max_body = server->config.max_body_size;
+  size_t current_len = SocketBuf_available (conn->body_buf);
+  size_t consumed, written;
+  size_t write_avail;
+  void *write_ptr;
+
+  /* Check if adding this chunk would exceed limit */
+  if (current_len + input_len > max_body)
+    {
+      input_len = max_body - current_len;
+      if (input_len == 0)
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+          connection_send_error (server, conn, 413, "Payload Too Large");
+          conn->state = CONN_STATE_CLOSED;
+          return -1;
+        }
+    }
+
+  /* Ensure buffer has space for incoming data */
+  if (!SocketBuf_ensure (conn->body_buf, input_len))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  /* Get write pointer and parse body into it */
+  write_ptr = SocketBuf_writeptr (conn->body_buf, &write_avail);
+  if (write_ptr == NULL || write_avail == 0)
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  *result = SocketHTTP1_Parser_read_body (conn->parser,
+                                          (const char *)input,
+                                          input_len,
+                                          &consumed,
+                                          (char *)write_ptr,
+                                          write_avail,
+                                          &written);
+
+  SocketBuf_consume (conn->inbuf, consumed);
+  if (written > 0)
+    SocketBuf_written (conn->body_buf, written);
+
+  conn->body_len = SocketBuf_available (conn->body_buf);
+
+  /* Check size limit after write */
+  if (conn->body_len > max_body
+      && !SocketHTTP1_Parser_body_complete (conn->parser))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+      connection_send_error (server, conn, 413, "Payload Too Large");
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * body_read_fixed_mode - Read body with Content-Length
+ * @server: HTTP server
+ * @conn: Connection with fixed body buffer
+ * @input: Input data pointer
+ * @input_len: Input data length
+ * @result: Output parse result
+ *
+ * Returns: 0 on success, -1 on error (connection closed)
+ */
+static int
+body_read_fixed_mode (SocketHTTPServer_T server,
+                      ServerConnection *conn,
+                      const void *input,
+                      size_t input_len,
+                      SocketHTTP1_Result *result)
+{
+  size_t max_body = server->config.max_body_size;
+  char *output = (char *)conn->body + conn->body_len;
+  size_t output_avail = conn->body_capacity - conn->body_len;
+  size_t consumed, written;
+
+  *result = SocketHTTP1_Parser_read_body (conn->parser,
+                                          (const char *)input,
+                                          input_len,
+                                          &consumed,
+                                          output,
+                                          output_avail,
+                                          &written);
+
+  SocketBuf_consume (conn->inbuf, consumed);
+  conn->body_len += written;
+
+  /* Reject oversized bodies early to prevent DoS */
+  if (conn->body_len > max_body
+      && !SocketHTTP1_Parser_body_complete (conn->parser))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+      connection_send_error (server, conn, 413, "Payload Too Large");
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  return 0;
+}
+
 int
 server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn)
 {
   const void *input;
-  size_t input_len, consumed, written;
+  size_t input_len;
   SocketHTTP1_Result r;
-  size_t max_body = server->config.max_body_size;
+  int rc;
 
   input = SocketBuf_readptr (conn->inbuf, &input_len);
   if (input_len == 0)
@@ -675,101 +871,19 @@ server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn)
 
   /* Handle streaming mode: deliver body data via callback */
   if (conn->body_streaming && conn->body_callback)
-    {
-      return server_process_streaming_body (server, conn, input, input_len);
-    }
+    return server_process_streaming_body (server, conn, input, input_len);
 
+  /* Read body based on mode */
   if (conn->body_uses_buf)
-    {
-      /* Chunked/until-close mode: use dynamic SocketBuf_T */
-      size_t current_len = SocketBuf_available (conn->body_buf);
-
-      /* Check if adding this chunk would exceed limit */
-      if (current_len + input_len > max_body)
-        {
-          input_len = max_body - current_len;
-          if (input_len == 0)
-            {
-              SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-              connection_send_error (server, conn, 413, "Payload Too Large");
-              conn->state = CONN_STATE_CLOSED;
-              return 0;
-            }
-        }
-
-      /* Ensure buffer has space for incoming data */
-      if (!SocketBuf_ensure (conn->body_buf, input_len))
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
-          conn->state = CONN_STATE_CLOSED;
-          return 0;
-        }
-
-      /* Get write pointer and parse body into it */
-      size_t write_avail;
-      void *write_ptr = SocketBuf_writeptr (conn->body_buf, &write_avail);
-      if (write_ptr == NULL || write_avail == 0)
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
-          conn->state = CONN_STATE_CLOSED;
-          return 0;
-        }
-
-      r = SocketHTTP1_Parser_read_body (conn->parser,
-                                        (const char *)input,
-                                        input_len,
-                                        &consumed,
-                                        (char *)write_ptr,
-                                        write_avail,
-                                        &written);
-
-      SocketBuf_consume (conn->inbuf, consumed);
-      if (written > 0)
-        SocketBuf_written (conn->body_buf, written);
-
-      conn->body_len = SocketBuf_available (conn->body_buf);
-
-      /* Check size limit after write */
-      if (conn->body_len > max_body
-          && !SocketHTTP1_Parser_body_complete (conn->parser))
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-          connection_send_error (server, conn, 413, "Payload Too Large");
-          conn->state = CONN_STATE_CLOSED;
-          return 0;
-        }
-    }
+    rc = body_read_chunked_mode (server, conn, input, input_len, &r);
   else
-    {
-      /* Content-Length mode: use fixed buffer */
-      char *output = (char *)conn->body + conn->body_len;
-      size_t output_avail = conn->body_capacity - conn->body_len;
+    rc = body_read_fixed_mode (server, conn, input, input_len, &r);
 
-      r = SocketHTTP1_Parser_read_body (conn->parser,
-                                        (const char *)input,
-                                        input_len,
-                                        &consumed,
-                                        output,
-                                        output_avail,
-                                        &written);
-
-      SocketBuf_consume (conn->inbuf, consumed);
-      conn->body_len += written;
-
-      /* Reject oversized bodies early to prevent DoS */
-      if (conn->body_len > max_body
-          && !SocketHTTP1_Parser_body_complete (conn->parser))
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-          connection_send_error (server, conn, 413, "Payload Too Large");
-          conn->state = CONN_STATE_CLOSED;
-          return 0;
-        }
-    }
+  if (rc < 0)
+    return 0;
 
   if (r == HTTP1_ERROR || r < 0)
     {
-      /* Error in body reading (e.g., invalid chunk) */
       SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
       conn->state = CONN_STATE_CLOSED;
       return 0;
@@ -781,7 +895,6 @@ server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn)
       return server_handle_parsed_request (server, conn);
     }
 
-  /* Continue reading body on next poll iteration */
   return 0;
 }
 
