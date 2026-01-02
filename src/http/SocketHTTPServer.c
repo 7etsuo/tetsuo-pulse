@@ -1413,6 +1413,92 @@ SocketHTTPServer_Request_upgrade_websocket (
   return NULL; /* Only reached on alloc failures before accept */
 }
 
+/**
+ * @brief Validate RFC 8441 Extended CONNECT for WebSocket over HTTP/2.
+ *
+ * Checks that the request is a valid WebSocket upgrade per RFC 8441:
+ * - Method must be CONNECT
+ * - :protocol pseudo-header must be "websocket"
+ * - Sec-WebSocket-Version must be "13" if present
+ *
+ * @param s HTTP/2 stream to validate
+ * @return 1 if valid WebSocket upgrade, 0 otherwise
+ */
+static int
+validate_rfc8441_websocket_upgrade (ServerHTTP2Stream *s)
+{
+  const char *version;
+
+  /* RFC 8441 Extended CONNECT: :method=CONNECT, :protocol=websocket */
+  if (s->request->method != HTTP_METHOD_CONNECT)
+    return 0;
+  if (s->h2_protocol == NULL || strcmp (s->h2_protocol, "websocket") != 0)
+    return 0;
+
+  /* Validate WebSocket version if specified */
+  version
+      = SocketHTTP_Headers_get (s->request->headers, "Sec-WebSocket-Version");
+  if (version != NULL && strcmp (version, "13") != 0)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * @brief Prepare HTTP/2 200 response for WebSocket upgrade.
+ *
+ * Allocates response headers if needed and populates the response structure.
+ *
+ * @param req Request context (provides arena for allocation)
+ * @param s HTTP/2 stream
+ * @param response Response structure to populate
+ * @return 0 on success, -1 on failure (headers already sent or alloc failed)
+ */
+static int
+prepare_h2_websocket_response (SocketHTTPServer_Request_T req,
+                               ServerHTTP2Stream *s,
+                               SocketHTTP_Response *response)
+{
+  if (s->response_headers_sent)
+    return -1;
+
+  if (s->response_headers == NULL)
+    s->response_headers = SocketHTTP_Headers_new (req->arena);
+  if (s->response_headers == NULL)
+    return -1;
+
+  s->response_status = 200;
+
+  memset (response, 0, sizeof (*response));
+  response->version = HTTP_VERSION_2;
+  response->status_code = 200;
+  response->headers = s->response_headers;
+
+  return 0;
+}
+
+/**
+ * @brief Configure stream for WebSocket-over-HTTP/2 data delivery.
+ *
+ * Sets streaming flags and registers the callback for DATA frame delivery.
+ *
+ * @param s HTTP/2 stream to configure
+ * @param callback Callback for incoming WebSocket frame data
+ * @param userdata User context passed to callback
+ */
+static void
+setup_ws_over_h2_streaming (ServerHTTP2Stream *s,
+                            SocketHTTPServer_BodyCallback callback,
+                            void *userdata)
+{
+  s->response_streaming = 1;
+  s->response_headers_sent = 1;
+  s->body_streaming = 1;
+  s->body_callback = callback;
+  s->body_callback_userdata = userdata;
+  s->ws_over_h2 = 1;
+}
+
 SocketHTTP2_Stream_T
 SocketHTTPServer_Request_accept_websocket_h2 (
     SocketHTTPServer_Request_T req,
@@ -1420,7 +1506,6 @@ SocketHTTPServer_Request_accept_websocket_h2 (
     void *userdata)
 {
   ServerHTTP2Stream *s;
-  const char *version;
   SocketHTTP_Response response;
 
   assert (req != NULL);
@@ -1433,31 +1518,11 @@ SocketHTTPServer_Request_accept_websocket_h2 (
 
   s = req->h2_stream;
 
-  /* RFC 8441 Extended CONNECT: :method=CONNECT, :protocol=websocket */
-  if (s->request->method != HTTP_METHOD_CONNECT)
-    return NULL;
-  if (s->h2_protocol == NULL || strcmp (s->h2_protocol, "websocket") != 0)
+  if (!validate_rfc8441_websocket_upgrade (s))
     return NULL;
 
-  version
-      = SocketHTTP_Headers_get (s->request->headers, "Sec-WebSocket-Version");
-  if (version != NULL && strcmp (version, "13") != 0)
+  if (prepare_h2_websocket_response (req, s, &response) < 0)
     return NULL;
-
-  if (s->response_headers_sent)
-    return NULL;
-
-  if (s->response_headers == NULL)
-    s->response_headers = SocketHTTP_Headers_new (req->arena);
-  if (s->response_headers == NULL)
-    return NULL;
-
-  s->response_status = 200;
-
-  memset (&response, 0, sizeof (response));
-  response.version = HTTP_VERSION_2;
-  response.status_code = 200;
-  response.headers = s->response_headers;
 
   TRY
   {
@@ -1474,16 +1539,7 @@ SocketHTTPServer_Request_accept_websocket_h2 (
   }
   END_TRY;
 
-  /* Mark as streaming so server won't auto-send a standard HTTP response. */
-  s->response_streaming = 1;
-  s->response_headers_sent = 1;
-
-  /* Deliver future DATA bytes via callback (WebSocket frames on DATA stream).
-   */
-  s->body_streaming = 1;
-  s->body_callback = callback;
-  s->body_callback_userdata = userdata;
-  s->ws_over_h2 = 1;
+  setup_ws_over_h2_streaming (s, callback, userdata);
 
   return s->stream;
 }
