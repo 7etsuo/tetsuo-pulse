@@ -129,6 +129,12 @@ httpclient_http2_recv_headers (SocketHTTP2_Stream_T stream,
                                SocketHTTPClient_Response *response,
                                int *end_stream)
 {
+  /*
+   * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
+   * This is acceptable for modern systems (Linux default: 8MB stack).
+   * Chosen over heap allocation for performance (no malloc overhead).
+   * If stack pressure becomes an issue, consider arena allocation.
+   */
   SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS];
   size_t header_count = 0;
   Arena_T arena;
