@@ -508,13 +508,96 @@ server_http2_send_nonstreaming_response (ServerConnection *conn,
     }
 }
 
+/**
+ * h2_check_request_preconditions - Validate path, rate limit, and run validator
+ * @server: HTTP server
+ * @s: HTTP/2 stream with request
+ * @req_ctx: Request context for error responses
+ *
+ * Returns: 1 if request passed all checks, 0 if rejected (response sent)
+ */
+static int
+h2_check_request_preconditions (SocketHTTPServer_T server,
+                                ServerHTTP2Stream *s,
+                                struct SocketHTTPServer_Request *req_ctx)
+{
+  SocketRateLimit_T limiter;
+  int reject_status = 0;
+
+  /* Validate path */
+  if (s->request->path == NULL || s->request->path[0] != '/'
+      || strlen (s->request->path) > SOCKETHTTP_MAX_URI_LEN)
+    {
+      s->response_status = 400;
+      SocketHTTPServer_Request_body_string (req_ctx, "Bad Request");
+      SocketHTTPServer_Request_finish (req_ctx);
+      return 0;
+    }
+
+  /* Check rate limit */
+  limiter = find_rate_limiter (server, s->request->path);
+  if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED, rate_limited);
+      s->response_status = 429;
+      SocketHTTPServer_Request_body_string (req_ctx, "Too Many Requests");
+      SocketHTTPServer_Request_finish (req_ctx);
+      return 0;
+    }
+
+  /* Run validator callback */
+  if (server->validator != NULL)
+    {
+      if (!server->validator (
+              req_ctx, &reject_status, server->validator_userdata))
+        {
+          if (reject_status == 0)
+            reject_status = 403;
+          s->response_status = reject_status;
+          SocketHTTPServer_Request_body_string (req_ctx, "Request Rejected");
+          SocketHTTPServer_Request_finish (req_ctx);
+          return 0;
+        }
+    }
+
+  return 1;
+}
+
+/**
+ * h2_run_middleware_and_handler - Execute middleware chain and request handler
+ * @server: HTTP server
+ * @s: HTTP/2 stream
+ * @req_ctx: Request context
+ *
+ * Returns: 1 if middleware handled request, 0 if handler was invoked
+ */
+static int
+h2_run_middleware_and_handler (SocketHTTPServer_T server,
+                               ServerHTTP2Stream *s,
+                               struct SocketHTTPServer_Request *req_ctx)
+{
+  for (MiddlewareEntry *mw = server->middleware_chain; mw != NULL;
+       mw = mw->next)
+    {
+      int result = mw->func (req_ctx, mw->userdata);
+      if (result != 0)
+        return 1; /* Middleware handled request */
+    }
+
+  if (server->handler != NULL)
+    server->handler (req_ctx, server->handler_userdata);
+
+  (void)s;
+  return 0;
+}
+
 void
 server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
 {
   SocketHTTPServer_T server;
   ServerConnection *conn;
   struct SocketHTTPServer_Request req_ctx;
-  int reject_status = 0;
 
   assert (ctx != NULL);
   server = ctx->server;
@@ -534,56 +617,12 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
   req_ctx.arena = s->arena;
   req_ctx.start_time_ms = Socket_get_monotonic_ms ();
 
-  if (s->request->path == NULL || s->request->path[0] != '/'
-      || strlen (s->request->path) > SOCKETHTTP_MAX_URI_LEN)
-    {
-      s->response_status = 400;
-      SocketHTTPServer_Request_body_string (&req_ctx, "Bad Request");
-      SocketHTTPServer_Request_finish (&req_ctx);
-      return;
-    }
-
-  SocketRateLimit_T limiter = find_rate_limiter (server, s->request->path);
-  if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
-    {
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED, rate_limited);
-      s->response_status = 429;
-      SocketHTTPServer_Request_body_string (&req_ctx, "Too Many Requests");
-      SocketHTTPServer_Request_finish (&req_ctx);
-      return;
-    }
-
-  if (server->validator != NULL)
-    {
-      if (!server->validator (
-              &req_ctx, &reject_status, server->validator_userdata))
-        {
-          if (reject_status == 0)
-            reject_status = 403;
-          s->response_status = reject_status;
-          SocketHTTPServer_Request_body_string (&req_ctx, "Request Rejected");
-          SocketHTTPServer_Request_finish (&req_ctx);
-          return;
-        }
-    }
+  if (!h2_check_request_preconditions (server, s, &req_ctx))
+    return;
 
   s->response_status = 200;
 
-  for (MiddlewareEntry *mw = server->middleware_chain; mw != NULL;
-       mw = mw->next)
-    {
-      int result = mw->func (&req_ctx, mw->userdata);
-      if (result != 0)
-        {
-          SERVER_METRICS_INC (
-              server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
-          return;
-        }
-    }
-
-  if (server->handler != NULL)
-    server->handler (&req_ctx, server->handler_userdata);
+  h2_run_middleware_and_handler (server, s, &req_ctx);
 
   SERVER_METRICS_INC (
       server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL, requests_total);
