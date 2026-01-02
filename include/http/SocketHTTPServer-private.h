@@ -266,6 +266,36 @@ struct SocketHTTPServer
   Arena_T arena;
 };
 
+/**
+ * @brief Helper macro to free a singly-linked list with custom cleanup.
+ *
+ * Safely traverses and frees a linked list, executing custom cleanup code for
+ * each node before freeing the node itself. Avoids use-after-free by saving
+ * the next pointer before cleanup.
+ *
+ * @param head       Pointer to the head of the list
+ * @param type       Type of the list node
+ * @param cleanup    Cleanup code block (can reference 'node' variable)
+ *
+ * Example:
+ *   FREE_LIST(server->rate_limiters, RateLimitEntry, {
+ *     free(node->path_prefix);
+ *   });
+ */
+#define FREE_LIST(head, type, cleanup)   \
+  do                                     \
+    {                                    \
+      type *node = (head);               \
+      while (node != NULL)               \
+        {                                \
+          type *next = node->next;       \
+          cleanup;                       \
+          free (node);                   \
+          node = next;                   \
+        }                                \
+    }                                    \
+  while (0)
+
 #define HTTPSERVER_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
 #define HTTPSERVER_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
 #define RAISE_HTTPSERVER_ERROR(e) \
