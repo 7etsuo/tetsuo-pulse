@@ -86,6 +86,59 @@ ensure_ex_data_index (void)
 #endif
 
 /**
+ * set_tcp_nodelay - Enable TCP_NODELAY on a socket
+ * @fd: File descriptor to configure
+ *
+ * Disables Nagle's algorithm for reduced latency. Critical for TLS handshakes
+ * which involve multiple small messages.
+ */
+static void
+set_tcp_nodelay (int fd)
+{
+  int optval = 1;
+
+  if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof (optval)) < 0)
+    {
+      SOCKET_LOG_DEBUG_MSG (
+          "TCP_NODELAY failed for fd=%d (errno=%d, may be non-TCP socket)",
+          fd,
+          errno);
+    }
+  else
+    {
+      SOCKET_LOG_DEBUG_MSG ("TCP_NODELAY enabled for handshake optimization on "
+                            "fd=%d",
+                            fd);
+    }
+}
+
+#if SOCKET_HAS_QUICKACK
+/**
+ * set_tcp_quickack - Enable TCP_QUICKACK on a socket (Linux only)
+ * @fd: File descriptor to configure
+ *
+ * Disables delayed ACKs during handshake. The kernel will revert to normal
+ * behavior after some time.
+ */
+static void
+set_tcp_quickack (int fd)
+{
+  int optval = 1;
+
+  if (setsockopt (fd, IPPROTO_TCP, TCP_QUICKACK, &optval, sizeof (optval)) < 0)
+    {
+      SOCKET_LOG_DEBUG_MSG (
+          "TCP_QUICKACK failed for fd=%d (errno=%d)", fd, errno);
+    }
+  else
+    {
+      SOCKET_LOG_DEBUG_MSG (
+          "TCP_QUICKACK enabled for handshake optimization on fd=%d", fd);
+    }
+}
+#endif
+
+/**
  * SocketTLS_optimize_handshake - Apply TCP optimizations for faster handshake
  * @socket: Socket to optimize (must be TLS-enabled but before handshake)
  *
@@ -109,8 +162,6 @@ ensure_ex_data_index (void)
 int
 SocketTLS_optimize_handshake (Socket_T socket)
 {
-  int optval = 1;
-
   assert (socket);
 
   if (!socket->tls_enabled)
@@ -126,39 +177,9 @@ SocketTLS_optimize_handshake (Socket_T socket)
       return -1;
     }
 
-  /* TCP_NODELAY: Disable Nagle's algorithm for reduced latency
-   * This is critical for TLS handshakes which involve multiple small messages
-   */
-  if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof (optval)) < 0)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "TCP_NODELAY failed for fd=%d (errno=%d, may be non-TCP socket)",
-          fd,
-          errno);
-      /* Continue - this might be a Unix domain socket or other non-TCP type */
-    }
-  else
-    {
-      SOCKET_LOG_DEBUG_MSG ("TCP_NODELAY enabled for handshake optimization on "
-                            "fd=%d",
-                            fd);
-    }
-
+  set_tcp_nodelay (fd);
 #if SOCKET_HAS_QUICKACK
-  /* TCP_QUICKACK: Disable delayed ACKs during handshake (Linux only)
-   * This is a hint that we want immediate ACKs during the handshake phase.
-   * The kernel will revert to normal behavior after some time. */
-  if (setsockopt (fd, IPPROTO_TCP, TCP_QUICKACK, &optval, sizeof (optval)) < 0)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "TCP_QUICKACK failed for fd=%d (errno=%d)", fd, errno);
-      /* Continue - not critical, just an optimization */
-    }
-  else
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "TCP_QUICKACK enabled for handshake optimization on fd=%d", fd);
-    }
+  set_tcp_quickack (fd);
 #endif
 
   return 0;
@@ -507,6 +528,58 @@ SocketTLS_get_early_data_status (Socket_T socket)
 }
 
 /**
+ * check_tls13_support - Verify TLS 1.3 is in use for KeyUpdate
+ * @ssl: SSL connection handle
+ * @fd: File descriptor for logging
+ *
+ * Returns: 1 if TLS 1.3 is supported, 0 otherwise (sets errno to ENOTSUP)
+ */
+static int
+check_tls13_support (SSL *ssl, int fd)
+{
+  if (SSL_version (ssl) < TLS1_3_VERSION)
+    {
+      SOCKET_LOG_DEBUG_MSG ("KeyUpdate not available for TLS version 0x%x "
+                            "(requires TLS 1.3) on fd=%d",
+                            SSL_version (ssl),
+                            fd);
+      errno = ENOTSUP;
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * perform_key_update - Execute SSL key update and update metrics
+ * @ssl: SSL connection handle
+ * @socket: Socket for counter update
+ * @request_peer_update: Whether to request peer key update
+ *
+ * Raises: SocketTLS_Failed on OpenSSL error
+ */
+static void
+perform_key_update (SSL *ssl, Socket_T socket, int request_peer_update)
+{
+  int update_type = request_peer_update ? SSL_KEY_UPDATE_REQUESTED
+                                        : SSL_KEY_UPDATE_NOT_REQUESTED;
+
+  if (SSL_key_update (ssl, update_type) != 1)
+    {
+      tls_format_openssl_error ("SSL_key_update failed");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+    }
+
+  socket->tls_key_update_count++;
+  SocketMetrics_counter_inc (SOCKET_CTR_TLS_KEY_UPDATES);
+
+  SOCKET_LOG_DEBUG_MSG ("KeyUpdate %s queued for fd=%d (total updates: %d)",
+                        request_peer_update ? "with peer request"
+                                            : "local only",
+                        SocketBase_fd (socket->base),
+                        socket->tls_key_update_count);
+}
+
+/**
  * SocketTLS_request_key_update - Request TLS 1.3 key rotation
  * @socket: Socket with completed TLS 1.3 handshake
  * @request_peer_update: If 1, request peer to also update their keys
@@ -549,38 +622,10 @@ SocketTLS_request_key_update (Socket_T socket, int request_peer_update)
       return -1;
     }
 
-  /* KeyUpdate is TLS 1.3 only */
-  if (SSL_version (ssl) < TLS1_3_VERSION)
-    {
-      SOCKET_LOG_DEBUG_MSG ("KeyUpdate not available for TLS version 0x%x "
-                            "(requires TLS 1.3) on fd=%d",
-                            SSL_version (ssl),
-                            SocketBase_fd (socket->base));
-      errno = ENOTSUP;
-      return 0;
-    }
+  if (!check_tls13_support (ssl, SocketBase_fd (socket->base)))
+    return 0;
 
-  /* Determine update type */
-  int update_type = request_peer_update ? SSL_KEY_UPDATE_REQUESTED
-                                        : SSL_KEY_UPDATE_NOT_REQUESTED;
-
-  /* Queue the KeyUpdate message */
-  if (SSL_key_update (ssl, update_type) != 1)
-    {
-      tls_format_openssl_error ("SSL_key_update failed");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  /* Increment counter */
-  socket->tls_key_update_count++;
-  SocketMetrics_counter_inc (SOCKET_CTR_TLS_KEY_UPDATES);
-
-  SOCKET_LOG_DEBUG_MSG ("KeyUpdate %s queued for fd=%d (total updates: %d)",
-                        request_peer_update ? "with peer request"
-                                            : "local only",
-                        SocketBase_fd (socket->base),
-                        socket->tls_key_update_count);
-
+  perform_key_update (ssl, socket, request_peer_update);
   return 1;
 }
 
@@ -676,6 +721,60 @@ select_shard (TLSSessionCacheSharded_T *cache,
 }
 
 /**
+ * get_sharded_context - Extract TLS context from SSL_CTX with sharding check
+ * @ssl_ctx: OpenSSL context
+ *
+ * Returns: SocketTLSContext_T if sharding enabled, NULL otherwise
+ */
+static SocketTLSContext_T
+get_sharded_context (SSL_CTX *ssl_ctx)
+{
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
+  if (!ctx || !ctx->sharded_enabled)
+    return NULL;
+  return ctx;
+}
+
+/**
+ * get_shard_for_session - Get the shard for a session ID
+ * @cache: Sharded cache structure
+ * @id: Session ID
+ * @id_len: Length of session ID
+ *
+ * Returns: Pointer to the shard for this session ID
+ */
+static TLSSessionShard_T *
+get_shard_for_session (TLSSessionCacheSharded_T *cache,
+                       const unsigned char *id,
+                       size_t id_len)
+{
+  size_t shard_idx = select_shard (cache, id, id_len);
+  return &cache->shards[shard_idx];
+}
+
+/**
+ * init_session_entry - Initialize a session entry with ID and session
+ * @entry: Entry to initialize
+ * @id: Session ID to copy
+ * @id_len: Length of session ID
+ * @sess: SSL session to store
+ */
+static void
+init_session_entry (SessionEntry *entry,
+                    const unsigned char *id,
+                    unsigned int id_len,
+                    SSL_SESSION *sess)
+{
+  memset (entry->session_id, 0, TLS_SESSION_ID_MAX_SIZE);
+  memcpy (entry->session_id,
+          id,
+          (id_len < TLS_SESSION_ID_MAX_SIZE) ? id_len
+                                             : TLS_SESSION_ID_MAX_SIZE);
+  entry->session = sess;
+  entry->next = NULL;
+}
+
+/**
  * sharded_get_session_cb - Retrieve session from sharded cache
  */
 static SSL_SESSION *
@@ -684,14 +783,12 @@ sharded_get_session_cb (SSL *ssl,
                         int id_len,
                         int *copy)
 {
-  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
-  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
-  if (!ctx || !ctx->sharded_enabled)
+  SocketTLSContext_T ctx = get_sharded_context (SSL_get_SSL_CTX (ssl));
+  if (!ctx)
     return NULL;
 
-  TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
-  size_t shard_idx = select_shard (cache, id, (size_t)id_len);
-  TLSSessionShard_T *shard = &cache->shards[shard_idx];
+  TLSSessionShard_T *shard
+      = get_shard_for_session (&ctx->sharded_session_cache, id, (size_t)id_len);
 
   pthread_mutex_lock (&shard->mutex);
   SessionEntry *entry = HashTable_find (shard->session_table, id, NULL);
@@ -712,52 +809,58 @@ sharded_get_session_cb (SSL *ssl,
 }
 
 /**
+ * shard_try_store_session - Attempt to store session in shard (called with lock
+ * held)
+ * @shard: Shard to store in
+ * @ctx: TLS context for arena allocation
+ * @id: Session ID
+ * @id_len: Length of session ID
+ * @sess: Session to store
+ *
+ * Returns: 1 on success, 0 if shard full or allocation failed
+ */
+static int
+shard_try_store_session (TLSSessionShard_T *shard,
+                         SocketTLSContext_T ctx,
+                         const unsigned char *id,
+                         unsigned int id_len,
+                         SSL_SESSION *sess)
+{
+  if (shard->current_count >= shard->max_sessions)
+    return 0;
+
+  SessionEntry *entry
+      = Arena_alloc (ctx->arena, sizeof (SessionEntry), __FILE__, __LINE__);
+  if (!entry)
+    return 0;
+
+  init_session_entry (entry, id, id_len, sess);
+  HashTable_insert (shard->session_table, entry, entry->session_id);
+  shard->current_count++;
+  shard->stores++;
+  return 1;
+}
+
+/**
  * sharded_new_session_cb - Store newly negotiated session
  */
 static int
 sharded_new_session_cb (SSL *ssl, SSL_SESSION *sess)
 {
-  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
-  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
-  if (!ctx || !ctx->sharded_enabled)
+  SocketTLSContext_T ctx = get_sharded_context (SSL_get_SSL_CTX (ssl));
+  if (!ctx)
     return 0;
 
   unsigned int id_len;
   const unsigned char *id = SSL_SESSION_get_id (sess, &id_len);
-
-  TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
-  size_t shard_idx = select_shard (cache, id, id_len);
-  TLSSessionShard_T *shard = &cache->shards[shard_idx];
+  TLSSessionShard_T *shard
+      = get_shard_for_session (&ctx->sharded_session_cache, id, id_len);
 
   pthread_mutex_lock (&shard->mutex);
-  if (shard->current_count >= shard->max_sessions)
-    {
-      pthread_mutex_unlock (&shard->mutex);
-      return 0;
-    }
-
-  SessionEntry *entry
-      = Arena_alloc (ctx->arena, sizeof (SessionEntry), __FILE__, __LINE__);
-  if (!entry)
-    {
-      pthread_mutex_unlock (&shard->mutex);
-      return 0;
-    }
-
-  memset (entry->session_id, 0, TLS_SESSION_ID_MAX_SIZE);
-  memcpy (entry->session_id,
-          id,
-          (id_len < TLS_SESSION_ID_MAX_SIZE) ? id_len
-                                             : TLS_SESSION_ID_MAX_SIZE);
-  entry->session = sess;
-  entry->next = NULL;
-
-  HashTable_insert (shard->session_table, entry, entry->session_id);
-  shard->current_count++;
-  shard->stores++;
+  int result = shard_try_store_session (shard, ctx, id, id_len, sess);
   pthread_mutex_unlock (&shard->mutex);
 
-  return 1;
+  return result;
 }
 
 /**
@@ -766,16 +869,14 @@ sharded_new_session_cb (SSL *ssl, SSL_SESSION *sess)
 static void
 sharded_remove_session_cb (SSL_CTX *ssl_ctx, SSL_SESSION *sess)
 {
-  SocketTLSContext_T ctx = SSL_CTX_get_ex_data (ssl_ctx, tls_ctx_ex_data_index);
-  if (!ctx || !ctx->sharded_enabled)
+  SocketTLSContext_T ctx = get_sharded_context (ssl_ctx);
+  if (!ctx)
     return;
 
   unsigned int id_len;
   const unsigned char *id = SSL_SESSION_get_id (sess, &id_len);
-
-  TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
-  size_t shard_idx = select_shard (cache, id, id_len);
-  TLSSessionShard_T *shard = &cache->shards[shard_idx];
+  TLSSessionShard_T *shard
+      = get_shard_for_session (&ctx->sharded_session_cache, id, id_len);
 
   pthread_mutex_lock (&shard->mutex);
   void *prev = NULL;
@@ -973,6 +1074,96 @@ struct TLSBufferPool
 typedef struct TLSBufferPool *TLSBufferPool_T;
 
 /**
+ * pool_cleanup_owned - Clean up owned arena resources
+ * @pool: Pool struct to free (may be NULL)
+ * @arena: Arena to dispose
+ *
+ * Used when pool allocation fails and pool owns the arena.
+ */
+static void
+pool_cleanup_owned (TLSBufferPool_T pool, Arena_T *arena)
+{
+  if (pool)
+    free (pool);
+  Arena_dispose (arena);
+}
+
+/**
+ * pool_alloc_struct - Allocate pool structure based on arena ownership
+ * @pool_arena: Arena to allocate from
+ * @owns_arena: 1 if pool owns arena, 0 if caller owns
+ *
+ * CRITICAL: When pool owns the arena, we must NOT allocate the pool struct
+ * from the arena. Otherwise, TLSBufferPool_free() would call
+ * Arena_dispose(&p->arena) where &p->arena points into arena-allocated
+ * memory, causing heap-use-after-free when Arena_dispose writes *ap = NULL.
+ *
+ * Returns: Allocated pool, or NULL on failure
+ */
+static TLSBufferPool_T
+pool_alloc_struct (Arena_T pool_arena, int owns_arena)
+{
+  if (owns_arena)
+    return malloc (sizeof (struct TLSBufferPool));
+
+  return Arena_alloc (
+      pool_arena, sizeof (struct TLSBufferPool), __FILE__, __LINE__);
+}
+
+/**
+ * pool_init_fields - Initialize basic pool fields
+ * @pool: Pool to initialize
+ * @pool_arena: Arena for allocations
+ * @owns_arena: Arena ownership flag
+ * @buffer_size: Size of each buffer
+ * @num_buffers: Total number of buffers
+ */
+static void
+pool_init_fields (TLSBufferPool_T pool,
+                  Arena_T pool_arena,
+                  int owns_arena,
+                  size_t buffer_size,
+                  size_t num_buffers)
+{
+  pool->arena = pool_arena;
+  pool->owns_arena = owns_arena;
+  pool->buffer_size = buffer_size;
+  pool->total_buffers = num_buffers;
+  pool->in_use = 0;
+  pool->free_list = NULL;
+}
+
+/**
+ * pool_preallocate_buffers - Pre-allocate all buffers and build free list
+ * @pool: Pool to populate
+ * @pool_arena: Arena for allocations
+ * @buffer_size: Size of each buffer
+ * @num_buffers: Number of buffers to allocate
+ *
+ * Returns: 1 on success, 0 on allocation failure
+ */
+static int
+pool_preallocate_buffers (TLSBufferPool_T pool,
+                          Arena_T pool_arena,
+                          size_t buffer_size,
+                          size_t num_buffers)
+{
+  for (size_t i = 0; i < num_buffers; i++)
+    {
+      pool->buffers[i].data
+          = Arena_alloc (pool_arena, buffer_size, __FILE__, __LINE__);
+      if (!pool->buffers[i].data)
+        return 0;
+
+      pool->buffers[i].size = buffer_size;
+      pool->buffers[i].in_use = 0;
+      pool->buffers[i].next = pool->free_list;
+      pool->free_list = &pool->buffers[i];
+    }
+  return 1;
+}
+
+/**
  * TLSBufferPool_new - Create a new TLS buffer pool
  * @buffer_size: Size of each buffer (typically SOCKET_TLS_BUFFER_SIZE)
  * @num_buffers: Number of pre-allocated buffers
@@ -990,7 +1181,6 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
 {
   Arena_T pool_arena = arena;
   int owns_arena = 0;
-  TLSBufferPool_T pool;
 
   if (!pool_arena)
     {
@@ -1000,50 +1190,23 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
       owns_arena = 1;
     }
 
-  /*
-   * CRITICAL: When pool owns the arena, we must NOT allocate the pool struct
-   * from the arena. Otherwise, TLSBufferPool_free() would call
-   * Arena_dispose(&p->arena) where &p->arena points into arena-allocated
-   * memory, causing heap-use-after-free when Arena_dispose writes *ap = NULL.
-   *
-   * When caller provides arena: pool struct is arena-allocated, caller manages
-   * arena lifetime, pool does NOT dispose the arena.
-   */
-  if (owns_arena)
+  TLSBufferPool_T pool = pool_alloc_struct (pool_arena, owns_arena);
+  if (!pool)
     {
-      pool = malloc (sizeof (struct TLSBufferPool));
-      if (!pool)
-        {
-          Arena_dispose (&pool_arena);
-          return NULL;
-        }
-    }
-  else
-    {
-      pool = Arena_alloc (
-          pool_arena, sizeof (struct TLSBufferPool), __FILE__, __LINE__);
-      if (!pool)
-        return NULL;
+      if (owns_arena)
+        Arena_dispose (&pool_arena);
+      return NULL;
     }
 
-  pool->arena = pool_arena;
-  pool->owns_arena = owns_arena;
-  pool->buffer_size = buffer_size;
-  pool->total_buffers = num_buffers;
-  pool->in_use = 0;
-  pool->free_list = NULL;
+  pool_init_fields (pool, pool_arena, owns_arena, buffer_size, num_buffers);
 
   if (pthread_mutex_init (&pool->mutex, NULL) != 0)
     {
       if (owns_arena)
-        {
-          free (pool);
-          Arena_dispose (&pool_arena);
-        }
+        pool_cleanup_owned (pool, &pool_arena);
       return NULL;
     }
 
-  /* Allocate buffer array */
   pool->buffers = Arena_alloc (pool_arena,
                                num_buffers * sizeof (struct TLSPoolBuffer),
                                __FILE__,
@@ -1052,33 +1215,16 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
     {
       pthread_mutex_destroy (&pool->mutex);
       if (owns_arena)
-        {
-          free (pool);
-          Arena_dispose (&pool_arena);
-        }
+        pool_cleanup_owned (pool, &pool_arena);
       return NULL;
     }
 
-  /* Pre-allocate buffers and build free list */
-  for (size_t i = 0; i < num_buffers; i++)
+  if (!pool_preallocate_buffers (pool, pool_arena, buffer_size, num_buffers))
     {
-      pool->buffers[i].data
-          = Arena_alloc (pool_arena, buffer_size, __FILE__, __LINE__);
-      if (!pool->buffers[i].data)
-        {
-          /* Partial allocation - clean up */
-          pthread_mutex_destroy (&pool->mutex);
-          if (owns_arena)
-            {
-              free (pool);
-              Arena_dispose (&pool_arena);
-            }
-          return NULL;
-        }
-      pool->buffers[i].size = buffer_size;
-      pool->buffers[i].in_use = 0;
-      pool->buffers[i].next = pool->free_list;
-      pool->free_list = &pool->buffers[i];
+      pthread_mutex_destroy (&pool->mutex);
+      if (owns_arena)
+        pool_cleanup_owned (pool, &pool_arena);
+      return NULL;
     }
 
   SOCKET_LOG_DEBUG_MSG ("Created TLS buffer pool: %zu buffers of %zu bytes",
@@ -1193,6 +1339,21 @@ TLSBufferPool_stats (TLSBufferPool_T pool,
 }
 
 /**
+ * pool_destroy_mutex - Destroy pool mutex and clear caller's pointer
+ * @pool: Double pointer to pool (will be set to NULL)
+ *
+ * Returns: The pool pointer before clearing, with mutex destroyed
+ */
+static TLSBufferPool_T
+pool_destroy_mutex (TLSBufferPool_T *pool)
+{
+  TLSBufferPool_T p = *pool;
+  pthread_mutex_destroy (&p->mutex);
+  *pool = NULL;
+  return p;
+}
+
+/**
  * TLSBufferPool_free - Destroy a buffer pool
  * @pool: Buffer pool to destroy (may be NULL)
  *
@@ -1210,26 +1371,12 @@ TLSBufferPool_free (TLSBufferPool_T *pool)
   if (!pool || !*pool)
     return;
 
-  TLSBufferPool_T p = *pool;
-  int owns_arena = p->owns_arena;
-  Arena_T arena = p->arena;
-
-  pthread_mutex_destroy (&p->mutex);
-
-  /* Clear caller's pointer first (always safe - points to caller's stack/heap)
-   */
-  *pool = NULL;
+  int owns_arena = (*pool)->owns_arena;
+  Arena_T arena = (*pool)->arena;
+  TLSBufferPool_T p = pool_destroy_mutex (pool);
 
   if (owns_arena)
-    {
-      /*
-       * Pool owns arena: pool struct was malloc'd (not arena-allocated).
-       * Free the pool struct first, then dispose the arena.
-       * This avoids UAF because &p->arena is not in the arena's memory.
-       */
-      free (p);
-      Arena_dispose (&arena);
-    }
+    pool_cleanup_owned (p, &arena);
   /*
    * If !owns_arena: caller provided arena and is responsible for its lifecycle.
    * The pool struct was arena-allocated, so it will be freed when the caller
