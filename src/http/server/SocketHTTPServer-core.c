@@ -156,26 +156,14 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
   connection_free_pending (s);
 
   /* Free rate limit entries */
-  RateLimitEntry *e = s->rate_limiters;
-  while (e != NULL)
-    {
-      RateLimitEntry *next = e->next;
-      free (e->path_prefix);
-      free (e);
-      e = next;
-    }
+  FREE_LIST (s->rate_limiters, RateLimitEntry, { free (node->path_prefix); });
 
   /* Free static route entries */
-  StaticRoute *sr = s->static_routes;
-  while (sr != NULL)
-    {
-      StaticRoute *next = sr->next;
-      free (sr->prefix);
-      free (sr->directory);
-      free (sr->resolved_directory);
-      free (sr);
-      sr = next;
-    }
+  FREE_LIST (s->static_routes, StaticRoute, {
+    free (node->prefix);
+    free (node->directory);
+    free (node->resolved_directory);
+  });
 
   if (s->ip_tracker != NULL)
     {
