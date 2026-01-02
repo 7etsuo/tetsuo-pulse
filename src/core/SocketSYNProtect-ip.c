@@ -171,16 +171,18 @@ whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
           if (entry->addr_family == family
               && ip_matches_cidr_bytes (family, ip_bytes, entry))
             return 1;
+          entry = entry->next;
+          continue;
         }
-      else
-        {
-          if (strcmp (entry->ip, ip_str) == 0)
-            return 1;
 
-          if (entry->addr_family == family
-              && memcmp (entry->addr_bytes, ip_bytes, cmp_len) == 0)
-            return 1;
-        }
+      /* Non-CIDR entry: check exact string or byte match */
+      if (strcmp (entry->ip, ip_str) == 0)
+        return 1;
+
+      if (entry->addr_family == family
+          && memcmp (entry->addr_bytes, ip_bytes, cmp_len) == 0)
+        return 1;
+
       entry = entry->next;
     }
   return 0;
@@ -272,12 +274,14 @@ remove_ip_entry_from_hash (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
 
   while (*pp != NULL)
     {
-      if (*pp == entry)
+      if (*pp != entry)
         {
-          *pp = entry->hash_next;
-          break;
+          pp = &(*pp)->hash_next;
+          continue;
         }
-      pp = &(*pp)->hash_next;
+
+      *pp = entry->hash_next;
+      return;
     }
 }
 
@@ -296,11 +300,15 @@ blacklist_check (SocketSYNProtect_T protect, const char *ip, int64_t now_ms)
 
   while (entry != NULL)
     {
-      if (ip_addresses_equal (entry->ip, ip))
+      if (!ip_addresses_equal (entry->ip, ip))
         {
-          if (entry->expires_ms == 0 || entry->expires_ms > now_ms)
-            return 1;
+          entry = entry->next;
+          continue;
         }
+
+      if (entry->expires_ms == 0 || entry->expires_ms > now_ms)
+        return 1;
+
       entry = entry->next;
     }
 
