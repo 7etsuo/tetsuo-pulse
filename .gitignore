@@ -101,3 +101,6 @@ todo_ssl.md
 examples/tags
 
 clean.md
+
+# Claude Code state files
+.claude/issue-state/
