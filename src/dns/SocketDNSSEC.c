@@ -213,6 +213,32 @@ SocketDNSSEC_parse_rrsig (const unsigned char *msg,
   return 0;
 }
 
+/* Dispatch table for DS digest length validation (RFC 4034, 4509, 5933, 6605)
+ */
+static const uint8_t ds_digest_lengths[] = {
+  [DNSSEC_DIGEST_SHA1] = DNSSEC_DIGEST_LEN_SHA1,
+  [DNSSEC_DIGEST_SHA256] = DNSSEC_DIGEST_LEN_SHA256,
+  [DNSSEC_DIGEST_GOST] = DNSSEC_DIGEST_LEN_GOST,
+  [DNSSEC_DIGEST_SHA384] = DNSSEC_DIGEST_LEN_SHA384,
+};
+
+#define DS_DIGEST_TABLE_SIZE \
+  (sizeof (ds_digest_lengths) / sizeof (ds_digest_lengths[0]))
+
+static int
+validate_ds_digest_length (uint8_t digest_type, uint16_t digest_len)
+{
+  /* Unknown digest type - accept but may fail validation */
+  if (digest_type >= DS_DIGEST_TABLE_SIZE
+      || ds_digest_lengths[digest_type] == 0)
+    return 0;
+
+  if (digest_len != ds_digest_lengths[digest_type])
+    return -1;
+
+  return 0;
+}
+
 /*
  * Parse DS record RDATA (RFC 4034 Section 5)
  */
@@ -244,29 +270,8 @@ SocketDNSSEC_parse_ds (const SocketDNS_RR *rr, SocketDNSSEC_DS *ds)
   ds->digest = p;
   ds->digest_len = rr->rdlength - DNSSEC_DS_FIXED_SIZE;
 
-  /* Validate digest length based on type (RFC 4034, 4509, 5933, 6605) */
-  switch (ds->digest_type)
-    {
-    case DNSSEC_DIGEST_SHA1:
-      if (ds->digest_len != DNSSEC_DIGEST_LEN_SHA1)
-        return -1;
-      break;
-    case DNSSEC_DIGEST_SHA256:
-      if (ds->digest_len != DNSSEC_DIGEST_LEN_SHA256)
-        return -1;
-      break;
-    case DNSSEC_DIGEST_SHA384:
-      if (ds->digest_len != DNSSEC_DIGEST_LEN_SHA384)
-        return -1;
-      break;
-    case DNSSEC_DIGEST_GOST:
-      if (ds->digest_len != DNSSEC_DIGEST_LEN_GOST)
-        return -1;
-      break;
-    default:
-      /* Unknown digest type - accept but may fail validation */
-      break;
-    }
+  if (validate_ds_digest_length (ds->digest_type, ds->digest_len) < 0)
+    return -1;
 
   return 0;
 }
@@ -310,6 +315,25 @@ SocketDNSSEC_parse_nsec (const unsigned char *msg,
   return 0;
 }
 
+static int
+read_length_prefixed_field (const unsigned char **ptr,
+                            const unsigned char *end,
+                            const unsigned char **data,
+                            uint8_t *len)
+{
+  if (*ptr >= end)
+    return -1;
+
+  *len = *(*ptr)++;
+  if (*ptr + *len > end)
+    return -1;
+
+  *data = (*len > 0) ? *ptr : NULL;
+  *ptr += *len;
+
+  return 0;
+}
+
 /*
  * Parse NSEC3 record RDATA (RFC 5155)
  */
@@ -338,25 +362,15 @@ SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr, SocketDNSSEC_NSEC3 *nsec3)
   nsec3->iterations = socket_util_unpack_be16 (p);
   p += 2;
 
-  /* Salt Length: 1 byte */
-  nsec3->salt_len = *p++;
-  if (p + nsec3->salt_len > end)
+  /* Salt: length-prefixed */
+  if (read_length_prefixed_field (&p, end, &nsec3->salt, &nsec3->salt_len) < 0)
     return -1;
 
-  /* Salt: variable */
-  nsec3->salt = (nsec3->salt_len > 0) ? p : NULL;
-  p += nsec3->salt_len;
-
-  /* Hash Length: 1 byte */
-  if (p >= end)
+  /* Next Hashed Owner Name: length-prefixed */
+  if (read_length_prefixed_field (
+          &p, end, &nsec3->next_hashed, &nsec3->hash_len)
+      < 0)
     return -1;
-  nsec3->hash_len = *p++;
-  if (p + nsec3->hash_len > end)
-    return -1;
-
-  /* Next Hashed Owner Name: variable */
-  nsec3->next_hashed = p;
-  p += nsec3->hash_len;
 
   /* Type Bit Maps: remainder */
   nsec3->type_bitmaps = p;
@@ -792,6 +806,51 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
 #ifdef SOCKET_HAS_TLS
 
 /*
+ * Parse RSA public key components from DNSKEY wire format.
+ * Format: exponent length (1 or 3 bytes) + exponent + modulus
+ * Returns 0 on success, -1 on malformed data.
+ */
+static int
+parse_rsa_pubkey_components (const unsigned char *pubkey,
+                             size_t pubkey_len,
+                             const unsigned char **exp_data,
+                             size_t *exp_len,
+                             const unsigned char **mod_data,
+                             size_t *mod_len)
+{
+  if (pubkey_len < 3)
+    return -1;
+
+  const unsigned char *pk = pubkey;
+  size_t elen;
+  if (pk[0] == 0)
+    {
+      if (pubkey_len < 3)
+        return -1;
+      elen = ((size_t)pk[1] << 8) | pk[2];
+      pk += 3;
+    }
+  else
+    {
+      elen = pk[0];
+      pk += 1;
+    }
+
+  /* Validate exp_len against remaining buffer to prevent overflow */
+  size_t remaining = (pubkey + pubkey_len) - pk;
+  if (elen > remaining)
+    return -1;
+
+  *exp_data = pk;
+  *exp_len = elen;
+  pk += elen;
+  *mod_data = pk;
+  *mod_len = (pubkey + pubkey_len) - pk;
+
+  return 0;
+}
+
+/*
  * Create RSA public key from DNSKEY
  * Returns pkey on success, NULL on error
  * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for
@@ -800,45 +859,23 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
 static EVP_PKEY *
 create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 {
-  /* RSA public key format: exponent length + exponent + modulus */
-  if (dnskey->pubkey_len < 3)
+  const unsigned char *exp_data, *mod_data;
+  size_t exp_len, mod_len;
+
+  if (parse_rsa_pubkey_components (dnskey->pubkey,
+                                   dnskey->pubkey_len,
+                                   &exp_data,
+                                   &exp_len,
+                                   &mod_data,
+                                   &mod_len)
+      < 0)
     {
       *status = DNSSEC_BOGUS;
       return NULL;
     }
 
-  const unsigned char *pk = dnskey->pubkey;
-  size_t exp_len;
-  if (pk[0] == 0)
-    {
-      if (dnskey->pubkey_len < 3)
-        {
-          *status = DNSSEC_BOGUS;
-          return NULL;
-        }
-      exp_len = ((size_t)pk[1] << 8) | pk[2];
-      pk += 3;
-    }
-  else
-    {
-      exp_len = pk[0];
-      pk += 1;
-    }
-
-  /* Validate exp_len against remaining buffer to prevent overflow */
-  size_t remaining = (dnskey->pubkey + dnskey->pubkey_len) - pk;
-  if (exp_len > remaining)
-    {
-      *status = DNSSEC_BOGUS;
-      return NULL;
-    }
-
-  const unsigned char *exp_data = pk;
-  pk += exp_len;
-  size_t mod_len = (dnskey->pubkey + dnskey->pubkey_len) - pk;
-
-  /* Create RSA key */
-  BIGNUM *n = BN_bin2bn (pk, mod_len, NULL);
+  /* Create BIGNUMs from parsed components */
+  BIGNUM *n = BN_bin2bn (mod_data, mod_len, NULL);
   BIGNUM *e = BN_bin2bn (exp_data, exp_len, NULL);
   if (n == NULL || e == NULL)
     {
@@ -853,7 +890,7 @@ create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
   /* OpenSSL 3.0+ uses EVP_PKEY_fromdata */
   OSSL_PARAM params[3];
-  params[0] = OSSL_PARAM_construct_BN ("n", (unsigned char *)pk, mod_len);
+  params[0] = OSSL_PARAM_construct_BN ("n", (unsigned char *)mod_data, mod_len);
   params[1] = OSSL_PARAM_construct_BN ("e", (unsigned char *)exp_data, exp_len);
   params[2] = OSSL_PARAM_construct_end ();
 
@@ -902,6 +939,50 @@ create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
   return pkey;
 }
 
+/* ECDSA curve parameters */
+typedef struct
+{
+  int nid;
+  size_t coord_size;
+  const char *group_name;
+} ECDSAParams;
+
+/*
+ * Get ECDSA parameters for algorithm
+ * Returns 0 on success, -1 for unsupported algorithm
+ */
+static int
+get_ecdsa_params (uint8_t algorithm, ECDSAParams *params)
+{
+  if (algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
+    {
+      params->nid = NID_X9_62_prime256v1;
+      params->coord_size = DNSSEC_ECDSA_P256_COORD_SIZE;
+      params->group_name = "P-256";
+      return 0;
+    }
+  else if (algorithm == DNSSEC_ALGO_ECDSAP384SHA384)
+    {
+      params->nid = NID_secp384r1;
+      params->coord_size = DNSSEC_ECDSA_P384_COORD_SIZE;
+      params->group_name = "P-384";
+      return 0;
+    }
+  return -1;
+}
+
+/*
+ * Build uncompressed point format (0x04 || X || Y)
+ */
+static void
+build_uncompressed_point (unsigned char *out,
+                          const unsigned char *pubkey,
+                          size_t coord_size)
+{
+  out[0] = 0x04; /* Uncompressed point */
+  memcpy (out + 1, pubkey, 2 * coord_size);
+}
+
 /*
  * Create ECDSA public key from DNSKEY
  * Returns pkey on success, NULL on error
@@ -911,33 +992,33 @@ create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 static EVP_PKEY *
 create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 {
-  int nid = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
-                ? NID_X9_62_prime256v1
-                : NID_secp384r1;
-  size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
-                          ? DNSSEC_ECDSA_P256_COORD_SIZE
-                          : DNSSEC_ECDSA_P384_COORD_SIZE;
-
-  if (dnskey->pubkey_len != 2 * coord_size)
+  ECDSAParams params;
+  if (get_ecdsa_params (dnskey->algorithm, &params) < 0)
     {
       *status = DNSSEC_BOGUS;
       return NULL;
     }
 
+  if (dnskey->pubkey_len != 2 * params.coord_size)
+    {
+      *status = DNSSEC_BOGUS;
+      return NULL;
+    }
+
+  unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
+  build_uncompressed_point (
+      pubkey_uncompressed, dnskey->pubkey, params.coord_size);
+
   EVP_PKEY *pkey = NULL;
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
   /* OpenSSL 3.0+ */
-  unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
-  pubkey_uncompressed[0] = 0x04; /* Uncompressed point */
-  memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
-
-  const char *group_name = (nid == NID_X9_62_prime256v1) ? "P-256" : "P-384";
-  OSSL_PARAM params[3];
-  params[0] = OSSL_PARAM_construct_utf8_string ("group", (char *)group_name, 0);
-  params[1] = OSSL_PARAM_construct_octet_string (
-      "pub", pubkey_uncompressed, 1 + 2 * coord_size);
-  params[2] = OSSL_PARAM_construct_end ();
+  OSSL_PARAM ossl_params[3];
+  ossl_params[0] = OSSL_PARAM_construct_utf8_string (
+      "group", (char *)params.group_name, 0);
+  ossl_params[1] = OSSL_PARAM_construct_octet_string (
+      "pub", pubkey_uncompressed, 1 + 2 * params.coord_size);
+  ossl_params[2] = OSSL_PARAM_construct_end ();
 
   EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "EC", NULL);
   if (pctx == NULL)
@@ -947,7 +1028,7 @@ create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
     }
 
   if (EVP_PKEY_fromdata_init (pctx) <= 0
-      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
+      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, ossl_params) <= 0)
     {
       EVP_PKEY_CTX_free (pctx);
       *status = DNSSEC_INDETERMINATE;
@@ -955,20 +1036,15 @@ create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
     }
   EVP_PKEY_CTX_free (pctx);
 #else
-  EC_KEY *ec = EC_KEY_new_by_curve_name (nid);
+  EC_KEY *ec = EC_KEY_new_by_curve_name (params.nid);
   if (ec == NULL)
     {
       *status = DNSSEC_INDETERMINATE;
       return NULL;
     }
 
-  /* Create uncompressed public key point */
-  unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
-  pubkey_uncompressed[0] = 0x04; /* Uncompressed */
-  memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
-
   const unsigned char *pp = pubkey_uncompressed;
-  if (o2i_ECPublicKey (&ec, &pp, 1 + 2 * coord_size) == NULL)
+  if (o2i_ECPublicKey (&ec, &pp, 1 + 2 * params.coord_size) == NULL)
     {
       EC_KEY_free (ec);
       *status = DNSSEC_BOGUS;
