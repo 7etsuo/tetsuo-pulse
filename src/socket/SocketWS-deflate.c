@@ -371,7 +371,7 @@ compress_loop (SocketWS_T ws,
   int ret;
 
   /* Data compression phase with Z_NO_FLUSH */
-  do
+  while (strm->avail_in > 0)
     {
       ret = deflate (strm, Z_NO_FLUSH);
       if (ret == Z_STREAM_ERROR)
@@ -383,16 +383,17 @@ compress_loop (SocketWS_T ws,
 
       *total_out = *buf_size - strm->avail_out;
 
-      /* Grow buffer if needed */
-      if (strm->avail_out == 0 && strm->avail_in > 0)
-        {
-          if (try_grow_zlib_buffer (
-                  ws, strm, buf, buf_size, *total_out, 0 /* compress */)
-              < 0)
-            return -1;
-        }
+      /* Check if buffer growth is needed */
+      int needs_growth = (strm->avail_out == 0 && strm->avail_in > 0);
+      if (!needs_growth)
+        continue;
+
+      /* Grow buffer */
+      if (try_grow_zlib_buffer (
+              ws, strm, buf, buf_size, *total_out, 0 /* compress */)
+          < 0)
+        return -1;
     }
-  while (strm->avail_in > 0);
 
   /* Flush phase to output remaining data and end block for BFINAL=1 */
   int flush_type = should_reset_zlib_context (ws, 1 /* deflate */)
