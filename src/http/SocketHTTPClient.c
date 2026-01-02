@@ -263,76 +263,95 @@ httpclient_validate_user_agent (SocketHTTPClient_T client,
   return 0;
 }
 
+/**
+ * Create arena for client allocations.
+ */
+static Arena_T
+httpclient_create_arena (void)
+{
+  Arena_T arena = Arena_new ();
+  if (arena == NULL)
+    SOCKET_RAISE_MSG (SocketHTTPClient,
+                      SocketHTTPClient_Failed,
+                      "Failed to create client arena");
+  return arena;
+}
+
+/**
+ * Allocate and initialize client structure.
+ */
+static SocketHTTPClient_T
+httpclient_allocate_struct (Arena_T arena)
+{
+  SocketHTTPClient_T client;
+  HTTPCLIENT_ARENA_CALLOC_OR_RAISE (
+      arena, client, *client, "Failed to allocate client structure");
+  client->arena = arena;
+  return client;
+}
+
+/**
+ * Initialize client mutex.
+ */
+static void
+httpclient_init_mutex (SocketHTTPClient_T client)
+{
+  if (pthread_mutex_init (&client->mutex, NULL) != 0)
+    {
+      Arena_T arena = client->arena;
+      Arena_dispose (&arena);
+      SOCKET_RAISE_MSG (SocketHTTPClient,
+                        SocketHTTPClient_Failed,
+                        "Failed to initialize client mutex");
+    }
+}
+
+/**
+ * Create connection pool if enabled in config.
+ */
+static void
+httpclient_init_pool (SocketHTTPClient_T client,
+                      const SocketHTTPClient_Config *config)
+{
+  if (!config->enable_connection_pool)
+    return;
+
+  client->pool = httpclient_pool_new (client->arena, config);
+  if (client->pool == NULL)
+    {
+      Arena_T arena = client->arena;
+      Arena_dispose (&arena);
+      SOCKET_RAISE_MSG (SocketHTTPClient,
+                        SocketHTTPClient_Failed,
+                        "Failed to create connection pool");
+    }
+}
+
 SocketHTTPClient_T
 SocketHTTPClient_new (const SocketHTTPClient_Config *config)
 {
-  SocketHTTPClient_T client;
   SocketHTTPClient_Config default_config;
-  Arena_T arena;
-
-  /* Use defaults if no config provided */
   if (config == NULL)
     {
       SocketHTTPClient_config_defaults (&default_config);
       config = &default_config;
     }
 
-  /* Create arena for client allocations */
-  arena = Arena_new ();
-  if (arena == NULL)
-    {
-      SOCKET_RAISE_MSG (SocketHTTPClient,
-                        SocketHTTPClient_Failed,
-                        "Failed to create client arena");
-    }
+  Arena_T arena = httpclient_create_arena ();
+  SocketHTTPClient_T client = httpclient_allocate_struct (arena);
+  httpclient_init_mutex (client);
 
-  /* Allocate client structure */
-  HTTPCLIENT_ARENA_CALLOC_OR_RAISE (
-      arena, client, *client, "Failed to allocate client structure");
-
-  client->arena = arena;
-
-  /* Initialize mutex for thread safety */
-  if (pthread_mutex_init (&client->mutex, NULL) != 0)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (SocketHTTPClient,
-                        SocketHTTPClient_Failed,
-                        "Failed to initialize client mutex");
-    }
-
-  /* Copy configuration */
   client->config = *config;
 
-  /* Validate and duplicate user agent string */
   if (config->user_agent != NULL)
-    {
-      httpclient_validate_user_agent (client, arena, config->user_agent);
-    }
+    httpclient_validate_user_agent (client, arena, config->user_agent);
 
-  /* Create connection pool */
-  if (config->enable_connection_pool)
-    {
-      client->pool = httpclient_pool_new (arena, config);
-      if (client->pool == NULL)
-        {
-          Arena_dispose (&arena);
-          SOCKET_RAISE_MSG (SocketHTTPClient,
-                            SocketHTTPClient_Failed,
-                            "Failed to create connection pool");
-        }
-    }
+  httpclient_init_pool (client, config);
 
-  /* Initialize async I/O if requested */
   if (config->enable_async_io)
-    {
-      /* httpclient_async_init handles graceful fallback if io_uring unavailable
-       */
-      httpclient_async_init (client);
-    }
+    httpclient_async_init (client);
 
   client->last_error = HTTPCLIENT_OK;
-
   return client;
 }
 
