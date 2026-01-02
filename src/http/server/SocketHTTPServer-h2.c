@@ -16,9 +16,12 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
+#include <sys/socket.h>
 
 #include "core/Arena.h"
+#include "poll/SocketPoll.h"
 #include "core/SocketLog.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
@@ -835,4 +838,234 @@ server_http2_enable (SocketHTTPServer_T server, ServerConnection *conn)
   conn->http2_callback_set = 1;
 
   return 0;
+}
+
+/**
+ * server_process_http2 - Process HTTP/2 connection events
+ * @server: HTTP server
+ * @conn: HTTP/2 connection
+ * @events: Poll events (POLL_READ, POLL_WRITE, etc.)
+ *
+ * Returns: 0 on success, -1 on error (connection should be closed)
+ */
+int
+server_process_http2 (SocketHTTPServer_T server,
+                      ServerConnection *conn,
+                      unsigned events)
+{
+  volatile int r = 0;
+  volatile int f = 0;
+  volatile int stream_error = 0;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (conn->http2_conn == NULL)
+    {
+      if (server_http2_enable (server, conn) < 0)
+        return -1;
+    }
+
+  TRY
+  {
+    r = SocketHTTP2_Conn_process (conn->http2_conn, events);
+  }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+    return -1;
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+    return -1;
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+    /* Stream-level error: non-fatal for the connection (RFC 9113).
+     * The core resets the offending stream; other streams may continue. */
+    if (Except_frame.exception != NULL
+        && Except_frame.exception->reason != NULL)
+      SOCKET_LOG_WARN_MSG ("HTTP/2 stream error: %s",
+                           Except_frame.exception->reason);
+    stream_error = 1;
+    r = 0;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  if (!stream_error && r < 0)
+    return -1;
+
+  TRY
+  {
+    f = SocketHTTP2_Conn_flush (conn->http2_conn);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  if (SocketHTTP2_Conn_is_closed (conn->http2_conn))
+    return -1;
+
+  if (f == 1)
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+  else
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+
+  return 0;
+}
+
+/**
+ * server_try_http2_prior_knowledge - Detect HTTP/2 prior knowledge upgrade
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @events: Poll events
+ *
+ * Peeks at the socket buffer to detect HTTP/2 client connection preface
+ * (prior knowledge upgrade per RFC 9113 §3.4). If detected, enables HTTP/2
+ * on the connection.
+ *
+ * Returns: 1 if HTTP/2 detected and enabled, 0 otherwise
+ */
+int
+server_try_http2_prior_knowledge (SocketHTTPServer_T server,
+                                  ServerConnection *conn,
+                                  unsigned events)
+{
+  unsigned char preface[HTTP2_PREFACE_SIZE];
+  int fd;
+  ssize_t n;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (!(events & POLL_READ))
+    return 0;
+  if (server->config.tls_context != NULL)
+    return 0;
+  if (server->config.max_version < HTTP_VERSION_2)
+    return 0;
+  if (conn->state != CONN_STATE_READING_REQUEST)
+    return 0;
+  if (conn->http2_conn != NULL || conn->is_http2)
+    return 0;
+
+  fd = Socket_fd (conn->socket);
+  n = recv (fd, preface, sizeof (preface), MSG_PEEK | MSG_DONTWAIT);
+  if (n < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      return 0;
+    }
+  if ((size_t)n < sizeof (preface))
+    return 0;
+
+  if (memcmp (preface, HTTP2_CLIENT_PREFACE, HTTP2_PREFACE_SIZE) != 0)
+    return 0;
+
+  conn->is_http2 = 1;
+  conn->state = CONN_STATE_HTTP2;
+
+  if (server_http2_enable (server, conn) < 0)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return 0;
+    }
+
+  (void)server_process_http2 (server, conn, events);
+  return 1;
+}
+
+/**
+ * validate_rfc8441_websocket_upgrade - Validate RFC 8441 Extended CONNECT
+ * @s: HTTP/2 stream to validate
+ *
+ * Checks that the request is a valid WebSocket upgrade per RFC 8441:
+ * - Method must be CONNECT
+ * - :protocol pseudo-header must be "websocket"
+ * - Sec-WebSocket-Version must be "13" if present
+ *
+ * Returns: 1 if valid WebSocket upgrade, 0 otherwise
+ */
+int
+validate_rfc8441_websocket_upgrade (ServerHTTP2Stream *s)
+{
+  const char *version;
+
+  /* RFC 8441 Extended CONNECT: :method=CONNECT, :protocol=websocket */
+  if (s->request->method != HTTP_METHOD_CONNECT)
+    return 0;
+  if (s->h2_protocol == NULL || strcmp (s->h2_protocol, "websocket") != 0)
+    return 0;
+
+  /* Validate WebSocket version if specified */
+  version
+      = SocketHTTP_Headers_get (s->request->headers, "Sec-WebSocket-Version");
+  if (version != NULL && strcmp (version, "13") != 0)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * prepare_h2_websocket_response - Prepare HTTP/2 200 response for WebSocket
+ * @req: Request context (provides arena for allocation)
+ * @s: HTTP/2 stream
+ * @response: Response structure to populate
+ *
+ * Allocates response headers if needed and populates the response structure.
+ *
+ * Returns: 0 on success, -1 on failure (headers already sent or alloc failed)
+ */
+int
+prepare_h2_websocket_response (SocketHTTPServer_Request_T req,
+                               ServerHTTP2Stream *s,
+                               SocketHTTP_Response *response)
+{
+  if (s->response_headers_sent)
+    return -1;
+
+  if (s->response_headers == NULL)
+    s->response_headers = SocketHTTP_Headers_new (req->arena);
+  if (s->response_headers == NULL)
+    return -1;
+
+  s->response_status = 200;
+
+  memset (response, 0, sizeof (*response));
+  response->version = HTTP_VERSION_2;
+  response->status_code = 200;
+  response->headers = s->response_headers;
+
+  return 0;
+}
+
+/**
+ * setup_ws_over_h2_streaming - Configure stream for WebSocket-over-HTTP/2
+ * @s: HTTP/2 stream to configure
+ * @callback: Callback for incoming WebSocket frame data
+ * @userdata: User context passed to callback
+ *
+ * Sets streaming flags and registers the callback for DATA frame delivery.
+ */
+void
+setup_ws_over_h2_streaming (ServerHTTP2Stream *s,
+                            SocketHTTPServer_BodyCallback callback,
+                            void *userdata)
+{
+  s->response_streaming = 1;
+  s->response_headers_sent = 1;
+  s->body_streaming = 1;
+  s->body_callback = callback;
+  s->body_callback_userdata = userdata;
+  s->ws_over_h2 = 1;
 }

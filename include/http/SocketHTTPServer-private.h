@@ -380,6 +380,25 @@ void server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                              int event,
                              void *userdata);
 int server_http2_enable (SocketHTTPServer_T server, ServerConnection *conn);
+int server_process_http2 (SocketHTTPServer_T server,
+                          ServerConnection *conn,
+                          unsigned events);
+int server_try_http2_prior_knowledge (SocketHTTPServer_T server,
+                                      ServerConnection *conn,
+                                      unsigned events);
+
+/* WebSocket-over-HTTP/2 helpers (SocketHTTPServer-h2.c) */
+int validate_rfc8441_websocket_upgrade (ServerHTTP2Stream *s);
+int prepare_h2_websocket_response (SocketHTTPServer_Request_T req,
+                                   ServerHTTP2Stream *s,
+                                   SocketHTTP_Response *response);
+void setup_ws_over_h2_streaming (ServerHTTP2Stream *s,
+                                 SocketHTTPServer_BodyCallback callback,
+                                 void *userdata);
+
+/* Rate limiting and validation (SocketHTTPServer-http1.c) */
+int server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn);
+int server_run_validator (SocketHTTPServer_T server, ServerConnection *conn);
 
 /*
  * Response state accessors - abstract HTTP/1.1 vs HTTP/2 path selection.
