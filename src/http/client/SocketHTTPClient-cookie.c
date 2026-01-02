@@ -224,6 +224,11 @@ parse_max_age (const char *value, const size_t len)
 
   /* Calculate expiration time with overflow protection */
   now = time (NULL);
+  if (now == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      return 0; /* Time failure - reject cookie */
+    }
   if (!SocketSecurity_check_add ((size_t)now, (size_t)age, &temp))
     return 1; /* Overflow in time calculation - treat as expired */
   expires = (time_t)temp;
@@ -456,6 +461,12 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
       }
 
     time_t now_t = time (NULL);
+    if (now_t == (time_t)-1)
+      {
+        HTTPCLIENT_ERROR_MSG ("time() failed");
+        result = -1;
+        goto unlock;
+      }
     size_t name_l = strlen (cookie->name);
     size_t value_l = strlen (cookie->value);
     size_t domain_l = strlen (cookie->domain);
@@ -620,6 +631,12 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
         entry->cookie.same_site = cookie->same_site;
 
         entry->created = time (NULL);
+        if (entry->created == (time_t)-1)
+          {
+            HTTPCLIENT_ERROR_MSG ("time() failed");
+            result = -1;
+            goto unlock;
+          }
 
         entry->next = jar->hash_table[hash];
         jar->hash_table[hash] = entry;
@@ -677,6 +694,11 @@ SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
   assert (jar != NULL);
 
   const time_t now = time (NULL);
+  if (now == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      return; /* Cannot determine expiry without valid time */
+    }
 
   pthread_mutex_lock (&jar->mutex);
 
@@ -918,6 +940,11 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
 
   output[0] = '\0';
   now = time (NULL);
+  if (now == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      return -1; /* Cannot determine cookie validity without valid time */
+    }
   is_secure = SocketHTTP_URI_is_secure (uri);
   request_path = uri->path ? uri->path : "/";
 
@@ -1325,6 +1352,11 @@ httpclient_parse_set_cookie (const char *value,
     }
 
   time_t now = time (NULL);
+  if (now == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      return -1; /* Cannot validate cookie expiry without valid time */
+    }
   if (cookie->expires != 0 && !cookie_expiry_is_valid (cookie->expires, now))
     {
       SocketLog_emitf (SOCKET_LOG_WARN,
