@@ -578,10 +578,30 @@ ws_compression_init (SocketWS_T ws)
   return 0;
 }
 
+/* Helper: typedef for cleanup function pointer */
+typedef int (*zlib_cleanup_fn) (z_stream *);
+
+/* Helper: cleanup a single context */
+static void
+cleanup_zlib_context (z_stream *strm, int *initialized, zlib_cleanup_fn cleanup)
+{
+  if (!*initialized)
+    return;
+
+  cleanup (strm);
+  *initialized = 0;
+}
+
 void
 ws_compression_free (SocketWS_T ws)
 {
   assert (ws);
+
+  /* Dispatch table maps is_deflate flag to cleanup function */
+  static const zlib_cleanup_fn cleanup_fn[] = {
+    [0] = inflateEnd, /* is_deflate = 0 -> inflate */
+    [1] = deflateEnd  /* is_deflate = 1 -> deflate */
+  };
 
   struct
   {
@@ -597,18 +617,9 @@ ws_compression_free (SocketWS_T ws)
 
   for (size_t i = 0; i < sizeof (contexts) / sizeof (contexts[0]); i++)
     {
-      if (*contexts[i].initialized)
-        {
-          if (contexts[i].is_deflate)
-            {
-              deflateEnd (contexts[i].strm);
-            }
-          else
-            {
-              inflateEnd (contexts[i].strm);
-            }
-          *contexts[i].initialized = 0;
-        }
+      cleanup_zlib_context (contexts[i].strm,
+                            contexts[i].initialized,
+                            cleanup_fn[contexts[i].is_deflate]);
     }
 
   /* Buffers not allocated; no action needed */
