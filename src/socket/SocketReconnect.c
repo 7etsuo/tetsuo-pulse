@@ -451,75 +451,89 @@ start_connect (T conn)
   return 1;
 }
 
+/**
+ * poll_for_write_ready - Poll socket for write readiness
+ * @fd: File descriptor
+ * @revents_out: Output for poll revents
+ *
+ * Returns: 1 if ready, 0 if still connecting or EINTR, -1 on error
+ */
+static int
+poll_for_write_ready (int fd, short *revents_out)
+{
+  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+
+  int result = poll (&pfd, 1, 0);
+  if (result < 0)
+    return (errno == EINTR) ? 0 : -1;
+
+  *revents_out = pfd.revents;
+  return (result == 0) ? 0 : 1;
+}
+
+/**
+ * get_socket_error - Retrieve socket error via SO_ERROR
+ * @fd: File descriptor
+ *
+ * Returns: Socket error code, or errno if getsockopt failed
+ */
+static int
+get_socket_error (int fd)
+{
+  int error = 0;
+  socklen_t len = sizeof (error);
+
+  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+    return errno;
+  return error;
+}
+
+/**
+ * handle_poll_error_events - Handle POLLERR/POLLHUP/POLLNVAL
+ * @conn: Connection context
+ * @fd: File descriptor
+ *
+ * Returns: -1 (always fails)
+ */
+static int
+handle_poll_error_events (T conn, int fd)
+{
+  int err = get_socket_error (fd);
+  reconnect_set_socket_error (
+      conn, "Connect poll error", err ? err : ECONNREFUSED);
+  return -1;
+}
+
 static int
 check_connect_completion (T conn)
 {
-  int fd, error;
-  socklen_t len;
-  struct pollfd pfd;
-  int result;
-
   if (!conn->socket || !conn->connect_in_progress)
     return -1;
 
-  fd = Socket_fd (conn->socket);
+  int fd = Socket_fd (conn->socket);
+  short revents = 0;
 
-  /* Poll for write readiness */
-  pfd.fd = fd;
-  pfd.events = POLLOUT;
-  pfd.revents = 0;
-
-  result = poll (&pfd, 1, 0);
-  if (result < 0)
+  int poll_result = poll_for_write_ready (fd, &revents);
+  if (poll_result < 0)
     {
-      if (errno == EINTR)
-        return 0;
       reconnect_set_socket_error (conn, "Connect poll failed", errno);
       return -1;
     }
-
-  if (result == 0)
+  if (poll_result == 0)
     return 0; /* Still connecting */
 
-  /* Check for errors */
-  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
-    {
-      /* Initialize error before getsockopt to avoid uninitialized read */
-      error = 0;
-      len = sizeof (error);
-      int connect_err = ECONNREFUSED; /* default */
+  if (revents & (POLLERR | POLLHUP | POLLNVAL))
+    return handle_poll_error_events (conn, fd);
 
-      if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-        connect_err = errno; /* getsockopt itself failed */
-      else if (error != 0)
-        connect_err = error; /* socket error occurred */
-
-      reconnect_set_socket_error (conn, "Connect poll error", connect_err);
-      return -1;
-    }
-
-  /* Check SO_ERROR - verify connection completed successfully */
-  /* Initialize error before getsockopt to avoid uninitialized read */
-  error = 0;
-  len = sizeof (error);
-  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-    {
-      /* getsockopt itself failed, use errno */
-      reconnect_set_socket_error (
-          conn, "Connect check getsockopt failed", errno);
-      return -1;
-    }
-
+  /* Verify connection success via SO_ERROR */
+  int error = get_socket_error (fd);
   if (error != 0)
     {
-      /* Connection completed with error */
       reconnect_set_socket_error (conn, "Connect check failed", error);
       return -1;
     }
 
-  /* Success! Restore blocking mode */
   restore_socket_blocking (conn->socket);
-
   conn->connect_in_progress = 0;
   return 1;
 }

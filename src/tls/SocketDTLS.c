@@ -439,6 +439,41 @@ dtls_set_ssl_hostname (SocketDgram_T socket, const char *hostname)
                           "Failed to enable hostname verification");
 }
 
+/**
+ * configure_dtls_mtu - Configure MTU settings on SSL object
+ * @ssl: SSL object
+ * @mtu: MTU value from context
+ */
+static void
+configure_dtls_mtu (SSL *ssl, size_t mtu)
+{
+  SSL_set_mtu (ssl, (long)mtu);
+  SSL_set_options (ssl,
+                   SSL_OP_NO_QUERY_MTU | SSL_OP_NO_RENEGOTIATION
+                       | SSL_OP_NO_COMPRESSION);
+  DTLS_set_link_mtu (ssl, (long)mtu);
+  SSL_set_read_ahead (ssl, 1);
+}
+
+/**
+ * configure_dtls_retransmit_timeout - Set initial retransmission timeout
+ * @ssl: SSL object
+ *
+ * Non-fatal if it fails - handshake works with default timing.
+ */
+static void
+configure_dtls_retransmit_timeout (SSL *ssl)
+{
+  static const struct timeval DTLS_INITIAL_TIMEOUT
+      = { .tv_sec = 1, .tv_usec = 0 };
+  BIO *rbio = SSL_get_rbio (ssl);
+  if (rbio)
+    BIO_ctrl (rbio,
+              BIO_CTRL_DGRAM_SET_RECV_TIMEOUT,
+              0,
+              (void *)&DTLS_INITIAL_TIMEOUT);
+}
+
 void
 SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
 {
@@ -450,7 +485,6 @@ SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
     RAISE (SocketDTLS_Failed);
 
   validate_dtls_enable_preconditions (socket);
-
   SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
 
   volatile SSL *ssl = NULL;
@@ -461,52 +495,22 @@ SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
     ssl = create_dtls_ssl_object (ctx);
     int fd = SocketBase_fd (socket->base);
 
-    /* Create datagram BIO and attach to SSL */
     bio = create_dgram_bio (fd);
     SSL_set_bio ((SSL *)ssl, (BIO *)bio, (BIO *)bio);
     bio = NULL; /* Ownership transferred to SSL */
 
-    /* Set MTU hint */
-    SSL_set_mtu ((SSL *)ssl, (long)SocketDTLSContext_get_mtu (ctx));
-    SSL_set_options ((SSL *)ssl,
-                     SSL_OP_NO_QUERY_MTU | SSL_OP_NO_RENEGOTIATION
-                         | SSL_OP_NO_COMPRESSION);
-    DTLS_set_link_mtu ((SSL *)ssl, (long)SocketDTLSContext_get_mtu (ctx));
-
-    /* Enable read-ahead for efficient DTLS record reassembly */
-    SSL_set_read_ahead ((SSL *)ssl, 1);
-
-    /* Enable timer-based retransmission for DTLS */
-    const struct timeval DTLS_INITIAL_RETRANS_TIMEOUT
-        = { .tv_sec = 1, .tv_usec = 0 };
-    BIO *rbio = SSL_get_rbio ((SSL *)ssl);
-    if (rbio)
-      {
-        long ret = BIO_ctrl (rbio,
-                             BIO_CTRL_DGRAM_SET_RECV_TIMEOUT,
-                             0,
-                             (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
-        /* Non-fatal: handshake will still work with default timing.
-         * BIO_ctrl return value depends on the control command; <= 0 may
-         * indicate failure for some BIO types (e.g., unsupported operation). */
-        (void)ret; /* Explicitly ignore - continue with default timing */
-      }
-
-    /* This may raise on allocation failure - will cleanup properly */
+    configure_dtls_mtu ((SSL *)ssl, SocketDTLSContext_get_mtu (ctx));
+    configure_dtls_retransmit_timeout ((SSL *)ssl);
     finalize_dtls_state (socket, (SSL *)ssl, ctx);
 
-    ssl = NULL; /* Success - ownership transferred to socket */
+    ssl = NULL; /* Success - ownership transferred */
   }
   ELSE
   {
     if (ssl)
-      {
-        SSL_free ((SSL *)ssl);
-      }
+      SSL_free ((SSL *)ssl);
     if (bio)
-      {
-        BIO_free ((BIO *)bio);
-      }
+      BIO_free ((BIO *)bio);
     RERAISE;
   }
   END_TRY;
@@ -768,75 +772,101 @@ get_poll_events_for_handshake_state (DTLSHandshakeState state)
     }
 }
 
+/**
+ * is_handshake_timeout_expired - Check if deadline has passed
+ * @timeout_ms: Original timeout value
+ * @deadline_ms: Deadline timestamp
+ *
+ * Returns: true if expired, false otherwise
+ */
+static int
+is_handshake_timeout_expired (int timeout_ms, int64_t deadline_ms)
+{
+  if (timeout_ms <= 0)
+    return 0; /* Infinite or non-blocking mode */
+  return SocketTimeout_expired (deadline_ms);
+}
+
+/**
+ * wait_for_handshake_io - Wait for I/O readiness with poll
+ * @fd: File descriptor
+ * @state: Current handshake state
+ * @timeout_ms: Original timeout value
+ * @deadline_ms: Deadline timestamp
+ *
+ * Returns: 1 if ready, 0 if timeout, raises on error
+ */
+static int
+wait_for_handshake_io (int fd,
+                       DTLSHandshakeState state,
+                       int timeout_ms,
+                       int64_t deadline_ms)
+{
+  struct pollfd pfd = { .fd = fd,
+                        .events = get_poll_events_for_handshake_state (state),
+                        .revents = 0 };
+
+  int infinite = (timeout_ms < 0);
+  int poll_tmo
+      = calculate_handshake_poll_timeout (timeout_ms, infinite, deadline_ms);
+  if (poll_tmo == 0)
+    return 0; /* Deadline expired */
+
+  int rc = poll (&pfd, 1, poll_tmo);
+  if (rc < 0 && errno != EINTR)
+    SOCKET_RAISE_FMT (SocketDTLS,
+                      SocketDTLS_HandshakeFailed,
+                      "poll failed: %s",
+                      Socket_safe_strerror (errno));
+
+  return 1; /* Ready or EINTR - continue loop */
+}
+
+/**
+ * raise_handshake_timeout - Raise timeout exception
+ * @socket: Socket instance
+ *
+ * Does not return.
+ */
+static void
+raise_handshake_timeout (SocketDgram_T socket)
+{
+  DTLS_ERROR_MSG ("DTLS handshake timeout");
+  socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
+  RAISE_DTLS_ERROR (SocketDTLS_TimeoutExpired);
+}
+
 DTLSHandshakeState
 SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
 {
   assert (socket);
-
   REQUIRE_DTLS_ENABLED (socket, SocketDTLS_HandshakeFailed);
 
   if (socket->dtls_handshake_done)
     return DTLS_HANDSHAKE_COMPLETE;
 
   int fd = SocketBase_fd (socket->base);
-  struct pollfd pfd;
-  pfd.fd = fd;
-  pfd.events = POLLIN | POLLOUT;
-
-  /* Handle timeout modes:
-   * timeout_ms == 0: Single non-blocking step
-   * timeout_ms == -1: Infinite wait (no timeout)
-   * timeout_ms > 0: Wait up to timeout_ms milliseconds
-   */
-  const int infinite_timeout = (timeout_ms < 0);
-  int64_t deadline_ms = 0LL;
-
-  if (timeout_ms > 0)
-    deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
+  int64_t deadline_ms
+      = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0;
 
   for (;;)
     {
-      /* Check timeout expiration (skip for infinite/zero timeout) */
-      if (!infinite_timeout && timeout_ms > 0
-          && SocketTimeout_expired (deadline_ms))
+      if (is_handshake_timeout_expired (timeout_ms, deadline_ms))
         break;
 
       DTLSHandshakeState state = SocketDTLS_handshake (socket);
 
-      /* Terminal states: return immediately */
       if (state == DTLS_HANDSHAKE_COMPLETE || state == DTLS_HANDSHAKE_ERROR)
         return state;
 
-      /* timeout_ms == 0: Single non-blocking step, return current state */
       if (timeout_ms == 0)
-        return state;
+        return state; /* Non-blocking: single step only */
 
-      /* Calculate poll timeout and events based on state */
-      int poll_tmo = calculate_handshake_poll_timeout (
-          timeout_ms, infinite_timeout, deadline_ms);
-      if (poll_tmo == 0)
+      if (!wait_for_handshake_io (fd, state, timeout_ms, deadline_ms))
         break; /* Deadline expired */
-
-      pfd.events = get_poll_events_for_handshake_state (state);
-
-      /* Wait for I/O readiness */
-      int rc = poll (&pfd, 1, poll_tmo);
-      if (rc < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          SOCKET_RAISE_FMT (SocketDTLS,
-                            SocketDTLS_HandshakeFailed,
-                            "poll failed: %s",
-                            Socket_safe_strerror (errno));
-        }
     }
 
-  /* Timeout expired (only reached for finite positive timeout) */
-  DTLS_ERROR_MSG ("DTLS handshake timeout");
-  socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
-  RAISE_DTLS_ERROR (SocketDTLS_TimeoutExpired);
-
+  raise_handshake_timeout (socket);
   return DTLS_HANDSHAKE_ERROR; /* Unreachable */
 }
 
