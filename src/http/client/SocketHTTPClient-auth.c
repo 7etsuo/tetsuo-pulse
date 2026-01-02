@@ -575,7 +575,7 @@ parse_http_auth_params (const char *header,
   return 0;
 }
 
-static void
+static int
 generate_cnonce (char *cnonce, size_t size)
 {
   unsigned char random_bytes[HTTPCLIENT_DIGEST_CNONCE_SIZE];
@@ -586,13 +586,15 @@ generate_cnonce (char *cnonce, size_t size)
 
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
     {
-      uint64_t t = (uint64_t)time (NULL);
-      memcpy (random_bytes, &t, sizeof (t));
-      memset (random_bytes + sizeof (t), 0, sizeof (random_bytes) - sizeof (t));
+      SOCKET_LOG_ERROR_MSG (
+          "Failed to generate cryptographically secure cnonce for Digest auth");
+      memset (cnonce, 0, size);
+      return -1;
     }
 
   SocketCrypto_hex_encode (random_bytes, sizeof (random_bytes), cnonce, 1);
   SocketCrypto_secure_clear (random_bytes, sizeof (random_bytes));
+  return 0;
 }
 
 /* Find "auth" token in qop list (qop=auth-int not supported) */
@@ -648,7 +650,8 @@ httpclient_auth_digest_challenge (const char *www_authenticate,
   use_sha256 = (strcasecmp (ch.algorithm, "SHA-256") == 0
                 || strcasecmp (ch.algorithm, "SHA-256-sess") == 0);
 
-  generate_cnonce (cnonce, sizeof (cnonce));
+  if (generate_cnonce (cnonce, sizeof (cnonce)) != 0)
+    return -1;
 
   if (ch.qop[0] != '\0')
     qop = find_auth_qop (ch.qop);
