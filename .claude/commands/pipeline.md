@@ -539,11 +539,12 @@ Done
    find <directory> -name "*.c" -exec awk '/^[[:space:]]*if / {
      match($0, /^[[:space:]]*/);
      depth = RLENGTH / 2;
-     if (depth >= 3) print FILENAME":"NR": depth "depth
+     if (depth >= 3) print FILENAME":"FNR": depth "depth
    }' {} +
    ```
 
-   This detects if statements by indentation depth (assuming 2-space or 4-space indent).
+   **Note**: Uses `FNR` (per-file line number) not `NR` (global) for correct line numbers.
+   This detects if statements by indentation depth (2-space indent: depth = spaces/2).
 
 2. **Parse output** into structured findings:
    - File path
