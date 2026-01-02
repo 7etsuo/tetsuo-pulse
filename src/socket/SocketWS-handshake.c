@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -147,6 +148,7 @@ ws_write_subprotocol_header (char *buf,
                              const char *const *subprotocols)
 {
   const char *const *proto;
+  bool need_comma;
 
   if (!subprotocols || !subprotocols[0])
     return 0;
@@ -154,16 +156,17 @@ ws_write_subprotocol_header (char *buf,
   if (ws_snprintf_checked (buf, size, offset, "Sec-WebSocket-Protocol: ") < 0)
     return -1;
 
+  need_comma = false;
   for (proto = subprotocols; *proto; proto++)
     {
-      /* Add comma separator after first element */
-      if (proto != subprotocols)
-        {
-          if (ws_snprintf_checked (buf, size, offset, ", ") < 0)
-            return -1;
-        }
+      /* Add comma separator between elements */
+      if (need_comma && ws_snprintf_checked (buf, size, offset, ", ") < 0)
+        return -1;
+
       if (ws_snprintf_checked (buf, size, offset, "%s", *proto) < 0)
         return -1;
+
+      need_comma = true;
     }
 
   return ws_snprintf_checked (buf, size, offset, "\r\n");
