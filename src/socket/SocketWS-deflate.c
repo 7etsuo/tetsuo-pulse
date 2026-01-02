@@ -407,6 +407,7 @@ decompress_loop (SocketWS_T ws,
     {
       ret = inflate (strm, Z_SYNC_FLUSH);
 
+      /* Guard clause: check for inflate errors first */
       if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR)
         {
           ws_set_error (ws,
@@ -419,14 +420,15 @@ decompress_loop (SocketWS_T ws,
 
       *total_out = *buf_size - strm->avail_out;
 
-      /* Grow buffer if needed */
-      if (strm->avail_out == 0 && ret != Z_STREAM_END)
-        {
-          if (try_grow_zlib_buffer (
-                  ws, strm, buf, buf_size, *total_out, 1 /* decompress */)
-              < 0)
-            return -1;
-        }
+      /* Guard clause: skip buffer growth if not needed */
+      if (strm->avail_out != 0 || ret == Z_STREAM_END)
+        continue;
+
+      /* Now handle buffer growth at normal indentation */
+      if (try_grow_zlib_buffer (
+              ws, strm, buf, buf_size, *total_out, 1 /* decompress */)
+          < 0)
+        return -1;
     }
   while (strm->avail_in > 0 && ret != Z_STREAM_END);
 
