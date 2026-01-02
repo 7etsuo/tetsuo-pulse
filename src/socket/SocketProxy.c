@@ -1624,6 +1624,40 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
+#if SOCKET_HAS_TLS
+static void
+proxy_process_tls_handshake (SocketProxy_Conn_T conn)
+{
+  if (proxy_check_timeout (conn) < 0)
+    return;
+
+  TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
+
+  /* Guard clause: Handle error state first */
+  if (hs == TLS_HANDSHAKE_ERROR)
+    {
+      socketproxy_set_error (conn,
+                             PROXY_ERROR_PROTOCOL,
+                             "TLS handshake failed: %s",
+                             Socket_GetLastError ());
+      conn->state = PROXY_STATE_FAILED;
+      return;
+    }
+
+  /* Guard clause: Nothing to do if still in progress */
+  if (hs != TLS_HANDSHAKE_COMPLETE)
+    return;
+
+  /* Success path: flat and prominent */
+  conn->tls_enabled = 1;
+  conn->state = PROXY_STATE_HANDSHAKE_SEND;
+  conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+
+  if (proxy_build_initial_request (conn) < 0)
+    return;
+}
+#endif
+
 void
 SocketProxy_Conn_process (SocketProxy_Conn_T conn)
 {
@@ -1640,27 +1674,7 @@ SocketProxy_Conn_process (SocketProxy_Conn_T conn)
 
     case PROXY_STATE_TLS_TO_PROXY:
 #if SOCKET_HAS_TLS
-      if (proxy_check_timeout (conn) < 0)
-        return;
-
-      TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
-
-      if (hs == TLS_HANDSHAKE_COMPLETE)
-        {
-          conn->tls_enabled = 1;
-          conn->state = PROXY_STATE_HANDSHAKE_SEND;
-          conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-          if (proxy_build_initial_request (conn) < 0)
-            return;
-        }
-      else if (hs == TLS_HANDSHAKE_ERROR)
-        {
-          socketproxy_set_error (conn,
-                                 PROXY_ERROR_PROTOCOL,
-                                 "TLS handshake failed: %s",
-                                 Socket_GetLastError ());
-          conn->state = PROXY_STATE_FAILED;
-        }
+      proxy_process_tls_handshake (conn);
 #endif
       break;
 
