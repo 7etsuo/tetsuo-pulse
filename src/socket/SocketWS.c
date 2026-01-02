@@ -451,66 +451,86 @@ ws_requires_masking (SocketWS_T ws)
   return ws->role == WS_ROLE_CLIENT;
 }
 
+/* Helper: Handle transport send errors */
 static ssize_t
-ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
+handle_transport_send_error (SocketWS_T ws, ssize_t sent)
+{
+  if (sent >= 0)
+    return sent;
+
+  /* Would block - not an error */
+  if (errno == EAGAIN || errno == EWOULDBLOCK)
+    return 0;
+
+  /* Broken pipe - connection closed */
+  if (errno == EPIPE)
+    {
+      ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+      ws->state = WS_STATE_CLOSED;
+      ws->close_code = WS_CLOSE_ABNORMAL;
+      return -1;
+    }
+
+  /* Other transport error */
+  ws_set_error (ws, WS_ERROR, "Transport send failed");
+  return -1;
+}
+
+/* Helper: Send via direct socket with exception handling */
+static ssize_t
+send_via_socket (SocketWS_T ws, const void *ptr, size_t available)
 {
   volatile ssize_t sent = 0;
   volatile int failed = 0;
 
-  /* Use transport abstraction if available */
+  TRY
+  {
+    sent = Socket_send (ws->socket, ptr, available);
+  }
+  EXCEPT (Socket_Closed)
+  {
+    /* Normal/expected close path: don't spam error logs. */
+    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+    ws->state = WS_STATE_CLOSED;
+    ws->close_code = WS_CLOSE_ABNORMAL;
+    failed = 1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ws_set_error (ws, WS_ERROR, "Socket send failed");
+    failed = 1;
+  }
+  END_TRY;
+
+  return failed ? -1 : sent;
+}
+
+static ssize_t
+ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
+{
+  /* Perform the send operation */
+  ssize_t sent = ws->transport
+                     ? SocketWS_Transport_send (ws->transport, ptr, available)
+                     : send_via_socket (ws, ptr, available);
+
+  /* Handle transport errors if using transport */
   if (ws->transport)
     {
-      sent = SocketWS_Transport_send (ws->transport, ptr, available);
+      sent = handle_transport_send_error (ws, sent);
       if (sent < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-              /* Would block - not an error */
-              sent = 0;
-            }
-          else if (errno == EPIPE)
-            {
-              ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-              ws->state = WS_STATE_CLOSED;
-              ws->close_code = WS_CLOSE_ABNORMAL;
-              return -1;
-            }
-          else
-            {
-              ws_set_error (ws, WS_ERROR, "Transport send failed");
-              return -1;
-            }
-        }
-    }
-  else
-    {
-      /* Fallback to direct socket I/O for backward compatibility */
-      TRY
-      {
-        sent = Socket_send (ws->socket, ptr, available);
-      }
-      EXCEPT (Socket_Closed)
-      {
-        /* Normal/expected close path: don't spam error logs. */
-        ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-        ws->state = WS_STATE_CLOSED;
-        ws->close_code = WS_CLOSE_ABNORMAL;
-        failed = 1;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        ws_set_error (ws, WS_ERROR, "Socket send failed");
-        failed = 1;
-      }
-      END_TRY;
-
-      if (failed)
         return -1;
     }
+  /* send_via_socket already handles errors internally */
+  else if (sent < 0)
+    {
+      return -1;
+    }
 
+  /* No progress - would block */
   if (sent <= 0)
-    return 0; /* Would block / no progress */
+    return 0;
 
+  /* Success - consume sent bytes */
   SocketBuf_consume (ws->send_buf, (size_t)sent);
   return sent;
 }
