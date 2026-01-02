@@ -902,34 +902,24 @@ alpn_select_cb (SSL *ssl,
   return SSL_TLSEXT_ERR_NOACK;
 }
 
-void
-SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
+/**
+ * alpn_validate_and_measure_protos - Validate protocols and compute wire length
+ * @protos: Array of protocol strings
+ * @count: Number of protocols
+ * @lens: Output array for protocol lengths (must be pre-allocated)
+ * @wire_len_out: Output for total wire format length
+ *
+ * Validates each protocol length (non-zero, <= max) and computes the total
+ * wire format length needed for client ALPN. Raises exception on invalid input.
+ */
+static void
+alpn_validate_and_measure_protos (const char **protos,
+                                  size_t count,
+                                  size_t *lens,
+                                  size_t *wire_len_out)
 {
-  assert (ctx);
-
-  ctx->alpn.protocols = NULL;
-  ctx->alpn.lens = NULL;
-  ctx->alpn.count = 0;
-  if (!protos || count == 0)
-    return;
-
-  if (count > SOCKET_DTLS_MAX_ALPN_PROTOCOLS)
-    {
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "Too many ALPN protocols: %zu (max %d)",
-                                count,
-                                SOCKET_DTLS_MAX_ALPN_PROTOCOLS);
-    }
-
-  /* Allocate lens array first */
-  ctx->alpn.lens
-      = Arena_alloc (ctx->arena, count * sizeof (size_t), __FILE__, __LINE__);
-  if (!ctx->alpn.lens)
-    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                              "Failed to allocate ALPN lens array");
-
-  /* Pre-validate protocols, compute lengths and wire_len (for client) */
   size_t wire_len = 0;
+
   for (size_t i = 0; i < count; ++i)
     {
       size_t len = strlen (protos[i]);
@@ -938,7 +928,7 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
           RAISE_DTLS_CTX_ERROR_FMT (
               SocketDTLS_Failed, "Invalid ALPN protocol length: %zu", len);
         }
-      ctx->alpn.lens[i] = len;
+      lens[i] = len;
 
       /* Security check for string allocation size */
       size_t ts;
@@ -961,6 +951,110 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
       wire_len = new_wl;
     }
 
+  *wire_len_out = wire_len;
+}
+
+/**
+ * alpn_copy_protocol_strings - Copy protocol strings to arena
+ * @arena: Memory arena for allocations
+ * @protos: Source protocol strings
+ * @count: Number of protocols
+ * @lens: Pre-computed lengths for each protocol
+ * @out_protocols: Output array for copied strings (must be pre-allocated)
+ *
+ * Allocates and copies each protocol string to the arena.
+ * Raises exception on allocation failure.
+ */
+static void
+alpn_copy_protocol_strings (Arena_T arena,
+                            const char **protos,
+                            size_t count,
+                            const size_t *lens,
+                            const char **out_protocols)
+{
+  for (size_t i = 0; i < count; ++i)
+    {
+      size_t len = lens[i];
+      size_t total_size = len + 1;
+      char *copy = Arena_alloc (arena, total_size, __FILE__, __LINE__);
+      if (!copy)
+        RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                  "Failed to allocate ALPN protocol string");
+      memcpy (copy, protos[i], total_size);
+      out_protocols[i] = copy;
+    }
+}
+
+/**
+ * alpn_build_wire_format - Build ALPN wire format for client
+ * @arena: Memory arena for allocation
+ * @protos: Protocol strings
+ * @count: Number of protocols
+ * @lens: Pre-computed lengths for each protocol
+ * @wire_len: Total wire format length
+ *
+ * Builds the wire format buffer (length-prefixed strings) for
+ * SSL_CTX_set_alpn_protos.
+ *
+ * @return Allocated wire format buffer, raises on failure
+ */
+static unsigned char *
+alpn_build_wire_format (Arena_T arena,
+                        const char **protos,
+                        size_t count,
+                        const size_t *lens,
+                        size_t wire_len)
+{
+  unsigned char *wire = Arena_alloc (arena, wire_len, __FILE__, __LINE__);
+  if (!wire)
+    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                              "Failed to allocate ALPN wire format");
+
+  unsigned char *p = wire;
+  for (size_t i = 0; i < count; ++i)
+    {
+      size_t len = lens[i];
+      *p++ = (unsigned char)len;
+      memcpy (p, protos[i], len);
+      p += len;
+    }
+
+  return wire;
+}
+
+void
+SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
+{
+  assert (ctx);
+
+  /* Reset ALPN state */
+  ctx->alpn.protocols = NULL;
+  ctx->alpn.lens = NULL;
+  ctx->alpn.count = 0;
+
+  if (!protos || count == 0)
+    return;
+
+  /* Validate count */
+  if (count > SOCKET_DTLS_MAX_ALPN_PROTOCOLS)
+    {
+      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                "Too many ALPN protocols: %zu (max %d)",
+                                count,
+                                SOCKET_DTLS_MAX_ALPN_PROTOCOLS);
+    }
+
+  /* Allocate lens array */
+  ctx->alpn.lens
+      = Arena_alloc (ctx->arena, count * sizeof (size_t), __FILE__, __LINE__);
+  if (!ctx->alpn.lens)
+    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                              "Failed to allocate ALPN lens array");
+
+  /* Validate protocols and compute wire length */
+  size_t wire_len = 0;
+  alpn_validate_and_measure_protos (protos, count, ctx->alpn.lens, &wire_len);
+
   /* Allocate protocols array */
   ctx->alpn.protocols
       = Arena_alloc (ctx->arena, count * sizeof (char *), __FILE__, __LINE__);
@@ -968,18 +1062,9 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                               "Failed to allocate ALPN protocol array");
 
-  /* Copy protocol strings using cached lengths */
-  for (size_t i = 0; i < count; ++i)
-    {
-      size_t len = ctx->alpn.lens[i];
-      size_t total_size = len + 1;
-      char *copy = Arena_alloc (ctx->arena, total_size, __FILE__, __LINE__);
-      if (!copy)
-        RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                  "Failed to allocate ALPN protocol string");
-      memcpy (copy, protos[i], total_size);
-      ctx->alpn.protocols[i] = copy;
-    }
+  /* Copy protocol strings */
+  alpn_copy_protocol_strings (
+      ctx->arena, protos, count, ctx->alpn.lens, ctx->alpn.protocols);
 
   ctx->alpn.count = count;
 
@@ -987,29 +1072,18 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
   if (ctx->is_server)
     {
       SSL_CTX_set_alpn_select_cb (ctx->ssl_ctx, alpn_select_cb, ctx);
+      return;
     }
-  /* Client: build and set wire format using cached lengths */
-  else
-    {
-      if (wire_len == 0)
-        return;
-      unsigned char *wire
-          = Arena_alloc (ctx->arena, wire_len, __FILE__, __LINE__);
-      if (!wire)
-        RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                  "Failed to allocate ALPN wire format");
-      unsigned char *p = wire;
-      for (size_t i = 0; i < count; ++i)
-        {
-          size_t len = ctx->alpn.lens[i];
-          *p++ = (unsigned char)len;
-          memcpy (p, protos[i], len);
-          p += len;
-        }
-      if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len)
-          != 0)
-        raise_openssl_error ("Failed to set ALPN protocols");
-    }
+
+  /* Client: build and set wire format */
+  if (wire_len == 0)
+    return;
+
+  unsigned char *wire = alpn_build_wire_format (
+      ctx->arena, protos, count, ctx->alpn.lens, wire_len);
+
+  if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len) != 0)
+    raise_openssl_error ("Failed to set ALPN protocols");
 }
 
 void
