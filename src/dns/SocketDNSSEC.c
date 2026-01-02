@@ -850,12 +850,82 @@ parse_rsa_pubkey_components (const unsigned char *pubkey,
   return 0;
 }
 
-/*
- * Create RSA public key from DNSKEY
- * Returns pkey on success, NULL on error
- * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for
- * system errors
- */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+static EVP_PKEY *
+create_rsa_pkey_ossl3 (const unsigned char *mod_data,
+                       size_t mod_len,
+                       const unsigned char *exp_data,
+                       size_t exp_len,
+                       int *status)
+{
+  OSSL_PARAM params[3];
+  params[0] = OSSL_PARAM_construct_BN ("n", (unsigned char *)mod_data, mod_len);
+  params[1] = OSSL_PARAM_construct_BN ("e", (unsigned char *)exp_data, exp_len);
+  params[2] = OSSL_PARAM_construct_end ();
+
+  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "RSA", NULL);
+  if (pctx == NULL)
+    {
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  EVP_PKEY *pkey = NULL;
+  if (EVP_PKEY_fromdata_init (pctx) <= 0
+      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
+    {
+      EVP_PKEY_CTX_free (pctx);
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  EVP_PKEY_CTX_free (pctx);
+  *status = DNSSEC_SECURE;
+  return pkey;
+}
+#else
+static EVP_PKEY *
+create_rsa_pkey_legacy (const unsigned char *mod_data,
+                        size_t mod_len,
+                        const unsigned char *exp_data,
+                        size_t exp_len,
+                        int *status)
+{
+  BIGNUM *n = BN_bin2bn (mod_data, mod_len, NULL);
+  BIGNUM *e = BN_bin2bn (exp_data, exp_len, NULL);
+  if (n == NULL || e == NULL)
+    {
+      BN_free (n);
+      BN_free (e);
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  RSA *rsa = RSA_new ();
+  if (rsa == NULL)
+    {
+      BN_free (n);
+      BN_free (e);
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  RSA_set0_key (rsa, n, e, NULL);
+
+  EVP_PKEY *pkey = EVP_PKEY_new ();
+  if (pkey == NULL)
+    {
+      RSA_free (rsa);
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+
+  EVP_PKEY_assign_RSA (pkey, rsa);
+  *status = DNSSEC_SECURE;
+  return pkey;
+}
+#endif
+
 static EVP_PKEY *
 create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 {
@@ -874,69 +944,11 @@ create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
       return NULL;
     }
 
-  /* Create BIGNUMs from parsed components */
-  BIGNUM *n = BN_bin2bn (mod_data, mod_len, NULL);
-  BIGNUM *e = BN_bin2bn (exp_data, exp_len, NULL);
-  if (n == NULL || e == NULL)
-    {
-      BN_free (n);
-      BN_free (e);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-
-  EVP_PKEY *pkey = NULL;
-
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-  /* OpenSSL 3.0+ uses EVP_PKEY_fromdata */
-  OSSL_PARAM params[3];
-  params[0] = OSSL_PARAM_construct_BN ("n", (unsigned char *)mod_data, mod_len);
-  params[1] = OSSL_PARAM_construct_BN ("e", (unsigned char *)exp_data, exp_len);
-  params[2] = OSSL_PARAM_construct_end ();
-
-  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "RSA", NULL);
-  if (pctx == NULL)
-    {
-      BN_free (n);
-      BN_free (e);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-
-  if (EVP_PKEY_fromdata_init (pctx) <= 0
-      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
-    {
-      EVP_PKEY_CTX_free (pctx);
-      BN_free (n);
-      BN_free (e);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-  EVP_PKEY_CTX_free (pctx);
-  BN_free (n);
-  BN_free (e);
+  return create_rsa_pkey_ossl3 (mod_data, mod_len, exp_data, exp_len, status);
 #else
-  RSA *rsa = RSA_new ();
-  if (rsa == NULL)
-    {
-      BN_free (n);
-      BN_free (e);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-  RSA_set0_key (rsa, n, e, NULL);
-  pkey = EVP_PKEY_new ();
-  if (pkey == NULL)
-    {
-      RSA_free (rsa);
-      *status = DNSSEC_INDETERMINATE;
-      return NULL;
-    }
-  EVP_PKEY_assign_RSA (pkey, rsa);
+  return create_rsa_pkey_legacy (mod_data, mod_len, exp_data, exp_len, status);
 #endif
-
-  *status = DNSSEC_SECURE;
-  return pkey;
 }
 
 /* ECDSA curve parameters */

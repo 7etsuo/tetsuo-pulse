@@ -369,6 +369,66 @@ handle_shrink_excess (T pool, size_t new_maxconns)
   POOL_LOCK (pool);
 }
 
+static void
+invoke_pre_resize_cb (T pool,
+                      SocketPool_PreResizeCallback pre_cb,
+                      void *pre_cb_data,
+                      size_t old_maxconns,
+                      size_t new_maxconns)
+{
+  if (pre_cb == NULL)
+    return;
+
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "Pool pre-resize notification: %zu -> %zu connections",
+                   old_maxconns,
+                   new_maxconns);
+  pre_cb (pool, old_maxconns, new_maxconns, pre_cb_data);
+}
+
+static void
+invoke_post_resize_cb (T pool,
+                       SocketPool_ResizeCallback cb,
+                       void *cb_data,
+                       size_t old_maxconns,
+                       size_t new_maxconns)
+{
+  if (cb == NULL)
+    return;
+
+  SocketLog_emitf (SOCKET_LOG_DEBUG,
+                   SOCKET_LOG_COMPONENT,
+                   "Pool resized from %zu to %zu connections",
+                   old_maxconns,
+                   new_maxconns);
+  cb (pool, old_maxconns, new_maxconns, cb_data);
+}
+
+static int
+perform_resize_operations (T pool, size_t old_maxconns, size_t new_maxconns)
+{
+  size_t valid_count;
+
+  if (new_maxconns < old_maxconns)
+    handle_shrink_excess (pool, new_maxconns);
+
+  if (realloc_connections_array (pool, new_maxconns) != 0)
+    return -1;
+
+  valid_count = old_maxconns < new_maxconns ? old_maxconns : new_maxconns;
+  rehash_active_connections (pool, valid_count);
+  rebuild_active_list (pool, valid_count);
+
+  if (new_maxconns > old_maxconns)
+    initialize_new_slots (pool, old_maxconns, new_maxconns);
+  else
+    relink_free_slots (pool, new_maxconns);
+
+  pool->maxconns = new_maxconns;
+  return 0;
+}
+
 /**
  * SocketPool_resize - Resize pool capacity at runtime
  * @pool: Pool instance
@@ -383,7 +443,6 @@ void
 SocketPool_resize (T pool, size_t new_maxconns)
 {
   size_t old_maxconns;
-  size_t valid_count;
   SocketPool_ResizeCallback cb = NULL;
   void *cb_data = NULL;
   SocketPool_PreResizeCallback pre_cb = NULL;
@@ -403,63 +462,23 @@ SocketPool_resize (T pool, size_t new_maxconns)
       return;
     }
 
-  /* Capture pre-resize callback info BEFORE any modifications */
   pre_cb = pool->pre_resize_cb;
   pre_cb_data = pool->pre_resize_cb_data;
 
-  /* CRITICAL: Invoke pre-resize callback WITH mutex held so external
-   * code can safely clear cached Connection_T pointers before they
-   * become invalid due to realloc. The callback must be quick and
-   * MUST NOT call SocketPool_add/remove/get (will deadlock). */
-  if (pre_cb)
-    {
-      SocketLog_emitf (SOCKET_LOG_DEBUG,
-                       SOCKET_LOG_COMPONENT,
-                       "Pool pre-resize notification: %zu -> %zu connections",
-                       old_maxconns,
-                       new_maxconns);
-      pre_cb (pool, old_maxconns, new_maxconns, pre_cb_data);
-    }
+  invoke_pre_resize_cb (pool, pre_cb, pre_cb_data, old_maxconns, new_maxconns);
 
-  if (new_maxconns < old_maxconns)
-    handle_shrink_excess (pool, new_maxconns);
-
-  if (realloc_connections_array (pool, new_maxconns) != 0)
+  if (perform_resize_operations (pool, old_maxconns, new_maxconns) != 0)
     {
       POOL_UNLOCK (pool);
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
 
-  /* Rehash only valid slots: min of old and new size.
-   * When growing, new slots are uninitialized until initialize_new_slots.
-   * When shrinking, array was truncated to new_maxconns. */
-  valid_count = old_maxconns < new_maxconns ? old_maxconns : new_maxconns;
-  rehash_active_connections (pool, valid_count);
-  rebuild_active_list (pool, valid_count);
-
-  if (new_maxconns > old_maxconns)
-    initialize_new_slots (pool, old_maxconns, new_maxconns);
-  else
-    relink_free_slots (pool, new_maxconns);
-
-  pool->maxconns = new_maxconns;
-
-  /* Capture callback info before releasing lock */
   cb = pool->resize_cb;
   cb_data = pool->resize_cb_data;
 
   POOL_UNLOCK (pool);
 
-  /* Invoke resize callback outside lock to prevent deadlock */
-  if (cb)
-    {
-      SocketLog_emitf (SOCKET_LOG_DEBUG,
-                       SOCKET_LOG_COMPONENT,
-                       "Pool resized from %zu to %zu connections",
-                       old_maxconns,
-                       new_maxconns);
-      cb (pool, old_maxconns, new_maxconns, cb_data);
-    }
+  invoke_post_resize_cb (pool, cb, cb_data, old_maxconns, new_maxconns);
 }
 
 /* ============================================================================
