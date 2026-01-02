@@ -32,6 +32,13 @@ httpclient_io_safe_send (SocketHTTPClient_T client,
 {
   ssize_t sent;
 
+  /* Validate required parameters */
+  if (conn == NULL)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
   /* Use async I/O if available */
   if (client != NULL && client->async_available)
     {
@@ -79,6 +86,13 @@ httpclient_io_safe_recv (SocketHTTPClient_T client,
                          size_t size,
                          ssize_t *n)
 {
+  /* Validate required parameters */
+  if (conn == NULL)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
   /* Use async I/O if available */
   if (client != NULL && client->async_available)
     {
