@@ -261,6 +261,23 @@ cookie_expiry_is_valid (time_t expires, time_t now)
              && expires <= now + MAX_COOKIE_EXPIRY_FUTURE);
 }
 
+/* Validate required cookie fields (name, value, domain must be non-NULL) */
+static int
+validate_cookie_required_fields (const SocketHTTPClient_Cookie *cookie)
+{
+  if (cookie->name == NULL || cookie->value == NULL || cookie->domain == NULL)
+    {
+      SocketLog_emitf (SOCKET_LOG_ERROR,
+                       SOCKET_LOG_COMPONENT,
+                       "Invalid NULL fields in cookie: name=%s value=%s domain=%s",
+                       cookie->name ? cookie->name : "NULL",
+                       cookie->value ? cookie->value : "NULL",
+                       cookie->domain ? cookie->domain : "NULL");
+      return -1;
+    }
+  return 0;
+}
+
 
 /* RFC 6265 §5.1.4 default path derivation */
 static void
@@ -443,14 +460,8 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
   TRY
   {
     // Validate cookie before storing
-    if (cookie->name == NULL || cookie->value == NULL || cookie->domain == NULL)
+    if (validate_cookie_required_fields (cookie) != 0)
       {
-        SocketLog_emitf (
-            SOCKET_LOG_ERROR,
-            SOCKET_LOG_COMPONENT,
-            "Invalid NULL fields in cookie set for name=%s domain=%s",
-            cookie->name ? cookie->name : "NULL",
-            cookie->domain ? cookie->domain : "NULL");
         result = -1;
         goto unlock;
       }
@@ -1286,16 +1297,8 @@ httpclient_parse_set_cookie (const char *value,
         }
     }
 
-  if (cookie->name == NULL || cookie->value == NULL)
+  if (validate_cookie_required_fields (cookie) != 0)
     {
-      HTTPCLIENT_ERROR_MSG (
-          "Invalid Set-Cookie: missing required name or value");
-      return -1;
-    }
-  if (cookie->domain == NULL)
-    {
-      HTTPCLIENT_ERROR_MSG ("Invalid Set-Cookie: missing required domain "
-                            "after applying defaults");
       return -1;
     }
 
