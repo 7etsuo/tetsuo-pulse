@@ -189,6 +189,77 @@ socketproxy_parse_scheme (const char *url,
   return -1;
 }
 
+/* Helper to validate string contains only printable ASCII */
+static int
+validate_printable_string (const char *str, const char *field_name)
+{
+  for (const char *s = str; *s; s++)
+    {
+      if (!isprint ((unsigned char)*s))
+        {
+          PROXY_ERROR_MSG ("Invalid character in %s", field_name);
+          return -1;
+        }
+    }
+  return 0;
+}
+
+/* Helper to parse username:password format */
+static int
+parse_username_password (const char *start,
+                         const char *colon,
+                         const char *at_sign,
+                         SocketProxy_Config *config,
+                         Arena_T arena)
+{
+  size_t user_len = (size_t)(colon - start);
+  size_t pass_len = (size_t)(at_sign - colon - 1);
+
+  if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+    return -1;
+  if (pass_len > SOCKET_PROXY_MAX_PASSWORD_LEN)
+    return -1;
+
+  config->username = proxy_alloc_string (start, user_len, arena);
+  if (config->username == NULL)
+    return -1;
+
+  if (validate_printable_string (config->username, "username") < 0)
+    return -1;
+
+  config->password = proxy_alloc_string (colon + 1, pass_len, arena);
+  if (config->password == NULL)
+    return -1;
+
+  if (validate_printable_string (config->password, "password") < 0)
+    return -1;
+
+  return 0;
+}
+
+/* Helper to parse username-only format */
+static int
+parse_username_only (const char *start,
+                     const char *at_sign,
+                     SocketProxy_Config *config,
+                     Arena_T arena)
+{
+  size_t user_len = (size_t)(at_sign - start);
+
+  if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+    return -1;
+
+  config->username = proxy_alloc_string (start, user_len, arena);
+  if (config->username == NULL)
+    return -1;
+
+  if (validate_printable_string (config->username, "username") < 0)
+    return -1;
+
+  config->password = NULL;
+  return 0;
+}
+
 int
 socketproxy_parse_userinfo (const char *start,
                             SocketProxy_Config *config,
@@ -198,6 +269,7 @@ socketproxy_parse_userinfo (const char *start,
   const char *at_sign;
   const char *colon;
 
+  /* Guard: No userinfo present */
   at_sign = strchr (start, '@');
   if (at_sign == NULL)
     {
@@ -205,6 +277,7 @@ socketproxy_parse_userinfo (const char *start,
       return 0;
     }
 
+  /* Guard: Userinfo too long */
   size_t userinfo_len = (size_t)(at_sign - start);
   if (userinfo_len > SOCKET_PROXY_MAX_USERINFO_LEN)
     {
@@ -215,68 +288,15 @@ socketproxy_parse_userinfo (const char *start,
 
   colon = memchr (start, ':', (size_t)(at_sign - start));
 
+  /* Parse based on format: username:password or username-only */
+  int result;
   if (colon != NULL && colon < at_sign)
-    {
-      size_t user_len = (size_t)(colon - start);
-      size_t pass_len = (size_t)(at_sign - colon - 1);
-
-      if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN
-          || pass_len > SOCKET_PROXY_MAX_PASSWORD_LEN)
-        {
-          return -1;
-        }
-
-      config->username = proxy_alloc_string (start, user_len, arena);
-      if (config->username == NULL)
-        return -1;
-
-      /* Validate username chars (printable ASCII, no controls) */
-      for (const char *s = config->username; *s; s++)
-        {
-          if (!isprint ((unsigned char)*s))
-            {
-              PROXY_ERROR_MSG ("Invalid character in username");
-              return -1;
-            }
-        }
-
-      config->password = proxy_alloc_string (colon + 1, pass_len, arena);
-      if (config->password == NULL)
-        return -1;
-
-      for (const char *s = config->password; *s; s++)
-        {
-          if (!isprint ((unsigned char)*s))
-            {
-              PROXY_ERROR_MSG ("Invalid character in password");
-              return -1;
-            }
-        }
-    }
+    result = parse_username_password (start, colon, at_sign, config, arena);
   else
-    {
-      size_t user_len = (size_t)(at_sign - start);
+    result = parse_username_only (start, at_sign, config, arena);
 
-      if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
-        {
-          return -1;
-        }
-
-      config->username = proxy_alloc_string (start, user_len, arena);
-      if (config->username == NULL)
-        return -1;
-
-      /* Validate username chars (printable ASCII, no controls) */
-      for (const char *s = config->username; *s; s++)
-        {
-          if (!isprint ((unsigned char)*s))
-            {
-              PROXY_ERROR_MSG ("Invalid character in username");
-              return -1;
-            }
-        }
-      config->password = NULL;
-    }
+  if (result < 0)
+    return -1;
 
   *end = at_sign + 1;
   return 0;
