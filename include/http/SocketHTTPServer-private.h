@@ -325,6 +325,11 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn);
 void connection_close (SocketHTTPServer_T server, ServerConnection *conn);
 void connection_free_pending (SocketHTTPServer_T server);
 ServerConnection *connection_new (SocketHTTPServer_T server, Socket_T socket);
+void connection_transition_to_websocket (SocketHTTPServer_T server,
+                                         ServerConnection *conn,
+                                         SocketWS_T ws,
+                                         SocketHTTPServer_BodyCallback callback,
+                                         void *userdata);
 
 /* Event loop helpers (SocketHTTPServer.c) */
 int server_check_connection_timeout (SocketHTTPServer_T server,

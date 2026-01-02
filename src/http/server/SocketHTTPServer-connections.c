@@ -1444,3 +1444,20 @@ server_process_client_event (SocketHTTPServer_T server,
 
   return requests_processed;
 }
+
+void
+connection_transition_to_websocket (SocketHTTPServer_T server,
+                                    ServerConnection *conn,
+                                    SocketWS_T ws,
+                                    SocketHTTPServer_BodyCallback callback,
+                                    void *userdata)
+{
+  conn->websocket = ws;
+  conn->ws_callback = callback;
+  conn->ws_callback_userdata = userdata;
+  conn->response_streaming = 1;
+  conn->state = CONN_STATE_WEBSOCKET;
+
+  unsigned ws_events = SocketWS_poll_events (ws);
+  SocketPoll_mod (server->poll, conn->socket, ws_events, conn);
+}

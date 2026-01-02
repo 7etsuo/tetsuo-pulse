@@ -681,6 +681,29 @@ SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req)
   return SocketWS_is_upgrade (req->conn->request);
 }
 
+static int
+complete_websocket_handshake (SocketWS_T ws)
+{
+  int hs_result;
+
+  do
+    {
+      hs_result = SocketWS_handshake (ws);
+      if (hs_result > 0)
+        SocketWS_process (ws, POLL_WRITE);
+    }
+  while (hs_result > 0);
+
+  if (hs_result < 0)
+    {
+      SocketWS_free (&ws);
+      return -1;
+    }
+
+  SocketWS_process (ws, POLL_WRITE);
+  return 0;
+}
+
 SocketWS_T
 SocketHTTPServer_Request_upgrade_websocket (
     SocketHTTPServer_Request_T req,
@@ -698,64 +721,27 @@ SocketHTTPServer_Request_upgrade_websocket (
   SocketWS_T ws = NULL;
   TRY
   {
-    ws = SocketWS_server_accept (
-        req->conn->socket, req->conn->request, ws_config);
+    ws = SocketWS_server_accept (req->conn->socket, req->conn->request,
+                                 ws_config);
     if (ws == NULL)
-      {
-        RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-      }
+      RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
 
-    /* Complete handshake - may require multiple calls in non-blocking mode */
-    int hs_result;
-    do
-      {
-        hs_result = SocketWS_handshake (ws);
-        if (hs_result > 0)
-          {
-            /* Handshake needs more I/O - flush send buffer */
-            SocketWS_process (ws, POLL_WRITE);
-          }
-      }
-    while (hs_result > 0);
+    if (complete_websocket_handshake (ws) < 0)
+      RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
 
-    if (hs_result < 0)
-      {
-        /* Handshake failed */
-        SocketWS_free (&ws);
-        RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-      }
-
-    /* Flush any remaining handshake response data before transitioning */
-    SocketWS_process (ws, POLL_WRITE);
-
-    /* Store WebSocket handle and callback in connection for poll integration */
-    req->conn->websocket = ws;
-    req->conn->ws_callback = callback;
-    req->conn->ws_callback_userdata = userdata;
-
-    /* Mark as streaming to prevent post-handler code from overwriting state */
-    req->conn->response_streaming = 1;
-
-    /* Transition to WebSocket state - server event loop will handle events */
-    req->conn->state = CONN_STATE_WEBSOCKET;
-
-    /* Update poll interest for WebSocket events */
-    unsigned ws_events = SocketWS_poll_events (ws);
-    SocketPoll_mod (req->server->poll, req->conn->socket, ws_events, req->conn);
-
+    connection_transition_to_websocket (req->server, req->conn, ws, callback,
+                                        userdata);
     return ws;
   }
   EXCEPT (SocketWS_Failed)
   {
     if (ws != NULL)
-      {
-        SocketWS_free (&ws);
-      }
+      SocketWS_free (&ws);
     RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
   }
   END_TRY;
 
-  return NULL; /* Only reached on alloc failures before accept */
+  return NULL;
 }
 
 SocketHTTP2_Stream_T
