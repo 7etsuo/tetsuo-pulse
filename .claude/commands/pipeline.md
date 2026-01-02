@@ -122,6 +122,7 @@ For each TODO finding, spawn:
 ```
 Task:
   subagent_type: todo-scanner-agent
+  model: sonnet
   run_in_background: true
   prompt: |
     Process this TODO comment and create a GitHub issue if not duplicate:
@@ -330,6 +331,7 @@ For each file, spawn:
 ```
 Task:
   subagent_type: per-file-pipeline-agent
+  model: sonnet
   run_in_background: true
   prompt: |
     Run READABILITY-FOCUSED analysis pipeline for this file:
@@ -597,6 +599,7 @@ For each finding, spawn:
 ```
 Task:
   subagent_type: readability-analyzer-agent
+  model: sonnet
   run_in_background: true
   prompt: |
     Analyze this deeply nested if statement and create a GitHub issue with flattening plan:
@@ -817,6 +820,7 @@ For each file, spawn:
 ```
 Task:
   subagent_type: per-file-pipeline-agent
+  model: sonnet
   run_in_background: true
   prompt: |
     Run complete analysis pipeline for this file:
