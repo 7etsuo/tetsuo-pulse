@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "http/SocketHTTP2.h"
+#include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTPClient-private.h"
 
 /* HTTP/2 pseudo-header constants */
@@ -60,11 +61,13 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
                      PSEUDO_HEADER_STATUS_LEN)
              == 0)
         {
-          /* Parse status code */
-          response->status_code = (int)strtol (headers[i].value, NULL, 10);
-          if (response->status_code < HTTP_STATUS_CODE_MIN
-              || response->status_code > HTTP_STATUS_CODE_MAX)
+          /* Use validated parser from SocketHTTP2-validate.c (RFC 9113 §8.3.2) */
+          if (http2_parse_status_code (headers[i].value,
+                                       headers[i].value_len,
+                                       &response->status_code)
+              < 0)
             return -1;
+
           status_found = 1;
           break;
         }
