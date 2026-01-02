@@ -170,14 +170,60 @@ static const SocketWS_TransportOps socket_ops = {
   .free = socket_transport_free,
 };
 
+static int
+h2stream_check_send_state (SocketHTTP2_Stream_T stream)
+{
+  if (stream->state != HTTP2_STREAM_STATE_OPEN
+      && stream->state != HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Cannot send on stream %u in state %d", stream->id,
+                            stream->state);
+      errno = EPIPE;
+      return -1;
+    }
+
+  if (stream->end_stream_sent)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Cannot send after END_STREAM on stream %u",
+                            stream->id);
+      errno = EPIPE;
+      return -1;
+    }
+
+  return 0;
+}
+
+static ssize_t
+h2stream_calc_send_len (SocketHTTP2_Stream_T stream,
+                        SocketHTTP2_Conn_T conn,
+                        size_t requested_len)
+{
+  int32_t available = http2_flow_available_send (conn, stream);
+  if (available <= 0)
+    {
+      SOCKET_LOG_DEBUG_MSG (
+          "Stream %u send blocked by flow control (available=%d)", stream->id,
+          available);
+      errno = EAGAIN;
+      return -1;
+    }
+
+  size_t send_len = requested_len;
+  if (send_len > (size_t)available)
+    send_len = (size_t)available;
+  if (send_len > conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE])
+    send_len = conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE];
+
+  return (ssize_t)send_len;
+}
+
 static ssize_t
 h2stream_transport_send (void *ctx, const void *data, size_t len)
 {
   SocketHTTP2_Stream_T stream = (SocketHTTP2_Stream_T)ctx;
   SocketHTTP2_Conn_T conn;
   SocketHTTP2_FrameHeader header;
-  int32_t available;
-  size_t send_len;
+  ssize_t send_len;
 
   assert (stream != NULL);
   assert (stream->conn != NULL);
@@ -188,73 +234,37 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
 
   conn = stream->conn;
 
-  /* Check stream state - must be open or half-closed remote */
-  if (stream->state != HTTP2_STREAM_STATE_OPEN
-      && stream->state != HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "Cannot send on stream %u in state %d", stream->id, stream->state);
-      errno = EPIPE;
-      return -1;
-    }
+  if (h2stream_check_send_state (stream) != 0)
+    return -1;
 
-  /* Check if we've already sent END_STREAM */
-  if (stream->end_stream_sent)
-    {
-      SOCKET_LOG_DEBUG_MSG ("Cannot send after END_STREAM on stream %u",
-                            stream->id);
-      errno = EPIPE;
-      return -1;
-    }
+  send_len = h2stream_calc_send_len (stream, conn, len);
+  if (send_len < 0)
+    return -1;
 
-  /* Check flow control window */
-  available = http2_flow_available_send (conn, stream);
-  if (available <= 0)
+  if (http2_flow_consume_send (conn, stream, (size_t)send_len) != 0)
     {
-      /* Flow control blocked - would need to wait for WINDOW_UPDATE */
-      SOCKET_LOG_DEBUG_MSG (
-          "Stream %u send blocked by flow control (available=%d)",
-          stream->id,
-          available);
-      errno = EAGAIN;
-      return -1;
-    }
-
-  /* Send up to available window and max frame size */
-  send_len = len;
-  if (send_len > (size_t)available)
-    send_len = (size_t)available;
-  if (send_len > conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE])
-    send_len = conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE];
-
-  /* Consume flow control window before sending */
-  if (http2_flow_consume_send (conn, stream, send_len) != 0)
-    {
-      /* Protocol violation - indicates bug in flow control logic */
       SOCKET_LOG_ERROR_MSG ("Failed to consume flow control window");
       errno = ENOSPC;
       return -1;
     }
 
-  /* Build and send DATA frame - no END_STREAM yet, caller handles close */
   memset (&header, 0, sizeof (header));
   header.length = (uint32_t)send_len;
-  header.type = 0x0; /* DATA frame type */
-  header.flags = 0;  /* No END_STREAM for now */
+  header.type = 0x0;
+  header.flags = 0;
   header.stream_id = stream->id;
 
-  if (http2_frame_send (conn, &header, data, send_len) != 0)
+  if (http2_frame_send (conn, &header, data, (size_t)send_len) != 0)
     {
-      /* Protocol error - failed to queue frame in send buffer */
       SOCKET_LOG_ERROR_MSG ("Failed to queue DATA frame");
       errno = EIO;
       return -1;
     }
 
-  SOCKET_LOG_DEBUG_MSG (
-      "Queued %zu bytes as DATA on stream %u", send_len, stream->id);
+  SOCKET_LOG_DEBUG_MSG ("Queued %zu bytes as DATA on stream %u",
+                        (size_t)send_len, stream->id);
 
-  return (ssize_t)send_len;
+  return send_len;
 }
 
 static ssize_t
