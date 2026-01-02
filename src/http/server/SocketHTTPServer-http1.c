@@ -580,3 +580,129 @@ server_process_streaming_body (SocketHTTPServer_T server,
 
   return 0;
 }
+
+int
+server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  const void *input;
+  size_t input_len, consumed, written;
+  SocketHTTP1_Result r;
+  size_t max_body = server->config.max_body_size;
+
+  input = SocketBuf_readptr (conn->inbuf, &input_len);
+  if (input_len == 0)
+    return 0;
+
+  /* Handle streaming mode: deliver body data via callback */
+  if (conn->body_streaming && conn->body_callback)
+    {
+      return server_process_streaming_body (server, conn, input, input_len);
+    }
+
+  if (conn->body_uses_buf)
+    {
+      /* Chunked/until-close mode: use dynamic SocketBuf_T */
+      size_t current_len = SocketBuf_available (conn->body_buf);
+
+      /* Check if adding this chunk would exceed limit */
+      if (current_len + input_len > max_body)
+        {
+          input_len = max_body - current_len;
+          if (input_len == 0)
+            {
+              SocketMetrics_counter_inc (
+                  SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+              connection_send_error (
+                  server, conn, 413, "Payload Too Large");
+              conn->state = CONN_STATE_CLOSED;
+              return 0;
+            }
+        }
+
+      /* Ensure buffer has space for incoming data */
+      if (!SocketBuf_ensure (conn->body_buf, input_len))
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+          conn->state = CONN_STATE_CLOSED;
+          return 0;
+        }
+
+      /* Get write pointer and parse body into it */
+      size_t write_avail;
+      void *write_ptr = SocketBuf_writeptr (conn->body_buf, &write_avail);
+      if (write_ptr == NULL || write_avail == 0)
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+          conn->state = CONN_STATE_CLOSED;
+          return 0;
+        }
+
+      r = SocketHTTP1_Parser_read_body (conn->parser,
+                                        (const char *)input,
+                                        input_len,
+                                        &consumed,
+                                        (char *)write_ptr,
+                                        write_avail,
+                                        &written);
+
+      SocketBuf_consume (conn->inbuf, consumed);
+      if (written > 0)
+        SocketBuf_written (conn->body_buf, written);
+
+      conn->body_len = SocketBuf_available (conn->body_buf);
+
+      /* Check size limit after write */
+      if (conn->body_len > max_body
+          && !SocketHTTP1_Parser_body_complete (conn->parser))
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+          connection_send_error (server, conn, 413, "Payload Too Large");
+          conn->state = CONN_STATE_CLOSED;
+          return 0;
+        }
+    }
+  else
+    {
+      /* Content-Length mode: use fixed buffer */
+      char *output = (char *)conn->body + conn->body_len;
+      size_t output_avail = conn->body_capacity - conn->body_len;
+
+      r = SocketHTTP1_Parser_read_body (conn->parser,
+                                        (const char *)input,
+                                        input_len,
+                                        &consumed,
+                                        output,
+                                        output_avail,
+                                        &written);
+
+      SocketBuf_consume (conn->inbuf, consumed);
+      conn->body_len += written;
+
+      /* Reject oversized bodies early to prevent DoS */
+      if (conn->body_len > max_body
+          && !SocketHTTP1_Parser_body_complete (conn->parser))
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+          connection_send_error (server, conn, 413, "Payload Too Large");
+          conn->state = CONN_STATE_CLOSED;
+          return 0;
+        }
+    }
+
+  if (r == HTTP1_ERROR || r < 0)
+    {
+      /* Error in body reading (e.g., invalid chunk) */
+      SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+      conn->state = CONN_STATE_CLOSED;
+      return 0;
+    }
+
+  if (SocketHTTP1_Parser_body_complete (conn->parser))
+    {
+      conn->state = CONN_STATE_HANDLING;
+      return server_handle_parsed_request (server, conn);
+    }
+
+  /* Continue reading body on next poll iteration */
+  return 0;
+}
