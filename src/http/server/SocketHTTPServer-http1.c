@@ -30,9 +30,8 @@
 /* STRLEN_LIT macro for compile-time string length */
 #define STRLEN_LIT(s) (sizeof (s) - 1)
 
-/* Buffer sizes */
+/* Buffer sizes - HTTPSERVER_RECV_BUFFER_SIZE defined in SocketHTTPServer.h */
 #define HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE 8192
-#define HTTPSERVER_RECV_BUFFER_SIZE 16384
 
 int
 server_header_has_token_ci (const char *value, const char *token)
