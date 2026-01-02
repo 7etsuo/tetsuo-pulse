@@ -378,6 +378,7 @@ set(LIB_SOURCES
     src/http/SocketHTTPServer.c
     src/http/SocketHTTPServer-connections.c
     src/http/SocketHTTPServer-core.c
+    src/http/SocketHTTPServer-http1.c
     src/http/SocketHTTPServer-static.c
     src/http/SocketHTTPServer-h2.c
     src/http/SocketHTTPServer-metrics.c
