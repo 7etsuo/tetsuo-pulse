@@ -697,28 +697,24 @@ SocketHTTPServer_Request_path (SocketHTTPServer_Request_T req)
   return req->conn->request->path;
 }
 
+static inline const char *
+parse_query_from_path (const char *path)
+{
+  if (path == NULL)
+    return NULL;
+  const char *q = strchr (path, '?');
+  return q ? q + 1 : NULL;
+}
+
 const char *
 SocketHTTPServer_Request_query (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
   if (req->h2_stream != NULL && req->h2_stream->request != NULL)
-    {
-      const char *path = req->h2_stream->request->path;
-      const char *q;
-      if (path == NULL)
-        return NULL;
-      q = strchr (path, '?');
-      return q ? q + 1 : NULL;
-    }
+    return parse_query_from_path (req->h2_stream->request->path);
   if (req->conn->request == NULL)
     return NULL;
-
-  const char *path = req->conn->request->path;
-  if (path == NULL)
-    return NULL;
-
-  const char *q = strchr (path, '?');
-  return q ? q + 1 : NULL;
+  return parse_query_from_path (req->conn->request->path);
 }
 
 SocketHTTP_Headers_T
