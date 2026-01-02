@@ -974,11 +974,30 @@ ws_validate_client_upgrade_request (SocketWS_T ws,
   return 0;
 }
 
+/**
+ * Search for matching subprotocol in configured list.
+ * Returns matching protocol string or NULL if not found.
+ */
+static const char *
+ws_find_matching_subprotocol (const char *token,
+                               const char *const *subprotocols)
+{
+  const char *const *p;
+
+  for (p = subprotocols; *p; p++)
+    {
+      if (strcasecmp (token, *p) == 0)
+        return *p;
+    }
+
+  return NULL;
+}
+
 static void
 ws_negotiate_server_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
   const char *protocol;
-  const char *const *p;
+  const char *match;
   char *proto_copy;
   char *token;
   char *saveptr = NULL;
@@ -994,14 +1013,12 @@ ws_negotiate_server_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
   token = strtok_r (proto_copy, ", ", &saveptr);
   while (token)
     {
-      for (p = ws->config.subprotocols; *p; p++)
+      match = ws_find_matching_subprotocol (token, ws->config.subprotocols);
+      if (match)
         {
-          if (strcasecmp (token, *p) == 0)
-            {
-              ws->handshake.selected_subprotocol
-                  = ws_copy_string (ws->arena, *p);
-              return;
-            }
+          ws->handshake.selected_subprotocol
+              = ws_copy_string (ws->arena, match);
+          return;
         }
       token = strtok_r (NULL, ", ", &saveptr);
     }
