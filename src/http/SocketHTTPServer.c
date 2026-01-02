@@ -551,6 +551,192 @@ server_process_client_event (SocketHTTPServer_T server,
 }
 
 /**
+ * check_global_lifetime_timeout - Check global connection lifetime limit
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Defense-in-depth against connections held indefinitely.
+ * Applies to all states. Set to 0 to disable.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_global_lifetime_timeout (SocketHTTPServer_T server,
+                                ServerConnection *conn,
+                                int64_t now)
+{
+  if (server->config.max_connection_lifetime_ms <= 0)
+    return 0;
+
+  int64_t connection_age_ms = now - conn->created_at_ms;
+  if (connection_age_ms > server->config.max_connection_lifetime_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Connection lifetime exceeded (%lld ms > %d ms), closing connection",
+          (long long)connection_age_ms,
+          server->config.max_connection_lifetime_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * check_tls_handshake_timeout - Check TLS handshake timeout
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Prevents slowloris attacks during TLS negotiation phase.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_tls_handshake_timeout (SocketHTTPServer_T server,
+                              ServerConnection *conn,
+                              int64_t now)
+{
+  if (conn->state != CONN_STATE_TLS_HANDSHAKE)
+    return 0;
+  if (server->config.tls_handshake_timeout_ms <= 0)
+    return 0;
+
+  int64_t idle_ms = now - conn->last_activity_ms;
+  if (idle_ms > server->config.tls_handshake_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "TLS handshake timeout (%lld ms > %d ms), closing connection",
+          (long long)idle_ms, server->config.tls_handshake_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * check_request_timeout - Check request parsing and body reading timeouts
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Prevents slowloris attacks where headers/body are sent slowly.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_request_timeout (SocketHTTPServer_T server,
+                       ServerConnection *conn,
+                       int64_t now)
+{
+  int64_t idle_ms = now - conn->last_activity_ms;
+
+  /* Keepalive timeout for idle connections */
+  if (conn->state == CONN_STATE_READING_REQUEST
+      && idle_ms > server->config.keepalive_timeout_ms)
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* Header parsing timeout */
+  if (conn->state == CONN_STATE_READING_REQUEST && conn->request_start_ms > 0
+      && (now - conn->request_start_ms)
+             > server->config.request_read_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Header parsing timeout (%lld ms > %d ms), closing connection",
+          (long long)(now - conn->request_start_ms),
+          server->config.request_read_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* Request body reading timeout */
+  if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
+      && (now - conn->request_start_ms)
+             > server->config.request_read_timeout_ms)
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * check_response_timeout - Check response write timeout
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_response_timeout (SocketHTTPServer_T server,
+                        ServerConnection *conn,
+                        int64_t now)
+{
+  if (conn->state != CONN_STATE_STREAMING_RESPONSE)
+    return 0;
+  if (conn->response_start_ms <= 0)
+    return 0;
+
+  if ((now - conn->response_start_ms)
+      > server->config.response_write_timeout_ms)
+    {
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * check_http2_timeout - Check HTTP/2 idle connection timeout
+ * @server: HTTP server
+ * @conn: Connection to check
+ * @now: Current time in milliseconds
+ *
+ * SECURITY: Prevents resource exhaustion from idle HTTP/2 connections.
+ *
+ * Returns: 1 if timed out (connection closed), 0 otherwise
+ */
+static int
+check_http2_timeout (SocketHTTPServer_T server,
+                     ServerConnection *conn,
+                     int64_t now)
+{
+  if (conn->state != CONN_STATE_HTTP2)
+    return 0;
+
+  int64_t idle_ms = now - conn->last_activity_ms;
+  if (idle_ms > server->config.keepalive_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 connection idle timeout (%lld ms > %d ms), "
+                           "closing connection",
+                           (long long)idle_ms,
+                           server->config.keepalive_timeout_ms);
+      SERVER_METRICS_INC (
+          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+  return 0;
+}
+
+/**
  * server_check_connection_timeout - Check if connection has timed out
  * @server: HTTP server
  * @conn: Connection to check
@@ -569,108 +755,16 @@ server_check_connection_timeout (SocketHTTPServer_T server,
                                  ServerConnection *conn,
                                  int64_t now)
 {
-  int64_t idle_ms = now - conn->last_activity_ms;
-  int64_t connection_age_ms = now - conn->created_at_ms;
-
-  /* SECURITY: Global connection lifetime timeout (defense-in-depth)
-   * Protects against any state-based attack where connections are held
-   * indefinitely. Applies to all states. Set to 0 to disable. */
-  if (server->config.max_connection_lifetime_ms > 0
-      && connection_age_ms > server->config.max_connection_lifetime_ms)
-    {
-      SOCKET_LOG_WARN_MSG (
-          "Connection lifetime exceeded (%lld ms > %d ms), closing connection",
-          (long long)connection_age_ms,
-          server->config.max_connection_lifetime_ms);
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
-
-  /* SECURITY: TLS handshake timeout
-   * Prevents slowloris attacks during TLS negotiation phase.
-   * Attacker can hold connection indefinitely during handshake without this. */
-  if (conn->state == CONN_STATE_TLS_HANDSHAKE
-      && server->config.tls_handshake_timeout_ms > 0
-      && idle_ms > server->config.tls_handshake_timeout_ms)
-    {
-      SOCKET_LOG_WARN_MSG (
-          "TLS handshake timeout (%lld ms > %d ms), closing connection",
-          (long long)idle_ms,
-          server->config.tls_handshake_timeout_ms);
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
-
-  /* Check keepalive timeout */
-  if (conn->state == CONN_STATE_READING_REQUEST
-      && idle_ms > server->config.keepalive_timeout_ms)
-    {
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
-
-  /* SECURITY: Header parsing timeout
-   * Prevents slowloris attacks where headers are sent slowly.
-   * Use request_start_ms if set (request started), otherwise use
-   * last_activity_ms for connections that haven't started a request yet. */
-  if (conn->state == CONN_STATE_READING_REQUEST && conn->request_start_ms > 0
-      && (now - conn->request_start_ms)
-             > server->config.request_read_timeout_ms)
-    {
-      SOCKET_LOG_WARN_MSG (
-          "Header parsing timeout (%lld ms > %d ms), closing connection",
-          (long long)(now - conn->request_start_ms),
-          server->config.request_read_timeout_ms);
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
-
-  /* Check request read timeout (body reading) */
-  if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
-      && (now - conn->request_start_ms)
-             > server->config.request_read_timeout_ms)
-    {
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
-
-  /* Check response write timeout */
-  if (conn->state == CONN_STATE_STREAMING_RESPONSE
-      && conn->response_start_ms > 0
-      && (now - conn->response_start_ms)
-             > server->config.response_write_timeout_ms)
-    {
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
-
-  /* SECURITY: HTTP/2 idle connection timeout
-   * Prevents resource exhaustion from idle HTTP/2 connections.
-   * HTTP/2 connections can be long-lived, but should close if truly idle. */
-  if (conn->state == CONN_STATE_HTTP2
-      && idle_ms > server->config.keepalive_timeout_ms)
-    {
-      SOCKET_LOG_WARN_MSG ("HTTP/2 connection idle timeout (%lld ms > %d ms), "
-                           "closing connection",
-                           (long long)idle_ms,
-                           server->config.keepalive_timeout_ms);
-      SERVER_METRICS_INC (
-          server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT, requests_timeout);
-      connection_close (server, conn);
-      return 1;
-    }
+  if (check_global_lifetime_timeout (server, conn, now))
+    return 1;
+  if (check_tls_handshake_timeout (server, conn, now))
+    return 1;
+  if (check_request_timeout (server, conn, now))
+    return 1;
+  if (check_response_timeout (server, conn, now))
+    return 1;
+  if (check_http2_timeout (server, conn, now))
+    return 1;
 
   return 0;
 }
