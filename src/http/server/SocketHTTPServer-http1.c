@@ -191,9 +191,12 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
   headers = req->headers;
 
   /* Use Headers_get_n with STRLEN_LIT for performance */
-  upgrade = SocketHTTP_Headers_get_n (headers, "Upgrade", STRLEN_LIT ("Upgrade"));
-  connection = SocketHTTP_Headers_get_n (headers, "Connection", STRLEN_LIT ("Connection"));
-  settings_b64 = SocketHTTP_Headers_get_n (headers, "HTTP2-Settings", STRLEN_LIT ("HTTP2-Settings"));
+  upgrade
+      = SocketHTTP_Headers_get_n (headers, "Upgrade", STRLEN_LIT ("Upgrade"));
+  connection = SocketHTTP_Headers_get_n (
+      headers, "Connection", STRLEN_LIT ("Connection"));
+  settings_b64 = SocketHTTP_Headers_get_n (
+      headers, "HTTP2-Settings", STRLEN_LIT ("HTTP2-Settings"));
 
   if (upgrade == NULL || strcasecmp (upgrade, "h2c") != 0)
     return 0;
@@ -687,10 +690,8 @@ server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn)
           input_len = max_body - current_len;
           if (input_len == 0)
             {
-              SocketMetrics_counter_inc (
-                  SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-              connection_send_error (
-                  server, conn, 413, "Payload Too Large");
+              SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+              connection_send_error (server, conn, 413, "Payload Too Large");
               conn->state = CONN_STATE_CLOSED;
               return 0;
             }
@@ -781,5 +782,85 @@ server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn)
     }
 
   /* Continue reading body on next poll iteration */
+  return 0;
+}
+
+/*
+ * HTTP/1.1 streaming helpers - extracted from SocketHTTPServer.c
+ * These provide protocol-specific implementations for the public streaming API.
+ */
+
+int
+server_http1_begin_stream (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  char buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
+  SocketHTTP_Response response;
+  ssize_t len;
+
+  if (conn->response_headers_sent)
+    return -1;
+
+  SocketHTTP_Headers_set (
+      conn->response_headers, "Transfer-Encoding", "chunked");
+
+  memset (&response, 0, sizeof (response));
+  response.version = HTTP_VERSION_1_1;
+  response.status_code = conn->response_status;
+  response.headers = conn->response_headers;
+
+  len = SocketHTTP1_serialize_response (&response, buf, sizeof (buf));
+  if (len < 0)
+    return -1;
+
+  if (connection_send_data (server, conn, buf, (size_t)len) < 0)
+    return -1;
+
+  conn->response_streaming = 1;
+  conn->response_start_ms = Socket_get_monotonic_ms ();
+  conn->state = CONN_STATE_STREAMING_RESPONSE;
+  conn->response_headers_sent = 1;
+  return 0;
+}
+
+int
+server_http1_send_chunk (SocketHTTPServer_T server,
+                         ServerConnection *conn,
+                         const void *data,
+                         size_t len)
+{
+  char chunk_buf[HTTPSERVER_CHUNK_BUFFER_SIZE];
+  ssize_t chunk_len;
+
+  if (!conn->response_streaming || !conn->response_headers_sent)
+    return -1;
+
+  if (len == 0)
+    return 0;
+
+  chunk_len
+      = SocketHTTP1_chunk_encode (data, len, chunk_buf, sizeof (chunk_buf));
+  if (chunk_len < 0)
+    return -1;
+
+  return connection_send_data (server, conn, chunk_buf, (size_t)chunk_len);
+}
+
+int
+server_http1_end_stream (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  char final_buf[HTTPSERVER_CHUNK_FINAL_BUF_SIZE];
+  ssize_t final_len;
+
+  if (!conn->response_streaming)
+    return -1;
+
+  final_len = SocketHTTP1_chunk_final (final_buf, sizeof (final_buf), NULL);
+  if (final_len < 0)
+    return -1;
+
+  if (connection_send_data (server, conn, final_buf, (size_t)final_len) < 0)
+    return -1;
+
+  connection_finish_request (server, conn);
   return 0;
 }

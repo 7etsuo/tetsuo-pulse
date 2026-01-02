@@ -1069,3 +1069,178 @@ setup_ws_over_h2_streaming (ServerHTTP2Stream *s,
   s->body_callback_userdata = userdata;
   s->ws_over_h2 = 1;
 }
+
+/*
+ * HTTP/2 streaming helpers - extracted from SocketHTTPServer.c
+ * These provide protocol-specific implementations for the public streaming API.
+ */
+
+int
+server_h2_begin_stream (ServerConnection *conn, ServerHTTP2Stream *s)
+{
+  SocketHTTP_Response response;
+
+  (void)conn;
+
+  if (s->response_headers_sent)
+    return -1;
+
+  if (s->response_headers == NULL)
+    s->response_headers = SocketHTTP_Headers_new (s->arena);
+
+  memset (&response, 0, sizeof (response));
+  response.version = HTTP_VERSION_2;
+  response.status_code = s->response_status;
+  response.headers = s->response_headers;
+
+  if (SocketHTTP2_Stream_send_response (s->stream, &response, 0) < 0)
+    return -1;
+
+  s->response_streaming = 1;
+  s->response_headers_sent = 1;
+  return 0;
+}
+
+int
+server_h2_send_chunk (ServerConnection *conn,
+                      ServerHTTP2Stream *s,
+                      const void *data,
+                      size_t len)
+{
+  const unsigned char *p = (const unsigned char *)data;
+  ssize_t accepted;
+
+  if (!s->response_streaming || !s->response_headers_sent)
+    return -1;
+
+  if (len == 0)
+    return 0;
+
+  accepted = SocketHTTP2_Stream_send_data (s->stream, data, len, 0);
+  if (accepted < 0)
+    return -1;
+
+  if ((size_t)accepted < len)
+    {
+      if (s->response_outbuf == NULL)
+        s->response_outbuf
+            = SocketBuf_new (s->arena, HTTPSERVER_IO_BUFFER_SIZE);
+      if (s->response_outbuf == NULL)
+        return -1;
+      if (!SocketBuf_ensure (s->response_outbuf, len - (size_t)accepted))
+        return -1;
+      SocketBuf_write (
+          s->response_outbuf, p + accepted, len - (size_t)accepted);
+    }
+
+  server_http2_flush_stream_output (conn, s);
+  return 0;
+}
+
+int
+server_h2_end_stream (ServerConnection *conn, ServerHTTP2Stream *s)
+{
+  if (!s->response_streaming)
+    return -1;
+
+  s->response_finished = 1;
+
+  server_http2_flush_stream_output (conn, s);
+
+  if (!s->response_end_stream_sent
+      && (s->response_outbuf == NULL
+          || SocketBuf_available (s->response_outbuf) == 0))
+    {
+      server_http2_flush_stream_output (conn, s);
+    }
+
+  return 0;
+}
+
+/*
+ * HTTP/2 server push helpers - extracted from SocketHTTPServer.c
+ */
+
+int
+server_h2_validate_push (SocketHTTPServer_Request_T req, const char *path)
+{
+  if (req->h2_stream == NULL || req->h2_stream->request == NULL
+      || req->conn->http2_conn == NULL)
+    return -1;
+
+  if (SocketHTTP2_Conn_get_setting (req->conn->http2_conn,
+                                    HTTP2_SETTINGS_ENABLE_PUSH)
+      == 0)
+    return -1;
+
+  if (path[0] != '/')
+    return -1;
+
+  return 0;
+}
+
+SocketHPACK_Header *
+server_h2_build_push_headers (Arena_T arena,
+                              const SocketHTTP_Request *parent,
+                              const char *path,
+                              SocketHTTP_Headers_T extra_headers,
+                              size_t *out_count)
+{
+  const char *scheme = parent->scheme ? parent->scheme : "https";
+  const char *authority = parent->authority ? parent->authority : "";
+  size_t extra = extra_headers ? SocketHTTP_Headers_count (extra_headers) : 0;
+  size_t total = HTTP2_REQUEST_PSEUDO_HEADER_COUNT + extra;
+  SocketHPACK_Header *hpack;
+  size_t out_idx;
+
+  hpack = Arena_alloc (arena, total * sizeof (*hpack), __FILE__, __LINE__);
+  if (hpack == NULL)
+    return NULL;
+
+  memset (hpack, 0, total * sizeof (*hpack));
+
+  /* Pseudo-headers */
+  hpack[0].name = ":method";
+  hpack[0].name_len = 7;
+  hpack[0].value = "GET";
+  hpack[0].value_len = 3;
+
+  hpack[1].name = ":scheme";
+  hpack[1].name_len = 7;
+  hpack[1].value = scheme;
+  hpack[1].value_len = strlen (scheme);
+
+  hpack[2].name = ":authority";
+  hpack[2].name_len = 10;
+  hpack[2].value = authority;
+  hpack[2].value_len = strlen (authority);
+
+  hpack[3].name = ":path";
+  hpack[3].name_len = 5;
+  hpack[3].value = path;
+  hpack[3].value_len = strlen (path);
+
+  /* Additional headers (filter out pseudo-headers from user input) */
+  out_idx = HTTP2_REQUEST_PSEUDO_HEADER_COUNT;
+  if (extra_headers != NULL)
+    {
+      for (size_t i = 0; i < extra; i++)
+        {
+          const SocketHTTP_Header *hdr
+              = SocketHTTP_Headers_at (extra_headers, i);
+          if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+            continue;
+          if (hdr->name[0] == ':')
+            continue;
+
+          hpack[out_idx].name = hdr->name;
+          hpack[out_idx].name_len = strlen (hdr->name);
+          hpack[out_idx].value = hdr->value;
+          hpack[out_idx].value_len = strlen (hdr->value);
+          out_idx++;
+        }
+    }
+
+  *out_count = out_idx;
+  return hpack;
+}
