@@ -1232,15 +1232,16 @@ SocketReconnect_next_timeout_ms (T conn)
 
     case RECONNECT_CONNECTED:
       /* Health check timer */
-      if (conn->policy.health_check_interval_ms > 0)
-        {
-          remaining = (conn->last_health_check_ms
-                       + conn->policy.health_check_interval_ms)
-                      - now;
-          if (remaining <= 0)
-            return 0;
-          timeout = (int)remaining;
-        }
+      if (conn->policy.health_check_interval_ms <= 0)
+        break;
+
+      remaining = (conn->last_health_check_ms
+                   + conn->policy.health_check_interval_ms)
+                  - now;
+      if (remaining <= 0)
+        return 0;
+
+      timeout = (int)remaining;
       break;
 
     default:
