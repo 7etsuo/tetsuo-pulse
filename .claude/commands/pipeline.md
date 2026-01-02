@@ -1,9 +1,10 @@
 # Code Analysis Pipeline
 
-Multi-agent code analysis pipeline for C codebases. Supports three modes:
+Multi-agent code analysis pipeline for C codebases. Supports four modes:
 1. **Code Analysis Mode** (default) - Security, redundancy, and refactoring analysis
 2. **TODO Mode** - Scan for TODO/FIXME/HACK/XXX/NOTE comments and create issues
 3. **Refactor Mode** - Focus on flattening nested ifs and identifying single-use subroutines
+4. **Nested Mode** - Fast shell-based detection of deeply nested if statements
 
 ## Usage
 
@@ -11,6 +12,7 @@ Multi-agent code analysis pipeline for C codebases. Supports three modes:
 /pipeline <directory>           # Code analysis mode (default)
 /pipeline <directory> todo      # TODO scanning mode
 /pipeline <file|directory> refactor  # Readability refactoring mode
+/pipeline <directory> nested    # Fast nested-if detection mode
 ```
 
 Examples:
@@ -20,6 +22,7 @@ Examples:
 /pipeline src/                  # Analyze entire src directory
 /pipeline src/http/SocketHTTP2.c refactor  # Refactor analysis on single file
 /pipeline src/socket/ refactor  # Refactor analysis on directory
+/pipeline src/http/ nested      # Find and flatten deeply nested ifs
 ```
 
 ---
@@ -30,6 +33,7 @@ Check the second argument to determine which mode to run:
 
 - If second argument is `todo` → Run **TODO Mode** (see TODO MODE section below)
 - If second argument is `refactor` → Run **Refactor Mode** (see REFACTOR MODE section below)
+- If second argument is `nested` → Run **Nested Mode** (see NESTED MODE section below)
 - Otherwise → Run **Code Analysis Mode** (see PHASE 1-3 sections below)
 
 ---
@@ -485,6 +489,228 @@ Analysis report saved to: <target>/REFACTOR_ANALYSIS.md
 - #206: refactor(http2): Extract MAX_RETRY_COUNT constant
 
 **Refactor pipeline complete.**
+```
+
+---
+
+# NESTED MODE
+
+Fast shell-based detection and flattening of deeply nested if statements. Uses awk for quick discovery, then spawns agents to create GitHub issues with concrete refactoring plans.
+
+**Key difference from Refactor Mode**: Nested mode uses a fast shell script for discovery (seconds) vs full agent-based analysis (slower). It's surgical - only targets nested ifs, not single-use functions or magic numbers.
+
+## Nested Mode Architecture
+
+```
+/pipeline src/socket/ nested
+    │
+    ▼
+Phase N1: Shell Discovery
+    │ Run awk script to find all if statements at depth >= 3
+    │ Parse output into: file, line, depth
+    │ CHECKPOINT: Display findings by severity
+    ▼
+Phase N2: Per-Finding Flattening Agents (parallel)
+    │ ┌────────────────────────────────────────────────────┐
+    │ │ readability-analyzer-agent (file1.c:100, depth 4) │
+    │ │   ├── Read surrounding context (function)          │
+    │ │   ├── Generate guard clause refactoring plan       │
+    │ │   └── Create GitHub issue with before/after code   │
+    │ ├────────────────────────────────────────────────────┤
+    │ │ readability-analyzer-agent (file2.c:250, depth 3) │
+    │ │   └── ...                                           │
+    │ └────────────────────────────────────────────────────┘
+    ▼
+Phase N3: Report
+    │ Aggregate results
+    │ Write <directory>/NESTED_ANALYSIS.md
+    ▼
+Done
+```
+
+## PHASE N1: Shell Discovery
+
+**Goal**: Fast identification of deeply nested if statements using awk.
+
+### Steps
+
+1. **Run awk script** to find nested if statements:
+   ```bash
+   find <directory> -name "*.c" -exec awk '/^[[:space:]]*if / {
+     match($0, /^[[:space:]]*/);
+     depth = RLENGTH / 2;
+     if (depth >= 3) print FILENAME":"NR": depth "depth
+   }' {} +
+   ```
+
+   This detects if statements by indentation depth (assuming 2-space or 4-space indent).
+
+2. **Parse output** into structured findings:
+   - File path
+   - Line number
+   - Nesting depth (3, 4, 5+)
+   - Severity:
+     - **CRITICAL**: depth 5+
+     - **HIGH**: depth 4
+     - **MEDIUM**: depth 3
+
+3. **CHECKPOINT**: Display findings and ask user to confirm:
+   ```markdown
+   ## Phase N1: Discovery Complete
+
+   Found [N] deeply nested if statements in <directory>:
+
+   | Depth | Count | Severity |
+   |-------|-------|----------|
+   | 3     | 8     | MEDIUM   |
+   | 4     | 3     | HIGH     |
+   | 5+    | 1     | CRITICAL |
+
+   **Total**: 12 findings
+
+   **Proceed with flattening analysis?** ([N] agents will be spawned)
+   ```
+
+## PHASE N2: Per-Finding Flattening Agents
+
+**Goal**: Spawn one agent per finding to analyze and create GitHub issues.
+
+### CRITICAL: Parallel Execution
+
+**Spawn one `readability-analyzer-agent` per finding, ALL IN A SINGLE MESSAGE.**
+
+Do NOT:
+- Process findings sequentially
+- Run agents one at a time
+- Analyze code yourself without agents
+
+DO:
+- Send ONE message with N Task tool invocations (one per finding)
+- Run all agents in background
+- Collect all results when complete
+
+### Task Invocations
+
+For each finding, spawn:
+
+```
+Task:
+  subagent_type: readability-analyzer-agent
+  run_in_background: true
+  prompt: |
+    Analyze this deeply nested if statement and create a GitHub issue with flattening plan:
+
+    File: [FILEPATH]
+    Line: [LINE_NUMBER]
+    Depth: [DEPTH]
+    Severity: [SEVERITY]
+    Repository: 7etsuo/tetsuo-socket
+
+    Your workflow:
+    1. Read the function containing line [LINE_NUMBER]
+    2. Identify all conditions in the nesting chain
+    3. Generate a concrete guard clause refactoring:
+       - Convert nested ifs to early returns
+       - Invert conditions (if X → if !X return)
+       - Show before/after code snippets
+    4. Create a GitHub issue with:
+       - Title: refactor(<module>): Flatten [DEPTH]-level nesting in <function_name>
+       - Labels: refactor, readability
+       - Body: Include before/after code snippets from step 3
+    5. Return result:
+       - CREATED: issue URL
+       - FAILED: reason
+
+    Reference CLAUDE.md "Deep Nesting (Arrow Code)" section for the pattern:
+    - Use early returns (guard clauses)
+    - Invert conditions: if (sock != NULL) { work } → if (sock == NULL) return -1;
+    - Actual logic should be at normal indentation, not buried
+```
+
+### Batching Strategy
+
+If more than 50 findings:
+1. Split into batches of 20
+2. Ask user: "Found [N] findings. Process in batches of 20?"
+3. Run each batch, wait for completion
+4. Aggregate results across batches
+
+### Collecting Results
+
+Wait for all agents to complete using `TaskOutput` with blocking.
+
+Each agent returns:
+- Status: CREATED or FAILED
+- Issue URL (if created)
+- Function name where nesting was found
+- File and line location
+
+## PHASE N3: Report Generation
+
+**Goal**: Aggregate results into a comprehensive nested-if report.
+
+### Report Location
+
+Save to: `<directory>/NESTED_ANALYSIS.md`
+
+### Report Template
+
+```markdown
+# Nested If Analysis Report
+
+**Generated**: [timestamp]
+**Directory**: <directory>
+**Findings**: [count]
+
+## Summary
+
+| Depth | Found | Issues Created | Failed |
+|-------|-------|----------------|--------|
+| 3 (MEDIUM)   | 8 | 7 | 1 |
+| 4 (HIGH)     | 3 | 3 | 0 |
+| 5+ (CRITICAL)| 1 | 1 | 0 |
+| **Total**    | **12** | **11** | **1** |
+
+## Issues Created
+
+| Issue # | File:Line | Depth | Function | Severity |
+|---------|-----------|-------|----------|----------|
+| #300 | SocketHTTP2.c:142 | 5 | process_frame | CRITICAL |
+| #301 | SocketHTTP2.c:380 | 4 | validate_headers | HIGH |
+| #302 | SocketBuf.c:200 | 4 | read_buffered | HIGH |
+| #303 | Socket.c:100 | 3 | connect_internal | MEDIUM |
+...
+
+## Failed Analyses
+
+| File:Line | Depth | Reason |
+|-----------|-------|--------|
+| SocketDNS.c:500 | 3 | Agent timeout |
+
+---
+*Report generated by /pipeline nested*
+```
+
+### Final Output
+
+```markdown
+## Phase N3: Report Complete
+
+Report saved to: <directory>/NESTED_ANALYSIS.md
+
+### Summary
+- Findings detected: [N]
+- Issues created: [N]
+- Failed: [N]
+
+### Issue Links
+
+- #300: refactor(http2): Flatten 5-level nesting in process_frame
+- #301: refactor(http2): Flatten 4-level nesting in validate_headers
+- #302: refactor(buf): Flatten 4-level nesting in read_buffered
+- #303: refactor(socket): Flatten 3-level nesting in connect_internal
+
+**Nested pipeline complete.**
 ```
 
 ---
