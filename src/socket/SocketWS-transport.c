@@ -176,8 +176,8 @@ h2stream_check_send_state (SocketHTTP2_Stream_T stream)
   if (stream->state != HTTP2_STREAM_STATE_OPEN
       && stream->state != HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE)
     {
-      SOCKET_LOG_DEBUG_MSG ("Cannot send on stream %u in state %d", stream->id,
-                            stream->state);
+      SOCKET_LOG_DEBUG_MSG (
+          "Cannot send on stream %u in state %d", stream->id, stream->state);
       errno = EPIPE;
       return -1;
     }
@@ -202,7 +202,8 @@ h2stream_calc_send_len (SocketHTTP2_Stream_T stream,
   if (available <= 0)
     {
       SOCKET_LOG_DEBUG_MSG (
-          "Stream %u send blocked by flow control (available=%d)", stream->id,
+          "Stream %u send blocked by flow control (available=%d)",
+          stream->id,
           available);
       errno = EAGAIN;
       return -1;
@@ -261,8 +262,8 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
       return -1;
     }
 
-  SOCKET_LOG_DEBUG_MSG ("Queued %zu bytes as DATA on stream %u",
-                        (size_t)send_len, stream->id);
+  SOCKET_LOG_DEBUG_MSG (
+      "Queued %zu bytes as DATA on stream %u", (size_t)send_len, stream->id);
 
   return send_len;
 }
@@ -334,36 +335,39 @@ h2stream_transport_close (void *ctx, int orderly)
 
   conn = stream->conn;
 
-  if (orderly)
+  /* Abnormal close path - send RST_STREAM and exit early */
+  if (!orderly)
     {
-      /* Graceful close: send empty DATA frame with END_STREAM flag */
-      if (!stream->end_stream_sent
-          && (stream->state == HTTP2_STREAM_STATE_OPEN
-              || stream->state == HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE))
-        {
-          memset (&header, 0, sizeof (header));
-          header.length = 0;
-          header.type = 0x0;  /* DATA frame type */
-          header.flags = 0x1; /* END_STREAM flag */
-          header.stream_id = stream->id;
+      http2_send_stream_error (conn, stream->id, HTTP2_CANCEL);
+      SOCKET_LOG_DEBUG_MSG ("Sent RST_STREAM CANCEL on stream %u", stream->id);
+      return 0;
+    }
 
-          if (http2_frame_send (conn, &header, NULL, 0) == 0)
-            {
-              stream->end_stream_sent = 1;
-              SOCKET_LOG_DEBUG_MSG ("Sent END_STREAM on stream %u", stream->id);
-            }
-          else
-            {
-              SOCKET_LOG_WARN_MSG ("Failed to send END_STREAM on stream %u",
-                                   stream->id);
-            }
-        }
+  /* Orderly close - check if END_STREAM already sent */
+  if (stream->end_stream_sent)
+    return 0;
+
+  /* Check if stream is in a state where we can send END_STREAM */
+  if (stream->state != HTTP2_STREAM_STATE_OPEN
+      && stream->state != HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE)
+    return 0;
+
+  /* Send empty DATA frame with END_STREAM flag */
+  memset (&header, 0, sizeof (header));
+  header.length = 0;
+  header.type = 0x0;  /* DATA frame type */
+  header.flags = 0x1; /* END_STREAM flag */
+  header.stream_id = stream->id;
+
+  if (http2_frame_send (conn, &header, NULL, 0) == 0)
+    {
+      stream->end_stream_sent = 1;
+      SOCKET_LOG_DEBUG_MSG ("Sent END_STREAM on stream %u", stream->id);
     }
   else
     {
-      /* Abnormal close: send RST_STREAM with CANCEL (0x8) */
-      http2_send_stream_error (conn, stream->id, HTTP2_CANCEL);
-      SOCKET_LOG_DEBUG_MSG ("Sent RST_STREAM CANCEL on stream %u", stream->id);
+      SOCKET_LOG_WARN_MSG ("Failed to send END_STREAM on stream %u",
+                           stream->id);
     }
 
   return 0;
