@@ -110,6 +110,7 @@ typedef enum
   CONN_STATE_STREAMING_RESPONSE,
   CONN_STATE_SENDING_RESPONSE,
   CONN_STATE_HTTP2,
+  CONN_STATE_WEBSOCKET,
   CONN_STATE_CLOSED
 } ServerConnState;
 
@@ -180,6 +181,10 @@ typedef struct ServerConnection
   SocketHTTPServer_BodyCallback body_callback;
   void *body_callback_userdata;
   int body_streaming;
+
+  SocketWS_T websocket;
+  SocketHTTPServer_BodyCallback ws_callback;
+  void *ws_callback_userdata;
 
   int response_status;
   SocketHTTP_Headers_T response_headers;
@@ -283,18 +288,18 @@ struct SocketHTTPServer
  *     free(node->path_prefix);
  *   });
  */
-#define FREE_LIST(head, type, cleanup)   \
-  do                                     \
-    {                                    \
-      type *node = (head);               \
-      while (node != NULL)               \
-        {                                \
-          type *next = node->next;       \
-          cleanup;                       \
-          free (node);                   \
-          node = next;                   \
-        }                                \
-    }                                    \
+#define FREE_LIST(head, type, cleanup) \
+  do                                   \
+    {                                  \
+      type *node = (head);             \
+      while (node != NULL)             \
+        {                              \
+          type *next = node->next;     \
+          cleanup;                     \
+          free (node);                 \
+          node = next;                 \
+        }                              \
+    }                                  \
   while (0)
 
 #define HTTPSERVER_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)

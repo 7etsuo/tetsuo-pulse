@@ -302,8 +302,10 @@ extern int SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req);
 
 extern int
 SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req);
-extern SocketWS_T
-SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
+extern SocketWS_T SocketHTTPServer_Request_upgrade_websocket (
+    SocketHTTPServer_Request_T req,
+    SocketHTTPServer_BodyCallback callback,
+    void *userdata);
 extern SocketHTTP2_Stream_T SocketHTTPServer_Request_accept_websocket_h2 (
     SocketHTTPServer_Request_T req,
     SocketHTTPServer_BodyCallback callback,

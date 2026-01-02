@@ -59,8 +59,8 @@ static size_t connection_check_body_size_limit (size_t max_body,
 static void connection_init_request_ctx (SocketHTTPServer_T server,
                                          ServerConnection *conn,
                                          struct SocketHTTPServer_Request *ctx);
-static void connection_setup_tls (ServerConnection *conn,
-                                  SocketTLSContext_T tls_context);
+static void
+connection_setup_tls (ServerConnection *conn, SocketTLSContext_T tls_context);
 
 /* Read data from socket into connection buffer. Returns >0 bytes read, 0 on
  * EAGAIN, -1 on error/close */
@@ -882,6 +882,10 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   /* Mark as pending close FIRST to prevent use-after-free.
    * This flag is checked before processing any event for this connection. */
   conn->pending_close = 1;
+
+  /* Free WebSocket handle if upgraded */
+  if (conn->websocket != NULL)
+    SocketWS_free (&conn->websocket);
 
   /* Free HTTP/2 connection (does not close underlying socket). */
   if (conn->http2_conn != NULL)

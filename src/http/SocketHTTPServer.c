@@ -226,6 +226,70 @@ server_process_http2 (SocketHTTPServer_T server,
   return 0;
 }
 
+static int
+server_process_websocket (SocketHTTPServer_T server,
+                          ServerConnection *conn,
+                          unsigned events)
+{
+  volatile int status = 0;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+  assert (conn->websocket != NULL);
+
+  TRY
+  {
+    status = SocketWS_process (conn->websocket, events);
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    return -1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  if (status < 0)
+    return -1;
+
+  /* Process received messages via callback */
+  while (SocketWS_recv_available (conn->websocket) > 0)
+    {
+      SocketWS_Message msg;
+      int result = SocketWS_recv_message (conn->websocket, &msg);
+      if (result > 0 && conn->ws_callback != NULL)
+        {
+          int is_final
+              = (SocketWS_state (conn->websocket) == WS_STATE_CLOSING
+                 || SocketWS_state (conn->websocket) == WS_STATE_CLOSED)
+                    ? 1
+                    : 0;
+          conn->ws_callback (
+              NULL, msg.data, msg.len, is_final, conn->ws_callback_userdata);
+          free (msg.data);
+        }
+      else if (result <= 0)
+        {
+          return -1;
+        }
+    }
+
+  /* Check if connection closed */
+  if (SocketWS_state (conn->websocket) == WS_STATE_CLOSED)
+    return -1;
+
+  /* Update poll events */
+  unsigned ws_events = SocketWS_poll_events (conn->websocket);
+  SocketPoll_mod (server->poll, conn->socket, ws_events, conn);
+
+  return 0;
+}
 
 static int
 server_try_http2_prior_knowledge (SocketHTTPServer_T server,
@@ -390,6 +454,17 @@ server_process_client_event (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_HTTP2)
     {
       if (server_process_http2 (server, conn, events) < 0)
+        conn->state = CONN_STATE_CLOSED;
+      if (conn->state == CONN_STATE_CLOSED)
+        {
+          connection_close (server, conn);
+        }
+      return 0;
+    }
+
+  if (conn->state == CONN_STATE_WEBSOCKET)
+    {
+      if (server_process_websocket (server, conn, events) < 0)
         conn->state = CONN_STATE_CLOSED;
       if (conn->state == CONN_STATE_CLOSED)
         {
@@ -1260,7 +1335,10 @@ SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req)
 }
 
 SocketWS_T
-SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
+SocketHTTPServer_Request_upgrade_websocket (
+    SocketHTTPServer_Request_T req,
+    SocketHTTPServer_BodyCallback callback,
+    void *userdata)
 {
   assert (req != NULL);
 
@@ -1279,23 +1357,21 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
       {
         RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
       }
-    /* Ownership of socket transferred to ws - prevent double-free */
-
-    /* Remove from server poll before nulling socket */
-    SocketPoll_del (req->server->poll, req->conn->socket);
-    req->conn->socket
-        = NULL; /* Transfer ownership, skip free in connection_close */
-
-    /* Close connection resources but skip socket free (now owned by ws) */
-    connection_close (req->server, req->conn);
-
-    /* Note: Full integration requires managing ws in separate poll or wrapper
-     */
-    /* For now, returns ws for manual management - user must poll/process ws
-     * events */
 
     /* Start handshake - may require multiple calls in non-blocking mode */
     SocketWS_handshake (ws);
+
+    /* Store WebSocket handle and callback in connection for poll integration */
+    req->conn->websocket = ws;
+    req->conn->ws_callback = callback;
+    req->conn->ws_callback_userdata = userdata;
+
+    /* Transition to WebSocket state - server event loop will handle events */
+    req->conn->state = CONN_STATE_WEBSOCKET;
+
+    /* Update poll interest for WebSocket events */
+    unsigned ws_events = SocketWS_poll_events (ws);
+    SocketPoll_mod (req->server->poll, req->conn->socket, ws_events, req->conn);
 
     return ws;
   }
