@@ -1724,6 +1724,7 @@ proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
 {
   struct pollfd pfd;
   int timeout;
+  int poll_result;
 
   while (!SocketProxy_Conn_poll (conn))
     {
@@ -1739,10 +1740,15 @@ proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
       if (timeout < 0)
         timeout = SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
 
-      if (poll (&pfd, 1, timeout) < 0)
+      poll_result = poll (&pfd, 1, timeout);
+
+      /* Guard clause: retry on EINTR */
+      if (poll_result < 0 && errno == EINTR)
+        continue;
+
+      /* Guard clause: error on poll failure */
+      if (poll_result < 0)
         {
-          if (errno == EINTR)
-            continue;
           socketproxy_set_error (conn, PROXY_ERROR, "poll failed");
           return -1;
         }
