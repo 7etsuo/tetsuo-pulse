@@ -61,6 +61,15 @@
 #define SOCKETHTTP2_MAX_CONTINUATION_FRAMES 32
 #define HTTP2_REQUEST_PSEUDO_HEADER_COUNT 4
 
+/*
+ * Stack usage check: Ensure SOCKETHTTP2_MAX_DECODED_HEADERS doesn't exceed
+ * safe stack limits. With SocketHPACK_Header ~40 bytes, limit to 256 headers
+ * (~10KB stack) to stay well within typical 8MB stack size.
+ */
+#if SOCKETHTTP2_MAX_DECODED_HEADERS > 256
+#error "SOCKETHTTP2_MAX_DECODED_HEADERS exceeds safe stack limit (>10KB)"
+#endif
+
 #endif
 
 #ifndef SOCKETHTTP2_MAX_STREAMS

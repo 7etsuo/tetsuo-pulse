@@ -660,6 +660,12 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
   if (event == HTTP2_EVENT_HEADERS_RECEIVED)
     {
+      /*
+       * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
+       * This is acceptable for modern systems (Linux default: 8MB stack).
+       * Chosen over heap allocation for performance (no malloc overhead).
+       * If stack pressure becomes an issue, consider arena allocation.
+       */
       SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
       size_t hdr_count = 0;
       int end_stream = 0;
@@ -679,6 +685,7 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
     }
   else if (event == HTTP2_EVENT_TRAILERS_RECEIVED)
     {
+      /* Stack allocation: Same rationale as headers above (~5KB) */
       SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
       size_t trailer_count = 0;
 

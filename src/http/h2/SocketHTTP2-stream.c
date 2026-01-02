@@ -1246,6 +1246,7 @@ http2_decode_headers (SocketHTTP2_Conn_T conn,
                       const unsigned char *block,
                       size_t len)
 {
+  /* Stack allocation: ~5KB (see SocketHTTP2.h for rationale) */
   SocketHPACK_Header decoded_headers[HTTP2_MAX_DECODED_HEADERS];
   size_t header_count = 0;
   SocketHPACK_Result result;
