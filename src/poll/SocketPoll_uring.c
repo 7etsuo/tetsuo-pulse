@@ -463,6 +463,92 @@ wait_for_cqe (PollBackend_T backend,
 }
 
 /**
+ * extract_fd_from_cqe - Extract and validate file descriptor from CQE
+ * @cqe: Completion queue entry
+ *
+ * Returns: File descriptor (> 0), or 0 if invalid/internal operation.
+ *
+ * Extracts fd from CQE user_data field and performs validation:
+ * - Skips internal operations (fd <= 0)
+ * - Validates fd is within reasonable bounds (defense-in-depth)
+ */
+static int
+extract_fd_from_cqe (const struct io_uring_cqe *cqe)
+{
+  int fd;
+
+  fd = (int)(uintptr_t)cqe->user_data;
+
+  /* Skip internal operations (poll_remove, etc.) */
+  if (fd <= 0)
+    return 0;
+
+  /* Defense-in-depth: validate fd is within reasonable bounds.
+   * While io_uring user_data corruption is unlikely under normal operation,
+   * this prevents processing invalid fds from corrupted CQEs. Follows the
+   * same pattern as kqueue backend (SocketPoll_kqueue.c:331). */
+  if ((uintptr_t)fd > (uintptr_t)INT_MAX)
+    return 0;
+
+  return fd;
+}
+
+/**
+ * store_cqe_event - Convert CQE result to ready_event and store in array
+ * @backend: Backend instance
+ * @cqe: Completion queue entry
+ * @fd: File descriptor from CQE
+ * @event_index: Index in events array to store result
+ *
+ * Translates CQE result to portable poll events. Negative results are
+ * converted to POLL_ERROR, positive results are translated via event map.
+ */
+static void
+store_cqe_event (PollBackend_T backend,
+                 const struct io_uring_cqe *cqe,
+                 int fd,
+                 int event_index)
+{
+  if (cqe->res < 0)
+    {
+      backend->events[event_index].fd = fd;
+      backend->events[event_index].events = POLL_ERROR;
+    }
+  else
+    {
+      unsigned events_mask = (unsigned)cqe->res;
+      backend->events[event_index].fd = fd;
+      backend->events[event_index].events = translate_from_uring (events_mask);
+    }
+}
+
+#ifndef IORING_POLL_ADD_MULTI
+/**
+ * resubmit_poll_for_fd - Re-add poll operation in single-shot mode
+ * @backend: Backend instance
+ * @fd: File descriptor to re-monitor
+ * @cqe_res: Original CQE result (contains poll mask)
+ *
+ * Single-shot poll mode requires re-submitting poll after each event.
+ * Uses original poll mask from CQE result, defaulting to POLLIN if error.
+ */
+static void
+resubmit_poll_for_fd (PollBackend_T backend, int fd, int cqe_res)
+{
+  struct io_uring_sqe *sqe;
+  unsigned poll_mask;
+
+  sqe = io_uring_get_sqe (&backend->ring);
+  if (!sqe)
+    return;
+
+  poll_mask = (cqe_res > 0) ? (unsigned)cqe_res : POLLIN;
+  io_uring_prep_poll_add (sqe, fd, poll_mask);
+  set_sqe_fd (sqe, fd);
+}
+#endif
+
+/**
  * process_cqes - Process available CQEs into events array
  * @backend: Backend instance
  *
@@ -483,61 +569,27 @@ process_cqes (PollBackend_T backend)
   io_uring_for_each_cqe (&backend->ring, head, cqe)
   {
     int fd;
-    unsigned events_mask;
 
-    /* Stop if we've filled the events array - don't consume this CQE */
     if (nev >= backend->maxevents)
       break;
 
     consumed++;
 
-    fd = (int)(uintptr_t)cqe->user_data;
-
-    /* Skip internal operations (poll_remove, etc.) */
-    if (fd <= 0)
+    fd = extract_fd_from_cqe (cqe);
+    if (fd == 0)
       continue;
 
-    /* Defense-in-depth: validate fd is within reasonable bounds.
-     * While io_uring user_data corruption is unlikely under normal operation,
-     * this prevents processing invalid fds from corrupted CQEs. Follows the
-     * same pattern as kqueue backend (SocketPoll_kqueue.c:331). */
-    if ((uintptr_t)fd > (uintptr_t)INT_MAX)
-      continue;
-
-    if (cqe->res < 0)
-      {
-        /* Error on this fd */
-        backend->events[nev].fd = fd;
-        backend->events[nev].events = POLL_ERROR;
-      }
-    else
-      {
-        events_mask = (unsigned)cqe->res;
-        backend->events[nev].fd = fd;
-        backend->events[nev].events = translate_from_uring (events_mask);
-      }
-
+    store_cqe_event (backend, cqe, fd, nev);
     nev++;
 
 #ifndef IORING_POLL_ADD_MULTI
-    /* Single-shot mode: re-submit poll for this fd */
-    {
-      struct io_uring_sqe *sqe = io_uring_get_sqe (&backend->ring);
-      if (sqe)
-        {
-          unsigned poll_mask = (cqe->res > 0) ? (unsigned)cqe->res : POLLIN;
-          io_uring_prep_poll_add (sqe, fd, poll_mask);
-          set_sqe_fd (sqe, fd);
-        }
-    }
+    resubmit_poll_for_fd (backend, fd, cqe->res);
 #endif
   }
 
-  /* Advance CQ by total consumed CQEs, including skipped internal ops */
   io_uring_cq_advance (&backend->ring, consumed);
 
 #ifndef IORING_POLL_ADD_MULTI
-  /* Submit re-added polls */
   if (nev > 0)
     io_uring_submit (&backend->ring);
 #endif

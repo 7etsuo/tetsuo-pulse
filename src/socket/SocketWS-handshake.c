@@ -205,27 +205,32 @@ ws_write_compression_header (char *buf,
   return ws_snprintf_checked (buf, size, offset, "\r\n");
 }
 
-static int
-ws_build_client_request (SocketWS_T ws)
+/**
+ * Allocate request buffer from arena with error handling.
+ */
+static char *
+ws_allocate_request_buffer (SocketWS_T ws)
 {
   char *buf;
-  size_t offset = 0;
-
-  assert (ws && ws->host);
 
   buf = ALLOC (ws->arena, SOCKETWS_HANDSHAKE_REQUEST_SIZE);
   if (!buf)
     {
       ws_set_error (
           ws, WS_ERROR_HANDSHAKE, "Failed to allocate request buffer");
-      return -1;
     }
 
-  if (ws_generate_handshake_keys (ws) < 0)
-    return -1;
+  return buf;
+}
 
+/**
+ * Write all HTTP headers for WebSocket client handshake.
+ */
+static int
+ws_write_all_client_headers (SocketWS_T ws, char *buf, size_t *offset)
+{
   if (ws_write_request_line (
-          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, ws->path)
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, offset, ws->path)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Request line too long");
@@ -233,7 +238,7 @@ ws_build_client_request (SocketWS_T ws)
     }
 
   if (ws_write_host_header (
-          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, ws->host, ws->port)
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, offset, ws->host, ws->port)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Host header too long");
@@ -242,7 +247,7 @@ ws_build_client_request (SocketWS_T ws)
 
   if (ws_write_websocket_headers (buf,
                                   SOCKETWS_HANDSHAKE_REQUEST_SIZE,
-                                  &offset,
+                                  offset,
                                   ws->handshake.client_key)
       < 0)
     {
@@ -250,10 +255,8 @@ ws_build_client_request (SocketWS_T ws)
       return -1;
     }
 
-  if (ws_write_subprotocol_header (buf,
-                                   SOCKETWS_HANDSHAKE_REQUEST_SIZE,
-                                   &offset,
-                                   ws->config.subprotocols)
+  if (ws_write_subprotocol_header (
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, offset, ws->config.subprotocols)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Subprotocol header too long");
@@ -261,24 +264,53 @@ ws_build_client_request (SocketWS_T ws)
     }
 
   if (ws_write_compression_header (
-          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, &ws->config)
+          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, offset, &ws->config)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Compression header too long");
       return -1;
     }
 
-  if (ws_snprintf_checked (
-          buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset, "\r\n")
+  if (ws_snprintf_checked (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, offset, "\r\n")
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Request too long");
       return -1;
     }
 
+  return 0;
+}
+
+/**
+ * Store completed request data in handshake state.
+ */
+static void
+ws_store_request_data (SocketWS_T ws, char *buf, size_t len)
+{
   ws->handshake.request_buf = buf;
-  ws->handshake.request_len = offset;
+  ws->handshake.request_len = len;
   ws->handshake.request_sent = 0;
+}
+
+static int
+ws_build_client_request (SocketWS_T ws)
+{
+  char *buf;
+  size_t offset = 0;
+
+  assert (ws && ws->host);
+
+  if (ws_generate_handshake_keys (ws) < 0)
+    return -1;
+
+  buf = ws_allocate_request_buffer (ws);
+  if (!buf)
+    return -1;
+
+  if (ws_write_all_client_headers (ws, buf, &offset) < 0)
+    return -1;
+
+  ws_store_request_data (ws, buf, offset);
 
   return 0;
 }
