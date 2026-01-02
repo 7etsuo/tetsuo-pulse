@@ -216,6 +216,83 @@ try_bind (Socket_T socket, const char *addr, int port)
   return result;
 }
 
+static int
+detect_socket_family (const char *bind_addr)
+{
+  if (bind_addr == NULL || strcmp (bind_addr, "") == 0)
+    return AF_INET6;
+
+  if (inet_pton (AF_INET, bind_addr, &(struct in_addr){ 0 }) == 1)
+    return AF_INET;
+
+  if (is_ipv6_address (bind_addr))
+    return AF_INET6;
+
+  return AF_INET6;
+}
+
+static Socket_T
+create_listen_socket (int family, const char *volatile *bind_addr)
+{
+  Socket_T socket = Socket_new (family, SOCK_STREAM, 0);
+
+  if (socket == NULL && family == AF_INET6)
+    {
+      socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      if (socket != NULL && *bind_addr && strcmp (*bind_addr, "::") == 0)
+        *bind_addr = "0.0.0.0";
+    }
+
+  return socket;
+}
+
+static void
+configure_socket_options (Socket_T socket, int family)
+{
+  Socket_setreuseaddr (socket);
+
+#ifdef AF_INET6
+  if (family == AF_INET6)
+    {
+      int v6only = 0;
+      if (setsockopt (Socket_fd (socket),
+                      IPPROTO_IPV6,
+                      IPV6_V6ONLY,
+                      &v6only,
+                      sizeof (v6only))
+          < 0)
+        {
+          HTTPSERVER_ERROR_MSG ("Failed to disable IPv6-only mode: %s",
+                                strerror (errno));
+        }
+    }
+#endif
+
+  Socket_setnonblocking (socket);
+}
+
+static int
+bind_with_fallback (Socket_T socket,
+                    const char *bind_addr,
+                    int port,
+                    int family)
+{
+  if (try_bind (socket, bind_addr, port) == 0)
+    return 0;
+
+  if (family == AF_INET6 && strcmp (bind_addr, "::") == 0)
+    {
+      if (try_bind (socket, "0.0.0.0", port) == 0)
+        return 0;
+
+      HTTPSERVER_ERROR_FMT ("Failed to bind to port %d", port);
+      return -1;
+    }
+
+  HTTPSERVER_ERROR_FMT ("Failed to bind to %s:%d", bind_addr, port);
+  return -1;
+}
+
 int
 SocketHTTPServer_start (SocketHTTPServer_T server)
 {
@@ -229,82 +306,30 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
 
   bind_addr = server->config.bind_address;
   if (bind_addr == NULL || strcmp (bind_addr, "") == 0)
-    {
-      bind_addr = "::";
-      socket_family = AF_INET6;
-    }
-  else if (inet_pton (AF_INET, bind_addr, &(struct in_addr){ 0 }) == 1)
-    {
-      socket_family = AF_INET;
-    }
-  else if (is_ipv6_address (bind_addr))
-    {
-      socket_family = AF_INET6;
-    }
-  else
-    {
-      socket_family = AF_INET6;
-    }
+    bind_addr = "::";
 
-  server->listen_socket = Socket_new (socket_family, SOCK_STREAM, 0);
-  if (server->listen_socket == NULL && socket_family == AF_INET6)
-    {
-      socket_family = AF_INET;
-      server->listen_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-      if (bind_addr && strcmp (bind_addr, "::") == 0)
-        bind_addr = "0.0.0.0";
-    }
+  socket_family = detect_socket_family (bind_addr);
 
+  server->listen_socket = create_listen_socket (socket_family, &bind_addr);
   if (server->listen_socket == NULL)
     {
       HTTPSERVER_ERROR_FMT ("Failed to create listen socket");
       return -1;
     }
 
-  Socket_setreuseaddr (server->listen_socket);
+  configure_socket_options (server->listen_socket, socket_family);
 
-#ifdef AF_INET6
-  if (socket_family == AF_INET6)
+  if (bind_with_fallback (server->listen_socket,
+                          bind_addr,
+                          server->config.port,
+                          socket_family)
+      < 0)
     {
-      int v6only = 0;
-      if (setsockopt (Socket_fd (server->listen_socket),
-                      IPPROTO_IPV6,
-                      IPV6_V6ONLY,
-                      &v6only,
-                      sizeof (v6only))
-          < 0)
-        {
-          HTTPSERVER_ERROR_MSG ("Failed to disable IPv6-only mode: %s",
-                                strerror (errno));
-        }
-    }
-#endif
-
-  if (try_bind (server->listen_socket, bind_addr, server->config.port) < 0)
-    {
-      /* Try IPv4 fallback if using IPv6 wildcard */
-      if (socket_family == AF_INET6 && strcmp (bind_addr, "::") == 0)
-        {
-          if (try_bind (server->listen_socket, "0.0.0.0", server->config.port)
-              < 0)
-            {
-              Socket_free (&server->listen_socket);
-              HTTPSERVER_ERROR_FMT ("Failed to bind to port %d",
-                                    server->config.port);
-              return -1;
-            }
-        }
-      else
-        {
-          Socket_free (&server->listen_socket);
-          HTTPSERVER_ERROR_FMT (
-              "Failed to bind to %s:%d", bind_addr, server->config.port);
-          return -1;
-        }
+      Socket_free (&server->listen_socket);
+      return -1;
     }
 
   Socket_listen (server->listen_socket, server->config.backlog);
-  Socket_setnonblocking (server->listen_socket);
 
   SocketPoll_add (server->poll, server->listen_socket, POLL_READ, NULL);
 
