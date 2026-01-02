@@ -590,23 +590,26 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
 void
 socketproxy_advance_state (struct SocketProxy_Conn_T *conn)
 {
-  if (conn->state == PROXY_STATE_HANDSHAKE_SEND
-      || conn->state == PROXY_STATE_AUTH_SEND)
-    {
-      if (conn->send_offset >= conn->send_len)
-        {
-          if (conn->state == PROXY_STATE_AUTH_SEND)
-            conn->state = PROXY_STATE_AUTH_RECV;
-          else
-            conn->state = PROXY_STATE_HANDSHAKE_RECV;
+  /* Guard clause: only process SEND states */
+  if (conn->state != PROXY_STATE_HANDSHAKE_SEND
+      && conn->state != PROXY_STATE_AUTH_SEND)
+    return;
 
-          conn->send_offset = 0;
-          conn->send_len = 0;
-          conn->recv_offset = 0;
-          conn->recv_len = 0;
-        }
-      return;
-    }
+  /* Guard clause: only advance if send complete */
+  if (conn->send_offset < conn->send_len)
+    return;
+
+  /* Determine next state based on current state */
+  if (conn->state == PROXY_STATE_AUTH_SEND)
+    conn->state = PROXY_STATE_AUTH_RECV;
+  else
+    conn->state = PROXY_STATE_HANDSHAKE_RECV;
+
+  /* Reset buffers */
+  conn->send_offset = 0;
+  conn->send_len = 0;
+  conn->recv_offset = 0;
+  conn->recv_len = 0;
 }
 
 static int
