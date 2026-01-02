@@ -211,58 +211,87 @@ is_ipv6_address (const char *addr)
   return inet_pton (AF_INET6, addr, &dummy) == 1;
 }
 
-int
-SocketHTTPServer_start (SocketHTTPServer_T server)
+/**
+ * Detect the address family (AF_INET or AF_INET6) from the bind address.
+ *
+ * @param bind_addr The bind address string (can be NULL).
+ * @param out_bind_addr Pointer to bind address (may be modified to default).
+ * @return AF_INET or AF_INET6.
+ */
+static int
+detect_socket_family (const char *bind_addr, const char **out_bind_addr)
 {
-  const char *volatile bind_addr;
-  volatile int socket_family;
+  assert (out_bind_addr != NULL);
 
-  assert (server != NULL);
-
-  if (server->running)
-    return 0;
-
-  bind_addr = server->config.bind_address;
   if (bind_addr == NULL || strcmp (bind_addr, "") == 0)
     {
-      bind_addr = "::";
-      socket_family = AF_INET6;
+      *out_bind_addr = "::";
+      return AF_INET6;
     }
-  else if (inet_pton (AF_INET, bind_addr, &(struct in_addr){ 0 }) == 1)
+
+  *out_bind_addr = bind_addr;
+
+  if (inet_pton (AF_INET, bind_addr, &(struct in_addr){ 0 }) == 1)
+    return AF_INET;
+
+  if (is_ipv6_address (bind_addr))
+    return AF_INET6;
+
+  /* Default to IPv6 for unrecognized addresses */
+  return AF_INET6;
+}
+
+/**
+ * Create a listen socket with IPv6/IPv4 fallback.
+ *
+ * @param family Initial address family (AF_INET or AF_INET6).
+ * @param bind_addr Pointer to bind address (updated on fallback).
+ * @param out_family Pointer to store actual family used.
+ * @return Socket_T on success, NULL on failure.
+ */
+static Socket_T
+create_listen_socket (int family, const char **bind_addr, int *out_family)
+{
+  Socket_T socket;
+
+  assert (bind_addr != NULL);
+  assert (out_family != NULL);
+
+  socket = Socket_new (family, SOCK_STREAM, 0);
+  if (socket == NULL && family == AF_INET6)
     {
-      socket_family = AF_INET;
-    }
-  else if (is_ipv6_address (bind_addr))
-    {
-      socket_family = AF_INET6;
+      /* IPv6 failed, try IPv4 fallback */
+      *out_family = AF_INET;
+      socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      if (*bind_addr && strcmp (*bind_addr, "::") == 0)
+        *bind_addr = "0.0.0.0";
     }
   else
     {
-      socket_family = AF_INET6;
+      *out_family = family;
     }
 
-  server->listen_socket = Socket_new (socket_family, SOCK_STREAM, 0);
-  if (server->listen_socket == NULL && socket_family == AF_INET6)
-    {
-      socket_family = AF_INET;
-      server->listen_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-      if (bind_addr && strcmp (bind_addr, "::") == 0)
-        bind_addr = "0.0.0.0";
-    }
+  return socket;
+}
 
-  if (server->listen_socket == NULL)
-    {
-      HTTPSERVER_ERROR_FMT ("Failed to create listen socket");
-      return -1;
-    }
+/**
+ * Configure listen socket options (SO_REUSEADDR, IPV6_V6ONLY).
+ *
+ * @param socket The listen socket.
+ * @param family The address family (AF_INET or AF_INET6).
+ */
+static void
+configure_listen_socket (Socket_T socket, int family)
+{
+  assert (socket != NULL);
 
-  Socket_setreuseaddr (server->listen_socket);
+  Socket_setreuseaddr (socket);
 
 #ifdef AF_INET6
-  if (socket_family == AF_INET6)
+  if (family == AF_INET6)
     {
       int v6only = 0;
-      if (setsockopt (Socket_fd (server->listen_socket),
+      if (setsockopt (Socket_fd (socket),
                       IPPROTO_IPV6,
                       IPV6_V6ONLY,
                       &v6only,
@@ -274,41 +303,108 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
         }
     }
 #endif
+}
+
+/**
+ * Bind listen socket with IPv4 fallback for "::" addresses.
+ *
+ * @param socket The listen socket.
+ * @param bind_addr The bind address.
+ * @param port The port to bind to.
+ * @param family The address family (AF_INET or AF_INET6).
+ * @return 0 on success, -1 on failure.
+ */
+static int
+bind_with_fallback (Socket_T socket,
+                    const char *bind_addr,
+                    int port,
+                    int family)
+{
+  volatile int result = -1;
+
+  assert (socket != NULL);
+  assert (bind_addr != NULL);
 
   TRY
   {
-    Socket_bind (server->listen_socket, bind_addr, server->config.port);
+    Socket_bind (socket, bind_addr, port);
+    result = 0;
   }
   EXCEPT (Socket_Failed)
   {
-    if (socket_family == AF_INET6 && strcmp (bind_addr, "::") == 0)
+    if (family == AF_INET6 && strcmp (bind_addr, "::") == 0)
       {
         TRY
         {
-          Socket_bind (server->listen_socket, "0.0.0.0", server->config.port);
+          Socket_bind (socket, "0.0.0.0", port);
+          result = 0;
         }
         EXCEPT (Socket_Failed)
         {
-          Socket_free (&server->listen_socket);
-          HTTPSERVER_ERROR_FMT ("Failed to bind to port %d",
-                                server->config.port);
-          return -1;
+          HTTPSERVER_ERROR_FMT ("Failed to bind to port %d", port);
+          result = -1;
         }
         END_TRY;
       }
     else
       {
-        Socket_free (&server->listen_socket);
-        HTTPSERVER_ERROR_FMT (
-            "Failed to bind to %s:%d", bind_addr, server->config.port);
-        return -1;
+        HTTPSERVER_ERROR_FMT ("Failed to bind to %s:%d", bind_addr, port);
+        result = -1;
       }
   }
   END_TRY;
 
+  return result;
+}
+
+int
+SocketHTTPServer_start (SocketHTTPServer_T server)
+{
+  const char *volatile bind_addr;
+  volatile int socket_family;
+  const char *bind_addr_tmp;
+  int socket_family_tmp;
+
+  assert (server != NULL);
+
+  if (server->running)
+    return 0;
+
+  /* Detect address family and normalize bind address */
+  socket_family_tmp
+      = detect_socket_family (server->config.bind_address, &bind_addr_tmp);
+  bind_addr = bind_addr_tmp;
+  socket_family = socket_family_tmp;
+
+  /* Create listen socket with fallback */
+  server->listen_socket = create_listen_socket (
+      socket_family_tmp, &bind_addr_tmp, &socket_family_tmp);
+  bind_addr = bind_addr_tmp;
+  socket_family = socket_family_tmp;
+
+  if (server->listen_socket == NULL)
+    {
+      HTTPSERVER_ERROR_FMT ("Failed to create listen socket");
+      return -1;
+    }
+
+  /* Configure socket options */
+  configure_listen_socket (server->listen_socket, socket_family);
+
+  /* Bind with fallback */
+  if (bind_with_fallback (
+          server->listen_socket, bind_addr, server->config.port, socket_family)
+      < 0)
+    {
+      Socket_free (&server->listen_socket);
+      return -1;
+    }
+
+  /* Set up listen socket */
   Socket_listen (server->listen_socket, server->config.backlog);
   Socket_setnonblocking (server->listen_socket);
 
+  /* Add to poll */
   SocketPoll_add (server->poll, server->listen_socket, POLL_READ, NULL);
 
   server->running = 1;
