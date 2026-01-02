@@ -1465,6 +1465,63 @@ test_prepared_request_free_null (void)
 }
 
 /* ============================================================================
+ * I/O Safety Tests (Issue #2676)
+ * ============================================================================
+ */
+
+/**
+ * @brief Test httpclient_io_safe_send with NULL conn parameter.
+ *
+ * Verifies that passing NULL for conn returns -1 and sets errno to EINVAL,
+ * preventing segmentation fault from NULL pointer dereference.
+ */
+static void
+test_io_safe_send_null_conn (void)
+{
+  SocketHTTPClient_T client = NULL;
+  char data[] = "test data";
+  ssize_t result;
+
+  TEST_START ("io_safe_send with NULL conn");
+
+  /* Call with NULL conn - should return -1 and set errno */
+  errno = 0;
+  result = httpclient_io_safe_send (
+      client, NULL, data, sizeof (data), "test operation");
+
+  ASSERT_EQ (result, -1, "should return -1 for NULL conn");
+  ASSERT_EQ (errno, EINVAL, "should set errno to EINVAL");
+
+  TEST_PASS ();
+}
+
+/**
+ * @brief Test httpclient_io_safe_recv with NULL conn parameter.
+ *
+ * Verifies that passing NULL for conn returns -1 and sets errno to EINVAL,
+ * preventing segmentation fault from NULL pointer dereference.
+ */
+static void
+test_io_safe_recv_null_conn (void)
+{
+  SocketHTTPClient_T client = NULL;
+  char buf[256];
+  ssize_t n = 0;
+  int result;
+
+  TEST_START ("io_safe_recv with NULL conn");
+
+  /* Call with NULL conn - should return -1 and set errno */
+  errno = 0;
+  result = httpclient_io_safe_recv (client, NULL, buf, sizeof (buf), &n);
+
+  ASSERT_EQ (result, -1, "should return -1 for NULL conn");
+  ASSERT_EQ (errno, EINVAL, "should set errno to EINVAL");
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -1563,6 +1620,10 @@ main (void)
   test_prepared_request_with_port ();
   test_prepared_request_invalid ();
   test_prepared_request_free_null ();
+
+  printf ("\nI/O Safety Tests (Issue #2676):\n");
+  test_io_safe_send_null_conn ();
+  test_io_safe_recv_null_conn ();
 
   printf ("\n============================================================\n");
   printf ("Test Results: %d passed, %d failed, %d total\n",
