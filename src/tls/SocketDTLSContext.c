@@ -114,6 +114,69 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx)
 }
 
 /**
+ * init_context_defaults - Initialize default context values
+ * @ctx: Context to initialize
+ * @ssl_ctx: OpenSSL context
+ * @is_server: 1 for server, 0 for client
+ */
+static void
+init_context_defaults (T ctx, SSL_CTX *ssl_ctx, int is_server)
+{
+  ctx->arena
+      = Arena_new (); /* Raises Arena_Failed on failure; no NULL check needed */
+
+  atomic_init (&ctx->refcount, 1); /* Initialize refcount to 1 */
+  ctx->ssl_ctx = ssl_ctx;
+  ctx->is_server = is_server;
+  ctx->mtu = SOCKET_DTLS_DEFAULT_MTU;
+  ctx->initial_timeout_ms = SOCKET_DTLS_INITIAL_TIMEOUT_MS;
+  ctx->max_timeout_ms = SOCKET_DTLS_MAX_TIMEOUT_MS;
+
+  /* Initialize cookie state */
+  ctx->cookie.cookie_enabled = 0;
+}
+
+/**
+ * init_context_mutexes - Initialize mutexes for context
+ * @ctx: Context to initialize mutexes for
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+init_context_mutexes (T ctx)
+{
+  if (pthread_mutex_init (&ctx->cookie.secret_mutex, NULL) != 0)
+    return -1;
+
+  if (pthread_mutex_init (&ctx->stats_mutex, NULL) != 0)
+    {
+      pthread_mutex_destroy (&ctx->cookie.secret_mutex);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * init_context_exdata - Store context pointer in SSL_CTX ex_data
+ * @ssl_ctx: OpenSSL context
+ * @ctx: DTLS context to store
+ */
+static void
+init_context_exdata (SSL_CTX *ssl_ctx, T ctx)
+{
+  pthread_once (&dtls_exdata_once, init_exdata_index);
+  if (dtls_context_exdata_idx >= 0)
+    {
+      if (SSL_CTX_set_ex_data (ssl_ctx, dtls_context_exdata_idx, ctx) != 1)
+        {
+          SOCKET_LOG_WARN_MSG (
+              "Failed to set SSL_CTX ex_data for DTLS context");
+        }
+    }
+}
+
+/**
  * alloc_context - Allocate and initialize context structure
  * @ssl_ctx: OpenSSL context to wrap
  * @is_server: 1 for server, 0 for client
@@ -131,48 +194,18 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
                                 "Failed to allocate DTLS context");
     }
 
-  ctx->arena
-      = Arena_new (); /* Raises Arena_Failed on failure; no NULL check needed */
+  init_context_defaults (ctx, ssl_ctx, is_server);
 
-  atomic_init (&ctx->refcount, 1); /* Initialize refcount to 1 */
-  ctx->ssl_ctx = ssl_ctx;
-  ctx->is_server = is_server;
-  ctx->mtu = SOCKET_DTLS_DEFAULT_MTU;
-  ctx->initial_timeout_ms = SOCKET_DTLS_INITIAL_TIMEOUT_MS;
-  ctx->max_timeout_ms = SOCKET_DTLS_MAX_TIMEOUT_MS;
-
-  /* Initialize cookie state */
-  ctx->cookie.cookie_enabled = 0;
-  if (pthread_mutex_init (&ctx->cookie.secret_mutex, NULL) != 0)
+  if (init_context_mutexes (ctx) != 0)
     {
       Arena_dispose (&ctx->arena);
       SSL_CTX_free (ssl_ctx);
       free (ctx);
       RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                "Failed to initialize cookie mutex");
+                                "Failed to initialize mutexes");
     }
 
-  /* Initialize stats mutex */
-  if (pthread_mutex_init (&ctx->stats_mutex, NULL) != 0)
-    {
-      pthread_mutex_destroy (&ctx->cookie.secret_mutex);
-      Arena_dispose (&ctx->arena);
-      SSL_CTX_free (ssl_ctx);
-      free (ctx);
-      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                "Failed to initialize stats mutex");
-    }
-
-  /* Store context pointer in SSL_CTX ex_data for callback access */
-  pthread_once (&dtls_exdata_once, init_exdata_index);
-  if (dtls_context_exdata_idx >= 0)
-    {
-      if (SSL_CTX_set_ex_data (ssl_ctx, dtls_context_exdata_idx, ctx) != 1)
-        {
-          SOCKET_LOG_WARN_MSG (
-              "Failed to set SSL_CTX ex_data for DTLS context");
-        }
-    }
+  init_context_exdata (ssl_ctx, ctx);
 
   return ctx;
 }
@@ -266,6 +299,47 @@ SocketDTLSContext_ref (T ctx)
   atomic_fetch_add (&ctx->refcount, 1);
 }
 
+/**
+ * clear_cookie_secrets - Securely clear cookie secrets
+ * @ctx: Context containing secrets to clear
+ */
+static void
+clear_cookie_secrets (T ctx)
+{
+  SocketCrypto_secure_clear (ctx->cookie.secret, sizeof (ctx->cookie.secret));
+  SocketCrypto_secure_clear (ctx->cookie.prev_secret,
+                             sizeof (ctx->cookie.prev_secret));
+}
+
+/**
+ * destroy_context_mutexes - Destroy context mutexes
+ * @ctx: Context containing mutexes to destroy
+ */
+static void
+destroy_context_mutexes (T ctx)
+{
+  pthread_mutex_destroy (&ctx->cookie.secret_mutex);
+  pthread_mutex_destroy (&ctx->stats_mutex);
+}
+
+/**
+ * free_ssl_context - Free SSL_CTX and flush session cache
+ * @ctx: Context containing SSL_CTX to free
+ */
+static void
+free_ssl_context (T ctx)
+{
+  if (ctx->ssl_ctx)
+    {
+#if OPENSSL_VERSION_NUMBER < SOCKET_OPENSSL_VERSION_3_0
+      /* Flush session cache to prevent memory leaks (OpenSSL < 3.0) */
+      SSL_CTX_flush_sessions (ctx->ssl_ctx, 0);
+#endif
+      SSL_CTX_free (ctx->ssl_ctx);
+      ctx->ssl_ctx = NULL;
+    }
+}
+
 void
 SocketDTLSContext_free (T *ctx_p)
 {
@@ -284,25 +358,9 @@ SocketDTLSContext_free (T *ctx_p)
 
   /* We're the last reference - perform actual cleanup */
 
-  /* Securely clear cookie secrets using SocketCrypto */
-  SocketCrypto_secure_clear (ctx->cookie.secret, sizeof (ctx->cookie.secret));
-  SocketCrypto_secure_clear (ctx->cookie.prev_secret,
-                             sizeof (ctx->cookie.prev_secret));
-
-  /* Destroy mutexes */
-  pthread_mutex_destroy (&ctx->cookie.secret_mutex);
-  pthread_mutex_destroy (&ctx->stats_mutex);
-
-  /* Free SSL_CTX */
-  if (ctx->ssl_ctx)
-    {
-#if OPENSSL_VERSION_NUMBER < SOCKET_OPENSSL_VERSION_3_0
-      /* Flush session cache to prevent memory leaks (OpenSSL < 3.0) */
-      SSL_CTX_flush_sessions (ctx->ssl_ctx, 0);
-#endif
-      SSL_CTX_free (ctx->ssl_ctx);
-      ctx->ssl_ctx = NULL;
-    }
+  clear_cookie_secrets (ctx);
+  destroy_context_mutexes (ctx);
+  free_ssl_context (ctx);
 
   /* Free arena (releases all arena-allocated memory) */
   if (ctx->arena)
@@ -586,6 +644,48 @@ SocketDTLSContext_load_certificate (T ctx,
   END_TRY;
 }
 
+/**
+ * validate_ca_path_type - Validate CA path is file or directory
+ * @st: Stat structure for CA path
+ * @ca_file: File path for error messages
+ * @fd: File descriptor to close on error
+ */
+static void
+validate_ca_path_type (const struct stat *st, const char *ca_file, int fd)
+{
+  if (!S_ISREG (st->st_mode) && !S_ISDIR (st->st_mode))
+    {
+      close (fd);
+      RAISE_DTLS_CTX_ERROR_FMT (
+          SocketDTLS_Failed,
+          "CA path '%s' must be a regular file or directory",
+          ca_file);
+    }
+}
+
+/**
+ * validate_ca_file_size - Validate CA file size is within limits
+ * @st: Stat structure for CA file
+ * @ca_file: File path for error messages
+ * @fd: File descriptor to close on error
+ */
+static void
+validate_ca_file_size (const struct stat *st, const char *ca_file, int fd)
+{
+  if (S_ISREG (st->st_mode))
+    {
+      size_t file_size = (size_t)st->st_size;
+      if (file_size <= 0 || file_size > SOCKET_DTLS_MAX_FILE_SIZE)
+        {
+          close (fd);
+          RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                    "CA file '%s' too large (max %zu bytes)",
+                                    ca_file,
+                                    SOCKET_DTLS_MAX_FILE_SIZE);
+        }
+    }
+}
+
 void
 SocketDTLSContext_load_ca (T ctx, const char *ca_file)
 {
@@ -599,29 +699,8 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
   struct stat st;
   int fd = open_and_stat_file (ca_file, "CA path", &st);
 
-  /* Validate type: must be regular file or directory */
-  if (!S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode))
-    {
-      close (fd);
-      RAISE_DTLS_CTX_ERROR_FMT (
-          SocketDTLS_Failed,
-          "CA path '%s' must be a regular file or directory",
-          ca_file);
-    }
-
-  /* Validate size for regular files */
-  if (S_ISREG (st.st_mode))
-    {
-      size_t file_size = (size_t)st.st_size;
-      if (file_size <= 0 || file_size > SOCKET_DTLS_MAX_FILE_SIZE)
-        {
-          close (fd);
-          RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                    "CA file '%s' too large (max %zu bytes)",
-                                    ca_file,
-                                    SOCKET_DTLS_MAX_FILE_SIZE);
-        }
-    }
+  validate_ca_path_type (&st, ca_file, fd);
+  validate_ca_file_size (&st, ca_file, fd);
 
   close (fd);
 
@@ -732,18 +811,13 @@ SocketDTLSContext_set_cookie_secret (T ctx,
   ctx->cookie.cookie_enabled = 1;
 }
 
-void
-SocketDTLSContext_rotate_cookie_secret (T ctx)
+/**
+ * rotate_secret_locked - Perform secret rotation (caller must hold mutex)
+ * @ctx: Context containing secrets to rotate
+ */
+static void
+rotate_secret_locked (T ctx)
 {
-  assert (ctx);
-
-  if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
-    {
-      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                "Failed to acquire mutex for secret rotation");
-    }
-
-
   /* Move current to previous */
   memcpy (ctx->cookie.prev_secret,
           ctx->cookie.secret,
@@ -757,10 +831,23 @@ SocketDTLSContext_rotate_cookie_secret (T ctx)
       /* Ensure sensitive data cleared before raising exception */
       SocketCrypto_secure_clear (ctx->cookie.prev_secret,
                                  sizeof (ctx->cookie.prev_secret));
-      pthread_mutex_unlock (&ctx->cookie.secret_mutex);
       RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                                 "Failed to generate new cookie secret");
     }
+}
+
+void
+SocketDTLSContext_rotate_cookie_secret (T ctx)
+{
+  assert (ctx);
+
+  if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Failed to acquire mutex for secret rotation");
+    }
+
+  rotate_secret_locked (ctx);
 
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
 }
