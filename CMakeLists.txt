@@ -355,33 +355,35 @@ set(LIB_SOURCES
     src/http/SocketHTTP1-chunked.c
     
     # HPACK Header Compression (RFC 7541)
-    src/http/SocketHPACK.c
-    src/http/SocketHPACK-huffman.c
-    src/http/SocketHPACK-table.c
-    
-    # HTTP/2 Protocol (RFC 9113)
-    src/http/SocketHTTP2-frame.c
-    src/http/SocketHTTP2-connection.c
-    src/http/SocketHTTP2-stream.c
-    src/http/SocketHTTP2-flow.c
-    src/http/SocketHTTP2-validate.c
-    src/http/SocketHTTP2-priority.c
+    src/http/hpack/SocketHPACK.c
+    src/http/hpack/SocketHPACK-huffman.c
+    src/http/hpack/SocketHPACK-table.c
 
-    # HTTP Client and Server APIs (Phase 7)
+    # HTTP/2 Protocol (RFC 9113)
+    src/http/h2/SocketHTTP2-frame.c
+    src/http/h2/SocketHTTP2-connection.c
+    src/http/h2/SocketHTTP2-stream.c
+    src/http/h2/SocketHTTP2-flow.c
+    src/http/h2/SocketHTTP2-validate.c
+    src/http/h2/SocketHTTP2-priority.c
+
+    # HTTP Client API
     src/http/SocketHTTPClient.c
-    src/http/SocketHTTPClient-pool.c
-    src/http/SocketHTTPClient-auth.c
-    src/http/SocketHTTPClient-cookie.c
-    src/http/SocketHTTPClient-retry.c
-    src/http/SocketHTTPClient-arena.c
-    src/http/SocketHTTPClient-async.c
+    src/http/client/SocketHTTPClient-pool.c
+    src/http/client/SocketHTTPClient-auth.c
+    src/http/client/SocketHTTPClient-cookie.c
+    src/http/client/SocketHTTPClient-retry.c
+    src/http/client/SocketHTTPClient-arena.c
+    src/http/client/SocketHTTPClient-async.c
+
+    # HTTP Server API
     src/http/SocketHTTPServer.c
-    src/http/SocketHTTPServer-connections.c
-    src/http/SocketHTTPServer-core.c
-    src/http/SocketHTTPServer-http1.c
-    src/http/SocketHTTPServer-static.c
-    src/http/SocketHTTPServer-h2.c
-    src/http/SocketHTTPServer-metrics.c
+    src/http/server/SocketHTTPServer-connections.c
+    src/http/server/SocketHTTPServer-core.c
+    src/http/server/SocketHTTPServer-http1.c
+    src/http/server/SocketHTTPServer-static.c
+    src/http/server/SocketHTTPServer-h2.c
+    src/http/server/SocketHTTPServer-metrics.c
 
     # QUIC foundational module (RFC 9000)
     src/quic/SocketQUICVarInt.c
