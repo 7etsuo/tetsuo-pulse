@@ -211,6 +211,23 @@ is_ipv6_address (const char *addr)
   return inet_pton (AF_INET6, addr, &dummy) == 1;
 }
 
+static int
+try_bind (Socket_T socket, const char *addr, int port)
+{
+  volatile int result = -1;
+  TRY
+  {
+    Socket_bind (socket, addr, port);
+    result = 0;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* result stays -1 */
+  }
+  END_TRY;
+  return result;
+}
+
 int
 SocketHTTPServer_start (SocketHTTPServer_T server)
 {
@@ -275,36 +292,28 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
     }
 #endif
 
-  TRY
-  {
-    Socket_bind (server->listen_socket, bind_addr, server->config.port);
-  }
-  EXCEPT (Socket_Failed)
-  {
-    if (socket_family == AF_INET6 && strcmp (bind_addr, "::") == 0)
-      {
-        TRY
+  if (try_bind (server->listen_socket, bind_addr, server->config.port) < 0)
+    {
+      /* Try IPv4 fallback if using IPv6 wildcard */
+      if (socket_family == AF_INET6 && strcmp (bind_addr, "::") == 0)
         {
-          Socket_bind (server->listen_socket, "0.0.0.0", server->config.port);
+          if (try_bind (server->listen_socket, "0.0.0.0", server->config.port)
+              < 0)
+            {
+              Socket_free (&server->listen_socket);
+              HTTPSERVER_ERROR_FMT ("Failed to bind to port %d",
+                                    server->config.port);
+              return -1;
+            }
         }
-        EXCEPT (Socket_Failed)
+      else
         {
           Socket_free (&server->listen_socket);
-          HTTPSERVER_ERROR_FMT ("Failed to bind to port %d",
-                                server->config.port);
+          HTTPSERVER_ERROR_FMT (
+              "Failed to bind to %s:%d", bind_addr, server->config.port);
           return -1;
         }
-        END_TRY;
-      }
-    else
-      {
-        Socket_free (&server->listen_socket);
-        HTTPSERVER_ERROR_FMT (
-            "Failed to bind to %s:%d", bind_addr, server->config.port);
-        return -1;
-      }
-  }
-  END_TRY;
+    }
 
   Socket_listen (server->listen_socket, server->config.backlog);
   Socket_setnonblocking (server->listen_socket);
