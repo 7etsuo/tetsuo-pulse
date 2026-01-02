@@ -808,6 +808,23 @@ submit_async_operation (T async, struct AsyncRequest *req)
 /* LCOV_EXCL_STOP */
 
 
+#if SOCKET_HAS_IO_URING
+static int
+process_io_uring_if_available (T async)
+{
+  if (!async->ring)
+    return 0;
+
+  uint64_t val;
+  ssize_t n = read (async->io_uring_fd, &val, sizeof (val));
+  if (n <= 0)
+    return 0;
+
+  return process_io_uring_completions (async, SOCKET_MAX_EVENT_BATCH);
+}
+#endif
+
+
 static int
 process_async_completions_internal (T async,
                                     int timeout_ms __attribute__ ((unused)))
@@ -816,26 +833,20 @@ process_async_completions_internal (T async,
 
   assert (async);
 
-  if (async->available)
-    {
+  if (!async->available)
+    goto check_timeouts;
+
 #if SOCKET_HAS_IO_URING
-      if (async->ring)
-        {
-          uint64_t val;
-          ssize_t n = read (async->io_uring_fd, &val, sizeof (val));
-          if (n > 0)
-            completed
-                = process_io_uring_completions (async, SOCKET_MAX_EVENT_BATCH);
-        }
+  completed = process_io_uring_if_available (async);
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
-      if (async->kqueue_fd >= 0)
-        completed = process_kqueue_completions (
-            async, timeout_ms, SOCKET_MAX_EVENT_BATCH);
+  if (async->kqueue_fd >= 0)
+    completed = process_kqueue_completions (
+        async, timeout_ms, SOCKET_MAX_EVENT_BATCH);
 #endif
-    }
 
+check_timeouts:
   if (async->request_timeout_ms > 0)
     completed += check_and_expire_stale_requests (async);
 
