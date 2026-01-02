@@ -330,6 +330,8 @@ void connection_transition_to_websocket (SocketHTTPServer_T server,
                                          SocketWS_T ws,
                                          SocketHTTPServer_BodyCallback callback,
                                          void *userdata);
+int select_protocol_after_handshake (SocketHTTPServer_T server,
+                                     ServerConnection *conn);
 
 /* Event loop helpers (SocketHTTPServer.c) */
 int server_check_connection_timeout (SocketHTTPServer_T server,

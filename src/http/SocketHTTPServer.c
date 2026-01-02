@@ -38,6 +38,23 @@ const Except_T SocketHTTPServer_BindFailed
 const Except_T SocketHTTPServer_ProtocolError
     = { &SocketHTTPServer_ProtocolError, "HTTP protocol error" };
 
+/**
+ * header_contains_crlf - Check if string contains CRLF characters
+ * @str: String to check
+ *
+ * Returns: 1 if CRLF found, 0 otherwise
+ */
+static int
+header_contains_crlf (const char *str)
+{
+  for (const char *p = str; *p; p++)
+    {
+      if (*p == '\r' || *p == '\n')
+        return 1;
+    }
+  return 0;
+}
+
 /* Find most specific rate limiter for path prefix */
 SocketRateLimit_T
 find_rate_limiter (SocketHTTPServer_T server, const char *path)
@@ -244,28 +261,16 @@ SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
                                  const char *value)
 {
   SocketHTTP_Headers_T *headers_ptr;
-  const char *p;
 
   assert (req != NULL);
   assert (name != NULL);
   assert (value != NULL);
 
   /* Reject headers with CRLF characters (injection prevention) */
-  for (p = name; *p; p++)
+  if (header_contains_crlf (name) || header_contains_crlf (value))
     {
-      if (*p == '\r' || *p == '\n')
-        {
-          SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
-          return;
-        }
-    }
-  for (p = value; *p; p++)
-    {
-      if (*p == '\r' || *p == '\n')
-        {
-          SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
-          return;
-        }
+      SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
+      return;
     }
 
   headers_ptr = server_response_headers_ptr (req);

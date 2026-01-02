@@ -1229,6 +1229,51 @@ server_check_connection_timeout (SocketHTTPServer_T server,
 
 #if SOCKET_HAS_TLS
 /**
+ * select_protocol_after_handshake - Select HTTP protocol after TLS handshake
+ * @server: HTTP server
+ * @conn: Connection with completed TLS handshake
+ *
+ * Determines protocol (HTTP/2 or HTTP/1.1) based on ALPN negotiation,
+ * enables the selected protocol, and transitions connection state.
+ *
+ * Returns: 0 on success, -1 on error
+ */
+int
+select_protocol_after_handshake (SocketHTTPServer_T server,
+                                 ServerConnection *conn)
+{
+  const char *alpn;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+  assert (conn->tls_handshake_done);
+
+  /* Decide protocol by ALPN. If not negotiated, fall back to HTTP/1.1. */
+  alpn = SocketTLS_get_alpn_selected (conn->socket);
+  if (alpn != NULL && strcmp (alpn, "h2") == 0
+      && server->config.max_version >= HTTP_VERSION_2)
+    {
+      /* Enable HTTP/2 - use early return to reduce nesting. */
+      if (server_http2_enable (server, conn) < 0)
+        {
+          conn->state = CONN_STATE_CLOSED;
+          return -1;
+        }
+      conn->is_http2 = 1;
+      conn->state = CONN_STATE_HTTP2;
+      SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+    }
+  else
+    {
+      conn->is_http2 = 0;
+      conn->state = CONN_STATE_READING_REQUEST;
+      SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+    }
+
+  return 0;
+}
+
+/**
  * server_process_tls_handshake - Process TLS handshake for connection
  * @server: HTTP server
  * @conn: Connection in TLS handshake state
@@ -1274,31 +1319,7 @@ server_process_tls_handshake (SocketHTTPServer_T server,
   if (hs == TLS_HANDSHAKE_COMPLETE)
     {
       conn->tls_handshake_done = 1;
-
-      /* Decide protocol by ALPN. If not negotiated, fall back to HTTP/1.1. */
-      const char *alpn = SocketTLS_get_alpn_selected (conn->socket);
-      if (alpn != NULL && strcmp (alpn, "h2") == 0
-          && server->config.max_version >= HTTP_VERSION_2)
-        {
-          /* Enable HTTP/2 - use early return to reduce nesting. */
-          if (server_http2_enable (server, conn) < 0)
-            {
-              conn->state = CONN_STATE_CLOSED;
-              return -1;
-            }
-          conn->is_http2 = 1;
-          conn->state = CONN_STATE_HTTP2;
-          SocketPoll_mod (
-              server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
-        }
-      else
-        {
-          conn->is_http2 = 0;
-          conn->state = CONN_STATE_READING_REQUEST;
-          SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
-        }
-
-      return 0;
+      return select_protocol_after_handshake (server, conn);
     }
 
   /* Continue handshake: narrow poll interest to avoid busy loops. */
