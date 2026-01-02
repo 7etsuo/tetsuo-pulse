@@ -155,15 +155,7 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
   /* Free any connections that were closed but deferred deletion */
   connection_free_pending (s);
 
-  /* Free rate limit entries */
-  RateLimitEntry *e = s->rate_limiters;
-  while (e != NULL)
-    {
-      RateLimitEntry *next = e->next;
-      free (e->path_prefix);
-      free (e);
-      e = next;
-    }
+  /* Rate limit entries are arena-allocated - no manual cleanup needed */
 
   /* Free static route entries */
   StaticRoute *sr = s->static_routes;
@@ -372,16 +364,18 @@ SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
   /* Create new entry */
   if (limiter != NULL)
     {
-      RateLimitEntry *entry = malloc (sizeof (*entry));
+      RateLimitEntry *entry
+          = Arena_alloc (server->arena, sizeof (*entry), __FILE__, __LINE__);
       if (entry == NULL)
         return;
 
-      entry->path_prefix = strdup (path_prefix);
+      size_t prefix_len = strlen (path_prefix) + 1;
+      entry->path_prefix
+          = Arena_alloc (server->arena, prefix_len, __FILE__, __LINE__);
       if (entry->path_prefix == NULL)
-        {
-          free (entry);
-          return;
-        }
+        return;
+
+      memcpy (entry->path_prefix, path_prefix, prefix_len);
 
       entry->limiter = limiter;
       entry->next = server->rate_limiters;
