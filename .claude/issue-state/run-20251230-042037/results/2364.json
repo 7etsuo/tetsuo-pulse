@@ -1,5 +1,0 @@
-{
-  "issue": 2364,
-  "status": "already_resolved",
-  "resolution": "Feature already implemented in src/tls/SocketTLS.c at line 2287. The function SocketTLS_get_ocsp_response_status() already calls the helper function ocsp_check_cert_status(basic), which was the requested refactoring. This was implemented in commit c9dfcc59927e3f60b1c0fd6038db44e6c0aa097c on 2025-12-29, which refactored the function from 137 lines to 48 lines by extracting three helper functions: ocsp_parse_response(), ocsp_verify_signature(), and ocsp_check_cert_status(). The issue description itself mentions that the helper exists at line 2079 and should be used - this is now the case on the main branch."
-}

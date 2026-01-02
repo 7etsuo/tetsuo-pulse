@@ -1,8 +1,0 @@
-{
-  "number": 2215,
-  "title": "security: use strnlen() instead of strlen() on password in auth logging",
-  "body": "## Summary\n\nIn `SocketHTTPClient-auth.c` line 294, `strlen(password)` is called on an untrusted password parameter within a warning log message. This creates a potential denial-of-service vector if an adversary provides an extremely long password string.\n\n## Location\n\n**File:** `/home/tetsuo/git/tetsuo-socket/src/http/SocketHTTPClient-auth.c`  \n**Line:** 294  \n**Function:** `httpclient_auth_basic_header`\n\n## Current Code\n\n```c\nSOCKET_LOG_WARN_MSG (\n    \"Basic auth credentials too long: username='%.*s' password_len=%zu\",\n    (int)strnlen (username, 32), username, strlen (password));\n```\n\n## Issue\n\nThe code uses `strnlen()` for username (good) but `strlen()` for password. An attacker could provide a multi-GB password string to cause the application to hang while computing the length.\n\n## Recommendation\n\nReplace `strlen(password)` with `strnlen(password, 1024)` or similar reasonable limit:\n\n```c\nSOCKET_LOG_WARN_MSG (\n    \"Basic auth credentials too long: username='%.*s' password_len=%zu\",\n    (int)strnlen (username, 32), username, strnlen (password, 1024));\n```\n\n## Severity\n\n**MEDIUM** - DoS vector through untrusted input processing\n\n## Pattern ID\n\n`STRLEN_UNTRUSTED_INPUT`",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

@@ -1,8 +1,0 @@
-{
-  "number": 1707,
-  "title": "refactor(hpack-huffman): inline single-use refill_bit_buffer",
-  "body": "## Issue\n`refill_bit_buffer` is a static function called exactly once, making it a candidate for inlining.\n\n**File:** `src/http/SocketHPACK-huffman.c`  \n**Lines:** 549-557 (9 lines)  \n**Called at:** Line 657 (in SocketHPACK_huffman_decode)  \n**Severity:** HIGH  \n**Pattern:** SINGLE_USE_INLINE  \n**Category:** Readability Refactor\n\n## Current Code\n```c\nstatic void\nrefill_bit_buffer (uint64_t *bits, int *bits_avail, const unsigned char *input,\n                   size_t *in_pos, size_t input_len)\n{\n  while (*bits_avail < HUFFMAN_REFILL_THRESHOLD && *in_pos < input_len)\n    {\n      *bits = (*bits << HUFFMAN_BITS_PER_BYTE) | input[(*in_pos)++];\n      *bits_avail += HUFFMAN_BITS_PER_BYTE;\n    }\n}\n```\n\n**Single call site (line 657):**\n```c\nrefill_bit_buffer (&bits, &bits_avail, input, &in_pos, input_len);\n```\n\n## Recommendation\nInline the function body at line 657 in `SocketHPACK_huffman_decode`:\n\n```c\n// Refill bit buffer when running low\nwhile (bits_avail < HUFFMAN_REFILL_THRESHOLD && in_pos < input_len)\n  {\n    bits = (bits << HUFFMAN_BITS_PER_BYTE) | input[in_pos++];\n    bits_avail += HUFFMAN_BITS_PER_BYTE;\n  }\n```\n\n## Impact\n- Reduces indirection (one fewer function call)\n- Simplifies the decode loop\n- Very small function body (9 lines) is trivial to inline\n- No loss of clarity - simple bit buffer refill pattern",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

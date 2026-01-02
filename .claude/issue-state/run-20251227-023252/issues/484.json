@@ -1,8 +1,0 @@
-{
-  "number": 484,
-  "title": "fix(websocket): validate strtol endptr in ws_parse_window_bits",
-  "body": "## Problem\nIn `ws_parse_window_bits()`, the `strtol()` endptr is not validated after parsing. This means values like `\"server_max_window_bits=9garbage\"` would be accepted as valid window bits value of 9.\n\n## Location\n- File: src/socket/SocketWS-handshake.c\n- Line: 467-472\n\n## Current Code\n```c\n{\n  char *endptr;\n  long v = strtol (eq + 1, &endptr, 10);\n  value\n      = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;\n}\n```\n\n## Suggested Fix\nValidate that endptr advanced past the digits and points to a valid separator:\n```c\n{\n  char *endptr;\n  long v = strtol (eq + 1, &endptr, 10);\n  /* Validate endptr: must have consumed digits and hit separator or end */\n  if (endptr == eq + 1 || (*endptr != '\\0' && *endptr != ';' && *endptr != ',' && *endptr != ' '))\n    return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;\n  value\n      = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;\n}\n```\n\n## Category\nSecurity - Low\n\n## Notes\n- The existing range check (8-15) catches most invalid values\n- The impact is limited since this only affects permessage-deflate extension parsing\n- At worst, malformed extension values could cause unexpected compression window sizes\n- Per RFC 7692, valid window bits values are 8-15",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

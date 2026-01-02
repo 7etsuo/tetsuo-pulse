@@ -1,8 +1,0 @@
-{
-  "number": 1734,
-  "title": "refactor(http-server-connections): inline single-use connection_set_client_addr function",
-  "body": "## Summary\n\nThe connection_set_client_addr function is called only once (line 670) and is 8 lines long.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_set_client_addr\nLines: 616-625\nCalled at: connection_init_resources (line 670)\n\n## Pattern\nSINGLE_USE_INLINE (HIGH severity)",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}

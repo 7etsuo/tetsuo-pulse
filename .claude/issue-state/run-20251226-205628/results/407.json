@@ -1,9 +1,0 @@
-{
-  "issue_number": 407,
-  "status": "failed",
-  "error": "coordinator_configuration_error",
-  "message": "Issue Implementation Coordinator does not have access to Task tool required to spawn implementation agents. The coordinator was spawned but cannot create sub-agents to implement issues.",
-  "pr_number": null,
-  "branch": null,
-  "commits": []
-}

@@ -1,8 +1,0 @@
-{
-  "number": 1740,
-  "title": "refactor(http-server-connections): review single-use connection_add_to_server function",
-  "body": "## Summary\n\nThe connection_add_to_server function is called only once (line 759) and is 27 lines long.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_add_to_server\nLines: 695-723\nCalled at: connection_new (line 759)\n\n## Pattern\nSINGLE_USE_REVIEW (MEDIUM severity)\n\n## Recommendation\nReview whether this function provides value as a separate unit or should be inlined into connection_new.",
-  "labels": [],
-  "state": "OPEN",
-  "dependencies": []
-}
