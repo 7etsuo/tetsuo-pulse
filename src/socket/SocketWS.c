@@ -537,66 +537,80 @@ ws_flush_send_buffer (SocketWS_T ws)
 }
 
 static ssize_t
-ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
+ws_recv_transport (SocketWS_T ws, void *ptr, size_t space)
+{
+  ssize_t received = SocketWS_Transport_recv (ws->transport, ptr, space);
+
+  /* Handle would-block case */
+  if (received < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    return 0; /* Would block - not an error */
+
+  /* Handle other errors */
+  if (received < 0)
+    {
+      ws_set_error (ws, WS_ERROR, "Transport recv failed");
+      return -1;
+    }
+
+  /* Handle EOF */
+  if (received == 0)
+    {
+      ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+      ws->state = WS_STATE_CLOSED;
+      ws->close_code = WS_CLOSE_ABNORMAL;
+    }
+
+  return received;
+}
+
+static ssize_t
+ws_recv_socket (SocketWS_T ws, void *ptr, size_t space)
 {
   volatile ssize_t received = 0;
   volatile int failed = 0;
 
-  /* Use transport abstraction if available */
+  TRY
+  {
+    received = Socket_recv (ws->socket, ptr, space);
+  }
+  EXCEPT (Socket_Closed)
+  {
+    /* EOF / connection closed */
+    /* Normal/expected close path: don't spam error logs. */
+    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+    ws->state = WS_STATE_CLOSED;
+    ws->close_code = WS_CLOSE_ABNORMAL;
+    received = 0;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ws_set_error (ws, WS_ERROR, "Socket recv failed");
+    failed = 1;
+  }
+  END_TRY;
+
+  if (failed)
+    return -1;
+
+  return received;
+}
+
+static ssize_t
+ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
+{
+  ssize_t received;
+
+  /* Dispatch to appropriate transport */
   if (ws->transport)
-    {
-      received = SocketWS_Transport_recv (ws->transport, ptr, space);
-      if (received < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-              /* Would block - not an error */
-              received = 0;
-            }
-          else
-            {
-              ws_set_error (ws, WS_ERROR, "Transport recv failed");
-              return -1;
-            }
-        }
-      else if (received == 0)
-        {
-          /* EOF */
-          ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-          ws->state = WS_STATE_CLOSED;
-          ws->close_code = WS_CLOSE_ABNORMAL;
-        }
-    }
+    received = ws_recv_transport (ws, ptr, space);
   else
-    {
-      /* Fallback to direct socket I/O for backward compatibility */
-      TRY
-      {
-        received = Socket_recv (ws->socket, ptr, space);
-      }
-      EXCEPT (Socket_Closed)
-      {
-        /* EOF / connection closed */
-        /* Normal/expected close path: don't spam error logs. */
-        ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-        ws->state = WS_STATE_CLOSED;
-        ws->close_code = WS_CLOSE_ABNORMAL;
-        received = 0;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        ws_set_error (ws, WS_ERROR, "Socket recv failed");
-        failed = 1;
-      }
-      END_TRY;
+    received = ws_recv_socket (ws, ptr, space);
 
-      if (failed)
-        return -1;
-    }
-
+  /* Early return on would-block or error */
   if (received <= 0)
-    return 0; /* Would block */
+    return received;
 
+  /* Success path: update buffer state */
   SocketBuf_written (ws->recv_buf, (size_t)received);
   return received;
 }
