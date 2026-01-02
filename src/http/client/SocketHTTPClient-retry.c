@@ -15,6 +15,8 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHTTPClient-private.h"
 
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
+
 #define CLEAR_RESPONSE(r)                          \
   do                                               \
     {                                              \
@@ -140,4 +142,83 @@ httpclient_clear_response_for_retry (SocketHTTPClient_Response *response)
   CLEAR_RESPONSE (response);
 }
 
-/* Functions exported via SocketHTTPClient-private.h */
+/* ============================================================================
+ * REDIRECT HANDLING
+ * ============================================================================
+ */
+
+int
+httpclient_is_redirect_status (int status_code)
+{
+  return (status_code == 301 || status_code == 302 || status_code == 303
+          || status_code == 307 || status_code == 308);
+}
+
+int
+httpclient_should_follow_redirect (SocketHTTPClient_T client,
+                                   SocketHTTPClient_Request_T req,
+                                   int status_code)
+{
+  if (client->config.follow_redirects <= 0)
+    return 0;
+
+  if (!httpclient_is_redirect_status (status_code))
+    return 0;
+
+  /* Check if POST should follow redirect */
+  if (req->method == HTTP_METHOD_POST && !client->config.redirect_on_post)
+    {
+      /* 303 See Other always changes to GET */
+      if (status_code != 303)
+        return 0;
+    }
+
+  return 1;
+}
+
+int
+httpclient_check_request_limits (SocketHTTPClient_T client,
+                                 int redirect_count,
+                                 int auth_retry_count)
+{
+  if (redirect_count > client->config.follow_redirects)
+    {
+      client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
+      SOCKET_RAISE_MSG (SocketHTTPClient,
+                        SocketHTTPClient_TooManyRedirects,
+                        "Too many redirects (%d)",
+                        redirect_count);
+    }
+
+  /* Auth retry limit reached - return current response as-is */
+  if (auth_retry_count > HTTPCLIENT_MAX_AUTH_RETRIES)
+    return 1;
+
+  return 0;
+}
+
+void
+httpclient_release_connection (SocketHTTPClient_T client,
+                               HTTPPoolEntry *conn,
+                               int success)
+{
+  if (client->pool != NULL)
+    {
+      if (success && !conn->closed)
+        {
+          httpclient_pool_release (client->pool, conn);
+        }
+      else
+        {
+          httpclient_pool_close (client->pool, conn);
+        }
+    }
+  else
+    {
+      /* No pool - close the socket directly */
+      if (conn->proto.h1.socket != NULL)
+        {
+          Socket_free (&conn->proto.h1.socket);
+        }
+    }
+}

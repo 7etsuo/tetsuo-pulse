@@ -42,6 +42,22 @@ typedef struct SocketAsync_T *SocketAsync_T;
   SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
 
 /**
+ * @brief Response body accumulator state.
+ *
+ * Used by both HTTP/1.1 and HTTP/2 response parsing for collecting
+ * body data with size limits and benchmark/discard mode support.
+ */
+typedef struct HTTPBodyAccumulator
+{
+  char *body_buf;
+  size_t total_body;
+  size_t body_capacity;
+  size_t max_size;  /**< Maximum allowed size (0 = unlimited) */
+  int discard_body; /**< Benchmark mode: count bytes, skip memcpy */
+  Arena_T arena;
+} HTTPBodyAccumulator;
+
+/**
  * @brief HTTP connection pool entry for host:port reuse.
  * @ingroup http
  */
@@ -426,5 +442,208 @@ extern int httpclient_async_init (SocketHTTPClient_T client);
  * @param client HTTP client to cleanup
  */
 extern void httpclient_async_cleanup (SocketHTTPClient_T client);
+
+/* ============================================================================
+ * INLINE HELPER FUNCTIONS
+ * ============================================================================
+ */
+
+/**
+ * @brief Get effective auth (request-level or client default).
+ */
+static inline SocketHTTPClient_Auth *
+httpclient_get_effective_auth (SocketHTTPClient_T client,
+                               SocketHTTPClient_Request_T req)
+{
+  return req->auth != NULL ? req->auth : client->default_auth;
+}
+
+/**
+ * @brief Get path from URI, defaulting to "/" if NULL.
+ */
+static inline const char *
+httpclient_get_path_or_root (const SocketHTTP_URI *uri)
+{
+  return uri->path != NULL ? uri->path : "/";
+}
+
+/**
+ * @brief Validate hostname for control characters.
+ * SECURITY: Prevents CRLF injection in Host header.
+ * @return 1 if safe, 0 if contains control characters
+ */
+static inline int
+hostname_safe (const char *host, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)host[i];
+      if (c == '\r' || c == '\n' || c == '\0' || c < 0x20)
+        return 0;
+    }
+  return 1;
+}
+
+/* ============================================================================
+ * I/O WRAPPER FUNCTIONS (SocketHTTPClient-io.c)
+ * ============================================================================
+ */
+
+extern ssize_t httpclient_io_safe_send (SocketHTTPClient_T client,
+                                        HTTPPoolEntry *conn,
+                                        const void *data,
+                                        size_t len,
+                                        const char *op_desc);
+
+extern int httpclient_io_safe_recv (SocketHTTPClient_T client,
+                                    HTTPPoolEntry *conn,
+                                    char *buf,
+                                    size_t size,
+                                    ssize_t *n);
+
+/* ============================================================================
+ * BODY HANDLING FUNCTIONS (SocketHTTPClient-body.c)
+ * ============================================================================
+ */
+
+extern int httpclient_body_check_size_limit (HTTPBodyAccumulator *acc,
+                                             size_t len,
+                                             size_t *potential_size);
+
+extern size_t httpclient_body_calculate_capacity (HTTPBodyAccumulator *acc,
+                                                  size_t needed_size);
+
+extern int
+httpclient_body_grow_buffer (HTTPBodyAccumulator *acc, size_t needed_size);
+
+extern int httpclient_body_accumulate_chunk (HTTPBodyAccumulator *acc,
+                                             const char *data,
+                                             size_t len);
+
+extern void httpclient_body_fill_response (SocketHTTPClient_Response *response,
+                                           const SocketHTTP_Response *parsed,
+                                           HTTPBodyAccumulator *acc,
+                                           Arena_T resp_arena);
+
+/* ============================================================================
+ * HEADER BUILDING FUNCTIONS (SocketHTTPClient-headers.c)
+ * ============================================================================
+ */
+
+extern void httpclient_headers_add_host (SocketHTTPClient_Request_T req);
+
+extern void
+httpclient_headers_add_accept_encoding (SocketHTTPClient_T client,
+                                        SocketHTTPClient_Request_T req);
+
+extern void httpclient_headers_add_standard (SocketHTTPClient_T client,
+                                             SocketHTTPClient_Request_T req);
+
+extern void httpclient_headers_add_cookie (SocketHTTPClient_T client,
+                                           SocketHTTPClient_Request_T req);
+
+extern void
+httpclient_headers_add_initial_auth (SocketHTTPClient_T client,
+                                     SocketHTTPClient_Request_T req);
+
+extern void
+httpclient_headers_add_content_length (SocketHTTPClient_Request_T req);
+
+extern void httpclient_headers_prepare_request (SocketHTTPClient_T client,
+                                                SocketHTTPClient_Request_T req);
+
+extern void
+httpclient_store_response_cookies (SocketHTTPClient_T client,
+                                   SocketHTTPClient_Request_T req,
+                                   SocketHTTPClient_Response *response);
+
+/* ============================================================================
+ * HTTP/1.1 PROTOCOL FUNCTIONS (SocketHTTPClient-http1.c)
+ * ============================================================================
+ */
+
+extern void httpclient_http1_build_request (SocketHTTPClient_Request_T req,
+                                            SocketHTTP_Request *http_req);
+
+extern int httpclient_http1_send_headers (SocketHTTPClient_T client,
+                                          HTTPPoolEntry *conn,
+                                          const SocketHTTP_Request *http_req);
+
+extern int httpclient_http1_send_body (SocketHTTPClient_T client,
+                                       HTTPPoolEntry *conn,
+                                       const void *body,
+                                       size_t body_len);
+
+extern int
+httpclient_http1_receive_response (SocketHTTPClient_T client,
+                                   HTTPPoolEntry *conn,
+                                   SocketHTTPClient_Response *response,
+                                   size_t max_response_size,
+                                   int discard_body);
+
+extern int httpclient_http1_execute (HTTPPoolEntry *conn,
+                                     const SocketHTTPClient_Request_T req,
+                                     SocketHTTPClient_Response *response,
+                                     size_t max_response_size,
+                                     int discard_body);
+
+/* ============================================================================
+ * HTTP/2 PROTOCOL FUNCTIONS (SocketHTTPClient-http2.c)
+ * ============================================================================
+ */
+
+extern void
+httpclient_http2_build_request (const SocketHTTPClient_Request_T req,
+                                SocketHTTP_Request *http_req);
+
+extern int
+httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
+                                         size_t header_count,
+                                         SocketHTTPClient_Response *response,
+                                         Arena_T arena);
+
+extern int httpclient_http2_send_request (SocketHTTP2_Stream_T stream,
+                                          SocketHTTP2_Conn_T h2conn,
+                                          const SocketHTTP_Request *http_req,
+                                          const void *body,
+                                          size_t body_len);
+
+extern int httpclient_http2_recv_headers (SocketHTTP2_Stream_T stream,
+                                          SocketHTTP2_Conn_T h2conn,
+                                          SocketHTTPClient_Response *response,
+                                          int *end_stream);
+
+extern int httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
+                                       SocketHTTP2_Conn_T h2conn,
+                                       Arena_T arena,
+                                       size_t max_response_size,
+                                       unsigned char **body_out,
+                                       size_t *body_len_out,
+                                       int discard_body);
+
+extern int httpclient_http2_execute (HTTPPoolEntry *conn,
+                                     const SocketHTTPClient_Request_T req,
+                                     SocketHTTPClient_Response *response,
+                                     size_t max_response_size,
+                                     int discard_body);
+
+/* ============================================================================
+ * REDIRECT/AUTH RETRY FUNCTIONS (SocketHTTPClient-retry.c)
+ * ============================================================================
+ */
+
+extern int httpclient_is_redirect_status (int status_code);
+
+extern int httpclient_should_follow_redirect (SocketHTTPClient_T client,
+                                              SocketHTTPClient_Request_T req,
+                                              int status_code);
+
+extern int httpclient_check_request_limits (SocketHTTPClient_T client,
+                                            int redirect_count,
+                                            int auth_retry_count);
+
+extern void httpclient_release_connection (SocketHTTPClient_T client,
+                                           HTTPPoolEntry *conn,
+                                           int success);
 
 #endif /* SOCKETHTTPCLIENT_PRIVATE_INCLUDED */

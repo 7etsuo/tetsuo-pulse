@@ -35,6 +35,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/clang-format-check.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/volatile-check.sh",
             "timeout": 10
           },
