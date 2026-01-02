@@ -405,7 +405,6 @@ SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
                                  void *userdata)
 {
   MiddlewareEntry *entry;
-  MiddlewareEntry *tail;
 
   assert (server != NULL);
   assert (middleware != NULL);
@@ -426,16 +425,13 @@ SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
   if (server->middleware_chain == NULL)
     {
       server->middleware_chain = entry;
+      server->middleware_tail = entry;
     }
   else
     {
-      /* Find tail of chain */
-      tail = server->middleware_chain;
-      while (tail->next != NULL)
-        {
-          tail = tail->next;
-        }
-      tail->next = entry;
+      /* O(1) append using cached tail pointer */
+      server->middleware_tail->next = entry;
+      server->middleware_tail = entry;
     }
 
   SOCKET_LOG_DEBUG_MSG ("Added middleware to chain");
