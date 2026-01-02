@@ -1034,6 +1034,27 @@ SocketReconnect_free (T *conn)
   *conn = NULL;
 }
 
+static void
+handle_disconnected_state (T conn)
+{
+  transition_state (conn, RECONNECT_CONNECTING);
+
+  /* Guard: connection attempt failed */
+  if (!start_connect (conn))
+    {
+      handle_connect_failure (conn);
+      return;
+    }
+
+  /* Connection started - check if it completed immediately (rare, usually
+   * localhost) */
+  if (!conn->connect_in_progress)
+    {
+      handle_connect_success (conn);
+    }
+  /* Otherwise, connect_in_progress == 1, wait for completion in tick() */
+}
+
 void
 SocketReconnect_connect (T conn)
 {
@@ -1052,20 +1073,7 @@ SocketReconnect_connect (T conn)
       return;
 
     case RECONNECT_DISCONNECTED:
-      /* Start connection */
-      transition_state (conn, RECONNECT_CONNECTING);
-      if (start_connect (conn))
-        {
-          if (!conn->connect_in_progress)
-            {
-              /* Immediate connect (rare) */
-              handle_connect_success (conn);
-            }
-        }
-      else
-        {
-          handle_connect_failure (conn);
-        }
+      handle_disconnected_state (conn);
       break;
     }
 }
