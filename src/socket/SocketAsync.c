@@ -401,27 +401,27 @@ static int
 submit_io_uring_op (T async, struct AsyncRequest *req)
 {
   struct io_uring_sqe *sqe;
-  int fd = Socket_fd (req->socket);
+  int fd;
   int submitted;
 
   assert (async && async->ring && req);
 
+  /* Obtain SQE, flush if needed */
   sqe = io_uring_get_sqe (async->ring);
-  if (!sqe)
+  if (!sqe && async->pending_sqe_count > 0)
     {
-      /* SQ full - try flushing first */
-      if (async->pending_sqe_count > 0)
-        {
-          flush_io_uring_unlocked (async);
-          sqe = io_uring_get_sqe (async->ring);
-        }
-      if (!sqe)
-        {
-          errno = EAGAIN;
-          return -1;
-        }
+      flush_io_uring_unlocked (async);
+      sqe = io_uring_get_sqe (async->ring);
     }
 
+  if (!sqe)
+    {
+      errno = EAGAIN;
+      return -1;
+    }
+
+  /* Prepare operation */
+  fd = Socket_fd (req->socket);
   if (req->type == REQ_SEND)
     io_uring_prep_send (sqe, fd, req->send_buf, req->len, 0);
   else
@@ -432,7 +432,7 @@ submit_io_uring_op (T async, struct AsyncRequest *req)
   if (req->flags & ASYNC_FLAG_URGENT)
     sqe->flags |= IOSQE_IO_LINK;
 
-  /* Check for deferred submission (NOSYNC flag) */
+  /* Handle deferred submission (NOSYNC flag) */
   if (req->flags & ASYNC_FLAG_NOSYNC)
     {
       async->pending_sqe_count++;
@@ -444,6 +444,7 @@ submit_io_uring_op (T async, struct AsyncRequest *req)
           if (submitted < 0)
             return -1;
         }
+
       return 0;
     }
 
