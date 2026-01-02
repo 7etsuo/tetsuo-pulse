@@ -1168,45 +1168,46 @@ SocketReconnect_process (T conn)
   assert (conn);
 
   /* LCOV_EXCL_START - requires non-routable address for EINPROGRESS */
-  if (conn->state == RECONNECT_CONNECTING)
+
+  /* Guard: Only process if connecting */
+  if (conn->state != RECONNECT_CONNECTING)
+    return;
+
+  /* Handle TCP connect completion */
+  if (conn->connect_in_progress)
     {
-      /* Check if TCP connect is still in progress */
-      if (conn->connect_in_progress)
-        {
-          int result = check_connect_completion (conn);
-          if (result > 0)
-            {
-              handle_connect_success (conn);
-            }
-          else if (result < 0)
-            {
-              handle_connect_failure (conn);
-            }
-          /* result == 0: still connecting */
-          return;
-        }
+      int result = check_connect_completion (conn);
+      if (result > 0)
+        handle_connect_success (conn);
+      else if (result < 0)
+        handle_connect_failure (conn);
+      /* result == 0: still connecting */
+      return;
+    }
 
 #if SOCKET_HAS_TLS
-      /* Check if TLS handshake is in progress */
-      if (conn->tls_ctx && conn->tls_handshake_started
-          && conn->tls_handshake_state != TLS_HANDSHAKE_COMPLETE
-          && conn->tls_handshake_state != TLS_HANDSHAKE_ERROR)
-        {
-          int hs_result = perform_tls_handshake_step (conn);
-          if (hs_result == 1)
-            {
-              /* TLS handshake complete */
-              complete_tls_connection (conn);
-            }
-          else if (hs_result < 0)
-            {
-              /* TLS handshake failed */
-              handle_connect_failure (conn);
-            }
-          /* hs_result == 0: handshake in progress */
-        }
+  /* Guard: Skip TLS processing if not configured */
+  if (!conn->tls_ctx)
+    return;
+
+  /* Guard: Skip if handshake not started */
+  if (!conn->tls_handshake_started)
+    return;
+
+  /* Guard: Skip if handshake already complete or errored */
+  if (conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE
+      || conn->tls_handshake_state == TLS_HANDSHAKE_ERROR)
+    return;
+
+  /* Handle TLS handshake step */
+  int hs_result = perform_tls_handshake_step (conn);
+  if (hs_result == 1)
+    complete_tls_connection (conn);
+  else if (hs_result < 0)
+    handle_connect_failure (conn);
+  /* hs_result == 0: handshake in progress */
 #endif /* SOCKET_HAS_TLS */
-    }
+
   /* LCOV_EXCL_STOP */
 }
 
