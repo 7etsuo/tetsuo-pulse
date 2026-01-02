@@ -225,31 +225,35 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
   off_t off = offset ? *offset : 0;
   int result
       = sendfile (file_fd, SocketBase_fd (socket->base), off, &len, NULL, 0);
-  if (result == 0)
+
+  /* Guard clause: early return on failure */
+  if (result != 0)
+    return -1;
+
+  /* Handle offset update if provided */
+  if (offset)
     {
-      if (offset)
+      /* Use safe addition to prevent off_t overflow (CWE-190) */
+      off_t new_offset = off;
+      if (safe_add_off_t (&new_offset, len) < 0)
         {
-          /* Use safe addition to prevent off_t overflow (CWE-190) */
-          off_t new_offset = off;
-          if (safe_add_off_t (&new_offset, len) < 0)
-            {
-              /* Overflow detected - return error */
-              errno = EOVERFLOW;
-              return -1;
-            }
-          *offset = new_offset;
-        }
-      /* Check for SSIZE_MAX overflow before cast (CWE-190).
-       * If len > SSIZE_MAX, casting to ssize_t would wrap to negative,
-       * causing caller to misinterpret success as error. */
-      if (len > SSIZE_MAX)
-        {
+          /* Overflow detected - return error */
           errno = EOVERFLOW;
           return -1;
         }
-      return (ssize_t)len;
+      *offset = new_offset;
     }
-  return -1;
+
+  /* Check for SSIZE_MAX overflow before cast (CWE-190).
+   * If len > SSIZE_MAX, casting to ssize_t would wrap to negative,
+   * causing caller to misinterpret success as error. */
+  if (len > SSIZE_MAX)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+
+  return (ssize_t)len;
 }
 #endif
 
