@@ -1734,13 +1734,77 @@ SocketAsync_get_notification_fd (const T async)
   return -1;
 }
 
+/**
+ * Initialize io_uring info structure to default values.
+ */
+static void
+init_io_uring_info (SocketAsync_IOUringInfo *io_info)
+{
+  io_info->major = 0;
+  io_info->minor = 0;
+  io_info->patch = 0;
+  io_info->supported = 0;
+  io_info->full_support = 0;
+  io_info->compiled = SOCKET_HAS_IO_URING;
+}
+
+/**
+ * Check kernel version and set support flags.
+ *
+ * Support levels:
+ * - 5.1+: Basic io_uring support
+ * - 5.6+: Full features (multi-shot, SQPOLL, registered buffers)
+ *
+ * Returns: 1 if kernel version parsing succeeded, 0 otherwise.
+ */
+static int
+check_kernel_support (SocketAsync_IOUringInfo *io_info)
+{
+  if (!parse_kernel_version (&io_info->major, &io_info->minor, &io_info->patch))
+    return 0;
+
+  if (kernel_version_at_least (io_info->major, io_info->minor, 5, 1))
+    io_info->supported = 1;
+
+  if (kernel_version_at_least (io_info->major, io_info->minor, 5, 6))
+    io_info->full_support = 1;
+
+  return 1;
+}
+
+/**
+ * Probe io_uring runtime availability by attempting to create a test ring.
+ * Updates support flags if ring creation fails.
+ */
+static void
+probe_io_uring_runtime (SocketAsync_IOUringInfo *io_info)
+{
+#if SOCKET_HAS_IO_URING
+  struct io_uring ring;
+
+  if (!io_info->supported)
+    return;
+
+  if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &ring, 0) == 0)
+    {
+      io_uring_queue_exit (&ring);
+    }
+  else
+    {
+      io_info->supported = 0;
+      io_info->full_support = 0;
+    }
+#else
+  (void)io_info;
+#endif
+}
+
 int
 SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
 {
   static int cached = -1;
   static SocketAsync_IOUringInfo cached_info;
 
-  /* Return cached result if available */
   if (cached >= 0)
     {
       if (info)
@@ -1748,15 +1812,8 @@ SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
       return cached;
     }
 
-  /* Initialize info structure */
-  cached_info.major = 0;
-  cached_info.minor = 0;
-  cached_info.patch = 0;
-  cached_info.supported = 0;
-  cached_info.full_support = 0;
-  cached_info.compiled = SOCKET_HAS_IO_URING;
+  init_io_uring_info (&cached_info);
 
-  /* Check compile-time support */
   if (!SOCKET_HAS_IO_URING)
     {
       cached = 0;
@@ -1765,9 +1822,7 @@ SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
       return 0;
     }
 
-  /* Parse kernel version */
-  if (!parse_kernel_version (
-          &cached_info.major, &cached_info.minor, &cached_info.patch))
+  if (!check_kernel_support (&cached_info))
     {
       cached = 0;
       if (info)
@@ -1775,33 +1830,7 @@ SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
       return 0;
     }
 
-  /* Check kernel version requirements:
-   * - 5.1+: Basic io_uring support
-   * - 5.6+: Full features (multi-shot, SQPOLL, registered buffers)
-   */
-  if (kernel_version_at_least (cached_info.major, cached_info.minor, 5, 1))
-    cached_info.supported = 1;
-
-  if (kernel_version_at_least (cached_info.major, cached_info.minor, 5, 6))
-    cached_info.full_support = 1;
-
-#if SOCKET_HAS_IO_URING
-  /* Additional runtime probe: try to create a small ring */
-  if (cached_info.supported)
-    {
-      struct io_uring ring;
-      if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &ring, 0) == 0)
-        {
-          io_uring_queue_exit (&ring);
-        }
-      else
-        {
-          /* Ring creation failed - io_uring not usable */
-          cached_info.supported = 0;
-          cached_info.full_support = 0;
-        }
-    }
-#endif
+  probe_io_uring_runtime (&cached_info);
 
   cached = cached_info.supported;
   if (info)
