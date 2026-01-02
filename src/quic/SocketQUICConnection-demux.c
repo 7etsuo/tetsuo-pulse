@@ -149,46 +149,26 @@ hash_addr_pair (const uint8_t *local_addr,
   return hash % bucket_count;
 }
 
-SocketQUICConnTable_T
-SocketQUICConnTable_new (Arena_T arena, size_t bucket_count)
+static SocketQUICConnTable_T
+alloc_table_struct (Arena_T arena)
 {
-  SocketQUICConnTable_T table;
-  int using_arena;
+  if (arena)
+    return Arena_calloc (
+        arena, 1, sizeof (struct SocketQUICConnTable), __FILE__, __LINE__);
+  return calloc (1, sizeof (struct SocketQUICConnTable));
+}
 
-  if (bucket_count == 0)
+static int
+alloc_bucket_arrays (SocketQUICConnTable_T table, size_t bucket_count)
+{
+  if (table->arena)
     {
-      bucket_count = QUIC_CONNTABLE_DEFAULT_SIZE;
-    }
-
-  using_arena = (arena != NULL);
-
-  /* Allocate table structure */
-  if (using_arena)
-    {
-      table = Arena_calloc (arena, 1, sizeof (*table), __FILE__, __LINE__);
-    }
-  else
-    {
-      table = calloc (1, sizeof (*table));
-    }
-  if (!table)
-    {
-      RAISE (SocketQUICConnTable_Failed);
-    }
-
-  table->arena = arena;
-  table->bucket_count = bucket_count;
-  table->addr_bucket_count = bucket_count;
-
-  /* Allocate hash table buckets */
-  if (using_arena)
-    {
-      table->buckets = Arena_calloc (arena,
+      table->buckets = Arena_calloc (table->arena,
                                      bucket_count,
                                      sizeof (SocketQUICConnection_T),
                                      __FILE__,
                                      __LINE__);
-      table->addr_buckets = Arena_calloc (arena,
+      table->addr_buckets = Arena_calloc (table->arena,
                                           bucket_count,
                                           sizeof (SocketQUICConnection_T),
                                           __FILE__,
@@ -200,35 +180,25 @@ SocketQUICConnTable_new (Arena_T arena, size_t bucket_count)
       table->addr_buckets
           = calloc (bucket_count, sizeof (SocketQUICConnection_T));
     }
+  return (table->buckets && table->addr_buckets);
+}
 
-  if (!table->buckets || !table->addr_buckets)
+static void
+cleanup_table_on_failure (SocketQUICConnTable_T table)
+{
+  if (!table->arena)
     {
-      if (!using_arena)
-        {
-          free (table->buckets);
-          free (table->addr_buckets);
-          free (table);
-        }
-      RAISE (SocketQUICConnTable_Failed);
+      free (table->buckets);
+      free (table->addr_buckets);
+      free (table);
     }
+}
 
-  /* Initialize mutex */
-  if (pthread_mutex_init (&table->mutex, NULL) != 0)
-    {
-      if (!using_arena)
-        {
-          free (table->buckets);
-          free (table->addr_buckets);
-          free (table);
-        }
-      RAISE (SocketQUICConnTable_Failed);
-    }
-  table->mutex_initialized = 1;
-
-  /* Initialize hash seed with secure random or fallback */
+static void
+init_hash_seed (SocketQUICConnTable_T table)
+{
   if (!SECURE_RANDOM (&table->hash_seed, sizeof (table->hash_seed)))
     {
-      /* Enhanced fallback combines multiple entropy sources */
       struct timespec ts;
       clock_gettime (CLOCK_MONOTONIC, &ts);
       table->hash_seed
@@ -236,6 +206,36 @@ SocketQUICConnTable_new (Arena_T arena, size_t bucket_count)
                        ^ ((uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec)
                        ^ ((uint64_t)getpid () << 32));
     }
+}
+
+SocketQUICConnTable_T
+SocketQUICConnTable_new (Arena_T arena, size_t bucket_count)
+{
+  if (bucket_count == 0)
+    bucket_count = QUIC_CONNTABLE_DEFAULT_SIZE;
+
+  SocketQUICConnTable_T table = alloc_table_struct (arena);
+  if (!table)
+    RAISE (SocketQUICConnTable_Failed);
+
+  table->arena = arena;
+  table->bucket_count = bucket_count;
+  table->addr_bucket_count = bucket_count;
+
+  if (!alloc_bucket_arrays (table, bucket_count))
+    {
+      cleanup_table_on_failure (table);
+      RAISE (SocketQUICConnTable_Failed);
+    }
+
+  if (pthread_mutex_init (&table->mutex, NULL) != 0)
+    {
+      cleanup_table_on_failure (table);
+      RAISE (SocketQUICConnTable_Failed);
+    }
+  table->mutex_initialized = 1;
+
+  init_hash_seed (table);
 
   return table;
 }
