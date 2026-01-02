@@ -428,22 +428,20 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
 
         ssize_t sent
             = Socket_sendfile (socket, file_fd, current_offset_ptr, remaining);
+
+        /* Guard clause: handle would-block early */
         if (sent == 0)
-          {
-            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-            break;
-          }
+          break;
+
         total_sent += (size_t)sent;
-        if (offset)
-          {
-            /* Use safe addition to prevent off_t overflow (CWE-190) */
-            if (safe_add_off_t (&current_offset, (off_t)sent) < 0)
-              {
-                /* Overflow detected - stop processing and return partial
-                 * progress */
-                break;
-              }
-          }
+
+        /* Guard clause: skip offset update if not tracking offset */
+        if (!offset)
+          continue;
+
+        /* Guard clause: handle overflow and stop processing */
+        if (safe_add_off_t (&current_offset, (off_t)sent) < 0)
+          break;
       }
   }
   EXCEPT (Socket_Closed)
