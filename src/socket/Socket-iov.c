@@ -296,22 +296,25 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
         size_t to_read = (count - total_sent < sizeof (buffer))
                              ? (count - total_sent)
                              : sizeof (buffer);
+
         ssize_t read_bytes = read (file_fd, buffer, to_read);
-        if (read_bytes <= 0)
+
+        /* Handle read errors with guard clauses */
+        if (read_bytes == 0)
+          break; /* EOF */
+
+        if (read_bytes < 0)
           {
-            if (read_bytes == 0)
-              break; /* EOF */
             if (errno == EINTR)
-              continue;
-            return (size_t)-1;
+              continue;        /* Interrupted - retry */
+            return (size_t)-1; /* Actual error */
           }
 
+        /* Normal path: data was read successfully */
         ssize_t sent_bytes = Socket_send (socket, buffer, (size_t)read_bytes);
         if (sent_bytes == 0)
-          {
-            /* Would block - return partial progress */
-            break;
-          }
+          break; /* Would block - return partial progress */
+
         total_sent += (size_t)sent_bytes;
 
         if ((size_t)read_bytes < to_read)
