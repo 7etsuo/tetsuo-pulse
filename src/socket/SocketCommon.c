@@ -1972,6 +1972,50 @@ SocketCommon_find_active_iov (struct iovec *iov, int iovcnt, int *active_iovcnt)
   return NULL;
 }
 
+static void
+sync_single_iov_entry (struct iovec *orig, const struct iovec *copy)
+{
+  const char *copy_base;
+  const char *orig_base;
+  size_t copied;
+
+  /* No change - skip */
+  if (copy->iov_base == orig->iov_base)
+    return;
+
+  copy_base = (const char *)copy->iov_base;
+  orig_base = (const char *)orig->iov_base;
+
+  /* Original already consumed - skip */
+  if (orig_base == NULL)
+    return;
+
+  /* Copy consumed entire vector - mark original as consumed */
+  if (copy_base == NULL)
+    {
+      orig->iov_len = 0;
+      orig->iov_base = NULL;
+      return;
+    }
+
+  /* Guard against unexpected state */
+  if (copy_base < orig_base)
+    return; /* Unexpected - copy base before original */
+
+  /* Normal case: calculate and update consumed bytes */
+  copied = (size_t)(copy_base - orig_base);
+  if (copied >= orig->iov_len)
+    {
+      orig->iov_len = 0;
+      orig->iov_base = NULL;
+    }
+  else
+    {
+      orig->iov_len -= copied;
+      orig->iov_base = (char *)orig_base + copied;
+    }
+}
+
 void
 SocketCommon_sync_iov_progress (struct iovec *original,
                                 const struct iovec *copy,
@@ -1984,50 +2028,7 @@ SocketCommon_sync_iov_progress (struct iovec *original,
   assert (iovcnt > 0);
 
   for (i = 0; i < iovcnt; i++)
-    {
-      /* If the copy base differed from the original base, the copy was
-       * advanced. Update the original iovec to reflect bytes consumed. Be
-       * defensive: both bases may be NULL (fully consumed) or one may be NULL.
-       * Only do pointer arithmetic when both are non-NULL. */
-      if (copy[i].iov_base != original[i].iov_base)
-        {
-          const char *copy_base = (const char *)copy[i].iov_base;
-          const char *orig_base = (const char *)original[i].iov_base;
-
-          /* If original is already NULL we assume it was already fully
-           * consumed earlier; nothing to do. */
-          if (orig_base == NULL)
-            continue;
-
-          /* If the copy base is NULL, the copy was advanced past the end of
-           * this vector so the original is now fully consumed. */
-          if (copy_base == NULL)
-            {
-              original[i].iov_len = 0;
-              original[i].iov_base = NULL;
-              continue;
-            }
-
-          /* Normal case: both bases non-NULL. Ensure subtraction yields a
-           * non-negative size and clamp against original length. */
-          if (copy_base >= orig_base)
-            {
-              size_t copied = (size_t)(copy_base - orig_base);
-              if (copied >= original[i].iov_len)
-                {
-                  original[i].iov_len = 0;
-                  original[i].iov_base = NULL;
-                }
-              else
-                {
-                  original[i].iov_len -= copied;
-                  original[i].iov_base = (char *)orig_base + copied;
-                }
-            }
-          /* else: Unexpected - copy base is before original base. Ignore to
-           * avoid UB. */
-        }
-    }
+    sync_single_iov_entry (&original[i], &copy[i]);
 }
 
 struct iovec *
