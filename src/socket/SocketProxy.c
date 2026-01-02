@@ -1287,17 +1287,136 @@ proxy_check_timeout (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
+/**
+ * proxy_validate_he_context - Validate HappyEyeballs context exists
+ */
 static int
-proxy_process_connecting (struct SocketProxy_Conn_T *conn)
+proxy_validate_he_context (struct SocketProxy_Conn_T *conn)
 {
-  SocketHE_State he_state;
-
   if (conn->he == NULL)
     {
       socketproxy_set_error (
           conn, PROXY_ERROR_CONNECT, "No HappyEyeballs context");
       return -1;
     }
+  return 0;
+}
+
+/**
+ * proxy_extract_connected_socket - Extract socket from HappyEyeballs
+ *
+ * Retrieves the connected socket, frees the HE context,
+ * and sets the socket to non-blocking mode.
+ */
+static int
+proxy_extract_connected_socket (struct SocketProxy_Conn_T *conn)
+{
+  conn->socket = SocketHappyEyeballs_result (conn->he);
+  SocketHappyEyeballs_free (&conn->he);
+
+  if (conn->socket == NULL)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_CONNECT, "Failed to get socket from HappyEyeballs");
+      return -1;
+    }
+
+  Socket_setnonblocking (conn->socket);
+  return 0;
+}
+
+#if SOCKET_HAS_TLS
+/**
+ * proxy_create_tls_context_for_https - Create TLS context for HTTPS proxy
+ *
+ * Creates a new client TLS context with HTTP/1.1 ALPN if one doesn't exist.
+ */
+static int
+proxy_create_tls_context_for_https (struct SocketProxy_Conn_T *conn)
+{
+  if (conn->tls_ctx == NULL)
+    {
+      TRY
+      {
+        conn->tls_ctx = SocketTLSContext_new_client (NULL);
+
+        const char *alpn_protos[] = { "http/1.1" };
+        SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
+      }
+      EXCEPT (SocketTLS_Failed)
+      {
+        socketproxy_set_error (conn,
+                               PROXY_ERROR_PROTOCOL,
+                               "Failed to create TLS context: %s",
+                               Socket_GetLastError ());
+        return -1;
+      }
+      END_TRY;
+    }
+
+  SocketTLS_set_hostname (conn->socket, conn->proxy_host);
+  return 0;
+}
+#endif
+
+/**
+ * proxy_transition_to_handshake - Transition to appropriate handshake state
+ *
+ * For HTTPS proxies, transitions to TLS_TO_PROXY state.
+ * For other proxies, transitions to HANDSHAKE_SEND state.
+ */
+static int
+proxy_transition_to_handshake (struct SocketProxy_Conn_T *conn)
+{
+#if SOCKET_HAS_TLS
+  if (conn->type == SOCKET_PROXY_HTTPS)
+    {
+      if (proxy_create_tls_context_for_https (conn) < 0)
+        return -1;
+
+      conn->state = PROXY_STATE_TLS_TO_PROXY;
+      conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+      return 1;
+    }
+#endif
+
+  conn->state = PROXY_STATE_HANDSHAKE_SEND;
+  conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+
+  if (proxy_build_initial_request (conn) < 0)
+    return -1;
+
+  return 1;
+}
+
+/**
+ * proxy_handle_he_connection_failure - Handle HappyEyeballs connection failure
+ */
+static int
+proxy_handle_he_connection_failure (struct SocketProxy_Conn_T *conn)
+{
+  const char *error = SocketHappyEyeballs_error (conn->he);
+  socketproxy_set_error (conn,
+                         PROXY_ERROR_CONNECT,
+                         "Failed to connect to proxy: %s",
+                         error ? error : "unknown error");
+  SocketHappyEyeballs_free (&conn->he);
+  return -1;
+}
+
+/**
+ * proxy_process_connecting - Process CONNECTING_PROXY state
+ *
+ * Polls HappyEyeballs for connection completion. On success, extracts the
+ * socket and transitions to the appropriate handshake state.
+ */
+static int
+proxy_process_connecting (struct SocketProxy_Conn_T *conn)
+{
+  SocketHE_State he_state;
+
+  if (proxy_validate_he_context (conn) < 0)
+    return -1;
 
   SocketHappyEyeballs_process (conn->he);
 
@@ -1308,69 +1427,13 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
 
   if (he_state == HE_STATE_CONNECTED)
     {
-      conn->socket = SocketHappyEyeballs_result (conn->he);
-      SocketHappyEyeballs_free (&conn->he);
-
-      if (conn->socket == NULL)
-        {
-          socketproxy_set_error (conn,
-                                 PROXY_ERROR_CONNECT,
-                                 "Failed to get socket from HappyEyeballs");
-          return -1;
-        }
-
-      Socket_setnonblocking (conn->socket);
-
-#if SOCKET_HAS_TLS
-      if (conn->type == SOCKET_PROXY_HTTPS)
-        {
-          if (conn->tls_ctx == NULL)
-            {
-              TRY
-              {
-                conn->tls_ctx = SocketTLSContext_new_client (NULL);
-
-                const char *alpn_protos[] = { "http/1.1" };
-                SocketTLSContext_set_alpn_protos (
-                    conn->tls_ctx, alpn_protos, 1);
-              }
-              EXCEPT (SocketTLS_Failed)
-              {
-                socketproxy_set_error (conn,
-                                       PROXY_ERROR_PROTOCOL,
-                                       "Failed to create TLS context: %s",
-                                       Socket_GetLastError ());
-                return -1;
-              }
-              END_TRY;
-            }
-
-          SocketTLS_set_hostname (conn->socket, conn->proxy_host);
-
-          conn->state = PROXY_STATE_TLS_TO_PROXY;
-          conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-          return 1;
-        }
-#endif
-
-      conn->state = PROXY_STATE_HANDSHAKE_SEND;
-      conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-
-      if (proxy_build_initial_request (conn) < 0)
+      if (proxy_extract_connected_socket (conn) < 0)
         return -1;
 
-      return 1;
+      return proxy_transition_to_handshake (conn);
     }
-  else
-    {
-      const char *error = SocketHappyEyeballs_error (conn->he);
-      socketproxy_set_error (conn,
-                             PROXY_ERROR_CONNECT,
-                             "Failed to connect to proxy: %s",
-                             error ? error : "unknown error");
-      SocketHappyEyeballs_free (&conn->he);
-      return -1;
-    }
+
+  return proxy_handle_he_connection_failure (conn);
 }
 
 static int
@@ -1697,51 +1760,115 @@ proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
 
 #if SOCKET_HAS_TLS
 /**
- * proxy_tunnel_tls_handshake - Perform TLS handshake for HTTPS proxy
+ * proxy_tunnel_ensure_tls_context - Create TLS context if not provided
  *
- * Handles TLS context creation and handshake loop with timeout.
+ * Creates a new client TLS context with HTTP/1.1 ALPN if conn->tls_ctx is NULL.
  */
 static SocketProxy_Result
-proxy_tunnel_tls_handshake (SocketProxy_Conn_T conn, int fd)
+proxy_tunnel_ensure_tls_context (SocketProxy_Conn_T conn)
 {
-  (void)fd; /* Unused - kept for potential future use */
+  if (conn->tls_ctx != NULL)
+    return PROXY_OK;
 
-  if (conn->tls_ctx == NULL)
-    {
-      TRY
-      {
-        conn->tls_ctx = SocketTLSContext_new_client (NULL);
+  TRY
+  {
+    conn->tls_ctx = SocketTLSContext_new_client (NULL);
 
-        const char *alpn_protos[] = { "http/1.1" };
-        SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
-      }
-      EXCEPT (SocketTLS_Failed)
-      {
-        socketproxy_set_error (conn,
-                               PROXY_ERROR_PROTOCOL,
-                               "Failed to create TLS context: %s",
-                               Socket_GetLastError ());
-        return conn->result;
-      }
-      END_TRY;
-    }
+    const char *alpn_protos[] = { "http/1.1" };
+    SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    socketproxy_set_error (conn,
+                           PROXY_ERROR_PROTOCOL,
+                           "Failed to create TLS context: %s",
+                           Socket_GetLastError ());
+    return conn->result;
+  }
+  END_TRY;
 
+  return PROXY_OK;
+}
+
+/**
+ * proxy_tunnel_init_tls_state - Initialize TLS handshake state
+ *
+ * Sets the TLS hostname and transitions connection to TLS handshake state.
+ */
+static void
+proxy_tunnel_init_tls_state (SocketProxy_Conn_T conn)
+{
   SocketTLS_set_hostname (conn->socket, conn->proxy_host);
-
   conn->state = PROXY_STATE_TLS_TO_PROXY;
   conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+}
 
-  int64_t deadline_ms
-      = conn->handshake_start_time_ms + conn->handshake_timeout_ms;
+/**
+ * proxy_tunnel_poll_for_io - Wait for I/O readiness with timeout
+ *
+ * Polls for the requested event with remaining timeout.
+ * Returns 1 if ready, 0 if EINTR (retry), -1 on error/timeout.
+ */
+static int
+proxy_tunnel_poll_for_io (SocketProxy_Conn_T conn,
+                          int fd,
+                          int64_t deadline_ms,
+                          unsigned events)
+{
+  struct pollfd pfd = { fd, (short)events, 0 };
+  int64_t now_ms = socketproxy_get_time_ms ();
+  int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
+
+  if (poll_to <= 0)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_TIMEOUT, "TLS handshake timeout");
+      return -1;
+    }
+
+  int ret = poll (&pfd, 1, poll_to);
+  if (ret < 0)
+    {
+      if (errno == EINTR)
+        return 0; /* Retry */
+
+      socketproxy_set_error (
+          conn, PROXY_ERROR, "poll failed during TLS: %s", strerror (errno));
+      return -1;
+    }
+
+  if (ret == 0)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_TIMEOUT, "TLS handshake timeout");
+      return -1;
+    }
+
+  return 1;
+}
+
+/**
+ * proxy_tunnel_perform_handshake_loop - Execute TLS handshake loop
+ *
+ * Repeatedly attempts TLS handshake, polling for I/O as needed, until
+ * completion, error, or timeout.
+ */
+static SocketProxy_Result
+proxy_tunnel_perform_handshake_loop (SocketProxy_Conn_T conn,
+                                     int fd,
+                                     int64_t deadline_ms)
+{
   while (1)
     {
       TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
+
       if (hs == TLS_HANDSHAKE_COMPLETE)
         {
           conn->tls_enabled = 1;
-          break;
+          return PROXY_OK;
         }
-      else if (hs == TLS_HANDSHAKE_ERROR)
+
+      if (hs == TLS_HANDSHAKE_ERROR)
         {
           socketproxy_set_error (conn,
                                  PROXY_ERROR_PROTOCOL,
@@ -1749,37 +1876,41 @@ proxy_tunnel_tls_handshake (SocketProxy_Conn_T conn, int fd)
                                  Socket_GetLastError ());
           return conn->result;
         }
-      else
-        {
-          unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLLIN : POLLOUT);
-          struct pollfd pfd = { fd, (short)events, 0 };
-          int64_t now_ms = socketproxy_get_time_ms ();
-          int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
-          if (poll_to <= 0)
-            {
-              socketproxy_set_error (
-                  conn, PROXY_ERROR_TIMEOUT, "TLS handshake timeout");
-              return PROXY_ERROR_TIMEOUT;
-            }
-          int ret = poll (&pfd, 1, poll_to);
-          if (ret < 0)
-            {
-              if (errno == EINTR)
-                continue;
-              socketproxy_set_error (conn,
-                                     PROXY_ERROR,
-                                     "poll failed during TLS: %s",
-                                     strerror (errno));
-              return PROXY_ERROR;
-            }
-          if (ret == 0)
-            {
-              return PROXY_ERROR_TIMEOUT;
-            }
-        }
-    }
 
-  return PROXY_OK;
+      /* Need to wait for I/O */
+      unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLLIN : POLLOUT);
+      int poll_ret = proxy_tunnel_poll_for_io (conn, fd, deadline_ms, events);
+
+      if (poll_ret == 0)
+        continue; /* EINTR - retry handshake */
+
+      if (poll_ret < 0)
+        return conn->result;
+
+      /* Socket ready, loop to retry handshake */
+    }
+}
+
+/**
+ * proxy_tunnel_tls_handshake - Perform TLS handshake for HTTPS proxy
+ *
+ * Handles TLS context creation and handshake loop with timeout.
+ */
+static SocketProxy_Result
+proxy_tunnel_tls_handshake (SocketProxy_Conn_T conn, int fd)
+{
+  SocketProxy_Result result;
+
+  result = proxy_tunnel_ensure_tls_context (conn);
+  if (result != PROXY_OK)
+    return result;
+
+  proxy_tunnel_init_tls_state (conn);
+
+  int64_t deadline_ms
+      = conn->handshake_start_time_ms + conn->handshake_timeout_ms;
+
+  return proxy_tunnel_perform_handshake_loop (conn, fd, deadline_ms);
 }
 #endif
 
