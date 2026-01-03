@@ -756,7 +756,6 @@ set(TEST_SOURCES
     test_safe_arithmetic
     test_socketutil_time
     test_url_utils
-    test_socketutil_time
     test_socket
     test_simple_recv_line
     test_simple_dns_overflow

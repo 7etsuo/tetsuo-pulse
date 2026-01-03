@@ -554,6 +554,250 @@ TEST (metrics_reset_peaks)
 }
 
 /* ============================================================================
+ * SocketMetrics_update_peak_if_needed Tests
+ * ============================================================================
+ */
+
+TEST (metrics_update_peak_basic)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  int initial_peak = SocketMetrics_get_peak_connections ();
+
+  /* Update with higher count should increase peak */
+  SocketMetrics_update_peak_if_needed (initial_peak + 10);
+
+  int new_peak = SocketMetrics_get_peak_connections ();
+  ASSERT_EQ (initial_peak + 10, new_peak);
+}
+
+TEST (metrics_update_peak_no_change_when_lower)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  /* Set an initial peak */
+  SocketMetrics_update_peak_if_needed (100);
+  ASSERT_EQ (100, SocketMetrics_get_peak_connections ());
+
+  /* Try to update with lower value - should not change */
+  SocketMetrics_update_peak_if_needed (50);
+  ASSERT_EQ (100, SocketMetrics_get_peak_connections ());
+}
+
+TEST (metrics_update_peak_no_change_when_equal)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  /* Set an initial peak */
+  SocketMetrics_update_peak_if_needed (100);
+  ASSERT_EQ (100, SocketMetrics_get_peak_connections ());
+
+  /* Try to update with equal value - should not change */
+  SocketMetrics_update_peak_if_needed (100);
+  ASSERT_EQ (100, SocketMetrics_get_peak_connections ());
+}
+
+TEST (metrics_update_peak_zero)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  /* Test with zero value */
+  SocketMetrics_update_peak_if_needed (0);
+  int peak = SocketMetrics_get_peak_connections ();
+
+  /* Peak should be at least 0 */
+  ASSERT (peak >= 0);
+}
+
+TEST (metrics_update_peak_large_value)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  /* Test with large value */
+  SocketMetrics_update_peak_if_needed (10000);
+  ASSERT_EQ (10000, SocketMetrics_get_peak_connections ());
+}
+
+TEST (metrics_update_peak_incremental)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  /* Incrementally increase peak */
+  for (int i = 1; i <= 100; i++)
+    {
+      SocketMetrics_update_peak_if_needed (i);
+      ASSERT_EQ (i, SocketMetrics_get_peak_connections ());
+    }
+}
+
+/* ============================================================================
+ * SocketMetrics_update_peak_if_needed Concurrency Tests
+ * ============================================================================
+ */
+
+#include <pthread.h>
+
+#define THREAD_COUNT 8
+#define ITERATIONS_PER_THREAD 1000
+
+typedef struct
+{
+  int thread_id;
+  int max_value;
+} thread_data_t;
+
+static void *
+thread_update_peak (void *arg)
+{
+  thread_data_t *data = (thread_data_t *)arg;
+
+  /* Each thread updates with increasing values */
+  for (int i = 0; i < ITERATIONS_PER_THREAD; i++)
+    {
+      int value = data->thread_id * ITERATIONS_PER_THREAD + i;
+      SocketMetrics_update_peak_if_needed (value);
+      if (value > data->max_value)
+        {
+          data->max_value = value;
+        }
+    }
+
+  return NULL;
+}
+
+TEST (metrics_update_peak_concurrent)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  pthread_t threads[THREAD_COUNT];
+  thread_data_t thread_data[THREAD_COUNT];
+
+  int expected_max = 0;
+
+  /* Start threads */
+  for (int i = 0; i < THREAD_COUNT; i++)
+    {
+      thread_data[i].thread_id = i;
+      thread_data[i].max_value = 0;
+      pthread_create (&threads[i], NULL, thread_update_peak, &thread_data[i]);
+    }
+
+  /* Wait for all threads */
+  for (int i = 0; i < THREAD_COUNT; i++)
+    {
+      pthread_join (threads[i], NULL);
+      if (thread_data[i].max_value > expected_max)
+        {
+          expected_max = thread_data[i].max_value;
+        }
+    }
+
+  /* Peak should be the highest value seen across all threads */
+  int final_peak = SocketMetrics_get_peak_connections ();
+  ASSERT_EQ (expected_max, final_peak);
+}
+
+static void *
+thread_update_same_value (void *arg)
+{
+  int value = *(int *)arg;
+
+  /* All threads try to update with the same value repeatedly */
+  for (int i = 0; i < ITERATIONS_PER_THREAD; i++)
+    {
+      SocketMetrics_update_peak_if_needed (value);
+    }
+
+  return NULL;
+}
+
+TEST (metrics_update_peak_concurrent_same_value)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  pthread_t threads[THREAD_COUNT];
+  int shared_value = 5000;
+
+  /* All threads update with the same value */
+  for (int i = 0; i < THREAD_COUNT; i++)
+    {
+      pthread_create (&threads[i], NULL, thread_update_same_value,
+                      &shared_value);
+    }
+
+  /* Wait for all threads */
+  for (int i = 0; i < THREAD_COUNT; i++)
+    {
+      pthread_join (threads[i], NULL);
+    }
+
+  /* Peak should be the shared value */
+  ASSERT_EQ (shared_value, SocketMetrics_get_peak_connections ());
+}
+
+static void *
+thread_update_descending (void *arg)
+{
+  thread_data_t *data = (thread_data_t *)arg;
+
+  /* Each thread updates with descending values from high to low */
+  int start = (data->thread_id + 1) * ITERATIONS_PER_THREAD;
+  for (int i = 0; i < ITERATIONS_PER_THREAD; i++)
+    {
+      int value = start - i;
+      SocketMetrics_update_peak_if_needed (value);
+      if (value > data->max_value)
+        {
+          data->max_value = value;
+        }
+    }
+
+  return NULL;
+}
+
+TEST (metrics_update_peak_concurrent_descending)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_peaks ();
+
+  pthread_t threads[THREAD_COUNT];
+  thread_data_t thread_data[THREAD_COUNT];
+
+  int expected_max = 0;
+
+  /* Start threads with descending values */
+  for (int i = 0; i < THREAD_COUNT; i++)
+    {
+      thread_data[i].thread_id = i;
+      thread_data[i].max_value = 0;
+      pthread_create (&threads[i], NULL, thread_update_descending,
+                      &thread_data[i]);
+    }
+
+  /* Wait for all threads */
+  for (int i = 0; i < THREAD_COUNT; i++)
+    {
+      pthread_join (threads[i], NULL);
+      if (thread_data[i].max_value > expected_max)
+        {
+          expected_max = thread_data[i].max_value;
+        }
+    }
+
+  /* Peak should be the highest starting value */
+  int final_peak = SocketMetrics_get_peak_connections ();
+  ASSERT_EQ (expected_max, final_peak);
+}
+
+/* ============================================================================
  * Metadata Tests
  * ============================================================================
  */
