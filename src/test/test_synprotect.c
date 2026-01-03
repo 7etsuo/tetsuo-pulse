@@ -18,13 +18,17 @@
  * - Action determination
  * - Statistics collection
  * - Thread safety
+ * - CIDR matching algorithms
  */
 
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketSYNProtect.h"
+#include "core/SocketSYNProtect-private.h"
+#undef T /* Avoid conflict between SocketSYNProtect-private.h and Test.h */
 #include "core/SocketUtil.h"
 #include "test/Test.h"
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1654,6 +1658,443 @@ test_monotonic_time_handling (void)
 }
 
 /* ============================================================================
+||||||| parent of 5012aed1 (test(core): Add comprehensive unit tests for CIDR matching algorithms)
+ * CIDR Matching Algorithm Tests
+ * ============================================================================
+ */
+
+/**
+ * test_cidr_full_bytes_match - Test full byte matching for CIDR ranges
+ */
+static int
+test_cidr_full_bytes_match (void)
+{
+  uint8_t ip1[4] = { 192, 168, 1, 100 };
+  uint8_t ip2[4] = { 192, 168, 1, 200 };
+  uint8_t ip3[4] = { 192, 168, 2, 100 };
+
+  /* First 3 bytes match */
+  int match1 = cidr_full_bytes_match (ip1, ip2, 3);
+  if (!match1)
+    return 0;
+
+  /* First 2 bytes match */
+  int match2 = cidr_full_bytes_match (ip1, ip3, 2);
+  if (!match2)
+    return 0;
+
+  /* First 3 bytes don't match (third byte differs) */
+  int match3 = cidr_full_bytes_match (ip1, ip3, 3);
+  if (match3)
+    return 0;
+
+  /* All 4 bytes don't match */
+  int match4 = cidr_full_bytes_match (ip1, ip2, 4);
+  if (match4)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_cidr_partial_byte_match - Test partial byte matching with bit masks
+ */
+static int
+test_cidr_partial_byte_match (void)
+{
+  /* Test /25: 192.168.1.128 matches 192.168.1.128-255 */
+  uint8_t ip1[4] = { 192, 168, 1, 128 }; /* 10000000 */
+  uint8_t ip2[4] = { 192, 168, 1, 200 }; /* 11001000 */
+  uint8_t ip3[4] = { 192, 168, 1, 64 };  /* 01000000 */
+
+  /* Top 1 bit of byte 3: 128 (1xxxxxxx) matches 200 (1xxxxxxx) */
+  int match1 = cidr_partial_byte_match (ip1, ip2, 3, 1);
+  if (!match1)
+    return 0;
+
+  /* Top 1 bit: 128 (1xxxxxxx) doesn't match 64 (0xxxxxxx) */
+  int match2 = cidr_partial_byte_match (ip1, ip3, 3, 1);
+  if (match2)
+    return 0;
+
+  /* Test /23: partial byte with 7 bits */
+  uint8_t ip4[4] = { 192, 168, 2, 0 };  /* byte[2] = 00000010 */
+  uint8_t ip5[4] = { 192, 168, 3, 0 };  /* byte[2] = 00000011 */
+  uint8_t ip6[4] = { 192, 168, 4, 0 };  /* byte[2] = 00000100 */
+
+  /* Top 7 bits of byte 2: 0000001x matches */
+  int match3 = cidr_partial_byte_match (ip4, ip5, 2, 7);
+  if (!match3)
+    return 0;
+
+  /* Top 7 bits: 0000001x doesn't match 0000010x */
+  int match4 = cidr_partial_byte_match (ip4, ip6, 2, 7);
+  if (match4)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_ip_matches_cidr_bytes_ipv4 - Test IPv4 CIDR matching with binary
+ * addresses
+ */
+static int
+test_ip_matches_cidr_bytes_ipv4 (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  uint8_t ip_bytes[16];
+  struct in_addr addr;
+
+  /* Setup: 192.168.1.0/24 */
+  entry.addr_family = AF_INET;
+  entry.prefix_len = 24;
+  inet_pton (AF_INET, "192.168.1.0", &addr);
+  memset (entry.addr_bytes, 0, sizeof (entry.addr_bytes));
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  /* Test 1: 192.168.1.100 matches 192.168.1.0/24 */
+  inet_pton (AF_INET, "192.168.1.100", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test 2: 192.168.2.1 does NOT match 192.168.1.0/24 */
+  inet_pton (AF_INET, "192.168.2.1", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test 3: 10.0.0.1 matches 10.0.0.0/8 */
+  entry.prefix_len = 8;
+  inet_pton (AF_INET, "10.0.0.0", &addr);
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+  inet_pton (AF_INET, "10.0.0.1", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test 4: Family mismatch (IPv4 IP vs IPv6 CIDR) */
+  if (ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_ip_matches_cidr_bytes_ipv4_partial - Test IPv4 partial byte boundaries
+ */
+static int
+test_ip_matches_cidr_bytes_ipv4_partial (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  uint8_t ip_bytes[16];
+  struct in_addr addr;
+
+  /* Test /25: 192.168.1.128/25 covers 192.168.1.128-255 */
+  entry.addr_family = AF_INET;
+  entry.prefix_len = 25;
+  inet_pton (AF_INET, "192.168.1.128", &addr);
+  memset (entry.addr_bytes, 0, sizeof (entry.addr_bytes));
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  /* 192.168.1.200 should match (top bit = 1) */
+  inet_pton (AF_INET, "192.168.1.200", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* 192.168.1.64 should NOT match (top bit = 0) */
+  inet_pton (AF_INET, "192.168.1.64", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test /31: exact 2-address subnet */
+  entry.prefix_len = 31;
+  inet_pton (AF_INET, "192.168.1.0", &addr);
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  inet_pton (AF_INET, "192.168.1.0", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  inet_pton (AF_INET, "192.168.1.1", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  inet_pton (AF_INET, "192.168.1.2", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_ip_matches_cidr_bytes_ipv4_edge - Test IPv4 edge cases (/0, /32)
+ */
+static int
+test_ip_matches_cidr_bytes_ipv4_edge (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  uint8_t ip_bytes[16];
+  struct in_addr addr;
+
+  /* Test /0: matches all IPv4 */
+  entry.addr_family = AF_INET;
+  entry.prefix_len = 0;
+  inet_pton (AF_INET, "0.0.0.0", &addr);
+  memset (entry.addr_bytes, 0, sizeof (entry.addr_bytes));
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  inet_pton (AF_INET, "1.2.3.4", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  inet_pton (AF_INET, "255.255.255.255", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test /32: exact match only */
+  entry.prefix_len = 32;
+  inet_pton (AF_INET, "192.168.1.100", &addr);
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  /* Exact match */
+  inet_pton (AF_INET, "192.168.1.100", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Off by one */
+  inet_pton (AF_INET, "192.168.1.101", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_ip_matches_cidr_bytes_ipv6 - Test IPv6 CIDR matching
+ */
+static int
+test_ip_matches_cidr_bytes_ipv6 (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  uint8_t ip_bytes[16];
+  struct in6_addr addr6;
+
+  /* Setup: 2001:db8::/32 */
+  entry.addr_family = AF_INET6;
+  entry.prefix_len = 32;
+  inet_pton (AF_INET6, "2001:db8::", &addr6);
+  memcpy (entry.addr_bytes, addr6.s6_addr, 16);
+
+  /* Test 1: 2001:db8::1234 matches 2001:db8::/32 */
+  inet_pton (AF_INET6, "2001:db8::1234", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (!ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  /* Test 2: 2001:db9::1 does NOT match 2001:db8::/32 */
+  inet_pton (AF_INET6, "2001:db9::1", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  /* Test 3: fe80::1 matches fe80::/10 */
+  entry.prefix_len = 10;
+  inet_pton (AF_INET6, "fe80::", &addr6);
+  memcpy (entry.addr_bytes, addr6.s6_addr, 16);
+
+  inet_pton (AF_INET6, "fe80::1", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (!ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  /* Test 4: Family mismatch (IPv6 IP vs IPv4 CIDR) */
+  entry.addr_family = AF_INET;
+  if (ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_ip_matches_cidr_bytes_ipv6_edge - Test IPv6 edge cases (/0, /128)
+ */
+static int
+test_ip_matches_cidr_bytes_ipv6_edge (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  uint8_t ip_bytes[16];
+  struct in6_addr addr6;
+
+  /* Test /0: matches all IPv6 */
+  entry.addr_family = AF_INET6;
+  entry.prefix_len = 0;
+  inet_pton (AF_INET6, "::", &addr6);
+  memcpy (entry.addr_bytes, addr6.s6_addr, 16);
+
+  inet_pton (AF_INET6, "2001:db8::1", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (!ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  inet_pton (AF_INET6, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (!ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  /* Test /128: exact match only */
+  entry.prefix_len = 128;
+  inet_pton (AF_INET6, "2001:db8::1234", &addr6);
+  memcpy (entry.addr_bytes, addr6.s6_addr, 16);
+
+  /* Exact match */
+  inet_pton (AF_INET6, "2001:db8::1234", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (!ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  /* Off by one */
+  inet_pton (AF_INET6, "2001:db8::1235", &addr6);
+  memcpy (ip_bytes, addr6.s6_addr, 16);
+  if (ip_matches_cidr_bytes (AF_INET6, ip_bytes, &entry))
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_ip_matches_cidr_string - Test string-based CIDR matching wrapper
+ */
+static int
+test_ip_matches_cidr_string (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  struct in_addr addr4;
+  struct in6_addr addr6;
+
+  /* IPv4: 10.0.0.0/8 */
+  entry.addr_family = AF_INET;
+  entry.prefix_len = 8;
+  inet_pton (AF_INET, "10.0.0.0", &addr4);
+  memset (entry.addr_bytes, 0, sizeof (entry.addr_bytes));
+  memcpy (entry.addr_bytes, &addr4.s_addr, 4);
+
+  if (!ip_matches_cidr ("10.20.30.40", &entry))
+    return 0;
+
+  if (ip_matches_cidr ("11.0.0.1", &entry))
+    return 0;
+
+  /* IPv6: 2001:db8::/32 */
+  entry.addr_family = AF_INET6;
+  entry.prefix_len = 32;
+  inet_pton (AF_INET6, "2001:db8::", &addr6);
+  memcpy (entry.addr_bytes, addr6.s6_addr, 16);
+
+  if (!ip_matches_cidr ("2001:db8::abcd", &entry))
+    return 0;
+
+  if (ip_matches_cidr ("2001:db9::1", &entry))
+    return 0;
+
+  /* NULL IP should return 0 */
+  if (ip_matches_cidr (NULL, &entry))
+    return 0;
+
+  return 1;
+}
+
+/**
+ * test_cidr_prefix_boundaries - Test all common prefix boundary cases
+ */
+static int
+test_cidr_prefix_boundaries (void)
+{
+  SocketSYN_WhitelistEntry entry;
+  uint8_t ip_bytes[16];
+  struct in_addr addr;
+
+  /* Test /7 boundary (partial first byte) */
+  entry.addr_family = AF_INET;
+  entry.prefix_len = 7;
+  inet_pton (AF_INET, "8.0.0.0", &addr); /* 00001000 */
+  memset (entry.addr_bytes, 0, sizeof (entry.addr_bytes));
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  /* 8.x.x.x (0000100x) should match */
+  inet_pton (AF_INET, "8.8.8.8", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* 10.x.x.x (0000101x) should NOT match (bit 7 differs) */
+  inet_pton (AF_INET, "10.0.0.0", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test /15 boundary (partial second byte) */
+  entry.prefix_len = 15;
+  inet_pton (AF_INET, "192.168.0.0", &addr);
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  inet_pton (AF_INET, "192.168.1.1", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  inet_pton (AF_INET, "192.169.0.0", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  /* Test /23 boundary (partial third byte) */
+  entry.prefix_len = 23;
+  inet_pton (AF_INET, "172.16.2.0", &addr);
+  memcpy (entry.addr_bytes, &addr.s_addr, 4);
+
+  inet_pton (AF_INET, "172.16.3.100", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (!ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  inet_pton (AF_INET, "172.16.4.0", &addr);
+  memset (ip_bytes, 0, sizeof (ip_bytes));
+  memcpy (ip_bytes, &addr.s_addr, 4);
+  if (ip_matches_cidr_bytes (AF_INET, ip_bytes, &entry))
+    return 0;
+
+  return 1;
+}
+
+/* ============================================================================
  * Thread Safety Test
  * ============================================================================
  */
@@ -2228,6 +2669,18 @@ main (void)
   RUN_TEST (test_effective_attempts_both_windows);
   RUN_TEST (test_window_zero_duration);
   RUN_TEST (test_monotonic_time_handling);
+
+||||||| parent of 5012aed1 (test(core): Add comprehensive unit tests for CIDR matching algorithms)
+  printf ("\nCIDR Matching Algorithm Tests:\n");
+  RUN_TEST (test_cidr_full_bytes_match);
+  RUN_TEST (test_cidr_partial_byte_match);
+  RUN_TEST (test_ip_matches_cidr_bytes_ipv4);
+  RUN_TEST (test_ip_matches_cidr_bytes_ipv4_partial);
+  RUN_TEST (test_ip_matches_cidr_bytes_ipv4_edge);
+  RUN_TEST (test_ip_matches_cidr_bytes_ipv6);
+  RUN_TEST (test_ip_matches_cidr_bytes_ipv6_edge);
+  RUN_TEST (test_ip_matches_cidr_string);
+  RUN_TEST (test_cidr_prefix_boundaries);
 
   printf ("\nThread Safety Tests:\n");
   RUN_TEST (test_thread_safety);
