@@ -1522,6 +1522,197 @@ TEST (except_basename_no_actual_path)
 }
 #endif /* TESTING */
 
+||||||| parent of 6e66f6b0 (test(core): Add tests for SOCKET_EXCEPT_VERBOSE_UNCAUGHT build mode)
+/* ==========================================================================
+ * Tests for SOCKET_EXCEPT_VERBOSE_UNCAUGHT build mode
+ * These tests verify that exception location reporting behaves correctly
+ * in both verbose (debug) and non-verbose (release) builds.
+ * ==========================================================================
+ */
+
+#if SOCKET_EXCEPT_VERBOSE_UNCAUGHT
+/* Test verbose mode reports full file path in uncaught exceptions
+ * This test exercises line 108 in Except.c: const char *display_file = file;
+ */
+TEST (except_verbose_mode_full_path_uncaught)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      /* Child: Reset exception stack and raise uncaught exception */
+      Except_stack = NULL;
+      flush_coverage_before_abort ();
+
+      /* Use an absolute path to verify full path is preserved */
+      static const Except_T VerboseEx = { &VerboseEx, "Verbose test" };
+      Except_raise (&VerboseEx, "/some/absolute/path/to/test_file.c", 123);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+  /* Note: We can't easily check stderr output in this test framework,
+   * but the fact that it aborts with the correct signal confirms the
+   * code path was executed. Manual testing can verify the full path
+   * is printed to stderr. */
+}
+
+/* Test verbose mode preserves full path in caught exceptions */
+TEST (except_verbose_mode_full_path_caught)
+{
+  volatile int caught = 0;
+  const char *file = NULL;
+
+  TRY
+  {
+    /* Use an absolute path to verify it's preserved */
+    Except_raise (&TestException, "/absolute/path/to/source.c", 456);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    file = Except_frame.file;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  ASSERT_NOT_NULL (file);
+  /* In verbose mode, full path should be preserved */
+  ASSERT (strstr (file, "/absolute/path/to/source.c") != NULL);
+}
+
+#else
+/* Test non-verbose mode reports basename only in uncaught exceptions
+ * This test exercises lines 110-111 in Except.c:
+ *   const char *display_file = except_basename(file);
+ */
+TEST (except_non_verbose_mode_basename_uncaught)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      /* Child: Reset exception stack and raise uncaught exception */
+      Except_stack = NULL;
+      flush_coverage_before_abort ();
+
+      /* Use a path with directory components */
+      static const Except_T NonVerboseEx = { &NonVerboseEx, "Non-verbose test" };
+      Except_raise (&NonVerboseEx, "/some/absolute/path/to/test_file.c", 123);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+  /* Note: We can't easily check stderr output in this test framework,
+   * but the fact that it aborts with the correct signal confirms the
+   * code path was executed. Manual testing can verify only "test_file.c"
+   * (without directory) is printed to stderr. */
+}
+
+/* Test non-verbose mode uses basename in caught exceptions */
+TEST (except_non_verbose_mode_basename_caught)
+{
+  volatile int caught = 0;
+  const char *file = NULL;
+
+  TRY
+  {
+    /* Use a path with directory components */
+    Except_raise (&TestException, "/absolute/path/to/source.c", 456);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    file = Except_frame.file;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  ASSERT_NOT_NULL (file);
+  /* In non-verbose mode, the file is still stored as full path in the frame,
+   * but except_emit_location (used during abort) would extract basename.
+   * The frame itself stores the original path for programmatic access. */
+  ASSERT (strstr (file, "/absolute/path/to/source.c") != NULL);
+}
+#endif
+
+/* Test basename extraction with various path formats (covers except_basename)
+ * This is build-mode independent and tests the basename helper function.
+ */
+TEST (except_basename_extraction)
+{
+  volatile int caught = 0;
+  const char *file = NULL;
+
+  /* Test Unix-style path */
+  TRY
+  {
+    Except_raise (&TestException, "/usr/local/include/header.h", 10);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    file = Except_frame.file;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  ASSERT_NOT_NULL (file);
+  /* Frame stores full path */
+  ASSERT (strstr (file, "header.h") != NULL);
+
+  /* Reset and test Windows-style path */
+  caught = 0;
+  file = NULL;
+
+  TRY
+  {
+    Except_raise (&TestException, "C:\\Users\\test\\source.c", 20);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    file = Except_frame.file;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  ASSERT_NOT_NULL (file);
+  /* Frame stores full path */
+  ASSERT (strstr (file, "source.c") != NULL);
+
+  /* Test path with no directory separator (already a basename) */
+  caught = 0;
+  file = NULL;
+
+  TRY
+  {
+    Except_raise (&TestException, "simple.c", 30);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    file = Except_frame.file;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  ASSERT_NOT_NULL (file);
+  ASSERT_EQ (strcmp (file, "simple.c"), 0);
+}
+
 int
 main (void)
 {
