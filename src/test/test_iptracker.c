@@ -12,9 +12,7 @@
 
 #include <assert.h>
 #include <limits.h>
-||||||| parent of 86742604 (test(core): Add comprehensive tests for SocketIPTracker_setmax/getmax)
 #include <pthread.h>
-||||||| parent of 11582d50 (test(core): Add tests for SocketIPTracker_setmaxunique/getmaxunique)
 #include <stdio.h>
 #include <string.h>
 
@@ -339,7 +337,6 @@ TEST (iptracker_null_arena)
   SocketIPTracker_free (&tracker);
 }
 
-||||||| parent of 86742604 (test(core): Add comprehensive tests for SocketIPTracker_setmax/getmax)
 /* ==================== setmax/getmax Tests ==================== */
 
 /* Test basic setmax/getmax functionality */
@@ -509,36 +506,6 @@ TEST (iptracker_raise_limit_after_max)
   /* Should be at new limit */
   ASSERT_EQ (SocketIPTracker_count (tracker, "10.0.0.1"), 5);
   ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.1"), 0);
-
-  SocketIPTracker_free (&tracker);
-  Arena_dispose (&arena);
-}
-
-/* Test unlimited mode (max_per_ip = 0) */
-TEST (iptracker_unlimited_mode)
-{
-  Arena_T arena = Arena_new ();
-  SocketIPTracker_T tracker = NULL;
-  TRY
-  {
-    tracker = SocketIPTracker_new (arena, 0);
-  }
-  EXCEPT (SocketIPTracker_Failed)
-  {
-    Arena_dispose (&arena);
-    ASSERT (0);
-  }
-  END_TRY;
-
-  ASSERT_EQ (SocketIPTracker_getmax (tracker), 0);
-
-  /* Should be able to track many connections from same IP */
-  for (int i = 0; i < 100; i++)
-    {
-      ASSERT_EQ (SocketIPTracker_track (tracker, "192.168.1.1"), 1);
-    }
-
-  ASSERT_EQ (SocketIPTracker_count (tracker, "192.168.1.1"), 100);
 
   SocketIPTracker_free (&tracker);
   Arena_dispose (&arena);

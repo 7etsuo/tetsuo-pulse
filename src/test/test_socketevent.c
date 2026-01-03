@@ -946,7 +946,6 @@ TEST (socketevent_emit_accept_empty_addrs)
   ASSERT_EQ (result, 0);
 }
 
-||||||| parent of f8e468b7 (test(core): add comprehensive tests for SocketEvent_emit_connect)
 /* ============================================================================
  * EMIT_CONNECT TESTS
  * ============================================================================

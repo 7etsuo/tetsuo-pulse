@@ -1375,7 +1375,6 @@ TEST (except_helper_basename_empty)
 
 #endif /* TESTING */
 
-||||||| parent of e548fe01 (test(core): add comprehensive unit tests for except_basename edge cases)
 /* ==========================================================================
  * Unit tests for except_basename edge cases (issue #3016)
  * Tests the static except_basename function via test-only wrapper
@@ -1522,7 +1521,6 @@ TEST (except_basename_no_actual_path)
 }
 #endif /* TESTING */
 
-||||||| parent of 6e66f6b0 (test(core): Add tests for SOCKET_EXCEPT_VERBOSE_UNCAUGHT build mode)
 /* ==========================================================================
  * Tests for SOCKET_EXCEPT_VERBOSE_UNCAUGHT build mode
  * These tests verify that exception location reporting behaves correctly
