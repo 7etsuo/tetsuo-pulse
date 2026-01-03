@@ -206,6 +206,107 @@ TEST (security_hpack_limits_null_safe)
 }
 
 /* ============================================================================
+ * WebSocket Limits Tests (populate_ws_limits)
+ * ============================================================================
+ */
+
+TEST (security_populate_ws_limits_basic)
+{
+  /* Test that populate_ws_limits sets correct values via get_limits */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify both WebSocket fields are populated */
+  /* Note: Values may be 0 if SOCKET_HAS_WEBSOCKET is disabled */
+#if SOCKET_HAS_WEBSOCKET
+  ASSERT (limits.ws_max_frame_size > 0);
+  ASSERT (limits.ws_max_message_size > 0);
+#else
+  /* When WebSocket support disabled, limits should be 0 */
+  ASSERT_EQ (0, limits.ws_max_frame_size);
+  ASSERT_EQ (0, limits.ws_max_message_size);
+#endif
+}
+
+TEST (security_populate_ws_limits_consistency)
+{
+  /* Verify consistency: ws_max_message_size >= ws_max_frame_size */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  /* Message size should be >= frame size (messages can span frames) */
+  ASSERT (limits.ws_max_message_size >= limits.ws_max_frame_size);
+}
+
+TEST (security_populate_ws_limits_via_query)
+{
+  /* Test that populate_ws_limits is called correctly via get_ws_limits */
+  size_t max_frame = 0, max_message = 0;
+
+  SocketSecurity_get_ws_limits (&max_frame, &max_message);
+
+  /* Values should match what get_limits returns */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  ASSERT_EQ (limits.ws_max_frame_size, max_frame);
+  ASSERT_EQ (limits.ws_max_message_size, max_message);
+}
+
+TEST (security_populate_ws_limits_values_set)
+{
+  /* Verify populated values are set to expected values */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_WEBSOCKET
+  /* When enabled, values should be > 0 */
+  ASSERT (limits.ws_max_frame_size > 0);
+  ASSERT (limits.ws_max_message_size > 0);
+#else
+  /* When disabled, fallback definitions set both to 0 */
+  ASSERT_EQ (0, limits.ws_max_frame_size);
+  ASSERT_EQ (0, limits.ws_max_message_size);
+#endif
+}
+
+TEST (security_populate_ws_limits_multiple_calls)
+{
+  /* Verify populate_ws_limits is idempotent across multiple calls */
+  SocketSecurityLimits limits1, limits2;
+
+  SocketSecurity_get_limits (&limits1);
+  SocketSecurity_get_limits (&limits2);
+
+  /* Both calls should return identical values */
+  ASSERT_EQ (limits1.ws_max_frame_size, limits2.ws_max_frame_size);
+  ASSERT_EQ (limits1.ws_max_message_size, limits2.ws_max_message_size);
+}
+
+TEST (security_populate_ws_limits_not_corrupted)
+{
+  /* Verify populate_ws_limits doesn't corrupt other limit fields */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify other critical fields are still populated correctly */
+  ASSERT (limits.max_allocation > 0);
+  ASSERT (limits.http_max_uri_length > 0);
+  ASSERT (limits.hpack_max_table_size > 0);
+
+  /* WebSocket limits should be deterministic (not uninitialized) */
+  /* Verify both get_limits and get_ws_limits return same values */
+  size_t ws_frame, ws_message;
+  SocketSecurity_get_ws_limits (&ws_frame, &ws_message);
+  ASSERT_EQ (limits.ws_max_frame_size, ws_frame);
+  ASSERT_EQ (limits.ws_max_message_size, ws_message);
+}
+
+/* ============================================================================
  * Integer Overflow Protection Tests
  * ============================================================================
  */
