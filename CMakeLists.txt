@@ -800,6 +800,7 @@ set(TEST_SOURCES
     test_simple_security
     test_crypto
     test_utf8
+    test_utf8_integration
     test_http_core
     test_http1_parser
     test_hpack
