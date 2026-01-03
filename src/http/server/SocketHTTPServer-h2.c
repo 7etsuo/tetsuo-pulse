@@ -81,153 +81,6 @@ server_http2_stream_get_or_create (SocketHTTPServer_T server,
  * http2_is_connection_header_forbidden() from SocketHTTP2-validate.c via
  * SocketHTTP2-private.h */
 
-/* Context for pseudo-header validation */
-typedef struct
-{
-  Arena_T arena;
-  int pseudo_headers_seen;
-  int has_method;
-  int has_scheme;
-  int has_authority;
-  int has_path;
-  const char *scheme;
-  const char *authority;
-  const char *path;
-  const char *protocol;
-  SocketHTTP_Method method;
-} ServerHTTP2BuildContext;
-
-/* Pseudo-header descriptor for dispatch table */
-typedef struct
-{
-  const char *name;
-  size_t name_len;
-  int bit_index;
-  int (*handler) (ServerHTTP2BuildContext *ctx, const SocketHPACK_Header *hdr);
-} PseudoHeaderDesc;
-
-/* Handler for :method pseudo-header */
-static int
-handle_method_header (ServerHTTP2BuildContext *ctx,
-                      const SocketHPACK_Header *hdr)
-{
-  if (ctx->pseudo_headers_seen & (1 << 0))
-    {
-      SERVER_LOG_ERROR ("Duplicate :method pseudo-header");
-      return -1;
-    }
-  ctx->pseudo_headers_seen |= (1 << 0);
-  ctx->has_method = 1;
-  ctx->method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
-  if (ctx->method == HTTP_METHOD_UNKNOWN)
-    {
-      SERVER_LOG_ERROR ("Invalid HTTP method in :method pseudo-header");
-      return -1;
-    }
-  return 0;
-}
-
-/* Handler for :scheme pseudo-header */
-static int
-handle_scheme_header (ServerHTTP2BuildContext *ctx,
-                      const SocketHPACK_Header *hdr)
-{
-  if (ctx->pseudo_headers_seen & (1 << 1))
-    {
-      SERVER_LOG_ERROR ("Duplicate :scheme pseudo-header");
-      return -1;
-    }
-  ctx->pseudo_headers_seen |= (1 << 1);
-  ctx->has_scheme = 1;
-  ctx->scheme
-      = socket_util_arena_strndup (ctx->arena, hdr->value, hdr->value_len);
-  return 0;
-}
-
-/* Handler for :authority pseudo-header */
-static int
-handle_authority_header (ServerHTTP2BuildContext *ctx,
-                         const SocketHPACK_Header *hdr)
-{
-  if (ctx->pseudo_headers_seen & (1 << 2))
-    {
-      SERVER_LOG_ERROR ("Duplicate :authority pseudo-header");
-      return -1;
-    }
-  ctx->pseudo_headers_seen |= (1 << 2);
-  ctx->has_authority = 1;
-  ctx->authority
-      = socket_util_arena_strndup (ctx->arena, hdr->value, hdr->value_len);
-  return 0;
-}
-
-/* Handler for :path pseudo-header */
-static int
-handle_path_header (ServerHTTP2BuildContext *ctx, const SocketHPACK_Header *hdr)
-{
-  if (ctx->pseudo_headers_seen & (1 << 3))
-    {
-      SERVER_LOG_ERROR ("Duplicate :path pseudo-header");
-      return -1;
-    }
-  ctx->pseudo_headers_seen |= (1 << 3);
-  ctx->has_path = 1;
-  ctx->path
-      = socket_util_arena_strndup (ctx->arena, hdr->value, hdr->value_len);
-  return 0;
-}
-
-/* Handler for :protocol pseudo-header */
-static int
-handle_protocol_header (ServerHTTP2BuildContext *ctx,
-                        const SocketHPACK_Header *hdr)
-{
-  if (ctx->pseudo_headers_seen & (1 << 4))
-    {
-      SERVER_LOG_ERROR ("Duplicate :protocol pseudo-header");
-      return -1;
-    }
-  ctx->pseudo_headers_seen |= (1 << 4);
-
-  /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
-  /* Note: We can't easily check this here as we don't have conn access */
-  /* The validation happens in http2_validate_headers on the client side */
-  ctx->protocol
-      = socket_util_arena_strndup (ctx->arena, hdr->value, hdr->value_len);
-  return 0;
-}
-
-/* Dispatch table for pseudo-headers */
-static const PseudoHeaderDesc pseudo_header_handlers[]
-    = { { ":method", 7, 0, handle_method_header },
-        { ":scheme", 7, 1, handle_scheme_header },
-        { ":authority", 10, 2, handle_authority_header },
-        { ":path", 5, 3, handle_path_header },
-        { ":protocol", 9, 4, handle_protocol_header },
-        { NULL, 0, -1, NULL } };
-
-/* Process a pseudo-header using dispatch table */
-static int
-process_pseudo_header (ServerHTTP2BuildContext *ctx,
-                       const SocketHPACK_Header *hdr)
-{
-  for (const PseudoHeaderDesc *desc = pseudo_header_handlers;
-       desc->name != NULL;
-       desc++)
-    {
-      if (hdr->name_len == desc->name_len
-          && memcmp (hdr->name, desc->name, desc->name_len) == 0)
-        {
-          return desc->handler (ctx, hdr);
-        }
-    }
-
-  /* Unknown pseudo-header */
-  SERVER_LOG_ERROR (
-      "Unknown pseudo-header: %.*s", (int)hdr->name_len, hdr->name);
-  return -1;
-}
-
 /* Streaming body callback handler.
  * Invokes the user's body callback for streaming request bodies.
  * Returns 0 on success, -1 on callback error. */
@@ -333,9 +186,12 @@ server_http2_build_request (SocketHTTPServer_T server,
 {
   SocketHTTP_Request *req;
   SocketHTTP_Headers_T h;
-  ServerHTTP2BuildContext ctx;
+  const char *scheme = NULL;
+  const char *authority = NULL;
+  const char *path = NULL;
+  const char *protocol = NULL;
+  SocketHTTP_Method method = HTTP_METHOD_UNKNOWN;
   int64_t content_length = -1;
-  int pseudo_section_ended = 0;
 
   assert (server != NULL);
   assert (s != NULL);
@@ -348,10 +204,10 @@ server_http2_build_request (SocketHTTPServer_T server,
   if (h == NULL)
     return -1;
 
-  /* Initialize validation context */
-  memset (&ctx, 0, sizeof (ctx));
-  ctx.arena = s->arena;
-  ctx.method = HTTP_METHOD_UNKNOWN;
+  /* Validate pseudo-headers and extract them */
+  int pseudo_headers_seen = 0;
+  int has_method = 0, has_scheme = 0, has_authority = 0, has_path = 0;
+  int pseudo_section_ended = 0;
 
   for (size_t i = 0; i < header_count; i++)
     {
@@ -372,10 +228,86 @@ server_http2_build_request (SocketHTTPServer_T server,
               return -1;
             }
 
-          /* Dispatch to appropriate handler */
-          if (process_pseudo_header (&ctx, hdr) != 0)
-            return -1;
+          /* Validate pseudo-header name and track required ones */
+          if (hdr->name_len == 7 && memcmp (hdr->name, ":method", 7) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 0))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :method pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 0);
+              has_method = 1;
+              method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
+              if (method == HTTP_METHOD_UNKNOWN)
+                {
+                  SERVER_LOG_ERROR (
+                      "Invalid HTTP method in :method pseudo-header");
+                  return -1;
+                }
+            }
+          else if (hdr->name_len == 7 && memcmp (hdr->name, ":scheme", 7) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 1))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :scheme pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 1);
+              has_scheme = 1;
+              scheme = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
+            }
+          else if (hdr->name_len == 10
+                   && memcmp (hdr->name, ":authority", 10) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 2))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :authority pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 2);
+              has_authority = 1;
+              authority = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
+            }
+          else if (hdr->name_len == 5 && memcmp (hdr->name, ":path", 5) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 3))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :path pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 3);
+              has_path = 1;
+              path = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
+            }
+          else if (hdr->name_len == 9
+                   && memcmp (hdr->name, ":protocol", 9) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 4))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :protocol pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 4);
 
+              /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
+              /* Note: We can't easily check this here as we don't have conn
+               * access */
+              /* The validation happens in http2_validate_headers on the client
+               * side */
+              protocol = socket_util_arena_strndup (
+                  s->arena, hdr->value, hdr->value_len);
+            }
+          else
+            {
+              /* Unknown pseudo-header */
+              SERVER_LOG_ERROR (
+                  "Unknown pseudo-header: %.*s", (int)hdr->name_len, hdr->name);
+              return -1;
+            }
           continue;
         }
 
@@ -401,25 +333,25 @@ server_http2_build_request (SocketHTTPServer_T server,
     }
 
   /* Validate required pseudo-headers for requests */
-  if (!ctx.has_method)
+  if (!has_method)
     {
       SERVER_LOG_ERROR ("Request missing required :method pseudo-header");
       return -1;
     }
-  if (!ctx.has_scheme && !ctx.has_authority)
+  if (!has_scheme && !has_authority)
     {
       SERVER_LOG_ERROR (
           "Request missing required :scheme or :authority pseudo-header");
       return -1;
     }
-  if (!ctx.has_path)
+  if (!has_path)
     {
       SERVER_LOG_ERROR ("Request missing required :path pseudo-header");
       return -1;
     }
 
-  if (ctx.path == NULL)
-    ctx.path = "/";
+  if (path == NULL)
+    path = "/";
 
   {
     int64_t cl = -1;
@@ -434,18 +366,18 @@ server_http2_build_request (SocketHTTPServer_T server,
     return -1;
   memset (req, 0, sizeof (*req));
 
-  req->method = ctx.method;
+  req->method = method;
   req->version = HTTP_VERSION_2;
-  req->scheme = ctx.scheme;
-  req->authority = ctx.authority;
-  req->path = ctx.path;
+  req->scheme = scheme;
+  req->authority = authority;
+  req->path = path;
   req->headers = h;
   req->content_length = content_length;
   req->has_body = end_stream ? 0 : 1;
 
   s->request = req;
-  if (ctx.protocol != NULL && s->h2_protocol == NULL)
-    s->h2_protocol = (char *)ctx.protocol;
+  if (protocol != NULL && s->h2_protocol == NULL)
+    s->h2_protocol = (char *)protocol;
   s->request_end_stream = end_stream ? 1 : 0;
   if (end_stream)
     s->request_complete = 1;
@@ -798,138 +730,6 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
     server_http2_flush_stream_output (conn, s);
 }
 
-/**
- * Handle streaming callback path for HTTP/2 data frames.
- * Guard: body_streaming && body_callback
- */
-static int
-server_http2_handle_streaming_callback (ServerHTTP2Stream *s,
-                                        SocketHTTPServer_T server,
-                                        ServerConnection *conn,
-                                        SocketHTTP2_Stream_T stream,
-                                        const char *buf,
-                                        size_t n,
-                                        int end_stream)
-{
-  struct SocketHTTPServer_Request req_ctx;
-
-  req_ctx.server = server;
-  req_ctx.conn = conn;
-  req_ctx.h2_stream = s;
-  req_ctx.arena = s->arena;
-  req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-  if (s->body_callback (&req_ctx, buf, n, end_stream,
-                        s->body_callback_userdata)
-      != 0)
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * Append data to pre-allocated body buffer.
- * Guard: !body_uses_buf && body != NULL
- */
-static int
-server_http2_append_to_body (ServerHTTP2Stream *s,
-                             const char *buf,
-                             size_t n)
-{
-  size_t space = s->body_capacity - s->body_len;
-  size_t to_copy = (n > space) ? space : n;
-
-  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-  s->body_len += to_copy;
-  return 0;
-}
-
-/**
- * Ensure buffered body buffer is initialized.
- * Guard: !body_uses_buf (after first call, becomes no-op)
- */
-static int
-server_http2_ensure_body_buffer (ServerHTTP2Stream *s,
-                                 SocketHTTP2_Stream_T stream,
-                                 size_t max_body)
-{
-  size_t initial_size;
-
-  if (s->body_uses_buf)
-    return 0; /* Already initialized */
-
-  initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-  if (max_body > 0 && initial_size > max_body)
-    initial_size = max_body;
-
-  s->body_buf = SocketBuf_new (s->arena, initial_size);
-  if (s->body_buf == NULL)
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-      return -1;
-    }
-
-  s->body_uses_buf = 1;
-  return 0;
-}
-
-/**
- * Append data to buffered body.
- * Requires: body_buf already initialized, body_uses_buf == 1
- */
-static int
-server_http2_append_to_buffered_body (ServerHTTP2Stream *s,
-                                      SocketHTTP2_Stream_T stream,
-                                      const char *buf,
-                                      size_t n)
-{
-  if (!SocketBuf_ensure (s->body_buf, n))
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-      return -1;
-    }
-
-  SocketBuf_write (s->body_buf, buf, n);
-  s->body_len = SocketBuf_available (s->body_buf);
-  return 0;
-}
-
-/**
- * Buffer request body with size validation.
- * Handles three buffering strategies:
- * 1. Pre-allocated body buffer (static)
- * 2. Dynamic SocketBuf buffer (streaming)
- * Returns: 0 on success, -1 on error (stream closed)
- */
-static int
-server_http2_buffer_request_body (ServerHTTP2Stream *s,
-                                  SocketHTTP2_Stream_T stream,
-                                  const char *buf,
-                                  size_t n,
-                                  size_t max_body)
-{
-  /* Guard: Check size limits before buffering */
-  if (max_body > 0 && s->body_len + n > max_body)
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-      return -1;
-    }
-
-  /* Guard: Use pre-allocated body buffer if available */
-  if (!s->body_uses_buf && s->body != NULL)
-    return server_http2_append_to_body (s, buf, n);
-
-  /* Guard: Ensure dynamic buffer initialized */
-  if (server_http2_ensure_body_buffer (s, stream, max_body) < 0)
-    return -1;
-
-  /* Normal path: Append to dynamic buffer */
-  return server_http2_append_to_buffered_body (s, stream, buf, n);
-}
-
-
 void
 server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                         SocketHTTP2_Stream_T stream,
@@ -1020,7 +820,6 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
     {
       int end_stream = 0;
       char buf[HTTPSERVER_RECV_BUFFER_SIZE];
-      size_t max_body = server->config.max_body_size;
 
       for (;;)
         {
@@ -1031,103 +830,17 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
           s->body_received += (size_t)n;
 
-<<<<<<< HEAD
-          /* Guard: Handle streaming callback if configured */
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-=======
           /* Streaming path: invoke callback for each data chunk */
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
           if (s->body_streaming && s->body_callback)
             {
-<<<<<<< HEAD
-              if (server_http2_handle_streaming_callback (s, server, conn, stream,
-                                                          buf, (size_t)n,
-                                                          end_stream)
-                  < 0)
-                return;
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-              struct SocketHTTPServer_Request req_ctx;
-              req_ctx.server = server;
-              req_ctx.conn = conn;
-              req_ctx.h2_stream = s;
-              req_ctx.arena = s->arena;
-              req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-              if (s->body_callback (&req_ctx,
-                                    buf,
-                                    (size_t)n,
-                                    end_stream,
-                                    s->body_callback_userdata)
-                  != 0)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-=======
               if (server_http2_handle_streaming_body (
                       server, conn, s, stream, buf, n, end_stream)
                   < 0)
                 return;
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
             }
-<<<<<<< HEAD
-          /* Normal path: Buffer the request body */
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-=======
           /* Non-streaming path: buffer the body */
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
           else
             {
-<<<<<<< HEAD
-              if (server_http2_buffer_request_body (s, stream, buf, (size_t)n,
-                                                    max_body)
-                  < 0)
-                return;
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-              size_t max_body = server->config.max_body_size;
-
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  size_t space = s->body_capacity - s->body_len;
-                  size_t to_copy = (size_t)n;
-                  if (to_copy > space)
-                    to_copy = space;
-                  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-                  s->body_len += to_copy;
-                }
-              else
-                {
-                  if (!s->body_uses_buf)
-                    {
-                      size_t initial_size
-                          = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-                      if (max_body > 0 && initial_size > max_body)
-                        initial_size = max_body;
-                      s->body_buf = SocketBuf_new (s->arena, initial_size);
-                      if (s->body_buf == NULL)
-                        {
-                          SocketHTTP2_Stream_close (stream,
-                                                    HTTP2_INTERNAL_ERROR);
-                          return;
-                        }
-                      s->body_uses_buf = 1;
-                    }
-
-                  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
-                    {
-                      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                      return;
-                    }
-                  SocketBuf_write (s->body_buf, buf, (size_t)n);
-                  s->body_len = SocketBuf_available (s->body_buf);
-                }
-=======
               size_t max_body = server->config.max_body_size;
 
               /* Guard: exceeds max body size */
@@ -1150,7 +863,6 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                       < 0)
                     return;
                 }
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
             }
 
           if (end_stream)
@@ -1621,23 +1333,23 @@ server_h2_build_push_headers (Arena_T arena,
 
   /* Additional headers (filter out pseudo-headers from user input) */
   out_idx = HTTP2_REQUEST_PSEUDO_HEADER_COUNT;
-  for (size_t i = 0; i < extra; i++)
+  if (extra_headers != NULL)
     {
-      const SocketHTTP_Header *hdr
-          = SocketHTTP_Headers_at (extra_headers, i);
+      for (size_t i = 0; i < extra; i++)
+        {
+          const SocketHTTP_Header *hdr
+              = SocketHTTP_Headers_at (extra_headers, i);
+          if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+            continue;
+          if (hdr->name[0] == ':')
+            continue;
 
-      /* Skip NULL headers, pseudo-headers, or malformed entries */
-      if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
-        continue;
-      if (hdr->name[0] == ':')
-        continue;
-
-      /* Copy header to output array */
-      hpack[out_idx].name = hdr->name;
-      hpack[out_idx].name_len = strlen (hdr->name);
-      hpack[out_idx].value = hdr->value;
-      hpack[out_idx].value_len = strlen (hdr->value);
-      out_idx++;
+          hpack[out_idx].name = hdr->name;
+          hpack[out_idx].name_len = strlen (hdr->name);
+          hpack[out_idx].value = hdr->value;
+          hpack[out_idx].value_len = strlen (hdr->value);
+          out_idx++;
+        }
     }
 
   *out_count = out_idx;

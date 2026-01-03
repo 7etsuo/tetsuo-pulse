@@ -1085,6 +1085,40 @@ check_non_connect:
 }
 
 static int
+validate_pseudo_header_entry (SocketHTTP2_Conn_T conn,
+                               SocketHTTP2_Stream_T stream,
+                               const SocketHPACK_Header *h,
+                               int is_request,
+                               int is_trailer,
+                               int pseudo_section_ended,
+                               int *pseudo_headers_seen,
+                               HTTP2_PseudoHeaderState *state)
+{
+  /* RFC 9113 §8.1.3: Pseudo-headers not allowed in trailers */
+  if (is_trailer)
+    {
+      SOCKET_LOG_ERROR_MSG ("Pseudo-header '%.*s' not allowed in trailers",
+                            (int)h->name_len,
+                            h->name);
+      return -1;
+    }
+
+  /* Pseudo-headers must appear before regular headers */
+  if (pseudo_section_ended)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "Pseudo-header '%.*s' appears after regular headers",
+          (int)h->name_len,
+          h->name);
+      return -1;
+    }
+
+  /* Perform actual validation */
+  return validate_pseudo_header (
+      conn, stream, h, is_request, pseudo_headers_seen, state);
+}
+
+static int
 http2_validate_headers (SocketHTTP2_Conn_T conn,
                         SocketHTTP2_Stream_T stream,
                         const SocketHPACK_Header *headers,
@@ -1101,45 +1135,30 @@ http2_validate_headers (SocketHTTP2_Conn_T conn,
   for (size_t i = 0; i < count; i++)
     {
       const SocketHPACK_Header *h = &headers[i];
+      int result;
 
-      /* Check for pseudo-header */
+      /* Handle pseudo-header validation */
       if (h->name_len > 0 && h->name[0] == ':')
         {
-          /* RFC 9113 §8.1.3: Pseudo-headers not allowed in trailers */
-          if (is_trailer)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  "Pseudo-header '%.*s' not allowed in trailers",
-                  (int)h->name_len,
-                  h->name);
-              goto protocol_error;
-            }
-
-          /* Pseudo-headers must appear before regular headers */
-          if (pseudo_section_ended)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  "Pseudo-header '%.*s' appears after regular headers",
-                  (int)h->name_len,
-                  h->name);
-              goto protocol_error;
-            }
-
-          if (validate_pseudo_header (
-                  conn, stream, h, is_request, &pseudo_headers_seen, &state)
-              < 0)
-            goto protocol_error;
+          result = validate_pseudo_header_entry (conn,
+                                                 stream,
+                                                 h,
+                                                 is_request,
+                                                 is_trailer,
+                                                 pseudo_section_ended,
+                                                 &pseudo_headers_seen,
+                                                 &state);
         }
       else
         {
-          /* Regular header - pseudo-header section has ended */
+          /* Regular header - mark pseudo-header section as ended */
           pseudo_section_ended = 1;
-
-          if (validate_regular_header_entry (
-                  h, &has_te, stream, &parsed_content_length)
-              < 0)
-            goto protocol_error;
+          result = validate_regular_header_entry (
+              h, &has_te, stream, &parsed_content_length);
         }
+
+      if (result < 0)
+        goto protocol_error;
     }
 
   /* Validate required pseudo-headers */
