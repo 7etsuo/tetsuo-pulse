@@ -17,6 +17,14 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR" || exit 0
 
+# Skip tests for docs-only commits (only .md files)
+staged_files=$(git diff --cached --name-only 2>/dev/null || echo "")
+non_docs_files=$(echo "$staged_files" | grep -v '\.md$' | grep -v '^$' || true)
+if [[ -z "$non_docs_files" ]]; then
+    echo "Docs-only commit, skipping sanitizer tests." >&2
+    exit 0
+fi
+
 # Check if build directory exists
 if [[ ! -d build ]]; then
     echo "No build directory found. Run cmake first." >&2
