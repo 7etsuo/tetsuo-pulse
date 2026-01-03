@@ -2096,11 +2096,370 @@ test_cidr_prefix_boundaries (void)
 
 /* ============================================================================
  * Thread Safety Test
+||||||| parent of 06e9dc28 (test(core): Add LRU eviction tests for SocketSYNProtect)
+ * Thread Safety Test
+ * LRU Eviction Tests
  * ============================================================================
  */
 
+/* Forward declarations for thread worker (used in concurrent eviction test) */
 static SocketSYNProtect_T g_protect = NULL;
 static volatile int g_thread_errors = 0;
+static void *thread_worker (void *arg);
+
+/**
+ * test_lru_eviction_at_capacity - Test LRU eviction when max tracked IPs
+ * reached
+ */
+static int
+test_lru_eviction_at_capacity (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  SocketSYN_IPState state;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 10;
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Track 10 unique IPs to fill to capacity */
+    char ip[32];
+    for (int i = 0; i < 10; i++)
+      {
+        snprintf (ip, sizeof (ip), "192.168.1.%d", i + 1);
+        SocketSYNProtect_check (protect, ip, NULL);
+      }
+
+    /* Verify we have 10 tracked IPs */
+    SocketSYNProtect_stats (protect, &stats);
+    success = (stats.current_tracked_ips == 10);
+
+    /* Remember the first IP */
+    const char *first_ip = "192.168.1.1";
+
+    /* Track an 11th IP - should evict oldest (first) IP */
+    SocketSYNProtect_check (protect, "192.168.1.11", NULL);
+
+    /* Verify stats */
+    SocketSYNProtect_stats (protect, &stats);
+    success = success && (stats.current_tracked_ips == 10);
+    success = success && (stats.lru_evictions == 1);
+
+    /* Verify first IP was evicted */
+    int found = SocketSYNProtect_get_ip_state (protect, first_ip, &state);
+    success = success && (found == 0);
+
+    /* Verify 11th IP is present */
+    found = SocketSYNProtect_get_ip_state (protect, "192.168.1.11", &state);
+    success = success && (found == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_touch_moves_to_front - Test that accessing an IP moves it to front
+ * of LRU
+ */
+static int
+test_lru_touch_moves_to_front (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYN_IPState state;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 5;
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Track 5 IPs in order: 1, 2, 3, 4, 5 */
+    char ip[32];
+    for (int i = 0; i < 5; i++)
+      {
+        snprintf (ip, sizeof (ip), "10.0.0.%d", i + 1);
+        SocketSYNProtect_check (protect, ip, NULL);
+      }
+
+    /* Access IP #1 again - should move it to front of LRU */
+    SocketSYNProtect_check (protect, "10.0.0.1", NULL);
+
+    /* Now add a 6th IP - should evict IP #2 (not IP #1) */
+    SocketSYNProtect_check (protect, "10.0.0.6", NULL);
+
+    /* IP #1 should still exist (was moved to front) */
+    int found1 = SocketSYNProtect_get_ip_state (protect, "10.0.0.1", &state);
+    success = (found1 == 1);
+
+    /* IP #2 should be evicted (was at tail) */
+    int found2 = SocketSYNProtect_get_ip_state (protect, "10.0.0.2", &state);
+    success = success && (found2 == 0);
+
+    /* IP #6 should exist */
+    int found6 = SocketSYNProtect_get_ip_state (protect, "10.0.0.6", &state);
+    success = success && (found6 == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_ordering_preserved - Test that eviction follows strict LRU order
+ */
+static int
+test_lru_ordering_preserved (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 5;
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Track IPs: A, B, C, D, E */
+    char ip[32];
+    for (int i = 0; i < 5; i++)
+      {
+        snprintf (ip, sizeof (ip), "172.16.1.%d", i + 1);
+        SocketSYNProtect_check (protect, ip, NULL);
+      }
+
+    /* Verify we have 5 IPs */
+    SocketSYNProtect_stats (protect, &stats);
+    success = (stats.current_tracked_ips == 5);
+
+    /* Add a 6th IP - should evict one (likely the oldest) */
+    SocketSYNProtect_check (protect, "172.16.1.6", NULL);
+
+    /* Verify stats show eviction occurred */
+    SocketSYNProtect_stats (protect, &stats);
+    success = success && (stats.current_tracked_ips == 5);
+    success = success && (stats.lru_evictions == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_with_arena_allocation - Test that arena allocation works
+ * correctly
+ */
+static int
+test_lru_with_arena_allocation (void)
+{
+  Arena_T arena = NULL;
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  volatile int success = 0;
+
+  TRY
+  {
+    arena = Arena_new ();
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 10;
+    protect = SocketSYNProtect_new (arena, &config);
+
+    /* Add several IPs */
+    char ip[32];
+    for (int i = 0; i < 5; i++)
+      {
+        snprintf (ip, sizeof (ip), "192.0.2.%d", i + 1);
+        SocketSYNProtect_check (protect, ip, NULL);
+      }
+
+    /* Verify IPs were tracked */
+    SocketSYNProtect_stats (protect, &stats);
+    success = (stats.current_tracked_ips == 5);
+
+    /* Verify protection is working */
+    SocketSYN_Action action
+        = SocketSYNProtect_check (protect, "192.0.2.1", NULL);
+    success = success && (action != SYN_ACTION_BLOCK);
+
+    SocketSYNProtect_free (&protect);
+    Arena_dispose (&arena);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_with_malloc_allocation - Test LRU eviction with malloc allocation
+ */
+static int
+test_lru_with_malloc_allocation (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 3;
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Fill to capacity and trigger eviction */
+    SocketSYNProtect_check (protect, "198.51.100.1", NULL);
+    SocketSYNProtect_check (protect, "198.51.100.2", NULL);
+    SocketSYNProtect_check (protect, "198.51.100.3", NULL);
+    SocketSYNProtect_check (protect, "198.51.100.4", NULL); /* Triggers eviction
+                                                              */
+
+    SocketSYNProtect_stats (protect, &stats);
+    success = (stats.current_tracked_ips == 3);
+    success = success && (stats.lru_evictions == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_stats_accuracy - Test LRU eviction counter accuracy
+ */
+static int
+test_lru_stats_accuracy (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 5;
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Track 20 IPs - should cause 15 evictions */
+    char ip[32];
+    for (int i = 0; i < 20; i++)
+      {
+        snprintf (ip, sizeof (ip), "203.0.113.%d", i + 1);
+        SocketSYNProtect_check (protect, ip, NULL);
+      }
+
+    SocketSYNProtect_stats (protect, &stats);
+
+    /* Verify exactly 15 evictions */
+    success = (stats.lru_evictions == 15);
+
+    /* Verify current tracked IPs is at max */
+    success = success && (stats.current_tracked_ips == 5);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_concurrent_eviction - Test thread safety of LRU operations
+ */
+static int
+test_lru_concurrent_eviction (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  pthread_t threads[4];
+  int thread_ids[4];
+  volatile int success = 0;
+
+  TRY
+  {
+    /* Small capacity to force frequent evictions */
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 10;
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Spawn threads that will cause concurrent evictions */
+    g_protect = protect;
+    g_thread_errors = 0;
+
+    for (int i = 0; i < 4; i++)
+      {
+        thread_ids[i] = i;
+        pthread_create (&threads[i], NULL, thread_worker, &thread_ids[i]);
+      }
+
+    for (int i = 0; i < 4; i++)
+      pthread_join (threads[i], NULL);
+
+    /* Verify no errors occurred */
+    success = (g_thread_errors == 0);
+
+    /* Verify stats are consistent */
+    SocketSYNProtect_stats (protect, &stats);
+    success = success && (stats.current_tracked_ips <= 10);
+    success = success && (stats.lru_evictions > 0);
+
+    g_protect = NULL;
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/* ============================================================================
+ * Thread Safety Test
+ * ============================================================================
+ */
 
 static void *
 thread_worker (void *arg)
@@ -2681,6 +3040,16 @@ main (void)
   RUN_TEST (test_ip_matches_cidr_bytes_ipv6_edge);
   RUN_TEST (test_ip_matches_cidr_string);
   RUN_TEST (test_cidr_prefix_boundaries);
+
+||||||| parent of 06e9dc28 (test(core): Add LRU eviction tests for SocketSYNProtect)
+  printf ("\nLRU Eviction Tests:\n");
+  RUN_TEST (test_lru_eviction_at_capacity);
+  RUN_TEST (test_lru_touch_moves_to_front);
+  RUN_TEST (test_lru_ordering_preserved);
+  RUN_TEST (test_lru_with_arena_allocation);
+  RUN_TEST (test_lru_with_malloc_allocation);
+  RUN_TEST (test_lru_stats_accuracy);
+  RUN_TEST (test_lru_concurrent_eviction);
 
   printf ("\nThread Safety Tests:\n");
   RUN_TEST (test_thread_safety);
