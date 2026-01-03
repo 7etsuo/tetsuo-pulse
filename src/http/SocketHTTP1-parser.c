@@ -1437,6 +1437,41 @@ handle_dfa_action (SocketHTTP1_Parser_T parser,
     }
 }
 
+/* Helper: Validate a single byte is valid HTTP field content
+ * Returns true if valid, false if invalid control character
+ */
+static inline bool
+is_valid_field_content_byte (unsigned char c)
+{
+  /* field-content = field-vchar [ 1*( SP / HTAB / field-vchar ) ]
+   * field-vchar = VCHAR / obs-text
+   * VCHAR = 0x21-0x7E, obs-text = 0x80-0xFF, SP = 0x20, HTAB = 0x09 */
+
+  /* Reject control characters except HTAB */
+  if (c < 0x20 && c != 0x09)
+    return false;
+
+  /* Reject DEL */
+  if (c == 0x7F)
+    return false;
+
+  return true;
+}
+
+/* Helper: Find first invalid byte in range, or NULL if all valid
+ * Returns pointer to first invalid byte, or NULL if all bytes valid
+ */
+static inline const char *
+find_invalid_field_byte (const char *start, const char *end)
+{
+  for (const char *v = start; v < end; v++)
+    {
+      if (!is_valid_field_content_byte ((unsigned char)*v))
+        return v;
+    }
+  return NULL;
+}
+
 /* Fast path: batch process header values until CR
  * Returns pointer to first non-value byte (CR or invalid), or end if all valid
  */
@@ -1445,32 +1480,17 @@ scan_header_value (const char *p, const char *end)
 {
   /* Find CR - marks end of header value */
   const char *cr = memchr (p, '\r', (size_t)(end - p));
-  if (cr)
-    {
-      /* Validate all bytes before CR are valid field content */
-      for (const char *v = p; v < cr; v++)
-        {
-          unsigned char c = (unsigned char)*v;
-          /* field-content = field-vchar [ 1*( SP / HTAB / field-vchar ) ]
-           * field-vchar = VCHAR / obs-text
-           * VCHAR = 0x21-0x7E, obs-text = 0x80-0xFF, SP = 0x20, HTAB = 0x09 */
-          if (c < 0x20 && c != 0x09)
-            return v; /* Invalid control character */
-          if (c == 0x7F)
-            return v; /* DEL is invalid */
-        }
-      return cr;
-    }
-  /* No CR found - validate all remaining bytes */
-  for (const char *v = p; v < end; v++)
-    {
-      unsigned char c = (unsigned char)*v;
-      if (c < 0x20 && c != 0x09)
-        return v;
-      if (c == 0x7F)
-        return v;
-    }
-  return end;
+
+  /* Determine validation range */
+  const char *validate_end = cr ? cr : end;
+
+  /* Find first invalid byte in range */
+  const char *invalid = find_invalid_field_byte (p, validate_end);
+  if (invalid)
+    return invalid;
+
+  /* All bytes valid - return CR if found, otherwise end */
+  return validate_end;
 }
 
 /* Fast path: batch process header names until colon
