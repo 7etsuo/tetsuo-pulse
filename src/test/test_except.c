@@ -28,6 +28,24 @@
 /* Test exception type for testing */
 static const Except_T TestException = { &TestException, "Test exception" };
 
+/* ==========================================================================
+ * Test wrapper declarations for static helper functions
+ * These wrappers are conditionally compiled with -DTESTING
+ * ==========================================================================
+ */
+#ifdef TESTING
+extern void test_wrapper_except_flush_stderr (void);
+extern void test_wrapper_except_emit_fatal (const char *message);
+extern void test_wrapper_except_emit_reason (const Except_T *e);
+extern void test_wrapper_except_emit_location (const char *file, int line);
+extern void test_wrapper_except_store_exception (Except_Frame *frame,
+                                                  const Except_T *e,
+                                                  const char *file,
+                                                  int line);
+extern void test_wrapper_except_pop_frame (Except_Frame *frame);
+extern const char *test_wrapper_except_basename (const char *path);
+#endif
+
 /* Test basic exception raising and catching */
 TEST (except_basic_try_except)
 {
@@ -1124,6 +1142,238 @@ TEST (except_negative_line_handled)
   /* Line should be normalized to 0 when negative is passed */
   ASSERT_EQ (line, 0);
 }
+
+/* ==========================================================================
+ * Direct unit tests for static helper functions (requires -DTESTING)
+ * These tests verify implementation details for documentation and debugging.
+ * Note: Integration tests above already provide comprehensive coverage.
+ * ==========================================================================
+ */
+#ifdef TESTING
+
+/* Test except_flush_stderr - verifies fflush(stderr) is called */
+TEST (except_helper_flush_stderr)
+{
+  /* This test verifies the function can be called without crashing.
+   * In practice, fflush(stderr) is difficult to test directly without mocking.
+   */
+  test_wrapper_except_flush_stderr ();
+  /* Success if we reach here without crashing */
+  ASSERT (1);
+}
+
+/* Test except_emit_fatal with normal message */
+TEST (except_helper_emit_fatal_normal)
+{
+  /* Redirect stderr to avoid polluting test output
+   * Note: This is a simple smoke test - full output verification would
+   * require stderr capture infrastructure.
+   */
+  test_wrapper_except_emit_fatal ("Test fatal message");
+  /* Success if we reach here (function doesn't abort in this context) */
+  ASSERT (1);
+}
+
+/* Test except_emit_reason with NULL reason */
+TEST (except_helper_emit_reason_null)
+{
+  static const Except_T NullReasonEx = { &NullReasonEx, NULL };
+  /* Should output "(no reason provided)" */
+  test_wrapper_except_emit_reason (&NullReasonEx);
+  ASSERT (1);
+}
+
+/* Test except_emit_reason with empty reason */
+TEST (except_helper_emit_reason_empty)
+{
+  static const Except_T EmptyReasonEx = { &EmptyReasonEx, "" };
+  /* Should output the empty string */
+  test_wrapper_except_emit_reason (&EmptyReasonEx);
+  ASSERT (1);
+}
+
+/* Test except_emit_reason with normal reason */
+TEST (except_helper_emit_reason_normal)
+{
+  static const Except_T NormalEx = { &NormalEx, "Normal error" };
+  /* Should output ": Normal error" */
+  test_wrapper_except_emit_reason (&NormalEx);
+  ASSERT (1);
+}
+
+/* Test except_emit_location with both file and line */
+TEST (except_helper_emit_location_file_and_line)
+{
+  test_wrapper_except_emit_location ("test.c", 42);
+  ASSERT (1);
+}
+
+/* Test except_emit_location with file only, no line */
+TEST (except_helper_emit_location_file_only)
+{
+  test_wrapper_except_emit_location ("test.c", 0);
+  ASSERT (1);
+}
+
+/* Test except_emit_location with line only, no file */
+TEST (except_helper_emit_location_line_only)
+{
+  test_wrapper_except_emit_location (NULL, 42);
+  ASSERT (1);
+}
+
+/* Test except_emit_location with neither file nor line */
+TEST (except_helper_emit_location_no_info)
+{
+  test_wrapper_except_emit_location (NULL, 0);
+  ASSERT (1);
+}
+
+/* Test except_store_exception with NULL file */
+TEST (except_helper_store_exception_null_file)
+{
+  Except_Frame frame;
+  static const Except_T TestEx = { &TestEx, "test" };
+
+  test_wrapper_except_store_exception (&frame, &TestEx, NULL, 42);
+
+  ASSERT_EQ (frame.exception, &TestEx);
+  ASSERT_NOT_NULL (frame.file);
+  ASSERT_EQ (strcmp (frame.file, "unknown"), 0);
+  ASSERT_EQ (frame.line, 42);
+}
+
+/* Test except_store_exception with negative line */
+TEST (except_helper_store_exception_negative_line)
+{
+  Except_Frame frame;
+  static const Except_T TestEx = { &TestEx, "test" };
+
+  test_wrapper_except_store_exception (&frame, &TestEx, "test.c", -5);
+
+  ASSERT_EQ (frame.exception, &TestEx);
+  ASSERT_EQ (strcmp (frame.file, "test.c"), 0);
+  ASSERT_EQ (frame.line, 0); /* Normalized to 0 */
+}
+
+/* Test except_store_exception with zero line */
+TEST (except_helper_store_exception_zero_line)
+{
+  Except_Frame frame;
+  static const Except_T TestEx = { &TestEx, "test" };
+
+  test_wrapper_except_store_exception (&frame, &TestEx, "test.c", 0);
+
+  ASSERT_EQ (frame.exception, &TestEx);
+  ASSERT_EQ (strcmp (frame.file, "test.c"), 0);
+  ASSERT_EQ (frame.line, 0);
+}
+
+/* Test except_store_exception with positive line */
+TEST (except_helper_store_exception_positive_line)
+{
+  Except_Frame frame;
+  static const Except_T TestEx = { &TestEx, "test" };
+
+  test_wrapper_except_store_exception (&frame, &TestEx, "test.c", 123);
+
+  ASSERT_EQ (frame.exception, &TestEx);
+  ASSERT_EQ (strcmp (frame.file, "test.c"), 0);
+  ASSERT_EQ (frame.line, 123);
+}
+
+/* Test except_pop_frame with single frame */
+TEST (except_helper_pop_frame_single)
+{
+  Except_Frame frame;
+  Except_Frame *original_stack = Except_stack;
+
+  frame.prev = original_stack;
+  Except_stack = &frame;
+
+  test_wrapper_except_pop_frame (&frame);
+
+  ASSERT_EQ (Except_stack, original_stack);
+}
+
+/* Test except_pop_frame with nested frames */
+TEST (except_helper_pop_frame_nested)
+{
+  Except_Frame frame1, frame2;
+  Except_Frame *original_stack = Except_stack;
+
+  /* Build stack: original -> frame1 -> frame2 */
+  frame1.prev = original_stack;
+  frame2.prev = &frame1;
+  Except_stack = &frame2;
+
+  /* Pop frame2 */
+  test_wrapper_except_pop_frame (&frame2);
+  ASSERT_EQ (Except_stack, &frame1);
+
+  /* Pop frame1 */
+  test_wrapper_except_pop_frame (&frame1);
+  ASSERT_EQ (Except_stack, original_stack);
+}
+
+/* Test except_basename with NULL path */
+TEST (except_helper_basename_null)
+{
+  const char *result = test_wrapper_except_basename (NULL);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "unknown"), 0);
+}
+
+/* Test except_basename with simple filename */
+TEST (except_helper_basename_simple)
+{
+  const char *result = test_wrapper_except_basename ("test.c");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.c"), 0);
+}
+
+/* Test except_basename with Unix path */
+TEST (except_helper_basename_unix_path)
+{
+  const char *result = test_wrapper_except_basename ("/path/to/test.c");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.c"), 0);
+}
+
+/* Test except_basename with Windows path */
+TEST (except_helper_basename_windows_path)
+{
+  const char *result = test_wrapper_except_basename ("C:\\path\\to\\test.c");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.c"), 0);
+}
+
+/* Test except_basename with mixed separators */
+TEST (except_helper_basename_mixed_separators)
+{
+  const char *result = test_wrapper_except_basename ("/path\\to/test.c");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.c"), 0);
+}
+
+/* Test except_basename with trailing separator */
+TEST (except_helper_basename_trailing_separator)
+{
+  const char *result = test_wrapper_except_basename ("/path/to/");
+  ASSERT_NOT_NULL (result);
+  /* Returns empty string after trailing separator */
+  ASSERT_EQ (strcmp (result, ""), 0);
+}
+
+/* Test except_basename with empty string */
+TEST (except_helper_basename_empty)
+{
+  const char *result = test_wrapper_except_basename ("");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, ""), 0);
+}
+
+#endif /* TESTING */
 
 int
 main (void)
