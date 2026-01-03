@@ -634,6 +634,138 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
     server_http2_flush_stream_output (conn, s);
 }
 
+/**
+ * Handle streaming callback path for HTTP/2 data frames.
+ * Guard: body_streaming && body_callback
+ */
+static int
+server_http2_handle_streaming_callback (ServerHTTP2Stream *s,
+                                        SocketHTTPServer_T server,
+                                        ServerConnection *conn,
+                                        SocketHTTP2_Stream_T stream,
+                                        const char *buf,
+                                        size_t n,
+                                        int end_stream)
+{
+  struct SocketHTTPServer_Request req_ctx;
+
+  req_ctx.server = server;
+  req_ctx.conn = conn;
+  req_ctx.h2_stream = s;
+  req_ctx.arena = s->arena;
+  req_ctx.start_time_ms = Socket_get_monotonic_ms ();
+
+  if (s->body_callback (&req_ctx, buf, n, end_stream,
+                        s->body_callback_userdata)
+      != 0)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * Append data to pre-allocated body buffer.
+ * Guard: !body_uses_buf && body != NULL
+ */
+static int
+server_http2_append_to_body (ServerHTTP2Stream *s,
+                             const char *buf,
+                             size_t n)
+{
+  size_t space = s->body_capacity - s->body_len;
+  size_t to_copy = (n > space) ? space : n;
+
+  memcpy ((char *)s->body + s->body_len, buf, to_copy);
+  s->body_len += to_copy;
+  return 0;
+}
+
+/**
+ * Ensure buffered body buffer is initialized.
+ * Guard: !body_uses_buf (after first call, becomes no-op)
+ */
+static int
+server_http2_ensure_body_buffer (ServerHTTP2Stream *s,
+                                 SocketHTTP2_Stream_T stream,
+                                 size_t max_body)
+{
+  size_t initial_size;
+
+  if (s->body_uses_buf)
+    return 0; /* Already initialized */
+
+  initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
+  if (max_body > 0 && initial_size > max_body)
+    initial_size = max_body;
+
+  s->body_buf = SocketBuf_new (s->arena, initial_size);
+  if (s->body_buf == NULL)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+      return -1;
+    }
+
+  s->body_uses_buf = 1;
+  return 0;
+}
+
+/**
+ * Append data to buffered body.
+ * Requires: body_buf already initialized, body_uses_buf == 1
+ */
+static int
+server_http2_append_to_buffered_body (ServerHTTP2Stream *s,
+                                      SocketHTTP2_Stream_T stream,
+                                      const char *buf,
+                                      size_t n)
+{
+  if (!SocketBuf_ensure (s->body_buf, n))
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+      return -1;
+    }
+
+  SocketBuf_write (s->body_buf, buf, n);
+  s->body_len = SocketBuf_available (s->body_buf);
+  return 0;
+}
+
+/**
+ * Buffer request body with size validation.
+ * Handles three buffering strategies:
+ * 1. Pre-allocated body buffer (static)
+ * 2. Dynamic SocketBuf buffer (streaming)
+ * Returns: 0 on success, -1 on error (stream closed)
+ */
+static int
+server_http2_buffer_request_body (ServerHTTP2Stream *s,
+                                  SocketHTTP2_Stream_T stream,
+                                  const char *buf,
+                                  size_t n,
+                                  size_t max_body)
+{
+  /* Guard: Check size limits before buffering */
+  if (max_body > 0 && s->body_len + n > max_body)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+
+  /* Guard: Use pre-allocated body buffer if available */
+  if (!s->body_uses_buf && s->body != NULL)
+    return server_http2_append_to_body (s, buf, n);
+
+  /* Guard: Ensure dynamic buffer initialized */
+  if (server_http2_ensure_body_buffer (s, stream, max_body) < 0)
+    return -1;
+
+  /* Normal path: Append to dynamic buffer */
+  return server_http2_append_to_buffered_body (s, stream, buf, n);
+}
+
+
 void
 server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                         SocketHTTP2_Stream_T stream,
@@ -723,6 +855,7 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
     {
       int end_stream = 0;
       char buf[HTTPSERVER_RECV_BUFFER_SIZE];
+      size_t max_body = server->config.max_body_size;
 
       for (;;)
         {
@@ -733,71 +866,22 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
           s->body_received += (size_t)n;
 
+          /* Guard: Handle streaming callback if configured */
           if (s->body_streaming && s->body_callback)
             {
-              struct SocketHTTPServer_Request req_ctx;
-              req_ctx.server = server;
-              req_ctx.conn = conn;
-              req_ctx.h2_stream = s;
-              req_ctx.arena = s->arena;
-              req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-              if (s->body_callback (&req_ctx,
-                                    buf,
-                                    (size_t)n,
-                                    end_stream,
-                                    s->body_callback_userdata)
-                  != 0)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
+              if (server_http2_handle_streaming_callback (s, server, conn, stream,
+                                                          buf, (size_t)n,
+                                                          end_stream)
+                  < 0)
+                return;
             }
+          /* Normal path: Buffer the request body */
           else
             {
-              size_t max_body = server->config.max_body_size;
-
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  size_t space = s->body_capacity - s->body_len;
-                  size_t to_copy = (size_t)n;
-                  if (to_copy > space)
-                    to_copy = space;
-                  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-                  s->body_len += to_copy;
-                }
-              else
-                {
-                  if (!s->body_uses_buf)
-                    {
-                      size_t initial_size
-                          = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-                      if (max_body > 0 && initial_size > max_body)
-                        initial_size = max_body;
-                      s->body_buf = SocketBuf_new (s->arena, initial_size);
-                      if (s->body_buf == NULL)
-                        {
-                          SocketHTTP2_Stream_close (stream,
-                                                    HTTP2_INTERNAL_ERROR);
-                          return;
-                        }
-                      s->body_uses_buf = 1;
-                    }
-
-                  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
-                    {
-                      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                      return;
-                    }
-                  SocketBuf_write (s->body_buf, buf, (size_t)n);
-                  s->body_len = SocketBuf_available (s->body_buf);
-                }
+              if (server_http2_buffer_request_body (s, stream, buf, (size_t)n,
+                                                    max_body)
+                  < 0)
+                return;
             }
 
           if (end_stream)
