@@ -492,6 +492,76 @@ server_http2_try_dispose_stream (ServerConnection *conn, ServerHTTP2Stream *s)
     Arena_dispose (&s->arena);
 }
 
+/**
+ * @brief Send trailer headers for HTTP/2 response.
+ *
+ * Extracts valid trailers (excluding pseudo-headers) from the response
+ * trailer list, allocates HPACK header structures, and sends them via
+ * the HTTP/2 stream.
+ *
+ * @param conn Server connection context
+ * @param s HTTP/2 stream state
+ * @param response_trailers Trailer headers container
+ * @param total Number of headers in the container
+ */
+static void
+server_http2_send_trailers (ServerConnection *conn,
+                            ServerHTTP2Stream *s,
+                            SocketHTTP_Headers_T response_trailers,
+                            size_t total)
+{
+  size_t count = 0;
+
+  /* Count valid (non-pseudo) trailers. */
+  for (size_t i = 0; i < total; i++)
+    {
+      const SocketHTTP_Header *hdr
+          = SocketHTTP_Headers_at (response_trailers, i);
+      if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+        continue;
+      if (hdr->name[0] == ':')
+        continue;
+      count++;
+    }
+
+  if (count == 0)
+    return;
+
+  /* Allocate trailer buffer. */
+  SocketHPACK_Header *trailers
+      = Arena_alloc (s->arena, count * sizeof (*trailers), __FILE__, __LINE__);
+  if (trailers == NULL)
+    {
+      SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
+      return;
+    }
+
+  memset (trailers, 0, count * sizeof (*trailers));
+
+  /* Fill trailer buffer. */
+  size_t out = 0;
+  for (size_t i = 0; i < total; i++)
+    {
+      const SocketHTTP_Header *hdr
+          = SocketHTTP_Headers_at (response_trailers, i);
+      if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+        continue;
+      if (hdr->name[0] == ':')
+        continue;
+      trailers[out].name = hdr->name;
+      trailers[out].name_len = strlen (hdr->name);
+      trailers[out].value = hdr->value;
+      trailers[out].value_len = strlen (hdr->value);
+      out++;
+    }
+
+  /* Send trailers. */
+  if (SocketHTTP2_Stream_send_trailers (s->stream, trailers, count) < 0)
+    SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
+
+  (void)conn; /* Unused parameter */
+}
+
 void
 server_http2_send_end_stream (ServerConnection *conn, ServerHTTP2Stream *s)
 {
@@ -505,53 +575,7 @@ server_http2_send_end_stream (ServerConnection *conn, ServerHTTP2Stream *s)
       && SocketHTTP_Headers_count (s->response_trailers) > 0)
     {
       size_t total = SocketHTTP_Headers_count (s->response_trailers);
-      size_t count = 0;
-      SocketHPACK_Header *trailers = NULL;
-
-      /* Count valid (non-pseudo) trailers. */
-      for (size_t i = 0; i < total; i++)
-        {
-          const SocketHTTP_Header *hdr
-              = SocketHTTP_Headers_at (s->response_trailers, i);
-          if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
-            continue;
-          if (hdr->name[0] == ':')
-            continue;
-          count++;
-        }
-
-      if (count > 0)
-        {
-          trailers = Arena_alloc (
-              s->arena, count * sizeof (*trailers), __FILE__, __LINE__);
-          if (trailers == NULL)
-            {
-              SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
-              s->response_end_stream_sent = 1;
-              server_http2_try_dispose_stream (conn, s);
-              return;
-            }
-          memset (trailers, 0, count * sizeof (*trailers));
-
-          size_t out = 0;
-          for (size_t i = 0; i < total; i++)
-            {
-              const SocketHTTP_Header *hdr
-                  = SocketHTTP_Headers_at (s->response_trailers, i);
-              if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
-                continue;
-              if (hdr->name[0] == ':')
-                continue;
-              trailers[out].name = hdr->name;
-              trailers[out].name_len = strlen (hdr->name);
-              trailers[out].value = hdr->value;
-              trailers[out].value_len = strlen (hdr->value);
-              out++;
-            }
-
-          if (SocketHTTP2_Stream_send_trailers (s->stream, trailers, count) < 0)
-            SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
-        }
+      server_http2_send_trailers (conn, s, s->response_trailers, total);
     }
   else
     {
