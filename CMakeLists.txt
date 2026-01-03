@@ -816,6 +816,7 @@ set(TEST_SOURCES
     test_socketio
     test_sendfile_bounds
     test_timer
+    test_timer_oneshot
     test_metrics
     test_httpserver
     test_httpserver_websocket
