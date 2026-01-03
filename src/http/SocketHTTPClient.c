@@ -1336,6 +1336,7 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
     {
       HTTPPoolEntry *next = entry->next;
 
+      /* Clean up HTTP/1.x resources */
       if (entry->version == HTTP_VERSION_1_1
           || entry->version == HTTP_VERSION_1_0)
         {
