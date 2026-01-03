@@ -830,20 +830,23 @@ SocketHTTP_URI_encode (const char *input,
     {
       unsigned char c = (unsigned char)input[i];
 
+      /* Guard: Check if unreserved character fits */
       if (SOCKETHTTP_IS_UNRESERVED (c))
         {
           if (out_len + 1 >= output_size)
             return -1;
           output[out_len++] = (char)c;
+          continue;
         }
-      else
-        {
-          if (out_len + 3 >= output_size)
-            return -1;
-          output[out_len++] = '%';
-          output[out_len++] = hex[c >> 4];
-          output[out_len++] = hex[c & 0x0F];
-        }
+
+      /* Guard: Check if percent-encoded sequence fits */
+      if (out_len + 3 >= output_size)
+        return -1;
+
+      /* Encode as %HH */
+      output[out_len++] = '%';
+      output[out_len++] = hex[c >> 4];
+      output[out_len++] = hex[c & 0x0F];
     }
 
   if (out_len >= output_size)
