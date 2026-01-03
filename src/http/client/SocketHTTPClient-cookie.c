@@ -725,6 +725,30 @@ SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar)
   pthread_mutex_unlock (&jar->mutex);
 }
 
+/**
+ * @brief Remove expired entries from a hash table collision chain.
+ * @param pp Pointer to chain head (for in-place removal)
+ * @param now Current timestamp
+ * @param count Pointer to cookie count (decremented on removal)
+ */
+static void
+remove_expired_from_chain (CookieEntry **pp, time_t now, size_t *count)
+{
+  while (*pp != NULL)
+    {
+      CookieEntry *entry = *pp;
+      if (entry->cookie.expires > 0 && entry->cookie.expires < now)
+        {
+          *pp = entry->next;
+          (*count)--;
+        }
+      else
+        {
+          pp = &entry->next;
+        }
+    }
+}
+
 void
 SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
 {
@@ -740,22 +764,7 @@ SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
   pthread_mutex_lock (&jar->mutex);
 
   for (size_t i = 0; i < jar->hash_size; i++)
-    {
-      CookieEntry **pp = &jar->hash_table[i];
-      while (*pp != NULL)
-        {
-          CookieEntry *entry = *pp;
-          if (entry->cookie.expires > 0 && entry->cookie.expires < now)
-            {
-              *pp = entry->next;
-              jar->count--;
-            }
-          else
-            {
-              pp = &entry->next;
-            }
-        }
-    }
+    remove_expired_from_chain (&jar->hash_table[i], now, &jar->count);
 
   pthread_mutex_unlock (&jar->mutex);
 }
