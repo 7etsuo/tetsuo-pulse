@@ -115,24 +115,6 @@ static const struct
 
 
 /**
- * skip_to_next_component - Advance pointer to next path component
- * @p: Current position in path
- *
- * Skips to the character after the next '/', or to end of string.
- *
- * Returns: Pointer to next component (after '/') or end of string
- */
-static const char *
-skip_to_next_component (const char *p)
-{
-  while (*p != '\0' && *p != '/')
-    p++;
-  if (*p == '/')
-    p++;
-  return p;
-}
-
-/**
  * validate_static_path - Validate path for security (no traversal attacks)
  * @path: URL path component (after prefix removal)
  *
@@ -161,7 +143,11 @@ validate_static_path (const char *path)
       /* Not a dot - skip to next component */
       if (p[0] != '.')
         {
-          p = skip_to_next_component (p);
+          /* Skip to next '/' or end of string */
+          while (*p != '\0' && *p != '/')
+            p++;
+          if (*p == '/')
+            p++;
           continue;
         }
 
@@ -183,7 +169,11 @@ validate_static_path (const char *path)
         }
 
       /* Dot followed by other characters (e.g., ".gitignore") */
-      p = skip_to_next_component (p);
+      /* Skip to next '/' or end of string */
+      while (*p != '\0' && *p != '/')
+        p++;
+      if (*p == '/')
+        p++;
     }
 
   /* Reject hidden files (dotfiles) */
@@ -345,6 +335,11 @@ get_mime_type (const char *file_path)
  * @end: Output: end byte position
  *
  * Returns: 1 if valid range parsed, 0 if invalid/unsatisfiable
+ *
+ * Supports:
+ * - Suffix range: "-500" (last 500 bytes)
+ * - Open-ended: "500-" (from byte 500 to EOF)
+ * - Closed range: "500-999" (bytes 500-999)
  */
 static int
 parse_range_header (const char *range_str,
@@ -370,42 +365,41 @@ parse_range_header (const char *range_str,
   while (*p == ' ')
     p++;
 
+  /* Handle suffix range: "-500" means last 500 bytes */
   if (*p == '-')
     {
-      /* Suffix range: "-500" means last 500 bytes */
       p++;
       val = strtoll (p, &endptr, 10);
       if (endptr == p || val <= 0)
         return 0;
       *start = (file_size > val) ? (file_size - val) : 0;
       *end = file_size - 1;
+      goto validate;
     }
-  else
+
+  /* Handle normal range: "500-999" or "500-" */
+  val = strtoll (p, &endptr, 10);
+  if (endptr == p || val < 0)
+    return 0;
+  *start = (off_t)val;
+
+  if (*endptr != '-')
+    return 0;
+
+  p = endptr + 1;
+
+  /* Handle open-ended range: "500-" */
+  if (*p == '\0' || *p == ',')
     {
-      /* Normal range: "500-999" or "500-" */
-      val = strtoll (p, &endptr, 10);
-      if (endptr == p || val < 0)
-        return 0;
-      *start = (off_t)val;
-
-      if (*endptr != '-')
-        return 0;
-
-      p = endptr + 1;
-
-      /* Open-ended range: "500-" */
-      if (*p == '\0' || *p == ',')
-        {
-          *end = file_size - 1;
-          goto validate;
-        }
-
-      /* Closed range: "500-999" */
-      val = strtoll (p, &endptr, 10);
-      if (endptr == p)
-        return 0;
-      *end = (off_t)val;
+      *end = file_size - 1;
+      goto validate;
     }
+
+  /* Handle closed range: "500-999" */
+  val = strtoll (p, &endptr, 10);
+  if (endptr == p)
+    return 0;
+  *end = (off_t)val;
 
 validate:
 
@@ -418,6 +412,18 @@ validate:
     *end = file_size - 1;
 
   return 1;
+}
+
+/**
+ * is_sendfile_retry_error - Check if sendfile error is transient
+ * @err: errno value
+ *
+ * Returns: 1 if error is transient and should retry, 0 otherwise
+ */
+static int
+is_sendfile_retry_error (int err)
+{
+  return (err == EAGAIN || err == EWOULDBLOCK || err == EINTR);
 }
 
 /**
@@ -487,6 +493,7 @@ server_serve_static_file (SocketHTTPServer_T server,
   off_t range_end = 0;
   int use_range = 0;
   int fd = -1;
+  int result = 0;
   ssize_t sent;
 
   /* Validate the file path for security */
@@ -551,12 +558,9 @@ server_serve_static_file (SocketHTTPServer_T server,
   range_header = SocketHTTP_Headers_get (conn->request->headers, "Range");
   if (range_header != NULL && conn->request->method == HTTP_METHOD_GET)
     {
-      if (parse_range_header (
+      /* Try to parse the range */
+      if (!parse_range_header (
               range_header, st.st_size, &range_start, &range_end))
-        {
-          use_range = 1;
-        }
-      else
         {
           /* Invalid range - send 416 Range Not Satisfiable */
           conn->response_status = 416;
@@ -570,6 +574,9 @@ server_serve_static_file (SocketHTTPServer_T server,
           conn->response_body_len = 0;
           return 1;
         }
+
+      /* Valid range parsed */
+      use_range = 1;
     }
 
   /* Open the file */
@@ -622,63 +629,70 @@ server_serve_static_file (SocketHTTPServer_T server,
     {
       conn->response_body = NULL;
       conn->response_body_len = 0;
-      close (fd);
-      return 1;
+      result = 1;
+      goto cleanup;
     }
 
   /* Send response headers first */
-  char header_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
-  SocketHTTP_Response response;
-  memset (&response, 0, sizeof (response));
-  response.version = HTTP_VERSION_1_1;
-  response.status_code = conn->response_status;
-  response.headers = conn->response_headers;
+  {
+    char header_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
+    SocketHTTP_Response response;
+    memset (&response, 0, sizeof (response));
+    response.version = HTTP_VERSION_1_1;
+    response.status_code = conn->response_status;
+    response.headers = conn->response_headers;
 
-  ssize_t header_len = SocketHTTP1_serialize_response (
-      &response, header_buf, sizeof (header_buf));
-  if (header_len < 0
-      || connection_send_data (server, conn, header_buf, (size_t)header_len)
-             < 0)
-    {
-      close (fd);
-      return -1;
-    }
+    ssize_t header_len = SocketHTTP1_serialize_response (
+        &response, header_buf, sizeof (header_buf));
+    if (header_len < 0
+        || connection_send_data (server, conn, header_buf, (size_t)header_len)
+               < 0)
+      {
+        result = -1;
+        goto cleanup;
+      }
+  }
 
   conn->response_headers_sent = 1;
 
   /* Use sendfile() for zero-copy file transfer */
-  off_t offset = range_start;
-  size_t remaining = (size_t)(range_end - range_start + 1);
+  {
+    off_t offset = range_start;
+    size_t remaining = (size_t)(range_end - range_start + 1);
 
-  while (remaining > 0)
-    {
-      sent = sendfile (Socket_fd (conn->socket), fd, &offset, remaining);
+    while (remaining > 0)
+      {
+        sent = sendfile (Socket_fd (conn->socket), fd, &offset, remaining);
 
-      /* Handle errors */
-      if (sent < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
-            continue;
-          close (fd);
-          return -1;
-        }
+        /* Handle errors - retry on transient failures */
+        if (sent < 0)
+          {
+            if (is_sendfile_retry_error (errno))
+              continue;
+            result = -1;
+            goto cleanup;
+          }
 
-      if (sent == 0)
-        break;
+        if (sent == 0)
+          break;
 
-      remaining -= (size_t)sent;
-      SocketMetrics_counter_add (SOCKET_CTR_HTTP_SERVER_BYTES_SENT,
-                                 (uint64_t)sent);
-    }
-
-  close (fd);
+        remaining -= (size_t)sent;
+        SocketMetrics_counter_add (SOCKET_CTR_HTTP_SERVER_BYTES_SENT,
+                                   (uint64_t)sent);
+      }
+  }
 
   /* Mark response as finished */
   conn->response_finished = 1;
   conn->response_body = NULL;
   conn->response_body_len = 0;
+  result = 1;
 
-  return 1;
+cleanup:
+  if (fd >= 0)
+    close (fd);
+
+  return result;
 }
 
 int
