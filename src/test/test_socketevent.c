@@ -299,6 +299,324 @@ TEST (socketevent_userdata_combinations)
   ASSERT_EQ (result, 0);
 }
 
+/* ============================================================================
+ * POLL WAKEUP EVENT TESTS
+ * ============================================================================
+ */
+
+/* Test context for poll wakeup event verification */
+typedef struct
+{
+  int called;
+  SocketEventType type;
+  const char *component;
+  int nfds;
+  int timeout_ms;
+} PollWakeupContext;
+
+/* Callback for poll wakeup event verification */
+static void
+poll_wakeup_callback (void *userdata, const SocketEventRecord *event)
+{
+  PollWakeupContext *ctx = (PollWakeupContext *)userdata;
+
+  if (ctx != NULL && event != NULL)
+    {
+      ctx->called = 1;
+      ctx->type = event->type;
+      ctx->component = event->component;
+      ctx->nfds = event->data.poll.nfds;
+      ctx->timeout_ms = event->data.poll.timeout_ms;
+    }
+}
+
+/* Test emit_poll_wakeup with no registered handlers (should not crash) */
+TEST (socketevent_emit_poll_wakeup_no_handlers)
+{
+  /* Should complete without crashing */
+  SocketEvent_emit_poll_wakeup (0, 1000);
+  SocketEvent_emit_poll_wakeup (10, -1);
+  SocketEvent_emit_poll_wakeup (5, 0);
+}
+
+/* Test emit_poll_wakeup with single registered handler */
+TEST (socketevent_emit_poll_wakeup_single_handler)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  /* Register handler */
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  /* Emit event with zero file descriptors */
+  SocketEvent_emit_poll_wakeup (0, 1000);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.type, SOCKET_EVENT_POLL_WAKEUP);
+  ASSERT_EQ (ctx.nfds, 0);
+  ASSERT_EQ (ctx.timeout_ms, 1000);
+
+  /* Verify component string */
+  ASSERT_NOT_NULL (ctx.component);
+  ASSERT_EQ (strcmp (ctx.component, "SocketPoll"), 0);
+
+  /* Clean up */
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with multiple registered handlers */
+TEST (socketevent_emit_poll_wakeup_multiple_handlers)
+{
+  PollWakeupContext ctx1 = { 0, 0, NULL, 0, 0 };
+  PollWakeupContext ctx2 = { 0, 0, NULL, 0, 0 };
+  PollWakeupContext ctx3 = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  /* Register three handlers */
+  result = SocketEvent_register (poll_wakeup_callback, &ctx1);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_register (poll_wakeup_callback, &ctx2);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_register (poll_wakeup_callback, &ctx3);
+  ASSERT_EQ (result, 0);
+
+  /* Emit event with multiple fds */
+  SocketEvent_emit_poll_wakeup (42, 5000);
+
+  /* All handlers should receive the event */
+  ASSERT_EQ (ctx1.called, 1);
+  ASSERT_EQ (ctx1.type, SOCKET_EVENT_POLL_WAKEUP);
+  ASSERT_EQ (ctx1.nfds, 42);
+  ASSERT_EQ (ctx1.timeout_ms, 5000);
+
+  ASSERT_EQ (ctx2.called, 1);
+  ASSERT_EQ (ctx2.type, SOCKET_EVENT_POLL_WAKEUP);
+  ASSERT_EQ (ctx2.nfds, 42);
+  ASSERT_EQ (ctx2.timeout_ms, 5000);
+
+  ASSERT_EQ (ctx3.called, 1);
+  ASSERT_EQ (ctx3.type, SOCKET_EVENT_POLL_WAKEUP);
+  ASSERT_EQ (ctx3.nfds, 42);
+  ASSERT_EQ (ctx3.timeout_ms, 5000);
+
+  /* Clean up */
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx1);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx2);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx3);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with nfds=0 (no file descriptors) */
+TEST (socketevent_emit_poll_wakeup_zero_fds)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_poll_wakeup (0, 100);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 0);
+  ASSERT_EQ (ctx.timeout_ms, 100);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with positive nfds values */
+TEST (socketevent_emit_poll_wakeup_positive_fds)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  /* Test various positive nfds values */
+  SocketEvent_emit_poll_wakeup (1, 1000);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 1);
+
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (100, 2000);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 100);
+
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (10000, 3000);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 10000);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with timeout_ms=-1 (infinite timeout) */
+TEST (socketevent_emit_poll_wakeup_infinite_timeout)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_poll_wakeup (5, -1);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 5);
+  ASSERT_EQ (ctx.timeout_ms, -1);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with timeout_ms=0 (non-blocking) */
+TEST (socketevent_emit_poll_wakeup_nonblocking_timeout)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_poll_wakeup (3, 0);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 3);
+  ASSERT_EQ (ctx.timeout_ms, 0);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with positive timeout values */
+TEST (socketevent_emit_poll_wakeup_positive_timeout)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  /* Test various timeout values */
+  SocketEvent_emit_poll_wakeup (2, 1);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.timeout_ms, 1);
+
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (2, 1000);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.timeout_ms, 1000);
+
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (2, 60000);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.timeout_ms, 60000);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_poll_wakeup with various nfds and timeout combinations */
+TEST (socketevent_emit_poll_wakeup_combinations)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  /* Zero fds, infinite timeout */
+  SocketEvent_emit_poll_wakeup (0, -1);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 0);
+  ASSERT_EQ (ctx.timeout_ms, -1);
+
+  /* Zero fds, zero timeout */
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (0, 0);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 0);
+  ASSERT_EQ (ctx.timeout_ms, 0);
+
+  /* Many fds, infinite timeout */
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (1000, -1);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 1000);
+  ASSERT_EQ (ctx.timeout_ms, -1);
+
+  /* Many fds, zero timeout */
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (1000, 0);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 1000);
+  ASSERT_EQ (ctx.timeout_ms, 0);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test that poll events use correct union member (data.poll) */
+TEST (socketevent_emit_poll_wakeup_uses_poll_union)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  /* Emit with distinctive values */
+  SocketEvent_emit_poll_wakeup (123, 456);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.type, SOCKET_EVENT_POLL_WAKEUP);
+  /* Verify we got the poll-specific data */
+  ASSERT_EQ (ctx.nfds, 123);
+  ASSERT_EQ (ctx.timeout_ms, 456);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test multiple emit calls with same handler */
+TEST (socketevent_emit_poll_wakeup_multiple_emits)
+{
+  PollWakeupContext ctx = { 0, 0, NULL, 0, 0 };
+  int result;
+
+  result = SocketEvent_register (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+
+  /* First emit */
+  SocketEvent_emit_poll_wakeup (10, 100);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 10);
+  ASSERT_EQ (ctx.timeout_ms, 100);
+
+  /* Second emit with different values */
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (20, 200);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 20);
+  ASSERT_EQ (ctx.timeout_ms, 200);
+
+  /* Third emit */
+  ctx.called = 0;
+  SocketEvent_emit_poll_wakeup (30, 300);
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.nfds, 30);
+  ASSERT_EQ (ctx.timeout_ms, 300);
+
+  result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
 int
 main (void)
 {
