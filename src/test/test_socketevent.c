@@ -947,6 +947,293 @@ TEST (socketevent_emit_accept_empty_addrs)
   ASSERT_EQ (result, 0);
 }
 
+||||||| parent of f8e468b7 (test(core): add comprehensive tests for SocketEvent_emit_connect)
+/* ============================================================================
+ * EMIT_CONNECT TESTS
+ * ============================================================================
+ */
+
+/* Event capture structure for testing */
+typedef struct
+{
+  int invoked;
+  SocketEventRecord captured;
+} EventCapture;
+
+/* Helper callback to capture event data */
+static void
+capture_callback (void *userdata, const SocketEventRecord *event)
+{
+  EventCapture *capture = (EventCapture *)userdata;
+  capture->invoked++;
+  capture->captured = *event;
+}
+
+/* Test emit_connect with no handlers registered (graceful handling) */
+TEST (socketevent_emit_connect_no_handlers)
+{
+  /* Should not crash when no handlers are registered */
+  SocketEvent_emit_connect (42, "192.168.1.1", 8080, "10.0.0.1", 12345);
+}
+
+/* Test emit_connect dispatches to single registered handler */
+TEST (socketevent_emit_connect_single_handler)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  /* Emit event */
+  SocketEvent_emit_connect (42, "192.168.1.1", 8080, "10.0.0.1", 12345);
+
+  /* Verify handler was invoked once */
+  ASSERT_EQ (capture.invoked, 1);
+
+  /* Verify event type is CONNECTED (not ACCEPTED) */
+  ASSERT_EQ (capture.captured.type, SOCKET_EVENT_CONNECTED);
+
+  /* Verify component is "Socket" */
+  ASSERT (strcmp (capture.captured.component, "Socket") == 0);
+
+  /* Verify connection data fields */
+  ASSERT_EQ (capture.captured.data.connection.fd, 42);
+  ASSERT (strcmp (capture.captured.data.connection.peer_addr, "192.168.1.1")
+          == 0);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 8080);
+  ASSERT (
+      strcmp (capture.captured.data.connection.local_addr, "10.0.0.1") == 0);
+  ASSERT_EQ (capture.captured.data.connection.local_port, 12345);
+
+  /* Clean up */
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect dispatches to multiple registered handlers */
+TEST (socketevent_emit_connect_multiple_handlers)
+{
+  EventCapture capture1 = { 0 };
+  EventCapture capture2 = { 0 };
+  EventCapture capture3 = { 0 };
+  int result;
+
+  /* Register three handlers */
+  result = SocketEvent_register (capture_callback, &capture1);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_register (capture_callback, &capture2);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_register (capture_callback, &capture3);
+  ASSERT_EQ (result, 0);
+
+  /* Emit event */
+  SocketEvent_emit_connect (99, "10.20.30.40", 443, "172.16.0.1", 54321);
+
+  /* Verify all handlers were invoked */
+  ASSERT_EQ (capture1.invoked, 1);
+  ASSERT_EQ (capture2.invoked, 1);
+  ASSERT_EQ (capture3.invoked, 1);
+
+  /* Verify all received correct event type */
+  ASSERT_EQ (capture1.captured.type, SOCKET_EVENT_CONNECTED);
+  ASSERT_EQ (capture2.captured.type, SOCKET_EVENT_CONNECTED);
+  ASSERT_EQ (capture3.captured.type, SOCKET_EVENT_CONNECTED);
+
+  /* Verify all received correct fd */
+  ASSERT_EQ (capture1.captured.data.connection.fd, 99);
+  ASSERT_EQ (capture2.captured.data.connection.fd, 99);
+  ASSERT_EQ (capture3.captured.data.connection.fd, 99);
+
+  /* Clean up */
+  result = SocketEvent_unregister (capture_callback, &capture1);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_unregister (capture_callback, &capture2);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_unregister (capture_callback, &capture3);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect with NULL peer_addr */
+TEST (socketevent_emit_connect_null_peer_addr)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_connect (10, NULL, 80, "127.0.0.1", 8000);
+
+  ASSERT_EQ (capture.invoked, 1);
+  ASSERT_NULL (capture.captured.data.connection.peer_addr);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 80);
+  ASSERT (
+      strcmp (capture.captured.data.connection.local_addr, "127.0.0.1") == 0);
+  ASSERT_EQ (capture.captured.data.connection.local_port, 8000);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect with NULL local_addr */
+TEST (socketevent_emit_connect_null_local_addr)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_connect (20, "example.com", 443, NULL, 9000);
+
+  ASSERT_EQ (capture.invoked, 1);
+  ASSERT (strcmp (capture.captured.data.connection.peer_addr, "example.com")
+          == 0);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 443);
+  ASSERT_NULL (capture.captured.data.connection.local_addr);
+  ASSERT_EQ (capture.captured.data.connection.local_port, 9000);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect with both NULL addresses */
+TEST (socketevent_emit_connect_both_null_addrs)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_connect (30, NULL, 0, NULL, 0);
+
+  ASSERT_EQ (capture.invoked, 1);
+  ASSERT_NULL (capture.captured.data.connection.peer_addr);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 0);
+  ASSERT_NULL (capture.captured.data.connection.local_addr);
+  ASSERT_EQ (capture.captured.data.connection.local_port, 0);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect with negative fd */
+TEST (socketevent_emit_connect_negative_fd)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_connect (-1, "192.168.0.1", 22, "10.0.0.1", 5000);
+
+  ASSERT_EQ (capture.invoked, 1);
+  ASSERT_EQ (capture.captured.data.connection.fd, -1);
+  ASSERT_EQ (capture.captured.type, SOCKET_EVENT_CONNECTED);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect with zero ports */
+TEST (socketevent_emit_connect_zero_ports)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_connect (5, "0.0.0.0", 0, "0.0.0.0", 0);
+
+  ASSERT_EQ (capture.invoked, 1);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 0);
+  ASSERT_EQ (capture.captured.data.connection.local_port, 0);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect with high port numbers */
+TEST (socketevent_emit_connect_high_ports)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_connect (100, "::1", 65535, "fe80::1", 65534);
+
+  ASSERT_EQ (capture.invoked, 1);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 65535);
+  ASSERT_EQ (capture.captured.data.connection.local_port, 65534);
+  ASSERT (strcmp (capture.captured.data.connection.peer_addr, "::1") == 0);
+  ASSERT (strcmp (capture.captured.data.connection.local_addr, "fe80::1")
+          == 0);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_connect multiple times to same handler */
+TEST (socketevent_emit_connect_multiple_emits)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  /* Emit three different events */
+  SocketEvent_emit_connect (1, "host1", 100, "local1", 200);
+  SocketEvent_emit_connect (2, "host2", 101, "local2", 201);
+  SocketEvent_emit_connect (3, "host3", 102, "local3", 202);
+
+  /* Handler should be invoked three times */
+  ASSERT_EQ (capture.invoked, 3);
+
+  /* Last event's data should be captured */
+  ASSERT_EQ (capture.captured.data.connection.fd, 3);
+  ASSERT (strcmp (capture.captured.data.connection.peer_addr, "host3") == 0);
+  ASSERT_EQ (capture.captured.data.connection.peer_port, 102);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test that emit_connect is distinct from emit_accept (different event type)
+ */
+TEST (socketevent_emit_connect_vs_accept)
+{
+  EventCapture capture = { 0 };
+  int result;
+
+  result = SocketEvent_register (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+
+  /* Emit connect event */
+  SocketEvent_emit_connect (50, "192.168.1.10", 8080, "10.0.0.5", 3000);
+
+  /* Verify it's CONNECTED, not ACCEPTED */
+  ASSERT_EQ (capture.captured.type, SOCKET_EVENT_CONNECTED);
+  ASSERT_NE (capture.captured.type, SOCKET_EVENT_ACCEPTED);
+
+  /* Reset and emit accept event for comparison */
+  capture.invoked = 0;
+  SocketEvent_emit_accept (51, "192.168.1.11", 8081, "10.0.0.6", 3001);
+
+  /* Verify accept generates ACCEPTED type */
+  ASSERT_EQ (capture.captured.type, SOCKET_EVENT_ACCEPTED);
+  ASSERT_NE (capture.captured.type, SOCKET_EVENT_CONNECTED);
+
+  result = SocketEvent_unregister (capture_callback, &capture);
+  ASSERT_EQ (result, 0);
+}
+
 int
 main (void)
 {
