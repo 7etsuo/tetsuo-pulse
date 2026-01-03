@@ -751,6 +751,7 @@ set(TEST_SOURCES
     test_timewindow
     test_socketerror
     test_socketevent
+    test_socketlog
     test_safe_arithmetic
     test_url_utils
     test_socketutil_time
