@@ -853,6 +853,12 @@ SocketHTTP_URI_encode (const char *input,
   return (ssize_t)out_len;
 }
 
+static inline int
+uri_decode_check_space (size_t out_len, size_t output_size)
+{
+  return (out_len + 1 > output_size) ? -1 : 0;
+}
+
 ssize_t
 SocketHTTP_URI_decode (const char *input,
                        size_t len,
@@ -866,7 +872,10 @@ SocketHTTP_URI_decode (const char *input,
 
   for (size_t i = 0; i < len; i++)
     {
-      if (input[i] == '%')
+      char c = input[i];
+
+      /* Handle percent-encoded character */
+      if (c == '%')
         {
           if (i + 2 >= len)
             return -1;
@@ -877,32 +886,35 @@ SocketHTTP_URI_decode (const char *input,
           if (hi == HEX_INVALID || lo == HEX_INVALID)
             return -1;
 
-          if (out_len + 1 > output_size)
+          if (uri_decode_check_space (out_len, output_size) < 0)
             return -1;
 
           output[out_len++] = (char)((hi << 4) | lo);
           i += 2;
+          continue;
         }
-      else if (input[i] == '+')
+
+      /* Handle plus as space */
+      if (c == '+')
         {
-          if (out_len + 1 > output_size)
+          if (uri_decode_check_space (out_len, output_size) < 0)
             return -1;
 
           output[out_len++] = ' ';
+          continue;
         }
-      else
-        {
-          if (out_len + 1 > output_size)
-            return -1;
 
-          output[out_len++] = input[i];
-        }
+      /* Handle regular character */
+      if (uri_decode_check_space (out_len, output_size) < 0)
+        return -1;
+
+      output[out_len++] = c;
     }
 
   if (out_len >= output_size)
     return -1;
-  output[out_len] = '\0';
 
+  output[out_len] = '\0';
   return (ssize_t)out_len;
 }
 
