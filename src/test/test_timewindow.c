@@ -207,6 +207,53 @@ TEST (timewindow_rotate_at_expiry)
   ASSERT_EQ (tw.previous_count, 5u);
 }
 
+TEST (timewindow_rotate_past_duration)
+{
+  TimeWindow_T tw;
+  int64_t now = 1000;
+
+  TimeWindow_init (&tw, 10000, now);
+  tw.current_count = 7;
+  tw.previous_count = 3;
+
+  /* Should rotate when elapsed > duration */
+  int rotated = TimeWindow_rotate_if_needed (&tw, now + 15000);
+  ASSERT_EQ (rotated, 1);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 7u);
+  ASSERT_EQ (tw.window_start_ms, now + 15000);
+}
+
+TEST (timewindow_rotate_resets_current_count)
+{
+  TimeWindow_T tw;
+  int64_t now = 1000;
+
+  TimeWindow_init (&tw, 5000, now);
+  tw.current_count = 42;
+  tw.previous_count = 10;
+
+  /* Verify current_count is zeroed after rotation */
+  int rotated = TimeWindow_rotate_if_needed (&tw, now + 5000);
+  ASSERT_EQ (rotated, 1);
+  ASSERT_EQ (tw.current_count, 0u);
+}
+
+TEST (timewindow_rotate_updates_window_start)
+{
+  TimeWindow_T tw;
+  int64_t now = 1000;
+  int64_t new_now = now + 10000;
+
+  TimeWindow_init (&tw, 10000, now);
+  tw.current_count = 5;
+
+  /* Verify window_start_ms is updated to now_ms after rotation */
+  int rotated = TimeWindow_rotate_if_needed (&tw, new_now);
+  ASSERT_EQ (rotated, 1);
+  ASSERT_EQ (tw.window_start_ms, new_now);
+}
+
 TEST (timewindow_rotate_preserves_previous)
 {
   TimeWindow_T tw;
@@ -225,6 +272,84 @@ TEST (timewindow_rotate_preserves_previous)
   TimeWindow_record (&tw, now + 1100);
   TimeWindow_record (&tw, now + 1200);
   ASSERT_EQ (tw.current_count, 2u);
+  ASSERT_EQ (tw.previous_count, 3u);
+}
+
+TEST (timewindow_rotate_time_backwards)
+{
+  TimeWindow_T tw;
+  int64_t now = 5000;
+
+  TimeWindow_init (&tw, 1000, now);
+  tw.current_count = 10;
+  tw.previous_count = 5;
+
+  /* Time goes backwards - should clamp elapsed to 0, no rotation */
+  int rotated = TimeWindow_rotate_if_needed (&tw, now - 500);
+  ASSERT_EQ (rotated, 0);
+  ASSERT_EQ (tw.current_count, 10u);
+  ASSERT_EQ (tw.previous_count, 5u);
+  ASSERT_EQ (tw.window_start_ms, now); /* Unchanged */
+}
+
+TEST (timewindow_rotate_time_same)
+{
+  TimeWindow_T tw;
+  int64_t now = 1000;
+
+  TimeWindow_init (&tw, 1000, now);
+  tw.current_count = 8;
+
+  /* Time stays the same - elapsed = 0, no rotation */
+  int rotated = TimeWindow_rotate_if_needed (&tw, now);
+  ASSERT_EQ (rotated, 0);
+  ASSERT_EQ (tw.current_count, 8u);
+  ASSERT_EQ (tw.window_start_ms, now);
+}
+
+TEST (timewindow_rotate_large_time_jump)
+{
+  TimeWindow_T tw;
+  int64_t now = 1000;
+
+  TimeWindow_init (&tw, 1000, now);
+  tw.current_count = 15;
+  tw.previous_count = 7;
+
+  /* Large time jump: elapsed >> duration */
+  int rotated = TimeWindow_rotate_if_needed (&tw, now + 1000000);
+  ASSERT_EQ (rotated, 1);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 15u);
+  ASSERT_EQ (tw.window_start_ms, now + 1000000);
+}
+
+TEST (timewindow_rotate_sequence)
+{
+  TimeWindow_T tw;
+  int64_t now = 1000;
+
+  TimeWindow_init (&tw, 1000, now);
+
+  /* First rotation */
+  tw.current_count = 5;
+  int rotated1 = TimeWindow_rotate_if_needed (&tw, now + 1000);
+  ASSERT_EQ (rotated1, 1);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 5u);
+
+  /* Second rotation */
+  tw.current_count = 8;
+  int rotated2 = TimeWindow_rotate_if_needed (&tw, now + 2000);
+  ASSERT_EQ (rotated2, 1);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 8u);
+
+  /* Third rotation */
+  tw.current_count = 3;
+  int rotated3 = TimeWindow_rotate_if_needed (&tw, now + 3000);
+  ASSERT_EQ (rotated3, 1);
+  ASSERT_EQ (tw.current_count, 0u);
   ASSERT_EQ (tw.previous_count, 3u);
 }
 
