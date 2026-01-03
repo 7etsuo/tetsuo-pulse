@@ -1268,23 +1268,23 @@ server_h2_build_push_headers (Arena_T arena,
 
   /* Additional headers (filter out pseudo-headers from user input) */
   out_idx = HTTP2_REQUEST_PSEUDO_HEADER_COUNT;
-  if (extra_headers != NULL)
+  for (size_t i = 0; i < extra; i++)
     {
-      for (size_t i = 0; i < extra; i++)
-        {
-          const SocketHTTP_Header *hdr
-              = SocketHTTP_Headers_at (extra_headers, i);
-          if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
-            continue;
-          if (hdr->name[0] == ':')
-            continue;
+      const SocketHTTP_Header *hdr
+          = SocketHTTP_Headers_at (extra_headers, i);
 
-          hpack[out_idx].name = hdr->name;
-          hpack[out_idx].name_len = strlen (hdr->name);
-          hpack[out_idx].value = hdr->value;
-          hpack[out_idx].value_len = strlen (hdr->value);
-          out_idx++;
-        }
+      /* Skip NULL headers, pseudo-headers, or malformed entries */
+      if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+        continue;
+      if (hdr->name[0] == ':')
+        continue;
+
+      /* Copy header to output array */
+      hpack[out_idx].name = hdr->name;
+      hpack[out_idx].name_len = strlen (hdr->name);
+      hpack[out_idx].value = hdr->value;
+      hpack[out_idx].value_len = strlen (hdr->value);
+      out_idx++;
     }
 
   *out_count = out_idx;
