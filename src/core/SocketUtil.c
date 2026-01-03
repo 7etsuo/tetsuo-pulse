@@ -49,7 +49,8 @@ socket_timespec_to_ms (const struct timespec *ts)
          + (int64_t)ts->tv_nsec / SOCKET_NS_PER_MS;
 }
 
-static int
+/* Exposed for unit testing - normally would be static */
+int
 socket_try_clock (clockid_t clock_id, int64_t *result_ms)
 {
   struct timespec ts;
