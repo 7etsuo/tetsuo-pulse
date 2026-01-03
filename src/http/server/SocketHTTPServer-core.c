@@ -318,10 +318,8 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
 
   configure_socket_options (server->listen_socket, socket_family);
 
-  if (bind_with_fallback (server->listen_socket,
-                          bind_addr,
-                          server->config.port,
-                          socket_family)
+  if (bind_with_fallback (
+          server->listen_socket, bind_addr, server->config.port, socket_family)
       < 0)
     {
       Socket_free (&server->listen_socket);
@@ -563,27 +561,25 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
     {
       SocketEvent_T *ev = &events[i];
 
+      /* Handle listen socket - accept new connections */
       if (ev->socket == server->listen_socket)
         {
-          /* Accept new connections if running */
           if (server->state == HTTPSERVER_STATE_RUNNING)
-            {
-              server_accept_clients (server);
-            }
+            server_accept_clients (server);
+          continue;
         }
-      else
-        {
-          ServerConnection *conn = (ServerConnection *)ev->data;
-          /* Skip connections marked for deferred deletion.
-           * This can happen when io_uring or other backends return
-           * multiple events for the same connection in a single batch,
-           * and an earlier event closed the connection. */
-          if (conn != NULL && !conn->pending_close)
-            {
-              requests_processed
-                  += server_process_client_event (server, conn, ev->events);
-            }
-        }
+
+      /* Handle client connections - skip if marked for deletion or null.
+       * This can happen when io_uring or other backends return
+       * multiple events for the same connection in a single batch,
+       * and an earlier event closed the connection. */
+      ServerConnection *conn = (ServerConnection *)ev->data;
+      if (conn == NULL || conn->pending_close)
+        continue;
+
+      /* Process the client event */
+      requests_processed
+          += server_process_client_event (server, conn, ev->events);
     }
 
   server_cleanup_timed_out (server);
