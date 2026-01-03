@@ -857,6 +857,32 @@ set_body_mode_none (SocketHTTP1_Parser_T parser)
   parser->body_complete = 1;
 }
 
+/* Handle Transfer-Encoding header validation and body mode setup */
+static SocketHTTP1_Result
+handle_transfer_encoding (SocketHTTP1_Parser_T parser)
+{
+  /* No chunked encoding present */
+  if (!has_chunked_encoding (parser->headers))
+    {
+      if (parser->config.strict_mode)
+        return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+
+      set_body_mode_until_close (parser);
+      return HTTP1_OK;
+    }
+
+  /* Unsupported transfer codings in strict mode */
+  if (parser->config.strict_mode && has_other_transfer_coding (parser->headers))
+    return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+
+  /* Chunked not last per RFC 9112 */
+  if (!validate_chunked_is_last (parser->headers))
+    return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+
+  set_body_mode_chunked (parser);
+  return HTTP1_OK;
+}
+
 static SocketHTTP1_Result
 determine_body_mode (SocketHTTP1_Parser_T parser)
 {
@@ -879,31 +905,9 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
         return HTTP1_ERROR_INVALID_CONTENT_LENGTH;
     }
 
-  /* Transfer-Encoding takes precedence over Content-Length, with strict
-   * validation */
+  /* Transfer-Encoding takes precedence over Content-Length */
   if (has_te)
-    {
-      /* Early return: no chunked encoding */
-      if (!has_chunked_encoding (parser->headers))
-        {
-          if (parser->config.strict_mode)
-            return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
-          set_body_mode_until_close (parser);
-          return HTTP1_OK;
-        }
-
-      /* Early return: unsupported transfer codings in strict mode */
-      if (parser->config.strict_mode
-          && has_other_transfer_coding (parser->headers))
-        return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
-
-      /* Early return: chunked not last per RFC 9112 */
-      if (!validate_chunked_is_last (parser->headers))
-        return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
-
-      set_body_mode_chunked (parser);
-      return HTTP1_OK;
-    }
+    return handle_transfer_encoding (parser);
 
   /* Content-Length present */
   if (cl_value >= 0)
@@ -1528,8 +1532,8 @@ scan_header_name (const char *p, const char *end)
  */
 static inline int
 process_header_value_chunk (SocketHTTP1_Parser_T parser,
-                             const char *chunk,
-                             size_t chunk_len)
+                            const char *chunk,
+                            size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1561,8 +1565,8 @@ process_header_value_chunk (SocketHTTP1_Parser_T parser,
  */
 static inline int
 process_header_name_chunk (SocketHTTP1_Parser_T parser,
-                            const char *chunk,
-                            size_t chunk_len)
+                           const char *chunk,
+                           size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
