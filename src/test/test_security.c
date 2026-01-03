@@ -386,6 +386,168 @@ TEST (security_populate_ws_limits_not_corrupted)
 }
 
 /* ============================================================================
+||||||| parent of 05cc7f41 (test(core): Add unit tests for populate_tls_limits)
+ * TLS Limits Population Tests (populate_tls_limits)
+ * ============================================================================
+ */
+
+TEST (security_tls_limits_populated_when_enabled)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* Verify TLS fields are populated when TLS is enabled */
+  ASSERT_EQ (SOCKET_TLS_MAX_CERT_CHAIN_DEPTH, limits.tls_max_cert_chain_depth);
+  ASSERT_EQ (SOCKET_TLS_SESSION_CACHE_SIZE, limits.tls_session_cache_size);
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_PROTOCOLS, limits.tls_max_alpn_protocols);
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_LEN, limits.tls_max_alpn_len);
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_TOTAL_BYTES, limits.tls_max_alpn_total_bytes);
+
+  /* Verify all TLS limits are > 0 when TLS is enabled */
+  ASSERT (limits.tls_max_cert_chain_depth > 0);
+  ASSERT (limits.tls_session_cache_size > 0);
+  ASSERT (limits.tls_max_alpn_protocols > 0);
+  ASSERT (limits.tls_max_alpn_len > 0);
+  ASSERT (limits.tls_max_alpn_total_bytes > 0);
+#else
+  /* When TLS is disabled, TLS limits should remain 0 */
+  ASSERT_EQ (0, limits.tls_max_cert_chain_depth);
+  ASSERT_EQ (0, limits.tls_session_cache_size);
+  ASSERT_EQ (0, limits.tls_max_alpn_protocols);
+  ASSERT_EQ (0, limits.tls_max_alpn_len);
+  ASSERT_EQ (0, limits.tls_max_alpn_total_bytes);
+#endif
+}
+
+TEST (security_tls_limits_cert_chain_depth)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* Verify cert chain depth matches expected value */
+  ASSERT_EQ (SOCKET_TLS_MAX_CERT_CHAIN_DEPTH, limits.tls_max_cert_chain_depth);
+  /* Verify it's reasonable (typical value is 10) */
+  ASSERT (limits.tls_max_cert_chain_depth >= 5);
+  ASSERT (limits.tls_max_cert_chain_depth <= 100);
+#endif
+}
+
+TEST (security_tls_limits_session_cache_size)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* Verify session cache size matches expected value */
+  ASSERT_EQ (SOCKET_TLS_SESSION_CACHE_SIZE, limits.tls_session_cache_size);
+  /* Verify it's reasonable (typical value is 1000) */
+  ASSERT (limits.tls_session_cache_size >= 100);
+  ASSERT (limits.tls_session_cache_size <= 100000);
+#endif
+}
+
+TEST (security_tls_limits_alpn_protocols)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* Verify ALPN protocols limit matches expected value */
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_PROTOCOLS, limits.tls_max_alpn_protocols);
+  /* Verify it's reasonable (typical value is 16) */
+  ASSERT (limits.tls_max_alpn_protocols >= 5);
+  ASSERT (limits.tls_max_alpn_protocols <= 100);
+#endif
+}
+
+TEST (security_tls_limits_alpn_len)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* Verify ALPN max length matches expected value */
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_LEN, limits.tls_max_alpn_len);
+  /* Verify it's reasonable (RFC 7301: 1-255 bytes) */
+  ASSERT (limits.tls_max_alpn_len >= 1);
+  ASSERT (limits.tls_max_alpn_len <= 255);
+#endif
+}
+
+TEST (security_tls_limits_alpn_total_bytes)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* Verify ALPN total bytes matches expected value */
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_TOTAL_BYTES,
+             limits.tls_max_alpn_total_bytes);
+  /* Verify it's reasonable (typical value is 1024) */
+  ASSERT (limits.tls_max_alpn_total_bytes >= 256);
+  ASSERT (limits.tls_max_alpn_total_bytes <= 65536);
+#endif
+}
+
+TEST (security_tls_limits_consistency)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* ALPN total bytes should be >= max single protocol length */
+  ASSERT (limits.tls_max_alpn_total_bytes >= limits.tls_max_alpn_len);
+
+  /* Total bytes should accommodate at least max_protocols * reasonable size */
+  /* Each protocol needs at least some minimum space */
+  size_t min_total = limits.tls_max_alpn_protocols * 10; /* Assume 10 bytes min
+                                                             per protocol */
+  ASSERT (limits.tls_max_alpn_total_bytes >= min_total);
+#endif
+}
+
+TEST (security_tls_limits_zero_initialization)
+{
+  /* Test that TLS fields start at zero before population */
+  SocketSecurityLimits limits;
+  memset (&limits, 0xFF, sizeof (limits)); /* Fill with non-zero pattern */
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_TLS
+  /* After population, all TLS fields should have proper values */
+  ASSERT (limits.tls_max_cert_chain_depth > 0);
+  ASSERT (limits.tls_session_cache_size > 0);
+  ASSERT (limits.tls_max_alpn_protocols > 0);
+  ASSERT (limits.tls_max_alpn_len > 0);
+  ASSERT (limits.tls_max_alpn_total_bytes > 0);
+#else
+  /* When TLS disabled, fields should be zero regardless of initial pattern */
+  ASSERT_EQ (0, limits.tls_max_cert_chain_depth);
+  ASSERT_EQ (0, limits.tls_session_cache_size);
+  ASSERT_EQ (0, limits.tls_max_alpn_protocols);
+  ASSERT_EQ (0, limits.tls_max_alpn_len);
+  ASSERT_EQ (0, limits.tls_max_alpn_total_bytes);
+#endif
+}
+
+/* ============================================================================
  * Integer Overflow Protection Tests
  * ============================================================================
  */
