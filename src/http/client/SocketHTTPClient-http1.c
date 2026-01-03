@@ -147,18 +147,23 @@ httpclient_http1_read_body_data (HTTPPoolEntry *conn,
                                              sizeof (body_chunk),
                                              &body_written);
 
-      /* HTTP1_INCOMPLETE means more data needed, keep going */
+      /* Guard clause: break early on error */
       if (result != HTTP1_OK && result != HTTP1_INCOMPLETE)
         break;
 
-      if (body_written > 0)
+      /* Guard clause: skip iteration if nothing written */
+      if (body_written == 0)
         {
-          acc_result = httpclient_body_accumulate_chunk (
-              acc, body_chunk, body_written);
-          if (acc_result < 0)
-            return acc_result; /* -1 = memory error, -2 = size limit exceeded
-                                */
+          *consumed += body_consumed;
+          remaining -= body_consumed;
+          continue;
         }
+
+      /* Main logic at normal indentation (Level 2 only) */
+      acc_result = httpclient_body_accumulate_chunk (
+          acc, body_chunk, body_written);
+      if (acc_result < 0)
+        return acc_result; /* -1 = memory error, -2 = size limit exceeded */
 
       *consumed += body_consumed;
       remaining -= body_consumed;
