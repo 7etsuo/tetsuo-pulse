@@ -644,6 +644,25 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser,
 }
 
 /**
+ * Validate CR character in trailer CR state and consume it.
+ *
+ * In HTTP/1.1, CR is always followed by LF. This function validates that
+ * the expected LF character follows the CR and advances the input position.
+ *
+ * @param p Pointer to current input position (modified if CR consumed)
+ * @return HTTP1_OK if valid CR+LF sequence found, HTTP1_ERROR_INVALID_TRAILER
+ *         if LF is not present
+ */
+static SocketHTTP1_Result
+validate_trailer_cr (const char **p)
+{
+  if (**p != '\n')
+    return HTTP1_ERROR_INVALID_TRAILER;
+  (*p)++;
+  return HTTP1_OK;
+}
+
+/**
  * Handle trailer parsing states in chunked transfer encoding.
  *
  * Processes trailer headers after the final zero-size chunk (RFC 9112 Section
@@ -702,13 +721,15 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
         case HTTP1_PS_TRAILER_CR:
         case HTTP1_PS_TRAILER_LF:
           {
-            /* Inline handle_trailer_line_completion logic */
+            /* Validate CR if in CR state */
             if (parser->internal_state == HTTP1_PS_TRAILER_CR)
               {
-                if (**p != '\n')
-                  return HTTP1_ERROR_INVALID_TRAILER;
-                (*p)++;
+                SocketHTTP1_Result res = validate_trailer_cr (p);
+                if (res != HTTP1_OK)
+                  return res;
               }
+
+            /* Complete the trailer header */
             SocketHTTP1_Result res = complete_trailer_header (parser);
             if (res != HTTP1_OK)
               return res;
