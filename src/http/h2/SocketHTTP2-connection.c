@@ -613,18 +613,24 @@ SocketHTTP2_Conn_handshake (SocketHTTP2_Conn_T conn)
   switch (conn->state)
     {
     case HTTP2_CONN_STATE_INIT:
-      if (conn->role == HTTP2_ROLE_CLIENT)
-        {
-          if (handshake_send_client_preface (conn) < 0)
-            return -1;
-          return handshake_send_settings (conn) < 0 ? -1 : 1;
-        }
       /* Server waits for client preface */
+      if (conn->role != HTTP2_ROLE_CLIENT)
+        return 1;
+
+      /* Client sends preface then settings */
+      if (handshake_send_client_preface (conn) < 0)
+        return -1;
+
+      if (handshake_send_settings (conn) < 0)
+        return -1;
+
       return 1;
 
     case HTTP2_CONN_STATE_PREFACE_SENT:
     case HTTP2_CONN_STATE_PREFACE_RECV:
-      return handshake_send_settings (conn) < 0 ? -1 : 1;
+      if (handshake_send_settings (conn) < 0)
+        return -1;
+      return 1;
 
     case HTTP2_CONN_STATE_SETTINGS_SENT:
     case HTTP2_CONN_STATE_SETTINGS_RECV:
