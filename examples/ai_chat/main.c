@@ -299,20 +299,29 @@ process_ws_message(SocketWS_T ws, const char *msg, size_t len)
 
     char type[32], nick[64], text[1024];
 
-    if (!json_get_string(msg, "type", type, sizeof(type))) return;
+    printf("[DEBUG] Received WS message: %.100s%s\n", msg, len > 100 ? "..." : "");
+
+    if (!json_get_string(msg, "type", type, sizeof(type))) {
+        printf("[DEBUG] Failed to parse type\n");
+        return;
+    }
+
+    printf("[DEBUG] Message type: %s\n", type);
 
     if (strcmp(type, "join") == 0) {
         if (json_get_string(msg, "nick", nick, sizeof(nick))) {
             WebSocketHub_set_nick(hub, ws, nick);
             WebSocketHub_broadcast_userjoin(hub, nick);
             WebSocketHub_broadcast_userlist(hub);
-            printf("User joined: %s\n", nick);
+            printf(">>> User joined: %s\n", nick);
         }
     } else if (strcmp(type, "user") == 0) {
         if (json_get_string(msg, "nick", nick, sizeof(nick)) &&
             json_get_string(msg, "text", text, sizeof(text))) {
             AgentSystem_add_user_message(agent_system, nick, text);
-            printf("<%s> %s\n", nick, text);
+            printf(">>> <%s> %s\n", nick, text);
+        } else {
+            printf("[DEBUG] Failed to parse nick or text\n");
         }
     }
 }
