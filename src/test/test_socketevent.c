@@ -617,7 +617,6 @@ TEST (socketevent_emit_poll_wakeup_multiple_emits)
   ASSERT_EQ (result, 0);
 }
 
-||||||| parent of 9d1edeed (test(core): Add comprehensive tests for SocketEvent_emit_accept)
 /* ============================================================================
  * SocketEvent_emit_accept Tests
  * ============================================================================

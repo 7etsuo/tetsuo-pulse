@@ -814,7 +814,6 @@ TEST (arena_reset_followed_by_calloc)
   Arena_dispose (&arena);
 }
 
-||||||| parent of 7308f2e0 (test(core): Add comprehensive tests for Arena_new_unlocked)
 /* ==================== Arena_new_unlocked() Tests ==================== */
 
 /* Test basic unlocked arena creation */
