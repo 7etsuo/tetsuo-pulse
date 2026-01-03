@@ -644,6 +644,31 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser,
 }
 
 /**
+ * Validate CR/LF sequence for trailer lines.
+ *
+ * When in HTTP1_PS_TRAILER_CR state, validates that CR is followed by LF.
+ * When in HTTP1_PS_TRAILER_LF state, no validation needed.
+ *
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @return HTTP1_OK on success, or HTTP1_ERROR_INVALID_TRAILER on invalid CRLF
+ */
+static SocketHTTP1_Result
+validate_trailer_cr_lf (SocketHTTP1_Parser_T parser, const char **p)
+{
+  /* LF case - no validation needed */
+  if (parser->internal_state != HTTP1_PS_TRAILER_CR)
+    return HTTP1_OK;
+
+  /* CR case - must be followed by LF */
+  if (**p != '\n')
+    return HTTP1_ERROR_INVALID_TRAILER;
+
+  (*p)++;
+  return HTTP1_OK;
+}
+
+/**
  * Handle trailer line completion after CR or LF state.
  *
  * Validates CRLF sequence for trailer lines and completes header processing.
@@ -655,16 +680,11 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser,
 static SocketHTTP1_Result
 handle_trailer_line_completion (SocketHTTP1_Parser_T parser, const char **p)
 {
-  /* Validate CR must be followed by LF */
-  if (parser->internal_state == HTTP1_PS_TRAILER_CR)
-    {
-      if (**p != '\n')
-        return HTTP1_ERROR_INVALID_TRAILER;
-      (*p)++;
-    }
+  SocketHTTP1_Result res = validate_trailer_cr_lf (parser, p);
+  if (res != HTTP1_OK)
+    return res;
 
-  /* Complete the header (add to trailers collection, reset buffers) */
-  SocketHTTP1_Result res = complete_trailer_header (parser);
+  res = complete_trailer_header (parser);
   if (res != HTTP1_OK)
     return res;
 
@@ -785,7 +805,8 @@ chunk_size_handler (SocketHTTP1_Parser_T parser,
 }
 
 /**
- * Handle chunk data copying - guard clause returns early on incomplete or error.
+ * Handle chunk data copying - guard clause returns early on incomplete or
+ * error.
  *
  * @param parser Parser instance with current state
  * @param p Pointer to current input position (modified as data consumed)
@@ -872,22 +893,29 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
       switch (parser->internal_state)
         {
         case HTTP1_PS_CHUNK_SIZE:
-          result = chunk_size_handler (parser, &p, end, input, output, out,
-                                       consumed, written);
+          result = chunk_size_handler (
+              parser, &p, end, input, output, out, consumed, written);
           if (result != HTTP1_OK)
             return result;
           break;
 
         case HTTP1_PS_CHUNK_DATA:
-          result = chunk_data_handler (parser, &p, end, &out, &out_remaining,
-                                       input, output, consumed, written);
+          result = chunk_data_handler (parser,
+                                       &p,
+                                       end,
+                                       &out,
+                                       &out_remaining,
+                                       input,
+                                       output,
+                                       consumed,
+                                       written);
           if (result != HTTP1_OK)
             return result;
           break;
 
         case HTTP1_PS_CHUNK_DATA_CR:
-          result = chunk_crlf_handler (parser, &p, end, input, output, out,
-                                       consumed, written);
+          result = chunk_crlf_handler (
+              parser, &p, end, input, output, out, consumed, written);
           if (result != HTTP1_OK)
             return result;
           break;
