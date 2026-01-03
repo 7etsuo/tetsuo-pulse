@@ -762,12 +762,26 @@ has_chunked_encoding (SocketHTTP_Headers_T headers)
   return 0;
 }
 
+/* Check if a single TE value contains any unsupported coding */
+static int
+contains_unsupported_coding (const char *te_value)
+{
+  static const char *unsupported[]
+      = { "gzip", "x-gzip", "compress", "deflate", "identity", NULL };
+
+  for (const char **u = unsupported; *u; u++)
+    {
+      if (http1_contains_token (te_value, *u))
+        return 1;
+    }
+
+  return 0;
+}
+
 /* Check for unsupported transfer codings */
 static int
 has_other_transfer_coding (SocketHTTP_Headers_T headers)
 {
-  static const char *unsupported[]
-      = { "gzip", "x-gzip", "compress", "deflate", "identity", NULL };
   if (!headers)
     return 0;
 
@@ -780,11 +794,8 @@ has_other_transfer_coding (SocketHTTP_Headers_T headers)
 
   for (size_t i = 0; i < count; i++)
     {
-      for (const char **u = unsupported; *u; u++)
-        {
-          if (http1_contains_token (te_values[i], *u))
-            return 1;
-        }
+      if (contains_unsupported_coding (te_values[i]))
+        return 1;
     }
 
   return 0;
