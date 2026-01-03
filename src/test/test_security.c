@@ -30,6 +30,7 @@
 #include "core/SocketUTF8.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTP2.h"
 #include "http/SocketHTTPClient-private.h"
 #include "http/SocketHTTPClient.h"
 #include "socket/SocketBuf.h"
@@ -736,6 +737,149 @@ TEST (security_http1_header_limit_enforced)
 
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
+}
+
+/* ============================================================================
+ * HTTP Limits Population Tests
+ * ============================================================================
+ */
+
+TEST (security_populate_http_limits_fields)
+{
+  /* Test that populate_http_limits sets all expected fields correctly */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify http_max_uri_length = SOCKETHTTP_MAX_URI_LEN */
+  ASSERT_EQ (SOCKETHTTP_MAX_URI_LEN, limits.http_max_uri_length);
+
+  /* Verify http_max_header_name = SOCKETHTTP_MAX_HEADER_NAME */
+  ASSERT_EQ (SOCKETHTTP_MAX_HEADER_NAME, limits.http_max_header_name);
+
+  /* Verify http_max_header_value = SOCKETHTTP_MAX_HEADER_VALUE */
+  ASSERT_EQ (SOCKETHTTP_MAX_HEADER_VALUE, limits.http_max_header_value);
+
+  /* Verify http_max_header_size = SOCKETHTTP_MAX_HEADER_SIZE */
+  ASSERT_EQ (SOCKETHTTP_MAX_HEADER_SIZE, limits.http_max_header_size);
+
+  /* Verify http_max_headers = SOCKETHTTP_MAX_HEADERS */
+  ASSERT_EQ (SOCKETHTTP_MAX_HEADERS, limits.http_max_headers);
+
+  /* Verify http_max_body_size = SOCKET_SECURITY_MAX_BODY_SIZE */
+  ASSERT_EQ (SOCKET_SECURITY_MAX_BODY_SIZE, limits.http_max_body_size);
+}
+
+TEST (security_populate_http1_limits_fields)
+{
+  /* Test that populate_http1_limits sets all expected fields correctly */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify http1_max_request_line = SOCKETHTTP1_MAX_REQUEST_LINE */
+  ASSERT_EQ (SOCKETHTTP1_MAX_REQUEST_LINE, limits.http1_max_request_line);
+
+  /* Verify http1_max_chunk_size = SOCKETHTTP1_MAX_CHUNK_SIZE */
+  ASSERT_EQ (SOCKETHTTP1_MAX_CHUNK_SIZE, limits.http1_max_chunk_size);
+}
+
+TEST (security_populate_http2_limits_fields)
+{
+  /* Test that populate_http2_limits sets all expected fields correctly */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify http2_max_concurrent_streams =
+   * SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS */
+  ASSERT_EQ (SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS,
+             limits.http2_max_concurrent_streams);
+
+  /* Verify http2_max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE */
+  ASSERT_EQ (SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE, limits.http2_max_frame_size);
+
+  /* Verify http2_max_header_list_size =
+   * SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE */
+  ASSERT_EQ (SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE,
+             limits.http2_max_header_list_size);
+}
+
+TEST (security_http_limits_nonzero)
+{
+  /* Verify all HTTP limits are non-zero (sanity check) */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  ASSERT (limits.http_max_uri_length > 0);
+  ASSERT (limits.http_max_header_name > 0);
+  ASSERT (limits.http_max_header_value > 0);
+  ASSERT (limits.http_max_header_size > 0);
+  ASSERT (limits.http_max_headers > 0);
+  ASSERT (limits.http_max_body_size > 0);
+}
+
+TEST (security_http1_limits_nonzero)
+{
+  /* Verify all HTTP/1.1 limits are non-zero (sanity check) */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  ASSERT (limits.http1_max_request_line > 0);
+  ASSERT (limits.http1_max_chunk_size > 0);
+}
+
+TEST (security_http2_limits_nonzero)
+{
+  /* Verify all HTTP/2 limits are non-zero (sanity check) */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  ASSERT (limits.http2_max_concurrent_streams > 0);
+  ASSERT (limits.http2_max_frame_size > 0);
+  ASSERT (limits.http2_max_header_list_size > 0);
+}
+
+TEST (security_http_limits_consistency)
+{
+  /* Verify HTTP limits have reasonable relationships */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  /* Header value should be <= total header size */
+  ASSERT (limits.http_max_header_value <= limits.http_max_header_size);
+
+  /* Header name should be reasonable compared to header value */
+  ASSERT (limits.http_max_header_name <= limits.http_max_header_value);
+
+  /* URI length should be reasonable */
+  ASSERT (limits.http_max_uri_length <= limits.http_max_body_size);
+}
+
+TEST (security_http1_limits_consistency)
+{
+  /* Verify HTTP/1.1 limits have reasonable relationships */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  /* Request line should be reasonable compared to chunk size */
+  ASSERT (limits.http1_max_request_line <= limits.http1_max_chunk_size);
+}
+
+TEST (security_http2_limits_consistency)
+{
+  /* Verify HTTP/2 limits have reasonable relationships */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  /* Frame size should be <= header list size (frames contain headers) */
+  ASSERT (limits.http2_max_frame_size <= limits.http2_max_header_list_size);
+
+  /* Concurrent streams should be reasonable (not absurdly high) */
+  ASSERT (limits.http2_max_concurrent_streams <= 10000);
 }
 
 /* ============================================================================
