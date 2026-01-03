@@ -27,8 +27,8 @@
 #include "agents.h"
 
 #define PORT 8080
-#define AGENT_TURN_DELAY_MS 5000
-#define THINKING_DELAY_MS 2000
+#define AGENT_TURN_DELAY_MS 2000
+#define THINKING_DELAY_MS 1000
 
 static volatile int running = 1;
 static SocketHTTPServer_T server = NULL;
@@ -138,7 +138,7 @@ static const char *INDEX_HTML =
 "    const inputEl = document.getElementById('input');\n"
 "    const usersEl = document.getElementById('users');\n"
 "    let ws = null;\n"
-"    let myNick = 'User' + Math.floor(Math.random() * 1000);\n"
+"    let myNick = 'tetsuo-pulse';\n"
 "    function timestamp() {\n"
 "      const d = new Date();\n"
 "      return d.toTimeString().slice(0, 8);\n"
@@ -196,8 +196,8 @@ static const char *INDEX_HTML =
 "        } else if (data.type === 'thinking') {\n"
 "          addLine('<span class=\"time\">[' + timestamp() + ']</span> <span class=\"nick server\">*</span> <span class=\"text\">' + data.agent + ' is typing...</span>', 'action');\n"
 "        } else if (data.type === 'msg') {\n"
-"          const nc = data.agent.toLowerCase();\n"
-"          addLine('<span class=\"time\">[' + timestamp() + ']</span> &lt;<span class=\"nick ' + nc + '\">' + data.agent + '</span>&gt; <span class=\"text\">' + escapeHtml(data.text) + '</span>');\n"
+"          const nc = data.avatar ? data.agent.toLowerCase() : 'user';\n"
+"          addLine('<span class=\"time\">[' + timestamp() + ']</span> &lt;<span class=\"nick ' + nc + '\">' + escapeHtml(data.agent) + '</span>&gt; <span class=\"text\">' + escapeHtml(data.text) + '</span>');\n"
 "        } else if (data.type === 'userlist') {\n"
 "          updateUserList(data.users);\n"
 "        } else if (data.type === 'userjoin') {\n"
@@ -253,7 +253,7 @@ schedule_next_turn(SocketPoll_T poll, AgentSystem_T agents)
     ctx->agents = agents;
     ctx->poll = poll;
 
-    int delay = AGENT_TURN_DELAY_MS + (rand() % 3000);
+    int delay = AGENT_TURN_DELAY_MS + (rand() % 1000);
     SocketTimer_add(poll, delay, agent_turn_callback, ctx);
 }
 

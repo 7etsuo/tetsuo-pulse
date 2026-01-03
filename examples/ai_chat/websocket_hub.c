@@ -154,6 +154,12 @@ WebSocketHub_broadcast_json(WebSocketHub_T hub,
             escaped_agent ? escaped_agent : "",
             avatar,
             escaped_text ? escaped_text : "");
+    } else if (agent && text) {
+        len = snprintf(buffer, sizeof(buffer),
+            "{\"type\":\"%s\",\"agent\":\"%s\",\"text\":\"%s\"}",
+            type,
+            escaped_agent ? escaped_agent : "",
+            escaped_text ? escaped_text : "");
     } else if (agent) {
         len = snprintf(buffer, sizeof(buffer),
             "{\"type\":\"%s\",\"agent\":\"%s\"}",
