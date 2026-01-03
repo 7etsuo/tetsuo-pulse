@@ -415,18 +415,16 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser,
       parser->chunk_size = 0;
       parser->chunk_remaining = 0;
 
+      /* Guard: Initialize trailers if not already done */
       if (parser->trailers == NULL)
         {
-          SocketHTTP_Headers_T trailers
-              = SocketHTTP_Headers_new (parser->arena);
-          if (trailers == NULL)
-            {
-              return HTTP1_ERROR;
-            }
-          parser->trailers = trailers;
+          parser->trailers = SocketHTTP_Headers_new (parser->arena);
+          if (parser->trailers == NULL)
+            return HTTP1_ERROR;
           parser->trailer_count = 0;
           parser->total_trailer_size = 0;
         }
+
       parser->internal_state = HTTP1_PS_TRAILER_START;
       parser->state = HTTP1_STATE_TRAILERS;
     }
