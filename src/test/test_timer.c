@@ -1221,6 +1221,257 @@ TEST (timer_repeating_first_firing_timing)
 }
 
 /* ============================================================================
+ * Advanced Cancellation Tests (Issue #3065)
+ * ============================================================================
+ */
+
+TEST (timer_cancel_after_fired)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    /* Create a 10ms one-shot timer */
+    timer = SocketTimer_add (poll, 10, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait for timer to fire */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 50);
+
+    /* Timer should have fired */
+    ASSERT_EQ (1, ctx.call_count);
+
+    /* Cancelling already-fired timer should return -1 */
+    int result = SocketTimer_cancel (poll, timer);
+    ASSERT_EQ (-1, result);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+TEST (timer_lazy_deletion_mechanism)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx1 = { 0, 0, NULL };
+  TimerCallbackContext ctx2 = { 0, 0, NULL };
+  TimerCallbackContext ctx3 = { 0, 0, NULL };
+  SocketTimer_T timer1 = NULL;
+  SocketTimer_T timer2 = NULL;
+  SocketTimer_T timer3 = NULL;
+
+  TRY
+  {
+    /* Create timers with different delays (100ms, 200ms, 300ms) */
+    timer1 = SocketTimer_add (poll, 100, timer_callback_with_check, &ctx1);
+    timer2 = SocketTimer_add (poll, 200, timer_callback_with_check, &ctx2);
+    timer3 = SocketTimer_add (poll, 300, timer_callback_with_check, &ctx3);
+
+    ASSERT_NOT_NULL (timer1);
+    ASSERT_NOT_NULL (timer2);
+    ASSERT_NOT_NULL (timer3);
+
+    /* Cancel timer2 (middle timer) - lazy deletion should mark it cancelled */
+    int result = SocketTimer_cancel (poll, timer2);
+    ASSERT_EQ (0, result);
+
+    /* Wait for timer1 to fire (100ms) */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 150);
+
+    /* Only timer1 should have fired */
+    ASSERT_EQ (1, ctx1.call_count);
+    ASSERT_EQ (0, ctx2.call_count);
+    ASSERT_EQ (0, ctx3.call_count);
+
+    /* Wait for timer3 to fire (another 200ms) */
+    (void)SocketPoll_wait (poll, &events, 200);
+
+    /* timer1 and timer3 should have fired, timer2 should not */
+    ASSERT_EQ (1, ctx1.call_count);
+    ASSERT_EQ (0, ctx2.call_count);
+    ASSERT_EQ (1, ctx3.call_count);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+TEST (timer_multiple_cancellations_in_heap)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (20);
+  TimerCallbackContext contexts[10];
+  SocketTimer_T timers[10];
+
+  TRY
+  {
+    /* Create 10 timers with different delays (50ms, 100ms, 150ms, ...) */
+    for (int i = 0; i < 10; i++)
+      {
+        contexts[i].call_count = 0;
+        contexts[i].last_call_time_ms = 0;
+        contexts[i].expected_userdata = NULL;
+        timers[i] = SocketTimer_add (
+            poll, 50 + (i * 50), timer_callback_with_check, &contexts[i]);
+        ASSERT_NOT_NULL (timers[i]);
+      }
+
+    /* Cancel 5 out of 10 timers (indices 1, 3, 5, 7, 9) */
+    for (int i = 1; i < 10; i += 2)
+      {
+        int result = SocketTimer_cancel (poll, timers[i]);
+        ASSERT_EQ (0, result);
+      }
+
+    /* Wait long enough for all timers to expire (600ms total, polling multiple
+     * times) */
+    SocketEvent_T *events = NULL;
+    int64_t start = Socket_get_monotonic_ms ();
+    while (Socket_get_monotonic_ms () - start < 600)
+      {
+        (void)SocketPoll_wait (poll, &events, 100);
+      }
+
+    /* Verify only non-cancelled timers fired (indices 0, 2, 4, 6, 8) */
+    for (int i = 0; i < 10; i++)
+      {
+        if (i % 2 == 0)
+          {
+            /* Even indices should have fired */
+            ASSERT_EQ (1, contexts[i].call_count);
+          }
+        else
+          {
+            /* Odd indices were cancelled, should not fire */
+            ASSERT_EQ (0, contexts[i].call_count);
+          }
+      }
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+TEST (timer_cancel_repeating_verifies_no_further_fires)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    /* Create a repeating 30ms timer */
+    timer
+        = SocketTimer_add_repeating (poll, 30, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait for first fire (~30ms) */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 50);
+
+    /* Should have fired at least once */
+    int count_after_first = ctx.call_count;
+    ASSERT (count_after_first >= 1);
+
+    /* Cancel the timer */
+    int result = SocketTimer_cancel (poll, timer);
+    ASSERT_EQ (0, result);
+
+    /* Wait longer (another 100ms) */
+    (void)SocketPoll_wait (poll, &events, 100);
+
+    /* Call count should not have increased */
+    ASSERT_EQ (count_after_first, ctx.call_count);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+TEST (timer_cancel_early_cancellation)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    /* Create a timer with long delay (1000ms) */
+    timer = SocketTimer_add (poll, 1000, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Cancel immediately (early cancellation) */
+    int result = SocketTimer_cancel (poll, timer);
+    ASSERT_EQ (0, result);
+
+    /* Wait a bit to ensure it doesn't fire */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 100);
+
+    /* Callback should never have fired */
+    ASSERT_EQ (0, ctx.call_count);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+TEST (timer_cancelled_timers_skipped_at_heap_root)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx1 = { 0, 0, NULL };
+  TimerCallbackContext ctx2 = { 0, 0, NULL };
+  SocketTimer_T timer1 = NULL;
+  SocketTimer_T timer2 = NULL;
+
+  TRY
+  {
+    /* Create two timers: first expires at 50ms, second at 100ms */
+    timer1 = SocketTimer_add (poll, 50, timer_callback_with_check, &ctx1);
+    timer2 = SocketTimer_add (poll, 100, timer_callback_with_check, &ctx2);
+
+    ASSERT_NOT_NULL (timer1);
+    ASSERT_NOT_NULL (timer2);
+
+    /* Cancel the first timer (will be at heap root) */
+    int result = SocketTimer_cancel (poll, timer1);
+    ASSERT_EQ (0, result);
+
+    /* Wait for when both would have expired */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 150);
+
+    /* Only timer2 should have fired, timer1 should be skipped */
+    ASSERT_EQ (0, ctx1.call_count);
+    ASSERT_EQ (1, ctx2.call_count);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* ============================================================================
  * Main - Run all timer tests
  * ============================================================================
  */
