@@ -1375,6 +1375,153 @@ TEST (except_helper_basename_empty)
 
 #endif /* TESTING */
 
+||||||| parent of e548fe01 (test(core): add comprehensive unit tests for except_basename edge cases)
+/* ==========================================================================
+ * Unit tests for except_basename edge cases (issue #3016)
+ * Tests the static except_basename function via test-only wrapper
+ * ==========================================================================
+ */
+
+#ifdef TESTING
+/* Test except_basename with forward slash */
+TEST (except_basename_forward_slash)
+{
+  const char *input = "/path/to/file.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "file.c"), 0);
+}
+
+/* Test except_basename with backslash (Windows) */
+TEST (except_basename_backslash)
+{
+  const char *input = "C:\\path\\to\\file.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "file.c"), 0);
+}
+
+/* Test except_basename with mixed separators */
+TEST (except_basename_mixed_separators)
+{
+  const char *input = "/path\\to/file.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "file.c"), 0);
+}
+
+/* Test except_basename with trailing separator */
+TEST (except_basename_trailing_separator)
+{
+  const char *input = "/path/to/";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  /* After the last separator is empty string */
+  ASSERT_EQ (strcmp (result, ""), 0);
+}
+
+/* Test except_basename with no separators */
+TEST (except_basename_no_separators)
+{
+  const char *input = "file.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "file.c"), 0);
+}
+
+/* Test except_basename with NULL path */
+TEST (except_basename_null_path)
+{
+  const char *result = except_basename_test_wrapper (NULL);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "unknown"), 0);
+}
+
+/* Test except_basename with empty string */
+TEST (except_basename_empty_string)
+{
+  const char *input = "";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  /* Empty string has no separators, so returns the string itself */
+  ASSERT_EQ (strcmp (result, ""), 0);
+}
+
+/* Test except_basename with multiple consecutive separators */
+TEST (except_basename_consecutive_separators)
+{
+  const char *input = "/path//to///file.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "file.c"), 0);
+}
+
+/* Test except_basename with only separator */
+TEST (except_basename_only_separator)
+{
+  const char *input = "/";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  /* After the only separator is empty string */
+  ASSERT_EQ (strcmp (result, ""), 0);
+}
+
+/* Test except_basename with backslash only */
+TEST (except_basename_backslash_only)
+{
+  const char *input = "\\";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  /* After the only separator is empty string */
+  ASSERT_EQ (strcmp (result, ""), 0);
+}
+
+/* Test except_basename with complex path */
+TEST (except_basename_complex_path)
+{
+  const char *input = "/home/user/projects/tetsuo-socket/src/core/Except.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "Except.c"), 0);
+}
+
+/* Test except_basename with Windows drive letter */
+TEST (except_basename_windows_drive)
+{
+  const char *input = "C:\\Users\\username\\Documents\\test.txt";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.txt"), 0);
+}
+
+/* Test except_basename with relative path forward slash */
+TEST (except_basename_relative_forward)
+{
+  const char *input = "./src/test.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.c"), 0);
+}
+
+/* Test except_basename with relative path backslash */
+TEST (except_basename_relative_backslash)
+{
+  const char *input = ".\\src\\test.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "test.c"), 0);
+}
+
+/* Test except_basename with filename containing separator-like chars */
+TEST (except_basename_no_actual_path)
+{
+  const char *input = "file-with-dash.c";
+  const char *result = except_basename_test_wrapper (input);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (strcmp (result, "file-with-dash.c"), 0);
+}
+#endif /* TESTING */
+
 int
 main (void)
 {

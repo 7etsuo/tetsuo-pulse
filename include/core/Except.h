@@ -83,6 +83,19 @@ extern __thread Except_Frame *Except_stack;
 /** Base exception for assertion failures */
 extern const Except_T Assert_Failed;
 
+#ifdef TESTING
+/**
+ * @brief Test-only wrapper for except_basename (internal testing).
+ *
+ * Exposes the static except_basename function for unit testing.
+ * Only available when compiled with -DTESTING flag.
+ *
+ * @param path File path to extract basename from
+ * @return Basename of path, or "unknown" if path is NULL
+ */
+extern const char *except_basename_test_wrapper (const char *path);
+#endif
+
 /**
  * @brief Raise an exception (internal - use RAISE macro).
  *

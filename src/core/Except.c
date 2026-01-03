@@ -101,6 +101,17 @@ except_basename (const char *path)
   return (last_sep != NULL) ? (last_sep + 1) : path;
 }
 
+#ifdef TESTING
+/* Test-only wrapper to expose except_basename for unit testing.
+ * This is only compiled when building tests (via -DTESTING flag).
+ * Production builds never include this symbol. */
+const char *
+except_basename_test_wrapper (const char *path)
+{
+  return except_basename (path);
+}
+#endif
+
 static void
 except_emit_location (const char *file, int line)
 {
