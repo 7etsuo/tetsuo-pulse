@@ -746,6 +746,7 @@ target_include_directories(test_framework PRIVATE ${CMAKE_SOURCE_DIR}/include)
 set(TEST_SOURCES
     test_new_features
     test_arena
+    test_socketutil_time
     test_except
     test_hashtable
     test_timewindow
