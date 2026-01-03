@@ -1056,6 +1056,124 @@ TEST (socketretry_validate_multiplier_max_boundary)
 }
 
 /* ============================================================================
+||||||| parent of 72f70c44 (test(core): Add edge case tests for retry_power_double overflow handling)
+ * retry_power_double Edge Case Tests (CPU DoS & Overflow Prevention)
+ * ============================================================================
+ */
+
+TEST (socketretry_power_double_cpu_dos_prevention)
+{
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_attempts = 2000; /* Allow large attempt numbers */
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
+  policy.multiplier = 2.0;
+  policy.jitter = 0.0;
+
+  /* Attempt 1001 should trigger RETRY_MAX_EXPONENT (1000) limit
+   * With base (multiplier) 2.0 > 1.0, should return INFINITY,
+   * which gets capped to max_delay_ms */
+  int delay = SocketRetry_calculate_delay (&policy, 1001);
+  ASSERT_EQ (delay, 3600000);
+}
+
+TEST (socketretry_power_double_base_greater_than_one_large_exp)
+{
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_attempts = 2000; /* Allow large attempt numbers */
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
+  policy.multiplier = 1.5; /* Base > 1.0 */
+  policy.jitter = 0.0;
+
+  /* With exponent > RETRY_MAX_EXPONENT (1000) and base > 1.0,
+   * retry_power_double returns INFINITY, capped to max_delay_ms */
+  int delay = SocketRetry_calculate_delay (&policy, 1001);
+  ASSERT_EQ (delay, 3600000);
+}
+
+TEST (socketretry_power_double_base_less_than_one_large_exp)
+{
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_attempts = 2000; /* Allow large attempt numbers */
+  policy.initial_delay_ms = 1000;
+  policy.max_delay_ms = 10000;
+  policy.multiplier = 1.0; /* Base == 1.0 exactly */
+  policy.jitter = 0.0;
+
+  /* With base == 1.0 and large exponent > RETRY_MAX_EXPONENT,
+   * retry_power_double returns 1.0, so delay = initial_delay * 1.0 */
+  int delay = SocketRetry_calculate_delay (&policy, 1001);
+  ASSERT_EQ (delay, 1000);
+
+  /* Note: Testing base < 1.0 would violate policy validation (multiplier >= 1.0)
+   * The issue description mentions it, but policy validation prevents it */
+}
+
+TEST (socketretry_power_double_overflow_detection)
+{
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_attempts = 2000; /* Allow large attempt numbers */
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
+  policy.multiplier = 2.0;
+  policy.jitter = 0.0;
+
+  /* Attempt with exponent that causes overflow within loop
+   * retry_power_double should detect result > DBL_MAX / base and return INFINITY */
+  /* Attempt 1024: 2^1023 overflows double precision */
+  int delay = SocketRetry_calculate_delay (&policy, 1024);
+  ASSERT_EQ (delay, 3600000); /* INFINITY capped to max_delay_ms */
+}
+
+TEST (socketretry_power_double_large_multiplier_no_hang)
+{
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_attempts = 1000; /* Allow large attempt numbers */
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
+  policy.multiplier = 10.0; /* Large multiplier */
+  policy.jitter = 0.0;
+
+  /* Verify large multiplier doesn't cause infinite loop
+   * Should complete quickly due to early overflow detection or exp capping */
+  int64_t start = SocketTimeout_now_ms ();
+  int delay = SocketRetry_calculate_delay (&policy, 500);
+  int64_t elapsed = SocketTimeout_now_ms () - start;
+
+  /* Should complete within 100ms (generous margin) */
+  ASSERT (elapsed < 100);
+  /* Result should be capped to max_delay_ms */
+  ASSERT_EQ (delay, 3600000);
+}
+
+TEST (socketretry_power_double_exp_exactly_at_limit)
+{
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_attempts = 2000; /* Allow large attempt numbers */
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
+  policy.multiplier = 2.0;
+  policy.jitter = 0.0;
+
+  /* Test exponent exactly at RETRY_MAX_EXPONENT (1000)
+   * Should still compute normally (only > 1000 triggers early return) */
+  int delay1000 = SocketRetry_calculate_delay (&policy, 1000);
+  /* 2^999 will overflow to INFINITY, capped to max_delay_ms */
+  ASSERT_EQ (delay1000, 3600000);
+
+  /* Test exponent at 1001 (just over the limit) */
+  int delay1001 = SocketRetry_calculate_delay (&policy, 1001);
+  ASSERT_EQ (delay1001, 3600000);
+}
+
+/* ============================================================================
  * Main
  * ============================================================================
  */
