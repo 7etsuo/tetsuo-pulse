@@ -28,6 +28,7 @@
 #include "core/SocketCrypto.h"
 #include "core/SocketSecurity.h"
 #include "core/SocketUTF8.h"
+#include "http/SocketHPACK.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTPClient-private.h"
@@ -1302,6 +1303,106 @@ TEST (security_size_to_int_openssl_pattern)
   size_t huge_buf = (size_t)INT_MAX + 1000;
   int capped_len = SocketSecurity_size_to_int (huge_buf);
   ASSERT_EQ (INT_MAX, capped_len);
+}
+
+/* ============================================================================
+ * populate_hpack_limits Tests
+ * ============================================================================
+ */
+
+TEST (security_populate_hpack_limits_sets_correct_value)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  /* Call SocketSecurity_get_limits which internally calls populate_hpack_limits
+   */
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify hpack_max_table_size is set to SOCKETHPACK_MAX_TABLE_SIZE */
+#if SOCKET_HAS_HTTP
+  ASSERT_EQ (SOCKETHPACK_MAX_TABLE_SIZE, limits.hpack_max_table_size);
+  ASSERT_EQ (64 * 1024, limits.hpack_max_table_size); /* 64KB */
+#else
+  /* When HTTP is disabled, should be 0 (fallback definition) */
+  ASSERT_EQ (0, limits.hpack_max_table_size);
+#endif
+}
+
+TEST (security_populate_hpack_limits_via_get_limits)
+{
+  /* Test that populate_hpack_limits is correctly called through
+   * SocketSecurity_get_limits */
+  SocketSecurityLimits limits;
+  memset (&limits, 0xFF, sizeof (limits)); /* Fill with non-zero pattern */
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify the field was properly populated (not left as 0xFF...) */
+#if SOCKET_HAS_HTTP
+  ASSERT (limits.hpack_max_table_size > 0);
+  ASSERT (limits.hpack_max_table_size <= 1024 * 1024); /* Reasonable limit */
+#else
+  ASSERT_EQ (0, limits.hpack_max_table_size);
+#endif
+}
+
+TEST (security_populate_hpack_limits_consistency_with_query)
+{
+  /* Verify that populate_hpack_limits matches SocketSecurity_get_hpack_limits
+   */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  size_t max_table_from_query;
+  SocketSecurity_get_hpack_limits (&max_table_from_query);
+
+  /* Both should return the same value */
+  ASSERT_EQ (max_table_from_query, limits.hpack_max_table_size);
+}
+
+TEST (security_populate_hpack_limits_non_zero_with_http)
+{
+  /* When SOCKET_HAS_HTTP is enabled, HPACK limit should be non-zero */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+#if SOCKET_HAS_HTTP
+  /* HPACK is part of HTTP/2, so limit should be set */
+  ASSERT (limits.hpack_max_table_size > 0);
+  /* Verify it matches the constant from the header */
+  ASSERT_EQ (SOCKETHPACK_MAX_TABLE_SIZE, limits.hpack_max_table_size);
+#else
+  /* Without HTTP support, HPACK limit should be 0 */
+  ASSERT_EQ (0, limits.hpack_max_table_size);
+#endif
+}
+
+TEST (security_populate_hpack_limits_not_corrupted)
+{
+  /* Verify that populate_hpack_limits doesn't corrupt other fields */
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  /* Set a recognizable pattern in another field */
+  limits.max_allocation = 0xDEADBEEF;
+
+  SocketSecurity_get_limits (&limits);
+
+  /* The hpack field should be set */
+#if SOCKET_HAS_HTTP
+  ASSERT (limits.hpack_max_table_size > 0);
+#else
+  ASSERT_EQ (0, limits.hpack_max_table_size);
+#endif
+
+  /* But max_allocation should be overwritten by populate_memory_limits */
+  ASSERT_NE (0xDEADBEEF, limits.max_allocation);
+  ASSERT_EQ (SOCKET_SECURITY_MAX_ALLOCATION, limits.max_allocation);
 }
 
 /* ============================================================================
