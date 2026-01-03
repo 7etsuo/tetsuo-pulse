@@ -565,32 +565,34 @@ connection_execute_parser (ServerConnection *conn, int *need_more)
 static int
 connection_handle_body (SocketHTTPServer_T server, ServerConnection *conn)
 {
+  /* Guard clause: no body to handle */
   if (!conn->request->has_body)
     {
       conn->state = CONN_STATE_HANDLING;
       return 1;
     }
 
-  if (!conn->body_streaming)
+  /* Streaming mode: direct processing */
+  if (conn->body_streaming)
     {
-      if (connection_setup_body_buffer (server, conn) < 0)
-        return -1;
-
-      if (conn->body_capacity > 0)
-        {
-          int body_result = connection_read_initial_body (server, conn);
-          if (body_result <= 0)
-            return body_result;
-        }
-
+      int body_result = connection_read_initial_body (server, conn);
+      if (body_result <= 0)
+        return body_result;
       conn->state = CONN_STATE_HANDLING;
       return 1;
     }
 
-  /* Streaming mode enabled by validator */
-  int body_result = connection_read_initial_body (server, conn);
-  if (body_result <= 0)
-    return body_result;
+  /* Non-streaming mode: setup buffer first */
+  if (connection_setup_body_buffer (server, conn) < 0)
+    return -1;
+
+  /* Only read if buffer allocated */
+  if (conn->body_capacity > 0)
+    {
+      int body_result = connection_read_initial_body (server, conn);
+      if (body_result <= 0)
+        return body_result;
+    }
 
   conn->state = CONN_STATE_HANDLING;
   return 1;
