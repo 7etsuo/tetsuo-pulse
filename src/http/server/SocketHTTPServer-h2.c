@@ -634,6 +634,93 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
     server_http2_flush_stream_output (conn, s);
 }
 
+/**
+ * @brief Handle HTTP/2 HEADERS_RECEIVED event.
+ *
+ * Extracts headers and builds request, with early return on errors.
+ * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
+ */
+static void
+server_http2_handle_headers_event (SocketHTTPServer_T server,
+                                   ServerHTTP2Stream *s,
+                                   SocketHTTP2_Stream_T stream)
+{
+  /*
+   * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
+   * This is acceptable for modern systems (Linux default: 8MB stack).
+   * Chosen over heap allocation for performance (no malloc overhead).
+   * If stack pressure becomes an issue, consider arena allocation.
+   */
+  SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
+  size_t hdr_count = 0;
+  int end_stream = 0;
+
+  /* Guard clause: early return if recv fails */
+  if (SocketHTTP2_Stream_recv_headers (stream,
+                                       hdrs,
+                                       SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                       &hdr_count,
+                                       &end_stream)
+      != 1)
+    return;
+
+  /* Guard clause: early return if build fails */
+  if (server_http2_build_request (server, s, hdrs, hdr_count, end_stream) < 0)
+    return;
+}
+
+/**
+ * @brief Handle HTTP/2 TRAILERS_RECEIVED event.
+ *
+ * Extracts trailers and adds them to request, with early return on errors.
+ * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
+ */
+static void
+server_http2_handle_trailers_event (SocketHTTPServer_T server,
+                                    ServerHTTP2Stream *s,
+                                    SocketHTTP2_Stream_T stream)
+{
+  /* Stack allocation: Same rationale as headers above (~5KB) */
+  SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
+  size_t trailer_count = 0;
+
+  (void)server; /* Unused in this function, but matches handler signature */
+
+  /* Guard clause: early return if recv fails */
+  if (SocketHTTP2_Stream_recv_trailers (stream, trailers,
+                                        SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                        &trailer_count)
+      != 1)
+    return;
+
+  /* Guard clause: allocate trailers container if needed */
+  if (s->request_trailers == NULL)
+    {
+      s->request_trailers = SocketHTTP_Headers_new (s->arena);
+      if (s->request_trailers == NULL)
+        {
+          SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+          return;
+        }
+    }
+
+  /* Add trailers to request, filtering pseudo-headers per RFC 9113 */
+  for (size_t i = 0; i < trailer_count; i++)
+    {
+      const SocketHPACK_Header *hdr = &trailers[i];
+      if (hdr->name == NULL || hdr->value == NULL)
+        continue;
+      /* RFC 9113: trailers must not include pseudo-headers. */
+      if (hdr->name_len > 0 && hdr->name[0] == ':')
+        continue;
+      SocketHTTP_Headers_add_n (s->request_trailers,
+                                hdr->name,
+                                hdr->name_len,
+                                hdr->value,
+                                hdr->value_len);
+    }
+}
+
 void
 server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                         SocketHTTP2_Stream_T stream,
@@ -660,64 +747,11 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
   if (event == HTTP2_EVENT_HEADERS_RECEIVED)
     {
-      /*
-       * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
-       * This is acceptable for modern systems (Linux default: 8MB stack).
-       * Chosen over heap allocation for performance (no malloc overhead).
-       * If stack pressure becomes an issue, consider arena allocation.
-       */
-      SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
-      size_t hdr_count = 0;
-      int end_stream = 0;
-
-      if (SocketHTTP2_Stream_recv_headers (stream,
-                                           hdrs,
-                                           SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                           &hdr_count,
-                                           &end_stream)
-          == 1)
-        {
-          if (server_http2_build_request (
-                  server, s, hdrs, hdr_count, end_stream)
-              < 0)
-            return;
-        }
+      server_http2_handle_headers_event (server, s, stream);
     }
   else if (event == HTTP2_EVENT_TRAILERS_RECEIVED)
     {
-      /* Stack allocation: Same rationale as headers above (~5KB) */
-      SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
-      size_t trailer_count = 0;
-
-      if (SocketHTTP2_Stream_recv_trailers (
-              stream, trailers, SOCKETHTTP2_MAX_DECODED_HEADERS, &trailer_count)
-          == 1)
-        {
-          if (s->request_trailers == NULL)
-            {
-              s->request_trailers = SocketHTTP_Headers_new (s->arena);
-              if (s->request_trailers == NULL)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                  return;
-                }
-            }
-
-          for (size_t i = 0; i < trailer_count; i++)
-            {
-              const SocketHPACK_Header *hdr = &trailers[i];
-              if (hdr->name == NULL || hdr->value == NULL)
-                continue;
-              /* RFC 9113: trailers must not include pseudo-headers. */
-              if (hdr->name_len > 0 && hdr->name[0] == ':')
-                continue;
-              SocketHTTP_Headers_add_n (s->request_trailers,
-                                        hdr->name,
-                                        hdr->name_len,
-                                        hdr->value,
-                                        hdr->value_len);
-            }
-        }
+      server_http2_handle_trailers_event (server, s, stream);
     }
   else if (event == HTTP2_EVENT_DATA_RECEIVED)
     {
