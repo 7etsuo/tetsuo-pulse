@@ -1182,19 +1182,18 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
       /* Attempt the request */
       result = execute_single_attempt (client, req, response);
 
-      /* Success */
+      /* Success - check if we need to retry on 5xx */
       if (result == 0)
         {
-          /* Check if we need to retry on 5xx */
           if (!should_retry_5xx (client, response, attempt))
             return 0;
+          /* Continue loop to retry on 5xx */
+          continue;
         }
-      else
-        {
-          /* Error - handle failed attempt */
-          if (!handle_failed_attempt (client, attempt))
-            break;
-        }
+
+      /* Error - try to recover or break if fatal */
+      if (!handle_failed_attempt (client, attempt))
+        break;
     }
 
   /* All retries exhausted - raise the last error */
