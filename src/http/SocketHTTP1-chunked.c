@@ -731,6 +731,73 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
   return HTTP1_INCOMPLETE;
 }
 
+/**
+ * Process parser state and handle early returns with progress tracking.
+ *
+ * Encapsulates the switch-based state processing with consistent error
+ * handling. Reduces nesting depth in the main read_body_chunked loop.
+ *
+ * @param parser Parser instance
+ * @param p Pointer to current input position (modified)
+ * @param end End of input buffer
+ * @param out Pointer to current output position (modified)
+ * @param out_remaining Pointer to remaining output buffer space (modified)
+ * @param out_result Where to store the result code
+ * @return 1 if processing should continue, 0 if caller should return
+ */
+static int
+process_state_and_check_result (SocketHTTP1_Parser_T parser,
+                                const char **p,
+                                const char *end,
+                                char **out,
+                                size_t *out_remaining,
+                                SocketHTTP1_Result *out_result)
+{
+  SocketHTTP1_Result result = HTTP1_OK;
+  int should_continue = 1;
+
+  switch (parser->internal_state)
+    {
+    case HTTP1_PS_CHUNK_SIZE:
+      result = handle_chunk_size_state (parser, p, end);
+      if (result != HTTP1_OK)
+        should_continue = 0;
+      break;
+
+    case HTTP1_PS_CHUNK_DATA:
+      result = handle_chunk_data_state (parser, p, end, out, out_remaining);
+      if (result == HTTP1_INCOMPLETE)
+        should_continue = 0;
+      break;
+
+    case HTTP1_PS_CHUNK_DATA_CR:
+      result = handle_chunk_crlf_states (parser, p, end);
+      if (result != HTTP1_OK)
+        should_continue = 0;
+      break;
+
+    case HTTP1_PS_TRAILER_START:
+    case HTTP1_PS_TRAILER_NAME:
+    case HTTP1_PS_TRAILER_COLON:
+    case HTTP1_PS_TRAILER_VALUE:
+    case HTTP1_PS_TRAILER_CR:
+    case HTTP1_PS_TRAILER_LF:
+    case HTTP1_PS_TRAILERS_END_LF:
+    case HTTP1_PS_COMPLETE:
+      result = handle_trailer_states (parser, p, end);
+      should_continue = 0; /* Trailer processing always returns */
+      break;
+
+    default:
+      result = HTTP1_ERROR;
+      should_continue = 0;
+      break;
+    }
+
+  *out_result = result;
+  return should_continue;
+}
+
 static SocketHTTP1_Result
 read_body_chunked (SocketHTTP1_Parser_T parser,
                    const char *const input,
@@ -746,53 +813,19 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
   size_t out_remaining = output_len;
   SocketHTTP1_Result result;
 
-#define UPDATE_PROGRESS_AND_RETURN(r)                             \
-  do                                                              \
-    {                                                             \
-      update_progress (input, p, output, out, consumed, written); \
-      return (r);                                                 \
-    }                                                             \
-  while (0)
-
   *consumed = 0;
   *written = 0;
 
   while (p < end && out_remaining > 0)
     {
-      switch (parser->internal_state)
+      int should_continue;
+      should_continue = process_state_and_check_result (
+          parser, &p, end, &out, &out_remaining, &result);
+
+      if (!should_continue)
         {
-        case HTTP1_PS_CHUNK_SIZE:
-          result = handle_chunk_size_state (parser, &p, end);
-          if (result != HTTP1_OK)
-            UPDATE_PROGRESS_AND_RETURN (result);
-          break;
-
-        case HTTP1_PS_CHUNK_DATA:
-          result
-              = handle_chunk_data_state (parser, &p, end, &out, &out_remaining);
-          if (result == HTTP1_INCOMPLETE)
-            UPDATE_PROGRESS_AND_RETURN (HTTP1_INCOMPLETE);
-          break;
-
-        case HTTP1_PS_CHUNK_DATA_CR:
-          result = handle_chunk_crlf_states (parser, &p, end);
-          if (result != HTTP1_OK)
-            UPDATE_PROGRESS_AND_RETURN (result);
-          break;
-
-        case HTTP1_PS_TRAILER_START:
-        case HTTP1_PS_TRAILER_NAME:
-        case HTTP1_PS_TRAILER_COLON:
-        case HTTP1_PS_TRAILER_VALUE:
-        case HTTP1_PS_TRAILER_CR:
-        case HTTP1_PS_TRAILER_LF:
-        case HTTP1_PS_TRAILERS_END_LF:
-        case HTTP1_PS_COMPLETE:
-          result = handle_trailer_states (parser, &p, end);
-          UPDATE_PROGRESS_AND_RETURN (result);
-
-        default:
-          return HTTP1_ERROR;
+          update_progress (input, p, output, out, consumed, written);
+          return result;
         }
     }
 
@@ -802,8 +835,6 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
     return HTTP1_OK;
 
   return HTTP1_INCOMPLETE;
-
-#undef UPDATE_PROGRESS_AND_RETURN
 }
 
 SocketHTTP1_Result
