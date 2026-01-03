@@ -786,6 +786,31 @@ http2_encode_and_alloc_block (SocketHTTP2_Conn_T conn,
 #define PSEUDO_BIT_STATUS (1 << 4)
 #define PSEUDO_BIT_PROTOCOL (1 << 5)
 
+/*
+ * Log appropriate error message for :protocol pseudo-header validation failure.
+ *
+ * Determines the specific reason for validation failure and logs a descriptive
+ * error message. This helper reduces nesting depth in validate_pseudo_header.
+ */
+static void
+log_protocol_validation_error (SocketHTTP2_Conn_T conn, size_t value_len)
+{
+  if (conn->role != HTTP2_ROLE_SERVER)
+    {
+      SOCKET_LOG_ERROR_MSG (":protocol pseudo-header not allowed in responses");
+      return;
+    }
+
+  if (conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 0)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          ":protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL=1");
+      return;
+    }
+
+  SOCKET_LOG_ERROR_MSG (":protocol value too long: %zu bytes", value_len);
+}
+
 static int
 validate_pseudo_header (SocketHTTP2_Conn_T conn,
                         SocketHTTP2_Stream_T stream,
@@ -880,16 +905,7 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn,
 
       if (http2_validate_protocol_header (conn, stream, h, state) < 0)
         {
-          if (conn->role != HTTP2_ROLE_SERVER)
-            SOCKET_LOG_ERROR_MSG (
-                ":protocol pseudo-header not allowed in responses");
-          else if (conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL]
-                   == 0)
-            SOCKET_LOG_ERROR_MSG (
-                ":protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL=1");
-          else
-            SOCKET_LOG_ERROR_MSG (":protocol value too long: %zu bytes",
-                                  h->value_len);
+          log_protocol_validation_error (conn, h->value_len);
           return -1;
         }
       return 0;
