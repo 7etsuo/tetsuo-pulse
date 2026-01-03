@@ -56,21 +56,24 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
   /* Find :status pseudo-header first */
   for (i = 0; i < header_count; i++)
     {
-      if (headers[i].name_len == PSEUDO_HEADER_STATUS_LEN
-          && memcmp (headers[i].name, PSEUDO_HEADER_STATUS,
-                     PSEUDO_HEADER_STATUS_LEN)
-             == 0)
-        {
-          /* Use validated parser from SocketHTTP2-validate.c (RFC 9113 §8.3.2) */
-          if (http2_parse_status_code (headers[i].value,
-                                       headers[i].value_len,
-                                       &response->status_code)
-              < 0)
-            return -1;
+      /* Skip non-status headers */
+      if (headers[i].name_len != PSEUDO_HEADER_STATUS_LEN)
+        continue;
 
-          status_found = 1;
-          break;
-        }
+      if (memcmp (headers[i].name, PSEUDO_HEADER_STATUS,
+                  PSEUDO_HEADER_STATUS_LEN)
+          != 0)
+        continue;
+
+      /* Found :status - parse and validate (RFC 9113 §8.3.2) */
+      if (http2_parse_status_code (headers[i].value,
+                                   headers[i].value_len,
+                                   &response->status_code)
+          < 0)
+        return -1;
+
+      status_found = 1;
+      break;
     }
 
   if (!status_found)
