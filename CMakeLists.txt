@@ -796,6 +796,8 @@ set(TEST_SOURCES
     test_synprotect_ip
 ||||||| parent of 09e16a8b (test(core): add unit tests for IPv4 address parsing)
     test_ipv4_parse
+||||||| parent of cd32f524 (test(core): Add unit tests for IPv6 address parsing (parse_ipv6_address))
+    test_ipv6_parse
     test_simple_security
     test_crypto
     test_utf8
