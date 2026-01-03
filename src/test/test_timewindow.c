@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "core/TimeWindow.h"
@@ -46,6 +47,88 @@ TEST (timewindow_init_clamps_invalid_duration)
   /* Negative duration should be clamped to 1 */
   TimeWindow_init (&tw, -100, 0);
   ASSERT_EQ (tw.duration_ms, 1);
+}
+
+TEST (timewindow_init_different_valid_durations)
+{
+  TimeWindow_T tw;
+  int64_t now_ms = 5000;
+
+  /* Test 1ms duration */
+  TimeWindow_init (&tw, 1, now_ms);
+  ASSERT_EQ (tw.duration_ms, 1);
+  ASSERT_EQ (tw.window_start_ms, now_ms);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
+
+  /* Test 1000ms (1 second) duration */
+  TimeWindow_init (&tw, 1000, now_ms);
+  ASSERT_EQ (tw.duration_ms, 1000);
+  ASSERT_EQ (tw.window_start_ms, now_ms);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
+
+  /* Test 86400000ms (1 day) duration */
+  TimeWindow_init (&tw, 86400000, now_ms);
+  ASSERT_EQ (tw.duration_ms, 86400000);
+  ASSERT_EQ (tw.window_start_ms, now_ms);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
+}
+
+TEST (timewindow_init_zero_now_ms)
+{
+  TimeWindow_T tw;
+  int64_t duration_ms = 5000;
+
+  TimeWindow_init (&tw, duration_ms, 0);
+
+  ASSERT_EQ (tw.duration_ms, duration_ms);
+  ASSERT_EQ (tw.window_start_ms, 0);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
+}
+
+TEST (timewindow_init_large_now_ms)
+{
+  TimeWindow_T tw;
+  int64_t duration_ms = 10000;
+  int64_t large_now = INT64_MAX - 1000000;
+
+  TimeWindow_init (&tw, duration_ms, large_now);
+
+  ASSERT_EQ (tw.duration_ms, duration_ms);
+  ASSERT_EQ (tw.window_start_ms, large_now);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
+}
+
+TEST (timewindow_init_negative_now_ms)
+{
+  TimeWindow_T tw;
+  int64_t duration_ms = 5000;
+  int64_t negative_now = -1000;
+
+  TimeWindow_init (&tw, duration_ms, negative_now);
+
+  ASSERT_EQ (tw.duration_ms, duration_ms);
+  ASSERT_EQ (tw.window_start_ms, negative_now);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
+}
+
+TEST (timewindow_init_very_negative_duration)
+{
+  TimeWindow_T tw;
+  int64_t now_ms = 1000;
+
+  TimeWindow_init (&tw, INT64_MIN, now_ms);
+
+  /* Should clamp to TIMEWINDOW_MIN_DURATION_MS */
+  ASSERT_EQ (tw.duration_ms, 1);
+  ASSERT_EQ (tw.window_start_ms, now_ms);
+  ASSERT_EQ (tw.current_count, 0u);
+  ASSERT_EQ (tw.previous_count, 0u);
 }
 
 /* ============================================================================
