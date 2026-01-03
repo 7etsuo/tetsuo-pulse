@@ -258,7 +258,7 @@ main(int argc, char **argv)
 
     GrokClient_Config grok_config = {
         .api_key = api_key,
-        .model = "grok-beta",
+        .model = NULL,  /* Use default model */
         .timeout_ms = 30000
     };
 
