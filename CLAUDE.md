@@ -990,10 +990,10 @@ GraphQL: Projects (classic) is being deprecated in favor of the new Projects exp
 
 **Workaround**: Use `gh issue list --search` instead:
 ```bash
-# Instead of: gh issue view 141 --repo 7etsuo/tetsuo-socket
+# Instead of: gh issue view 141 --repo 7etsuo/tetsuo-pulse
 # Use:
-gh issue list --repo 7etsuo/tetsuo-socket --state all --search "141" --limit 5
+gh issue list --repo 7etsuo/tetsuo-pulse --state all --search "141" --limit 5
 
 # Or search by keyword:
-gh issue list --repo 7etsuo/tetsuo-socket --state all --search "fuzz" --limit 20
+gh issue list --repo 7etsuo/tetsuo-pulse --state all --search "fuzz" --limit 20
 ```
