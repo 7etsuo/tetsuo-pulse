@@ -957,6 +957,35 @@ cookie_matches_request (const SocketHTTPClient_Cookie *cookie,
   return 1;
 }
 
+/* Helper: Format a single cookie into the output buffer */
+static int
+format_cookie_to_buffer (char *output,
+                         size_t output_size,
+                         size_t written,
+                         const char *name,
+                         const char *value)
+{
+  size_t name_len = strlen (name);
+  size_t value_len = strlen (value);
+  size_t cookie_len = name_len + value_len + 1;
+
+  if (written > 0)
+    cookie_len += 2;
+
+  if (written + cookie_len >= output_size)
+    return -1; /* Buffer full */
+
+  if (written > 0)
+    {
+      memcpy (output + written, "; ", 2);
+      written += 2;
+    }
+
+  written += (size_t)snprintf (
+      output + written, output_size - written, "%s=%s", name, value);
+  return (int)written;
+}
+
 int
 httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTP_URI *uri,
@@ -995,10 +1024,11 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
       while (entry != NULL)
         {
           const SocketHTTPClient_Cookie *c = &entry->cookie;
-          size_t name_len, value_len, cookie_len;
+          int result;
 
           chain_len++;
 
+          /* Skip non-matching cookies */
           if (!cookie_matches_request (c,
                                        uri->host,
                                        request_path,
@@ -1013,27 +1043,13 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
               continue;
             }
 
-          name_len = strlen (c->name);
-          value_len = strlen (c->value);
-          cookie_len = name_len + value_len + 1;
-          if (written > 0)
-            cookie_len += 2;
+          /* Format cookie into buffer */
+          result = format_cookie_to_buffer (
+              output, output_size, written, c->name, c->value);
+          if (result < 0)
+            break; /* Buffer full, stop iteration */
 
-          if (written + cookie_len >= output_size)
-            break;
-
-          if (written > 0)
-            {
-              memcpy (output + written, "; ", 2);
-              written += 2;
-            }
-
-          written += (size_t)snprintf (output + written,
-                                       output_size - written,
-                                       "%s=%s",
-                                       c->name,
-                                       c->value);
-
+          written = (size_t)result;
           entry = entry->next;
         }
 
