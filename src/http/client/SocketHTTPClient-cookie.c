@@ -851,6 +851,30 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
   return 0;
 }
 
+static int
+should_skip_cookie_for_save (const SocketHTTPClient_Cookie *c)
+{
+  if (strchr (c->name, '\r') || strchr (c->name, '\n'))
+    return 1;
+  if (strchr (c->value, '\r') || strchr (c->value, '\n'))
+    return 1;
+  return 0;
+}
+
+static void
+write_cookie_to_file (FILE *f, const SocketHTTPClient_Cookie *c)
+{
+  fprintf (f,
+           "%s\t%s\t%s\t%s\t%lld\t%s\t%s\n",
+           c->domain,
+           (c->domain[0] == '.') ? "TRUE" : "FALSE",
+           c->path ? c->path : "/",
+           c->secure ? "TRUE" : "FALSE",
+           (long long)c->expires,
+           c->name,
+           c->value);
+}
+
 int
 SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
                                  const char *filename)
@@ -878,8 +902,7 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
         {
           const SocketHTTPClient_Cookie *c = &entry->cookie;
 
-          if (strchr (c->name, '\r') || strchr (c->name, '\n')
-              || strchr (c->value, '\r') || strchr (c->value, '\n'))
+          if (should_skip_cookie_for_save (c))
             {
               SocketLog_emitf (SOCKET_LOG_WARN,
                                SOCKET_LOG_COMPONENT,
@@ -889,16 +912,7 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
               continue;
             }
 
-          fprintf (f,
-                   "%s\t%s\t%s\t%s\t%lld\t%s\t%s\n",
-                   c->domain,
-                   (c->domain[0] == '.') ? "TRUE" : "FALSE",
-                   c->path ? c->path : "/",
-                   c->secure ? "TRUE" : "FALSE",
-                   (long long)c->expires,
-                   c->name,
-                   c->value);
-
+          write_cookie_to_file (f, c);
           entry = entry->next;
         }
     }
