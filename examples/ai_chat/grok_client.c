@@ -201,8 +201,8 @@ GrokClient_chat(GrokClient_T client,
             "{\"role\":\"system\",\"content\":\"%s\"},"
             "{\"role\":\"user\",\"content\":\"%s\"}"
         "],"
-        "\"max_tokens\":200,"
-        "\"temperature\":0.8"
+        "\"max_tokens\":60,"
+        "\"temperature\":0.7"
         "}",
         client->model, escaped_system, escaped_history);
 
