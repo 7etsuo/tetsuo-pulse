@@ -369,24 +369,22 @@ SocketHTTP2_Priority_serialize (const SocketHTTP2_Priority *priority,
     }
 
   /* Write incremental if true */
-  if (priority->incremental)
+  if (!priority->incremental)
+    return (ssize_t)len; /* Early exit if nothing more to write */
+
+  /* Calculate space needed: "i" (1 char) or ", i" (3 chars) */
+  size_t needed = wrote_param ? 3 : 1;
+  if (len + needed > buf_size)
+    return -1;
+
+  /* Write separator if needed */
+  if (wrote_param)
     {
-      if (wrote_param)
-        {
-          /* ", i" needs 3 more characters */
-          if (len + 3 > buf_size)
-            return -1;
-          buf[len++] = ',';
-          buf[len++] = ' ';
-        }
-      if (len + 1 > buf_size)
-        return -1;
-      buf[len++] = 'i';
+      buf[len++] = ',';
+      buf[len++] = ' ';
     }
 
-  /* If nothing written, we could write nothing or write defaults */
-  /* RFC 9218: omitting a parameter is equivalent to the default value */
-
+  buf[len++] = 'i';
   return (ssize_t)len;
 }
 
