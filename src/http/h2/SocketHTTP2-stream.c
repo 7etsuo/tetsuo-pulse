@@ -1028,7 +1028,8 @@ validate_required_pseudo_headers (const HTTP2_PseudoHeaderState *state,
   /* Extended CONNECT (CONNECT with :protocol) - RFC 8441 */
   if (state->is_connect_method && state->has_protocol)
     {
-      if (http2_validate_extended_connect (state) < 0)
+      /* Extended CONNECT requires :scheme, :path, and :authority */
+      if (!state->has_scheme || !state->has_path || !state->has_authority)
         {
           SOCKET_LOG_ERROR_MSG (
               "Extended CONNECT requires :scheme, :path, and :authority");
@@ -1038,19 +1039,26 @@ validate_required_pseudo_headers (const HTTP2_PseudoHeaderState *state,
     }
 
   /* Standard CONNECT (CONNECT without :protocol) - RFC 9113 Section 8.5 */
-  if (state->is_connect_method)
+  if (!state->is_connect_method)
+    goto check_non_connect;
+
+  /* Standard CONNECT requires :authority */
+  if (!state->has_authority)
     {
-      if (http2_validate_standard_connect (state) < 0)
-        {
-          if (!state->has_authority)
-            SOCKET_LOG_ERROR_MSG ("CONNECT requires :authority pseudo-header");
-          else
-            SOCKET_LOG_ERROR_MSG ("Standard CONNECT must not have :scheme or "
-                                  ":path pseudo-headers");
-          return -1;
-        }
-      return 0;
+      SOCKET_LOG_ERROR_MSG ("CONNECT requires :authority pseudo-header");
+      return -1;
     }
+
+  /* Standard CONNECT must not have :scheme or :path */
+  if (state->has_scheme || state->has_path)
+    {
+      SOCKET_LOG_ERROR_MSG ("Standard CONNECT must not have :scheme or "
+                            ":path pseudo-headers");
+      return -1;
+    }
+  return 0;
+
+check_non_connect:
 
   /* Non-CONNECT: need :scheme or :authority, and :path */
   if (!state->has_scheme && !state->has_authority)
