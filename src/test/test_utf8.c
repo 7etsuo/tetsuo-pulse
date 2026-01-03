@@ -23,6 +23,7 @@
 #include "test/Test.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* ============================================================================
@@ -731,6 +732,343 @@ TEST (utf8_long_valid)
                     " \xF0\x9F\x8C\x8D";       /* Earth emoji */
 
   ASSERT_EQ (UTF8_VALID, SocketUTF8_validate_str (str));
+}
+
+/* ============================================================================
+ * Boundary and Stress Tests
+ * ============================================================================
+ */
+
+TEST (utf8_stress_large_ascii)
+{
+  /* Test 1MB of valid ASCII */
+  size_t len = 1024 * 1024;
+  unsigned char *data = malloc (len);
+  if (!data)
+    {
+      fprintf (stderr, "Failed to allocate memory for test\n");
+      return;
+    }
+
+  memset (data, 'A', len);
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_validate (data, len));
+  free (data);
+}
+
+TEST (utf8_stress_large_multibyte)
+{
+  /* Test 1MB of 3-byte sequences (Euro signs) */
+  size_t num_euros = 100000; /* 100K Euro signs = 300KB */
+  size_t len = num_euros * 3;
+  unsigned char *data = malloc (len);
+  if (!data)
+    {
+      fprintf (stderr, "Failed to allocate memory for test\n");
+      return;
+    }
+
+  /* Fill with Euro sign: E2 82 AC */
+  for (size_t i = 0; i < num_euros; i++)
+    {
+      data[i * 3 + 0] = 0xE2;
+      data[i * 3 + 1] = 0x82;
+      data[i * 3 + 2] = 0xAC;
+    }
+
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_validate (data, len));
+  free (data);
+}
+
+TEST (utf8_state_tracking_bytes_2byte)
+{
+  SocketUTF8_State state;
+  SocketUTF8_init (&state);
+
+  /* Start 2-byte sequence */
+  const unsigned char part1[] = { 0xC2 };
+  SocketUTF8_update (&state, part1, 1);
+  ASSERT_EQ (2u, state.bytes_needed); /* Expecting 2-byte sequence */
+  ASSERT_EQ (1u, state.bytes_seen);   /* Seen 1 so far */
+
+  /* Complete */
+  const unsigned char part2[] = { 0xA9 };
+  SocketUTF8_update (&state, part2, 1);
+  ASSERT_EQ (0u, state.bytes_needed); /* Sequence complete */
+  ASSERT_EQ (0u, state.bytes_seen);
+}
+
+TEST (utf8_state_tracking_bytes_3byte)
+{
+  SocketUTF8_State state;
+  SocketUTF8_init (&state);
+
+  /* Start 3-byte sequence */
+  const unsigned char part1[] = { 0xE2 };
+  SocketUTF8_update (&state, part1, 1);
+  ASSERT_EQ (3u, state.bytes_needed); /* Expecting 3-byte sequence */
+  ASSERT_EQ (1u, state.bytes_seen);   /* Seen 1 so far */
+
+  /* Continue */
+  const unsigned char part2[] = { 0x82 };
+  SocketUTF8_update (&state, part2, 1);
+  ASSERT_EQ (3u, state.bytes_needed);
+  ASSERT_EQ (2u, state.bytes_seen);
+
+  /* Complete */
+  const unsigned char part3[] = { 0xAC };
+  SocketUTF8_update (&state, part3, 1);
+  ASSERT_EQ (0u, state.bytes_needed); /* Sequence complete */
+  ASSERT_EQ (0u, state.bytes_seen);
+}
+
+TEST (utf8_state_tracking_bytes_4byte)
+{
+  SocketUTF8_State state;
+  SocketUTF8_init (&state);
+
+  /* Start 4-byte sequence */
+  const unsigned char part1[] = { 0xF0 };
+  SocketUTF8_update (&state, part1, 1);
+  ASSERT_EQ (4u, state.bytes_needed); /* Expecting 4-byte sequence */
+  ASSERT_EQ (1u, state.bytes_seen);   /* Seen 1 so far */
+
+  /* Continue */
+  const unsigned char part2[] = { 0x9F };
+  SocketUTF8_update (&state, part2, 1);
+  ASSERT_EQ (4u, state.bytes_needed);
+  ASSERT_EQ (2u, state.bytes_seen);
+
+  /* Continue */
+  const unsigned char part3[] = { 0x98 };
+  SocketUTF8_update (&state, part3, 1);
+  ASSERT_EQ (4u, state.bytes_needed);
+  ASSERT_EQ (3u, state.bytes_seen);
+
+  /* Complete */
+  const unsigned char part4[] = { 0x80 };
+  SocketUTF8_update (&state, part4, 1);
+  ASSERT_EQ (0u, state.bytes_needed); /* Sequence complete */
+  ASSERT_EQ (0u, state.bytes_seen);
+}
+
+TEST (utf8_multiple_reset_cycles)
+{
+  SocketUTF8_State state;
+  SocketUTF8_init (&state);
+
+  for (int i = 0; i < 1000; i++)
+    {
+      const unsigned char data[] = { 0xE2, 0x82, 0xAC }; /* Euro */
+      ASSERT_EQ (UTF8_VALID, SocketUTF8_update (&state, data, 3));
+      SocketUTF8_reset (&state);
+    }
+}
+
+TEST (utf8_decode_consumed_null)
+{
+  const unsigned char data[] = { 0xC2, 0xA9 };
+  uint32_t cp;
+
+  /* Test with NULL consumed parameter */
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_decode (data, 2, &cp, NULL));
+  ASSERT_EQ (0xA9u, cp);
+}
+
+TEST (utf8_decode_2byte_invalid_continuation)
+{
+  /* Test each continuation byte failure point */
+  const unsigned char data1[] = { 0xC2, 0x41 }; /* ASCII instead of
+                                                   continuation */
+  size_t consumed;
+  uint32_t cp;
+  ASSERT_EQ (UTF8_INVALID, SocketUTF8_decode (data1, 2, &cp, &consumed));
+  ASSERT_EQ (1u, consumed); /* Failed at second byte */
+}
+
+TEST (utf8_decode_3byte_invalid_continuation_first)
+{
+  /* Invalid first continuation byte */
+  const unsigned char data[] = { 0xE2, 0x41, 0xAC }; /* ASCII at position 1 */
+  size_t consumed;
+  uint32_t cp;
+  ASSERT_EQ (UTF8_INVALID, SocketUTF8_decode (data, 3, &cp, &consumed));
+  ASSERT_EQ (1u, consumed); /* Failed at second byte */
+}
+
+TEST (utf8_decode_3byte_invalid_continuation_second)
+{
+  /* Invalid second continuation byte */
+  const unsigned char data[] = { 0xE2, 0x82, 0x41 }; /* ASCII at position 2 */
+  size_t consumed;
+  uint32_t cp;
+  ASSERT_EQ (UTF8_INVALID, SocketUTF8_decode (data, 3, &cp, &consumed));
+  ASSERT_EQ (2u, consumed); /* Failed at third byte */
+}
+
+TEST (utf8_decode_4byte_invalid_continuation_first)
+{
+  /* Invalid first continuation byte */
+  const unsigned char data[] = { 0xF0, 0x41, 0x98, 0x80 };
+  size_t consumed;
+  uint32_t cp;
+  ASSERT_EQ (UTF8_INVALID, SocketUTF8_decode (data, 4, &cp, &consumed));
+  ASSERT_EQ (1u, consumed);
+}
+
+TEST (utf8_decode_4byte_invalid_continuation_second)
+{
+  /* Invalid second continuation byte */
+  const unsigned char data[] = { 0xF0, 0x9F, 0x41, 0x80 };
+  size_t consumed;
+  uint32_t cp;
+  ASSERT_EQ (UTF8_INVALID, SocketUTF8_decode (data, 4, &cp, &consumed));
+  ASSERT_EQ (2u, consumed);
+}
+
+TEST (utf8_decode_4byte_invalid_continuation_third)
+{
+  /* Invalid third continuation byte */
+  const unsigned char data[] = { 0xF0, 0x9F, 0x98, 0x41 };
+  size_t consumed;
+  uint32_t cp;
+  ASSERT_EQ (UTF8_INVALID, SocketUTF8_decode (data, 4, &cp, &consumed));
+  ASSERT_EQ (3u, consumed);
+}
+
+TEST (utf8_count_millions)
+{
+  /* Generate 1 million ASCII characters */
+  size_t len = 1000000;
+  unsigned char *data = malloc (len);
+  if (!data)
+    {
+      fprintf (stderr, "Failed to allocate memory for test\n");
+      return;
+    }
+
+  memset (data, 'A', len);
+  size_t count;
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_count_codepoints (data, len, &count));
+  ASSERT_EQ (len, count);
+  free (data);
+}
+
+TEST (utf8_count_large_multibyte)
+{
+  /* Count 100K Euro signs (3 bytes each) */
+  size_t num_euros = 100000;
+  size_t len = num_euros * 3;
+  unsigned char *data = malloc (len);
+  if (!data)
+    {
+      fprintf (stderr, "Failed to allocate memory for test\n");
+      return;
+    }
+
+  for (size_t i = 0; i < num_euros; i++)
+    {
+      data[i * 3 + 0] = 0xE2;
+      data[i * 3 + 1] = 0x82;
+      data[i * 3 + 2] = 0xAC;
+    }
+
+  size_t count;
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_count_codepoints (data, len, &count));
+  ASSERT_EQ (num_euros, count);
+  free (data);
+}
+
+TEST (utf8_incremental_large_chunks)
+{
+  /* Test incremental validation with large chunks */
+  SocketUTF8_State state;
+  SocketUTF8_init (&state);
+
+  size_t chunk_size = 100000;
+  unsigned char *chunk = malloc (chunk_size);
+  if (!chunk)
+    {
+      fprintf (stderr, "Failed to allocate memory for test\n");
+      return;
+    }
+
+  memset (chunk, 'X', chunk_size);
+
+  /* Feed 10 chunks */
+  for (int i = 0; i < 10; i++)
+    {
+      ASSERT_EQ (UTF8_VALID, SocketUTF8_update (&state, chunk, chunk_size));
+    }
+
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_finish (&state));
+  free (chunk);
+}
+
+TEST (utf8_incremental_split_across_many_chunks)
+{
+  /* Split a single 4-byte sequence across 4 chunks */
+  SocketUTF8_State state;
+  SocketUTF8_init (&state);
+
+  const unsigned char part1[] = { 0xF0 };
+  const unsigned char part2[] = { 0x9F };
+  const unsigned char part3[] = { 0x98 };
+  const unsigned char part4[] = { 0x80 };
+
+  ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_update (&state, part1, 1));
+  ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_update (&state, part2, 1));
+  ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_update (&state, part3, 1));
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_update (&state, part4, 1));
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_finish (&state));
+}
+
+TEST (utf8_decode_codepoint_null)
+{
+  /* Test decode with NULL codepoint parameter */
+  const unsigned char data[] = { 0xE2, 0x82, 0xAC }; /* Euro */
+  size_t consumed;
+
+  ASSERT_EQ (UTF8_VALID, SocketUTF8_decode (data, 3, NULL, &consumed));
+  ASSERT_EQ (3u, consumed);
+}
+
+TEST (utf8_boundary_all_ranges)
+{
+  /* Test boundary values for each byte length */
+  struct
+  {
+    const unsigned char *data;
+    size_t len;
+    uint32_t expected_cp;
+  } tests[] = {
+    /* 1-byte boundaries */
+    { (const unsigned char *)"\x00", 1, 0x00 },     /* Min 1-byte */
+    { (const unsigned char *)"\x7F", 1, 0x7F },     /* Max 1-byte */
+
+    /* 2-byte boundaries */
+    { (const unsigned char *)"\xC2\x80", 2, 0x80 }, /* Min 2-byte */
+    { (const unsigned char *)"\xDF\xBF", 2, 0x7FF }, /* Max 2-byte */
+
+    /* 3-byte boundaries */
+    { (const unsigned char *)"\xE0\xA0\x80", 3, 0x800 }, /* Min 3-byte */
+    { (const unsigned char *)"\xEF\xBF\xBF", 3, 0xFFFF }, /* Max 3-byte */
+
+    /* 4-byte boundaries */
+    { (const unsigned char *)"\xF0\x90\x80\x80", 4, 0x10000 }, /* Min 4-byte
+                                                                 */
+    { (const unsigned char *)"\xF4\x8F\xBF\xBF", 4, 0x10FFFF }, /* Max
+                                                                   codepoint */
+  };
+
+  for (size_t i = 0; i < sizeof (tests) / sizeof (tests[0]); i++)
+    {
+      uint32_t cp;
+      size_t consumed;
+      ASSERT_EQ (UTF8_VALID,
+                 SocketUTF8_decode (tests[i].data, tests[i].len, &cp, &consumed));
+      ASSERT_EQ (tests[i].expected_cp, cp);
+      ASSERT_EQ (tests[i].len, consumed);
+    }
 }
 
 /* ============================================================================
