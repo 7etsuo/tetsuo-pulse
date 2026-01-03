@@ -1240,7 +1240,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
  *
  * Returns: 0 on success, -1 on error
  */
-int
+static int
 select_protocol_after_handshake (SocketHTTPServer_T server,
                                  ServerConnection *conn)
 {
