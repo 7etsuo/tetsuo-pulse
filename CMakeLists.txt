@@ -1329,6 +1329,7 @@ if(BUILD_EXAMPLES)
         examples/ai_chat/grok_client.c
         examples/ai_chat/agents.c
         examples/ai_chat/websocket_hub.c
+        examples/ai_chat/async_worker.c
     )
     target_link_libraries(ai_chat socket_static ${CURL_LIBRARIES})
     target_include_directories(ai_chat PRIVATE
