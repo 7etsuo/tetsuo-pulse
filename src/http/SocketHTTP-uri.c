@@ -1038,20 +1038,25 @@ validate_pct_encoded (const char *s, size_t len)
   size_t i = 0;
   while (i < len)
     {
-      if (s[i] == '%')
-        {
-          if (i + 2 >= len)
-            return URI_PARSE_ERROR;
-          unsigned char hi = SOCKETHTTP_HEX_VALUE (s[i + 1]);
-          unsigned char lo = SOCKETHTTP_HEX_VALUE (s[i + 2]);
-          if (hi == HEX_INVALID || lo == HEX_INVALID)
-            return URI_PARSE_ERROR;
-          i += 3;
-        }
-      else
+      /* Skip non-encoded characters */
+      if (s[i] != '%')
         {
           i++;
+          continue;
         }
+
+      /* Guard clause: Ensure enough characters remain for hex pair */
+      if (i + 2 >= len)
+        return URI_PARSE_ERROR;
+
+      /* Validate hex pair */
+      unsigned char hi = SOCKETHTTP_HEX_VALUE (s[i + 1]);
+      unsigned char lo = SOCKETHTTP_HEX_VALUE (s[i + 2]);
+
+      if (hi == HEX_INVALID || lo == HEX_INVALID)
+        return URI_PARSE_ERROR;
+
+      i += 3;
     }
   return URI_PARSE_OK;
 }
