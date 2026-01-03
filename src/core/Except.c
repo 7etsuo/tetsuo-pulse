@@ -208,3 +208,64 @@ Except_raise (const Except_T *e, const char *file, int line)
   except_pop_frame (frame);
   except_jump_to_handler (frame);
 }
+
+/* ==========================================================================
+ * Test wrappers for static helper functions
+ * These allow direct unit testing of internal implementation details
+ * ==========================================================================
+ */
+#ifdef TESTING
+
+/* Test wrapper for except_flush_stderr */
+void
+test_wrapper_except_flush_stderr (void)
+{
+  except_flush_stderr ();
+}
+
+/* Test wrapper for except_emit_fatal */
+void
+test_wrapper_except_emit_fatal (const char *message)
+{
+  except_emit_fatal (message);
+}
+
+/* Test wrapper for except_emit_reason */
+void
+test_wrapper_except_emit_reason (const Except_T *e)
+{
+  except_emit_reason (e);
+}
+
+/* Test wrapper for except_emit_location */
+void
+test_wrapper_except_emit_location (const char *file, int line)
+{
+  except_emit_location (file, line);
+}
+
+/* Test wrapper for except_store_exception */
+void
+test_wrapper_except_store_exception (Except_Frame *frame,
+                                     const Except_T *e,
+                                     const char *file,
+                                     int line)
+{
+  except_store_exception (frame, e, file, line);
+}
+
+/* Test wrapper for except_pop_frame */
+void
+test_wrapper_except_pop_frame (Except_Frame *frame)
+{
+  except_pop_frame (frame);
+}
+
+/* Test wrapper for except_basename */
+const char *
+test_wrapper_except_basename (const char *path)
+{
+  return except_basename (path);
+}
+
+#endif /* TESTING */
