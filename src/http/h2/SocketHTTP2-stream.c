@@ -2548,6 +2548,29 @@ validate_push_promise (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
+/* Helper: Check if header name matches ":method" */
+static inline int
+is_method_header (const SocketHPACK_Header *h)
+{
+  return h->name_len == STRLEN_LIT (":method")
+         && memcmp (h->name, ":method", STRLEN_LIT (":method")) == 0;
+}
+
+/* Helper: Check if value is a safe HTTP method (GET or HEAD) */
+static inline int
+is_safe_method (const SocketHPACK_Header *h)
+{
+  if (h->value_len == STRLEN_LIT ("GET")
+      && memcmp (h->value, "GET", STRLEN_LIT ("GET")) == 0)
+    return 1;
+
+  if (h->value_len == STRLEN_LIT ("HEAD")
+      && memcmp (h->value, "HEAD", STRLEN_LIT ("HEAD")) == 0)
+    return 1;
+
+  return 0;
+}
+
 /**
  * Validate PUSH_PROMISE request method per RFC 9113 Section 8.4.
  *
@@ -2565,25 +2588,19 @@ validate_push_request_method (SocketHTTP2_Stream_T stream)
     {
       const SocketHPACK_Header *h = &stream->headers[i];
 
-      /* Check for :method pseudo-header */
-      if (h->name_len == STRLEN_LIT (":method")
-          && memcmp (h->name, ":method", STRLEN_LIT (":method")) == 0)
-        {
-          /* RFC 9113 §8.4: Only GET and HEAD are valid for pushed requests */
-          if ((h->value_len == STRLEN_LIT ("GET")
-               && memcmp (h->value, "GET", STRLEN_LIT ("GET")) == 0)
-              || (h->value_len == STRLEN_LIT ("HEAD")
-                  && memcmp (h->value, "HEAD", STRLEN_LIT ("HEAD")) == 0))
-            {
-              return 0; /* Valid safe method */
-            }
+      if (!is_method_header (h))
+        continue;
 
-          SOCKET_LOG_WARN_MSG (
-              "PUSH_PROMISE rejected: unsafe method '%.*s' (RFC 9113 §8.4)",
-              (int)h->value_len,
-              h->value);
-          return -1; /* Invalid/unsafe method */
-        }
+      /* Found :method header - validate it's a safe method */
+      if (is_safe_method (h))
+        return 0; /* Valid safe method */
+
+      /* Invalid/unsafe method found */
+      SOCKET_LOG_WARN_MSG (
+          "PUSH_PROMISE rejected: unsafe method '%.*s' (RFC 9113 §8.4)",
+          (int)h->value_len,
+          h->value);
+      return -1;
     }
 
   /* :method pseudo-header not found - this is also a protocol error */
