@@ -14,6 +14,8 @@
 #include <limits.h>
 ||||||| parent of 86742604 (test(core): Add comprehensive tests for SocketIPTracker_setmax/getmax)
 #include <pthread.h>
+||||||| parent of 11582d50 (test(core): Add tests for SocketIPTracker_setmaxunique/getmaxunique)
+#include <stdio.h>
 #include <string.h>
 
 #include "core/Arena.h"
@@ -1014,6 +1016,163 @@ TEST (iptracker_concurrent_setmax_getmax)
   /* Should not crash and should have a valid value */
   int final_max = SocketIPTracker_getmax (tracker);
   ASSERT (final_max >= 0 && final_max < 50);
+
+  SocketIPTracker_free (&tracker);
+  Arena_dispose (&arena);
+}
+
+/* Test setmaxunique and getmaxunique */
+TEST (iptracker_setmaxunique_getmaxunique)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  SocketIPTracker_T tracker = NULL;
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
+  EXCEPT (SocketIPTracker_Failed)
+  {
+    Arena_dispose (&arena);
+    ASSERT (0); /* Should not raise exception */
+  }
+  END_TRY;
+
+  /* Test default value - should be SOCKET_MAX_CONNECTIONS (10000) */
+  size_t default_max = SocketIPTracker_getmaxunique (tracker);
+  ASSERT_EQ (default_max, 10000);
+
+  /* Test setting new value */
+  SocketIPTracker_setmaxunique (tracker, 5);
+  ASSERT_EQ (SocketIPTracker_getmaxunique (tracker), 5);
+
+  /* Test setting to 0 (unlimited) */
+  SocketIPTracker_setmaxunique (tracker, 0);
+  ASSERT_EQ (SocketIPTracker_getmaxunique (tracker), 0);
+
+  /* Test setting back to a limit */
+  SocketIPTracker_setmaxunique (tracker, 100);
+  ASSERT_EQ (SocketIPTracker_getmaxunique (tracker), 100);
+
+  SocketIPTracker_free (&tracker);
+  Arena_dispose (&arena);
+}
+
+/* Test enforcing max_unique_ips limit */
+TEST (iptracker_enforce_max_unique_ips)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  SocketIPTracker_T tracker = NULL;
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
+  EXCEPT (SocketIPTracker_Failed)
+  {
+    Arena_dispose (&arena);
+    ASSERT (0); /* Should not raise exception */
+  }
+  END_TRY;
+
+  /* Set a low limit */
+  SocketIPTracker_setmaxunique (tracker, 3);
+
+  /* Track up to limit */
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.1"), 1);
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.2"), 1);
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.3"), 1);
+  ASSERT_EQ (SocketIPTracker_unique_ips (tracker), 3);
+
+  /* Next unique IP should be rejected (returns 0) */
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.4"), 0);
+  ASSERT_EQ (SocketIPTracker_unique_ips (tracker), 3);
+
+  /* But existing IPs can still be tracked */
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.1"), 1);
+  ASSERT_EQ (SocketIPTracker_count (tracker, "10.0.0.1"), 2);
+
+  SocketIPTracker_free (&tracker);
+  Arena_dispose (&arena);
+}
+
+/* Test unlimited unique IPs (max_unique_ips = 0) */
+TEST (iptracker_unlimited_unique_ips)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  SocketIPTracker_T tracker = NULL;
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
+  EXCEPT (SocketIPTracker_Failed)
+  {
+    Arena_dispose (&arena);
+    ASSERT (0); /* Should not raise exception */
+  }
+  END_TRY;
+
+  /* Set to 0 for unlimited */
+  SocketIPTracker_setmaxunique (tracker, 0);
+
+  /* Should be able to track many unique IPs */
+  for (int i = 1; i <= 100; i++)
+    {
+      char ip[32];
+      snprintf (ip, sizeof (ip), "10.0.0.%d", i);
+      ASSERT_EQ (SocketIPTracker_track (tracker, ip), 1);
+    }
+
+  ASSERT_EQ (SocketIPTracker_unique_ips (tracker), 100);
+
+  SocketIPTracker_free (&tracker);
+  Arena_dispose (&arena);
+}
+
+/* Test changing max_unique_ips after tracking IPs */
+TEST (iptracker_change_max_unique_after_tracking)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  SocketIPTracker_T tracker = NULL;
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
+  EXCEPT (SocketIPTracker_Failed)
+  {
+    Arena_dispose (&arena);
+    ASSERT (0); /* Should not raise exception */
+  }
+  END_TRY;
+
+  /* Start with unlimited */
+  SocketIPTracker_setmaxunique (tracker, 0);
+
+  /* Track 5 IPs */
+  for (int i = 1; i <= 5; i++)
+    {
+      char ip[32];
+      snprintf (ip, sizeof (ip), "10.0.0.%d", i);
+      SocketIPTracker_track (tracker, ip);
+    }
+  ASSERT_EQ (SocketIPTracker_unique_ips (tracker), 5);
+
+  /* Now set limit to 3 - existing connections should remain */
+  SocketIPTracker_setmaxunique (tracker, 3);
+  ASSERT_EQ (SocketIPTracker_unique_ips (tracker), 5);
+
+  /* But new IPs should be rejected */
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.6"), 0);
+  ASSERT_EQ (SocketIPTracker_unique_ips (tracker), 5);
+
+  /* Existing IPs can still be tracked */
+  ASSERT_EQ (SocketIPTracker_track (tracker, "10.0.0.1"), 1);
 
   SocketIPTracker_free (&tracker);
   Arena_dispose (&arena);
