@@ -792,6 +792,8 @@ set(TEST_SOURCES
     test_coverage
     test_synprotect
     test_synprotect_ip_parsing
+||||||| parent of 838f822d (test(core): Add unit tests for SYN protection IP parsing functions)
+    test_synprotect_ip
     test_simple_security
     test_crypto
     test_utf8
