@@ -5,6 +5,7 @@
 
 struct WebSocketHub {
     SocketWS_T clients[MAX_CLIENTS];
+    char nicks[MAX_CLIENTS][MAX_NICK_LEN];
     int count;
 };
 
@@ -31,6 +32,7 @@ WebSocketHub_add(WebSocketHub_T hub, SocketWS_T ws)
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (hub->clients[i] == NULL) {
             hub->clients[i] = ws;
+            hub->nicks[i][0] = '\0';
             hub->count++;
             return 0;
         }
@@ -46,10 +48,38 @@ WebSocketHub_remove(WebSocketHub_T hub, SocketWS_T ws)
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (hub->clients[i] == ws) {
             hub->clients[i] = NULL;
+            hub->nicks[i][0] = '\0';
             hub->count--;
             return;
         }
     }
+}
+
+void
+WebSocketHub_set_nick(WebSocketHub_T hub, SocketWS_T ws, const char *nick)
+{
+    if (!hub || !ws || !nick) return;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (hub->clients[i] == ws) {
+            strncpy(hub->nicks[i], nick, MAX_NICK_LEN - 1);
+            hub->nicks[i][MAX_NICK_LEN - 1] = '\0';
+            return;
+        }
+    }
+}
+
+const char *
+WebSocketHub_get_nick(WebSocketHub_T hub, SocketWS_T ws)
+{
+    if (!hub || !ws) return NULL;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (hub->clients[i] == ws) {
+            return hub->nicks[i][0] ? hub->nicks[i] : NULL;
+        }
+    }
+    return NULL;
 }
 
 void
@@ -140,6 +170,70 @@ WebSocketHub_broadcast_json(WebSocketHub_T hub,
 
     free(escaped_text);
     free(escaped_agent);
+
+    if (len > 0 && (size_t)len < sizeof(buffer)) {
+        WebSocketHub_broadcast(hub, buffer, len);
+    }
+}
+
+void
+WebSocketHub_broadcast_userlist(WebSocketHub_T hub)
+{
+    if (!hub) return;
+
+    char buffer[4096];
+    int pos = snprintf(buffer, sizeof(buffer), "{\"type\":\"userlist\",\"users\":[");
+
+    int first = 1;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (hub->clients[i] && hub->nicks[i][0]) {
+            char *escaped = escape_json_value(hub->nicks[i]);
+            if (escaped) {
+                pos += snprintf(buffer + pos, sizeof(buffer) - pos,
+                    "%s\"%s\"", first ? "" : ",", escaped);
+                free(escaped);
+                first = 0;
+            }
+        }
+    }
+
+    pos += snprintf(buffer + pos, sizeof(buffer) - pos, "]}");
+
+    if (pos > 0 && (size_t)pos < sizeof(buffer)) {
+        WebSocketHub_broadcast(hub, buffer, pos);
+    }
+}
+
+void
+WebSocketHub_broadcast_userjoin(WebSocketHub_T hub, const char *nick)
+{
+    if (!hub || !nick) return;
+
+    char *escaped = escape_json_value(nick);
+    if (!escaped) return;
+
+    char buffer[256];
+    int len = snprintf(buffer, sizeof(buffer),
+        "{\"type\":\"userjoin\",\"nick\":\"%s\"}", escaped);
+    free(escaped);
+
+    if (len > 0 && (size_t)len < sizeof(buffer)) {
+        WebSocketHub_broadcast(hub, buffer, len);
+    }
+}
+
+void
+WebSocketHub_broadcast_userpart(WebSocketHub_T hub, const char *nick)
+{
+    if (!hub || !nick) return;
+
+    char *escaped = escape_json_value(nick);
+    if (!escaped) return;
+
+    char buffer[256];
+    int len = snprintf(buffer, sizeof(buffer),
+        "{\"type\":\"userpart\",\"nick\":\"%s\"}", escaped);
+    free(escaped);
 
     if (len > 0 && (size_t)len < sizeof(buffer)) {
         WebSocketHub_broadcast(hub, buffer, len);
