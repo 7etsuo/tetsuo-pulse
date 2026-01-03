@@ -3,77 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Agents Debate</title>
+  <title>#ai-debate</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e; color: #eee; min-height: 100vh;
-      display: flex; flex-direction: column;
+      font-family: 'Courier New', Consolas, monospace;
+      background: #0a0a0a; color: #c0c0c0;
+      height: 100vh; display: flex; flex-direction: column;
     }
-    header {
-      background: #16213e; padding: 1rem 2rem;
-      border-bottom: 2px solid #0f3460;
+    #header {
+      background: #1a1a1a; padding: 8px 12px;
+      border-bottom: 1px solid #333;
+      display: flex; justify-content: space-between; align-items: center;
     }
-    header h1 { font-size: 1.5rem; }
-    header p { color: #888; font-size: 0.9rem; margin-top: 0.25rem; }
-    #topic {
-      background: #0f3460; padding: 1rem 2rem;
-      font-style: italic; color: #e94560;
-    }
+    #header .channel { color: #5f9; font-weight: bold; }
+    #header .topic { color: #f95; font-size: 0.9em; margin-left: 1em; }
+    #header .status { font-size: 0.85em; }
+    .connected { color: #5f9; }
+    .disconnected { color: #f55; }
     #messages {
-      flex: 1; overflow-y: auto; padding: 1rem 2rem;
-      display: flex; flex-direction: column; gap: 1rem;
+      flex: 1; overflow-y: auto; padding: 8px 12px;
+      font-size: 14px; line-height: 1.4;
     }
-    .message {
-      background: #16213e; border-radius: 12px; padding: 1rem;
-      max-width: 80%; animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
-    .message .header {
-      display: flex; align-items: center; gap: 0.5rem;
-      margin-bottom: 0.5rem; font-weight: 600;
-    }
-    .message .avatar { font-size: 1.2rem; }
-    .message .text { line-height: 1.5; }
-    .thinking {
-      color: #888; font-style: italic;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-    .thinking .dots { animation: pulse 1s infinite; }
-    @keyframes pulse { 50% { opacity: 0.5; } }
-    #status {
-      background: #16213e; padding: 0.5rem 2rem;
-      font-size: 0.8rem; color: #888;
-      border-top: 1px solid #0f3460;
-    }
-    .connected { color: #4ade80; }
-    .disconnected { color: #f87171; }
+    .line { white-space: pre-wrap; word-wrap: break-word; }
+    .line .time { color: #666; }
+    .line .nick { font-weight: bold; }
+    .line .nick.sage { color: #59f; }
+    .line .nick.nova { color: #5f9; }
+    .line .nick.echo { color: #fd5; }
+    .line .nick.server { color: #f5f; }
+    .line .text { color: #ddd; }
+    .line.action { color: #888; font-style: italic; }
+    .line.join { color: #5a5; }
+    .line.topic { color: #f95; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>AI Agents Debate</h1>
-    <p>Watch Sage, Nova, and Echo discuss tech topics</p>
-  </header>
-  <div id="topic">Connecting...</div>
+  <div id="header">
+    <div>
+      <span class="channel">#ai-debate</span>
+      <span class="topic" id="topic"></span>
+    </div>
+    <span id="status" class="status">connecting...</span>
+  </div>
   <div id="messages"></div>
-  <div id="status">Connecting...</div>
   <script>
     const messagesEl = document.getElementById('messages');
     const topicEl = document.getElementById('topic');
     const statusEl = document.getElementById('status');
-    let thinkingEl = null;
+
+    function timestamp() {
+      const d = new Date();
+      return d.toTimeString().slice(0, 8);
+    }
+
+    function addLine(html, cls = '') {
+      const div = document.createElement('div');
+      div.className = 'line' + (cls ? ' ' + cls : '');
+      div.innerHTML = html;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function nickClass(name) {
+      return name.toLowerCase();
+    }
 
     function connect() {
       const ws = new WebSocket(`ws://${location.host}/ws`);
 
       ws.onopen = () => {
-        statusEl.innerHTML = '<span class="connected">Connected</span>';
+        statusEl.className = 'status connected';
+        statusEl.textContent = 'connected';
+        addLine(`<span class="time">[${timestamp()}]</span> <span class="nick server">***</span> <span class="text">Connected to server</span>`, 'join');
       };
 
       ws.onclose = () => {
-        statusEl.innerHTML = '<span class="disconnected">Disconnected - Reconnecting...</span>';
+        statusEl.className = 'status disconnected';
+        statusEl.textContent = 'disconnected';
+        addLine(`<span class="time">[${timestamp()}]</span> <span class="nick server">***</span> <span class="text">Disconnected, reconnecting...</span>`);
         setTimeout(connect, 2000);
       };
 
@@ -82,29 +90,20 @@
 
         if (data.type === 'topic') {
           topicEl.textContent = data.text;
-          messagesEl.innerHTML = '';
+          addLine(`<span class="time">[${timestamp()}]</span> <span class="nick server">***</span> <span class="text">Topic: ${data.text}</span>`, 'topic');
         } else if (data.type === 'thinking') {
-          if (thinkingEl) thinkingEl.remove();
-          thinkingEl = document.createElement('div');
-          thinkingEl.className = 'thinking';
-          thinkingEl.innerHTML = `<span>${data.agent} is thinking</span><span class="dots">...</span>`;
-          messagesEl.appendChild(thinkingEl);
-          messagesEl.scrollTop = messagesEl.scrollHeight;
+          addLine(`<span class="time">[${timestamp()}]</span> <span class="nick server">*</span> <span class="text">${data.agent} is typing...</span>`, 'action');
         } else if (data.type === 'msg') {
-          if (thinkingEl) { thinkingEl.remove(); thinkingEl = null; }
-          const msg = document.createElement('div');
-          msg.className = 'message';
-          msg.innerHTML = `
-            <div class="header">
-              <span class="avatar">${data.avatar}</span>
-              <span>${data.agent}</span>
-            </div>
-            <div class="text">${data.text}</div>
-          `;
-          messagesEl.appendChild(msg);
-          messagesEl.scrollTop = messagesEl.scrollHeight;
+          const nc = nickClass(data.agent);
+          addLine(`<span class="time">[${timestamp()}]</span> &lt;<span class="nick ${nc}">${data.agent}</span>&gt; <span class="text">${escapeHtml(data.text)}</span>`);
         }
       };
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     connect();
