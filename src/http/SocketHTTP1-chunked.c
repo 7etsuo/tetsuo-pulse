@@ -677,6 +677,8 @@ handle_trailer_line_completion (SocketHTTP1_Parser_T parser, const char **p)
  * Processes trailer headers after the final zero-size chunk (RFC 9112 Section
  * 7.1.3). States handled: HTTP1_PS_TRAILER_START through HTTP1_PS_COMPLETE.
  *
+ * Refactored to flatten nesting from 4-5 levels to 2 levels maximum.
+ *
  * @param parser Parser instance with current state
  * @param p Pointer to current input position (modified as data consumed)
  * @param end End of input buffer
@@ -690,51 +692,40 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
 {
   while (*p < end)
     {
+      SocketHTTP1_Result res;
+
       switch (parser->internal_state)
         {
         case HTTP1_PS_TRAILER_START:
-          {
-            SocketHTTP1_Result res
-                = handle_trailer_start_state (parser, p, end);
-            if (res != HTTP1_OK || parser->internal_state == HTTP1_PS_COMPLETE)
-              return res;
-            break;
-          }
+          res = handle_trailer_start_state (parser, p, end);
+          if (res != HTTP1_OK || parser->internal_state == HTTP1_PS_COMPLETE)
+            return res;
+          break;
 
         case HTTP1_PS_TRAILER_NAME:
-          {
-            SocketHTTP1_Result res = handle_trailer_name_state (parser, p, end);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
+          res = handle_trailer_name_state (parser, p, end);
+          if (res != HTTP1_OK)
+            return res;
+          break;
 
         case HTTP1_PS_TRAILER_COLON:
-          {
-            SocketHTTP1_Result res
-                = handle_trailer_colon_state (parser, p, end);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
+          res = handle_trailer_colon_state (parser, p, end);
+          if (res != HTTP1_OK)
+            return res;
+          break;
 
         case HTTP1_PS_TRAILER_VALUE:
-          {
-            SocketHTTP1_Result res
-                = handle_trailer_value_state (parser, p, end);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
+          res = handle_trailer_value_state (parser, p, end);
+          if (res != HTTP1_OK)
+            return res;
+          break;
 
         case HTTP1_PS_TRAILER_CR:
         case HTTP1_PS_TRAILER_LF:
-          {
-            SocketHTTP1_Result res = handle_trailer_line_completion (parser, p);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
+          res = handle_trailer_line_completion (parser, p);
+          if (res != HTTP1_OK)
+            return res;
+          break;
 
         case HTTP1_PS_TRAILERS_END_LF:
           mark_body_complete (parser);
@@ -785,7 +776,8 @@ chunk_size_handler (SocketHTTP1_Parser_T parser,
 }
 
 /**
- * Handle chunk data copying - guard clause returns early on incomplete or error.
+ * Handle chunk data copying - guard clause returns early on incomplete or
+ * error.
  *
  * @param parser Parser instance with current state
  * @param p Pointer to current input position (modified as data consumed)
@@ -872,22 +864,29 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
       switch (parser->internal_state)
         {
         case HTTP1_PS_CHUNK_SIZE:
-          result = chunk_size_handler (parser, &p, end, input, output, out,
-                                       consumed, written);
+          result = chunk_size_handler (
+              parser, &p, end, input, output, out, consumed, written);
           if (result != HTTP1_OK)
             return result;
           break;
 
         case HTTP1_PS_CHUNK_DATA:
-          result = chunk_data_handler (parser, &p, end, &out, &out_remaining,
-                                       input, output, consumed, written);
+          result = chunk_data_handler (parser,
+                                       &p,
+                                       end,
+                                       &out,
+                                       &out_remaining,
+                                       input,
+                                       output,
+                                       consumed,
+                                       written);
           if (result != HTTP1_OK)
             return result;
           break;
 
         case HTTP1_PS_CHUNK_DATA_CR:
-          result = chunk_crlf_handler (parser, &p, end, input, output, out,
-                                       consumed, written);
+          result = chunk_crlf_handler (
+              parser, &p, end, input, output, out, consumed, written);
           if (result != HTTP1_OK)
             return result;
           break;
