@@ -1528,8 +1528,8 @@ scan_header_name (const char *p, const char *end)
  */
 static inline int
 process_header_value_chunk (SocketHTTP1_Parser_T parser,
-                             const char *chunk,
-                             size_t chunk_len)
+                            const char *chunk,
+                            size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1561,8 +1561,8 @@ process_header_value_chunk (SocketHTTP1_Parser_T parser,
  */
 static inline int
 process_header_name_chunk (SocketHTTP1_Parser_T parser,
-                            const char *chunk,
-                            size_t chunk_len)
+                           const char *chunk,
+                           size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1587,6 +1587,52 @@ process_header_name_chunk (SocketHTTP1_Parser_T parser,
   parser->line_length += chunk_len;
   parser->header_line_length += chunk_len;
   return 0;
+}
+
+/* Helper: Handle HTTP1_ACT_STORE_VALUE action
+ * Returns HTTP1_OK on success, parser->error on failure
+ */
+static inline SocketHTTP1_Result
+handle_store_value (SocketHTTP1_Parser_T parser,
+                    uint8_t c,
+                    const char *p,
+                    const char *data,
+                    size_t *consumed)
+{
+  if (http1_tokenbuf_append (&parser->value_buf,
+                             parser->arena,
+                             (char)c,
+                             parser->config.max_header_value)
+      < 0)
+    {
+      set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+      *consumed = (size_t)(p - data);
+      return parser->error;
+    }
+  return HTTP1_OK;
+}
+
+/* Helper: Handle HTTP1_ACT_STORE_NAME action
+ * Returns HTTP1_OK on success, parser->error on failure
+ */
+static inline SocketHTTP1_Result
+handle_store_name (SocketHTTP1_Parser_T parser,
+                   uint8_t c,
+                   const char *p,
+                   const char *data,
+                   size_t *consumed)
+{
+  if (http1_tokenbuf_append (&parser->name_buf,
+                             parser->arena,
+                             (char)c,
+                             parser->config.max_header_name)
+      < 0)
+    {
+      set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
+      *consumed = (size_t)(p - data);
+      return parser->error;
+    }
+  return HTTP1_OK;
 }
 
 static SocketHTTP1_Result
@@ -1682,31 +1728,15 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
           }
         else if (action == HTTP1_ACT_STORE_VALUE)
           {
-            /* Inline single-byte value append (for bytes after batch) */
-            if (http1_tokenbuf_append (&parser->value_buf,
-                                       parser->arena,
-                                       (char)c,
-                                       parser->config.max_header_value)
-                < 0)
-              {
-                set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-                *consumed = (size_t)(p - data);
-                return parser->error;
-              }
+            result = handle_store_value (parser, c, p, data, consumed);
+            if (result != HTTP1_OK)
+              return result;
           }
         else if (action == HTTP1_ACT_STORE_NAME)
           {
-            /* Inline single-byte name append */
-            if (http1_tokenbuf_append (&parser->name_buf,
-                                       parser->arena,
-                                       (char)c,
-                                       parser->config.max_header_name)
-                < 0)
-              {
-                set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
-                *consumed = (size_t)(p - data);
-                return parser->error;
-              }
+            result = handle_store_name (parser, c, p, data, consumed);
+            if (result != HTTP1_OK)
+              return result;
           }
         else
           {
