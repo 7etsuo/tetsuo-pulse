@@ -337,27 +337,31 @@ evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
   time_t oldest_time = (time_t)-1;
   CookieEntry **oldest_pp = NULL;
 
+  /* Find oldest cookie across all hash buckets */
   for (size_t i = 0; i < jar->hash_size; i++)
     {
-      CookieEntry **pp = &jar->hash_table[i];
-      while (*pp != NULL)
+      for (CookieEntry **pp = &jar->hash_table[i]; *pp != NULL;
+           pp = &(*pp)->next)
         {
           CookieEntry *entry = *pp;
-          if (entry->created < oldest_time)
-            {
-              oldest_time = entry->created;
-              oldest_pp = pp;
-            }
-          pp = &entry->next;
+
+          /* Skip if not older than current oldest */
+          if (entry->created >= oldest_time)
+            continue;
+
+          oldest_time = entry->created;
+          oldest_pp = pp;
         }
     }
 
-  if (oldest_pp != NULL)
-    {
-      CookieEntry *entry = *oldest_pp;
-      *oldest_pp = entry->next;
-      jar->count--;
-    }
+  /* Early return if no cookies found */
+  if (oldest_pp == NULL)
+    return;
+
+  /* Evict the oldest cookie */
+  CookieEntry *entry = *oldest_pp;
+  *oldest_pp = entry->next;
+  jar->count--;
 }
 
 
