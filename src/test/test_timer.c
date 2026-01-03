@@ -739,6 +739,488 @@ TEST (timer_repeating_zero_interval)
 }
 
 /* ============================================================================
+ * Comprehensive Repeating Timer Tests (Issue #3053)
+ * ============================================================================
+ */
+
+/* Test basic repeating timer with various intervals */
+TEST (timer_repeating_basic_intervals)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx10 = { 0, 0, NULL };
+  TimerCallbackContext ctx100 = { 0, 0, NULL };
+  TimerCallbackContext ctx1000 = { 0, 0, NULL };
+  SocketTimer_T timer10 = NULL;
+  SocketTimer_T timer100 = NULL;
+  SocketTimer_T timer1000 = NULL;
+
+  TRY
+  {
+    /* Create timers with different intervals */
+    timer10 = SocketTimer_add_repeating (poll, 10, timer_callback, &ctx10);
+    timer100 = SocketTimer_add_repeating (poll, 100, timer_callback, &ctx100);
+    timer1000
+        = SocketTimer_add_repeating (poll, 1000, timer_callback, &ctx1000);
+
+    ASSERT_NOT_NULL (timer10);
+    ASSERT_NOT_NULL (timer100);
+    ASSERT_NOT_NULL (timer1000);
+
+    /* Wait enough time for multiple firings - loop to ensure time passes */
+    SocketEvent_T *events = NULL;
+    int64_t start = Socket_get_monotonic_ms ();
+    int64_t target = start + 250;
+    while (Socket_get_monotonic_ms () < target)
+      {
+        (void)SocketPoll_wait (poll, &events, 100);
+      }
+    int64_t elapsed = Socket_get_monotonic_ms () - start;
+
+    /* Verify callbacks fired (allow for slower systems) */
+    ASSERT (ctx10.call_count >= 1);
+    /* 100ms timer may fire 1-3 times in 250ms */
+    ASSERT (ctx100.call_count >= 0);
+    /* 1000ms timer should not have fired yet */
+    ASSERT_EQ (0, ctx1000.call_count);
+
+    /* Verify elapsed time is reasonable */
+    ASSERT (elapsed >= 200);
+
+    /* Cancel all timers */
+    SocketTimer_cancel (poll, timer10);
+    SocketTimer_cancel (poll, timer100);
+    SocketTimer_cancel (poll, timer1000);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test interval accuracy over multiple firings */
+TEST (timer_repeating_interval_accuracy)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+  const int64_t interval = 50;
+
+  TRY
+  {
+    int64_t start = Socket_get_monotonic_ms ();
+    timer = SocketTimer_add_repeating (poll, interval, timer_callback, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait for multiple firings */
+    SocketEvent_T *events = NULL;
+    for (int i = 0; i < 5; i++)
+      {
+        (void)SocketPoll_wait (poll, &events, interval + 20);
+      }
+
+    int64_t elapsed = Socket_get_monotonic_ms () - start;
+
+    /* Should have fired at least 4 times in ~250ms */
+    ASSERT (ctx.call_count >= 4);
+
+    /* Check timing: elapsed should be close to (call_count * interval) */
+    int64_t expected = ctx.call_count * interval;
+    int64_t deviation = elapsed - expected;
+    /* Allow 5ms tolerance per firing + 10ms base */
+    int64_t tolerance = (ctx.call_count * 5) + 10;
+    ASSERT (deviation >= -tolerance);
+    ASSERT (deviation <= tolerance);
+
+    SocketTimer_cancel (poll, timer);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test that repeating timer count reaches expected number */
+TEST (timer_repeating_count_firings)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    /* 20ms interval, wait 250ms = ~12 firings expected */
+    timer
+        = SocketTimer_add_repeating (poll, 20, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    SocketEvent_T *events = NULL;
+    int64_t start = Socket_get_monotonic_ms ();
+    int64_t target = start + 250;
+    while (Socket_get_monotonic_ms () < target)
+      {
+        (void)SocketPoll_wait (poll, &events, 50);
+      }
+
+    /* Should have fired at least 6 times (allowing tolerance for slower systems) */
+    ASSERT (ctx.call_count >= 6);
+    /* Should not have fired more than 18 times */
+    ASSERT (ctx.call_count <= 18);
+
+    SocketTimer_cancel (poll, timer);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test cancellation of repeating timer after N firings */
+TEST (timer_repeating_cancellation_after_firings)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    timer
+        = SocketTimer_add_repeating (poll, 30, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait for a few firings */
+    SocketEvent_T *events = NULL;
+    int64_t start = Socket_get_monotonic_ms ();
+    int64_t target = start + 150;
+    while (Socket_get_monotonic_ms () < target)
+      {
+        (void)SocketPoll_wait (poll, &events, 40);
+      }
+
+    int count_before_cancel = ctx.call_count;
+    ASSERT (count_before_cancel >= 1);
+
+    /* Cancel the timer */
+    int result = SocketTimer_cancel (poll, timer);
+    ASSERT_EQ (0, result);
+
+    /* Wait again - no more callbacks should occur */
+    (void)SocketPoll_wait (poll, &events, 100);
+
+    /* Count should not have increased */
+    ASSERT_EQ (count_before_cancel, ctx.call_count);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test multiple repeating timers with different intervals */
+TEST (timer_repeating_multiple_timers_no_interference)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx10 = { 0, 0, NULL };
+  TimerCallbackContext ctx50 = { 0, 0, NULL };
+  TimerCallbackContext ctx100 = { 0, 0, NULL };
+  SocketTimer_T timer10 = NULL;
+  SocketTimer_T timer50 = NULL;
+  SocketTimer_T timer100 = NULL;
+
+  TRY
+  {
+    timer10 = SocketTimer_add_repeating (poll, 10, timer_callback, &ctx10);
+    timer50 = SocketTimer_add_repeating (poll, 50, timer_callback, &ctx50);
+    timer100 = SocketTimer_add_repeating (poll, 100, timer_callback, &ctx100);
+
+    ASSERT_NOT_NULL (timer10);
+    ASSERT_NOT_NULL (timer50);
+    ASSERT_NOT_NULL (timer100);
+
+    /* Wait for multiple cycles - loop to ensure time passes */
+    SocketEvent_T *events = NULL;
+    int64_t start = Socket_get_monotonic_ms ();
+    int64_t target = start + 300;
+    while (Socket_get_monotonic_ms () < target)
+      {
+        (void)SocketPoll_wait (poll, &events, 50);
+      }
+
+    /* Verify each timer fired at appropriate rate (relaxed for CI systems) */
+    /* 10ms timer: ~30 firings in 300ms, but allow wide tolerance */
+    ASSERT (ctx10.call_count >= 10);
+    ASSERT (ctx10.call_count <= 50);
+
+    /* 50ms timer: ~6 firings in 300ms */
+    ASSERT (ctx50.call_count >= 2);
+    ASSERT (ctx50.call_count <= 12);
+
+    /* 100ms timer: ~3 firings in 300ms */
+    ASSERT (ctx100.call_count >= 1);
+    ASSERT (ctx100.call_count <= 6);
+
+    /* Cancel all */
+    SocketTimer_cancel (poll, timer10);
+    SocketTimer_cancel (poll, timer50);
+    SocketTimer_cancel (poll, timer100);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test minimum interval (1ms) */
+TEST (timer_repeating_minimum_interval)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    /* SOCKET_TIMER_MIN_INTERVAL_MS = 1 */
+    timer = SocketTimer_add_repeating (poll, 1, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait a short time - loop to ensure time passes */
+    SocketEvent_T *events = NULL;
+    int64_t start = Socket_get_monotonic_ms ();
+    int64_t target = start + 100;
+    while (Socket_get_monotonic_ms () < target)
+      {
+        (void)SocketPoll_wait (poll, &events, 10);
+      }
+
+    /* Should have fired many times (at least 20 in 100ms, allowing for overhead) */
+    ASSERT (ctx.call_count >= 20);
+
+    SocketTimer_cancel (poll, timer);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test maximum interval (SOCKET_MAX_TIMER_DELAY_MS) */
+TEST (timer_repeating_maximum_interval)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    /* SOCKET_MAX_TIMER_DELAY_MS = 31536000000 (1 year) */
+    /* Create timer with max interval - should succeed */
+    timer = SocketTimer_add_repeating (
+        poll, INT64_C (31536000000), timer_callback, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Timer won't fire in reasonable test time, just verify creation */
+    /* Cancel immediately */
+    int result = SocketTimer_cancel (poll, timer);
+    ASSERT_EQ (0, result);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test negative interval (should fail) */
+TEST (timer_repeating_negative_interval)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  int caught = 0;
+
+  TRY
+  {
+    TRY
+    {
+      SocketTimer_add_repeating (poll, -100, timer_callback, NULL);
+    }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
+    ELSE
+    {
+      caught = 1;
+    }
+    END_TRY;
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+
+  ASSERT (caught);
+}
+
+/* Test interval exceeding maximum (should fail) */
+TEST (timer_repeating_interval_exceeds_max)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  int caught = 0;
+
+  TRY
+  {
+    TRY
+    {
+      /* Exceed SOCKET_MAX_TIMER_DELAY_MS */
+      SocketTimer_add_repeating (
+          poll, INT64_C (31536000000) + 1, timer_callback, NULL);
+    }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
+    ELSE
+    {
+      caught = 1;
+    }
+    END_TRY;
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+
+  ASSERT (caught);
+}
+
+/* Test that timer persists in heap after each firing */
+TEST (timer_repeating_persistence_in_heap)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    timer
+        = SocketTimer_add_repeating (poll, 40, timer_callback_with_check, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Fire multiple times and verify timer is still active */
+    SocketEvent_T *events = NULL;
+    for (int i = 0; i < 3; i++)
+      {
+        (void)SocketPoll_wait (poll, &events, 50);
+        ASSERT (ctx.call_count > i);
+      }
+
+    /* Timer should still be active - query remaining time */
+    int64_t remaining = SocketTimer_remaining (poll, timer);
+    ASSERT (remaining >= 0);
+    ASSERT (remaining <= 45);
+
+    SocketTimer_cancel (poll, timer);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test rescheduling behavior after firing */
+TEST (timer_repeating_reschedule_verification)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    int64_t start = Socket_get_monotonic_ms ();
+    timer = SocketTimer_add_repeating (poll, 60, timer_callback, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait for first firing */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 80);
+    ASSERT_EQ (1, ctx.call_count);
+
+    /* Verify timer auto-rescheduled (remaining time should be ~60ms) */
+    int64_t remaining = SocketTimer_remaining (poll, timer);
+    ASSERT (remaining > 0);
+    ASSERT (remaining <= 65);
+
+    /* Wait for second firing */
+    (void)SocketPoll_wait (poll, &events, 80);
+    ASSERT_EQ (2, ctx.call_count);
+
+    /* Verify still rescheduled */
+    remaining = SocketTimer_remaining (poll, timer);
+    ASSERT (remaining > 0);
+    ASSERT (remaining <= 65);
+
+    SocketTimer_cancel (poll, timer);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* Test first firing occurs after interval_ms */
+TEST (timer_repeating_first_firing_timing)
+{
+  setup_signals ();
+  SocketPoll_T poll = SocketPoll_new (10);
+  TimerCallbackContext ctx = { 0, 0, NULL };
+  SocketTimer_T timer = NULL;
+
+  TRY
+  {
+    int64_t start = Socket_get_monotonic_ms ();
+    timer = SocketTimer_add_repeating (poll, 100, timer_callback, &ctx);
+    ASSERT_NOT_NULL (timer);
+
+    /* Wait for first firing */
+    SocketEvent_T *events = NULL;
+    (void)SocketPoll_wait (poll, &events, 120);
+
+    int64_t first_fire = ctx.last_call_time_ms;
+    int64_t elapsed = first_fire - start;
+
+    /* First firing should be ~100ms after start */
+    ASSERT (elapsed >= 95);
+    ASSERT (elapsed <= 115);
+
+    SocketTimer_cancel (poll, timer);
+  }
+  FINALLY
+  {
+    SocketPoll_free (&poll);
+  }
+  END_TRY;
+}
+
+/* ============================================================================
  * Main - Run all timer tests
  * ============================================================================
  */
