@@ -797,6 +797,8 @@ set(TEST_SOURCES
     test_ipv4_parse
 ||||||| parent of cd32f524 (test(core): Add unit tests for IPv6 address parsing (parse_ipv6_address))
     test_ipv6_parse
+||||||| parent of 93187f47 (test(core): Add unit tests for ip_addresses_equal function)
+    test_ip_equality
     test_simple_security
     test_crypto
     test_utf8
