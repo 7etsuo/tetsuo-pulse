@@ -756,6 +756,10 @@ set(TEST_SOURCES
     test_safe_arithmetic
     test_socketutil_time
     test_url_utils
+||||||| parent of 626c6d12 (test(core): Add comprehensive tests for SocketMetrics histogram percentile edge cases)
+    test_url_utils
+    test_socketutil_time
+    test_url_utils
     test_socket
     test_simple_recv_line
     test_simple_dns_overflow
@@ -834,6 +838,7 @@ set(TEST_SOURCES
 ||||||| parent of 9f194d4d (test(core): Add comprehensive unit tests for SocketTimer heap operations)
     test_timer_heap
     test_metrics
+    test_metrics_percentile
     test_httpserver
     test_httpserver_websocket
     # QUIC tests (RFC 9000)
