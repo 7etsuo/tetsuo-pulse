@@ -18,6 +18,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/HashTable.h"
+#include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 #include "test/Test.h"
 
@@ -429,6 +430,109 @@ TEST (hashtable_null_config_raises)
     raised = 1;
   }
   END_TRY;
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (hashtable_table_allocation_failure_arena)
+{
+  /* Test table struct allocation failure when using Arena
+   *
+   * NOTE: This test is challenging because:
+   * 1. Arena allocates in chunks, typically 10KB
+   * 2. Small allocations (table struct ~64 bytes) fit in existing chunks
+   * 3. Global memory limit only triggers on new chunk allocation
+   *
+   * Strategy: Allocate large chunks to exhaust memory, then try to allocate
+   * table. If table fits in current chunk, it won't fail. So we need to
+   * ensure the table allocation requires a new chunk.
+   */
+  volatile int raised = 0;
+  volatile Arena_T arena = NULL;
+  HashTable_Config config = make_config (16);
+
+  size_t old_limit = SocketConfig_get_max_memory ();
+
+  TRY
+  {
+    arena = Arena_new ();
+
+    /* Allocate a large amount to fill the current chunk completely.
+     * Typical Arena chunk size is 10240 bytes. Allocate more than that
+     * to force the next allocation (table struct) to require a new chunk. */
+    for (int i = 0; i < 10; i++)
+      {
+        char *dummy = ALLOC (arena, 1000);
+        (void)dummy;
+      }
+
+    /* Set global memory limit to current usage to prevent new allocations */
+    size_t current_used = SocketConfig_get_memory_used ();
+    SocketConfig_set_max_memory (current_used);
+
+    /* This should fail when trying to allocate the table struct in a new chunk */
+    HashTable_new (arena, &config);
+  }
+  EXCEPT (HashTable_Failed)
+  {
+    raised = 1;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    /* Arena allocation failure also acceptable */
+    raised = 1;
+  }
+  FINALLY
+  {
+    /* Restore limit before cleanup */
+    SocketConfig_set_max_memory (old_limit);
+    if (arena != NULL)
+      Arena_dispose ((Arena_T *)&arena);
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (hashtable_bucket_allocation_failure_arena)
+{
+  /* Test bucket array allocation failure when using Arena */
+  volatile int raised = 0;
+  volatile Arena_T arena = NULL;
+  HashTable_Config config = make_config (1024); /* Large bucket count */
+
+  size_t old_limit = SocketConfig_get_max_memory ();
+
+  TRY
+  {
+    arena = Arena_new ();
+
+    /* Set tight limit after arena creation:
+     * Allow table struct (~64 bytes) but fail on large bucket array
+     * (1024 pointers = 8192 bytes on 64-bit systems) */
+    size_t current_used = SocketConfig_get_memory_used ();
+    size_t table_size = 128; /* Approximate size for table struct */
+    SocketConfig_set_max_memory (current_used + table_size);
+
+    HashTable_new (arena, &config);
+  }
+  EXCEPT (HashTable_Failed)
+  {
+    raised = 1;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    /* Arena allocation failure also acceptable */
+    raised = 1;
+  }
+  FINALLY
+  {
+    /* Restore limit before cleanup */
+    SocketConfig_set_max_memory (old_limit);
+    if (arena != NULL)
+      Arena_dispose ((Arena_T *)&arena);
+  }
+  END_TRY;
+
   ASSERT_EQ (raised, 1);
 }
 
