@@ -957,6 +957,50 @@ cookie_matches_request (const SocketHTTPClient_Cookie *cookie,
   return 1;
 }
 
+/**
+ * Append a single cookie to the output buffer.
+ *
+ * @param output       Output buffer for Cookie header value
+ * @param output_size  Size of output buffer
+ * @param written      Number of bytes already written to output
+ * @param c            Cookie to append
+ * @return             Number of bytes written (including prior content),
+ *                     or -1 if buffer is full
+ *
+ * @note Handles separator insertion "; " for subsequent cookies
+ */
+static int
+append_cookie_to_buffer (char *output,
+                         size_t output_size,
+                         size_t written,
+                         const SocketHTTPClient_Cookie *c)
+{
+  size_t name_len = strlen (c->name);
+  size_t value_len = strlen (c->value);
+  size_t cookie_len = name_len + value_len + 1; /* name=value */
+
+  /* Add separator length if not first cookie */
+  if (written > 0)
+    cookie_len += 2; /* "; " */
+
+  /* Guard: Check buffer space */
+  if (written + cookie_len >= output_size)
+    return -1; /* Buffer full */
+
+  /* Add separator if needed */
+  if (written > 0)
+    {
+      memcpy (output + written, "; ", 2);
+      written += 2;
+    }
+
+  /* Append cookie */
+  written += (size_t)snprintf (
+      output + written, output_size - written, "%s=%s", c->name, c->value);
+
+  return (int)written;
+}
+
 int
 httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTP_URI *uri,
@@ -995,10 +1039,10 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
       while (entry != NULL)
         {
           const SocketHTTPClient_Cookie *c = &entry->cookie;
-          size_t name_len, value_len, cookie_len;
 
           chain_len++;
 
+          /* Guard: Skip non-matching cookies */
           if (!cookie_matches_request (c,
                                        uri->host,
                                        request_path,
@@ -1013,27 +1057,13 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
               continue;
             }
 
-          name_len = strlen (c->name);
-          value_len = strlen (c->value);
-          cookie_len = name_len + value_len + 1;
-          if (written > 0)
-            cookie_len += 2;
+          /* Attempt to append cookie */
+          int new_written
+              = append_cookie_to_buffer (output, output_size, written, c);
+          if (new_written < 0)
+            break; /* Buffer full, stop processing */
 
-          if (written + cookie_len >= output_size)
-            break;
-
-          if (written > 0)
-            {
-              memcpy (output + written, "; ", 2);
-              written += 2;
-            }
-
-          written += (size_t)snprintf (output + written,
-                                       output_size - written,
-                                       "%s=%s",
-                                       c->name,
-                                       c->value);
-
+          written = (size_t)new_written;
           entry = entry->next;
         }
 
