@@ -634,6 +634,100 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
     server_http2_flush_stream_output (conn, s);
 }
 
+/**
+ * @brief Handle streaming body data with callback
+ *
+ * Invokes the body callback for streaming request processing.
+ * Returns 0 on success, -1 if stream should be canceled.
+ */
+static int
+handle_streaming_body_data (SocketHTTPServer_T server,
+                            ServerConnection *conn,
+                            ServerHTTP2Stream *s,
+                            SocketHTTP2_Stream_T stream,
+                            const char *buf,
+                            size_t n,
+                            int end_stream)
+{
+  struct SocketHTTPServer_Request req_ctx;
+
+  req_ctx.server = server;
+  req_ctx.conn = conn;
+  req_ctx.h2_stream = s;
+  req_ctx.arena = s->arena;
+  req_ctx.start_time_ms = Socket_get_monotonic_ms ();
+
+  if (s->body_callback (&req_ctx, buf, n, end_stream, s->body_callback_userdata)
+      != 0)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Handle buffered body data accumulation
+ *
+ * Accumulates body data in pre-allocated buffer or dynamically grown buffer.
+ * Returns 0 on success, -1 if stream should be canceled.
+ */
+static int
+handle_buffered_body_data (SocketHTTPServer_T server,
+                           ServerHTTP2Stream *s,
+                           SocketHTTP2_Stream_T stream,
+                           const char *buf,
+                           size_t n)
+{
+  size_t max_body = server->config.max_body_size;
+
+  /* Check body size limit */
+  if (max_body > 0 && s->body_len + n > max_body)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+
+  /* Case 1: Pre-allocated fixed buffer (not using SocketBuf) */
+  if (!s->body_uses_buf && s->body != NULL)
+    {
+      size_t space = s->body_capacity - s->body_len;
+      size_t to_copy = n < space ? n : space;
+      memcpy ((char *)s->body + s->body_len, buf, to_copy);
+      s->body_len += to_copy;
+      return 0;
+    }
+
+  /* Case 2: Dynamic buffer using SocketBuf */
+  /* Initialize buffer on first use */
+  if (!s->body_uses_buf)
+    {
+      size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
+      if (max_body > 0 && initial_size > max_body)
+        initial_size = max_body;
+
+      s->body_buf = SocketBuf_new (s->arena, initial_size);
+      if (s->body_buf == NULL)
+        {
+          SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+          return -1;
+        }
+      s->body_uses_buf = 1;
+    }
+
+  /* Ensure buffer has space and append data */
+  if (!SocketBuf_ensure (s->body_buf, n))
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+      return -1;
+    }
+
+  SocketBuf_write (s->body_buf, buf, n);
+  s->body_len = SocketBuf_available (s->body_buf);
+  return 0;
+}
+
 void
 server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                         SocketHTTP2_Stream_T stream,
@@ -661,10 +755,11 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
   if (event == HTTP2_EVENT_HEADERS_RECEIVED)
     {
       /*
-       * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
-       * This is acceptable for modern systems (Linux default: 8MB stack).
-       * Chosen over heap allocation for performance (no malloc overhead).
-       * If stack pressure becomes an issue, consider arena allocation.
+       * Stack allocation: ~5KB (128 headers * ~40 bytes per
+       * SocketHPACK_Header). This is acceptable for modern systems (Linux
+       * default: 8MB stack). Chosen over heap allocation for performance (no
+       * malloc overhead). If stack pressure becomes an issue, consider arena
+       * allocation.
        */
       SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
       size_t hdr_count = 0;
@@ -733,71 +828,19 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
           s->body_received += (size_t)n;
 
+          /* Dispatch to streaming or buffered handler */
           if (s->body_streaming && s->body_callback)
             {
-              struct SocketHTTPServer_Request req_ctx;
-              req_ctx.server = server;
-              req_ctx.conn = conn;
-              req_ctx.h2_stream = s;
-              req_ctx.arena = s->arena;
-              req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-              if (s->body_callback (&req_ctx,
-                                    buf,
-                                    (size_t)n,
-                                    end_stream,
-                                    s->body_callback_userdata)
+              if (handle_streaming_body_data (
+                      server, conn, s, stream, buf, (size_t)n, end_stream)
                   != 0)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
+                return;
             }
           else
             {
-              size_t max_body = server->config.max_body_size;
-
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  size_t space = s->body_capacity - s->body_len;
-                  size_t to_copy = (size_t)n;
-                  if (to_copy > space)
-                    to_copy = space;
-                  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-                  s->body_len += to_copy;
-                }
-              else
-                {
-                  if (!s->body_uses_buf)
-                    {
-                      size_t initial_size
-                          = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-                      if (max_body > 0 && initial_size > max_body)
-                        initial_size = max_body;
-                      s->body_buf = SocketBuf_new (s->arena, initial_size);
-                      if (s->body_buf == NULL)
-                        {
-                          SocketHTTP2_Stream_close (stream,
-                                                    HTTP2_INTERNAL_ERROR);
-                          return;
-                        }
-                      s->body_uses_buf = 1;
-                    }
-
-                  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
-                    {
-                      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                      return;
-                    }
-                  SocketBuf_write (s->body_buf, buf, (size_t)n);
-                  s->body_len = SocketBuf_available (s->body_buf);
-                }
+              if (handle_buffered_body_data (server, s, stream, buf, (size_t)n)
+                  != 0)
+                return;
             }
 
           if (end_stream)
