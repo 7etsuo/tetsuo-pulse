@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define GROK_API_URL "https://api.x.ai/v1/chat/completions"
-#define DEFAULT_MODEL "grok-beta"
+#define DEFAULT_MODEL "grok-4-1-fast-reasoning"
 #define DEFAULT_TIMEOUT_MS 30000
 #define MAX_ERROR_LEN 256
 
