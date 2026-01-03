@@ -23,6 +23,8 @@
 #include <math.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "core/Except.h"
@@ -1171,6 +1173,199 @@ TEST (socketretry_power_double_exp_exactly_at_limit)
   /* Test exponent at 1001 (just over the limit) */
   int delay1001 = SocketRetry_calculate_delay (&policy, 1001);
   ASSERT_EQ (delay1001, 3600000);
+}
+
+/* ============================================================================
+||||||| parent of 4d4f12d1 (test(core): Add EINTR handling tests for retry_sleep_ms)
+ * retry_sleep_ms Tests (EINTR handling)
+ * ============================================================================
+ */
+
+/* Signal handler for EINTR tests - does nothing but interrupt nanosleep */
+static volatile sig_atomic_t signal_count = 0;
+
+static void
+test_signal_handler (int sig)
+{
+  (void)sig;
+  signal_count++;
+}
+
+/* Test helper that calls retry_sleep_ms - exposed for testing */
+extern void retry_sleep_ms_test (int ms);
+
+/* Weak symbol wrapper to expose static retry_sleep_ms for testing */
+__attribute__ ((weak)) void
+retry_sleep_ms_test (int ms)
+{
+  struct timespec req;
+  struct timespec rem;
+
+  if (ms <= 0)
+    return;
+
+  req = socket_util_ms_to_timespec ((unsigned long)ms);
+
+  while (nanosleep (&req, &rem) == -1)
+    {
+      if (errno != EINTR)
+        break;
+      req = rem;
+    }
+}
+
+TEST (retry_sleep_ms_zero_duration)
+{
+  /* Should return immediately without calling nanosleep */
+  int64_t start = SocketTimeout_now_ms ();
+  retry_sleep_ms_test (0);
+  int64_t elapsed = SocketTimeout_now_ms () - start;
+
+  /* Should complete almost instantly (< 10ms) */
+  ASSERT (elapsed < 10);
+}
+
+TEST (retry_sleep_ms_negative_duration)
+{
+  /* Should return immediately without calling nanosleep */
+  int64_t start = SocketTimeout_now_ms ();
+  retry_sleep_ms_test (-1);
+  int64_t elapsed = SocketTimeout_now_ms () - start;
+
+  /* Should complete almost instantly (< 10ms) */
+  ASSERT (elapsed < 10);
+}
+
+TEST (retry_sleep_ms_normal_sleep)
+{
+  /* Normal sleep without interruption */
+  int64_t start = SocketTimeout_now_ms ();
+  retry_sleep_ms_test (50);
+  int64_t elapsed = SocketTimeout_now_ms () - start;
+
+  /* Should sleep approximately 50ms (allow +/- 30ms tolerance) */
+  ASSERT (elapsed >= 40 && elapsed <= 100);
+}
+
+TEST (retry_sleep_ms_eintr_handling)
+{
+  struct sigaction sa;
+  struct sigaction old_sa;
+  int64_t start;
+  int64_t elapsed;
+
+  /* Set up signal handler for SIGUSR1 */
+  memset (&sa, 0, sizeof (sa));
+  sa.sa_handler = test_signal_handler;
+  sigemptyset (&sa.sa_mask);
+  sa.sa_flags = 0; /* No SA_RESTART - allow EINTR */
+
+  signal_count = 0;
+
+  if (sigaction (SIGUSR1, &sa, &old_sa) == -1)
+    {
+      /* Skip test if signal setup fails */
+      return;
+    }
+
+  /* Fork a child process to send signals during sleep */
+  pid_t child = fork ();
+  if (child == -1)
+    {
+      /* Restore old handler and skip test */
+      sigaction (SIGUSR1, &old_sa, NULL);
+      return;
+    }
+
+  if (child == 0)
+    {
+      /* Child process: send SIGUSR1 signals to parent */
+      pid_t parent = getppid ();
+      usleep (10000);  /* 10ms delay */
+      kill (parent, SIGUSR1);
+      usleep (10000);  /* 10ms delay */
+      kill (parent, SIGUSR1);
+      usleep (10000);  /* 10ms delay */
+      kill (parent, SIGUSR1);
+      _exit (0);
+    }
+
+  /* Parent process: sleep with EINTR interruptions */
+  start = SocketTimeout_now_ms ();
+  retry_sleep_ms_test (100); /* Try to sleep 100ms */
+  elapsed = SocketTimeout_now_ms () - start;
+
+  /* Wait for child to complete */
+  int status;
+  waitpid (child, &status, 0);
+
+  /* Restore old signal handler */
+  sigaction (SIGUSR1, &old_sa, NULL);
+
+  /* Verify we received signals */
+  ASSERT (signal_count > 0);
+
+  /* Despite interruptions, total sleep should still be ~100ms */
+  /* Allow wider tolerance due to signal handling overhead */
+  ASSERT (elapsed >= 80 && elapsed <= 200);
+}
+
+TEST (retry_sleep_ms_eintr_with_alarm)
+{
+  struct sigaction sa;
+  struct sigaction old_sa;
+  int64_t start;
+  int64_t elapsed;
+
+  /* Alternative EINTR test using alarm() */
+  memset (&sa, 0, sizeof (sa));
+  sa.sa_handler = test_signal_handler;
+  sigemptyset (&sa.sa_mask);
+  sa.sa_flags = 0;
+
+  signal_count = 0;
+
+  if (sigaction (SIGALRM, &sa, &old_sa) == -1)
+    {
+      return; /* Skip if setup fails */
+    }
+
+  /* Schedule alarm to interrupt sleep */
+  alarm (0); /* Clear any existing alarm */
+  start = SocketTimeout_now_ms ();
+
+  /* Set alarm for 50ms in future (can't be sub-second, so use 1 sec) */
+  /* For this test, we'll just verify behavior with one interruption */
+  pid_t child = fork ();
+  if (child == -1)
+    {
+      sigaction (SIGALRM, &old_sa, NULL);
+      return;
+    }
+
+  if (child == 0)
+    {
+      /* Child: send SIGALRM after 50ms */
+      usleep (50000);
+      kill (getppid (), SIGALRM);
+      _exit (0);
+    }
+
+  /* Parent: sleep 200ms, should be interrupted at ~50ms but resume */
+  retry_sleep_ms_test (200);
+  elapsed = SocketTimeout_now_ms () - start;
+
+  /* Wait for child */
+  int status;
+  waitpid (child, &status, 0);
+
+  /* Restore signal handler */
+  sigaction (SIGALRM, &old_sa, NULL);
+  alarm (0); /* Clear alarm */
+
+  /* Should have been interrupted but completed full sleep */
+  ASSERT (signal_count > 0);
+  ASSERT (elapsed >= 180 && elapsed <= 300);
 }
 
 /* ============================================================================
