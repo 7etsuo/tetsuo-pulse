@@ -980,7 +980,8 @@ uri_build_authority (const SocketHTTP_URI *uri,
   /* Userinfo (optional) */
   if (uri->userinfo && uri->userinfo_len > 0)
     {
-      URI_APPEND_STR (output, *pos, output_size, uri->userinfo, uri->userinfo_len);
+      URI_APPEND_STR (
+          output, *pos, output_size, uri->userinfo, uri->userinfo_len);
       URI_APPEND_CHAR (output, *pos, output_size, '@');
     }
 
@@ -1454,26 +1455,30 @@ mediatype_parse_parameter (const char *p,
         return NULL;
     }
 
+  /* Handle charset parameter */
   if (param_len == MEDIATYPE_CHARSET_LEN
       && strncasecmp (param_start, "charset", MEDIATYPE_CHARSET_LEN) == 0)
     {
       char *cs = arena_strndup (arena, value_start, value_len);
-      if (cs)
-        {
-          result->charset = cs;
-          result->charset_len = value_len;
-        }
+      if (!cs)
+        return p; /* Allocation failed, but parsing succeeded */
+
+      result->charset = cs;
+      result->charset_len = value_len;
+      return p;
     }
-  else if (param_len == MEDIATYPE_BOUNDARY_LEN
-           && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN)
-                  == 0)
+
+  /* Handle boundary parameter */
+  if (param_len == MEDIATYPE_BOUNDARY_LEN
+      && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN) == 0)
     {
       char *bd = arena_strndup (arena, value_start, value_len);
-      if (bd)
-        {
-          result->boundary = bd;
-          result->boundary_len = value_len;
-        }
+      if (!bd)
+        return p; /* Allocation failed, but parsing succeeded */
+
+      result->boundary = bd;
+      result->boundary_len = value_len;
+      return p;
     }
 
   return p;
