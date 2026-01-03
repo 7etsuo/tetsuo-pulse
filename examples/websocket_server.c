@@ -110,7 +110,7 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
       printf ("[%s] WebSocket upgrade requested\n", client);
 
       /* Accept the upgrade */
-      SocketWS_T ws = SocketHTTPServer_Request_upgrade_websocket (req);
+      SocketWS_T ws = SocketHTTPServer_Request_upgrade_websocket (req, NULL, NULL);
 
       if (ws)
         {
