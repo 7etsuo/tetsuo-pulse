@@ -142,13 +142,13 @@ create_socketpair (Socket_T *sock1_out, Socket_T *sock2_out, Arena_T arena)
 
     *sock1_out = sock1;
     *sock2_out = sock2;
-    RETURN 0; /* Must use RETURN macro inside TRY to unwind exception stack */
+    return 0;
   }
   EXCEPT (Socket_Failed)
   {
     close (fds[0]);
     close (fds[1]);
-    /* EXCEPT block pops the frame, so bare return is OK here */
+    return -1;
   }
   END_TRY;
 
@@ -465,21 +465,13 @@ int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   volatile Arena_T arena = NULL;
-  FuzzInput input_local;
-  const FuzzInput *input;
-  const uint8_t *payload;
-  size_t payload_len;
 
   if (size < MIN_INPUT_SIZE)
     return 0;
 
-  /* Use memcpy to ensure proper alignment - direct cast of fuzzer data
-   * to FuzzInput* can cause misaligned access since uint16_t members
-   * require 2-byte alignment but fuzzer data may be at odd addresses */
-  memcpy (&input_local, data, sizeof (FuzzInput));
-  input = &input_local;
-  payload = data + MIN_INPUT_SIZE;
-  payload_len = size - MIN_INPUT_SIZE;
+  const FuzzInput *input = (const FuzzInput *)data;
+  const uint8_t *payload = data + MIN_INPUT_SIZE;
+  size_t payload_len = size - MIN_INPUT_SIZE;
 
   TRY
   {
