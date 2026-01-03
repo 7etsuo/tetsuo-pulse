@@ -644,6 +644,20 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser,
 }
 
 /**
+ * Helper macro: Execute trailer state handler and return on error.
+ * Eliminates repetitive error-checking boilerplate across trailer cases.
+ * Maintains switch dispatch semantics while reducing nesting depth.
+ */
+#define HANDLE_TRAILER_CASE(state, handler)              \
+  case state:                                            \
+    {                                                    \
+      SocketHTTP1_Result res = handler (parser, p, end); \
+      if (res != HTTP1_OK)                               \
+        return res;                                      \
+      break;                                             \
+    }
+
+/**
  * Handle trailer parsing states in chunked transfer encoding.
  *
  * Processes trailer headers after the final zero-size chunk (RFC 9112 Section
@@ -664,40 +678,13 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
     {
       switch (parser->internal_state)
         {
-        case HTTP1_PS_TRAILER_START:
-          {
-            SocketHTTP1_Result res
-                = handle_trailer_start_state (parser, p, end);
-            if (res != HTTP1_OK || parser->internal_state == HTTP1_PS_COMPLETE)
-              return res;
-            break;
-          }
-
-        case HTTP1_PS_TRAILER_NAME:
-          {
-            SocketHTTP1_Result res = handle_trailer_name_state (parser, p, end);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
-
-        case HTTP1_PS_TRAILER_COLON:
-          {
-            SocketHTTP1_Result res
-                = handle_trailer_colon_state (parser, p, end);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
-
-        case HTTP1_PS_TRAILER_VALUE:
-          {
-            SocketHTTP1_Result res
-                = handle_trailer_value_state (parser, p, end);
-            if (res != HTTP1_OK)
-              return res;
-            break;
-          }
+          HANDLE_TRAILER_CASE (HTTP1_PS_TRAILER_START,
+                               handle_trailer_start_state)
+          HANDLE_TRAILER_CASE (HTTP1_PS_TRAILER_NAME, handle_trailer_name_state)
+          HANDLE_TRAILER_CASE (HTTP1_PS_TRAILER_COLON,
+                               handle_trailer_colon_state)
+          HANDLE_TRAILER_CASE (HTTP1_PS_TRAILER_VALUE,
+                               handle_trailer_value_state)
 
         case HTTP1_PS_TRAILER_CR:
         case HTTP1_PS_TRAILER_LF:
@@ -726,6 +713,10 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
         default:
           return HTTP1_ERROR;
         }
+
+      /* Handle state transitions to COMPLETE within handlers */
+      if (parser->internal_state == HTTP1_PS_COMPLETE)
+        return HTTP1_OK;
     }
 
   return HTTP1_INCOMPLETE;
