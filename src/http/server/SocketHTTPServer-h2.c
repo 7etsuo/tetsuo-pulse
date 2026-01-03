@@ -228,102 +228,6 @@ process_pseudo_header (ServerHTTP2BuildContext *ctx,
   return -1;
 }
 
-/* Streaming body callback handler.
- * Invokes the user's body callback for streaming request bodies.
- * Returns 0 on success, -1 on callback error. */
-static int
-server_http2_handle_streaming_body (SocketHTTPServer_T server,
-                                    ServerConnection *conn,
-                                    ServerHTTP2Stream *s,
-                                    SocketHTTP2_Stream_T stream,
-                                    const char *buf,
-                                    ssize_t n,
-                                    int end_stream)
-{
-  struct SocketHTTPServer_Request req_ctx;
-  req_ctx.server = server;
-  req_ctx.conn = conn;
-  req_ctx.h2_stream = s;
-  req_ctx.arena = s->arena;
-  req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-  if (s->body_callback (
-          &req_ctx, buf, (size_t)n, end_stream, s->body_callback_userdata)
-      != 0)
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-      return -1;
-    }
-  return 0;
-}
-
-/* Fixed buffer append handler.
- * Appends received data to pre-allocated fixed buffer.
- * Returns 0 on success. */
-static void
-server_http2_append_fixed_buffer (ServerHTTP2Stream *s,
-                                  const char *buf,
-                                  ssize_t n)
-{
-  size_t space = s->body_capacity - s->body_len;
-  size_t to_copy = (size_t)n;
-  if (to_copy > space)
-    to_copy = space;
-  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-  s->body_len += to_copy;
-}
-
-/* Dynamic buffer initialization.
- * Creates and initializes a dynamic buffer for streaming body data.
- * Returns 0 on success, -1 on allocation failure. */
-static int
-server_http2_init_dynamic_buffer (SocketHTTPServer_T server,
-                                  ServerHTTP2Stream *s,
-                                  SocketHTTP2_Stream_T stream)
-{
-  size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-  size_t max_body = server->config.max_body_size;
-
-  if (max_body > 0 && initial_size > max_body)
-    initial_size = max_body;
-
-  s->body_buf = SocketBuf_new (s->arena, initial_size);
-  if (s->body_buf == NULL)
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-      return -1;
-    }
-  s->body_uses_buf = 1;
-  return 0;
-}
-
-/* Dynamic buffer append handler.
- * Appends received data to dynamic buffer, initializing if needed.
- * Returns 0 on success, -1 on error. */
-static int
-server_http2_append_dynamic_buffer (SocketHTTPServer_T server,
-                                    ServerHTTP2Stream *s,
-                                    SocketHTTP2_Stream_T stream,
-                                    const char *buf,
-                                    ssize_t n)
-{
-  if (!s->body_uses_buf)
-    {
-      if (server_http2_init_dynamic_buffer (server, s, stream) < 0)
-        return -1;
-    }
-
-  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
-    {
-      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-      return -1;
-    }
-
-  SocketBuf_write (s->body_buf, buf, (size_t)n);
-  s->body_len = SocketBuf_available (s->body_buf);
-  return 0;
-}
-
 int
 server_http2_build_request (SocketHTTPServer_T server,
                             ServerHTTP2Stream *s,
@@ -1031,126 +935,22 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
           s->body_received += (size_t)n;
 
-<<<<<<< HEAD
           /* Guard: Handle streaming callback if configured */
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-=======
-          /* Streaming path: invoke callback for each data chunk */
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
           if (s->body_streaming && s->body_callback)
             {
-<<<<<<< HEAD
               if (server_http2_handle_streaming_callback (s, server, conn, stream,
                                                           buf, (size_t)n,
                                                           end_stream)
                   < 0)
                 return;
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-              struct SocketHTTPServer_Request req_ctx;
-              req_ctx.server = server;
-              req_ctx.conn = conn;
-              req_ctx.h2_stream = s;
-              req_ctx.arena = s->arena;
-              req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-              if (s->body_callback (&req_ctx,
-                                    buf,
-                                    (size_t)n,
-                                    end_stream,
-                                    s->body_callback_userdata)
-                  != 0)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-=======
-              if (server_http2_handle_streaming_body (
-                      server, conn, s, stream, buf, n, end_stream)
-                  < 0)
-                return;
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
             }
-<<<<<<< HEAD
           /* Normal path: Buffer the request body */
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-=======
-          /* Non-streaming path: buffer the body */
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
           else
             {
-<<<<<<< HEAD
               if (server_http2_buffer_request_body (s, stream, buf, (size_t)n,
                                                     max_body)
                   < 0)
                 return;
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-              size_t max_body = server->config.max_body_size;
-
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  size_t space = s->body_capacity - s->body_len;
-                  size_t to_copy = (size_t)n;
-                  if (to_copy > space)
-                    to_copy = space;
-                  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-                  s->body_len += to_copy;
-                }
-              else
-                {
-                  if (!s->body_uses_buf)
-                    {
-                      size_t initial_size
-                          = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-                      if (max_body > 0 && initial_size > max_body)
-                        initial_size = max_body;
-                      s->body_buf = SocketBuf_new (s->arena, initial_size);
-                      if (s->body_buf == NULL)
-                        {
-                          SocketHTTP2_Stream_close (stream,
-                                                    HTTP2_INTERNAL_ERROR);
-                          return;
-                        }
-                      s->body_uses_buf = 1;
-                    }
-
-                  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
-                    {
-                      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                      return;
-                    }
-                  SocketBuf_write (s->body_buf, buf, (size_t)n);
-                  s->body_len = SocketBuf_available (s->body_buf);
-                }
-=======
-              size_t max_body = server->config.max_body_size;
-
-              /* Guard: exceeds max body size */
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              /* Fixed buffer path */
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  server_http2_append_fixed_buffer (s, buf, n);
-                }
-              /* Dynamic buffer path */
-              else
-                {
-                  if (server_http2_append_dynamic_buffer (
-                          server, s, stream, buf, n)
-                      < 0)
-                    return;
-                }
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
             }
 
           if (end_stream)
