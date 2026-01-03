@@ -883,12 +883,12 @@ try_decode_short_code (HuffmanDecodeState *state)
     {
       const HuffmanDecodeConfig *cfg = &hpack_decode_configs[i];
       int res = try_decode_nbit (cfg, state);
-      if (res != 0)
-        {
-          if (res > 0)
-            state->bit.bits_avail -= cfg->bitlen;
-          return res;
-        }
+      if (res == 0)
+        continue;
+
+      if (res > 0)
+        state->bit.bits_avail -= cfg->bitlen;
+      return res;
     }
   return 0;
 }
@@ -966,15 +966,16 @@ process_next_huffman_symbol (HuffmanDecodeState *state)
   if (result == DECODE_ERROR)
     return DECODE_ERROR;
 
-  if (result != DECODE_SYMBOL)
+  if (result == DECODE_SYMBOL)
     {
-      if (is_valid_termination (state->bit.bits, state->bit.bits_avail))
-        return DECODE_EOS;
-      return DECODE_ERROR;
+      clear_consumed_bits (&state->bit.bits, state->bit.bits_avail);
+      return DECODE_SYMBOL;
     }
 
-  clear_consumed_bits (&state->bit.bits, state->bit.bits_avail);
-  return DECODE_SYMBOL;
+  if (is_valid_termination (state->bit.bits, state->bit.bits_avail))
+    return DECODE_EOS;
+
+  return DECODE_ERROR;
 }
 
 static size_t
