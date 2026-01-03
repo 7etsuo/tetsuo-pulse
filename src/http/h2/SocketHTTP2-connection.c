@@ -1081,6 +1081,29 @@ validate_enable_push (SocketHTTP2_Conn_T conn, uint32_t value)
 }
 
 static int
+adjust_stream_window (SocketHTTP2_Stream_T s, int32_t delta)
+{
+  return http2_flow_adjust_window (&s->send_window, delta);
+}
+
+static int
+adjust_all_stream_windows (SocketHTTP2_Conn_T conn, int32_t delta)
+{
+  for (size_t j = 0; j < HTTP2_STREAM_HASH_SIZE; j++)
+    {
+      for (SocketHTTP2_Stream_T s = conn->streams[j]; s; s = s->hash_next)
+        {
+          if (adjust_stream_window (s, delta) < 0)
+            {
+              http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
+              return -1;
+            }
+        }
+    }
+  return 0;
+}
+
+static int
 validate_initial_window_size (SocketHTTP2_Conn_T conn, uint32_t value)
 {
   if (value > SOCKETHTTP2_MAX_WINDOW_SIZE)
@@ -1094,19 +1117,8 @@ validate_initial_window_size (SocketHTTP2_Conn_T conn, uint32_t value)
       = (int32_t)value
         - (int32_t)conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE];
 
-  for (size_t j = 0; j < HTTP2_STREAM_HASH_SIZE; j++)
-    {
-      SocketHTTP2_Stream_T s = conn->streams[j];
-      while (s)
-        {
-          if (http2_flow_adjust_window (&s->send_window, delta) < 0)
-            {
-              http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
-              return -1;
-            }
-          s = s->hash_next;
-        }
-    }
+  if (adjust_all_stream_windows (conn, delta) < 0)
+    return -1;
 
   conn->initial_send_window = (int32_t)value;
   return 0;
