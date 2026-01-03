@@ -1342,13 +1342,10 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
           || entry->version == HTTP_VERSION_1_0)
         {
           if (entry->proto.h1.socket != NULL)
-            {
-              Socket_free (&entry->proto.h1.socket);
-            }
+            Socket_free (&entry->proto.h1.socket);
+
           if (entry->proto.h1.parser != NULL)
-            {
-              SocketHTTP1_Parser_free (&entry->proto.h1.parser);
-            }
+            SocketHTTP1_Parser_free (&entry->proto.h1.parser);
         }
 
       /* Add to free list */
