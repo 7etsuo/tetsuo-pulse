@@ -230,6 +230,146 @@ TEST (socketerror_geterrno_thread_local)
   errno = saved_errno;
 }
 
+/* ============================================================================
+ * SocketError_category_name Tests
+ * ============================================================================
+ */
+
+/* Test all valid category enum values return correct names */
+TEST (socketerror_category_name_all_valid)
+{
+  ASSERT_NOT_NULL (SocketError_category_name (SOCKET_ERROR_CATEGORY_NETWORK));
+  ASSERT_EQ (0,
+             strcmp ("NETWORK",
+                     SocketError_category_name (SOCKET_ERROR_CATEGORY_NETWORK)));
+
+  ASSERT_NOT_NULL (SocketError_category_name (SOCKET_ERROR_CATEGORY_PROTOCOL));
+  ASSERT_EQ (
+      0,
+      strcmp ("PROTOCOL",
+              SocketError_category_name (SOCKET_ERROR_CATEGORY_PROTOCOL)));
+
+  ASSERT_NOT_NULL (
+      SocketError_category_name (SOCKET_ERROR_CATEGORY_APPLICATION));
+  ASSERT_EQ (0,
+             strcmp ("APPLICATION",
+                     SocketError_category_name (
+                         SOCKET_ERROR_CATEGORY_APPLICATION)));
+
+  ASSERT_NOT_NULL (SocketError_category_name (SOCKET_ERROR_CATEGORY_TIMEOUT));
+  ASSERT_EQ (0,
+             strcmp ("TIMEOUT",
+                     SocketError_category_name (SOCKET_ERROR_CATEGORY_TIMEOUT)));
+
+  ASSERT_NOT_NULL (SocketError_category_name (SOCKET_ERROR_CATEGORY_RESOURCE));
+  ASSERT_EQ (
+      0,
+      strcmp ("RESOURCE",
+              SocketError_category_name (SOCKET_ERROR_CATEGORY_RESOURCE)));
+
+  ASSERT_NOT_NULL (SocketError_category_name (SOCKET_ERROR_CATEGORY_UNKNOWN));
+  ASSERT_EQ (0,
+             strcmp ("UNKNOWN",
+                     SocketError_category_name (SOCKET_ERROR_CATEGORY_UNKNOWN)));
+}
+
+/* Test negative category value returns "UNKNOWN" */
+TEST (socketerror_category_name_negative)
+{
+  const char *name = SocketError_category_name ((SocketErrorCategory)-1);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp ("UNKNOWN", name));
+}
+
+/* Test out-of-bounds positive value returns "UNKNOWN" */
+TEST (socketerror_category_name_out_of_bounds)
+{
+  const char *name
+      = SocketError_category_name (SOCKET_ERROR_CATEGORY_COUNT);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp ("UNKNOWN", name));
+
+  name = SocketError_category_name ((SocketErrorCategory)999);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp ("UNKNOWN", name));
+}
+
+/* Test all returned strings are non-NULL and non-empty */
+TEST (socketerror_category_name_non_null_non_empty)
+{
+  for (int cat = 0; cat < SOCKET_ERROR_CATEGORY_COUNT; cat++)
+    {
+      const char *name = SocketError_category_name ((SocketErrorCategory)cat);
+      ASSERT_NOT_NULL (name);
+      ASSERT (strlen (name) > 0);
+    }
+
+  /* Also test out-of-bounds */
+  const char *unknown = SocketError_category_name ((SocketErrorCategory)-1);
+  ASSERT_NOT_NULL (unknown);
+  ASSERT (strlen (unknown) > 0);
+}
+
+/* Test returned strings are static (same pointer on repeated calls) */
+TEST (socketerror_category_name_static_strings)
+{
+  const char *name1
+      = SocketError_category_name (SOCKET_ERROR_CATEGORY_NETWORK);
+  const char *name2
+      = SocketError_category_name (SOCKET_ERROR_CATEGORY_NETWORK);
+  ASSERT_EQ (name1, name2); /* Should be same pointer */
+
+  const char *unknown1 = SocketError_category_name ((SocketErrorCategory)-1);
+  const char *unknown2 = SocketError_category_name ((SocketErrorCategory)999);
+  ASSERT_EQ (unknown1, unknown2); /* Both should point to "UNKNOWN" */
+}
+
+/* Test categorize_errno integration with category_name */
+TEST (socketerror_category_name_integration_categorize)
+{
+  int saved_errno = errno;
+
+  /* Network errors should categorize to NETWORK */
+  SocketErrorCategory cat = SocketError_categorize_errno (ECONNREFUSED);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
+  ASSERT_EQ (0, strcmp ("NETWORK", SocketError_category_name (cat)));
+
+  cat = SocketError_categorize_errno (ECONNRESET);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
+  ASSERT_EQ (0, strcmp ("NETWORK", SocketError_category_name (cat)));
+
+  /* Timeout errors should categorize to TIMEOUT */
+  cat = SocketError_categorize_errno (ETIMEDOUT);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_TIMEOUT, cat);
+  ASSERT_EQ (0, strcmp ("TIMEOUT", SocketError_category_name (cat)));
+
+  /* Resource errors should categorize to RESOURCE */
+  cat = SocketError_categorize_errno (ENOMEM);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+  ASSERT_EQ (0, strcmp ("RESOURCE", SocketError_category_name (cat)));
+
+  cat = SocketError_categorize_errno (EMFILE);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+  ASSERT_EQ (0, strcmp ("RESOURCE", SocketError_category_name (cat)));
+
+  /* Protocol errors should categorize to PROTOCOL */
+  cat = SocketError_categorize_errno (EINVAL);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+  ASSERT_EQ (0, strcmp ("PROTOCOL", SocketError_category_name (cat)));
+
+  /* Application errors should categorize to APPLICATION */
+  cat = SocketError_categorize_errno (EACCES);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_APPLICATION, cat);
+  ASSERT_EQ (0, strcmp ("APPLICATION", SocketError_category_name (cat)));
+
+  /* Unknown errno should categorize to UNKNOWN */
+  cat = SocketError_categorize_errno (99999);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_UNKNOWN, cat);
+  ASSERT_EQ (0, strcmp ("UNKNOWN", SocketError_category_name (cat)));
+
+  errno = saved_errno;
+}
+
 int
 main (void)
 {
