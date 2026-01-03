@@ -617,6 +617,336 @@ TEST (socketevent_emit_poll_wakeup_multiple_emits)
   ASSERT_EQ (result, 0);
 }
 
+||||||| parent of 9d1edeed (test(core): Add comprehensive tests for SocketEvent_emit_accept)
+/* ============================================================================
+ * SocketEvent_emit_accept Tests
+ * ============================================================================
+ */
+
+/* Test context for verifying emit_accept event data */
+typedef struct
+{
+  int called;
+  SocketEventType type;
+  const char *component;
+  int fd;
+  const char *peer_addr;
+  int peer_port;
+  const char *local_addr;
+  int local_port;
+} AcceptEventContext;
+
+static void
+accept_event_handler (void *userdata, const SocketEventRecord *event)
+{
+  AcceptEventContext *ctx = (AcceptEventContext *)userdata;
+  ctx->called++;
+  ctx->type = event->type;
+  ctx->component = event->component;
+  ctx->fd = event->data.connection.fd;
+  ctx->peer_addr = event->data.connection.peer_addr;
+  ctx->peer_port = event->data.connection.peer_port;
+  ctx->local_addr = event->data.connection.local_addr;
+  ctx->local_port = event->data.connection.local_port;
+}
+
+/* Test emit_accept with no handlers registered (should not crash) */
+TEST (socketevent_emit_accept_no_handlers)
+{
+  /* This should not crash even without registered handlers */
+  SocketEvent_emit_accept (42, "192.168.1.100", 54321, "192.168.1.1", 80);
+}
+
+/* Test emit_accept dispatches to single registered handler */
+TEST (socketevent_emit_accept_single_handler)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (42, "192.168.1.100", 54321, "192.168.1.1", 80);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.type, SOCKET_EVENT_ACCEPTED);
+  ASSERT_EQ (ctx.fd, 42);
+  ASSERT_EQ (strcmp (ctx.peer_addr, "192.168.1.100"), 0);
+  ASSERT_EQ (ctx.peer_port, 54321);
+  ASSERT_EQ (strcmp (ctx.local_addr, "192.168.1.1"), 0);
+  ASSERT_EQ (ctx.local_port, 80);
+  ASSERT_EQ (strcmp (ctx.component, "Socket"), 0);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept dispatches to multiple registered handlers */
+TEST (socketevent_emit_accept_multiple_handlers)
+{
+  AcceptEventContext ctx1 = { 0 };
+  AcceptEventContext ctx2 = { 0 };
+  AcceptEventContext ctx3 = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx1);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_register (accept_event_handler, &ctx2);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_register (accept_event_handler, &ctx3);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (99, "10.0.0.5", 12345, "10.0.0.1", 443);
+
+  /* All handlers should be called */
+  ASSERT_EQ (ctx1.called, 1);
+  ASSERT_EQ (ctx2.called, 1);
+  ASSERT_EQ (ctx3.called, 1);
+
+  /* Verify all received same event data */
+  ASSERT_EQ (ctx1.fd, 99);
+  ASSERT_EQ (ctx2.fd, 99);
+  ASSERT_EQ (ctx3.fd, 99);
+  ASSERT_EQ (ctx1.peer_port, 12345);
+  ASSERT_EQ (ctx2.peer_port, 12345);
+  ASSERT_EQ (ctx3.peer_port, 12345);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx1);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_unregister (accept_event_handler, &ctx2);
+  ASSERT_EQ (result, 0);
+  result = SocketEvent_unregister (accept_event_handler, &ctx3);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with NULL peer_addr */
+TEST (socketevent_emit_accept_null_peer_addr)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (10, NULL, 8080, "127.0.0.1", 80);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 10);
+  ASSERT_NULL (ctx.peer_addr);
+  ASSERT_EQ (ctx.peer_port, 8080);
+  ASSERT_EQ (strcmp (ctx.local_addr, "127.0.0.1"), 0);
+  ASSERT_EQ (ctx.local_port, 80);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with NULL local_addr */
+TEST (socketevent_emit_accept_null_local_addr)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (20, "203.0.113.5", 9090, NULL, 22);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 20);
+  ASSERT_EQ (strcmp (ctx.peer_addr, "203.0.113.5"), 0);
+  ASSERT_EQ (ctx.peer_port, 9090);
+  ASSERT_NULL (ctx.local_addr);
+  ASSERT_EQ (ctx.local_port, 22);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with both addresses NULL */
+TEST (socketevent_emit_accept_both_addrs_null)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (30, NULL, 1234, NULL, 5678);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 30);
+  ASSERT_NULL (ctx.peer_addr);
+  ASSERT_EQ (ctx.peer_port, 1234);
+  ASSERT_NULL (ctx.local_addr);
+  ASSERT_EQ (ctx.local_port, 5678);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with negative fd */
+TEST (socketevent_emit_accept_negative_fd)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (-1, "192.168.1.1", 80, "192.168.1.2", 443);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, -1);
+  ASSERT_EQ (ctx.peer_port, 80);
+  ASSERT_EQ (ctx.local_port, 443);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with zero port values */
+TEST (socketevent_emit_accept_zero_ports)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (50, "0.0.0.0", 0, "0.0.0.0", 0);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 50);
+  ASSERT_EQ (ctx.peer_port, 0);
+  ASSERT_EQ (ctx.local_port, 0);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with maximum valid port values */
+TEST (socketevent_emit_accept_max_ports)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (60, "192.168.1.1", 65535, "192.168.1.2", 65535);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 60);
+  ASSERT_EQ (ctx.peer_port, 65535);
+  ASSERT_EQ (ctx.local_port, 65535);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with IPv6 addresses */
+TEST (socketevent_emit_accept_ipv6)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (70, "2001:db8::1", 8080, "2001:db8::2", 443);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 70);
+  ASSERT_EQ (strcmp (ctx.peer_addr, "2001:db8::1"), 0);
+  ASSERT_EQ (ctx.peer_port, 8080);
+  ASSERT_EQ (strcmp (ctx.local_addr, "2001:db8::2"), 0);
+  ASSERT_EQ (ctx.local_port, 443);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept called multiple times increments call count */
+TEST (socketevent_emit_accept_multiple_calls)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (1, "192.168.1.1", 80, "192.168.1.2", 80);
+  SocketEvent_emit_accept (2, "192.168.1.3", 81, "192.168.1.4", 81);
+  SocketEvent_emit_accept (3, "192.168.1.5", 82, "192.168.1.6", 82);
+
+  ASSERT_EQ (ctx.called, 3);
+  /* Context should have last emit's data */
+  ASSERT_EQ (ctx.fd, 3);
+  ASSERT_EQ (ctx.peer_port, 82);
+  ASSERT_EQ (ctx.local_port, 82);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept event type is always SOCKET_EVENT_ACCEPTED */
+TEST (socketevent_emit_accept_correct_event_type)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (100, "192.168.1.1", 80, "192.168.1.2", 443);
+
+  ASSERT_EQ (ctx.type, SOCKET_EVENT_ACCEPTED);
+  ASSERT_NE (ctx.type, SOCKET_EVENT_CONNECTED);
+  ASSERT_NE (ctx.type, SOCKET_EVENT_DNS_TIMEOUT);
+  ASSERT_NE (ctx.type, SOCKET_EVENT_POLL_WAKEUP);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept component is always "Socket" */
+TEST (socketevent_emit_accept_correct_component)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (110, "192.168.1.1", 80, "192.168.1.2", 443);
+
+  ASSERT_EQ (strcmp (ctx.component, "Socket"), 0);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test emit_accept with empty string addresses */
+TEST (socketevent_emit_accept_empty_addrs)
+{
+  AcceptEventContext ctx = { 0 };
+  int result;
+
+  result = SocketEvent_register (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+
+  SocketEvent_emit_accept (120, "", 80, "", 443);
+
+  ASSERT_EQ (ctx.called, 1);
+  ASSERT_EQ (ctx.fd, 120);
+  ASSERT_EQ (strcmp (ctx.peer_addr, ""), 0);
+  ASSERT_EQ (strcmp (ctx.local_addr, ""), 0);
+
+  result = SocketEvent_unregister (accept_event_handler, &ctx);
+  ASSERT_EQ (result, 0);
+}
+
 int
 main (void)
 {
