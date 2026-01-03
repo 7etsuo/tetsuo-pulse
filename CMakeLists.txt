@@ -823,6 +823,8 @@ set(TEST_SOURCES
     test_sendfile_bounds
     test_timer
     test_timer_oneshot
+||||||| parent of 9f194d4d (test(core): Add comprehensive unit tests for SocketTimer heap operations)
+    test_timer_heap
     test_metrics
     test_httpserver
     test_httpserver_websocket
