@@ -644,21 +644,30 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser,
 }
 
 /**
- * Validate CR character in trailer CR state and consume it.
+ * Handle trailer line completion after CR or LF state.
  *
- * In HTTP/1.1, CR is always followed by LF. This function validates that
- * the expected LF character follows the CR and advances the input position.
+ * Validates CRLF sequence for trailer lines and completes header processing.
  *
- * @param p Pointer to current input position (modified if CR consumed)
- * @return HTTP1_OK if valid CR+LF sequence found, HTTP1_ERROR_INVALID_TRAILER
- *         if LF is not present
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @return HTTP1_OK on success, or error code
  */
 static SocketHTTP1_Result
-validate_trailer_cr (const char **p)
+handle_trailer_line_completion (SocketHTTP1_Parser_T parser, const char **p)
 {
-  if (**p != '\n')
-    return HTTP1_ERROR_INVALID_TRAILER;
-  (*p)++;
+  /* Validate CR must be followed by LF */
+  if (parser->internal_state == HTTP1_PS_TRAILER_CR)
+    {
+      if (**p != '\n')
+        return HTTP1_ERROR_INVALID_TRAILER;
+      (*p)++;
+    }
+
+  /* Complete the header (add to trailers collection, reset buffers) */
+  SocketHTTP1_Result res = complete_trailer_header (parser);
+  if (res != HTTP1_OK)
+    return res;
+
   return HTTP1_OK;
 }
 
@@ -721,16 +730,7 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
         case HTTP1_PS_TRAILER_CR:
         case HTTP1_PS_TRAILER_LF:
           {
-            /* Validate CR if in CR state */
-            if (parser->internal_state == HTTP1_PS_TRAILER_CR)
-              {
-                SocketHTTP1_Result res = validate_trailer_cr (p);
-                if (res != HTTP1_OK)
-                  return res;
-              }
-
-            /* Complete the trailer header */
-            SocketHTTP1_Result res = complete_trailer_header (parser);
+            SocketHTTP1_Result res = handle_trailer_line_completion (parser, p);
             if (res != HTTP1_OK)
               return res;
             break;
