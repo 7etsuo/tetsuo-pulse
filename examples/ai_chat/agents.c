@@ -199,3 +199,16 @@ AgentSystem_current_agent_index(AgentSystem_T system)
 {
     return system ? system->current_agent : 0;
 }
+
+void
+AgentSystem_add_user_message(AgentSystem_T system, const char *nick, const char *text)
+{
+    if (!system || !nick || !text) return;
+
+    add_to_history(system, nick, text);
+
+    /* Broadcast user message to all clients */
+    if (system->hub) {
+        WebSocketHub_broadcast_json(system->hub, "msg", nick, NULL, text);
+    }
+}

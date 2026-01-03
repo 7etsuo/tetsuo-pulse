@@ -30,4 +30,6 @@ int AgentSystem_current_agent_index(AgentSystem_T system);
 
 const char *AgentSystem_random_topic(void);
 
+void AgentSystem_add_user_message(AgentSystem_T system, const char *nick, const char *text);
+
 #endif /* AGENTS_H */

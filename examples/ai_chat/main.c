@@ -68,21 +68,45 @@ static const char *INDEX_HTML =
 "    #header .status { font-size: 0.85em; }\n"
 "    .connected { color: #5f9; }\n"
 "    .disconnected { color: #f55; }\n"
+"    #main { display: flex; flex: 1; overflow: hidden; }\n"
 "    #messages {\n"
 "      flex: 1; overflow-y: auto; padding: 8px 12px;\n"
 "      font-size: 14px; line-height: 1.4;\n"
 "    }\n"
+"    #userlist {\n"
+"      width: 140px; background: #111; border-left: 1px solid #333;\n"
+"      padding: 8px; overflow-y: auto; font-size: 13px;\n"
+"    }\n"
+"    #userlist .section { color: #666; margin-bottom: 4px; font-size: 11px; }\n"
+"    #userlist .user { padding: 2px 0; }\n"
+"    #userlist .user.op { color: #5f9; }\n"
+"    #userlist .user.op::before { content: '@'; }\n"
+"    #userlist .user.voice { color: #59f; }\n"
+"    #userlist .user.voice::before { content: '+'; }\n"
+"    #userlist .user.normal { color: #f5f; }\n"
 "    .line { white-space: pre-wrap; word-wrap: break-word; }\n"
 "    .line .time { color: #666; }\n"
 "    .line .nick { font-weight: bold; }\n"
 "    .line .nick.sage { color: #59f; }\n"
 "    .line .nick.nova { color: #5f9; }\n"
 "    .line .nick.echo { color: #fd5; }\n"
-"    .line .nick.server { color: #f5f; }\n"
+"    .line .nick.user { color: #f5f; }\n"
+"    .line .nick.server { color: #888; }\n"
 "    .line .text { color: #ddd; }\n"
 "    .line.action { color: #888; font-style: italic; }\n"
 "    .line.join { color: #5a5; }\n"
 "    .line.topic { color: #f95; }\n"
+"    #input-bar {\n"
+"      background: #1a1a1a; padding: 8px 12px;\n"
+"      border-top: 1px solid #333;\n"
+"      display: flex; gap: 8px;\n"
+"    }\n"
+"    #input-bar input {\n"
+"      flex: 1; background: #0a0a0a; border: 1px solid #333;\n"
+"      color: #fff; padding: 6px 10px; font-family: inherit; font-size: 14px;\n"
+"      outline: none;\n"
+"    }\n"
+"    #input-bar input:focus { border-color: #5f9; }\n"
 "  </style>\n"
 "</head>\n"
 "<body>\n"
@@ -93,11 +117,28 @@ static const char *INDEX_HTML =
 "    </div>\n"
 "    <span id=\"status\" class=\"status\">connecting...</span>\n"
 "  </div>\n"
-"  <div id=\"messages\"></div>\n"
+"  <div id=\"main\">\n"
+"    <div id=\"messages\"></div>\n"
+"    <div id=\"userlist\">\n"
+"      <div class=\"section\">-- Agents --</div>\n"
+"      <div class=\"user op\">Sage</div>\n"
+"      <div class=\"user op\">Nova</div>\n"
+"      <div class=\"user op\">Echo</div>\n"
+"      <div class=\"section\">-- Users --</div>\n"
+"      <div id=\"users\"></div>\n"
+"    </div>\n"
+"  </div>\n"
+"  <div id=\"input-bar\">\n"
+"    <input type=\"text\" id=\"input\" placeholder=\"Type a message and press Enter...\" autocomplete=\"off\">\n"
+"  </div>\n"
 "  <script>\n"
 "    const messagesEl = document.getElementById('messages');\n"
 "    const topicEl = document.getElementById('topic');\n"
 "    const statusEl = document.getElementById('status');\n"
+"    const inputEl = document.getElementById('input');\n"
+"    const usersEl = document.getElementById('users');\n"
+"    let ws = null;\n"
+"    let myNick = 'User' + Math.floor(Math.random() * 1000);\n"
 "    function timestamp() {\n"
 "      const d = new Date();\n"
 "      return d.toTimeString().slice(0, 8);\n"
@@ -114,12 +155,32 @@ static const char *INDEX_HTML =
 "      div.textContent = text;\n"
 "      return div.innerHTML;\n"
 "    }\n"
+"    function updateUserList(users) {\n"
+"      usersEl.innerHTML = '';\n"
+"      users.forEach(u => {\n"
+"        const div = document.createElement('div');\n"
+"        div.className = 'user normal';\n"
+"        div.textContent = u;\n"
+"        usersEl.appendChild(div);\n"
+"      });\n"
+"    }\n"
+"    function sendMessage() {\n"
+"      const text = inputEl.value.trim();\n"
+"      if (!text || !ws || ws.readyState !== 1) return;\n"
+"      ws.send(JSON.stringify({type: 'user', nick: myNick, text: text}));\n"
+"      inputEl.value = '';\n"
+"    }\n"
+"    inputEl.addEventListener('keydown', (e) => {\n"
+"      if (e.key === 'Enter') sendMessage();\n"
+"    });\n"
 "    function connect() {\n"
-"      const ws = new WebSocket('ws://' + location.host + '/ws');\n"
+"      ws = new WebSocket('ws://' + location.host + '/ws');\n"
 "      ws.onopen = () => {\n"
 "        statusEl.className = 'status connected';\n"
 "        statusEl.textContent = 'connected';\n"
-"        addLine('<span class=\"time\">[' + timestamp() + ']</span> <span class=\"nick server\">***</span> <span class=\"text\">Connected to server</span>', 'join');\n"
+"        addLine('<span class=\"time\">[' + timestamp() + ']</span> <span class=\"nick server\">***</span> <span class=\"text\">Connected as ' + myNick + '</span>', 'join');\n"
+"        ws.send(JSON.stringify({type: 'join', nick: myNick}));\n"
+"        inputEl.focus();\n"
 "      };\n"
 "      ws.onclose = () => {\n"
 "        statusEl.className = 'status disconnected';\n"
@@ -137,6 +198,12 @@ static const char *INDEX_HTML =
 "        } else if (data.type === 'msg') {\n"
 "          const nc = data.agent.toLowerCase();\n"
 "          addLine('<span class=\"time\">[' + timestamp() + ']</span> &lt;<span class=\"nick ' + nc + '\">' + data.agent + '</span>&gt; <span class=\"text\">' + escapeHtml(data.text) + '</span>');\n"
+"        } else if (data.type === 'userlist') {\n"
+"          updateUserList(data.users);\n"
+"        } else if (data.type === 'userjoin') {\n"
+"          addLine('<span class=\"time\">[' + timestamp() + ']</span> <span class=\"nick server\">--&gt;</span> <span class=\"text\">' + escapeHtml(data.nick) + ' has joined</span>', 'join');\n"
+"        } else if (data.type === 'userpart') {\n"
+"          addLine('<span class=\"time\">[' + timestamp() + ']</span> <span class=\"nick server\">&lt;--</span> <span class=\"text\">' + escapeHtml(data.nick) + ' has left</span>');\n"
 "        }\n"
 "      };\n"
 "    }\n"
@@ -188,6 +255,103 @@ schedule_next_turn(SocketPoll_T poll, AgentSystem_T agents)
 
     int delay = AGENT_TURN_DELAY_MS + (rand() % 3000);
     SocketTimer_add(poll, delay, agent_turn_callback, ctx);
+}
+
+/* Simple JSON string value extractor */
+static const char *
+json_get_string(const char *json, const char *key, char *buf, size_t buflen)
+{
+    char pattern[64];
+    snprintf(pattern, sizeof(pattern), "\"%s\":", key);
+
+    const char *p = strstr(json, pattern);
+    if (!p) return NULL;
+
+    p += strlen(pattern);
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != '"') return NULL;
+    p++;
+
+    size_t i = 0;
+    while (*p && *p != '"' && i < buflen - 1) {
+        if (*p == '\\' && *(p+1)) {
+            p++;
+            switch (*p) {
+                case 'n': buf[i++] = '\n'; break;
+                case 'r': buf[i++] = '\r'; break;
+                case 't': buf[i++] = '\t'; break;
+                default: buf[i++] = *p; break;
+            }
+        } else {
+            buf[i++] = *p;
+        }
+        p++;
+    }
+    buf[i] = '\0';
+    return buf;
+}
+
+static void
+process_ws_message(SocketWS_T ws, const char *msg, size_t len)
+{
+    (void)len;
+
+    char type[32], nick[64], text[1024];
+
+    if (!json_get_string(msg, "type", type, sizeof(type))) return;
+
+    if (strcmp(type, "join") == 0) {
+        if (json_get_string(msg, "nick", nick, sizeof(nick))) {
+            WebSocketHub_set_nick(hub, ws, nick);
+            WebSocketHub_broadcast_userjoin(hub, nick);
+            WebSocketHub_broadcast_userlist(hub);
+            printf("User joined: %s\n", nick);
+        }
+    } else if (strcmp(type, "user") == 0) {
+        if (json_get_string(msg, "nick", nick, sizeof(nick)) &&
+            json_get_string(msg, "text", text, sizeof(text))) {
+            AgentSystem_add_user_message(agent_system, nick, text);
+            printf("<%s> %s\n", nick, text);
+        }
+    }
+}
+
+static void
+poll_ws_callback(SocketWS_T ws, void *userdata)
+{
+    (void)userdata;
+
+    if (SocketWS_state(ws) != WS_STATE_OPEN) {
+        const char *nick = WebSocketHub_get_nick(hub, ws);
+        if (nick) {
+            WebSocketHub_broadcast_userpart(hub, nick);
+            printf("User left: %s\n", nick);
+        }
+        WebSocketHub_remove(hub, ws);
+        WebSocketHub_broadcast_userlist(hub);
+        SocketWS_free(&ws);
+        return;
+    }
+
+    /* Process pending I/O */
+    SocketWS_process(ws, POLL_READ);
+
+    /* Check for available messages */
+    while (SocketWS_recv_available(ws) > 0) {
+        SocketWS_Message msg;
+        if (SocketWS_recv_message(ws, &msg) == 1) {
+            if (msg.type == WS_OPCODE_TEXT && msg.data && msg.len > 0) {
+                process_ws_message(ws, (const char *)msg.data, msg.len);
+            }
+            free(msg.data);
+        }
+    }
+}
+
+static void
+poll_websockets(void)
+{
+    WebSocketHub_foreach(hub, poll_ws_callback, NULL);
 }
 
 static void
@@ -300,6 +464,7 @@ main(int argc, char **argv)
 
         while (running) {
             SocketHTTPServer_process(server, 100);
+            poll_websockets();
         }
 
         printf("\nShutting down...\n");
