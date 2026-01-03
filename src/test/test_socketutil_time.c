@@ -627,3 +627,338 @@ main (void)
   Test_run_all ();
   return Test_get_failures ();
 }
+||||||| parent of 315ffbf1 (test(core): Add comprehensive tests for socket_timespec_to_ms helper)
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
+/**
+ * test_socketutil_time.c - Time utility function unit tests
+ * Tests for socket_timespec_to_ms and socket_util_timespec_to_ms.
+ * Covers basic conversion, edge cases, precision, and overflow protection.
+ */
+
+#include <limits.h>
+#include <stdint.h>
+#include <time.h>
+
+#include "core/SocketConfig.h"
+#include "core/SocketUtil.h"
+#include "test/Test.h"
+
+/* ============================================================================
+ * BASIC CONVERSION TESTS
+ * ============================================================================
+ */
+
+/* Test conversion of zero timespec */
+TEST (timespec_to_ms_zero)
+{
+  struct timespec ts = { 0, 0 };
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 0);
+}
+
+/* Test conversion of 1 second to milliseconds */
+TEST (timespec_to_ms_one_second)
+{
+  struct timespec ts = { 1, 0 };
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 1000);
+}
+
+/* Test conversion of 1 millisecond (1000000 nanoseconds) */
+TEST (timespec_to_ms_one_millisecond)
+{
+  struct timespec ts = { 0, 1000000 };
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 1);
+}
+
+/* Test conversion of combined seconds and nanoseconds */
+TEST (timespec_to_ms_combined)
+{
+  struct timespec ts = { 5, 500000000 }; /* 5.5 seconds */
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 5500);
+}
+
+/* Test conversion of 10 seconds */
+TEST (timespec_to_ms_ten_seconds)
+{
+  struct timespec ts = { 10, 0 };
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 10000);
+}
+
+/* Test conversion of various millisecond values */
+TEST (timespec_to_ms_various_milliseconds)
+{
+  struct timespec ts;
+
+  /* 123 milliseconds */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 123000000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 123);
+
+  /* 999 milliseconds */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 999000000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 999);
+
+  /* 1 second + 456 milliseconds */
+  ts.tv_sec = 1;
+  ts.tv_nsec = 456000000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1456);
+}
+
+/* ============================================================================
+ * EDGE CASE TESTS
+ * ============================================================================
+ */
+
+/* Test maximum nanoseconds value (just under 1 second) */
+TEST (timespec_to_ms_max_nanoseconds)
+{
+  struct timespec ts = { 0, 999999999 }; /* 999.999999 ms */
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 999); /* Should truncate to 999 ms */
+}
+
+/* Test large tv_sec value */
+TEST (timespec_to_ms_large_seconds)
+{
+  struct timespec ts = { 1000, 0 }; /* 1000 seconds */
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 1000000); /* 1 million milliseconds */
+}
+
+/* Test large combined value */
+TEST (timespec_to_ms_large_combined)
+{
+  struct timespec ts = { 3600, 500000000 }; /* 1 hour + 0.5 seconds */
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 3600500); /* 3600500 milliseconds */
+}
+
+/* Test very small nanosecond value (sub-millisecond) */
+TEST (timespec_to_ms_sub_millisecond)
+{
+  struct timespec ts = { 0, 500000 }; /* 0.5 milliseconds */
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 0); /* Should truncate to 0 ms */
+}
+
+/* ============================================================================
+ * PRECISION TESTS
+ * ============================================================================
+ */
+
+/* Test nanosecond-to-millisecond division precision */
+TEST (timespec_to_ms_division_precision)
+{
+  struct timespec ts;
+
+  /* 1 nanosecond - should truncate to 0 ms */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 1;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 0);
+
+  /* 999999 nanoseconds (0.999999 ms) - should truncate to 0 ms */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 999999;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 0);
+
+  /* 1000000 nanoseconds (exactly 1 ms) */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 1000000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1);
+
+  /* 1000001 nanoseconds (1.000001 ms) - should truncate to 1 ms */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 1000001;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1);
+}
+
+/* Test that sub-millisecond precision is truncated, not rounded */
+TEST (timespec_to_ms_truncation_not_rounding)
+{
+  struct timespec ts;
+
+  /* 1.9 milliseconds - should truncate to 1, not round to 2 */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 1900000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1);
+
+  /* 999.9 milliseconds - should truncate to 999, not round to 1000 */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 999900000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 999);
+
+  /* 5.999 seconds - should truncate to 5999 ms, not round to 6000 */
+  ts.tv_sec = 5;
+  ts.tv_nsec = 999000000;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 5999);
+}
+
+/* ============================================================================
+ * OVERFLOW PROTECTION TESTS
+ * ============================================================================
+ */
+
+/* Test that int64_t cast prevents overflow with large tv_sec */
+TEST (timespec_to_ms_large_tv_sec_no_overflow)
+{
+  struct timespec ts;
+
+  /* Large but reasonable value that should not overflow */
+  ts.tv_sec = 1000000; /* 1 million seconds */
+  ts.tv_nsec = 0;
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  ASSERT_EQ (result, 1000000000UL); /* 1 billion milliseconds */
+}
+
+/* Test behavior with maximum safe timespec values */
+TEST (timespec_to_ms_maximum_safe_values)
+{
+  struct timespec ts;
+
+  /* Maximum nanoseconds with reasonable seconds */
+  ts.tv_sec = 100000;
+  ts.tv_nsec = 999999999;
+  unsigned long result = socket_util_timespec_to_ms (ts);
+  /* 100000 * 1000 + 999999999 / 1000000 = 100000000 + 999 */
+  ASSERT_EQ (result, 100000999UL);
+}
+
+/* ============================================================================
+ * CONSTANT VERIFICATION TESTS
+ * ============================================================================
+ */
+
+/* Verify SOCKET_MS_PER_SECOND constant */
+TEST (timespec_to_ms_verify_ms_per_second_constant)
+{
+  ASSERT_EQ (SOCKET_MS_PER_SECOND, 1000);
+}
+
+/* Verify SOCKET_NS_PER_MS constant */
+TEST (timespec_to_ms_verify_ns_per_ms_constant)
+{
+  ASSERT_EQ (SOCKET_NS_PER_MS, 1000000LL);
+}
+
+/* Verify SOCKET_NS_PER_SECOND constant */
+TEST (timespec_to_ms_verify_ns_per_second_constant)
+{
+  ASSERT_EQ (SOCKET_NS_PER_SECOND, 1000000000LL);
+}
+
+/* ============================================================================
+ * RELATIONSHIP TESTS
+ * ============================================================================
+ */
+
+/* Test relationship between constants */
+TEST (timespec_to_ms_constant_relationships)
+{
+  /* Verify: NS_PER_SECOND = MS_PER_SECOND * NS_PER_MS */
+  ASSERT_EQ (SOCKET_NS_PER_SECOND,
+             SOCKET_MS_PER_SECOND * SOCKET_NS_PER_MS);
+}
+
+/* Test inverse conversion with socket_util_ms_to_timespec */
+TEST (timespec_to_ms_inverse_conversion)
+{
+  unsigned long ms;
+  struct timespec ts;
+
+  /* Test 0 ms */
+  ms = 0;
+  ts = socket_util_ms_to_timespec (ms);
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 0);
+
+  /* Test 1000 ms (1 second) */
+  ms = 1000;
+  ts = socket_util_ms_to_timespec (ms);
+  ASSERT_EQ (ts.tv_sec, 1);
+  ASSERT_EQ (ts.tv_nsec, 0);
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1000);
+
+  /* Test 1500 ms (1.5 seconds) */
+  ms = 1500;
+  ts = socket_util_ms_to_timespec (ms);
+  ASSERT_EQ (ts.tv_sec, 1);
+  ASSERT_EQ (ts.tv_nsec, 500000000);
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1500);
+
+  /* Test 5999 ms */
+  ms = 5999;
+  ts = socket_util_ms_to_timespec (ms);
+  ASSERT_EQ (ts.tv_sec, 5);
+  ASSERT_EQ (ts.tv_nsec, 999000000);
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 5999);
+}
+
+/* ============================================================================
+ * BOUNDARY VALUE TESTS
+ * ============================================================================
+ */
+
+/* Test boundary between seconds */
+TEST (timespec_to_ms_second_boundaries)
+{
+  struct timespec ts;
+
+  /* Just before 1 second */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 999999999;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 999);
+
+  /* Exactly 1 second */
+  ts.tv_sec = 1;
+  ts.tv_nsec = 0;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1000);
+
+  /* Just after 1 second */
+  ts.tv_sec = 1;
+  ts.tv_nsec = 1;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 1000);
+}
+
+/* Test various second/nanosecond combinations */
+TEST (timespec_to_ms_various_combinations)
+{
+  struct timespec ts;
+
+  /* 0 seconds, various nanoseconds */
+  ts.tv_sec = 0;
+  ts.tv_nsec = 0;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 0);
+
+  ts.tv_nsec = 500000000; /* 500 ms */
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 500);
+
+  ts.tv_nsec = 750000000; /* 750 ms */
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 750);
+
+  /* Various seconds, 0 nanoseconds */
+  ts.tv_sec = 2;
+  ts.tv_nsec = 0;
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 2000);
+
+  ts.tv_sec = 60; /* 1 minute */
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 60000);
+
+  ts.tv_sec = 3600; /* 1 hour */
+  ASSERT_EQ (socket_util_timespec_to_ms (ts), 3600000);
+}
+
+int
+main (void)
+{
+  Test_run_all ();
+  return Test_get_failures () > 0 ? 1 : 0;
+}
