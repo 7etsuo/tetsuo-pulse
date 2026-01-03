@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/select.h>
 #include <curl/curl.h>
 
 #include "core/Arena.h"
@@ -333,17 +334,28 @@ poll_ws_callback(SocketWS_T ws, void *userdata)
         return;
     }
 
-    /* Process pending I/O */
-    SocketWS_process(ws, POLL_READ);
+    /* Check if there's data ready using select with zero timeout */
+    int fd = SocketWS_pollfd(ws);
+    fd_set readfds;
+    struct timeval tv = {0, 0};  /* Zero timeout = non-blocking check */
 
-    /* Check for available messages */
-    while (SocketWS_recv_available(ws) > 0) {
-        SocketWS_Message msg;
-        if (SocketWS_recv_message(ws, &msg) == 1) {
-            if (msg.type == WS_OPCODE_TEXT && msg.data && msg.len > 0) {
-                process_ws_message(ws, (const char *)msg.data, msg.len);
+    FD_ZERO(&readfds);
+    FD_SET(fd, &readfds);
+
+    int ready = select(fd + 1, &readfds, NULL, NULL, &tv);
+    if (ready > 0 && FD_ISSET(fd, &readfds)) {
+        /* Data is available, process it */
+        SocketWS_process(ws, POLL_READ);
+
+        /* Check for available messages */
+        while (SocketWS_recv_available(ws) > 0) {
+            SocketWS_Message msg;
+            if (SocketWS_recv_message(ws, &msg) == 1) {
+                if (msg.type == WS_OPCODE_TEXT && msg.data && msg.len > 0) {
+                    process_ws_message(ws, (const char *)msg.data, msg.len);
+                }
+                free(msg.data);
             }
-            free(msg.data);
         }
     }
 }
