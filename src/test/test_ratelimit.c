@@ -248,6 +248,317 @@ TEST (ratelimit_zero_tokens)
 }
 
 /* ============================================================================
+ * SocketRateLimit_wait_time_ms Comprehensive Tests
+ * ============================================================================
+ */
+
+/* Test wait time is 0 when tokens available */
+TEST (ratelimit_wait_time_tokens_available)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY limiter = SocketRateLimit_new (arena, 100, 50);
+
+  /* Full bucket - wait time should be 0 for various token amounts */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 1);
+  ASSERT_EQ (0, wait_ms);
+
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 25);
+  ASSERT_EQ (0, wait_ms);
+
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 50);
+  ASSERT_EQ (0, wait_ms);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test wait time is 0 for 0 tokens requested */
+TEST (ratelimit_wait_time_zero_tokens)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY limiter = SocketRateLimit_new (arena, 100, 10);
+
+  /* Drain bucket completely */
+  SocketRateLimit_try_acquire (limiter, 10);
+
+  /* Even with empty bucket, 0 tokens should return 0 wait time */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 0);
+  ASSERT_EQ (0, wait_ms);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test correct wait time calculation for N tokens */
+TEST (ratelimit_wait_time_calculation_precise)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* 100 tokens/sec = 10ms per token */
+      limiter
+      = SocketRateLimit_new (arena, 100, 10);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 10);
+
+  /* Need 1 token at 100/sec = 10ms */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 1);
+  ASSERT (wait_ms >= 8 && wait_ms <= 12);
+
+  /* Need 5 tokens at 100/sec = 50ms */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 5);
+  ASSERT (wait_ms >= 40 && wait_ms <= 60);
+
+  /* Need 10 tokens at 100/sec = 100ms */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 10);
+  ASSERT (wait_ms >= 90 && wait_ms <= 110);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test mathematical correctness: tokens_per_sec = 100, need 50 (expect ~500ms)
+ */
+TEST (ratelimit_wait_time_math_100tps_50tokens)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* 100 tokens/sec, bucket of 100 */
+      limiter
+      = SocketRateLimit_new (arena, 100, 100);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 100);
+
+  /* Need 50 tokens: (50 / 100) * 1000 = 500ms */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 50);
+  ASSERT (wait_ms >= 480 && wait_ms <= 520);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test mathematical correctness: tokens_per_sec = 1000, need 1 (expect ~1ms) */
+TEST (ratelimit_wait_time_math_1000tps_1token)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* 1000 tokens/sec, bucket of 10 */
+      limiter
+      = SocketRateLimit_new (arena, 1000, 10);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 10);
+
+  /* Need 1 token: (1 / 1000) * 1000 = 1ms */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 1);
+  ASSERT (wait_ms >= 0 && wait_ms <= 3);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test fractional token scenarios with partial bucket */
+TEST (ratelimit_wait_time_fractional_tokens)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* 250 tokens/sec = 4ms per token */
+      limiter
+      = SocketRateLimit_new (arena, 250, 100);
+
+  /* Start with 30 tokens, need 50 (need 20 more) */
+  SocketRateLimit_try_acquire (limiter, 70);
+
+  /* Need 50 tokens when we have 30 = need 20 more
+   * 20 tokens at 250/sec = 80ms */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 50);
+  ASSERT (wait_ms >= 70 && wait_ms <= 90);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test wait time decreases as bucket refills */
+TEST (ratelimit_wait_time_decreases_with_refill)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms_1, wait_ms_2;
+
+  TRY
+      /* 1000 tokens/sec = 1 token per ms */
+      limiter
+      = SocketRateLimit_new (arena, 1000, 100);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 100);
+
+  /* Check wait time for 50 tokens (should be ~50ms) */
+  wait_ms_1 = SocketRateLimit_wait_time_ms (limiter, 50);
+
+  /* Wait for some tokens to refill (20ms should give ~20 tokens) */
+  usleep (20000);
+
+  /* Now wait time should be less (need ~30 tokens now) */
+  wait_ms_2 = SocketRateLimit_wait_time_ms (limiter, 50);
+
+  /* wait_ms_2 should be less than wait_ms_1 (allow some tolerance) */
+  ASSERT (wait_ms_2 < wait_ms_1 + 5);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test return -1 when tokens exceed bucket_size */
+TEST (ratelimit_wait_time_impossible_exceeds_bucket)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY limiter = SocketRateLimit_new (arena, 100, 50);
+
+  /* Request 1 more than bucket_size */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 51);
+  ASSERT_EQ (-1, wait_ms);
+
+  /* Request much more than bucket_size */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 1000);
+  ASSERT_EQ (-1, wait_ms);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test boundary: tokens equal to bucket_size should work */
+TEST (ratelimit_wait_time_boundary_equal_bucket)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* 100 tokens/sec, bucket of 50 */
+      limiter
+      = SocketRateLimit_new (arena, 100, 50);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 50);
+
+  /* Request exactly bucket_size - should calculate wait time */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 50);
+  ASSERT (wait_ms >= 480 && wait_ms <= 520); /* ~500ms */
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test very high tokens_per_sec (ms_per_token = 0 case) */
+TEST (ratelimit_wait_time_very_high_rate)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* Very high rate: 10 million tokens/sec
+       * ms_per_token = 1000 / 10000000 = 0.0001 → rounds to 0 */
+      limiter
+      = SocketRateLimit_new (arena, 10000000, 1000);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 1000);
+
+  /* With ms_per_token = 0, should return IMPOSSIBLE_WAIT */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 100);
+  ASSERT_EQ (-1, wait_ms);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test overflow in wait calculation: needed * ms_per_token overflows */
+TEST (ratelimit_wait_time_overflow_protection)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY
+      /* Low rate to maximize ms_per_token: 1 token/sec = 1000ms per token
+       * Large bucket to allow large token request */
+      limiter
+      = SocketRateLimit_new (arena, 1, 10000000);
+
+  /* Drain bucket */
+  SocketRateLimit_try_acquire (limiter, 10000000);
+
+  /* Request 9000000 tokens at 1000ms each
+   * Calculation: 9000000 * 1000 = 9,000,000,000 ms
+   * This should NOT overflow SIZE_MAX but test large values
+   * Wait should be ~104 days which is valid but very large */
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 9000000);
+
+  /* Should return a large positive value (around 9 billion ms) */
+  ASSERT (wait_ms > 8000000000LL && wait_ms < 10000000000LL);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* ============================================================================
  * SocketIPTracker Tests
  * ============================================================================
  */
