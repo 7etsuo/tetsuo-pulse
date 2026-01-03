@@ -81,6 +81,183 @@ server_http2_stream_get_or_create (SocketHTTPServer_T server,
  * http2_is_connection_header_forbidden() from SocketHTTP2-validate.c via
  * SocketHTTP2-private.h */
 
+/**
+ * parse_pseudo_header_method - Parse and validate :method pseudo-header
+ * @s: HTTP/2 stream
+ * @hdr: Header to check
+ * @pseudo_headers_seen: Pointer to bitmask of seen pseudo-headers
+ * @out_method: Pointer to method output variable
+ * @out_has_method: Pointer to has_method flag
+ *
+ * Returns: 1 if matched this header, 0 if not matched, -1 on error
+ */
+static int
+parse_pseudo_header_method (ServerHTTP2Stream *s,
+                            const SocketHPACK_Header *hdr,
+                            int *pseudo_headers_seen,
+                            SocketHTTP_Method *out_method,
+                            int *out_has_method)
+{
+  (void)s;
+
+  if (hdr->name_len != 7 || memcmp (hdr->name, ":method", 7) != 0)
+    return 0;
+
+  if (*pseudo_headers_seen & (1 << 0))
+    {
+      SERVER_LOG_ERROR ("Duplicate :method pseudo-header");
+      return -1;
+    }
+
+  *pseudo_headers_seen |= (1 << 0);
+  *out_has_method = 1;
+  *out_method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
+
+  if (*out_method == HTTP_METHOD_UNKNOWN)
+    {
+      SERVER_LOG_ERROR ("Invalid HTTP method in :method pseudo-header");
+      return -1;
+    }
+
+  return 1;
+}
+
+/**
+ * parse_pseudo_header_scheme - Parse and validate :scheme pseudo-header
+ * @s: HTTP/2 stream
+ * @hdr: Header to check
+ * @pseudo_headers_seen: Pointer to bitmask of seen pseudo-headers
+ * @out_scheme: Pointer to scheme output variable
+ * @out_has_scheme: Pointer to has_scheme flag
+ *
+ * Returns: 1 if matched this header, 0 if not matched, -1 on error
+ */
+static int
+parse_pseudo_header_scheme (ServerHTTP2Stream *s,
+                            const SocketHPACK_Header *hdr,
+                            int *pseudo_headers_seen,
+                            const char **out_scheme,
+                            int *out_has_scheme)
+{
+  if (hdr->name_len != 7 || memcmp (hdr->name, ":scheme", 7) != 0)
+    return 0;
+
+  if (*pseudo_headers_seen & (1 << 1))
+    {
+      SERVER_LOG_ERROR ("Duplicate :scheme pseudo-header");
+      return -1;
+    }
+
+  *pseudo_headers_seen |= (1 << 1);
+  *out_has_scheme = 1;
+  *out_scheme
+      = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+
+  return 1;
+}
+
+/**
+ * parse_pseudo_header_authority - Parse and validate :authority pseudo-header
+ * @s: HTTP/2 stream
+ * @hdr: Header to check
+ * @pseudo_headers_seen: Pointer to bitmask of seen pseudo-headers
+ * @out_authority: Pointer to authority output variable
+ * @out_has_authority: Pointer to has_authority flag
+ *
+ * Returns: 1 if matched this header, 0 if not matched, -1 on error
+ */
+static int
+parse_pseudo_header_authority (ServerHTTP2Stream *s,
+                               const SocketHPACK_Header *hdr,
+                               int *pseudo_headers_seen,
+                               const char **out_authority,
+                               int *out_has_authority)
+{
+  if (hdr->name_len != 10 || memcmp (hdr->name, ":authority", 10) != 0)
+    return 0;
+
+  if (*pseudo_headers_seen & (1 << 2))
+    {
+      SERVER_LOG_ERROR ("Duplicate :authority pseudo-header");
+      return -1;
+    }
+
+  *pseudo_headers_seen |= (1 << 2);
+  *out_has_authority = 1;
+  *out_authority
+      = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+
+  return 1;
+}
+
+/**
+ * parse_pseudo_header_path - Parse and validate :path pseudo-header
+ * @s: HTTP/2 stream
+ * @hdr: Header to check
+ * @pseudo_headers_seen: Pointer to bitmask of seen pseudo-headers
+ * @out_path: Pointer to path output variable
+ * @out_has_path: Pointer to has_path flag
+ *
+ * Returns: 1 if matched this header, 0 if not matched, -1 on error
+ */
+static int
+parse_pseudo_header_path (ServerHTTP2Stream *s,
+                          const SocketHPACK_Header *hdr,
+                          int *pseudo_headers_seen,
+                          const char **out_path,
+                          int *out_has_path)
+{
+  if (hdr->name_len != 5 || memcmp (hdr->name, ":path", 5) != 0)
+    return 0;
+
+  if (*pseudo_headers_seen & (1 << 3))
+    {
+      SERVER_LOG_ERROR ("Duplicate :path pseudo-header");
+      return -1;
+    }
+
+  *pseudo_headers_seen |= (1 << 3);
+  *out_has_path = 1;
+  *out_path = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+
+  return 1;
+}
+
+/**
+ * parse_pseudo_header_protocol - Parse and validate :protocol pseudo-header
+ * @s: HTTP/2 stream
+ * @hdr: Header to check
+ * @pseudo_headers_seen: Pointer to bitmask of seen pseudo-headers
+ * @out_protocol: Pointer to protocol output variable
+ *
+ * Returns: 1 if matched this header, 0 if not matched, -1 on error
+ */
+static int
+parse_pseudo_header_protocol (ServerHTTP2Stream *s,
+                              const SocketHPACK_Header *hdr,
+                              int *pseudo_headers_seen,
+                              const char **out_protocol)
+{
+  if (hdr->name_len != 9 || memcmp (hdr->name, ":protocol", 9) != 0)
+    return 0;
+
+  if (*pseudo_headers_seen & (1 << 4))
+    {
+      SERVER_LOG_ERROR ("Duplicate :protocol pseudo-header");
+      return -1;
+    }
+
+  *pseudo_headers_seen |= (1 << 4);
+
+  /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
+  /* Note: We can't easily check this here as we don't have conn access */
+  /* The validation happens in http2_validate_headers on the client side */
+  *out_protocol
+      = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+
+  return 1;
+}
+
 int
 server_http2_build_request (SocketHTTPServer_T server,
                             ServerHTTP2Stream *s,
@@ -122,6 +299,8 @@ server_http2_build_request (SocketHTTPServer_T server,
 
       if (hdr->name_len > 0 && hdr->name[0] == ':')
         {
+          int parse_result;
+
           /* Pseudo-headers must appear before regular headers */
           if (pseudo_section_ended)
             {
@@ -132,87 +311,46 @@ server_http2_build_request (SocketHTTPServer_T server,
               return -1;
             }
 
-          /* Validate pseudo-header name and track required ones */
-          if (hdr->name_len == 7 && memcmp (hdr->name, ":method", 7) == 0)
-            {
-              if (pseudo_headers_seen & (1 << 0))
-                {
-                  SERVER_LOG_ERROR ("Duplicate :method pseudo-header");
-                  return -1;
-                }
-              pseudo_headers_seen |= (1 << 0);
-              has_method = 1;
-              method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
-              if (method == HTTP_METHOD_UNKNOWN)
-                {
-                  SERVER_LOG_ERROR (
-                      "Invalid HTTP method in :method pseudo-header");
-                  return -1;
-                }
-            }
-          else if (hdr->name_len == 7 && memcmp (hdr->name, ":scheme", 7) == 0)
-            {
-              if (pseudo_headers_seen & (1 << 1))
-                {
-                  SERVER_LOG_ERROR ("Duplicate :scheme pseudo-header");
-                  return -1;
-                }
-              pseudo_headers_seen |= (1 << 1);
-              has_scheme = 1;
-              scheme = socket_util_arena_strndup (
-                  s->arena, hdr->value, hdr->value_len);
-            }
-          else if (hdr->name_len == 10
-                   && memcmp (hdr->name, ":authority", 10) == 0)
-            {
-              if (pseudo_headers_seen & (1 << 2))
-                {
-                  SERVER_LOG_ERROR ("Duplicate :authority pseudo-header");
-                  return -1;
-                }
-              pseudo_headers_seen |= (1 << 2);
-              has_authority = 1;
-              authority = socket_util_arena_strndup (
-                  s->arena, hdr->value, hdr->value_len);
-            }
-          else if (hdr->name_len == 5 && memcmp (hdr->name, ":path", 5) == 0)
-            {
-              if (pseudo_headers_seen & (1 << 3))
-                {
-                  SERVER_LOG_ERROR ("Duplicate :path pseudo-header");
-                  return -1;
-                }
-              pseudo_headers_seen |= (1 << 3);
-              has_path = 1;
-              path = socket_util_arena_strndup (
-                  s->arena, hdr->value, hdr->value_len);
-            }
-          else if (hdr->name_len == 9
-                   && memcmp (hdr->name, ":protocol", 9) == 0)
-            {
-              if (pseudo_headers_seen & (1 << 4))
-                {
-                  SERVER_LOG_ERROR ("Duplicate :protocol pseudo-header");
-                  return -1;
-                }
-              pseudo_headers_seen |= (1 << 4);
+          /* Try to parse each pseudo-header type */
+          parse_result = parse_pseudo_header_method (
+              s, hdr, &pseudo_headers_seen, &method, &has_method);
+          if (parse_result < 0)
+            return -1;
+          if (parse_result > 0)
+            continue;
 
-              /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
-              /* Note: We can't easily check this here as we don't have conn
-               * access */
-              /* The validation happens in http2_validate_headers on the client
-               * side */
-              protocol = socket_util_arena_strndup (
-                  s->arena, hdr->value, hdr->value_len);
-            }
-          else
-            {
-              /* Unknown pseudo-header */
-              SERVER_LOG_ERROR (
-                  "Unknown pseudo-header: %.*s", (int)hdr->name_len, hdr->name);
-              return -1;
-            }
-          continue;
+          parse_result = parse_pseudo_header_scheme (
+              s, hdr, &pseudo_headers_seen, &scheme, &has_scheme);
+          if (parse_result < 0)
+            return -1;
+          if (parse_result > 0)
+            continue;
+
+          parse_result = parse_pseudo_header_authority (
+              s, hdr, &pseudo_headers_seen, &authority, &has_authority);
+          if (parse_result < 0)
+            return -1;
+          if (parse_result > 0)
+            continue;
+
+          parse_result = parse_pseudo_header_path (
+              s, hdr, &pseudo_headers_seen, &path, &has_path);
+          if (parse_result < 0)
+            return -1;
+          if (parse_result > 0)
+            continue;
+
+          parse_result = parse_pseudo_header_protocol (
+              s, hdr, &pseudo_headers_seen, &protocol);
+          if (parse_result < 0)
+            return -1;
+          if (parse_result > 0)
+            continue;
+
+          /* Unknown pseudo-header */
+          SERVER_LOG_ERROR (
+              "Unknown pseudo-header: %.*s", (int)hdr->name_len, hdr->name);
+          return -1;
         }
 
       /* Regular header - pseudo-header section has ended */
@@ -661,10 +799,11 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
   if (event == HTTP2_EVENT_HEADERS_RECEIVED)
     {
       /*
-       * Stack allocation: ~5KB (128 headers * ~40 bytes per SocketHPACK_Header).
-       * This is acceptable for modern systems (Linux default: 8MB stack).
-       * Chosen over heap allocation for performance (no malloc overhead).
-       * If stack pressure becomes an issue, consider arena allocation.
+       * Stack allocation: ~5KB (128 headers * ~40 bytes per
+       * SocketHPACK_Header). This is acceptable for modern systems (Linux
+       * default: 8MB stack). Chosen over heap allocation for performance (no
+       * malloc overhead). If stack pressure becomes an issue, consider arena
+       * allocation.
        */
       SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
       size_t hdr_count = 0;
