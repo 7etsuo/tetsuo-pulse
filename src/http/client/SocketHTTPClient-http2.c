@@ -57,11 +57,13 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
   for (i = 0; i < header_count; i++)
     {
       if (headers[i].name_len == PSEUDO_HEADER_STATUS_LEN
-          && memcmp (headers[i].name, PSEUDO_HEADER_STATUS,
+          && memcmp (headers[i].name,
+                     PSEUDO_HEADER_STATUS,
                      PSEUDO_HEADER_STATUS_LEN)
-             == 0)
+                 == 0)
         {
-          /* Use validated parser from SocketHTTP2-validate.c (RFC 9113 §8.3.2) */
+          /* Use validated parser from SocketHTTP2-validate.c (RFC 9113 §8.3.2)
+           */
           if (http2_parse_status_code (headers[i].value,
                                        headers[i].value_len,
                                        &response->status_code)
@@ -207,27 +209,37 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
 
       total_body += (size_t)recv_len;
 
+      /* Guard: enforce size limit */
       if (max_response_size > 0 && total_body > max_response_size)
         {
           SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
           return -2;
         }
 
-      /* Grow if full and unlimited size (only when not discarding) */
-      if (!discard_body && total_body >= body_cap && max_response_size == 0)
+      /* Guard: skip buffer growth if discarding */
+      if (discard_body)
+        continue;
+
+      /* Guard: skip if buffer not full */
+      if (total_body < body_cap)
+        continue;
+
+      /* Guard: skip if size limited */
+      if (max_response_size != 0)
+        continue;
+
+      /* Main logic: grow buffer (now at normal indentation) */
+      size_t needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE;
+      if (httpclient_grow_body_buffer (arena,
+                                       (char **)&body_buf,
+                                       &body_cap,
+                                       &total_body,
+                                       needed,
+                                       max_response_size)
+          != 0)
         {
-          size_t needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE;
-          if (httpclient_grow_body_buffer (arena,
-                                           (char **)&body_buf,
-                                           &body_cap,
-                                           &total_body,
-                                           needed,
-                                           max_response_size)
-              != 0)
-            {
-              SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-              return -1;
-            }
+          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+          return -1;
         }
     }
 
