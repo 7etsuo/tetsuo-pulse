@@ -616,6 +616,358 @@ TEST (ratelimit_wait_time_overflow_protection)
 }
 
 /* ============================================================================
+ * SocketRateLimit_free() Tests (Issue #3032)
+ * ============================================================================
+ */
+
+/* Test free with NULL pointer (no-op) */
+TEST (ratelimit_free_null_pointer)
+{
+  SocketRateLimit_T limiter = NULL;
+
+  /* Should not crash or modify anything */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+}
+
+/* Test free with pointer to NULL (no-op) */
+TEST (ratelimit_free_pointer_to_null)
+{
+  SocketRateLimit_T *limiter_ptr = NULL;
+
+  /* Should not crash - handles NULL input gracefully */
+  SocketRateLimit_free (limiter_ptr);
+}
+
+/* Test pointer set to NULL after free */
+TEST (ratelimit_free_nullifies_pointer)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  SocketRateLimit_free (&limiter);
+
+  /* Pointer must be NULL after free */
+  ASSERT_NULL (limiter);
+}
+
+/* Test freeing arena-allocated limiter (no double-free) */
+TEST (ratelimit_free_arena_allocated)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  SocketRateLimit_T limiter = SocketRateLimit_new (arena, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  int before_count = SocketRateLimit_debug_live_count ();
+
+  /* Free should decrement live count but not call free() */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+
+  int after_count = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (before_count - 1, after_count);
+
+  /* Arena disposal should not crash (no double-free) */
+  Arena_dispose (&arena);
+}
+
+/* Test freeing malloc-allocated limiter (verify free() called) */
+TEST (ratelimit_free_malloc_allocated)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  int before_count = SocketRateLimit_debug_live_count ();
+
+  /* Free should decrement live count and call free() */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+
+  int after_count = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (before_count - 1, after_count);
+}
+
+/* Test live count decrements after free */
+TEST (ratelimit_free_decrements_live_count)
+{
+  int initial_count = SocketRateLimit_debug_live_count ();
+
+  SocketRateLimit_T limiter1 = SocketRateLimit_new (NULL, 100, 100);
+  SocketRateLimit_T limiter2 = SocketRateLimit_new (NULL, 200, 200);
+  ASSERT_NOT_NULL (limiter1);
+  ASSERT_NOT_NULL (limiter2);
+
+  int after_create = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count + 2, after_create);
+
+  SocketRateLimit_free (&limiter1);
+  int after_first_free = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count + 1, after_first_free);
+
+  SocketRateLimit_free (&limiter2);
+  int after_second_free = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count, after_second_free);
+}
+
+/* Test double free protection */
+TEST (ratelimit_free_double_free_protection)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  int before_count = SocketRateLimit_debug_live_count ();
+
+  /* First free */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+
+  int after_first = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (before_count - 1, after_first);
+
+  /* Second free on NULL - should be no-op */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+
+  int after_second = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (after_first, after_second); /* Count unchanged */
+}
+
+/* Test free during active token acquisition */
+TEST (ratelimit_free_during_active_operations)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  /* Perform some operations */
+  int acquired = SocketRateLimit_try_acquire (limiter, 10);
+  (void)acquired; /* May or may not succeed */
+
+  /* Free immediately after operation */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+}
+
+/* Test free with depleted bucket */
+TEST (ratelimit_free_with_depleted_bucket)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 50);
+  ASSERT_NOT_NULL (limiter);
+
+  /* Deplete the bucket */
+  int consumed = SocketRateLimit_try_acquire (limiter, 50);
+  ASSERT_EQ (consumed, 1);
+
+  /* Verify bucket is empty */
+  size_t available = SocketRateLimit_available (limiter);
+  ASSERT_EQ (available, 0);
+
+  /* Free with empty bucket - should still work */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+}
+
+/* Test multiple create/free cycles */
+TEST (ratelimit_free_multiple_cycles)
+{
+  int initial_count = SocketRateLimit_debug_live_count ();
+
+  for (int i = 0; i < 10; i++)
+    {
+      SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+      ASSERT_NOT_NULL (limiter);
+
+      int during = SocketRateLimit_debug_live_count ();
+      ASSERT_EQ (initial_count + 1, during);
+
+      SocketRateLimit_free (&limiter);
+      ASSERT_NULL (limiter);
+
+      int after = SocketRateLimit_debug_live_count ();
+      ASSERT_EQ (initial_count, after);
+    }
+}
+
+/* Test free with different allocation modes */
+TEST (ratelimit_free_mixed_allocation_modes)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  int initial_count = SocketRateLimit_debug_live_count ();
+
+  /* Arena-allocated */
+  SocketRateLimit_T limiter1 = SocketRateLimit_new (arena, 100, 100);
+  ASSERT_NOT_NULL (limiter1);
+
+  /* Malloc-allocated */
+  SocketRateLimit_T limiter2 = SocketRateLimit_new (NULL, 200, 200);
+  ASSERT_NOT_NULL (limiter2);
+
+  int after_create = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count + 2, after_create);
+
+  /* Free arena one */
+  SocketRateLimit_free (&limiter1);
+  ASSERT_NULL (limiter1);
+
+  int after_first = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count + 1, after_first);
+
+  /* Free malloc one */
+  SocketRateLimit_free (&limiter2);
+  ASSERT_NULL (limiter2);
+
+  int after_second = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count, after_second);
+
+  Arena_dispose (&arena);
+}
+
+/* Test free after configuration changes */
+TEST (ratelimit_free_after_reconfigure)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  /* Reconfigure */
+  SocketRateLimit_configure (limiter, 200, 200);
+
+  size_t rate = SocketRateLimit_get_rate (limiter);
+  ASSERT_EQ (rate, 200);
+
+  /* Free after reconfiguration */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+}
+
+/* Test free after reset */
+TEST (ratelimit_free_after_reset)
+{
+  SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 100, 100);
+  ASSERT_NOT_NULL (limiter);
+
+  /* Consume some tokens */
+  SocketRateLimit_try_acquire (limiter, 50);
+
+  /* Reset bucket */
+  SocketRateLimit_reset (limiter);
+
+  size_t available = SocketRateLimit_available (limiter);
+  ASSERT_EQ (available, 100);
+
+  /* Free after reset */
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+}
+
+/* Test rapid create/free cycles */
+TEST (ratelimit_free_rapid_cycles)
+{
+  int initial_count = SocketRateLimit_debug_live_count ();
+
+  for (int i = 0; i < 100; i++)
+    {
+      SocketRateLimit_T limiter = SocketRateLimit_new (NULL, 1000, 1000);
+      ASSERT_NOT_NULL (limiter);
+      SocketRateLimit_free (&limiter);
+      ASSERT_NULL (limiter);
+    }
+
+  int final_count = SocketRateLimit_debug_live_count ();
+  ASSERT_EQ (initial_count, final_count);
+}
+
+/* Test free with maximum bucket size */
+TEST (ratelimit_free_large_bucket)
+{
+  SocketRateLimit_T limiter
+      = SocketRateLimit_new (NULL, 1000000, 1000000); /* 1M tokens/sec */
+  ASSERT_NOT_NULL (limiter);
+
+  SocketRateLimit_free (&limiter);
+  ASSERT_NULL (limiter);
+}
+
+/* Thread test context for free testing */
+typedef struct
+{
+  SocketRateLimit_T limiter;
+  volatile int keep_running;
+  pthread_mutex_t start_mutex;
+  pthread_cond_t start_cond;
+  volatile int started;
+} FreeThreadTestContext;
+
+/* Thread that acquires tokens while main thread frees */
+static void *
+free_acquire_tokens_thread (void *arg)
+{
+  FreeThreadTestContext *ctx = (FreeThreadTestContext *)arg;
+
+  /* Wait for signal to start */
+  pthread_mutex_lock (&ctx->start_mutex);
+  while (!ctx->started)
+    pthread_cond_wait (&ctx->start_cond, &ctx->start_mutex);
+  pthread_mutex_unlock (&ctx->start_mutex);
+
+  /* Try to acquire tokens while main thread frees */
+  while (ctx->keep_running)
+    {
+      /* This might fail if limiter is being freed */
+      if (ctx->limiter)
+        {
+          SocketRateLimit_try_acquire (ctx->limiter, 1);
+        }
+      /* Small sleep to allow free to occur */
+      struct timespec ts = { 0, 100000 }; /* 0.1ms */
+      nanosleep (&ts, NULL);
+    }
+
+  return NULL;
+}
+
+/* Test free while another thread might hold lock (retry logic) */
+TEST (ratelimit_free_with_concurrent_thread)
+{
+  FreeThreadTestContext ctx;
+  pthread_t thread;
+
+  ctx.limiter = SocketRateLimit_new (NULL, 1000, 1000);
+  ASSERT_NOT_NULL (ctx.limiter);
+  ctx.keep_running = 1;
+  ctx.started = 0;
+
+  pthread_mutex_init (&ctx.start_mutex, NULL);
+  pthread_cond_init (&ctx.start_cond, NULL);
+
+  /* Start thread that will try to acquire tokens */
+  pthread_create (&thread, NULL, free_acquire_tokens_thread, &ctx);
+
+  /* Signal thread to start */
+  pthread_mutex_lock (&ctx.start_mutex);
+  ctx.started = 1;
+  pthread_cond_broadcast (&ctx.start_cond);
+  pthread_mutex_unlock (&ctx.start_mutex);
+
+  /* Give thread time to start acquiring */
+  struct timespec ts = { 0, 5000000 }; /* 5ms */
+  nanosleep (&ts, NULL);
+
+  /* Free while thread might be holding lock - should use retry logic */
+  SocketRateLimit_free (&ctx.limiter);
+  ASSERT_NULL (ctx.limiter);
+
+  /* Stop thread */
+  ctx.keep_running = 0;
+  pthread_join (thread, NULL);
+
+  pthread_mutex_destroy (&ctx.start_mutex);
+  pthread_cond_destroy (&ctx.start_cond);
+}
+
+/* ============================================================================
  * SocketIPTracker Tests
  * ============================================================================
  */
