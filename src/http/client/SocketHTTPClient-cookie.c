@@ -1254,6 +1254,26 @@ parse_cookie_attribute (const char *attr_start,
     }
 }
 
+static int
+parse_attribute_value_if_present (const char **ptr,
+                                  const char *end,
+                                  const char **value_start,
+                                  const char **value_end)
+{
+  if (*ptr >= end || **ptr != '=')
+    return -1;
+
+  const char *val_start_temp, *val_end_temp;
+  (*ptr)++;
+
+  if (parse_value (ptr, end, &val_start_temp, &val_end_temp) != 0)
+    return -1;
+
+  *value_start = val_start_temp;
+  *value_end = val_end_temp;
+  return 0;
+}
+
 static void
 parse_cookie_attributes (const char **p,
                          const char *end,
@@ -1276,16 +1296,8 @@ parse_cookie_attributes (const char **p,
       if (parse_token (&ptr, end, &attr_start, &attr_end) != 0)
         break;
 
-      if (ptr < end && *ptr == '=')
-        {
-          const char *val_start_temp, *val_end_temp;
-          ptr++;
-          if (parse_value (&ptr, end, &val_start_temp, &val_end_temp) == 0)
-            {
-              attr_value_start = val_start_temp;
-              attr_value_end = val_end_temp;
-            }
-        }
+      parse_attribute_value_if_present (
+          &ptr, end, &attr_value_start, &attr_value_end);
 
       parse_cookie_attribute (
           attr_start,
