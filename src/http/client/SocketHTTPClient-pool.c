@@ -429,31 +429,44 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
   while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
     {
       ++chain_len;
-      if (host_port_secure_match (entry, host, port, is_secure)
-          && entry_can_handle_request (entry))
-        {
-          /* SECURITY: Verify TLS hostname matches for secure connections
-           * to prevent connection reuse across different hostnames.
-           * CVE-like vulnerability: An attacker could obtain a connection to
-           * evil.com, then reuse it for bank.com if we don't verify SNI
-           * hostname. RFC 6125 requires hostname verification on every TLS
-           * session use.
-           */
-          if (!verify_sni_hostname_match (entry, host))
-            {
-              /* Hostname mismatch - skip this connection and continue search */
-              entry = entry->hash_next;
-              continue;
-            }
 
-          clear_http1_buffers (entry);
-          entry_mark_in_use (entry);
-          pool->reused_connections++;
-          pthread_mutex_unlock (&pool->mutex);
-          return entry;
+      /* Skip if host/port/security don't match */
+      if (!host_port_secure_match (entry, host, port, is_secure))
+        {
+          entry = entry->hash_next;
+          continue;
         }
-      entry = entry->hash_next;
+
+      /* Skip if entry can't handle new requests */
+      if (!entry_can_handle_request (entry))
+        {
+          entry = entry->hash_next;
+          continue;
+        }
+
+      /* SECURITY: Verify TLS hostname matches for secure connections
+       * to prevent connection reuse across different hostnames.
+       * CVE-like vulnerability: An attacker could obtain a connection to
+       * evil.com, then reuse it for bank.com if we don't verify SNI
+       * hostname. RFC 6125 requires hostname verification on every TLS
+       * session use.
+       */
+      if (!verify_sni_hostname_match (entry, host))
+        {
+          /* Hostname mismatch - skip this connection and continue search */
+          entry = entry->hash_next;
+          continue;
+        }
+
+      /* Found usable connection - prepare and return it */
+      clear_http1_buffers (entry);
+      entry_mark_in_use (entry);
+      pool->reused_connections++;
+      pthread_mutex_unlock (&pool->mutex);
+      return entry;
     }
+
+  /* No match found - check if we hit DoS limit */
   if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
     raise_chain_too_long (chain_len, "in pool lookup", host, port);
 
@@ -484,24 +497,37 @@ httpclient_pool_get_prepared (HTTPPool *pool,
   while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
     {
       ++chain_len;
-      if (host_port_secure_match (entry, host, port, is_secure)
-          && entry_can_handle_request (entry))
-        {
-          /* SECURITY: Verify TLS hostname matches for secure connections */
-          if (!verify_sni_hostname_match (entry, host))
-            {
-              entry = entry->hash_next;
-              continue;
-            }
 
-          clear_http1_buffers (entry);
-          entry_mark_in_use (entry);
-          pool->reused_connections++;
-          pthread_mutex_unlock (&pool->mutex);
-          return entry;
+      /* Skip if host/port/security don't match */
+      if (!host_port_secure_match (entry, host, port, is_secure))
+        {
+          entry = entry->hash_next;
+          continue;
         }
-      entry = entry->hash_next;
+
+      /* Skip if entry can't handle new requests */
+      if (!entry_can_handle_request (entry))
+        {
+          entry = entry->hash_next;
+          continue;
+        }
+
+      /* SECURITY: Verify TLS hostname matches for secure connections */
+      if (!verify_sni_hostname_match (entry, host))
+        {
+          entry = entry->hash_next;
+          continue;
+        }
+
+      /* Found usable connection - prepare and return it */
+      clear_http1_buffers (entry);
+      entry_mark_in_use (entry);
+      pool->reused_connections++;
+      pthread_mutex_unlock (&pool->mutex);
+      return entry;
     }
+
+  /* No match found - check if we hit DoS limit */
   if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
     raise_chain_too_long (chain_len, "in pool lookup", host, port);
 
