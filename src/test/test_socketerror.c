@@ -6,228 +6,363 @@
 
 /**
  * test_socketerror.c - SocketError module unit tests
- * Tests for the SocketError thread-local error message handling module.
- * Covers error message retrieval and thread-local storage behavior.
+ * Tests for error categorization and errno classification.
  */
 
 #include <errno.h>
-#include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 
-#include "core/SocketUtil.h"
+#include "core/SocketError.h"
 #include "test/Test.h"
 
-typedef struct
+/* ============================================================================
+ * NETWORK CATEGORY TESTS
+ * ============================================================================
+ */
+
+TEST (error_categorize_econnrefused_is_network)
 {
-  int called;
-  SocketLogLevel level;
-  const char *component;
-  char message[SOCKET_ERROR_BUFSIZE];
-} LogProbe;
-
-static void
-log_capture_callback (void *userdata,
-                      SocketLogLevel level,
-                      const char *component,
-                      const char *message)
-{
-  LogProbe *probe = (LogProbe *)userdata;
-
-  if (!probe)
-    return;
-
-  probe->called++;
-  probe->level = level;
-  probe->component = component;
-
-  if (message)
-    strncpy (probe->message, message, sizeof (probe->message) - 1);
+  SocketErrorCategory cat = SocketError_categorize_errno (ECONNREFUSED);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketlog_custom_callback_receives_errors)
+TEST (error_categorize_econnreset_is_network)
 {
-  LogProbe probe = { 0 };
-
-  SocketLog_setcallback (log_capture_callback, &probe);
-  SOCKET_ERROR_MSG ("Observability logging test message");
-
-  ASSERT_EQ (1, probe.called);
-  ASSERT_EQ (SOCKET_LOG_ERROR, probe.level);
-  ASSERT_NOT_NULL (probe.component);
-  ASSERT (strstr (probe.message, "Observability logging test message") != NULL);
-
-  SocketLog_setcallback (NULL, NULL);
+  SocketErrorCategory cat = SocketError_categorize_errno (ECONNRESET);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketlog_level_names)
+TEST (error_categorize_ehostunreach_is_network)
 {
-  ASSERT_NOT_NULL (SocketLog_levelname (SOCKET_LOG_TRACE));
-  ASSERT_NOT_NULL (SocketLog_levelname (SOCKET_LOG_DEBUG));
-  ASSERT_NOT_NULL (SocketLog_levelname (SOCKET_LOG_INFO));
-  ASSERT_NOT_NULL (SocketLog_levelname (SOCKET_LOG_WARN));
-  ASSERT_NOT_NULL (SocketLog_levelname (SOCKET_LOG_ERROR));
-  ASSERT_NOT_NULL (SocketLog_levelname (SOCKET_LOG_FATAL));
-  ASSERT_NOT_NULL (SocketLog_levelname ((SocketLogLevel)999));
+  SocketErrorCategory cat = SocketError_categorize_errno (EHOSTUNREACH);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketlog_callback_replacement)
+TEST (error_categorize_enetunreach_is_network)
 {
-  LogProbe probe1 = { 0 };
-  LogProbe probe2 = { 0 };
-
-  SocketLog_setcallback (log_capture_callback, &probe1);
-  SocketLog_emit (SOCKET_LOG_INFO, "TestComponent", "Message 1");
-  ASSERT_EQ (1, probe1.called);
-  ASSERT_EQ (0, probe2.called);
-
-  SocketLog_setcallback (log_capture_callback, &probe2);
-  SocketLog_emit (SOCKET_LOG_INFO, "TestComponent", "Message 2");
-  ASSERT_EQ (1, probe1.called);
-  ASSERT_EQ (1, probe2.called);
-
-  SocketLog_setcallback (NULL, NULL);
+  SocketErrorCategory cat = SocketError_categorize_errno (ENETUNREACH);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketlog_getcallback_returns_default)
+TEST (error_categorize_enotconn_is_network)
 {
-  void *userdata = NULL;
-  SocketLogCallback callback;
-
-  SocketLog_setcallback (NULL, NULL);
-  callback = SocketLog_getcallback (&userdata);
-  ASSERT_NOT_NULL (callback);
+  SocketErrorCategory cat = SocketError_categorize_errno (ENOTCONN);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketlog_emitf_formats_messages)
+TEST (error_categorize_epipe_is_network)
 {
-  LogProbe probe = { 0 };
-
-  SocketLog_setcallback (log_capture_callback, &probe);
-  SocketLog_emitf (
-      SOCKET_LOG_WARN, "TestComponent", "Formatted: %d %s", 42, "test");
-
-  ASSERT_EQ (1, probe.called);
-  ASSERT_EQ (SOCKET_LOG_WARN, probe.level);
-  ASSERT (strstr (probe.message, "Formatted: 42 test") != NULL);
-
-  SocketLog_setcallback (NULL, NULL);
+  SocketErrorCategory cat = SocketError_categorize_errno (EPIPE);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-/* Test that Socket_GetLastError returns empty string initially */
-TEST (socketerror_initial_empty)
+TEST (error_categorize_econnaborted_is_network)
 {
-  socket_error_buf[0] = '\0';
-  socket_last_errno = 0;
-  const char *error = Socket_GetLastError ();
-  ASSERT_NOT_NULL (error);
-  ASSERT_EQ (strlen (error), 0);
+  SocketErrorCategory cat = SocketError_categorize_errno (ECONNABORTED);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-/* Test that error buffer is thread-local
- * Note: This test verifies the basic functionality. True thread-local
- * behavior would require execution in multiple threads, which is
- * tested in test_threadsafety.c */
-TEST (socketerror_returns_buffer)
+TEST (error_categorize_eagain_is_network)
 {
-  socket_error_buf[0] = '\0';
-  socket_last_errno = 0;
-  const char *error1 = Socket_GetLastError ();
-  const char *error2 = Socket_GetLastError ();
-
-  /* Should return same buffer pointer */
-  ASSERT_EQ (error1, error2);
-
-  /* Should be empty initially */
-  ASSERT_EQ (strlen (error1), 0);
+  SocketErrorCategory cat = SocketError_categorize_errno (EAGAIN);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-/* Test that Socket_GetLastError returns valid pointer */
-TEST (socketerror_valid_pointer)
+TEST (error_categorize_ealready_is_network)
 {
-  const char *error = Socket_GetLastError ();
-
-  /* Should not be NULL */
-  ASSERT_NOT_NULL (error);
-
-  /* Should be a valid string (may be empty) */
-  /* Reading from the buffer should not crash */
-  size_t len = strlen (error);
-  ASSERT (len < SOCKET_ERROR_BUFSIZE);
+  SocketErrorCategory cat = SocketError_categorize_errno (EALREADY);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketerror_geterrno_returns_captured_value)
+TEST (error_categorize_einprogress_is_network)
 {
-  int saved_errno = errno;
-
-  errno = ECONNREFUSED;
-  SOCKET_ERROR_FMT ("Test error with errno capture");
-  ASSERT_EQ (ECONNREFUSED, Socket_geterrno ());
-
-  errno = ETIMEDOUT;
-  SOCKET_ERROR_MSG ("Test error message");
-  ASSERT_EQ (ETIMEDOUT, Socket_geterrno ());
-
-  errno = saved_errno;
+  SocketErrorCategory cat = SocketError_categorize_errno (EINPROGRESS);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketerror_geterrorcode_maps_errno_correctly)
+TEST (error_categorize_eintr_is_network)
 {
-  int saved_errno = errno;
-
-  errno = ECONNREFUSED;
-  SOCKET_ERROR_FMT ("Connection refused test");
-  ASSERT_EQ (SOCKET_ERROR_ECONNREFUSED, Socket_geterrorcode ());
-
-  errno = ETIMEDOUT;
-  SOCKET_ERROR_FMT ("Timeout test");
-  ASSERT_EQ (SOCKET_ERROR_ETIMEDOUT, Socket_geterrorcode ());
-
-  errno = EADDRINUSE;
-  SOCKET_ERROR_FMT ("Address in use test");
-  ASSERT_EQ (SOCKET_ERROR_EADDRINUSE, Socket_geterrorcode ());
-
-  errno = ENOMEM;
-  SOCKET_ERROR_FMT ("Out of memory test");
-  ASSERT_EQ (SOCKET_ERROR_ENOMEM, Socket_geterrorcode ());
-
-  errno = EAGAIN;
-  SOCKET_ERROR_FMT ("Would block test");
-  ASSERT_EQ (SOCKET_ERROR_EAGAIN, Socket_geterrorcode ());
-
-  errno = 0;
-  SOCKET_ERROR_FMT ("No error test");
-  ASSERT_EQ (SOCKET_ERROR_NONE, Socket_geterrorcode ());
-
-  errno = saved_errno;
+  SocketErrorCategory cat = SocketError_categorize_errno (EINTR);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
 }
 
-TEST (socketerror_geterrorcode_unknown_errno)
+#ifdef ENETDOWN
+TEST (error_categorize_enetdown_is_network)
 {
-  int saved_errno = errno;
+  SocketErrorCategory cat = SocketError_categorize_errno (ENETDOWN);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
+}
+#endif
 
-  errno = 99999;
-  SOCKET_ERROR_FMT ("Unknown errno test");
-  ASSERT_EQ (SOCKET_ERROR_UNKNOWN, Socket_geterrorcode ());
+#ifdef ENETRESET
+TEST (error_categorize_enetreset_is_network)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ENETRESET);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
+}
+#endif
 
-  errno = saved_errno;
+#ifdef EWOULDBLOCK
+TEST (error_categorize_ewouldblock_is_network)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EWOULDBLOCK);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_NETWORK, cat);
+}
+#endif
+
+/* ============================================================================
+ * PROTOCOL CATEGORY TESTS
+ * ============================================================================
+ */
+
+TEST (error_categorize_einval_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EINVAL);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
 }
 
-TEST (socketerror_geterrno_thread_local)
+TEST (error_categorize_eafnosupport_is_protocol)
 {
-  int saved_errno = errno;
+  SocketErrorCategory cat = SocketError_categorize_errno (EAFNOSUPPORT);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
 
-  errno = ECONNREFUSED;
-  SOCKET_ERROR_FMT ("Thread local test 1");
-  int errno1 = Socket_geterrno ();
+TEST (error_categorize_ebadf_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EBADF);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
 
-  errno = ETIMEDOUT;
-  SOCKET_ERROR_FMT ("Thread local test 2");
-  int errno2 = Socket_geterrno ();
+TEST (error_categorize_efault_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EFAULT);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
 
-  ASSERT_EQ (ECONNREFUSED, errno1);
-  ASSERT_EQ (ETIMEDOUT, errno2);
+TEST (error_categorize_eisconn_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EISCONN);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
 
-  errno = saved_errno;
+TEST (error_categorize_enotsock_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ENOTSOCK);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
+
+TEST (error_categorize_eopnotsupp_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EOPNOTSUPP);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
+
+TEST (error_categorize_eprotonosupport_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EPROTONOSUPPORT);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
+
+#ifdef EPROTO
+TEST (error_categorize_eproto_is_protocol)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EPROTO);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_PROTOCOL, cat);
+}
+#endif
+
+/* ============================================================================
+ * APPLICATION CATEGORY TESTS
+ * ============================================================================
+ */
+
+TEST (error_categorize_eacces_is_application)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EACCES);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_APPLICATION, cat);
+}
+
+TEST (error_categorize_eaddrinuse_is_application)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EADDRINUSE);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_APPLICATION, cat);
+}
+
+TEST (error_categorize_eaddrnotavail_is_application)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EADDRNOTAVAIL);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_APPLICATION, cat);
+}
+
+TEST (error_categorize_eperm_is_application)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EPERM);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_APPLICATION, cat);
+}
+
+/* ============================================================================
+ * TIMEOUT CATEGORY TESTS
+ * ============================================================================
+ */
+
+TEST (error_categorize_etimedout_is_timeout)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ETIMEDOUT);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_TIMEOUT, cat);
+}
+
+/* ============================================================================
+ * RESOURCE CATEGORY TESTS
+ * ============================================================================
+ */
+
+TEST (error_categorize_emfile_is_resource)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (EMFILE);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+}
+
+TEST (error_categorize_enobufs_is_resource)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ENOBUFS);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+}
+
+TEST (error_categorize_enomem_is_resource)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ENOMEM);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+}
+
+TEST (error_categorize_enfile_is_resource)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ENFILE);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+}
+
+#ifdef ENOSPC
+TEST (error_categorize_enospc_is_resource)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (ENOSPC);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_RESOURCE, cat);
+}
+#endif
+
+/* ============================================================================
+ * UNKNOWN CATEGORY TESTS
+ * ============================================================================
+ */
+
+TEST (error_categorize_zero_is_unknown)
+{
+  SocketErrorCategory cat = SocketError_categorize_errno (0);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_UNKNOWN, cat);
+}
+
+TEST (error_categorize_invalid_errno_is_unknown)
+{
+  /* Use an errno value that should not be in the mappings table */
+  SocketErrorCategory cat = SocketError_categorize_errno (99999);
+  ASSERT_EQ (SOCKET_ERROR_CATEGORY_UNKNOWN, cat);
+}
+
+/* ============================================================================
+ * CATEGORY NAME TESTS
+ * ============================================================================
+ */
+
+TEST (error_category_name_network)
+{
+  const char *name = SocketError_category_name (SOCKET_ERROR_CATEGORY_NETWORK);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "NETWORK"));
+}
+
+TEST (error_category_name_protocol)
+{
+  const char *name
+      = SocketError_category_name (SOCKET_ERROR_CATEGORY_PROTOCOL);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "PROTOCOL"));
+}
+
+TEST (error_category_name_application)
+{
+  const char *name
+      = SocketError_category_name (SOCKET_ERROR_CATEGORY_APPLICATION);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "APPLICATION"));
+}
+
+TEST (error_category_name_timeout)
+{
+  const char *name = SocketError_category_name (SOCKET_ERROR_CATEGORY_TIMEOUT);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "TIMEOUT"));
+}
+
+TEST (error_category_name_resource)
+{
+  const char *name
+      = SocketError_category_name (SOCKET_ERROR_CATEGORY_RESOURCE);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "RESOURCE"));
+}
+
+TEST (error_category_name_unknown)
+{
+  const char *name = SocketError_category_name (SOCKET_ERROR_CATEGORY_UNKNOWN);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "UNKNOWN"));
+}
+
+TEST (error_category_name_invalid_returns_unknown)
+{
+  const char *name = SocketError_category_name ((SocketErrorCategory)999);
+  ASSERT_NOT_NULL (name);
+  ASSERT_EQ (0, strcmp (name, "UNKNOWN"));
+}
+
+/* ============================================================================
+ * RETRYABLE ERRNO TESTS
+ * ============================================================================
+ */
+
+TEST (error_retryable_econnrefused_is_retryable)
+{
+  int retryable = SocketError_is_retryable_errno (ECONNREFUSED);
+  ASSERT_EQ (1, retryable);
+}
+
+TEST (error_retryable_etimedout_is_retryable)
+{
+  int retryable = SocketError_is_retryable_errno (ETIMEDOUT);
+  ASSERT_EQ (1, retryable);
+}
+
+TEST (error_retryable_einval_is_not_retryable)
+{
+  int retryable = SocketError_is_retryable_errno (EINVAL);
+  ASSERT_EQ (0, retryable);
+}
+
+TEST (error_retryable_eacces_is_not_retryable)
+{
+  int retryable = SocketError_is_retryable_errno (EACCES);
+  ASSERT_EQ (0, retryable);
+}
+
+TEST (error_retryable_enomem_is_not_retryable)
+{
+  int retryable = SocketError_is_retryable_errno (ENOMEM);
+  ASSERT_EQ (0, retryable);
+}
+
+TEST (error_retryable_unknown_errno_is_not_retryable)
+{
+  int retryable = SocketError_is_retryable_errno (99999);
+  ASSERT_EQ (0, retryable);
 }
 
 int
