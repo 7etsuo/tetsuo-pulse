@@ -20,6 +20,7 @@
  */
 
 #include <errno.h>
+#include <math.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -228,6 +229,94 @@ TEST (socketretry_new_invalid_policy_bad_jitter)
 
   SocketRetry_policy_defaults (&bad);
   bad.jitter = 1.5; /* Invalid: must be 0.0 - 1.0 */
+
+  TRY
+  {
+    SocketRetry_T retry = SocketRetry_new (&bad);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (socketretry_new_invalid_policy_nan_multiplier)
+{
+  volatile int raised = 0;
+  SocketRetry_Policy bad;
+
+  SocketRetry_policy_defaults (&bad);
+  bad.multiplier = NAN; /* Invalid: NaN not allowed */
+
+  TRY
+  {
+    SocketRetry_T retry = SocketRetry_new (&bad);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (socketretry_new_invalid_policy_inf_multiplier)
+{
+  volatile int raised = 0;
+  SocketRetry_Policy bad;
+
+  SocketRetry_policy_defaults (&bad);
+  bad.multiplier = INFINITY; /* Invalid: Inf not allowed */
+
+  TRY
+  {
+    SocketRetry_T retry = SocketRetry_new (&bad);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (socketretry_new_invalid_policy_nan_jitter)
+{
+  volatile int raised = 0;
+  SocketRetry_Policy bad;
+
+  SocketRetry_policy_defaults (&bad);
+  bad.jitter = NAN; /* Invalid: NaN not allowed */
+
+  TRY
+  {
+    SocketRetry_T retry = SocketRetry_new (&bad);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (socketretry_new_invalid_policy_inf_jitter)
+{
+  volatile int raised = 0;
+  SocketRetry_Policy bad;
+
+  SocketRetry_policy_defaults (&bad);
+  bad.jitter = INFINITY; /* Invalid: Inf not allowed */
 
   TRY
   {
@@ -837,6 +926,133 @@ TEST (socketretry_no_jitter)
   int delay1b = SocketRetry_calculate_delay (&policy, 1);
   ASSERT_EQ (delay1a, delay1b);
   ASSERT_EQ (delay1a, 100);
+}
+
+/* ============================================================================
+ * Boundary Validation Tests
+ * ============================================================================
+ */
+
+TEST (socketretry_validate_max_delay_boundaries)
+{
+  SocketRetry_T retry = NULL;
+  SocketRetry_Policy policy;
+
+  /* Test upper boundary: max_delay_ms == SOCKET_RETRY_MAX_DELAY_VALUE_MS */
+  SocketRetry_policy_defaults (&policy);
+  policy.max_delay_ms = 3600000; /* SOCKET_RETRY_MAX_DELAY_VALUE_MS */
+  policy.initial_delay_ms = 100;
+
+  TRY
+  {
+    retry = SocketRetry_new (&policy);
+    ASSERT_NOT_NULL (retry);
+    SocketRetry_free (&retry);
+  }
+  FINALLY
+  {
+    if (retry)
+      SocketRetry_free (&retry);
+  }
+  END_TRY;
+
+  /* Test lower boundary: max_delay_ms == initial_delay_ms */
+  SocketRetry_policy_defaults (&policy);
+  policy.initial_delay_ms = 500;
+  policy.max_delay_ms = 500; /* Equal to initial_delay_ms */
+
+  TRY
+  {
+    retry = SocketRetry_new (&policy);
+    ASSERT_NOT_NULL (retry);
+    SocketRetry_free (&retry);
+  }
+  FINALLY
+  {
+    if (retry)
+      SocketRetry_free (&retry);
+  }
+  END_TRY;
+
+  /* Test invalid: max_delay_ms < initial_delay_ms */
+  volatile int raised = 0;
+  SocketRetry_policy_defaults (&policy);
+  policy.initial_delay_ms = 500;
+  policy.max_delay_ms = 400; /* Less than initial - invalid */
+
+  TRY
+  {
+    retry = SocketRetry_new (&policy);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+
+  /* Test invalid: max_delay_ms > SOCKET_RETRY_MAX_DELAY_VALUE_MS */
+  raised = 0;
+  SocketRetry_policy_defaults (&policy);
+  policy.max_delay_ms = 3600001; /* Above max allowed */
+  policy.initial_delay_ms = 100;
+
+  TRY
+  {
+    retry = SocketRetry_new (&policy);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (socketretry_validate_multiplier_max_boundary)
+{
+  SocketRetry_T retry = NULL;
+  SocketRetry_Policy policy;
+
+  /* Test max multiplier boundary: multiplier == SOCKET_RETRY_MAX_MULTIPLIER
+   * (16.0) */
+  SocketRetry_policy_defaults (&policy);
+  policy.multiplier = 16.0; /* SOCKET_RETRY_MAX_MULTIPLIER */
+
+  TRY
+  {
+    retry = SocketRetry_new (&policy);
+    ASSERT_NOT_NULL (retry);
+    SocketRetry_free (&retry);
+  }
+  FINALLY
+  {
+    if (retry)
+      SocketRetry_free (&retry);
+  }
+  END_TRY;
+
+  /* Test invalid: multiplier > SOCKET_RETRY_MAX_MULTIPLIER */
+  volatile int raised = 0;
+  SocketRetry_policy_defaults (&policy);
+  policy.multiplier = 16.1; /* Above max allowed */
+
+  TRY
+  {
+    retry = SocketRetry_new (&policy);
+    (void)retry;
+  }
+  EXCEPT (SocketRetry_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
 }
 
 /* ============================================================================
