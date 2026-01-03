@@ -1,10 +1,11 @@
 # Code Analysis Pipeline
 
-Multi-agent code analysis pipeline for C codebases. Supports four modes:
+Multi-agent code analysis pipeline for C codebases. Supports five modes:
 1. **Code Analysis Mode** (default) - Security, redundancy, and refactoring analysis
 2. **TODO Mode** - Scan for TODO/FIXME/HACK/XXX/NOTE comments and create issues
 3. **Refactor Mode** - Focus on flattening nested ifs and identifying single-use subroutines
 4. **Nested Mode** - Fast shell-based detection of deeply nested if statements
+5. **Test Mode** - Check for missing unit and integration tests for all functions
 
 ## Usage
 
@@ -13,6 +14,7 @@ Multi-agent code analysis pipeline for C codebases. Supports four modes:
 /pipeline <directory> todo      # TODO scanning mode
 /pipeline <file|directory> refactor  # Readability refactoring mode
 /pipeline <directory> nested    # Fast nested-if detection mode
+/pipeline <directory> test      # Test coverage analysis mode
 ```
 
 Examples:
@@ -23,6 +25,7 @@ Examples:
 /pipeline src/http/SocketHTTP2.c refactor  # Refactor analysis on single file
 /pipeline src/socket/ refactor  # Refactor analysis on directory
 /pipeline src/http/ nested      # Find and flatten deeply nested ifs
+/pipeline src/dns/ test         # Check test coverage for DNS module
 ```
 
 ---
@@ -34,6 +37,7 @@ Check the second argument to determine which mode to run:
 - If second argument is `todo` → Run **TODO Mode** (see TODO MODE section below)
 - If second argument is `refactor` → Run **Refactor Mode** (see REFACTOR MODE section below)
 - If second argument is `nested` → Run **Nested Mode** (see NESTED MODE section below)
+- If second argument is `test` → Run **Test Mode** (see TEST MODE section below)
 - Otherwise → Run **Code Analysis Mode** (see PHASE 1-3 sections below)
 
 ---
@@ -715,6 +719,373 @@ Report saved to: <directory>/NESTED_ANALYSIS.md
 - #303: refactor(socket): Flatten 3-level nesting in connect_internal
 
 **Nested pipeline complete.**
+```
+
+---
+
+# TEST MODE
+
+Analyze code for missing test coverage and create GitHub issues for untested functions. Checks for both unit tests and integration tests for all public and static functions.
+
+**Creates GitHub issues for all missing tests** (same pattern as other modes).
+
+## Test Mode Architecture
+
+```
+/pipeline src/dns/ test
+    │
+    ▼
+Phase TC1: Discovery
+    │ Identify target files (.c only, no headers)
+    │ Locate test directory (src/test/)
+    ▼
+Phase TC2: Per-File Test Coverage Agents (parallel)
+    │ ┌──────────────────────────────────────────────────────┐
+    │ │ test-coverage-agent (file1.c)                       │
+    │ │   ├── Extract all functions from file                │
+    │ │   ├── Search for corresponding tests                 │
+    │ │   ├── Identify missing unit tests                    │
+    │ │   ├── Identify missing integration tests             │
+    │ │   └── Create GitHub issues for missing tests         │
+    │ ├──────────────────────────────────────────────────────┤
+    │ │ test-coverage-agent (file2.c)                       │
+    │ │   └── ...                                            │
+    │ └──────────────────────────────────────────────────────┘
+    ▼
+Phase TC3: Report
+    │ Aggregate coverage findings
+    │ List created GitHub issues
+    │ Write <directory>/TEST_COVERAGE.md
+    ▼
+Done
+```
+
+## PHASE TC1: Discovery
+
+**Goal**: Identify source files to analyze for test coverage.
+
+### Steps
+
+1. **Check if input is file or directory**:
+   - If file: analyze that single .c file
+   - If directory: scan for all .c files recursively (exclude test files)
+
+2. **For directories, use Glob**:
+   ```
+   Glob pattern: <directory>/**/*.c
+   ```
+
+3. **Filter out test files**:
+   - Exclude files matching: `**/test_*.c`, `**/fuzz_*.c`
+   - Only analyze source implementation files
+
+4. **Verify test directory exists**:
+   - Check for `src/test/` directory
+   - Warn if test directory not found
+
+5. **CHECKPOINT**: Display files and confirm:
+   ```markdown
+   ## Phase TC1: Discovery Complete
+
+   Target: <path>
+   Source files to analyze: [N]
+   Test directory: src/test/
+
+   - src/dns/SocketDNS.c (1200 lines, module: dns)
+   - src/dns/SocketDNS-cache.c (600 lines, module: dns)
+   - src/http/SocketHTTP2.c (1500 lines, module: http)
+   ...
+
+   **Proceed with test coverage analysis?** ([N] test-coverage-agents will be spawned)
+   ```
+
+## PHASE TC2: Per-File Test Coverage Agents
+
+**Goal**: Spawn independent agents to analyze each file for test coverage and create issues.
+
+### CRITICAL: Parallel Execution
+
+**Spawn one `test-coverage-agent` per source file, ALL IN A SINGLE MESSAGE.**
+
+Do NOT:
+- Process files sequentially
+- Run agents one at a time
+- Analyze files yourself without agents
+
+DO:
+- Send ONE message with N Task tool invocations (one per file)
+- Run all agents in background
+- Collect all results when complete
+
+### Task Invocations
+
+For each file, spawn:
+
+```
+Task:
+  subagent_type: general-purpose
+  model: sonnet
+  run_in_background: true
+  prompt: |
+    Analyze test coverage for this source file and create GitHub issues for missing tests:
+
+    File: [FILEPATH]
+    Module: [MODULE_NAME] (extracted from path: src/MODULE/*)
+    Repository: 7etsuo/tetsuo-socket
+    Test Directory: src/test/
+
+    Your workflow:
+
+    1. EXTRACT ALL FUNCTIONS from the source file:
+       - Read [FILEPATH]
+       - Parse and identify all function definitions (public and static)
+       - For each function, record:
+         * Function name
+         * Return type
+         * Parameters
+         * Line number
+         * Visibility (static or public)
+
+    2. SEARCH FOR EXISTING TESTS:
+       - Look for test files in src/test/ that might test this module
+       - Common patterns:
+         * test_<module>.c - module tests
+         * test_<module>_<feature>.c - feature-specific tests
+         * Integration tests in test_integration_*.c
+       - For each function, search for test cases:
+         * Use Grep to search for function name in test files
+         * Look for patterns: TEST(*<function_name>*) or test_<function_name>*
+         * Check both unit tests and integration tests
+
+    3. CLASSIFY TEST COVERAGE for each function:
+       - UNIT TEST FOUND: Function has dedicated unit test
+       - INTEGRATION TEST FOUND: Function tested in integration tests only
+       - NO TESTS: Function has no tests at all
+       - PARTIAL: Function has unit tests but missing integration tests (or vice versa)
+
+    4. IDENTIFY MISSING TESTS:
+       - For public functions (non-static):
+         * Should have both unit tests AND integration tests
+         * Missing either → create issue
+       - For static (helper) functions:
+         * Should have at least unit tests (if complex) OR be covered by integration tests
+         * Missing both → create issue
+
+    5. CREATE GITHUB ISSUES for missing tests:
+       For each function missing tests, use gh CLI:
+
+       ```bash
+       gh issue create --repo 7etsuo/tetsuo-socket \
+         --title "test(<module>): Add <test_type> for <function_name>" \
+         --label "test,missing-coverage" \
+         --body "$(cat <<'EOF'
+       ## Missing Test Coverage
+
+       **File**: [FILEPATH]:[LINE]
+       **Function**: `<function_signature>`
+       **Module**: <module>
+       **Missing**: <unit tests | integration tests | all tests>
+
+       ## Current Coverage
+
+       - Unit tests: <YES/NO>
+       - Integration tests: <YES/NO>
+
+       ## Recommended Tests
+
+       ### Unit Tests
+       - Test basic functionality with valid inputs
+       - Test error handling (NULL, invalid params)
+       - Test exception paths (if uses TRY/EXCEPT)
+       - Test edge cases (boundary conditions)
+       - Test memory safety (Arena allocation/disposal)
+
+       ### Integration Tests
+       - Test interaction with other modules
+       - Test end-to-end workflows
+       - Test thread safety (if applicable)
+       - Test performance characteristics
+
+       ## Test File Location
+
+       Create tests in: `src/test/test_<module>.c` or `src/test/test_<module>_<feature>.c`
+
+       ## References
+
+       - Test framework: `include/test/Test.h`
+       - Test patterns: `.claude/skills/test-writer/SKILL.md`
+       - Existing tests: `src/test/test_<module>.c`
+
+       ---
+       *Generated by /pipeline test*
+       EOF
+       )"
+       ```
+
+    6. RETURN SUMMARY:
+       Return structured output with:
+       - File analyzed: [FILEPATH]
+       - Functions found: [count]
+       - Functions with full coverage: [count]
+       - Functions with partial coverage: [count]
+       - Functions with no coverage: [count]
+       - GitHub issues created: [list of URLs]
+
+    IMPORTANT NOTES:
+    - Use Test framework patterns from .claude/skills/test-writer/SKILL.md
+    - Reference existing test files for naming conventions
+    - Consider test types from CLAUDE.md (unit, integration, exception, thread safety)
+    - Create ONE issue per function (don't group functions)
+    - Include function signature and line number in issue body
+```
+
+### Batching Strategy
+
+If more than 20 files:
+1. Split into batches of 15-20 files
+2. Run each batch, wait for completion
+3. Aggregate results across batches
+
+### Collecting Results
+
+Wait for all agents to complete using `TaskOutput` with blocking.
+
+Each agent returns:
+- Functions analyzed count
+- Coverage statistics (full, partial, none)
+- GitHub issue URLs created
+- Any errors encountered
+
+## PHASE TC3: Report Generation
+
+**Goal**: Aggregate test coverage results into a comprehensive report.
+
+### Report Location
+
+Save to: `<target>/TEST_COVERAGE.md`
+
+### Report Template
+
+```markdown
+# Test Coverage Analysis Report
+
+**Generated**: [timestamp]
+**Target**: <path>
+**Files Analyzed**: [count]
+**Test Directory**: src/test/
+
+## Executive Summary
+
+- **Source Files Analyzed**: [count]
+- **Total Functions Found**: [count]
+- **Fully Tested (unit + integration)**: [count] ([percent]%)
+- **Partially Tested**: [count] ([percent]%)
+- **Not Tested**: [count] ([percent]%)
+- **GitHub Issues Created**: [count]
+
+## Coverage Breakdown by Module
+
+| Module | Functions | Full Coverage | Partial | No Coverage | % Coverage |
+|--------|-----------|---------------|---------|-------------|------------|
+| dns    | 45        | 30            | 10      | 5           | 89%        |
+| http   | 60        | 40            | 15      | 5           | 92%        |
+| socket | 35        | 28            | 5       | 2           | 94%        |
+| **Total** | **140** | **98**       | **30**  | **12**     | **91%**   |
+
+## Issues Created for Missing Tests
+
+### Unit Tests Missing ([count])
+
+| Issue # | File | Function | Line | Type |
+|---------|------|----------|------|------|
+| #400 | SocketDNS.c | dns_parse_response | 142 | unit test |
+| #401 | SocketHTTP2.c | h2_validate_headers | 300 | unit test |
+
+### Integration Tests Missing ([count])
+
+| Issue # | File | Function | Line | Type |
+|---------|------|----------|------|------|
+| #402 | SocketDNS.c | SocketDNS_resolve_async | 500 | integration test |
+| #403 | SocketHTTP2.c | SocketHTTP2_send_request | 800 | integration test |
+
+### No Tests Found ([count])
+
+| Issue # | File | Function | Line | Missing |
+|---------|------|----------|------|---------|
+| #404 | SocketDNS-cache.c | cache_cleanup_expired | 250 | all tests |
+| #405 | SocketHTTP2-frames.c | parse_settings_frame | 120 | all tests |
+
+## Per-File Coverage Details
+
+### src/dns/SocketDNS.c
+
+- **Functions**: 15
+- **Full coverage**: 10 (67%)
+- **Partial coverage**: 3 (20%)
+- **No coverage**: 2 (13%)
+- **Issues created**: #400, #402, #404
+
+**Missing tests**:
+- `dns_parse_response` (line 142) - no unit tests
+- `SocketDNS_resolve_async` (line 500) - no integration tests
+- `cache_cleanup_expired` (line 250) - no tests
+
+### src/http/SocketHTTP2.c
+
+- **Functions**: 20
+- **Full coverage**: 15 (75%)
+- **Partial coverage**: 4 (20%)
+- **No coverage**: 1 (5%)
+- **Issues created**: #401, #403, #405
+
+**Missing tests**:
+- `h2_validate_headers` (line 300) - no unit tests
+- `SocketHTTP2_send_request` (line 800) - no integration tests
+- `parse_settings_frame` (line 120) - no tests
+
+## Test Files Found
+
+| Test File | Module | Tests | Functions Covered |
+|-----------|--------|-------|-------------------|
+| test_dns.c | dns | 25 | dns_resolve, dns_cache_lookup, ... |
+| test_dns_integration.c | dns | 8 | end-to-end resolution workflows |
+| test_http2.c | http | 30 | frame parsing, header encoding, ... |
+| test_http2_integration.c | http | 12 | client/server interactions |
+
+## Recommendations
+
+1. **Priority: No Coverage Functions** - Create tests for [N] functions with no coverage
+2. **Add Integration Tests** - [N] functions have unit tests but lack integration coverage
+3. **Static Function Coverage** - Review [N] static helpers for test necessity
+4. **Test File Organization** - Consider splitting large test files by feature
+
+---
+*Report generated by /pipeline test*
+```
+
+### Final Output
+
+```markdown
+## Phase TC3: Report Complete
+
+Test coverage report saved to: <target>/TEST_COVERAGE.md
+
+### Summary
+- Files analyzed: [N]
+- Functions found: [N]
+- Coverage rate: [percent]%
+- GitHub issues created: [N]
+
+### Issue Links
+
+- #400: test(dns): Add unit tests for dns_parse_response
+- #401: test(http2): Add unit tests for h2_validate_headers
+- #402: test(dns): Add integration tests for SocketDNS_resolve_async
+- #403: test(http2): Add integration tests for SocketHTTP2_send_request
+- #404: test(dns): Add tests for cache_cleanup_expired
+- #405: test(http2): Add tests for parse_settings_frame
+
+**Test coverage pipeline complete.**
 ```
 
 ---
