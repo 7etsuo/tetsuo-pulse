@@ -752,6 +752,103 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
   return HTTP1_INCOMPLETE;
 }
 
+/**
+ * Handle chunk size parsing state - guard clause returns early on error or
+ * incomplete state.
+ *
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @param end End of input buffer
+ * @param input Start of input buffer for progress tracking
+ * @param output Start of output buffer for progress tracking
+ * @param out Current output position
+ * @param consumed Bytes consumed from input
+ * @param written Bytes written to output
+ * @return HTTP1_OK on successful state transition, HTTP1_INCOMPLETE or error
+ */
+static inline SocketHTTP1_Result
+chunk_size_handler (SocketHTTP1_Parser_T parser,
+                    const char **p,
+                    const char *end,
+                    const char *input,
+                    const char *output,
+                    const char *out,
+                    size_t *consumed,
+                    size_t *written)
+{
+  SocketHTTP1_Result result = handle_chunk_size_state (parser, p, end);
+  if (result == HTTP1_OK)
+    return HTTP1_OK;
+
+  update_progress (input, *p, output, out, consumed, written);
+  return result;
+}
+
+/**
+ * Handle chunk data copying - guard clause returns early on incomplete or error.
+ *
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @param end End of input buffer
+ * @param out Current output position (modified as data written)
+ * @param out_remaining Remaining output buffer space
+ * @param input Start of input buffer for progress tracking
+ * @param output Start of output buffer for progress tracking
+ * @param consumed Bytes consumed from input
+ * @param written Bytes written to output
+ * @return HTTP1_OK on state transition, HTTP1_INCOMPLETE if chunk incomplete
+ */
+static inline SocketHTTP1_Result
+chunk_data_handler (SocketHTTP1_Parser_T parser,
+                    const char **p,
+                    const char *end,
+                    char **out,
+                    size_t *out_remaining,
+                    const char *input,
+                    const char *output,
+                    size_t *consumed,
+                    size_t *written)
+{
+  SocketHTTP1_Result result
+      = handle_chunk_data_state (parser, p, end, out, out_remaining);
+  if (result == HTTP1_OK)
+    return HTTP1_OK;
+
+  update_progress (input, *p, output, *out, consumed, written);
+  return HTTP1_INCOMPLETE;
+}
+
+/**
+ * Handle chunk CRLF states - guard clause returns early on error or incomplete.
+ *
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @param end End of input buffer
+ * @param input Start of input buffer for progress tracking
+ * @param output Start of output buffer for progress tracking
+ * @param out Current output position
+ * @param consumed Bytes consumed from input
+ * @param written Bytes written to output
+ * @return HTTP1_OK on state transition, HTTP1_INCOMPLETE or error
+ */
+static inline SocketHTTP1_Result
+chunk_crlf_handler (SocketHTTP1_Parser_T parser,
+                    const char **p,
+                    const char *end,
+                    const char *input,
+                    const char *output,
+                    const char *out,
+                    size_t *consumed,
+                    size_t *written)
+{
+  SocketHTTP1_Result result = handle_chunk_crlf_states (parser, p, end);
+  if (result == HTTP1_OK)
+    return HTTP1_OK;
+
+  update_progress (input, *p, output, out, consumed, written);
+  return result;
+}
+
 static SocketHTTP1_Result
 read_body_chunked (SocketHTTP1_Parser_T parser,
                    const char *const input,
@@ -767,14 +864,6 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
   size_t out_remaining = output_len;
   SocketHTTP1_Result result;
 
-#define UPDATE_PROGRESS_AND_RETURN(r)                             \
-  do                                                              \
-    {                                                             \
-      update_progress (input, p, output, out, consumed, written); \
-      return (r);                                                 \
-    }                                                             \
-  while (0)
-
   *consumed = 0;
   *written = 0;
 
@@ -783,22 +872,24 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
       switch (parser->internal_state)
         {
         case HTTP1_PS_CHUNK_SIZE:
-          result = handle_chunk_size_state (parser, &p, end);
+          result = chunk_size_handler (parser, &p, end, input, output, out,
+                                       consumed, written);
           if (result != HTTP1_OK)
-            UPDATE_PROGRESS_AND_RETURN (result);
+            return result;
           break;
 
         case HTTP1_PS_CHUNK_DATA:
-          result
-              = handle_chunk_data_state (parser, &p, end, &out, &out_remaining);
-          if (result == HTTP1_INCOMPLETE)
-            UPDATE_PROGRESS_AND_RETURN (HTTP1_INCOMPLETE);
+          result = chunk_data_handler (parser, &p, end, &out, &out_remaining,
+                                       input, output, consumed, written);
+          if (result != HTTP1_OK)
+            return result;
           break;
 
         case HTTP1_PS_CHUNK_DATA_CR:
-          result = handle_chunk_crlf_states (parser, &p, end);
+          result = chunk_crlf_handler (parser, &p, end, input, output, out,
+                                       consumed, written);
           if (result != HTTP1_OK)
-            UPDATE_PROGRESS_AND_RETURN (result);
+            return result;
           break;
 
         case HTTP1_PS_TRAILER_START:
@@ -810,7 +901,8 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
         case HTTP1_PS_TRAILERS_END_LF:
         case HTTP1_PS_COMPLETE:
           result = handle_trailer_states (parser, &p, end);
-          UPDATE_PROGRESS_AND_RETURN (result);
+          update_progress (input, p, output, out, consumed, written);
+          return result;
 
         default:
           return HTTP1_ERROR;
@@ -818,13 +910,7 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
     }
 
   update_progress (input, p, output, out, consumed, written);
-
-  if (parser->body_complete)
-    return HTTP1_OK;
-
-  return HTTP1_INCOMPLETE;
-
-#undef UPDATE_PROGRESS_AND_RETURN
+  return parser->body_complete ? HTTP1_OK : HTTP1_INCOMPLETE;
 }
 
 SocketHTTP1_Result
