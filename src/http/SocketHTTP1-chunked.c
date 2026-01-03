@@ -329,6 +329,7 @@ read_body_until_close (SocketHTTP1_Parser_T parser,
   return HTTP1_INCOMPLETE;
 }
 
+
 static int64_t
 parse_chunk_size (const char *const input,
                   size_t len,
@@ -575,14 +576,15 @@ handle_trailer_colon_state (SocketHTTP1_Parser_T parser,
 {
   (void)end;
   char c = **p;
+
+  /* Guard: Skip whitespace and return */
   if (http1_is_ows (c))
     {
       (*p)++;
       return HTTP1_OK;
     }
-  http1_tokenbuf_reset (&parser->value_buf);
-  parser->line_length = 0;
-  parser->internal_state = HTTP1_PS_TRAILER_VALUE;
+
+  /* Guard: Handle line termination early */
   if (c == '\r' || c == '\n')
     {
       parser->internal_state
@@ -590,15 +592,26 @@ handle_trailer_colon_state (SocketHTTP1_Parser_T parser,
       (*p)++;
       return HTTP1_OK;
     }
+
+  /* Guard: Invalid character check */
   if (!(http1_is_field_vchar (c) || http1_is_ows (c)))
     return HTTP1_ERROR_INVALID_HEADER_VALUE;
+
+  /* Guard: Buffer overflow checks before append */
   if (http1_tokenbuf_append (
           &parser->value_buf, parser->arena, c, parser->config.max_header_value)
       < 0)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
+
   parser->line_length++;
+
   if (parser->line_length > parser->config.max_header_value)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
+
+  /* Success path is now clear */
+  http1_tokenbuf_reset (&parser->value_buf);
+  parser->line_length = 0;
+  parser->internal_state = HTTP1_PS_TRAILER_VALUE;
   (*p)++;
   return HTTP1_OK;
 }
@@ -770,8 +783,8 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
         case HTTP1_PS_CHUNK_DATA:
           result
               = handle_chunk_data_state (parser, &p, end, &out, &out_remaining);
-          if (result == HTTP1_INCOMPLETE)
-            UPDATE_PROGRESS_AND_RETURN (HTTP1_INCOMPLETE);
+          if (result != HTTP1_OK)
+            UPDATE_PROGRESS_AND_RETURN (result);
           break;
 
         case HTTP1_PS_CHUNK_DATA_CR:
@@ -792,7 +805,7 @@ read_body_chunked (SocketHTTP1_Parser_T parser,
           UPDATE_PROGRESS_AND_RETURN (result);
 
         default:
-          return HTTP1_ERROR;
+          UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR);
         }
     }
 
@@ -824,11 +837,11 @@ SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser,
   *consumed = 0;
   *written = 0;
 
-  /* Check if body is already complete */
+  /* Guard: Early return if body already complete */
   if (parser->body_complete)
     return HTTP1_OK;
 
-  /* Check if we're in error state */
+  /* Guard: Early return if parser in error state */
   if (parser->state == HTTP1_STATE_ERROR)
     return parser->error;
 
