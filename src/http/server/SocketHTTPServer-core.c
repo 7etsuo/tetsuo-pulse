@@ -318,10 +318,8 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
 
   configure_socket_options (server->listen_socket, socket_family);
 
-  if (bind_with_fallback (server->listen_socket,
-                          bind_addr,
-                          server->config.port,
-                          socket_family)
+  if (bind_with_fallback (
+          server->listen_socket, bind_addr, server->config.port, socket_family)
       < 0)
     {
       Socket_free (&server->listen_socket);
@@ -547,6 +545,48 @@ SocketHTTPServer_poll (SocketHTTPServer_T server)
   return server->poll;
 }
 
+/**
+ * handle_listen_socket_event - Handle events on the listen socket
+ * @server: HTTP server
+ * @ev: Event structure (unused, kept for API consistency)
+ *
+ * Accept new client connections if the server is in RUNNING state.
+ * Guard clause prevents nesting by early return.
+ */
+static void
+handle_listen_socket_event (SocketHTTPServer_T server,
+                            SocketEvent_T *ev __attribute__ ((unused)))
+{
+  /* Guard clause: only accept if running */
+  if (server->state != HTTPSERVER_STATE_RUNNING)
+    return;
+
+  server_accept_clients (server);
+}
+
+/**
+ * handle_client_connection_event - Handle events on client connections
+ * @server: HTTP server
+ * @ev: Event structure
+ *
+ * Process events for an existing client connection. Skip connections marked
+ * for deferred deletion (can happen when io_uring returns multiple events
+ * for same connection in a single batch).
+ *
+ * Returns: Number of requests processed (0 or 1)
+ */
+static int
+handle_client_connection_event (SocketHTTPServer_T server, SocketEvent_T *ev)
+{
+  ServerConnection *conn = (ServerConnection *)ev->data;
+
+  /* Guard clause: skip connections pending deletion */
+  if (conn == NULL || conn->pending_close)
+    return 0;
+
+  return server_process_client_event (server, conn, ev->events);
+}
+
 /* Process server events. Returns number of requests processed */
 int
 SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
@@ -565,24 +605,11 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
 
       if (ev->socket == server->listen_socket)
         {
-          /* Accept new connections if running */
-          if (server->state == HTTPSERVER_STATE_RUNNING)
-            {
-              server_accept_clients (server);
-            }
+          handle_listen_socket_event (server, ev);
         }
       else
         {
-          ServerConnection *conn = (ServerConnection *)ev->data;
-          /* Skip connections marked for deferred deletion.
-           * This can happen when io_uring or other backends return
-           * multiple events for the same connection in a single batch,
-           * and an earlier event closed the connection. */
-          if (conn != NULL && !conn->pending_close)
-            {
-              requests_processed
-                  += server_process_client_event (server, conn, ev->events);
-            }
+          requests_processed += handle_client_connection_event (server, ev);
         }
     }
 
