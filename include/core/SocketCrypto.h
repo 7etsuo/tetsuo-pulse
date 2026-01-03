@@ -294,6 +294,27 @@ extern int
 SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
 
 /* ============================================================================
+ * Lifecycle Management
+ * ============================================================================
+ */
+
+/**
+ * @brief Cleanup cryptographic resources.
+ *
+ * Releases resources allocated by the SocketCrypto module. Safe to call
+ * multiple times. After cleanup, subsequent SocketCrypto operations will
+ * reinitialize resources as needed.
+ *
+ * - When SOCKET_HAS_TLS is defined: No operation (OpenSSL handles cleanup).
+ * - When SOCKET_HAS_TLS is NOT defined: Closes the /dev/urandom file
+ *   descriptor used for random number generation.
+ *
+ * Raises: SocketCrypto_Failed on mutex lock failure.
+ * @threadsafe Yes (mutex protected).
+ */
+extern void SocketCrypto_cleanup (void);
+
+/* ============================================================================
  * Security Utilities
  * ============================================================================
  */
