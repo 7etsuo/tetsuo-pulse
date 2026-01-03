@@ -713,6 +713,60 @@ TEST (secure_clear)
 }
 
 /* ============================================================================
+ * Cleanup Tests
+ * ============================================================================
+ */
+
+TEST (cleanup_idempotent)
+{
+  /* Cleanup should be safe to call multiple times */
+  SocketCrypto_cleanup ();
+  SocketCrypto_cleanup ();
+  SocketCrypto_cleanup ();
+}
+
+TEST (cleanup_after_use)
+{
+  unsigned char buf[16];
+
+  /* Use crypto functions first */
+  int ret = SocketCrypto_random_bytes (buf, sizeof (buf));
+  ASSERT (ret == 0);
+
+  /* Cleanup should succeed */
+  SocketCrypto_cleanup ();
+}
+
+TEST (cleanup_without_prior_use)
+{
+  /* Cleanup should be safe when called without any prior SocketCrypto
+   * operations */
+  SocketCrypto_cleanup ();
+}
+
+#if !SOCKET_HAS_TLS
+TEST (cleanup_reopens_urandom)
+{
+  unsigned char buf1[16];
+  unsigned char buf2[16];
+
+  /* Generate random bytes */
+  int ret = SocketCrypto_random_bytes (buf1, sizeof (buf1));
+  ASSERT (ret == 0);
+
+  /* Cleanup closes /dev/urandom */
+  SocketCrypto_cleanup ();
+
+  /* Should still work - will reopen /dev/urandom */
+  ret = SocketCrypto_random_bytes (buf2, sizeof (buf2));
+  ASSERT (ret == 0);
+
+  /* Should be different values (very unlikely to be equal) */
+  ASSERT (memcmp (buf1, buf2, sizeof (buf1)) != 0);
+}
+#endif
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
