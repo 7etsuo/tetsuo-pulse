@@ -853,6 +853,38 @@ SocketHTTP_URI_encode (const char *input,
   return (ssize_t)out_len;
 }
 
+/**
+ * @brief Decode a single percent-encoded character (RFC 3986 §2.1).
+ * @param input Input string containing percent-encoded sequence.
+ * @param len Total length of input string.
+ * @param i Current position (must point to '%' character).
+ * @param out_char Output parameter for decoded character.
+ * @return 0 on success, -1 on error (invalid sequence or bounds).
+ *
+ * Validates that there are exactly 2 hex digits after '%' and that both
+ * are valid hex characters. Sets out_char to the decoded byte value.
+ */
+static int
+decode_percent_char (const char *input,
+                     size_t len,
+                     size_t i,
+                     unsigned char *out_char)
+{
+  /* Guard: Not enough characters for %XX sequence */
+  if (i + 2 >= len)
+    return -1;
+
+  unsigned char hi = SOCKETHTTP_HEX_VALUE (input[i + 1]);
+  unsigned char lo = SOCKETHTTP_HEX_VALUE (input[i + 2]);
+
+  /* Guard: Invalid hex digits */
+  if (hi == HEX_INVALID || lo == HEX_INVALID)
+    return -1;
+
+  *out_char = (unsigned char)((hi << 4) | lo);
+  return 0;
+}
+
 ssize_t
 SocketHTTP_URI_decode (const char *input,
                        size_t len,
@@ -866,39 +898,30 @@ SocketHTTP_URI_decode (const char *input,
 
   for (size_t i = 0; i < len; i++)
     {
+      /* Guard: Check output buffer space before writing */
+      if (out_len + 1 > output_size)
+        return -1;
+
       if (input[i] == '%')
         {
-          if (i + 2 >= len)
+          unsigned char decoded;
+          if (decode_percent_char (input, len, i, &decoded) != 0)
             return -1;
 
-          unsigned char hi = SOCKETHTTP_HEX_VALUE (input[i + 1]);
-          unsigned char lo = SOCKETHTTP_HEX_VALUE (input[i + 2]);
-
-          if (hi == HEX_INVALID || lo == HEX_INVALID)
-            return -1;
-
-          if (out_len + 1 > output_size)
-            return -1;
-
-          output[out_len++] = (char)((hi << 4) | lo);
-          i += 2;
+          output[out_len++] = (char)decoded;
+          i += 2; /* Skip the two hex digits */
         }
       else if (input[i] == '+')
         {
-          if (out_len + 1 > output_size)
-            return -1;
-
           output[out_len++] = ' ';
         }
       else
         {
-          if (out_len + 1 > output_size)
-            return -1;
-
           output[out_len++] = input[i];
         }
     }
 
+  /* Guard: Ensure null terminator fits */
   if (out_len >= output_size)
     return -1;
   output[out_len] = '\0';
