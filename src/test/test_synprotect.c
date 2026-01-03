@@ -1658,7 +1658,6 @@ test_monotonic_time_handling (void)
 }
 
 /* ============================================================================
-||||||| parent of 5012aed1 (test(core): Add comprehensive unit tests for CIDR matching algorithms)
  * CIDR Matching Algorithm Tests
  * ============================================================================
  */
@@ -2096,7 +2095,6 @@ test_cidr_prefix_boundaries (void)
 
 /* ============================================================================
  * Thread Safety Test
-||||||| parent of 06e9dc28 (test(core): Add LRU eviction tests for SocketSYNProtect)
  * Thread Safety Test
  * LRU Eviction Tests
  * ============================================================================
@@ -3029,7 +3027,6 @@ main (void)
   RUN_TEST (test_window_zero_duration);
   RUN_TEST (test_monotonic_time_handling);
 
-||||||| parent of 5012aed1 (test(core): Add comprehensive unit tests for CIDR matching algorithms)
   printf ("\nCIDR Matching Algorithm Tests:\n");
   RUN_TEST (test_cidr_full_bytes_match);
   RUN_TEST (test_cidr_partial_byte_match);
@@ -3041,7 +3038,6 @@ main (void)
   RUN_TEST (test_ip_matches_cidr_string);
   RUN_TEST (test_cidr_prefix_boundaries);
 
-||||||| parent of 06e9dc28 (test(core): Add LRU eviction tests for SocketSYNProtect)
   printf ("\nLRU Eviction Tests:\n");
   RUN_TEST (test_lru_eviction_at_capacity);
   RUN_TEST (test_lru_touch_moves_to_front);

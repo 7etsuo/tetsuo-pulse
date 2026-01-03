@@ -422,25 +422,6 @@ set(LIB_SOURCES
     src/quic/SocketQUICAck.c
     src/quic/SocketQUICLoss.c
 
-    # Simple convenience API
-    src/simple/SocketSimple.c
-    src/simple/SocketSimple-tcp.c
-    src/simple/SocketSimple-tls.c
-    src/simple/SocketSimple-dtls.c
-    src/simple/SocketSimple-dns.c
-    src/simple/SocketSimple-http.c
-    src/simple/SocketSimple-ws.c
-    src/simple/SocketSimple-pool.c
-    src/simple/SocketSimple-poll.c
-    src/simple/SocketSimple-ratelimit.c
-    src/simple/SocketSimple-proxy.c
-    src/simple/SocketSimple-http-server.c
-    src/simple/SocketSimple-security.c
-    src/simple/SocketSimple-async.c
-    src/simple/SocketSimple-buf.c
-    src/simple/SocketSimple-timer.c
-    src/simple/SocketSimple-happyeyeballs.c
-    src/simple/SocketSimple-reconnect.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -746,7 +727,6 @@ target_include_directories(test_framework PRIVATE ${CMAKE_SOURCE_DIR}/include)
 set(TEST_SOURCES
     test_new_features
     test_arena
-    test_socketutil_time
     test_except
     test_hashtable
     test_timewindow
@@ -756,15 +736,7 @@ set(TEST_SOURCES
     test_safe_arithmetic
     test_socketutil_time
     test_url_utils
-||||||| parent of 626c6d12 (test(core): Add comprehensive tests for SocketMetrics histogram percentile edge cases)
-    test_url_utils
-    test_socketutil_time
-    test_url_utils
     test_socket
-    test_simple_recv_line
-    test_simple_dns_overflow
-    test_simple_poll
-    test_simple_poll_udp
     test_socketbuf
     test_socketdgram
     test_socketpoll
@@ -778,7 +750,6 @@ set(TEST_SOURCES
     test_dns_cache
     test_dns_resolver
     test_dns_queue_limit
-    # test_dns_mutex_macros  # Temporarily disabled - build issue in main
     test_dnssec
     test_dnscookie
     test_dnserror
@@ -790,20 +761,14 @@ set(TEST_SOURCES
     test_happy_eyeballs
     test_reconnect
     test_ratelimit
-    test_simple_ratelimit
     test_async
     test_coverage
     test_synprotect
     test_synprotect_ip_parsing
-||||||| parent of 838f822d (test(core): Add unit tests for SYN protection IP parsing functions)
     test_synprotect_ip
-||||||| parent of 09e16a8b (test(core): add unit tests for IPv4 address parsing)
     test_ipv4_parse
-||||||| parent of cd32f524 (test(core): Add unit tests for IPv6 address parsing (parse_ipv6_address))
     test_ipv6_parse
-||||||| parent of 93187f47 (test(core): Add unit tests for ip_addresses_equal function)
     test_ip_equality
-    test_simple_security
     test_crypto
     test_utf8
     test_utf8_integration
@@ -815,10 +780,8 @@ set(TEST_SOURCES
     test_http2_rate_limit
     test_http_client
     test_proxy
-    test_simple_proxy_url
     test_websocket
     test_security
-    test_json_injection
     test_http_integration
     test_ws_integration
     test_http2_integration
@@ -835,7 +798,6 @@ set(TEST_SOURCES
     test_sendfile_bounds
     test_timer
     test_timer_oneshot
-||||||| parent of 9f194d4d (test(core): Add comprehensive unit tests for SocketTimer heap operations)
     test_timer_heap
     test_metrics
     test_metrics_percentile
@@ -1353,3 +1315,33 @@ if(BUILD_PROTOCOL_FUZZ_HARNESSES)
     message(STATUS "  See tests/protocol-fuzz/README.md for usage")
 endif()
 
+# ============================================================================
+# Example Programs
+# ============================================================================
+option(BUILD_EXAMPLES "Build example programs" OFF)
+
+if(BUILD_EXAMPLES)
+    find_package(CURL REQUIRED)
+
+    # AI Chat Demo - WebSocket chat with Grok API
+    add_executable(ai_chat
+        examples/ai_chat/main.c
+        examples/ai_chat/grok_client.c
+        examples/ai_chat/agents.c
+        examples/ai_chat/websocket_hub.c
+    )
+    target_link_libraries(ai_chat socket_static ${CURL_LIBRARIES})
+    target_include_directories(ai_chat PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/examples/ai_chat
+        ${CURL_INCLUDE_DIRS}
+    )
+    if(SOCKET_HAS_TLS)
+        target_compile_definitions(ai_chat PRIVATE SOCKET_HAS_TLS=1)
+        target_include_directories(ai_chat PRIVATE ${OPENSSL_INCLUDE_DIR})
+        target_link_libraries(ai_chat ${OPENSSL_LIBRARIES})
+    endif()
+
+    message(STATUS "Example programs: enabled")
+    message(STATUS "  ai_chat: WebSocket chat with Grok API")
+endif()

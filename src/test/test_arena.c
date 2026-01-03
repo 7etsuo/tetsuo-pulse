@@ -1134,7 +1134,6 @@ TEST (arena_unlocked_multiple_disposals)
   ASSERT_NULL (arena);
 }
 
-||||||| parent of 1b2c8c6d (test(core): add comprehensive tests for SocketConfig memory limit functions)
 /* ==================== SocketConfig Memory Limit Tests ==================== */
 
 /* Test set/get roundtrip */

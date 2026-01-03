@@ -1072,7 +1072,6 @@ TEST (utf8_boundary_all_ranges)
 }
 
 /* ============================================================================
-||||||| parent of a3f6affe (test(core): Add NULL pointer validation tests for SocketUTF8)
  * NULL Pointer Validation Tests
  * ============================================================================
  */

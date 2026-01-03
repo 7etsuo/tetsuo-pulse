@@ -386,7 +386,6 @@ TEST (security_populate_ws_limits_not_corrupted)
 }
 
 /* ============================================================================
-||||||| parent of 05cc7f41 (test(core): Add unit tests for populate_tls_limits)
  * TLS Limits Population Tests (populate_tls_limits)
  * ============================================================================
  */

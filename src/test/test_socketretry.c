@@ -1058,7 +1058,6 @@ TEST (socketretry_validate_multiplier_max_boundary)
 }
 
 /* ============================================================================
-||||||| parent of 72f70c44 (test(core): Add edge case tests for retry_power_double overflow handling)
  * retry_power_double Edge Case Tests (CPU DoS & Overflow Prevention)
  * ============================================================================
  */
@@ -1176,7 +1175,6 @@ TEST (socketretry_power_double_exp_exactly_at_limit)
 }
 
 /* ============================================================================
-||||||| parent of 4d4f12d1 (test(core): Add EINTR handling tests for retry_sleep_ms)
  * retry_sleep_ms Tests (EINTR handling)
  * ============================================================================
  */
