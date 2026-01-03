@@ -1437,6 +1437,37 @@ handle_dfa_action (SocketHTTP1_Parser_T parser,
     }
 }
 
+/* Validate single character is valid HTTP field-vchar
+ * Returns true if valid, false otherwise
+ * field-vchar = VCHAR / obs-text
+ * VCHAR = 0x21-0x7E, obs-text = 0x80-0xFF, SP = 0x20, HTAB = 0x09
+ */
+static inline bool
+is_valid_field_char (unsigned char c)
+{
+  /* Reject control characters except HTAB */
+  if (c < 0x20 && c != 0x09)
+    return false;
+  /* Reject DEL */
+  if (c == 0x7F)
+    return false;
+  return true;
+}
+
+/* Scan range for invalid characters
+ * Returns pointer to first invalid char, or limit if all valid
+ */
+static inline const char *
+scan_valid_field_chars (const char *start, const char *limit)
+{
+  for (const char *p = start; p < limit; p++)
+    {
+      if (!is_valid_field_char ((unsigned char)*p))
+        return p;
+    }
+  return limit;
+}
+
 /* Fast path: batch process header values until CR
  * Returns pointer to first non-value byte (CR or invalid), or end if all valid
  */
@@ -1445,32 +1476,17 @@ scan_header_value (const char *p, const char *end)
 {
   /* Find CR - marks end of header value */
   const char *cr = memchr (p, '\r', (size_t)(end - p));
-  if (cr)
-    {
-      /* Validate all bytes before CR are valid field content */
-      for (const char *v = p; v < cr; v++)
-        {
-          unsigned char c = (unsigned char)*v;
-          /* field-content = field-vchar [ 1*( SP / HTAB / field-vchar ) ]
-           * field-vchar = VCHAR / obs-text
-           * VCHAR = 0x21-0x7E, obs-text = 0x80-0xFF, SP = 0x20, HTAB = 0x09 */
-          if (c < 0x20 && c != 0x09)
-            return v; /* Invalid control character */
-          if (c == 0x7F)
-            return v; /* DEL is invalid */
-        }
-      return cr;
-    }
-  /* No CR found - validate all remaining bytes */
-  for (const char *v = p; v < end; v++)
-    {
-      unsigned char c = (unsigned char)*v;
-      if (c < 0x20 && c != 0x09)
-        return v;
-      if (c == 0x7F)
-        return v;
-    }
-  return end;
+
+  /* Validate up to CR (if found) or end */
+  const char *limit = cr ? cr : end;
+  const char *invalid = scan_valid_field_chars (p, limit);
+
+  /* If validation failed, return error position */
+  if (invalid != limit)
+    return invalid;
+
+  /* Return CR if found, otherwise end */
+  return cr ? cr : end;
 }
 
 /* Fast path: batch process header names until colon
