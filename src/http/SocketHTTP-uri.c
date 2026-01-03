@@ -853,6 +853,35 @@ SocketHTTP_URI_encode (const char *input,
   return (ssize_t)out_len;
 }
 
+/* Helper: Decode percent-encoded sequence at position i */
+static ssize_t
+decode_percent_sequence (const char *input,
+                         size_t i,
+                         size_t len,
+                         char *output,
+                         size_t out_len,
+                         size_t output_size)
+{
+  /* Guard: Ensure we have enough input for %XX */
+  if (i + 2 >= len)
+    return -1;
+
+  unsigned char hi = SOCKETHTTP_HEX_VALUE (input[i + 1]);
+  unsigned char lo = SOCKETHTTP_HEX_VALUE (input[i + 2]);
+
+  /* Guard: Validate hex digits */
+  if (hi == HEX_INVALID || lo == HEX_INVALID)
+    return -1;
+
+  /* Guard: Check output buffer space */
+  if (out_len + 1 > output_size)
+    return -1;
+
+  /* Success path at normal indentation */
+  output[out_len] = (char)((hi << 4) | lo);
+  return 3; /* consumed 3 chars: %XX */
+}
+
 ssize_t
 SocketHTTP_URI_decode (const char *input,
                        size_t len,
@@ -866,36 +895,26 @@ SocketHTTP_URI_decode (const char *input,
 
   for (size_t i = 0; i < len; i++)
     {
-      if (input[i] == '%')
+      char c = input[i];
+
+      if (c == '%')
         {
-          if (i + 2 >= len)
+          ssize_t consumed = decode_percent_sequence (
+              input, i, len, output, out_len, output_size);
+          if (consumed < 0)
             return -1;
 
-          unsigned char hi = SOCKETHTTP_HEX_VALUE (input[i + 1]);
-          unsigned char lo = SOCKETHTTP_HEX_VALUE (input[i + 2]);
-
-          if (hi == HEX_INVALID || lo == HEX_INVALID)
-            return -1;
-
-          if (out_len + 1 > output_size)
-            return -1;
-
-          output[out_len++] = (char)((hi << 4) | lo);
-          i += 2;
-        }
-      else if (input[i] == '+')
-        {
-          if (out_len + 1 > output_size)
-            return -1;
-
-          output[out_len++] = ' ';
+          out_len++;
+          i += (consumed - 1); /* for loop increments by 1 */
         }
       else
         {
+          /* Guard: Check buffer space */
           if (out_len + 1 > output_size)
             return -1;
 
-          output[out_len++] = input[i];
+          /* Decode '+' as space, otherwise copy as-is */
+          output[out_len++] = (c == '+') ? ' ' : c;
         }
     }
 
