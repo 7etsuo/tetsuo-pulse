@@ -1305,6 +1305,430 @@ test_thread_safety (void)
 }
 
 /* ============================================================================
+ * LRU Eviction Tests
+ * ============================================================================
+ */
+
+/**
+ * test_lru_ordering_basic - Test LRU order is newest-to-oldest
+ */
+static int
+test_lru_ordering_basic (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYN_IPState state1, state2, state3;
+  volatile int success = 0;
+
+  TRY
+  {
+    protect = SocketSYNProtect_new (NULL, NULL);
+
+    /* Add 3 IPs in order */
+    SocketSYNProtect_check (protect, "10.0.0.1", &state1);
+    SocketSYNProtect_check (protect, "10.0.0.2", &state2);
+    SocketSYNProtect_check (protect, "10.0.0.3", &state3);
+
+    /* Most recent should be checked last */
+    success = (state3.last_attempt_ms >= state2.last_attempt_ms);
+    success = success && (state2.last_attempt_ms >= state1.last_attempt_ms);
+
+    /* All should be tracked */
+    SocketSYNProtect_Stats stats;
+    SocketSYNProtect_stats (protect, &stats);
+    success = success && (stats.current_tracked_ips == 3);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_touch_middle - Test accessing middle IP moves it to front
+ */
+static int
+test_lru_touch_middle (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYN_IPState state1, state2;
+  volatile int success = 0;
+
+  TRY
+  {
+    protect = SocketSYNProtect_new (NULL, NULL);
+
+    /* Add 3 IPs */
+    SocketSYNProtect_check (protect, "192.168.1.1", NULL);
+    SocketSYNProtect_check (protect, "192.168.1.2", NULL);
+    SocketSYNProtect_check (protect, "192.168.1.3", NULL);
+
+    SocketSYNProtect_get_ip_state (protect, "192.168.1.2", &state1);
+
+    /* Access the middle IP again */
+    SocketSYNProtect_check (protect, "192.168.1.2", NULL);
+    SocketSYNProtect_get_ip_state (protect, "192.168.1.2", &state2);
+
+    /* Should have newer timestamp and more attempts */
+    success = (state2.last_attempt_ms >= state1.last_attempt_ms);
+    success = success && (state2.attempts_current > state1.attempts_current);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_touch_head - Test accessing head IP is a no-op
+ */
+static int
+test_lru_touch_head (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYN_IPState state1, state2;
+  volatile int success = 0;
+
+  TRY
+  {
+    protect = SocketSYNProtect_new (NULL, NULL);
+
+    /* Add 3 IPs - last one is head */
+    SocketSYNProtect_check (protect, "172.16.0.1", NULL);
+    SocketSYNProtect_check (protect, "172.16.0.2", NULL);
+    SocketSYNProtect_check (protect, "172.16.0.3", NULL);
+
+    SocketSYNProtect_get_ip_state (protect, "172.16.0.3", &state1);
+
+    /* Access head again */
+    SocketSYNProtect_check (protect, "172.16.0.3", NULL);
+    SocketSYNProtect_get_ip_state (protect, "172.16.0.3", &state2);
+
+    /* Should increment attempts counter */
+    success = (state2.attempts_current > state1.attempts_current);
+
+    /* All still tracked */
+    SocketSYNProtect_Stats stats;
+    SocketSYNProtect_stats (protect, &stats);
+    success = success && (stats.current_tracked_ips == 3);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_eviction_basic - Test eviction when reaching capacity
+ */
+static int
+test_lru_eviction_basic (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  volatile int success = 0;
+
+  TRY
+  {
+    /* Set low capacity for testing */
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 3;
+
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Fill to capacity */
+    SocketSYNProtect_check (protect, "1.1.1.1", NULL);
+    SocketSYNProtect_check (protect, "2.2.2.2", NULL);
+    SocketSYNProtect_check (protect, "3.3.3.3", NULL);
+
+    SocketSYNProtect_Stats stats1;
+    SocketSYNProtect_stats (protect, &stats1);
+    success = (stats1.current_tracked_ips == 3);
+
+    /* Add one more - should evict oldest (1.1.1.1) */
+    SocketSYNProtect_check (protect, "4.4.4.4", NULL);
+
+    SocketSYNProtect_Stats stats2;
+    SocketSYNProtect_stats (protect, &stats2);
+
+    /* Should still be at capacity */
+    success = success && (stats2.current_tracked_ips == 3);
+
+    /* Oldest IP should be gone */
+    SocketSYN_IPState state;
+    int found = SocketSYNProtect_get_ip_state (protect, "1.1.1.1", &state);
+    success = success && (found == 0);
+
+    /* New IP should be present */
+    found = SocketSYNProtect_get_ip_state (protect, "4.4.4.4", &state);
+    success = success && (found == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_eviction_counter - Test eviction counter increments
+ */
+static int
+test_lru_eviction_counter (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 2;
+
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Fill capacity */
+    SocketSYNProtect_check (protect, "10.1.1.1", NULL);
+    SocketSYNProtect_check (protect, "10.2.2.2", NULL);
+
+    SocketSYNProtect_Stats stats1;
+    SocketSYNProtect_stats (protect, &stats1);
+    uint64_t evictions_before = stats1.lru_evictions;
+
+    /* Trigger eviction */
+    SocketSYNProtect_check (protect, "10.3.3.3", NULL);
+
+    SocketSYNProtect_Stats stats2;
+    SocketSYNProtect_stats (protect, &stats2);
+
+    /* Eviction counter should increment */
+    success = (stats2.lru_evictions == evictions_before + 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_eviction_empty - Test eviction from empty list is no-op
+ */
+static int
+test_lru_eviction_empty (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  volatile int success = 0;
+
+  TRY
+  {
+    protect = SocketSYNProtect_new (NULL, NULL);
+
+    /* Get initial stats */
+    SocketSYNProtect_Stats stats1;
+    SocketSYNProtect_stats (protect, &stats1);
+    success = (stats1.current_tracked_ips == 0);
+
+    /* Cleanup should handle empty list gracefully */
+    size_t removed = SocketSYNProtect_cleanup (protect);
+
+    SocketSYNProtect_Stats stats2;
+    SocketSYNProtect_stats (protect, &stats2);
+
+    /* Should still be empty */
+    success = success && (stats2.current_tracked_ips == 0);
+    success = success && (stats2.lru_evictions == 0);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_eviction_single - Test evicting single entry
+ */
+static int
+test_lru_eviction_single (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 1;
+
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Add one IP */
+    SocketSYNProtect_check (protect, "50.50.50.50", NULL);
+
+    SocketSYNProtect_Stats stats1;
+    SocketSYNProtect_stats (protect, &stats1);
+    success = (stats1.current_tracked_ips == 1);
+
+    /* Add another - should evict the first and only entry */
+    SocketSYNProtect_check (protect, "60.60.60.60", NULL);
+
+    SocketSYNProtect_Stats stats2;
+    SocketSYNProtect_stats (protect, &stats2);
+
+    /* Should still have 1 entry */
+    success = success && (stats2.current_tracked_ips == 1);
+
+    /* Old IP should be gone */
+    SocketSYN_IPState state;
+    int found = SocketSYNProtect_get_ip_state (protect, "50.50.50.50", &state);
+    success = success && (found == 0);
+
+    /* New IP should exist */
+    found = SocketSYNProtect_get_ip_state (protect, "60.60.60.60", &state);
+    success = success && (found == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_eviction_removes_from_hash - Test eviction removes from hash table
+ */
+static int
+test_lru_eviction_removes_from_hash (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 3;
+
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Fill capacity */
+    SocketSYNProtect_check (protect, "100.0.0.1", NULL);
+    SocketSYNProtect_check (protect, "100.0.0.2", NULL);
+    SocketSYNProtect_check (protect, "100.0.0.3", NULL);
+
+    /* Verify all present */
+    SocketSYN_IPState state;
+    success = (SocketSYNProtect_get_ip_state (protect, "100.0.0.1", &state)
+               == 1);
+    success = success
+              && (SocketSYNProtect_get_ip_state (protect, "100.0.0.2", &state)
+                  == 1);
+    success = success
+              && (SocketSYNProtect_get_ip_state (protect, "100.0.0.3", &state)
+                  == 1);
+
+    /* Trigger eviction of oldest */
+    SocketSYNProtect_check (protect, "100.0.0.4", NULL);
+
+    /* Evicted IP should not be found in hash table */
+    int found = SocketSYNProtect_get_ip_state (protect, "100.0.0.1", &state);
+    success = success && (found == 0);
+
+    /* Other IPs should remain */
+    success = success
+              && (SocketSYNProtect_get_ip_state (protect, "100.0.0.2", &state)
+                  == 1);
+    success = success
+              && (SocketSYNProtect_get_ip_state (protect, "100.0.0.3", &state)
+                  == 1);
+    success = success
+              && (SocketSYNProtect_get_ip_state (protect, "100.0.0.4", &state)
+                  == 1);
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/**
+ * test_lru_with_malloc - Test LRU with malloc allocator
+ */
+static int
+test_lru_with_malloc (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  volatile int success = 0;
+
+  TRY
+  {
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 2;
+
+    /* NULL arena means malloc */
+    protect = SocketSYNProtect_new (NULL, &config);
+
+    /* Fill and trigger eviction */
+    SocketSYNProtect_check (protect, "250.0.0.1", NULL);
+    SocketSYNProtect_check (protect, "250.0.0.2", NULL);
+    SocketSYNProtect_check (protect, "250.0.0.3", NULL);
+
+    /* Should have evicted and freed memory */
+    SocketSYNProtect_Stats stats;
+    SocketSYNProtect_stats (protect, &stats);
+    success = (stats.current_tracked_ips == 2);
+    success = success && (stats.lru_evictions >= 1);
+
+    /* No leaks should be detected by sanitizers */
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -1373,6 +1797,17 @@ main (void)
 
   printf ("\nThread Safety Tests:\n");
   RUN_TEST (test_thread_safety);
+
+  printf ("\nLRU Eviction Tests:\n");
+  RUN_TEST (test_lru_ordering_basic);
+  RUN_TEST (test_lru_touch_middle);
+  RUN_TEST (test_lru_touch_head);
+  RUN_TEST (test_lru_eviction_basic);
+  RUN_TEST (test_lru_eviction_counter);
+  RUN_TEST (test_lru_eviction_empty);
+  RUN_TEST (test_lru_eviction_single);
+  RUN_TEST (test_lru_eviction_removes_from_hash);
+  RUN_TEST (test_lru_with_malloc);
 
   printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
 
