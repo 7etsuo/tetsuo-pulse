@@ -745,6 +745,24 @@ init_http2_entry_fields (HTTPPoolEntry *entry,
 }
 
 static int
+handle_http2_io_step (SocketHTTP2_Conn_T conn, HTTPPoolEntry *entry)
+{
+  if (SocketHTTP2_Conn_process (conn, 0) < 0)
+    {
+      SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+      return -1;
+    }
+
+  if (SocketHTTP2_Conn_flush (conn) < 0)
+    {
+      SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+      return -1;
+    }
+
+  return 0;
+}
+
+static int
 create_http2_entry_resources (HTTPPoolEntry *entry,
                               Socket_T socket,
                               HTTPPool *pool)
@@ -767,26 +785,21 @@ create_http2_entry_resources (HTTPPoolEntry *entry,
   do
     {
       handshake_result = SocketHTTP2_Conn_handshake (conn);
+
+      /* Guard: handshake failure */
       if (handshake_result < 0)
         {
-          /* Handshake failed */
           SocketHTTP2_Conn_free (&entry->proto.h2.conn);
           return -1;
         }
-      if (handshake_result == 1)
-        {
-          /* Need more I/O - process and flush */
-          if (SocketHTTP2_Conn_process (conn, 0) < 0)
-            {
-              SocketHTTP2_Conn_free (&entry->proto.h2.conn);
-              return -1;
-            }
-          if (SocketHTTP2_Conn_flush (conn) < 0)
-            {
-              SocketHTTP2_Conn_free (&entry->proto.h2.conn);
-              return -1;
-            }
-        }
+
+      /* Guard: no I/O needed, continue */
+      if (handshake_result != 1)
+        break;
+
+      /* Process pending I/O */
+      if (handle_http2_io_step (conn, entry) < 0)
+        return -1;
     }
   while (handshake_result == 1);
 
