@@ -486,6 +486,42 @@ TEST (hashtable_bucket_count_overflow_raises)
   ASSERT_EQ (raised, 1);
 }
 
+TEST (hashtable_null_compare_raises)
+{
+  volatile int raised = 0;
+  HashTable_Config config = make_config (16);
+  config.compare = NULL;
+
+  TRY
+  {
+    HashTable_new (NULL, &config);
+  }
+  EXCEPT (HashTable_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (hashtable_null_next_ptr_raises)
+{
+  volatile int raised = 0;
+  HashTable_Config config = make_config (16);
+  config.next_ptr = NULL;
+
+  TRY
+  {
+    HashTable_new (NULL, &config);
+  }
+  EXCEPT (HashTable_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+  ASSERT_EQ (raised, 1);
+}
+
 /* ============================================================================
  * Main
  * ============================================================================
