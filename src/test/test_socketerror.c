@@ -700,6 +700,109 @@ TEST (socketerror_category_name_integration_categorize)
   errno = saved_errno;
 }
 
+/* ==================== Socket_safe_strerror Unit Tests ==================== */
+
+/* Test zero errno returns "No error" */
+TEST (socketerror_safe_strerror_zero_errno)
+{
+  const char *result = Socket_safe_strerror (0);
+
+  ASSERT_NOT_NULL (result);
+  ASSERT (strcmp (result, "No error") == 0);
+}
+
+/* Test valid errno values return descriptive strings */
+TEST (socketerror_safe_strerror_valid_errno)
+{
+  struct
+  {
+    int errnum;
+    const char *expected_substring;
+  } test_cases[] = {
+    { ECONNREFUSED, "" }, /* Any non-NULL, non-empty string is valid */
+    { ETIMEDOUT, "" },    { ENOMEM, "" },
+    { EAGAIN, "" },       { EINVAL, "" },
+    { EPIPE, "" },        { ECONNRESET, "" },
+  };
+
+  for (size_t i = 0; i < sizeof (test_cases) / sizeof (test_cases[0]); i++)
+    {
+      const char *result = Socket_safe_strerror (test_cases[i].errnum);
+
+      ASSERT_NOT_NULL (result);
+      ASSERT (strlen (result) > 0); /* Must return non-empty string */
+    }
+}
+
+/* Test invalid errno returns "Unknown error" message */
+TEST (socketerror_safe_strerror_invalid_errno)
+{
+  const char *result = Socket_safe_strerror (99999);
+
+  ASSERT_NOT_NULL (result);
+  /* Should contain either "Unknown" or the error number */
+  ASSERT (strstr (result, "Unknown") != NULL || strstr (result, "99999") != NULL);
+}
+
+/* Test thread-local buffer reuse (consistent pointer per thread) */
+TEST (socketerror_safe_strerror_buffer_reuse)
+{
+  /* Call with errno=0 twice - this always uses the thread-local buffer */
+  const char *result1 = Socket_safe_strerror (0);
+  const char *result2 = Socket_safe_strerror (0);
+
+  /* Same thread should reuse the same buffer (same pointer) for errno=0 */
+  ASSERT_EQ (result1, result2);
+  ASSERT (strcmp (result1, "No error") == 0);
+
+  /* GNU strerror_r may return static strings for other errno values,
+   * so we test that multiple calls to errno=0 use the thread-local buffer */
+}
+
+/* Test buffer doesn't overflow with maximum errno */
+TEST (socketerror_safe_strerror_buffer_bounds)
+{
+  /* Test with various errno values including edge cases */
+  const int test_errnos[] = { 0, 1, EINVAL, ECONNREFUSED, ETIMEDOUT, 99999 };
+
+  for (size_t i = 0; i < sizeof (test_errnos) / sizeof (test_errnos[0]); i++)
+    {
+      const char *result = Socket_safe_strerror (test_errnos[i]);
+
+      ASSERT_NOT_NULL (result);
+      /* Verify buffer size constraint (SOCKET_STRERROR_BUFSIZE = 128) */
+      size_t len = strlen (result);
+      ASSERT (len < 128);
+    }
+}
+
+/* Test both strerror_r variants are handled correctly */
+TEST (socketerror_safe_strerror_platform_variants)
+{
+  /* Test common error that exists on all platforms */
+  const char *result_einval = Socket_safe_strerror (EINVAL);
+  const char *result_econnrefused = Socket_safe_strerror (ECONNREFUSED);
+
+  ASSERT_NOT_NULL (result_einval);
+  ASSERT_NOT_NULL (result_econnrefused);
+
+  /* Both should return non-empty strings */
+  ASSERT (strlen (result_einval) > 0);
+  ASSERT (strlen (result_econnrefused) > 0);
+
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
+  /* GNU extension path - strerror_r returns char* */
+  /* Verify we're getting descriptive text, not just error codes */
+  ASSERT (strstr (result_einval, "Invalid") != NULL
+          || strstr (result_einval, "invalid") != NULL
+          || strstr (result_einval, "argument") != NULL);
+#else
+  /* XSI-compliant path - strerror_r returns int, fills buffer */
+  /* Just verify we got non-NULL, non-empty string */
+  ASSERT (result_einval[0] != '\0');
+#endif
+}
+
 int
 main (void)
 {

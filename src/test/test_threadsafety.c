@@ -22,6 +22,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketError.h"
 #include "dns/SocketDNS.h"
 #include "poll/SocketPoll.h"
 #include "pool/SocketPool.h"
@@ -915,6 +916,98 @@ TEST (threadsafety_memory_intensive_operations)
 
   for (int i = 0; i < 10; i++)
     Arena_dispose (&arenas[i]);
+}
+
+/* ==================== SocketError Thread Safety Tests ==================== */
+
+/* Thread argument structure for Socket_safe_strerror testing */
+typedef struct
+{
+  int errnum;
+  const char *result;
+  int thread_id;
+  int valid;
+} ErrorThreadArg;
+
+static void *
+thread_safe_strerror_worker (void *arg)
+{
+  ErrorThreadArg *data = (ErrorThreadArg *)arg;
+
+  /* Each thread calls Socket_safe_strerror with its assigned errno */
+  data->result = Socket_safe_strerror (data->errnum);
+
+  /* Verify result is valid */
+  if (data->result == NULL || strlen (data->result) == 0)
+    {
+      data->valid = 0;
+      return (void *)-1;
+    }
+
+  data->valid = 1;
+  return NULL;
+}
+
+/* Test cross-thread isolation of Socket_safe_strerror */
+TEST (threadsafety_socket_safe_strerror_isolation)
+{
+#define NUM_ERROR_THREADS 8
+
+  pthread_t threads[NUM_ERROR_THREADS];
+  ErrorThreadArg args[NUM_ERROR_THREADS];
+
+  /* Different errno for each thread */
+  const int errnos[NUM_ERROR_THREADS]
+      = { EINVAL, ECONNREFUSED, ETIMEDOUT, ENOMEM, EAGAIN, EPIPE, ECONNRESET, 0 };
+
+  /* Create threads */
+  for (int i = 0; i < NUM_ERROR_THREADS; i++)
+    {
+      args[i].errnum = errnos[i];
+      args[i].result = NULL;
+      args[i].thread_id = i;
+      args[i].valid = 0;
+
+      int ret = pthread_create (&threads[i], NULL, thread_safe_strerror_worker, &args[i]);
+      ASSERT_EQ (ret, 0);
+    }
+
+  /* Join threads */
+  for (int i = 0; i < NUM_ERROR_THREADS; i++)
+    {
+      void *retval;
+      pthread_join (threads[i], &retval);
+
+      /* Verify thread succeeded */
+      ASSERT_NULL (retval);
+      ASSERT_EQ (args[i].valid, 1);
+
+      /* Verify each thread got a valid result */
+      ASSERT_NOT_NULL (args[i].result);
+      ASSERT (strlen (args[i].result) > 0);
+    }
+
+  /* Verify main thread can still get correct error messages after concurrent use */
+  for (int i = 0; i < NUM_ERROR_THREADS; i++)
+    {
+      /* Re-call Socket_safe_strerror from main thread to verify integrity */
+      const char *expected = Socket_safe_strerror (args[i].errnum);
+
+      ASSERT_NOT_NULL (expected);
+
+      /* For errno=0, specifically verify "No error" */
+      if (args[i].errnum == 0)
+        {
+          ASSERT (strcmp (expected, "No error") == 0);
+        }
+      else
+        {
+          /* Verify we get a non-empty descriptive string */
+          ASSERT (strlen (expected) > 0);
+        }
+    }
+
+#undef NUM_ERROR_THREADS
 }
 
 int
