@@ -1162,6 +1162,14 @@ protocol_error:
   return -1;
 }
 
+/* Helper: Check if header is a cookie header */
+static inline int
+is_cookie_header (const SocketHPACK_Header *h)
+{
+  return (h->name_len == STRLEN_LIT ("cookie")
+          && memcmp (h->name, "cookie", STRLEN_LIT ("cookie")) == 0);
+}
+
 static int
 http2_recombine_cookie_headers (Arena_T arena,
                                 SocketHPACK_Header *headers,
@@ -1185,15 +1193,19 @@ http2_recombine_cookie_headers (Arena_T arena,
   for (size_t i = 0; i < *count; i++)
     {
       const SocketHPACK_Header *h = &headers[i];
-      if (h->name_len == STRLEN_LIT ("cookie")
-          && memcmp (h->name, "cookie", STRLEN_LIT ("cookie")) == 0)
-        {
-          cookie_indices[num_cookies] = i;
-          if (first_cookie_idx == (size_t)-1)
-            first_cookie_idx = i;
-          total_value_len += h->value_len;
-          num_cookies++;
-        }
+
+      /* Skip non-cookie headers early */
+      if (!is_cookie_header (h))
+        continue;
+
+      /* Record first cookie index on first encounter */
+      if (first_cookie_idx == (size_t)-1)
+        first_cookie_idx = i;
+
+      /* Accumulate cookie data */
+      cookie_indices[num_cookies] = i;
+      total_value_len += h->value_len;
+      num_cookies++;
     }
 
   cookie_count = num_cookies;
