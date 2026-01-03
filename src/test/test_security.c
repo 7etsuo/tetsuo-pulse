@@ -95,6 +95,83 @@ TEST (security_limits_reasonable)
   ASSERT (limits.http2_max_concurrent_streams <= 1000); /* <= 1000 streams */
 }
 
+/* ============================================================================
+ * Memory Limits Tests (populate_memory_limits coverage)
+ * ============================================================================
+ */
+
+TEST (security_memory_limits_max_allocation)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify max_allocation is set correctly */
+  ASSERT_EQ (SOCKET_SECURITY_MAX_ALLOCATION, limits.max_allocation);
+  ASSERT (limits.max_allocation > 0);
+}
+
+TEST (security_memory_limits_max_buffer_size)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify max_buffer_size is set correctly */
+  ASSERT_EQ (SOCKET_MAX_BUFFER_SIZE, limits.max_buffer_size);
+  ASSERT (limits.max_buffer_size > 0);
+}
+
+TEST (security_memory_limits_max_connections)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify max_connections is set correctly */
+  ASSERT_EQ (SOCKET_MAX_CONNECTIONS, limits.max_connections);
+  ASSERT (limits.max_connections > 0);
+}
+
+TEST (security_memory_limits_arena_max_alloc_size)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify arena_max_alloc_size is set correctly */
+  ASSERT_EQ (ARENA_MAX_ALLOC_SIZE, limits.arena_max_alloc_size);
+  ASSERT (limits.arena_max_alloc_size > 0);
+}
+
+TEST (security_memory_limits_all_fields_populated)
+{
+  SocketSecurityLimits limits;
+  memset (&limits, 0, sizeof (limits));
+
+  SocketSecurity_get_limits (&limits);
+
+  /* Verify all four memory-related fields are non-zero after population */
+  ASSERT (limits.max_allocation > 0);
+  ASSERT (limits.max_buffer_size > 0);
+  ASSERT (limits.max_connections > 0);
+  ASSERT (limits.arena_max_alloc_size > 0);
+}
+
+TEST (security_memory_limits_arena_matches_max_allocation)
+{
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
+  /* ARENA_MAX_ALLOC_SIZE is defined as SOCKET_SECURITY_MAX_ALLOCATION */
+  /* Verify they match in the populated structure */
+  ASSERT_EQ (limits.arena_max_alloc_size, limits.max_allocation);
+}
+
 TEST (security_http_limits_query)
 {
   size_t max_uri, max_header_size, max_headers, max_body;
