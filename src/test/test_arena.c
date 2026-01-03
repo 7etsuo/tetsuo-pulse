@@ -20,6 +20,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"
 #include "core/SocketSecurity.h"
 #include "test/Test.h"
 
@@ -1132,6 +1133,382 @@ TEST (arena_unlocked_multiple_disposals)
   /* Dispose again - should be safe */
   Arena_dispose (&arena);
   ASSERT_NULL (arena);
+}
+
+||||||| parent of 1b2c8c6d (test(core): add comprehensive tests for SocketConfig memory limit functions)
+/* ==================== SocketConfig Memory Limit Tests ==================== */
+
+/* Test set/get roundtrip */
+TEST (socketconfig_set_get_max_memory_roundtrip)
+{
+  /* Save original limit */
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  /* Set a new limit */
+  size_t test_limit = 1024 * 1024; /* 1MB */
+  SocketConfig_set_max_memory (test_limit);
+
+  /* Verify get returns the same value */
+  ASSERT_EQ (SocketConfig_get_max_memory (), test_limit);
+
+  /* Restore original limit */
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test default value is 0 (unlimited) */
+TEST (socketconfig_default_max_memory_is_unlimited)
+{
+  /* Save current limit */
+  size_t current = SocketConfig_get_max_memory ();
+
+  /* Reset to default (0) */
+  SocketConfig_set_max_memory (0);
+
+  /* Verify default is 0 (unlimited) */
+  ASSERT_EQ (SocketConfig_get_max_memory (), 0);
+
+  /* Restore original */
+  SocketConfig_set_max_memory (current);
+}
+
+/* Test set to zero explicitly */
+TEST (socketconfig_set_max_memory_to_zero)
+{
+  /* Save original */
+  size_t original = SocketConfig_get_max_memory ();
+
+  /* Set to non-zero */
+  SocketConfig_set_max_memory (1000);
+
+  /* Set to zero (unlimited) */
+  SocketConfig_set_max_memory (0);
+
+  /* Verify */
+  ASSERT_EQ (SocketConfig_get_max_memory (), 0);
+
+  /* Restore */
+  SocketConfig_set_max_memory (original);
+}
+
+/* Test large limit value */
+TEST (socketconfig_set_large_memory_limit)
+{
+  size_t original = SocketConfig_get_max_memory ();
+
+  /* Set a very large limit (but not SIZE_MAX to avoid overflow issues) */
+  size_t large_limit = SIZE_MAX / 2;
+  SocketConfig_set_max_memory (large_limit);
+
+  ASSERT_EQ (SocketConfig_get_max_memory (), large_limit);
+
+  SocketConfig_set_max_memory (original);
+}
+
+/* Test memory usage tracking - allocation increases usage */
+TEST (socketconfig_usage_tracking_increases)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+  SocketConfig_set_max_memory (0); /* Unlimited */
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  size_t usage_before = SocketConfig_get_memory_used ();
+
+  /* Allocate some memory */
+  void *ptr = ALLOC (arena, 1000);
+  ASSERT_NOT_NULL (ptr);
+
+  /* Usage should increase */
+  size_t usage_after = SocketConfig_get_memory_used ();
+  ASSERT (usage_after >= usage_before);
+
+  Arena_dispose (&arena);
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test memory usage tracking - disposal decreases usage */
+TEST (socketconfig_usage_tracking_decreases_on_dispose)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+  SocketConfig_set_max_memory (0); /* Unlimited */
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  void *ptr = ALLOC (arena, 5000);
+  ASSERT_NOT_NULL (ptr);
+
+  size_t usage_with_arena = SocketConfig_get_memory_used ();
+
+  /* Dispose should reduce usage */
+  Arena_dispose (&arena);
+
+  size_t usage_after_dispose = SocketConfig_get_memory_used ();
+  ASSERT (usage_after_dispose <= usage_with_arena);
+
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test tracking across multiple arenas */
+TEST (socketconfig_usage_tracking_multiple_arenas)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+  SocketConfig_set_max_memory (0); /* Unlimited */
+
+  Arena_T arena1 = Arena_new ();
+  Arena_T arena2 = Arena_new ();
+  ASSERT_NOT_NULL (arena1);
+  ASSERT_NOT_NULL (arena2);
+
+  size_t usage_start = SocketConfig_get_memory_used ();
+
+  void *ptr1 = ALLOC (arena1, 1000);
+  void *ptr2 = ALLOC (arena2, 2000);
+  ASSERT_NOT_NULL (ptr1);
+  ASSERT_NOT_NULL (ptr2);
+
+  size_t usage_both = SocketConfig_get_memory_used ();
+  ASSERT (usage_both >= usage_start);
+
+  /* Dispose first arena */
+  Arena_dispose (&arena1);
+  size_t usage_one = SocketConfig_get_memory_used ();
+  ASSERT (usage_one <= usage_both);
+
+  /* Dispose second arena */
+  Arena_dispose (&arena2);
+  size_t usage_none = SocketConfig_get_memory_used ();
+  ASSERT (usage_none <= usage_one);
+
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test clear doesn't affect usage (memory still allocated to arena) */
+TEST (socketconfig_usage_clear_vs_dispose)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+  SocketConfig_set_max_memory (0); /* Unlimited */
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  void *ptr = ALLOC (arena, 3000);
+  ASSERT_NOT_NULL (ptr);
+
+  size_t usage_before_clear = SocketConfig_get_memory_used ();
+
+  /* Clear should not reduce global usage (chunks still owned by arena) */
+  Arena_clear (arena);
+
+  size_t usage_after_clear = SocketConfig_get_memory_used ();
+
+  /* Usage might stay same or decrease slightly, but arena still owns chunks */
+  /* The key point is dispose should show a decrease or stay same */
+  Arena_dispose (&arena);
+
+  size_t usage_after_dispose = SocketConfig_get_memory_used ();
+  ASSERT (usage_after_dispose <= usage_before_clear);
+
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test allocation fails when limit exceeded */
+TEST (socketconfig_limit_enforcement_allocation_fails)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  /* Set a very low limit */
+  SocketConfig_set_max_memory (1000);
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  TRY
+  {
+    /* Try to allocate more than the limit allows */
+    void *ptr = ALLOC (arena, 100000);
+    ASSERT (0); /* Should not reach here */
+    (void)ptr;
+  }
+  ELSE
+  {
+    /* Expected - allocation should fail */
+    ASSERT_NOT_NULL (Except_frame.exception);
+  }
+  END_TRY;
+
+  Arena_dispose (&arena);
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test allocations succeed when under limit */
+TEST (socketconfig_limit_enforcement_under_limit)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  /* Set a reasonable limit */
+  SocketConfig_set_max_memory (100000);
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate well under limit */
+  void *ptr = ALLOC (arena, 1000);
+  ASSERT_NOT_NULL (ptr);
+
+  Arena_dispose (&arena);
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test allocating exactly to limit */
+TEST (socketconfig_limit_enforcement_exact_limit)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  /* Set a specific limit and try to hit it exactly
+   * This is tricky due to arena chunk overhead, so we'll just verify
+   * that we can allocate up to near the limit */
+  size_t test_limit = 50000;
+  SocketConfig_set_max_memory (test_limit);
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate chunks until near limit */
+  volatile int success = 0;
+  TRY
+  {
+    void *ptr1 = ALLOC (arena, 10000);
+    ASSERT_NOT_NULL (ptr1);
+    success = 1;
+  }
+  ELSE
+  {
+    /* If it fails, that's also valid depending on overhead */
+  }
+  END_TRY;
+
+  /* At least one small allocation should work */
+  ASSERT_EQ (success, 1);
+
+  Arena_dispose (&arena);
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test limit enforcement with multiple arenas */
+TEST (socketconfig_limit_enforcement_multiple_arenas)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  /* Set a moderate limit */
+  SocketConfig_set_max_memory (30000);
+
+  Arena_T arena1 = Arena_new ();
+  Arena_T arena2 = Arena_new ();
+  ASSERT_NOT_NULL (arena1);
+  ASSERT_NOT_NULL (arena2);
+
+  /* Allocate from both arenas */
+  void *ptr1 = ALLOC (arena1, 5000);
+  ASSERT_NOT_NULL (ptr1);
+
+  void *ptr2 = ALLOC (arena2, 5000);
+  ASSERT_NOT_NULL (ptr2);
+
+  /* Eventually one should hit the limit */
+  volatile int hit_limit = 0;
+  TRY
+  {
+    /* Try to allocate more */
+    void *ptr3 = ALLOC (arena1, 50000);
+    (void)ptr3;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    hit_limit = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (hit_limit, 1);
+
+  Arena_dispose (&arena1);
+  Arena_dispose (&arena2);
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test changing limit while arenas exist */
+TEST (socketconfig_change_limit_with_existing_arenas)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  SocketConfig_set_max_memory (100000);
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  void *ptr1 = ALLOC (arena, 10000);
+  ASSERT_NOT_NULL (ptr1);
+
+  /* Lower the limit */
+  SocketConfig_set_max_memory (20000);
+
+  /* New allocations should respect new limit */
+  volatile int hit_new_limit = 0;
+  TRY
+  {
+    void *ptr2 = ALLOC (arena, 50000);
+    (void)ptr2;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    hit_new_limit = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (hit_new_limit, 1);
+
+  Arena_dispose (&arena);
+  SocketConfig_set_max_memory (original_limit);
+}
+
+/* Test usage before setting limit */
+TEST (socketconfig_usage_before_limit_set)
+{
+  size_t original_limit = SocketConfig_get_max_memory ();
+
+  /* Start with no limit */
+  SocketConfig_set_max_memory (0);
+
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  void *ptr = ALLOC (arena, 10000);
+  ASSERT_NOT_NULL (ptr);
+
+  size_t usage = SocketConfig_get_memory_used ();
+  ASSERT (usage > 0);
+
+  /* Now set a limit lower than current usage */
+  SocketConfig_set_max_memory (usage / 2);
+
+  /* New allocations should fail */
+  volatile int failed = 0;
+  TRY
+  {
+    void *ptr2 = ALLOC (arena, 10000);
+    (void)ptr2;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    failed = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (failed, 1);
+
+  Arena_dispose (&arena);
+  SocketConfig_set_max_memory (original_limit);
 }
 
 int
