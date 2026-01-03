@@ -1497,8 +1497,8 @@ scan_header_name (const char *p, const char *end)
  */
 static inline int
 process_header_value_chunk (SocketHTTP1_Parser_T parser,
-                             const char *chunk,
-                             size_t chunk_len)
+                            const char *chunk,
+                            size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1530,8 +1530,8 @@ process_header_value_chunk (SocketHTTP1_Parser_T parser,
  */
 static inline int
 process_header_name_chunk (SocketHTTP1_Parser_T parser,
-                            const char *chunk,
-                            size_t chunk_len)
+                           const char *chunk,
+                           size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1556,6 +1556,114 @@ process_header_name_chunk (SocketHTTP1_Parser_T parser,
   parser->line_length += chunk_len;
   parser->header_line_length += chunk_len;
   return 0;
+}
+
+/*
+ * Inline single-byte value append - extracted helper to reduce nesting.
+ * Returns: 0 on success, -1 on error (header too large).
+ */
+static inline int
+try_append_header_value_byte (SocketHTTP1_Parser_T parser,
+                              const char *p,
+                              const char *data,
+                              size_t *consumed)
+{
+  const char c = *p;
+
+  if (http1_tokenbuf_append (&parser->value_buf,
+                             parser->arena,
+                             (char)c,
+                             parser->config.max_header_value)
+      < 0)
+    {
+      set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+      *consumed = (size_t)(p - data);
+      return -1;
+    }
+  return 0;
+}
+
+/*
+ * Inline single-byte name append - extracted helper to reduce nesting.
+ * Returns: 0 on success, -1 on error (invalid header name).
+ */
+static inline int
+try_append_header_name_byte (SocketHTTP1_Parser_T parser,
+                             const char *p,
+                             const char *data,
+                             size_t *consumed)
+{
+  const char c = *p;
+
+  if (http1_tokenbuf_append (&parser->name_buf,
+                             parser->arena,
+                             (char)c,
+                             parser->config.max_header_name)
+      < 0)
+    {
+      set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
+      *consumed = (size_t)(p - data);
+      return -1;
+    }
+  return 0;
+}
+
+/*
+ * Try batch processing header value - extracted to reduce nesting.
+ * Returns: HTTP1_OK if batch processed (caller should continue loop),
+ *          HTTP1_INCOMPLETE if should fall through to byte processing,
+ *          error code if processing failed.
+ */
+static inline SocketHTTP1_Result
+try_batch_process_header_value (SocketHTTP1_Parser_T parser,
+                                const char **p_ptr,
+                                const char *end,
+                                const char *data,
+                                size_t *consumed)
+{
+  const char *value_end = scan_header_value (*p_ptr, end);
+  size_t chunk_len = (size_t)(value_end - *p_ptr);
+
+  if (chunk_len == 0)
+    return HTTP1_INCOMPLETE; /* Signal: fall through to byte processing */
+
+  if (process_header_value_chunk (parser, *p_ptr, chunk_len) < 0)
+    {
+      *consumed = (size_t)(*p_ptr - data);
+      return parser->error;
+    }
+
+  *p_ptr = value_end;
+  return HTTP1_OK; /* Signal: continue loop */
+}
+
+/*
+ * Try batch processing header name - extracted to reduce nesting.
+ * Returns: HTTP1_OK if batch processed (caller should continue loop),
+ *          HTTP1_INCOMPLETE if should fall through to byte processing,
+ *          error code if processing failed.
+ */
+static inline SocketHTTP1_Result
+try_batch_process_header_name (SocketHTTP1_Parser_T parser,
+                               const char **p_ptr,
+                               const char *end,
+                               const char *data,
+                               size_t *consumed)
+{
+  const char *name_end = scan_header_name (*p_ptr, end);
+  size_t chunk_len = (size_t)(name_end - *p_ptr);
+
+  if (chunk_len == 0)
+    return HTTP1_INCOMPLETE; /* Signal: fall through to byte processing */
+
+  if (process_header_name_chunk (parser, *p_ptr, chunk_len) < 0)
+    {
+      *consumed = (size_t)(*p_ptr - data);
+      return parser->error;
+    }
+
+  *p_ptr = name_end;
+  return HTTP1_OK; /* Signal: continue loop */
 }
 
 static SocketHTTP1_Result
@@ -1591,22 +1699,13 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
        */
       if (state == HTTP1_PS_HEADER_VALUE)
         {
-          const char *value_end = scan_header_value (p, end);
-          size_t chunk_len = (size_t)(value_end - p);
-
-          if (chunk_len > 0)
-            {
-              /* Process chunk with guard clauses */
-              if (process_header_value_chunk (parser, p, chunk_len) < 0)
-                {
-                  *consumed = (size_t)(p - data);
-                  return parser->error;
-                }
-
-              p = value_end;
-              continue; /* Next iteration will handle CR or invalid char */
-            }
-          /* Fall through to normal byte processing for CR/invalid */
+          SocketHTTP1_Result res = try_batch_process_header_value (
+              parser, &p, end, data, consumed);
+          if (res == HTTP1_OK)
+            continue;
+          if (res != HTTP1_INCOMPLETE)
+            return res;
+          /* Fall through to byte processing */
         }
 
       /*
@@ -1614,21 +1713,13 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
        */
       if (state == HTTP1_PS_HEADER_NAME)
         {
-          const char *name_end = scan_header_name (p, end);
-          size_t chunk_len = (size_t)(name_end - p);
-
-          if (chunk_len > 0)
-            {
-              /* Process chunk with guard clauses */
-              if (process_header_name_chunk (parser, p, chunk_len) < 0)
-                {
-                  *consumed = (size_t)(p - data);
-                  return parser->error;
-                }
-
-              p = name_end;
-              continue;
-            }
+          SocketHTTP1_Result res
+              = try_batch_process_header_name (parser, &p, end, data, consumed);
+          if (res == HTTP1_OK)
+            continue;
+          if (res != HTTP1_INCOMPLETE)
+            return res;
+          /* Fall through to byte processing */
         }
 
       /* Standard byte-by-byte processing for state transitions */
@@ -1652,30 +1743,14 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
         else if (action == HTTP1_ACT_STORE_VALUE)
           {
             /* Inline single-byte value append (for bytes after batch) */
-            if (http1_tokenbuf_append (&parser->value_buf,
-                                       parser->arena,
-                                       (char)c,
-                                       parser->config.max_header_value)
-                < 0)
-              {
-                set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-                *consumed = (size_t)(p - data);
-                return parser->error;
-              }
+            if (try_append_header_value_byte (parser, p, data, consumed) < 0)
+              return parser->error;
           }
         else if (action == HTTP1_ACT_STORE_NAME)
           {
             /* Inline single-byte name append */
-            if (http1_tokenbuf_append (&parser->name_buf,
-                                       parser->arena,
-                                       (char)c,
-                                       parser->config.max_header_name)
-                < 0)
-              {
-                set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
-                *consumed = (size_t)(p - data);
-                return parser->error;
-              }
+            if (try_append_header_name_byte (parser, p, data, consumed) < 0)
+              return parser->error;
           }
         else
           {
