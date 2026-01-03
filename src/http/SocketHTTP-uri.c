@@ -1132,6 +1132,22 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
   return validate_reg_name (host, len);
 }
 
+/* Helper: Check if position is at a path component boundary */
+static inline int
+is_path_boundary (const char *path, size_t i, size_t len, size_t pattern_len)
+{
+  /* Must be at start OR after '/' */
+  if (i != 0 && path[i - 1] != '/')
+    return 0;
+
+  /* Must be at end OR before '/' or '?' */
+  if (i + pattern_len < len && path[i + pattern_len] != '/'
+      && path[i + pattern_len] != '?')
+    return 0;
+
+  return 1;
+}
+
 /* SECURITY: Detect path traversal attacks */
 static SocketHTTP_URIResult
 check_path_traversal (const char *path, size_t len)
@@ -1142,13 +1158,8 @@ check_path_traversal (const char *path, size_t len)
       if (path[i] != '.' || path[i + 1] != '.')
         continue;
 
-      if (i != 0 && path[i - 1] != '/')
-        continue;
-
-      if (i + 2 < len && path[i + 2] != '/' && path[i + 2] != '?')
-        continue;
-
-      return URI_PARSE_INVALID_PATH;
+      if (is_path_boundary (path, i, len, 2))
+        return URI_PARSE_INVALID_PATH;
     }
 
   /* Check 2: Fully encoded "%2e%2e" or "%2E%2E" */
@@ -1165,35 +1176,29 @@ check_path_traversal (const char *path, size_t len)
   /* Check 3: Mixed encoding ".%2e" or ".%2E" */
   for (size_t i = 0; i + 3 < len; i++)
     {
+      /* Fast path: not the pattern we're looking for */
       if (path[i] != '.' || path[i + 1] != '%' || path[i + 2] != '2')
         continue;
       if (path[i + 3] != 'e' && path[i + 3] != 'E')
         continue;
 
-      if (i != 0 && path[i - 1] != '/')
-        continue;
-
-      if (i + 4 < len && path[i + 4] != '/' && path[i + 4] != '?')
-        continue;
-
-      return URI_PARSE_INVALID_PATH;
+      /* Pattern matched - verify it's a path component boundary */
+      if (is_path_boundary (path, i, len, 4))
+        return URI_PARSE_INVALID_PATH;
     }
 
   /* Check 4: Mixed encoding "%2e." or "%2E." */
   for (size_t i = 0; i + 3 < len; i++)
     {
+      /* Fast path: not the pattern we're looking for */
       if (path[i] != '%' || path[i + 1] != '2')
         continue;
       if ((path[i + 2] != 'e' && path[i + 2] != 'E') || path[i + 3] != '.')
         continue;
 
-      if (i != 0 && path[i - 1] != '/')
-        continue;
-
-      if (i + 4 < len && path[i + 4] != '/' && path[i + 4] != '?')
-        continue;
-
-      return URI_PARSE_INVALID_PATH;
+      /* Pattern matched - verify it's a path component boundary */
+      if (is_path_boundary (path, i, len, 4))
+        return URI_PARSE_INVALID_PATH;
     }
 
   return URI_PARSE_OK;
