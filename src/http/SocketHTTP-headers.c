@@ -82,6 +82,8 @@ find_entry_with_prev (SocketHTTP_Headers_T headers,
   while (*pp)
     {
       chain_len++;
+
+      /* Early exit if chain is too long */
       if (chain_len > SOCKETHTTP_MAX_CHAIN_SEARCH_LEN)
         {
           headers->dos_chain_warnings++;
@@ -98,16 +100,19 @@ find_entry_with_prev (SocketHTTP_Headers_T headers,
             {
               SOCKET_LOG_ERROR_MSG (
                   "DoS threshold exceeded - rejecting connection");
-              return NULL;
             }
           return NULL;
         }
+
+      /* Check for name match */
       if (sockethttp_name_equal ((*pp)->name, (*pp)->name_len, name, name_len))
         {
+          /* Handle optional prev_ptr_out */
           if (prev_ptr_out)
             *prev_ptr_out = pp;
           return *pp;
         }
+
       pp = &(*pp)->hash_next;
     }
   return NULL;
