@@ -460,6 +460,359 @@ TEST (arena_calloc_large_count)
   Arena_dispose (&arena);
 }
 
+/* ==================== Arena_reset Tests ==================== */
+
+/* Test basic reset with single chunk allocation */
+TEST (arena_reset_basic)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate some memory */
+  void *ptr1 = ALLOC (arena, 100);
+  ASSERT_NOT_NULL (ptr1);
+
+  /* Reset the arena */
+  Arena_reset (arena);
+
+  /* Allocate again after reset */
+  void *ptr2 = ALLOC (arena, 200);
+  ASSERT_NOT_NULL (ptr2);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset with multiple chunk allocations */
+TEST (arena_reset_multi_chunk)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate enough to trigger multiple chunks (typical chunk is 10KB) */
+  for (int i = 0; i < 100; i++)
+    {
+      void *ptr = ALLOC (arena, 1024); /* 100KB total */
+      ASSERT_NOT_NULL (ptr);
+      (void)ptr;
+    }
+
+  /* Reset should release extra chunks, keep first */
+  Arena_reset (arena);
+
+  /* Should be able to allocate again */
+  void *ptr = ALLOC (arena, 500);
+  ASSERT_NOT_NULL (ptr);
+
+  Arena_dispose (&arena);
+}
+
+/* Test allocation after reset */
+TEST (arena_reset_allocation_after_reset)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Initial allocation */
+  char *ptr1 = (char *)ALLOC (arena, 50);
+  ASSERT_NOT_NULL (ptr1);
+  memset (ptr1, 0xAA, 50);
+
+  /* Reset */
+  Arena_reset (arena);
+
+  /* Allocate after reset */
+  char *ptr2 = (char *)ALLOC (arena, 75);
+  ASSERT_NOT_NULL (ptr2);
+  memset (ptr2, 0xBB, 75);
+
+  /* Verify new allocation is writable */
+  for (int i = 0; i < 75; i++)
+    {
+      ASSERT_EQ (ptr2[i], (char)0xBB);
+    }
+
+  Arena_dispose (&arena);
+}
+
+/* Test repeated resets */
+TEST (arena_reset_repeated_resets)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Perform multiple reset cycles */
+  for (int cycle = 0; cycle < 10; cycle++)
+    {
+      /* Allocate some data */
+      void *ptr = ALLOC (arena, 100 + cycle * 10);
+      ASSERT_NOT_NULL (ptr);
+
+      /* Reset for next cycle */
+      Arena_reset (arena);
+    }
+
+  /* Final allocation should still work */
+  void *ptr = ALLOC (arena, 200);
+  ASSERT_NOT_NULL (ptr);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset on empty arena (no allocations) */
+TEST (arena_reset_empty_arena)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Reset without any allocations (prev == NULL case) */
+  Arena_reset (arena);
+
+  /* Should still be able to allocate */
+  void *ptr = ALLOC (arena, 100);
+  ASSERT_NOT_NULL (ptr);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset vs clear behavior comparison */
+TEST (arena_reset_vs_clear_behavior)
+{
+  Arena_T arena1 = Arena_new ();
+  Arena_T arena2 = Arena_new ();
+  ASSERT_NOT_NULL (arena1);
+  ASSERT_NOT_NULL (arena2);
+
+  /* Allocate in both arenas to trigger multiple chunks */
+  for (int i = 0; i < 50; i++)
+    {
+      void *p1 = ALLOC (arena1, 1024);
+      void *p2 = ALLOC (arena2, 1024);
+      ASSERT_NOT_NULL (p1);
+      ASSERT_NOT_NULL (p2);
+      (void)p1;
+      (void)p2;
+    }
+
+  /* Reset vs Clear */
+  Arena_reset (arena1); /* Keeps first chunk */
+  Arena_clear (arena2); /* Releases all chunks */
+
+  /* Both should be usable after */
+  void *ptr1 = ALLOC (arena1, 100);
+  void *ptr2 = ALLOC (arena2, 100);
+  ASSERT_NOT_NULL (ptr1);
+  ASSERT_NOT_NULL (ptr2);
+
+  Arena_dispose (&arena1);
+  Arena_dispose (&arena2);
+}
+
+/* Test chunk reuse after reset */
+TEST (arena_reset_chunk_reuse)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* First allocation */
+  char *ptr1 = (char *)ALLOC (arena, 100);
+  ASSERT_NOT_NULL (ptr1);
+  memset (ptr1, 0x11, 100);
+
+  /* Reset - should preserve first chunk */
+  Arena_reset (arena);
+
+  /* Second allocation - may reuse same memory location */
+  char *ptr2 = (char *)ALLOC (arena, 100);
+  ASSERT_NOT_NULL (ptr2);
+
+  /* Memory should be reusable (addresses might be same) */
+  /* Just verify we can write to it */
+  memset (ptr2, 0x22, 100);
+  ASSERT_EQ (ptr2[0], 0x22);
+
+  Arena_dispose (&arena);
+}
+
+/* Test large allocations spanning multiple chunks */
+TEST (arena_reset_after_large_allocations)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate several large blocks */
+  void *large1 = ALLOC (arena, 50000);
+  void *large2 = ALLOC (arena, 75000);
+  void *large3 = ALLOC (arena, 100000);
+  ASSERT_NOT_NULL (large1);
+  ASSERT_NOT_NULL (large2);
+  ASSERT_NOT_NULL (large3);
+
+  /* Reset should handle multiple chunks properly */
+  Arena_reset (arena);
+
+  /* Should be able to allocate again */
+  void *ptr = ALLOC (arena, 1000);
+  ASSERT_NOT_NULL (ptr);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset with NULL arena */
+TEST (arena_reset_null_arena)
+{
+  Arena_T arena = NULL;
+
+  /* Should not crash */
+  Arena_reset (arena);
+
+  /* No assertion needed - just verify no crash */
+}
+
+/* Test memory accounting after reset */
+TEST (arena_reset_memory_accounting)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate multiple chunks */
+  for (int i = 0; i < 50; i++)
+    {
+      void *ptr = ALLOC (arena, 1024);
+      ASSERT_NOT_NULL (ptr);
+      (void)ptr;
+    }
+
+  /* Reset releases extra chunks to global cache */
+  Arena_reset (arena);
+
+  /* Should be able to allocate and use memory normally */
+  void *ptr = ALLOC (arena, 500);
+  ASSERT_NOT_NULL (ptr);
+  memset (ptr, 0x42, 500);
+
+  Arena_dispose (&arena);
+}
+
+/* Test interleaved reset and allocations */
+TEST (arena_reset_interleaved_operations)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate, reset, allocate pattern */
+  void *ptr1 = ALLOC (arena, 100);
+  ASSERT_NOT_NULL (ptr1);
+
+  Arena_reset (arena);
+
+  void *ptr2 = ALLOC (arena, 200);
+  ASSERT_NOT_NULL (ptr2);
+
+  Arena_reset (arena);
+
+  void *ptr3 = ALLOC (arena, 300);
+  ASSERT_NOT_NULL (ptr3);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset preserves first chunk data until overwrite */
+TEST (arena_reset_first_chunk_preservation)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Small allocation in first chunk */
+  char *ptr1 = (char *)ALLOC (arena, 50);
+  ASSERT_NOT_NULL (ptr1);
+  memset (ptr1, 0xAA, 50);
+
+  /* Force multiple chunks */
+  for (int i = 0; i < 20; i++)
+    {
+      void *p = ALLOC (arena, 5000);
+      ASSERT_NOT_NULL (p);
+      (void)p;
+    }
+
+  /* Reset - releases extra chunks but keeps first */
+  Arena_reset (arena);
+
+  /* New allocation will reuse first chunk from beginning */
+  char *ptr2 = (char *)ALLOC (arena, 100);
+  ASSERT_NOT_NULL (ptr2);
+  memset (ptr2, 0xBB, 100);
+
+  /* Verify we can write to new allocation */
+  ASSERT_EQ (ptr2[0], (char)0xBB);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset efficiency with tight loop */
+TEST (arena_reset_tight_loop_efficiency)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Tight loop of allocate + reset */
+  for (int i = 0; i < 1000; i++)
+    {
+      void *ptr = ALLOC (arena, 100 + (i % 100));
+      ASSERT_NOT_NULL (ptr);
+      (void)ptr;
+      Arena_reset (arena);
+    }
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset with unlocked arena */
+TEST (arena_reset_unlocked_arena)
+{
+  Arena_T arena = Arena_new_unlocked ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Allocate some memory */
+  void *ptr1 = ALLOC (arena, 200);
+  ASSERT_NOT_NULL (ptr1);
+
+  /* Reset should work with unlocked arena */
+  Arena_reset (arena);
+
+  /* Allocate again */
+  void *ptr2 = ALLOC (arena, 300);
+  ASSERT_NOT_NULL (ptr2);
+
+  Arena_dispose (&arena);
+}
+
+/* Test reset followed by calloc */
+TEST (arena_reset_followed_by_calloc)
+{
+  Arena_T arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  /* Initial allocation */
+  void *ptr1 = ALLOC (arena, 500);
+  ASSERT_NOT_NULL (ptr1);
+
+  /* Reset */
+  Arena_reset (arena);
+
+  /* Use calloc after reset */
+  int *arr = (int *)CALLOC (arena, 100, sizeof (int));
+  ASSERT_NOT_NULL (arr);
+
+  /* Verify zero initialization */
+  for (int i = 0; i < 100; i++)
+    {
+      ASSERT_EQ (arr[i], 0);
+    }
+
+  Arena_dispose (&arena);
+}
+
 int
 main (void)
 {
