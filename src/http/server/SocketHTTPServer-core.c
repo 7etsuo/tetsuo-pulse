@@ -668,31 +668,25 @@ SocketHTTPServer_drain_poll (SocketHTTPServer_T server)
       return 0;
     }
 
-  /* Check timeout */
-  if (server->drain_timeout_ms >= 0)
-    {
-      int64_t now = Socket_get_monotonic_ms ();
-      if ((now - server->drain_start_ms) >= server->drain_timeout_ms)
-        {
-          /* Force close all connections */
-          while (server->connections != NULL)
-            {
-              connection_close (server, server->connections);
-            }
+  /* Early return pattern for timeout */
+  if (server->drain_timeout_ms < 0)
+    return (int)server->connection_count;  /* No timeout limit */
 
-          server->state = HTTPSERVER_STATE_STOPPED;
-          server->running = 0;
+  int64_t now = Socket_get_monotonic_ms ();
+  if ((now - server->drain_start_ms) < server->drain_timeout_ms)
+    return (int)server->connection_count;  /* Timeout not reached */
 
-          if (server->drain_callback != NULL)
-            {
-              server->drain_callback (
-                  server, 1, server->drain_callback_userdata);
-            }
-          return -1;
-        }
-    }
+  /* Timeout reached - force close all connections */
+  while (server->connections != NULL)
+    connection_close (server, server->connections);
 
-  return (int)server->connection_count;
+  server->state = HTTPSERVER_STATE_STOPPED;
+  server->running = 0;
+
+  if (server->drain_callback != NULL)
+    server->drain_callback (server, 1, server->drain_callback_userdata);
+
+  return -1;
 }
 
 int
