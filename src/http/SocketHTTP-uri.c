@@ -944,6 +944,65 @@ SocketHTTP_URI_decode (const char *input,
     }                                      \
   while (0)
 
+/* Helper: Append scheme component */
+static ssize_t
+uri_build_scheme (const SocketHTTP_URI *uri,
+                  char *output,
+                  size_t output_size,
+                  size_t *pos)
+{
+  if (!uri->scheme || uri->scheme_len == 0)
+    return 0;
+
+  URI_APPEND_STR (output, *pos, output_size, uri->scheme, uri->scheme_len);
+  URI_APPEND_CHAR (output, *pos, output_size, ':');
+
+  /* Add "//" if we have a host */
+  if (uri->host && uri->host_len > 0)
+    {
+      URI_APPEND_CHAR (output, *pos, output_size, '/');
+      URI_APPEND_CHAR (output, *pos, output_size, '/');
+    }
+
+  return 0;
+}
+
+/* Helper: Append authority component (userinfo + host + port) */
+static ssize_t
+uri_build_authority (const SocketHTTP_URI *uri,
+                     char *output,
+                     size_t output_size,
+                     size_t *pos)
+{
+  if (!uri->host || uri->host_len == 0)
+    return 0;
+
+  /* Userinfo (optional) */
+  if (uri->userinfo && uri->userinfo_len > 0)
+    {
+      URI_APPEND_STR (output, *pos, output_size, uri->userinfo, uri->userinfo_len);
+      URI_APPEND_CHAR (output, *pos, output_size, '@');
+    }
+
+  /* Host (required) */
+  URI_APPEND_STR (output, *pos, output_size, uri->host, uri->host_len);
+
+  /* Port (optional) */
+  if (uri->port >= 0)
+    {
+      char port_buf[URI_PORT_BUFSIZE];
+      int port_len = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
+
+      /* Early return if snprintf failed */
+      if (port_len <= 0 || (size_t)port_len >= sizeof (port_buf))
+        return 0;
+
+      URI_APPEND_STR (output, *pos, output_size, port_buf, (size_t)port_len);
+    }
+
+  return 0;
+}
+
 ssize_t
 SocketHTTP_URI_build (const SocketHTTP_URI *uri,
                       char *output,
@@ -954,49 +1013,26 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri,
 
   size_t pos = 0;
 
-  if (uri->scheme && uri->scheme_len > 0)
-    {
-      URI_APPEND_STR (output, pos, output_size, uri->scheme, uri->scheme_len);
-      URI_APPEND_CHAR (output, pos, output_size, ':');
+  /* Scheme */
+  if (uri_build_scheme (uri, output, output_size, &pos) < 0)
+    return -1;
 
-      if (uri->host && uri->host_len > 0)
-        {
-          URI_APPEND_CHAR (output, pos, output_size, '/');
-          URI_APPEND_CHAR (output, pos, output_size, '/');
-        }
-    }
+  /* Authority (userinfo + host + port) */
+  if (uri_build_authority (uri, output, output_size, &pos) < 0)
+    return -1;
 
-  if (uri->host && uri->host_len > 0)
-    {
-      if (uri->userinfo && uri->userinfo_len > 0)
-        {
-          URI_APPEND_STR (
-              output, pos, output_size, uri->userinfo, uri->userinfo_len);
-          URI_APPEND_CHAR (output, pos, output_size, '@');
-        }
-
-      URI_APPEND_STR (output, pos, output_size, uri->host, uri->host_len);
-
-      if (uri->port >= 0)
-        {
-          char port_buf[URI_PORT_BUFSIZE];
-          int port_len
-              = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
-          if (port_len > 0 && (size_t)port_len < sizeof (port_buf))
-            URI_APPEND_STR (
-                output, pos, output_size, port_buf, (size_t)port_len);
-        }
-    }
-
+  /* Path */
   if (uri->path && uri->path_len > 0)
     URI_APPEND_STR (output, pos, output_size, uri->path, uri->path_len);
 
+  /* Query */
   if (uri->query && uri->query_len > 0)
     {
       URI_APPEND_CHAR (output, pos, output_size, '?');
       URI_APPEND_STR (output, pos, output_size, uri->query, uri->query_len);
     }
 
+  /* Fragment */
   if (uri->fragment && uri->fragment_len > 0)
     {
       URI_APPEND_CHAR (output, pos, output_size, '#');
