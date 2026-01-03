@@ -1072,6 +1072,182 @@ TEST (utf8_boundary_all_ranges)
 }
 
 /* ============================================================================
+||||||| parent of a3f6affe (test(core): Add NULL pointer validation tests for SocketUTF8)
+ * NULL Pointer Validation Tests
+ * ============================================================================
+ */
+
+TEST (utf8_validate_null_data)
+{
+  /* NULL data with len > 0 should raise exception */
+  volatile int caught = 0;
+
+  TRY
+  {
+    SocketUTF8_validate (NULL, 1);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_init_null_state)
+{
+  /* NULL state pointer should raise exception */
+  volatile int caught = 0;
+
+  TRY
+  {
+    SocketUTF8_init (NULL);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_update_null_state)
+{
+  /* NULL state pointer should raise exception */
+  volatile int caught = 0;
+  const unsigned char data[] = "test";
+
+  TRY
+  {
+    SocketUTF8_update (NULL, data, 4);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_update_null_data)
+{
+  /* NULL data with len > 0 should raise exception */
+  volatile int caught = 0;
+  SocketUTF8_State state;
+
+  SocketUTF8_init (&state);
+
+  TRY
+  {
+    SocketUTF8_update (&state, NULL, 1);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_finish_null_state)
+{
+  /* NULL state pointer should raise exception */
+  volatile int caught = 0;
+
+  TRY
+  {
+    SocketUTF8_finish (NULL);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_reset_null_state)
+{
+  /* NULL state pointer should raise exception */
+  volatile int caught = 0;
+
+  TRY
+  {
+    SocketUTF8_reset (NULL);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_count_codepoints_null_count)
+{
+  /* NULL count pointer should raise exception */
+  volatile int caught = 0;
+  const unsigned char data[] = "test";
+
+  TRY
+  {
+    SocketUTF8_count_codepoints (data, 4, NULL);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_count_codepoints_null_data)
+{
+  /* NULL data with len > 0 should raise exception */
+  volatile int caught = 0;
+  size_t count;
+
+  TRY
+  {
+    SocketUTF8_count_codepoints (NULL, 1, &count);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+TEST (utf8_decode_null_data)
+{
+  /* NULL data with len > 0 should raise exception */
+  volatile int caught = 0;
+  uint32_t cp;
+  size_t consumed;
+
+  TRY
+  {
+    SocketUTF8_decode (NULL, 1, &cp, &consumed);
+  }
+  EXCEPT (SocketUTF8_Failed)
+  {
+    caught = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, caught);
+}
+
+/* ============================================================================
  * Main Entry Point
  * ============================================================================
  */
