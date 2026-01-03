@@ -463,7 +463,7 @@ main(int argc, char **argv)
         schedule_next_turn(poll_instance, agent_system);
 
         while (running) {
-            SocketHTTPServer_process(server, 100);
+            SocketHTTPServer_process(server, 10);
             poll_websockets();
         }
 
