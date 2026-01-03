@@ -1558,6 +1558,59 @@ process_header_name_chunk (SocketHTTP1_Parser_T parser,
   return 0;
 }
 
+/* Handle inline action execution with guard clauses.
+ * Returns HTTP1_OK on success, error code on failure.
+ * Sets parser->error and *consumed on failure.
+ */
+static SocketHTTP1_Result
+handle_inline_action (SocketHTTP1_Parser_T parser,
+                      uint8_t action,
+                      uint8_t c,
+                      const char *p,
+                      const char *data,
+                      size_t *consumed,
+                      HTTP1_InternalState current_state,
+                      HTTP1_InternalState *next_state)
+{
+  /* Guard: early return for no-op action */
+  if (action == HTTP1_ACT_NONE)
+    return HTTP1_OK;
+
+  /* Guard: handle simple store-value action */
+  if (action == HTTP1_ACT_STORE_VALUE)
+    {
+      if (http1_tokenbuf_append (&parser->value_buf,
+                                 parser->arena,
+                                 (char)c,
+                                 parser->config.max_header_value) < 0)
+        {
+          set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+          *consumed = (size_t)(p - data);
+          return parser->error;
+        }
+      return HTTP1_OK;
+    }
+
+  /* Guard: handle simple store-name action */
+  if (action == HTTP1_ACT_STORE_NAME)
+    {
+      if (http1_tokenbuf_append (&parser->name_buf,
+                                 parser->arena,
+                                 (char)c,
+                                 parser->config.max_header_name) < 0)
+        {
+          set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
+          *consumed = (size_t)(p - data);
+          return parser->error;
+        }
+      return HTTP1_OK;
+    }
+
+  /* Non-trivial action - delegate to full handler */
+  return handle_dfa_action (parser, action, c, p, data, consumed,
+                            current_state, next_state);
+}
+
 static SocketHTTP1_Result
 parse_headers_loop (SocketHTTP1_Parser_T parser,
                     const char *data,
@@ -1641,50 +1694,11 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
         next_state = (HTTP1_InternalState)state_table[state][cc];
         action = action_table[state][cc];
 
-        /*
-         * OPTIMIZATION 3: Inline trivial actions
-         * Only call handle_dfa_action for non-trivial cases.
-         */
-        if (action == HTTP1_ACT_NONE)
-          {
-            /* Just transition, no side effect - skip function call */
-          }
-        else if (action == HTTP1_ACT_STORE_VALUE)
-          {
-            /* Inline single-byte value append (for bytes after batch) */
-            if (http1_tokenbuf_append (&parser->value_buf,
-                                       parser->arena,
-                                       (char)c,
-                                       parser->config.max_header_value)
-                < 0)
-              {
-                set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-                *consumed = (size_t)(p - data);
-                return parser->error;
-              }
-          }
-        else if (action == HTTP1_ACT_STORE_NAME)
-          {
-            /* Inline single-byte name append */
-            if (http1_tokenbuf_append (&parser->name_buf,
-                                       parser->arena,
-                                       (char)c,
-                                       parser->config.max_header_name)
-                < 0)
-              {
-                set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
-                *consumed = (size_t)(p - data);
-                return parser->error;
-              }
-          }
-        else
-          {
-            /* Non-trivial action - use full handler */
-            result = handle_dfa_action (
-                parser, action, c, p, data, consumed, state, &next_state);
-            if (result != HTTP1_OK)
-              return result;
-          }
+        /* Inline action execution with guard clauses */
+        result = handle_inline_action (parser, action, c, p, data, consumed,
+                                       state, &next_state);
+        if (result != HTTP1_OK)
+          return result;
 
         /* Check for error transition */
         if (next_state == HTTP1_PS_ERROR)
