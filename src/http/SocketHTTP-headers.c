@@ -82,6 +82,8 @@ find_entry_with_prev (SocketHTTP_Headers_T headers,
   while (*pp)
     {
       chain_len++;
+
+      /* Guard clause: check for excessive chain length (DoS protection) */
       if (chain_len > SOCKETHTTP_MAX_CHAIN_SEARCH_LEN)
         {
           headers->dos_chain_warnings++;
@@ -102,13 +104,18 @@ find_entry_with_prev (SocketHTTP_Headers_T headers,
             }
           return NULL;
         }
-      if (sockethttp_name_equal ((*pp)->name, (*pp)->name_len, name, name_len))
+
+      /* Guard clause: skip non-matching entries */
+      if (!sockethttp_name_equal ((*pp)->name, (*pp)->name_len, name, name_len))
         {
-          if (prev_ptr_out)
-            *prev_ptr_out = pp;
-          return *pp;
+          pp = &(*pp)->hash_next;
+          continue;
         }
-      pp = &(*pp)->hash_next;
+
+      /* Found match - set output parameter and return */
+      if (prev_ptr_out)
+        *prev_ptr_out = pp;
+      return *pp;
     }
   return NULL;
 }
