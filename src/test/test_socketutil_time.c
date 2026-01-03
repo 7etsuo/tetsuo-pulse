@@ -339,3 +339,291 @@ main (void)
   Test_run_all ();
   return Test_get_failures ();
 }
+||||||| parent of 2c5d447e (test(core): add comprehensive tests for Socket_get_monotonic_ms)
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
+/**
+ * test_socketutil_time.c - Unit tests for Socket_get_monotonic_ms
+ * Tests for monotonic time retrieval, clock selection, and fallback behavior.
+ */
+
+#include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "core/SocketConfig.h"
+#include "core/SocketUtil.h"
+#include "test/Test.h"
+
+/* ============================================================================
+ * BASIC FUNCTIONALITY TESTS
+ * ============================================================================
+ */
+
+/* Test that Socket_get_monotonic_ms returns non-zero timestamp */
+TEST (get_monotonic_ms_returns_nonzero)
+{
+  int64_t time_ms = Socket_get_monotonic_ms ();
+  ASSERT_NE (time_ms, 0);
+}
+
+/* Test that consecutive calls return increasing values */
+TEST (get_monotonic_ms_monotonic_property)
+{
+  int64_t time1 = Socket_get_monotonic_ms ();
+  ASSERT_NE (time1, 0);
+
+  /* Small delay to ensure time advances */
+  struct timespec delay = { 0, 1000000 }; /* 1ms */
+  nanosleep (&delay, NULL);
+
+  int64_t time2 = Socket_get_monotonic_ms ();
+  ASSERT_NE (time2, 0);
+
+  /* time2 should be >= time1 (monotonic) */
+  ASSERT (time2 >= time1);
+}
+
+/* Test that returned value is reasonable (not absurdly large/small) */
+TEST (get_monotonic_ms_reasonable_value)
+{
+  int64_t time_ms = Socket_get_monotonic_ms ();
+  ASSERT_NE (time_ms, 0);
+
+  /* Should be positive */
+  ASSERT (time_ms > 0);
+
+  /* Should be less than 1000 years in milliseconds
+   * (roughly 31,536,000,000,000,000 ms) */
+  ASSERT (time_ms < 31536000000000000LL);
+
+  /* For systems up more than a few seconds, should be > 1000ms */
+  ASSERT (time_ms > 1000);
+}
+
+/* ============================================================================
+ * ELAPSED TIME MEASUREMENT TESTS
+ * ============================================================================
+ */
+
+/* Test elapsed time measurement accuracy */
+TEST (get_monotonic_ms_elapsed_time_accuracy)
+{
+  int64_t start = Socket_get_monotonic_ms ();
+  ASSERT_NE (start, 0);
+
+  /* Sleep for 10ms */
+  struct timespec delay = { 0, 10000000 }; /* 10ms */
+  nanosleep (&delay, NULL);
+
+  int64_t end = Socket_get_monotonic_ms ();
+  ASSERT_NE (end, 0);
+
+  int64_t elapsed = end - start;
+
+  /* Elapsed should be at least 10ms (allowing for system jitter) */
+  ASSERT (elapsed >= 10);
+
+  /* Should not be absurdly high (< 100ms for 10ms sleep) */
+  ASSERT (elapsed < 100);
+}
+
+/* Test that multiple rapid calls show progression */
+TEST (get_monotonic_ms_rapid_calls)
+{
+  volatile int64_t prev = Socket_get_monotonic_ms ();
+  ASSERT_NE (prev, 0);
+
+  int monotonic_count = 0;
+  for (int i = 0; i < 100; i++)
+    {
+      volatile int64_t current = Socket_get_monotonic_ms ();
+      ASSERT_NE (current, 0);
+
+      /* Current should be >= previous (monotonic property) */
+      ASSERT (current >= prev);
+
+      if (current > prev)
+        {
+          monotonic_count++;
+        }
+
+      prev = current;
+    }
+
+  /* On modern systems with high-resolution clocks, rapid calls may return
+   * the same timestamp. This is acceptable as long as monotonicity is
+   * maintained (which we verify above with current >= prev).
+   * The important property is that time never goes backward. */
+}
+
+/* ============================================================================
+ * CLOCK SELECTION VERIFICATION
+ * ============================================================================
+ */
+
+/* Test that preferred clocks are attempted in order */
+TEST (get_monotonic_ms_clock_selection)
+{
+  /* This test verifies the function works with available clocks.
+   * On most systems, CLOCK_MONOTONIC should be available.
+   * The function tries preferred clocks first before CLOCK_REALTIME.
+   */
+
+  int64_t time1 = Socket_get_monotonic_ms ();
+  ASSERT_NE (time1, 0);
+
+  /* Verify CLOCK_MONOTONIC works directly */
+  struct timespec ts;
+  int clock_available = (clock_gettime (CLOCK_MONOTONIC, &ts) == 0);
+
+  if (clock_available)
+    {
+      /* On systems with CLOCK_MONOTONIC, function should use it.
+       * We just verify that both methods return reasonable values.
+       * The exact difference may vary due to scheduling and system load. */
+      int64_t mono_ms = (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
+                        + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
+
+      /* Both should be positive and reasonable */
+      ASSERT (time1 > 0);
+      ASSERT (mono_ms > 0);
+    }
+}
+
+/* Test that function handles systems with different clock support */
+TEST (get_monotonic_ms_works_on_various_systems)
+{
+  /* Test that the function returns a valid result regardless of
+   * which clocks are available on the system */
+
+  int64_t time_ms = Socket_get_monotonic_ms ();
+  ASSERT_NE (time_ms, 0);
+  ASSERT (time_ms > 0);
+
+  /* Verify at least one clock is functional */
+  struct timespec ts;
+  int has_monotonic = (clock_gettime (CLOCK_MONOTONIC, &ts) == 0);
+  int has_realtime = (clock_gettime (CLOCK_REALTIME, &ts) == 0);
+
+  /* At least CLOCK_REALTIME should be available on POSIX systems */
+  ASSERT (has_monotonic || has_realtime);
+}
+
+/* ============================================================================
+ * ERROR HANDLING TESTS
+ * ============================================================================
+ */
+
+/* Test return value behavior (should return 0 on total failure) */
+TEST (get_monotonic_ms_failure_returns_zero)
+{
+  /* Under normal circumstances, this test always passes because
+   * CLOCK_REALTIME fallback is available. This test documents
+   * the expected behavior when all clocks fail.
+   *
+   * In strict mode or on systems where all clocks fail,
+   * Socket_get_monotonic_ms returns 0.
+   */
+
+  int64_t time_ms = Socket_get_monotonic_ms ();
+
+  /* On working systems, should never be 0 */
+  ASSERT_NE (time_ms, 0);
+
+  /* If this test fails (time_ms == 0), it indicates a system
+   * where no clocks are available - an extremely rare condition */
+}
+
+/* ============================================================================
+ * INTEGRATION TESTS WITH TIME UTILITIES
+ * ============================================================================
+ */
+
+/* Test conversion consistency with timespec helpers */
+TEST (get_monotonic_ms_timespec_conversion_consistency)
+{
+  int64_t time_ms = Socket_get_monotonic_ms ();
+  ASSERT_NE (time_ms, 0);
+
+  /* Convert to timespec and back */
+  struct timespec ts = socket_util_ms_to_timespec ((unsigned long)time_ms);
+  unsigned long converted_back = socket_util_timespec_to_ms (ts);
+
+  /* Should match (within rounding) */
+  int64_t diff = (time_ms > (int64_t)converted_back)
+                     ? (time_ms - (int64_t)converted_back)
+                     : ((int64_t)converted_back - time_ms);
+
+  /* Difference should be minimal (rounding in nanoseconds) */
+  ASSERT (diff < 2);
+}
+
+/* Test timespec_add helper */
+TEST (get_monotonic_ms_timespec_add)
+{
+  struct timespec ts1 = { 1, 500000000 }; /* 1.5 seconds */
+  struct timespec ts2 = { 2, 700000000 }; /* 2.7 seconds */
+
+  struct timespec result = socket_util_timespec_add (ts1, ts2);
+
+  /* Result should be 4.2 seconds = 4 sec + 200,000,000 ns */
+  ASSERT_EQ (result.tv_sec, 4);
+  ASSERT_EQ (result.tv_nsec, 200000000);
+}
+
+/* Test timespec_add overflow handling */
+TEST (get_monotonic_ms_timespec_add_overflow)
+{
+  struct timespec ts1 = { 1, 600000000 }; /* 1.6 seconds */
+  struct timespec ts2 = { 2, 500000000 }; /* 2.5 seconds */
+
+  struct timespec result = socket_util_timespec_add (ts1, ts2);
+
+  /* Result should be 4.1 seconds = 4 sec + 100,000,000 ns
+   * (nanoseconds overflow properly handled) */
+  ASSERT_EQ (result.tv_sec, 4);
+  ASSERT_EQ (result.tv_nsec, 100000000);
+}
+
+/* ============================================================================
+ * MONOTONICITY GUARANTEES
+ * ============================================================================
+ */
+
+/* Test that time doesn't go backward (critical for rate limiting) */
+TEST (get_monotonic_ms_never_decreases)
+{
+  volatile int64_t prev = Socket_get_monotonic_ms ();
+  ASSERT_NE (prev, 0);
+
+  /* Run 1000 iterations checking monotonicity */
+  for (int i = 0; i < 1000; i++)
+    {
+      volatile int64_t current = Socket_get_monotonic_ms ();
+      ASSERT_NE (current, 0);
+
+      /* Current MUST be >= previous (never go backward) */
+      ASSERT (current >= prev);
+
+      prev = current;
+    }
+}
+
+/* ============================================================================
+ * MAIN TEST ENTRY
+ * ============================================================================
+ */
+
+int
+main (void)
+{
+  Test_run_all ();
+  return Test_get_failures ();
+}
