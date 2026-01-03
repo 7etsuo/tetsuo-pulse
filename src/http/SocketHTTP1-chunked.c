@@ -644,6 +644,35 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser,
 }
 
 /**
+ * Handle trailer CR/LF line ending validation and completion.
+ *
+ * Validates that CR is followed by LF, then completes the trailer header
+ * parsing and resets parser state for the next trailer line.
+ *
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @return HTTP1_OK on success, or error code
+ */
+static SocketHTTP1_Result
+handle_trailer_line_end (SocketHTTP1_Parser_T parser, const char **p)
+{
+  /* Validate CR must be followed by LF */
+  if (parser->internal_state == HTTP1_PS_TRAILER_CR)
+    {
+      if (**p != '\n')
+        return HTTP1_ERROR_INVALID_TRAILER;
+      (*p)++;
+    }
+
+  /* Complete the trailer header and reset for next line */
+  SocketHTTP1_Result res = complete_trailer_header (parser);
+  if (res != HTTP1_OK)
+    return res;
+
+  return HTTP1_OK;
+}
+
+/**
  * Handle trailer parsing states in chunked transfer encoding.
  *
  * Processes trailer headers after the final zero-size chunk (RFC 9112 Section
@@ -702,14 +731,7 @@ handle_trailer_states (SocketHTTP1_Parser_T parser,
         case HTTP1_PS_TRAILER_CR:
         case HTTP1_PS_TRAILER_LF:
           {
-            /* Inline handle_trailer_line_completion logic */
-            if (parser->internal_state == HTTP1_PS_TRAILER_CR)
-              {
-                if (**p != '\n')
-                  return HTTP1_ERROR_INVALID_TRAILER;
-                (*p)++;
-              }
-            SocketHTTP1_Result res = complete_trailer_header (parser);
+            SocketHTTP1_Result res = handle_trailer_line_end (parser, p);
             if (res != HTTP1_OK)
               return res;
             break;
