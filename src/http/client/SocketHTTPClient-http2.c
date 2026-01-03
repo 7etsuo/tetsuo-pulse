@@ -60,15 +60,14 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
       if (headers[i].name_len != PSEUDO_HEADER_STATUS_LEN)
         continue;
 
-      if (memcmp (headers[i].name, PSEUDO_HEADER_STATUS,
-                  PSEUDO_HEADER_STATUS_LEN)
+      if (memcmp (
+              headers[i].name, PSEUDO_HEADER_STATUS, PSEUDO_HEADER_STATUS_LEN)
           != 0)
         continue;
 
       /* Found :status - parse and validate (RFC 9113 §8.3.2) */
-      if (http2_parse_status_code (headers[i].value,
-                                   headers[i].value_len,
-                                   &response->status_code)
+      if (http2_parse_status_code (
+              headers[i].value, headers[i].value_len, &response->status_code)
           < 0)
         return -1;
 
@@ -163,6 +162,77 @@ httpclient_http2_recv_headers (SocketHTTP2_Stream_T stream,
       headers, header_count, response, arena);
 }
 
+/**
+ * Process connection when no data received but stream still open
+ */
+static int
+process_pending_frames (SocketHTTP2_Conn_T h2conn)
+{
+  return SocketHTTP2_Conn_process (h2conn, 0);
+}
+
+/**
+ * Check and handle response size limits
+ */
+static int
+check_response_size_limit (SocketHTTP2_Stream_T stream,
+                           size_t total_body,
+                           size_t max_response_size)
+{
+  if (max_response_size == 0)
+    return 0; /* No limit */
+
+  if (total_body <= max_response_size)
+    return 0; /* Within limit */
+
+  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+  return -2; /* Exceeded limit */
+}
+
+/**
+ * Grow body buffer if needed (unlimited size mode)
+ */
+static int
+maybe_grow_body_buffer (Arena_T arena,
+                        unsigned char **body_buf,
+                        size_t *body_cap,
+                        size_t total_body,
+                        size_t max_response_size,
+                        int discard_body,
+                        SocketHTTP2_Stream_T stream)
+{
+  size_t needed;
+  size_t dummy_total;
+
+  /* Early returns for cases where growth not needed */
+  if (discard_body)
+    return 0;
+
+  if (total_body < *body_cap)
+    return 0;
+
+  if (max_response_size != 0)
+    return 0; /* Fixed size mode */
+
+  /* Need to grow */
+  needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE;
+  dummy_total = total_body; /* httpclient_grow_body_buffer modifies this */
+
+  if (httpclient_grow_body_buffer (arena,
+                                   (char **)body_buf,
+                                   body_cap,
+                                   &dummy_total,
+                                   needed,
+                                   max_response_size)
+      != 0)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+
+  return 0;
+}
+
 int
 httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
                             SocketHTTP2_Conn_T h2conn,
@@ -178,7 +248,7 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
   size_t total_body = 0;
   int end_stream = 0;
 
-  /* Benchmark mode: use stack buffer and discard data */
+  /* Initialize buffer based on mode */
   if (discard_body)
     {
       body_buf = discard_buf;
@@ -191,6 +261,7 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
       body_buf = Arena_alloc (arena, body_cap, __FILE__, __LINE__);
     }
 
+  /* Receive loop - flattened with early continue/return */
   while (!end_stream)
     {
       size_t recv_offset = discard_body ? 0 : total_body;
@@ -198,40 +269,36 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
       ssize_t recv_len = SocketHTTP2_Stream_recv_data (
           stream, body_buf + recv_offset, recv_cap, &end_stream);
 
+      /* Guard clause: handle errors immediately */
       if (recv_len < 0)
         return -1;
 
+      /* Guard clause: no data but stream open - process frames */
       if (recv_len == 0 && !end_stream)
         {
-          if (SocketHTTP2_Conn_process (h2conn, 0) < 0)
+          if (process_pending_frames (h2conn) < 0)
             return -1;
           continue;
         }
 
       total_body += (size_t)recv_len;
 
-      if (max_response_size > 0 && total_body > max_response_size)
-        {
-          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-          return -2;
-        }
+      /* Guard clause: check size limit */
+      int size_check
+          = check_response_size_limit (stream, total_body, max_response_size);
+      if (size_check != 0)
+        return size_check;
 
-      /* Grow if full and unlimited size (only when not discarding) */
-      if (!discard_body && total_body >= body_cap && max_response_size == 0)
-        {
-          size_t needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE;
-          if (httpclient_grow_body_buffer (arena,
-                                           (char **)&body_buf,
-                                           &body_cap,
-                                           &total_body,
-                                           needed,
-                                           max_response_size)
-              != 0)
-            {
-              SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-              return -1;
-            }
-        }
+      /* Guard clause: grow buffer if needed */
+      if (maybe_grow_body_buffer (arena,
+                                  &body_buf,
+                                  &body_cap,
+                                  total_body,
+                                  max_response_size,
+                                  discard_body,
+                                  stream)
+          < 0)
+        return -1;
     }
 
   *body_out = discard_body ? NULL : body_buf;
