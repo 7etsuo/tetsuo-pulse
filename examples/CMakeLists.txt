@@ -103,10 +103,10 @@ add_executable(example_connection_pool connection_pool.c)
 target_link_libraries(example_connection_pool ${EXAMPLE_LIBS})
 
 # =============================================================================
-# Simple API Examples (subdirectory)
+# Simple API Examples (subdirectory) - DISABLED: Simple API was removed
 # =============================================================================
 
-add_subdirectory(simple)
+# add_subdirectory(simple)
 
 # =============================================================================
 # Installation (optional)
