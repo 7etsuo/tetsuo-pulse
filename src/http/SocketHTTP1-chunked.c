@@ -390,6 +390,29 @@ parse_chunk_size (const char *const input,
   return (int64_t)size;
 }
 
+/**
+ * Initialize trailers collection for the final chunk.
+ *
+ * @param parser Parser instance to initialize trailers in
+ * @return HTTP1_OK on success, HTTP1_ERROR if allocation fails
+ */
+static SocketHTTP1_Result
+init_trailers (SocketHTTP1_Parser_T parser)
+{
+  if (parser->trailers != NULL)
+    return HTTP1_OK; /* Already initialized */
+
+  SocketHTTP_Headers_T trailers = SocketHTTP_Headers_new (parser->arena);
+  if (trailers == NULL)
+    return HTTP1_ERROR; /* Allocation failed */
+
+  parser->trailers = trailers;
+  parser->trailer_count = 0;
+  parser->total_trailer_size = 0;
+
+  return HTTP1_OK;
+}
+
 static SocketHTTP1_Result
 handle_chunk_size_state (SocketHTTP1_Parser_T parser,
                          const char **p,
@@ -411,36 +434,26 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser,
 
   if (chunk_size == 0)
     {
-      /* Last chunk - expect trailers or final CRLF */
+      /* Last chunk - initialize trailers collection */
       parser->chunk_size = 0;
       parser->chunk_remaining = 0;
 
-      if (parser->trailers == NULL)
-        {
-          SocketHTTP_Headers_T trailers
-              = SocketHTTP_Headers_new (parser->arena);
-          if (trailers == NULL)
-            {
-              return HTTP1_ERROR;
-            }
-          parser->trailers = trailers;
-          parser->trailer_count = 0;
-          parser->total_trailer_size = 0;
-        }
+      SocketHTTP1_Result res = init_trailers (parser);
+      if (res != HTTP1_OK)
+        return res;
+
       parser->internal_state = HTTP1_PS_TRAILER_START;
       parser->state = HTTP1_STATE_TRAILERS;
     }
   else
     {
-      /* Validate chunk_size fits in size_t (32-bit safety) */
+      /* Data chunk - validate size and set up for data reception */
       if ((uint64_t)chunk_size > SIZE_MAX)
         return HTTP1_ERROR_CHUNK_TOO_LARGE;
 
-      /* Check chunk size limit */
       if ((size_t)chunk_size > parser->config.max_chunk_size)
         return HTTP1_ERROR_CHUNK_TOO_LARGE;
 
-      /* Safe to cast after validation */
       parser->chunk_size = (size_t)chunk_size;
       parser->chunk_remaining = (size_t)chunk_size;
 
