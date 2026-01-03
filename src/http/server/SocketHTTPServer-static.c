@@ -48,7 +48,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 #endif
 
 /* String literal length macro (compile-time) */
-#define STRLEN_LIT(s) (sizeof(s) - 1)
+#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* Range header prefix constant */
 #define RANGE_HEADER_PREFIX "bytes="
@@ -169,7 +169,8 @@ validate_static_path (const char *path)
       if (p[1] == '.' && (p[2] == '/' || p[2] == '\0'))
         return 0;
 
-      /* Handle "." (valid, skip it) - flatten nesting with direct calculation */
+      /* Handle "." (valid, skip it) - flatten nesting with direct calculation
+       */
       if (p[1] == '/')
         {
           p += 2;
@@ -289,9 +290,8 @@ handle_conditional_get (ServerConnection *conn,
   conn->response_status = 304;
   conn->response_body = NULL;
   conn->response_body_len = 0;
-  SocketHTTP_Headers_set (conn->response_headers,
-                          "Date",
-                          format_http_date (time (NULL), date_buf));
+  SocketHTTP_Headers_set (
+      conn->response_headers, "Date", format_http_date (time (NULL), date_buf));
   SocketHTTP_Headers_set (conn->response_headers,
                           "Last-Modified",
                           format_http_date (file_mtime, last_modified_buf));
@@ -360,7 +360,8 @@ parse_range_header (const char *range_str,
     return 0;
 
   /* Must start with "bytes=" */
-  if (strncmp (range_str, RANGE_HEADER_PREFIX, STRLEN_LIT (RANGE_HEADER_PREFIX)) != 0)
+  if (strncmp (range_str, RANGE_HEADER_PREFIX, STRLEN_LIT (RANGE_HEADER_PREFIX))
+      != 0)
     return 0;
 
   p = range_str + STRLEN_LIT (RANGE_HEADER_PREFIX);
@@ -439,13 +440,11 @@ server_find_static_route (SocketHTTPServer_T server, const char *path)
   /* Find longest matching prefix */
   for (route = server->static_routes; route != NULL; route = route->next)
     {
-      if (strncmp (path, route->prefix, route->prefix_len) == 0)
+      if (strncmp (path, route->prefix, route->prefix_len) == 0
+          && route->prefix_len > best_len)
         {
-          if (route->prefix_len > best_len)
-            {
-              best = route;
-              best_len = route->prefix_len;
-            }
+          best = route;
+          best_len = route->prefix_len;
         }
     }
 
