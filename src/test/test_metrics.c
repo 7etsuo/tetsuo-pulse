@@ -20,7 +20,9 @@
  */
 
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "core/Except.h"
@@ -857,6 +859,468 @@ TEST (metrics_category_name)
   const char *tls_name = SocketMetrics_category_name (SOCKET_METRIC_CAT_TLS);
   ASSERT_NOT_NULL (tls_name);
   ASSERT (strlen (tls_name) > 0);
+}
+
+/* ============================================================================
+ * Export Edge Cases - Buffer Overflow Tests
+ * ============================================================================
+ */
+
+TEST (metrics_export_prometheus_exact_buffer_size)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* First get the required size with large buffer */
+  char large_buf[65536];
+  size_t needed = SocketMetrics_export_prometheus (large_buf, sizeof (large_buf));
+  ASSERT (needed > 0);
+  ASSERT (needed < sizeof (large_buf));
+
+  /* Test with exact buffer size */
+  char *exact_buf = malloc (needed);
+  ASSERT_NOT_NULL (exact_buf);
+  size_t actual = SocketMetrics_export_prometheus (exact_buf, needed);
+
+  /* Should match the needed size */
+  ASSERT_EQ (needed, actual);
+  free (exact_buf);
+}
+
+TEST (metrics_export_prometheus_off_by_one)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
+
+  /* Get required size */
+  char large_buf[65536];
+  size_t needed = SocketMetrics_export_prometheus (large_buf, sizeof (large_buf));
+
+  /* Test with buffer 1 byte too small */
+  if (needed > 1)
+    {
+      char *small_buf = malloc (needed - 1);
+      ASSERT_NOT_NULL (small_buf);
+      size_t actual = SocketMetrics_export_prometheus (small_buf, needed - 1);
+
+      /* Should truncate safely */
+      ASSERT (actual <= needed - 1);
+      free (small_buf);
+    }
+}
+
+TEST (metrics_export_prometheus_tiny_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* Populate with multiple metrics */
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CONNECT_SUCCESS, 50);
+  SocketMetrics_gauge_set (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS, 5);
+
+  /* Test with tiny 10-byte buffer */
+  char tiny_buf[10];
+  size_t actual = SocketMetrics_export_prometheus (tiny_buf, sizeof (tiny_buf));
+
+  /* Should handle gracefully without overflow */
+  ASSERT (actual >= sizeof (tiny_buf));
+}
+
+TEST (metrics_export_prometheus_zero_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* Zero-size buffer should return 0 */
+  char buffer[100];
+  size_t result = SocketMetrics_export_prometheus (buffer, 0);
+  ASSERT_EQ (0, result);
+}
+
+TEST (metrics_export_prometheus_null_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* NULL buffer should return 0 */
+  size_t result = SocketMetrics_export_prometheus (NULL, 1000);
+  ASSERT_EQ (0, result);
+}
+
+TEST (metrics_export_statsd_exact_buffer_size)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* Get required size */
+  char large_buf[8192];
+  size_t needed
+      = SocketMetrics_export_statsd (large_buf, sizeof (large_buf), "test");
+  ASSERT (needed > 0);
+
+  /* Test with exact size */
+  char *exact_buf = malloc (needed);
+  ASSERT_NOT_NULL (exact_buf);
+  size_t actual = SocketMetrics_export_statsd (exact_buf, needed, "test");
+  ASSERT_EQ (needed, actual);
+  free (exact_buf);
+}
+
+TEST (metrics_export_statsd_null_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  size_t result = SocketMetrics_export_statsd (NULL, 1000, "test");
+  ASSERT_EQ (0, result);
+}
+
+TEST (metrics_export_statsd_zero_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  char buffer[100];
+  size_t result = SocketMetrics_export_statsd (buffer, 0, "test");
+  ASSERT_EQ (0, result);
+}
+
+TEST (metrics_export_json_exact_buffer_size)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* Get required size */
+  char large_buf[131072];
+  size_t needed = SocketMetrics_export_json (large_buf, sizeof (large_buf));
+  ASSERT (needed > 0);
+
+  /* Test with exact size */
+  char *exact_buf = malloc (needed);
+  ASSERT_NOT_NULL (exact_buf);
+  size_t actual = SocketMetrics_export_json (exact_buf, needed);
+  ASSERT_EQ (needed, actual);
+  free (exact_buf);
+}
+
+TEST (metrics_export_json_null_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  size_t result = SocketMetrics_export_json (NULL, 1000);
+  ASSERT_EQ (0, result);
+}
+
+TEST (metrics_export_json_zero_buffer)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  char buffer[100];
+  size_t result = SocketMetrics_export_json (buffer, 0);
+  ASSERT_EQ (0, result);
+}
+
+/* ============================================================================
+ * Export Edge Cases - Data Accuracy Tests
+ * ============================================================================
+ */
+
+TEST (metrics_export_prometheus_large_values)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* Test with UINT64_MAX counter */
+  SocketMetrics_counter_add (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT, UINT64_MAX);
+
+  char buffer[65536];
+  size_t len = SocketMetrics_export_prometheus (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  /* Should contain the max value in string form */
+  ASSERT_NOT_NULL (strstr (buffer, "18446744073709551615"));
+}
+
+TEST (metrics_export_prometheus_negative_gauge)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* Test with negative gauge value */
+  SocketMetrics_gauge_set (SOCKET_GAU_POOL_IDLE_CONNECTIONS, INT64_MIN);
+
+  char buffer[65536];
+  size_t len = SocketMetrics_export_prometheus (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  /* Should contain negative value */
+  ASSERT_NOT_NULL (strstr (buffer, "-"));
+}
+
+TEST (metrics_export_prometheus_empty_metrics)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* All metrics at zero */
+  char buffer[65536];
+  size_t len = SocketMetrics_export_prometheus (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  /* Should still produce valid output with zeros */
+  ASSERT_NOT_NULL (strstr (buffer, "# HELP"));
+  ASSERT_NOT_NULL (strstr (buffer, "# TYPE"));
+}
+
+TEST (metrics_export_prometheus_full_metrics)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* Populate all metric types */
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
+  SocketMetrics_counter_add (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT, 5000);
+  SocketMetrics_gauge_set (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS, 10);
+  SocketMetrics_gauge_set (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS, 3);
+
+  /* Add histogram observations */
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   100.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   200.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 50.0);
+
+  char buffer[131072];
+  size_t len = SocketMetrics_export_prometheus (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  ASSERT (len < sizeof (buffer));
+  /* Should contain all sections */
+  ASSERT_NOT_NULL (strstr (buffer, "counter"));
+  ASSERT_NOT_NULL (strstr (buffer, "gauge"));
+  ASSERT_NOT_NULL (strstr (buffer, "summary"));
+}
+
+TEST (metrics_export_statsd_null_prefix)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* NULL prefix should use default "socket" */
+  char buffer[8192];
+  size_t len = SocketMetrics_export_statsd (buffer, sizeof (buffer), NULL);
+
+  ASSERT (len > 0);
+  ASSERT_NOT_NULL (strstr (buffer, "socket."));
+}
+
+TEST (metrics_export_statsd_empty_prefix)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* Empty prefix should use default "socket" */
+  char buffer[8192];
+  size_t len = SocketMetrics_export_statsd (buffer, sizeof (buffer), "");
+
+  ASSERT (len > 0);
+  /* Empty prefix becomes "socket" */
+  ASSERT_NOT_NULL (strstr (buffer, "."));
+}
+
+TEST (metrics_export_statsd_long_prefix)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  /* Long prefix */
+  const char *long_prefix = "myapp.production.cluster1.backend.metrics";
+  char buffer[8192];
+  size_t len
+      = SocketMetrics_export_statsd (buffer, sizeof (buffer), long_prefix);
+
+  ASSERT (len > 0);
+  ASSERT_NOT_NULL (strstr (buffer, long_prefix));
+}
+
+TEST (metrics_export_statsd_metric_separators)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 42);
+
+  char buffer[8192];
+  size_t len = SocketMetrics_export_statsd (buffer, sizeof (buffer), "app");
+
+  ASSERT (len > 0);
+  /* Should contain dot separators */
+  ASSERT_NOT_NULL (strstr (buffer, "app."));
+  ASSERT_NOT_NULL (strstr (buffer, "."));
+}
+
+TEST (metrics_export_statsd_type_suffixes)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
+  SocketMetrics_gauge_set (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS, 5);
+
+  char buffer[8192];
+  size_t len = SocketMetrics_export_statsd (buffer, sizeof (buffer), "test");
+
+  ASSERT (len > 0);
+  /* Counter suffix */
+  ASSERT_NOT_NULL (strstr (buffer, "|c"));
+  /* Gauge suffix */
+  ASSERT_NOT_NULL (strstr (buffer, "|g"));
+}
+
+TEST (metrics_export_statsd_percentile_names)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_histograms ();
+
+  /* Add histogram data */
+  for (int i = 1; i <= 100; i++)
+    {
+      SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                       (double)i);
+    }
+
+  char buffer[8192];
+  size_t len = SocketMetrics_export_statsd (buffer, sizeof (buffer), "app");
+
+  ASSERT (len > 0);
+  /* Should contain percentile names */
+  ASSERT_NOT_NULL (strstr (buffer, "p50"));
+  ASSERT_NOT_NULL (strstr (buffer, "p95"));
+  ASSERT_NOT_NULL (strstr (buffer, "p99"));
+}
+
+TEST (metrics_export_json_valid_structure)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
+  SocketMetrics_gauge_set (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS, 5);
+
+  char buffer[131072];
+  size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+
+  /* Verify balanced braces */
+  int brace_count = 0;
+  for (char *p = buffer; *p; p++)
+    {
+      if (*p == '{')
+        brace_count++;
+      if (*p == '}')
+        brace_count--;
+    }
+  ASSERT_EQ (0, brace_count);
+
+  /* Verify no trailing commas before closing braces */
+  ASSERT_NULL (strstr (buffer, ",\n  }"));
+  ASSERT_NULL (strstr (buffer, ",\n}"));
+}
+
+TEST (metrics_export_json_floating_point_precision)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset_histograms ();
+
+  /* Add values to get varied percentiles */
+  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 1.123456789);
+  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 2.987654321);
+  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 3.5);
+
+  char buffer[131072];
+  size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+
+  /* Should not contain NaN or Infinity */
+  ASSERT_NULL (strstr (buffer, "NaN"));
+  ASSERT_NULL (strstr (buffer, "Infinity"));
+  ASSERT_NULL (strstr (buffer, "nan"));
+  ASSERT_NULL (strstr (buffer, "inf"));
+}
+
+TEST (metrics_export_json_empty_histograms)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* No histogram observations */
+  char buffer[131072];
+  size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+
+  /* Should still have histograms section with all zeros */
+  ASSERT_NOT_NULL (strstr (buffer, "\"histograms\""));
+  ASSERT_NOT_NULL (strstr (buffer, "\"count\": 0"));
+}
+
+TEST (metrics_export_json_large_counter_values)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* Test with very large counter value */
+  SocketMetrics_counter_add (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT, 9223372036854775807ULL);
+
+  char buffer[131072];
+  size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  /* Should contain large number as string */
+  ASSERT_NOT_NULL (strstr (buffer, "9223372036854775807"));
+}
+
+TEST (metrics_export_json_negative_gauge_values)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  /* Test with negative gauge */
+  SocketMetrics_gauge_set (SOCKET_GAU_POOL_IDLE_CONNECTIONS, -42);
+
+  char buffer[131072];
+  size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  /* Should contain negative value */
+  ASSERT_NOT_NULL (strstr (buffer, "-42"));
+}
+
+TEST (metrics_export_json_timestamp_present)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  char buffer[131072];
+  size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));
+
+  ASSERT (len > 0);
+  /* Should contain timestamp_ms field */
+  ASSERT_NOT_NULL (strstr (buffer, "\"timestamp_ms\""));
 }
 
 /* ============================================================================
