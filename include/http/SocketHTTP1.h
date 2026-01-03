@@ -188,6 +188,7 @@ typedef enum
 {
   HTTP1_OK = 0,     /**< Complete message or chunk parsed */
   HTTP1_INCOMPLETE, /**< Need more data */
+  HTTP1_CONTINUE,   /**< Internal: continue main parsing loop */
   HTTP1_ERROR,      /**< Generic error */
 
   HTTP1_ERROR_LINE_TOO_LONG,
