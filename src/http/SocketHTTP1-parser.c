@@ -1528,8 +1528,8 @@ scan_header_name (const char *p, const char *end)
  */
 static inline int
 process_header_value_chunk (SocketHTTP1_Parser_T parser,
-                             const char *chunk,
-                             size_t chunk_len)
+                            const char *chunk,
+                            size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1561,8 +1561,8 @@ process_header_value_chunk (SocketHTTP1_Parser_T parser,
  */
 static inline int
 process_header_name_chunk (SocketHTTP1_Parser_T parser,
-                            const char *chunk,
-                            size_t chunk_len)
+                           const char *chunk,
+                           size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1587,6 +1587,62 @@ process_header_name_chunk (SocketHTTP1_Parser_T parser,
   parser->line_length += chunk_len;
   parser->header_line_length += chunk_len;
   return 0;
+}
+
+/* Try to batch process header value optimization
+ * Returns: 1 if batch processed (caller should continue loop),
+ *          0 if no batch to process (fall through to byte-by-byte),
+ *         -1 on error (error already set in parser)
+ */
+static inline int
+try_batch_process_header_value (SocketHTTP1_Parser_T parser,
+                                const char **p_ptr,
+                                const char *end,
+                                const char *data,
+                                size_t *consumed)
+{
+  const char *value_end = scan_header_value (*p_ptr, end);
+  size_t chunk_len = (size_t)(value_end - *p_ptr);
+
+  if (chunk_len == 0)
+    return 0; /* No batch to process */
+
+  if (process_header_value_chunk (parser, *p_ptr, chunk_len) < 0)
+    {
+      *consumed = (size_t)(*p_ptr - data);
+      return -1; /* Error already set */
+    }
+
+  *p_ptr = value_end;
+  return 1; /* Batch processed, caller should continue loop */
+}
+
+/* Try to batch process header name optimization
+ * Returns: 1 if batch processed (caller should continue loop),
+ *          0 if no batch to process (fall through to byte-by-byte),
+ *         -1 on error (error already set in parser)
+ */
+static inline int
+try_batch_process_header_name (SocketHTTP1_Parser_T parser,
+                               const char **p_ptr,
+                               const char *end,
+                               const char *data,
+                               size_t *consumed)
+{
+  const char *name_end = scan_header_name (*p_ptr, end);
+  size_t chunk_len = (size_t)(name_end - *p_ptr);
+
+  if (chunk_len == 0)
+    return 0; /* No batch to process */
+
+  if (process_header_name_chunk (parser, *p_ptr, chunk_len) < 0)
+    {
+      *consumed = (size_t)(*p_ptr - data);
+      return -1; /* Error already set */
+    }
+
+  *p_ptr = name_end;
+  return 1; /* Batch processed, caller should continue loop */
 }
 
 static SocketHTTP1_Result
@@ -1622,22 +1678,13 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
        */
       if (state == HTTP1_PS_HEADER_VALUE)
         {
-          const char *value_end = scan_header_value (p, end);
-          size_t chunk_len = (size_t)(value_end - p);
-
-          if (chunk_len > 0)
-            {
-              /* Process chunk with guard clauses */
-              if (process_header_value_chunk (parser, p, chunk_len) < 0)
-                {
-                  *consumed = (size_t)(p - data);
-                  return parser->error;
-                }
-
-              p = value_end;
-              continue; /* Next iteration will handle CR or invalid char */
-            }
-          /* Fall through to normal byte processing for CR/invalid */
+          int batch_result = try_batch_process_header_value (
+              parser, &p, end, data, consumed);
+          if (batch_result < 0)
+            return parser->error; /* Error */
+          if (batch_result > 0)
+            continue; /* Batch processed, continue loop */
+          /* batch_result == 0: fall through to byte-by-byte */
         }
 
       /*
@@ -1645,21 +1692,13 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
        */
       if (state == HTTP1_PS_HEADER_NAME)
         {
-          const char *name_end = scan_header_name (p, end);
-          size_t chunk_len = (size_t)(name_end - p);
-
-          if (chunk_len > 0)
-            {
-              /* Process chunk with guard clauses */
-              if (process_header_name_chunk (parser, p, chunk_len) < 0)
-                {
-                  *consumed = (size_t)(p - data);
-                  return parser->error;
-                }
-
-              p = name_end;
-              continue;
-            }
+          int batch_result
+              = try_batch_process_header_name (parser, &p, end, data, consumed);
+          if (batch_result < 0)
+            return parser->error; /* Error */
+          if (batch_result > 0)
+            continue; /* Batch processed, continue loop */
+          /* batch_result == 0: fall through to byte-by-byte */
         }
 
       /* Standard byte-by-byte processing for state transitions */
