@@ -1031,126 +1031,22 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
           s->body_received += (size_t)n;
 
-<<<<<<< HEAD
           /* Guard: Handle streaming callback if configured */
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-=======
-          /* Streaming path: invoke callback for each data chunk */
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
           if (s->body_streaming && s->body_callback)
             {
-<<<<<<< HEAD
               if (server_http2_handle_streaming_callback (s, server, conn, stream,
                                                           buf, (size_t)n,
                                                           end_stream)
                   < 0)
                 return;
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-              struct SocketHTTPServer_Request req_ctx;
-              req_ctx.server = server;
-              req_ctx.conn = conn;
-              req_ctx.h2_stream = s;
-              req_ctx.arena = s->arena;
-              req_ctx.start_time_ms = Socket_get_monotonic_ms ();
-
-              if (s->body_callback (&req_ctx,
-                                    buf,
-                                    (size_t)n,
-                                    end_stream,
-                                    s->body_callback_userdata)
-                  != 0)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-=======
-              if (server_http2_handle_streaming_body (
-                      server, conn, s, stream, buf, n, end_stream)
-                  < 0)
-                return;
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
             }
-<<<<<<< HEAD
           /* Normal path: Buffer the request body */
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-=======
-          /* Non-streaming path: buffer the body */
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
           else
             {
-<<<<<<< HEAD
               if (server_http2_buffer_request_body (s, stream, buf, (size_t)n,
                                                     max_body)
                   < 0)
                 return;
-||||||| parent of 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
-              size_t max_body = server->config.max_body_size;
-
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  size_t space = s->body_capacity - s->body_len;
-                  size_t to_copy = (size_t)n;
-                  if (to_copy > space)
-                    to_copy = space;
-                  memcpy ((char *)s->body + s->body_len, buf, to_copy);
-                  s->body_len += to_copy;
-                }
-              else
-                {
-                  if (!s->body_uses_buf)
-                    {
-                      size_t initial_size
-                          = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-                      if (max_body > 0 && initial_size > max_body)
-                        initial_size = max_body;
-                      s->body_buf = SocketBuf_new (s->arena, initial_size);
-                      if (s->body_buf == NULL)
-                        {
-                          SocketHTTP2_Stream_close (stream,
-                                                    HTTP2_INTERNAL_ERROR);
-                          return;
-                        }
-                      s->body_uses_buf = 1;
-                    }
-
-                  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
-                    {
-                      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                      return;
-                    }
-                  SocketBuf_write (s->body_buf, buf, (size_t)n);
-                  s->body_len = SocketBuf_available (s->body_buf);
-                }
-=======
-              size_t max_body = server->config.max_body_size;
-
-              /* Guard: exceeds max body size */
-              if (max_body > 0 && s->body_len + (size_t)n > max_body)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-                  return;
-                }
-
-              /* Fixed buffer path */
-              if (!s->body_uses_buf && s->body != NULL)
-                {
-                  server_http2_append_fixed_buffer (s, buf, n);
-                }
-              /* Dynamic buffer path */
-              else
-                {
-                  if (server_http2_append_dynamic_buffer (
-                          server, s, stream, buf, n)
-                      < 0)
-                    return;
-                }
->>>>>>> 76acb08e (refactor(httpserver-h2): flatten catastrophic 8-9 level nesting in DATA frame handler)
             }
 
           if (end_stream)
