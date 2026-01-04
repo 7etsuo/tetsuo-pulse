@@ -25,16 +25,13 @@
 #include <string.h>
 
 #include "quic/SocketQUICPacket.h"
+#include "quic/SocketQUICCrypto.h"
 #include "quic/SocketQUICVersion.h"
 #include "quic/SocketQUICConstants.h"
 #include "core/SocketCrypto.h"
 
 #ifdef SOCKET_HAS_TLS
 #include <openssl/evp.h>
-#include <openssl/kdf.h>
-#include <openssl/sha.h>
-#include <openssl/core_names.h>
-#include <openssl/params.h>
 #endif
 
 /* ============================================================================
@@ -59,16 +56,6 @@ static const uint8_t quic_v1_initial_salt[QUIC_V1_INITIAL_SALT_LEN]
 static const uint8_t quic_v2_initial_salt[QUIC_V1_INITIAL_SALT_LEN]
     = { 0x0d, 0xed, 0xe3, 0xde, 0xf7, 0x00, 0xa6, 0xdb, 0x81, 0x93,
         0x81, 0xbe, 0x6e, 0x26, 0x9d, 0xcb, 0xf9, 0xbd, 0x2e, 0xd9 };
-
-/* HKDF-Expand-Label labels (RFC 9001 Section 5.1) */
-static const char label_client_in[] = "client in";
-static const char label_server_in[] = "server in";
-static const char label_quic_key[] = "quic key";
-static const char label_quic_iv[] = "quic iv";
-static const char label_quic_hp[] = "quic hp";
-
-/* Compile-time string length for performance-critical paths */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* ============================================================================
  * Result String Table
@@ -179,318 +166,7 @@ SocketQUICInitial_padding_needed (size_t current_len)
 }
 
 /* ============================================================================
- * HKDF Functions (RFC 9001 Section 5.1) - OpenSSL 3.x API
- * ============================================================================
- */
-
-#ifdef SOCKET_HAS_TLS
-
-/**
- * @brief HKDF-Extract using SHA-256 (OpenSSL 3.x EVP_KDF API).
- */
-static int
-hkdf_extract (const uint8_t *salt,
-              size_t salt_len,
-              const uint8_t *ikm,
-              size_t ikm_len,
-              uint8_t *prk,
-              size_t prk_len)
-{
-  EVP_KDF *kdf = NULL;
-  EVP_KDF_CTX *kctx = NULL;
-  OSSL_PARAM params[5];
-  int result = -1;
-  int mode = EVP_KDF_HKDF_MODE_EXTRACT_ONLY;
-
-  kdf = EVP_KDF_fetch (NULL, "HKDF", NULL);
-  if (kdf == NULL)
-    goto cleanup;
-
-  kctx = EVP_KDF_CTX_new (kdf);
-  if (kctx == NULL)
-    goto cleanup;
-
-  params[0]
-      = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST, "SHA256", 0);
-  params[1] = OSSL_PARAM_construct_octet_string (
-      OSSL_KDF_PARAM_KEY, (void *)ikm, ikm_len);
-  params[2] = OSSL_PARAM_construct_octet_string (
-      OSSL_KDF_PARAM_SALT, (void *)salt, salt_len);
-  params[3] = OSSL_PARAM_construct_int (OSSL_KDF_PARAM_MODE, &mode);
-  params[4] = OSSL_PARAM_construct_end ();
-
-  if (EVP_KDF_derive (kctx, prk, prk_len, params) <= 0)
-    goto cleanup;
-
-  result = 0;
-
-cleanup:
-  EVP_KDF_CTX_free (kctx);
-  EVP_KDF_free (kdf);
-  return result;
-}
-
-/**
- * @brief Build HKDF label structure per RFC 8446 Section 7.1.
- *
- * Constructs the HkdfLabel structure used in HKDF-Expand-Label:
- *   struct {
- *     uint16 length = output_len;
- *     opaque label<7..255> = "tls13 " + label;
- *     opaque context<0..255> = context;
- *   } HkdfLabel;
- *
- * @param label Label string (without "tls13 " prefix)
- * @param label_len Length of label
- * @param context Context data (may be NULL if context_len is 0)
- * @param context_len Length of context
- * @param output_len Desired output length for HKDF
- * @param hkdf_label Buffer to store constructed label (must be at least
- * QUIC_HKDF_LABEL_MAX_SIZE bytes)
- * @param hkdf_label_len Output: actual length of constructed label
- * @return 0 on success, -1 on error
- */
-static int
-build_hkdf_label (const char *label,
-                  size_t label_len,
-                  const uint8_t *context,
-                  size_t context_len,
-                  size_t output_len,
-                  uint8_t *hkdf_label,
-                  size_t *hkdf_label_len)
-{
-  *hkdf_label_len = 0;
-
-  /* Length (2 bytes, big-endian) */
-  hkdf_label[(*hkdf_label_len)++] = (uint8_t)((output_len >> 8) & 0xFF);
-  hkdf_label[(*hkdf_label_len)++] = (uint8_t)(output_len & 0xFF);
-
-  /* Label length and "tls13 " prefix + actual label */
-  size_t full_label_len = QUIC_HKDF_TLS13_PREFIX_LEN + label_len;
-  hkdf_label[(*hkdf_label_len)++] = (uint8_t)full_label_len;
-
-  /* Check space for "tls13 " prefix */
-  if (*hkdf_label_len + QUIC_HKDF_TLS13_PREFIX_LEN > QUIC_HKDF_LABEL_MAX_SIZE)
-    return -1;
-  memcpy (hkdf_label + *hkdf_label_len, "tls13 ", QUIC_HKDF_TLS13_PREFIX_LEN);
-  *hkdf_label_len += QUIC_HKDF_TLS13_PREFIX_LEN;
-
-  /* Check space for label */
-  if (*hkdf_label_len + label_len > QUIC_HKDF_LABEL_MAX_SIZE)
-    return -1;
-  memcpy (hkdf_label + *hkdf_label_len, label, label_len);
-  *hkdf_label_len += label_len;
-
-  /* Context length and context */
-  hkdf_label[(*hkdf_label_len)++] = (uint8_t)context_len;
-  if (context_len > 0)
-    {
-      /* Check space for context */
-      if (*hkdf_label_len + context_len > QUIC_HKDF_LABEL_MAX_SIZE)
-        return -1;
-      memcpy (hkdf_label + *hkdf_label_len, context, context_len);
-      *hkdf_label_len += context_len;
-    }
-
-  return 0;
-}
-
-/**
- * @brief HKDF-Expand-Label for TLS 1.3 / QUIC (OpenSSL 3.x EVP_KDF API).
- *
- * Implements the TLS 1.3 HKDF-Expand-Label function per RFC 8446 Section 7.1.
- */
-static int
-hkdf_expand_label (const uint8_t *secret,
-                   size_t secret_len,
-                   const char *label,
-                   size_t label_len,
-                   const uint8_t *context,
-                   size_t context_len,
-                   uint8_t *output,
-                   size_t output_len)
-{
-  EVP_KDF *kdf = NULL;
-  EVP_KDF_CTX *kctx = NULL;
-  OSSL_PARAM params[6];
-  uint8_t hkdf_label[QUIC_HKDF_LABEL_MAX_SIZE];
-  size_t hkdf_label_len = 0;
-  int result = -1;
-  int mode = EVP_KDF_HKDF_MODE_EXPAND_ONLY;
-
-  /* Build HkdfLabel structure per RFC 8446 */
-  if (build_hkdf_label (label,
-                        label_len,
-                        context,
-                        context_len,
-                        output_len,
-                        hkdf_label,
-                        &hkdf_label_len)
-      < 0)
-    goto cleanup;
-
-  kdf = EVP_KDF_fetch (NULL, "HKDF", NULL);
-  if (kdf == NULL)
-    goto cleanup;
-
-  kctx = EVP_KDF_CTX_new (kdf);
-  if (kctx == NULL)
-    goto cleanup;
-
-  params[0]
-      = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST, "SHA256", 0);
-  params[1] = OSSL_PARAM_construct_octet_string (
-      OSSL_KDF_PARAM_KEY, (void *)secret, secret_len);
-  params[2] = OSSL_PARAM_construct_octet_string (
-      OSSL_KDF_PARAM_INFO, hkdf_label, hkdf_label_len);
-  params[3] = OSSL_PARAM_construct_int (OSSL_KDF_PARAM_MODE, &mode);
-  params[4] = OSSL_PARAM_construct_end ();
-
-  if (EVP_KDF_derive (kctx, output, output_len, params) <= 0)
-    goto cleanup;
-
-  result = 0;
-
-cleanup:
-  EVP_KDF_CTX_free (kctx);
-  EVP_KDF_free (kdf);
-  SocketCrypto_secure_clear (hkdf_label, sizeof (hkdf_label));
-  return result;
-}
-
-/**
- * @brief Derive keys from a secret using HKDF-Expand-Label.
- */
-static int
-derive_traffic_keys (const uint8_t *secret,
-                     size_t secret_len,
-                     uint8_t *key,
-                     uint8_t *iv,
-                     uint8_t *hp_key)
-{
-  /* Derive key */
-  if (hkdf_expand_label (secret,
-                         secret_len,
-                         label_quic_key,
-                         STRLEN_LIT (label_quic_key),
-                         NULL,
-                         0,
-                         key,
-                         QUIC_INITIAL_KEY_LEN)
-      < 0)
-    return -1;
-
-  /* Derive IV */
-  if (hkdf_expand_label (secret,
-                         secret_len,
-                         label_quic_iv,
-                         STRLEN_LIT (label_quic_iv),
-                         NULL,
-                         0,
-                         iv,
-                         QUIC_INITIAL_IV_LEN)
-      < 0)
-    return -1;
-
-  /* Derive header protection key */
-  if (hkdf_expand_label (secret,
-                         secret_len,
-                         label_quic_hp,
-                         STRLEN_LIT (label_quic_hp),
-                         NULL,
-                         0,
-                         hp_key,
-                         QUIC_INITIAL_HP_KEY_LEN)
-      < 0)
-    return -1;
-
-  return 0;
-}
-
-#endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Key Derivation Helpers
- * ============================================================================
- */
-
-#ifdef SOCKET_HAS_TLS
-
-/**
- * @brief Derive initial secret from connection ID.
- *
- * Implements RFC 9001 Section 5.2 Step 1: HKDF-Extract with version-specific
- * salt and client DCID.
- *
- * @param salt Version-specific salt
- * @param salt_len Salt length
- * @param dcid Client Destination Connection ID
- * @param initial_secret Output buffer (SOCKET_CRYPTO_SHA256_SIZE bytes)
- * @return 0 on success, -1 on error
- */
-static int
-derive_initial_secret (const uint8_t *salt,
-                       size_t salt_len,
-                       const SocketQUICConnectionID_T *dcid,
-                       uint8_t initial_secret[SOCKET_CRYPTO_SHA256_SIZE])
-{
-  return hkdf_extract (salt,
-                       salt_len,
-                       dcid->data,
-                       dcid->len,
-                       initial_secret,
-                       SOCKET_CRYPTO_SHA256_SIZE);
-}
-
-/**
- * @brief Derive client and server secrets from initial secret.
- *
- * Implements RFC 9001 Section 5.2 Steps 2-3: HKDF-Expand-Label to derive
- * client and server secrets from the initial secret.
- *
- * @param initial_secret Initial secret from HKDF-Extract
- * @param client_secret Output buffer for client secret
- * (SOCKET_CRYPTO_SHA256_SIZE bytes)
- * @param server_secret Output buffer for server secret
- * (SOCKET_CRYPTO_SHA256_SIZE bytes)
- * @return 0 on success, -1 on error
- */
-static int
-derive_endpoint_secrets (const uint8_t *initial_secret,
-                         uint8_t client_secret[SOCKET_CRYPTO_SHA256_SIZE],
-                         uint8_t server_secret[SOCKET_CRYPTO_SHA256_SIZE])
-{
-  /* Derive client secret */
-  if (hkdf_expand_label (initial_secret,
-                         SOCKET_CRYPTO_SHA256_SIZE,
-                         label_client_in,
-                         STRLEN_LIT (label_client_in),
-                         NULL,
-                         0,
-                         client_secret,
-                         SOCKET_CRYPTO_SHA256_SIZE)
-      < 0)
-    return -1;
-
-  /* Derive server secret */
-  if (hkdf_expand_label (initial_secret,
-                         SOCKET_CRYPTO_SHA256_SIZE,
-                         label_server_in,
-                         STRLEN_LIT (label_server_in),
-                         NULL,
-                         0,
-                         server_secret,
-                         SOCKET_CRYPTO_SHA256_SIZE)
-      < 0)
-    return -1;
-
-  return 0;
-}
-
-#endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Key Derivation
+ * Key Derivation - Delegates to SocketQUICCrypto module
  * ============================================================================
  */
 
@@ -499,87 +175,23 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
                                uint32_t version,
                                SocketQUICInitialKeys_T *keys)
 {
-#ifdef SOCKET_HAS_TLS
-  const uint8_t *salt;
-  size_t salt_len;
-  uint8_t initial_secret[SOCKET_CRYPTO_SHA256_SIZE];
-  uint8_t client_secret[SOCKET_CRYPTO_SHA256_SIZE];
-  uint8_t server_secret[SOCKET_CRYPTO_SHA256_SIZE];
-  SocketQUICInitial_Result result = QUIC_INITIAL_ERROR_CRYPTO;
-  int initial_secret_valid = 0;
-  int client_secret_valid = 0;
-  int server_secret_valid = 0;
+  SocketQUICCrypto_Result crypto_result
+      = SocketQUICCrypto_derive_initial_keys (dcid, version, keys);
 
-  if (dcid == NULL || keys == NULL)
-    return QUIC_INITIAL_ERROR_NULL;
-
-  SocketQUICInitialKeys_init (keys);
-
-  /* Get version-specific salt */
-  result = SocketQUICInitial_get_salt (version, &salt, &salt_len);
-  if (result != QUIC_INITIAL_OK)
-    return result;
-
-  /* Step 1: Derive initial secret from DCID */
-  if (derive_initial_secret (salt, salt_len, dcid, initial_secret) < 0)
-    goto cleanup;
-
-  initial_secret_valid = 1;
-
-  /* Step 2-3: Derive client and server secrets */
-  if (derive_endpoint_secrets (initial_secret, client_secret, server_secret)
-      < 0)
-    goto cleanup;
-
-  client_secret_valid = 1;
-  server_secret_valid = 1;
-
-  /* Clear initial secret (no longer needed) */
-  SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
-  initial_secret_valid = 0;
-
-  /* Step 4: Derive client keys */
-  if (derive_traffic_keys (client_secret,
-                           SOCKET_CRYPTO_SHA256_SIZE,
-                           keys->client_key,
-                           keys->client_iv,
-                           keys->client_hp_key)
-      < 0)
-    goto cleanup;
-
-  /* Step 5: Derive server keys */
-  if (derive_traffic_keys (server_secret,
-                           SOCKET_CRYPTO_SHA256_SIZE,
-                           keys->server_key,
-                           keys->server_iv,
-                           keys->server_hp_key)
-      < 0)
+  /* Map crypto result to initial result */
+  switch (crypto_result)
     {
-      SocketQUICInitialKeys_clear (keys);
-      goto cleanup;
+    case QUIC_CRYPTO_OK:
+      return QUIC_INITIAL_OK;
+    case QUIC_CRYPTO_ERROR_NULL:
+      return QUIC_INITIAL_ERROR_NULL;
+    case QUIC_CRYPTO_ERROR_VERSION:
+      return QUIC_INITIAL_ERROR_VERSION;
+    case QUIC_CRYPTO_ERROR_HKDF:
+    case QUIC_CRYPTO_ERROR_NO_TLS:
+    default:
+      return QUIC_INITIAL_ERROR_CRYPTO;
     }
-
-  /* Success - mark keys as initialized */
-  keys->initialized = 1;
-  result = QUIC_INITIAL_OK;
-
-cleanup:
-  /* Centralized secure cleanup of all secrets */
-  if (initial_secret_valid)
-    SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
-  if (client_secret_valid)
-    SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
-  if (server_secret_valid)
-    SocketCrypto_secure_clear (server_secret, sizeof (server_secret));
-
-  return result;
-
-#else
-  (void)dcid;
-  (void)version;
-  (void)keys;
-  return QUIC_INITIAL_ERROR_CRYPTO; /* TLS not available */
-#endif
 }
 
 /* ============================================================================

@@ -401,6 +401,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICStream-state.c
     src/quic/SocketQUICPacket.c
     src/quic/SocketQUICPacket-initial.c
+    src/quic/SocketQUICCrypto.c
     src/quic/SocketQUICWire.c
     src/quic/SocketQUICFrame.c
     src/quic/SocketQUICFrame-flow.c
@@ -642,6 +643,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICConnectionID-pool.h
     include/quic/SocketQUICStream.h
     include/quic/SocketQUICPacket.h
+    include/quic/SocketQUICCrypto.h
     include/quic/SocketQUICFrame.h
     include/quic/SocketQUICConnection.h
     include/quic/SocketQUICTransportParams.h
@@ -835,6 +837,7 @@ set(TEST_SOURCES
 if(SOCKET_HAS_TLS)
     list(APPEND TEST_SOURCES
         # QUIC Initial packet tests (requires TLS for crypto)
+        test_quic_crypto
         test_quic_initial
         test_tls_ct
         test_tls_integration
