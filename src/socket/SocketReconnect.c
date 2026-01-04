@@ -567,7 +567,7 @@ start_tls_handshake (T conn)
                      "%s:%d TLS enabled, starting handshake",
                      conn->host,
                      conn->port);
-    return 1;
+    RETURN 1;
   }
   EXCEPT (SocketTLS_Failed)
   {
