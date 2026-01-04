@@ -327,6 +327,116 @@ TEST (quic_crypto_derive_max_dcid)
   SocketQUICInitialKeys_clear (&keys);
 }
 
+TEST (quic_crypto_derive_various_dcid_lengths)
+{
+  SocketQUICConnectionID_T dcid;
+  SocketQUICInitialKeys_T keys;
+  uint8_t data[QUIC_CONNID_MAX_LEN];
+
+  /* Test DCID lengths 1-19 (0 and 20 tested elsewhere) */
+  for (size_t len = 1; len < QUIC_CONNID_MAX_LEN; len++)
+    {
+      memset (data, (uint8_t)len, len);
+      SocketQUICConnectionID_set (&dcid, data, len);
+
+      SocketQUICCrypto_Result result
+          = SocketQUICCrypto_derive_initial_keys (&dcid, QUIC_VERSION_1, &keys);
+
+      ASSERT_EQ (QUIC_CRYPTO_OK, result);
+      ASSERT_EQ (1, keys.initialized);
+
+      SocketQUICInitialKeys_clear (&keys);
+    }
+}
+
+/* ============================================================================
+ * QUIC v2 Tests (RFC 9369)
+ * ============================================================================
+ */
+
+TEST (quic_crypto_derive_v2_succeeds)
+{
+  SocketQUICConnectionID_T dcid;
+  SocketQUICInitialKeys_T keys;
+
+  SocketQUICConnectionID_set (&dcid, rfc_dcid_data, sizeof (rfc_dcid_data));
+
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_derive_initial_keys (&dcid, QUIC_VERSION_2, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (1, keys.initialized);
+
+  SocketQUICInitialKeys_clear (&keys);
+}
+
+TEST (quic_crypto_derive_v2_differs_from_v1)
+{
+  SocketQUICConnectionID_T dcid;
+  SocketQUICInitialKeys_T keys_v1;
+  SocketQUICInitialKeys_T keys_v2;
+
+  SocketQUICConnectionID_set (&dcid, rfc_dcid_data, sizeof (rfc_dcid_data));
+
+  /* Derive with v1 */
+  SocketQUICCrypto_Result result_v1
+      = SocketQUICCrypto_derive_initial_keys (&dcid, QUIC_VERSION_1, &keys_v1);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result_v1);
+
+  /* Derive with v2 */
+  SocketQUICCrypto_Result result_v2
+      = SocketQUICCrypto_derive_initial_keys (&dcid, QUIC_VERSION_2, &keys_v2);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result_v2);
+
+  /* Keys MUST differ due to different salts */
+  ASSERT (memcmp (keys_v1.client_key, keys_v2.client_key, QUIC_INITIAL_KEY_LEN)
+          != 0);
+  ASSERT (memcmp (keys_v1.server_key, keys_v2.server_key, QUIC_INITIAL_KEY_LEN)
+          != 0);
+  ASSERT (memcmp (keys_v1.client_iv, keys_v2.client_iv, QUIC_INITIAL_IV_LEN)
+          != 0);
+  ASSERT (memcmp (keys_v1.server_iv, keys_v2.server_iv, QUIC_INITIAL_IV_LEN)
+          != 0);
+
+  SocketQUICInitialKeys_clear (&keys_v1);
+  SocketQUICInitialKeys_clear (&keys_v2);
+}
+
+TEST (quic_crypto_derive_v2_secrets_differ)
+{
+  SocketQUICConnectionID_T dcid;
+  SocketQUICCryptoSecrets_T secrets_v1;
+  SocketQUICCryptoSecrets_T secrets_v2;
+  SocketQUICInitialKeys_T keys;
+
+  SocketQUICConnectionID_set (&dcid, rfc_dcid_data, sizeof (rfc_dcid_data));
+
+  /* Derive secrets with v1 */
+  SocketQUICCrypto_Result result_v1 = SocketQUICCrypto_derive_initial_secrets (
+      &dcid, QUIC_VERSION_1, &secrets_v1, &keys);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result_v1);
+
+  /* Derive secrets with v2 */
+  SocketQUICCrypto_Result result_v2 = SocketQUICCrypto_derive_initial_secrets (
+      &dcid, QUIC_VERSION_2, &secrets_v2, &keys);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result_v2);
+
+  /* Initial secrets MUST differ due to different salts */
+  ASSERT (memcmp (secrets_v1.initial_secret, secrets_v2.initial_secret,
+                  SOCKET_CRYPTO_SHA256_SIZE)
+          != 0);
+  ASSERT (memcmp (secrets_v1.client_initial_secret,
+                  secrets_v2.client_initial_secret, SOCKET_CRYPTO_SHA256_SIZE)
+          != 0);
+  ASSERT (memcmp (secrets_v1.server_initial_secret,
+                  secrets_v2.server_initial_secret, SOCKET_CRYPTO_SHA256_SIZE)
+          != 0);
+
+  SocketQUICCryptoSecrets_clear (&secrets_v1);
+  SocketQUICCryptoSecrets_clear (&secrets_v2);
+  SocketQUICInitialKeys_clear (&keys);
+}
+
 /* ============================================================================
  * Error Handling
  * ============================================================================
@@ -435,6 +545,45 @@ TEST (quic_crypto_traffic_keys_null_params)
              SocketQUICCrypto_derive_traffic_keys (secret,
                                                    SOCKET_CRYPTO_SHA256_SIZE,
                                                    key, iv, NULL));
+}
+
+TEST (quic_crypto_traffic_keys_invalid_secret_len)
+{
+  uint8_t secret[SOCKET_CRYPTO_SHA256_SIZE] = { 0 };
+  uint8_t key[QUIC_INITIAL_KEY_LEN];
+  uint8_t iv[QUIC_INITIAL_IV_LEN];
+  uint8_t hp[QUIC_INITIAL_HP_KEY_LEN];
+
+  /* Secret length too short */
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_HKDF,
+             SocketQUICCrypto_derive_traffic_keys (secret, 16, key, iv, hp));
+
+  /* Secret length too long */
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_HKDF,
+             SocketQUICCrypto_derive_traffic_keys (secret, 64, key, iv, hp));
+
+  /* Secret length zero */
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_HKDF,
+             SocketQUICCrypto_derive_traffic_keys (secret, 0, key, iv, hp));
+}
+
+TEST (quic_crypto_keys_clear)
+{
+  SocketQUICInitialKeys_T keys;
+
+  /* Fill with non-zero pattern */
+  memset (&keys, 0xBB, sizeof (keys));
+  keys.initialized = 1;
+
+  SocketQUICInitialKeys_clear (&keys);
+
+  /* Verify all key material is zero */
+  uint8_t *ptr = (uint8_t *)&keys;
+  for (size_t i = 0; i < sizeof (keys); i++)
+    {
+      ASSERT_EQ (0, ptr[i]);
+    }
+  ASSERT_EQ (0, keys.initialized);
 }
 
 #endif /* SOCKET_HAS_TLS */
