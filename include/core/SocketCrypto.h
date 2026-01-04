@@ -135,6 +135,57 @@ SocketCrypto_hmac_sha256 (const void *key,
                           unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
 
 /* ============================================================================
+ * HKDF Functions (RFC 5869)
+ * ============================================================================
+ */
+
+/**
+ * @brief HKDF-Extract: Extract a PRK from salt and IKM (RFC 5869 §2.2).
+ *
+ * PRK = HMAC-SHA256(salt, IKM)
+ *
+ * @param[in] salt Salt value (can be NULL for zero-length salt).
+ * @param[in] salt_len Salt length in bytes.
+ * @param[in] ikm Input Keying Material.
+ * @param[in] ikm_len IKM length in bytes.
+ * @param[out] prk Output PRK buffer (SOCKET_CRYPTO_SHA256_SIZE bytes).
+ *
+ * Raises: SocketCrypto_Failed on error or if TLS not available.
+ * @threadsafe Yes.
+ */
+extern void
+SocketCrypto_hkdf_extract (const void *salt,
+                           size_t salt_len,
+                           const void *ikm,
+                           size_t ikm_len,
+                           unsigned char prk[SOCKET_CRYPTO_SHA256_SIZE]);
+
+/**
+ * @brief HKDF-Expand-Label: TLS 1.3 style key derivation (RFC 8446 §7.1).
+ *
+ * Constructs HkdfLabel and expands PRK to output_len bytes.
+ * Used by QUIC for "quic key", "quic iv", "quic hp", "quic ku" labels.
+ *
+ * @param[in] prk Pseudorandom key from HKDF-Extract.
+ * @param[in] prk_len PRK length (typically SOCKET_CRYPTO_SHA256_SIZE).
+ * @param[in] label Label string WITHOUT "tls13 " prefix (added internally).
+ * @param[in] context Context data (can be NULL for empty context).
+ * @param[in] context_len Context length in bytes.
+ * @param[out] output Output buffer.
+ * @param[in] output_len Desired output length (max 255 bytes).
+ *
+ * Raises: SocketCrypto_Failed on error or if TLS not available.
+ * @threadsafe Yes.
+ */
+extern void SocketCrypto_hkdf_expand_label (const unsigned char *prk,
+                                            size_t prk_len,
+                                            const char *label,
+                                            const void *context,
+                                            size_t context_len,
+                                            unsigned char *output,
+                                            size_t output_len);
+
+/* ============================================================================
  * Base64 Encoding (RFC 4648)
  * ============================================================================
  */

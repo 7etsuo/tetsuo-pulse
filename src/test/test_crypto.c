@@ -713,6 +713,152 @@ TEST (secure_clear)
 }
 
 /* ============================================================================
+ * HKDF Tests (RFC 5869, RFC 9001 Appendix A.1)
+ * ============================================================================
+ */
+
+#if SOCKET_HAS_TLS
+
+TEST (hkdf_extract_quic_initial)
+{
+  /* RFC 9001 Appendix A.1: Initial secret derivation
+   * salt = 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a
+   * IKM = client DCID = 0x8394c8f03e515708
+   * Expected PRK = 7db5df06e7a69e432496adedb0085192
+   *                3595221596ae2ae9fb8115c1e9ed0a44
+   */
+  unsigned char salt[20], ikm[8], expected[32], prk[32];
+
+  hex_to_bytes ("38762cf7f55934b34d179ae6a4c80cadccbb7f0a", salt, 20);
+  hex_to_bytes ("8394c8f03e515708", ikm, 8);
+  hex_to_bytes ("7db5df06e7a69e432496adedb0085192"
+                "3595221596ae2ae9fb8115c1e9ed0a44",
+                expected,
+                32);
+
+  SocketCrypto_hkdf_extract (salt, 20, ikm, 8, prk);
+  ASSERT (memcmp (prk, expected, 32) == 0);
+}
+
+TEST (hkdf_expand_label_client_in)
+{
+  /* RFC 9001 Appendix A.1: client_initial_secret
+   * PRK = initial_secret from above
+   * label = "client in" (without tls13 prefix)
+   * context = ""
+   * output_len = 32
+   * Expected = c00cf151ca5be075ed0ebfb5c80323c4
+   *            2d6b7db67881289af4008f1f6c357aea
+   */
+  unsigned char prk[32], expected[32], output[32];
+
+  hex_to_bytes ("7db5df06e7a69e432496adedb0085192"
+                "3595221596ae2ae9fb8115c1e9ed0a44",
+                prk,
+                32);
+  hex_to_bytes ("c00cf151ca5be075ed0ebfb5c80323c4"
+                "2d6b7db67881289af4008f1f6c357aea",
+                expected,
+                32);
+
+  SocketCrypto_hkdf_expand_label (prk, 32, "client in", NULL, 0, output, 32);
+  ASSERT (memcmp (output, expected, 32) == 0);
+}
+
+TEST (hkdf_expand_label_quic_key)
+{
+  /* RFC 9001 Appendix A.1: client key derivation
+   * PRK = client_initial_secret
+   * label = "quic key"
+   * context = ""
+   * output_len = 16
+   * Expected = 1f369613dd76d5467730efcbe3b1a22d
+   */
+  unsigned char prk[32], expected[16], output[16];
+
+  hex_to_bytes ("c00cf151ca5be075ed0ebfb5c80323c4"
+                "2d6b7db67881289af4008f1f6c357aea",
+                prk,
+                32);
+  hex_to_bytes ("1f369613dd76d5467730efcbe3b1a22d", expected, 16);
+
+  SocketCrypto_hkdf_expand_label (prk, 32, "quic key", NULL, 0, output, 16);
+  ASSERT (memcmp (output, expected, 16) == 0);
+}
+
+TEST (hkdf_expand_label_quic_iv)
+{
+  /* RFC 9001 Appendix A.1: client IV derivation
+   * Expected = fa044b2f42a3fd3b46fb255c
+   */
+  unsigned char prk[32], expected[12], output[12];
+
+  hex_to_bytes ("c00cf151ca5be075ed0ebfb5c80323c4"
+                "2d6b7db67881289af4008f1f6c357aea",
+                prk,
+                32);
+  hex_to_bytes ("fa044b2f42a3fd3b46fb255c", expected, 12);
+
+  SocketCrypto_hkdf_expand_label (prk, 32, "quic iv", NULL, 0, output, 12);
+  ASSERT (memcmp (output, expected, 12) == 0);
+}
+
+TEST (hkdf_expand_label_quic_hp)
+{
+  /* RFC 9001 Appendix A.1: client header protection key
+   * Expected = 9f50449e04a0e810283a1e9933adedd2
+   */
+  unsigned char prk[32], expected[16], output[16];
+
+  hex_to_bytes ("c00cf151ca5be075ed0ebfb5c80323c4"
+                "2d6b7db67881289af4008f1f6c357aea",
+                prk,
+                32);
+  hex_to_bytes ("9f50449e04a0e810283a1e9933adedd2", expected, 16);
+
+  SocketCrypto_hkdf_expand_label (prk, 32, "quic hp", NULL, 0, output, 16);
+  ASSERT (memcmp (output, expected, 16) == 0);
+}
+
+TEST (hkdf_expand_label_server_in)
+{
+  /* RFC 9001 Appendix A.1: server_initial_secret
+   * Expected = 3c199828fd139efd216c155ad844cc81
+   *            fb82fa8d7446fa7d78be803acdda951b
+   */
+  unsigned char prk[32], expected[32], output[32];
+
+  hex_to_bytes ("7db5df06e7a69e432496adedb0085192"
+                "3595221596ae2ae9fb8115c1e9ed0a44",
+                prk,
+                32);
+  hex_to_bytes ("3c199828fd139efd216c155ad844cc81"
+                "fb82fa8d7446fa7d78be803acdda951b",
+                expected,
+                32);
+
+  SocketCrypto_hkdf_expand_label (prk, 32, "server in", NULL, 0, output, 32);
+  ASSERT (memcmp (output, expected, 32) == 0);
+}
+
+TEST (hkdf_extract_null_salt)
+{
+  /* RFC 5869 §2.2: If salt not provided, use HashLen zero bytes */
+  unsigned char ikm[16] = { 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
+                            0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b };
+  unsigned char prk1[32], prk2[32];
+  unsigned char zero_salt[32] = { 0 };
+
+  /* NULL salt should use zero bytes */
+  SocketCrypto_hkdf_extract (NULL, 0, ikm, 16, prk1);
+  SocketCrypto_hkdf_extract (zero_salt, 32, ikm, 16, prk2);
+
+  ASSERT (memcmp (prk1, prk2, 32) == 0);
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/* ============================================================================
  * Cleanup Tests
  * ============================================================================
  */
