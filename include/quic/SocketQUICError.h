@@ -237,6 +237,22 @@ typedef enum
   TLS_ALERT_NO_APPLICATION_PROTOCOL = 120
 } SocketTLS_Alert;
 
+/* ============================================================================
+ * QUIC-Specific TLS Errors (RFC 9001 Section 8)
+ * ============================================================================
+ */
+
+/**
+ * @brief QUIC error for ALPN negotiation failure (RFC 9001 §8.1).
+ *
+ * Per RFC 9001: "If no compatible application protocol is negotiated,
+ * the endpoint MUST close the connection with a no_application_protocol
+ * TLS alert (QUIC error code 0x0178)."
+ *
+ * This is equivalent to QUIC_CRYPTO_ERROR(TLS_ALERT_NO_APPLICATION_PROTOCOL).
+ */
+#define QUIC_ERROR_NO_APPLICATION_PROTOCOL 0x0178
+
 /**
  * @brief Get human-readable name for a TLS alert.
  *

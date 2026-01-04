@@ -392,4 +392,44 @@ SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake);
  */
 extern const char *SocketQUICTLS_result_string (SocketQUICTLS_Result result);
 
+/* ============================================================================
+ * ALPN Functions (RFC 9001 Section 8.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if ALPN negotiation succeeded (RFC 9001 §8.1).
+ *
+ * Per RFC 9001 §8.1, ALPN is mandatory for QUIC connections. This function
+ * validates that an application protocol was successfully negotiated.
+ * Call after handshake completes.
+ *
+ * If ALPN negotiation failed, sets handshake->error_code to
+ * QUIC_ERROR_NO_APPLICATION_PROTOCOL (0x0178).
+ *
+ * @param handshake Handshake context.
+ *
+ * @return QUIC_TLS_OK if ALPN was negotiated, QUIC_TLS_ERROR_ALPN otherwise.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_check_alpn_negotiated (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Get negotiated ALPN protocol string.
+ *
+ * Retrieves the application protocol negotiated during TLS handshake.
+ * Valid only after handshake completes.
+ *
+ * @param handshake Handshake context.
+ * @param alpn      Output: pointer to ALPN string (NOT null-terminated).
+ *                  Valid until SSL object is freed.
+ * @param len       Output: ALPN string length in bytes.
+ *
+ * @return QUIC_TLS_OK if available, QUIC_TLS_ERROR_ALPN if not negotiated.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
+                        const char **alpn,
+                        size_t *len);
+
 #endif /* SOCKETQUICTLS_INCLUDED */
