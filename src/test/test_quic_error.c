@@ -255,13 +255,15 @@ TEST (quic_error_string_crypto_errors)
 {
   const char *str;
 
+  /* Known alert 0 (close_notify) -> human-readable name */
   str = SocketQUIC_error_string (0x0100);
   ASSERT (strstr (str, "CRYPTO_ERROR") != NULL);
-  ASSERT (strstr (str, "0x00") != NULL);
+  ASSERT (strstr (str, "close_notify") != NULL);
 
+  /* Known alert 40 (handshake_failure) -> human-readable name */
   str = SocketQUIC_error_string (0x0128);
   ASSERT (strstr (str, "CRYPTO_ERROR") != NULL);
-  ASSERT (strstr (str, "0x28") != NULL);
+  ASSERT (strstr (str, "handshake_failure") != NULL);
 }
 
 TEST (quic_error_string_crypto_errors_all_codes)
@@ -901,6 +903,119 @@ TEST (quic_error_send_connection_close_boundary_check)
     Arena_dispose ((Arena_T *)&arena);
   }
   END_TRY;
+}
+
+/* ============================================================================
+ * TLS Alert String Tests (RFC 9001 §4.8)
+ * ============================================================================
+ */
+
+TEST (quic_tls_alert_string_close_notify)
+{
+  const char *str = SocketQUIC_tls_alert_string (0);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strcmp (str, "close_notify") == 0);
+}
+
+TEST (quic_tls_alert_string_handshake_failure)
+{
+  const char *str = SocketQUIC_tls_alert_string (40);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strcmp (str, "handshake_failure") == 0);
+}
+
+TEST (quic_tls_alert_string_no_application_protocol)
+{
+  const char *str = SocketQUIC_tls_alert_string (120);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strcmp (str, "no_application_protocol") == 0);
+}
+
+TEST (quic_tls_alert_string_unknown)
+{
+  /* Unknown alert code should return NULL */
+  ASSERT_NULL (SocketQUIC_tls_alert_string (255));
+  ASSERT_NULL (SocketQUIC_tls_alert_string (1));
+  ASSERT_NULL (SocketQUIC_tls_alert_string (99));
+}
+
+TEST (quic_tls_alert_string_all_known)
+{
+  /* Verify all known alerts have names */
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_UNEXPECTED_MESSAGE));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_BAD_RECORD_MAC));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_RECORD_OVERFLOW));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_BAD_CERTIFICATE));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_UNSUPPORTED_CERTIFICATE));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_CERTIFICATE_REVOKED));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_CERTIFICATE_EXPIRED));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_CERTIFICATE_UNKNOWN));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_ILLEGAL_PARAMETER));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_UNKNOWN_CA));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_ACCESS_DENIED));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_DECODE_ERROR));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_DECRYPT_ERROR));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_PROTOCOL_VERSION));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_INSUFFICIENT_SECURITY));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_INTERNAL_ERROR));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_INAPPROPRIATE_FALLBACK));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_USER_CANCELED));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_MISSING_EXTENSION));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_UNSUPPORTED_EXTENSION));
+  ASSERT_NOT_NULL (SocketQUIC_tls_alert_string (TLS_ALERT_UNRECOGNIZED_NAME));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_BAD_CERTIFICATE_STATUS));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_UNKNOWN_PSK_IDENTITY));
+  ASSERT_NOT_NULL (
+      SocketQUIC_tls_alert_string (TLS_ALERT_CERTIFICATE_REQUIRED));
+}
+
+TEST (quic_error_string_known_crypto_human_readable)
+{
+  uint64_t code = QUIC_CRYPTO_ERROR (TLS_ALERT_HANDSHAKE_FAILURE);
+  const char *str = SocketQUIC_error_string (code);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strcmp (str, "CRYPTO_ERROR(handshake_failure)") == 0);
+}
+
+TEST (quic_error_string_unknown_crypto_hex)
+{
+  /* Unknown alert code 0xFF should show hex */
+  uint64_t code = QUIC_CRYPTO_ERROR (0xFF);
+  const char *str = SocketQUIC_error_string (code);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strcmp (str, "CRYPTO_ERROR(0xff)") == 0);
+}
+
+TEST (quic_error_string_long_alert_name)
+{
+  /* Test longest alert name: bad_certificate_status_response (31 chars) */
+  uint64_t code = QUIC_CRYPTO_ERROR (TLS_ALERT_BAD_CERTIFICATE_STATUS);
+  const char *str = SocketQUIC_error_string (code);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strcmp (str, "CRYPTO_ERROR(bad_certificate_status_response)") == 0);
+}
+
+TEST (quic_crypto_error_with_tls_alert_enum)
+{
+  /* handshake_failure (40) -> CRYPTO_ERROR 0x128 */
+  uint64_t code = QUIC_CRYPTO_ERROR (TLS_ALERT_HANDSHAKE_FAILURE);
+  ASSERT_EQ (code, 0x0128);
+  ASSERT (QUIC_IS_CRYPTO_ERROR (code));
+  ASSERT_EQ (QUIC_CRYPTO_ALERT (code), 40);
+}
+
+TEST (quic_no_application_protocol_alert)
+{
+  /* RFC 9001 §8.1: no_application_protocol = 0x0178 */
+  uint64_t code = QUIC_CRYPTO_ERROR (TLS_ALERT_NO_APPLICATION_PROTOCOL);
+  ASSERT_EQ (code, 0x0178);
+  ASSERT (QUIC_IS_CRYPTO_ERROR (code));
 }
 
 /* ============================================================================
