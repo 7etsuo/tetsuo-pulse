@@ -10,7 +10,7 @@
 
 # Socket Library
 
-High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern C API for TCP, UDP, Unix domain sockets, HTTP/1.1, HTTP/2, WebSocket, and TLS/DTLS with comprehensive error handling, zero-copy I/O, and cross-platform event polling.
+High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern C API for TCP, UDP, Unix domain sockets, HTTP/1.1, HTTP/2, QUIC, WebSocket, and TLS/DTLS with comprehensive error handling, zero-copy I/O, and cross-platform event polling.
 
 ## Features
 
@@ -27,6 +27,14 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **HPACK** - Header compression with static/dynamic tables, Huffman coding (RFC 7541)
 - **HTTP Client** - Connection pooling, authentication (Basic/Digest/Bearer), cookies (RFC 6265)
 - **HTTP Server** - Event-driven request handling, keep-alive, graceful shutdown
+
+### QUIC Transport
+- **RFC 9000 Compliant** - Full QUIC v1 transport protocol implementation
+- **Connection Management** - Connection ID rotation, stateless reset, address validation
+- **Stream Multiplexing** - Bidirectional and unidirectional streams with flow control
+- **Loss Detection** - RFC 9002 congestion control and loss recovery
+- **Path Migration** - Seamless connection migration across network changes
+- **0-RTT Resumption** - Fast reconnection with early data support
 
 ### WebSocket
 - **RFC 6455 Compliant** - Full WebSocket protocol implementation
@@ -58,13 +66,21 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **Rate Limiting** - Token bucket algorithm for connections and bandwidth
 - **Request Smuggling Prevention** - Strict HTTP parsing with RFC compliance
 
+### DNS Resolution
+- **Async Resolver** - Non-blocking resolution with thread pool and query multiplexing
+- **DNS-over-TLS (DoT)** - RFC 7858/8310 encrypted DNS with opportunistic/strict modes
+- **DNS-over-HTTPS (DoH)** - RFC 8484 DNS queries over HTTPS (POST/GET methods)
+- **DNSSEC Validation** - RFC 4033-4035 chain of trust, NSEC/NSEC3 authenticated denial
+- **DNS Cookies** - RFC 7873 spoofing protection via EDNS0
+- **Negative Caching** - RFC 2308 proper NXDOMAIN/NODATA handling
+- **Extended DNS Errors** - RFC 8914 detailed error codes
+
 ### Infrastructure
 - **Exception-Based Errors** - Clean error propagation with `TRY/EXCEPT/FINALLY`
 - **Simple API** - Return-code based convenience layer for common operations (no TRY/EXCEPT needed)
 - **Arena Memory Management** - Efficient allocation with overflow protection
 - **Circular Buffer I/O** - Zero-copy buffering for network operations
 - **Asynchronous I/O** - Platform-optimized async operations (io_uring/kqueue)
-- **Asynchronous DNS** - Non-blocking resolution with thread pool and timeouts
 - **UTF-8 Validation** - Security-focused UTF-8 processing for WebSocket text frames
 - **Generic Retry Framework** - Exponential backoff with jitter for resilient operations
 - **Per-IP Connection Tracking** - Connection limits and rate limiting per client IP
@@ -566,6 +582,42 @@ END_TRY;
 
 SocketWS_free(&ws2);
 Socket_free(&sock);
+```
+
+### QUIC Client
+
+```c
+#include "quic/SocketQUICConnection.h"
+#include "quic/SocketQUICStream.h"
+#include "quic/SocketQUICHandshake.h"
+
+/* Create QUIC connection */
+Arena_T arena = Arena_new();
+SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+
+/* Configure connection parameters */
+SocketQUICConnection_set_initial_dcid(conn, dcid, dcid_len);
+SocketQUICConnection_set_local_addr(conn, local_addr, local_port);
+SocketQUICConnection_set_peer_addr(conn, peer_addr, peer_port);
+
+/* Create bidirectional stream */
+SocketQUICStream_T stream = SocketQUICStream_new(arena, 0, QUIC_STREAM_BIDI);
+SocketQUICStream_write(stream, data, len);
+
+/* Process handshake */
+SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, QUIC_HANDSHAKE_CLIENT);
+while (SocketQUICHandshake_state(hs) != QUIC_HS_STATE_COMPLETE) {
+    SocketQUICHandshake_process(hs);
+}
+
+/* Read stream data */
+uint8_t buf[4096];
+size_t bytes_read = SocketQUICStream_read(stream, buf, sizeof(buf));
+
+/* Clean up */
+SocketQUICStream_free(&stream);
+SocketQUICConnection_free(&conn);
+Arena_dispose(&arena);
 ```
 
 ### Proxy Tunneling
@@ -2060,7 +2112,16 @@ include/
 │   ├── SocketReconnect.h # Auto-reconnection
 │   └── SocketWS.h       # WebSocket (RFC 6455)
 ├── dns/           # DNS layer
-│   └── SocketDNS.h      # Async DNS resolution
+│   ├── SocketDNS.h      # Async DNS resolution
+│   ├── SocketDNSoverTLS.h # DNS-over-TLS (RFC 7858)
+│   ├── SocketDNSoverHTTPS.h # DNS-over-HTTPS (RFC 8484)
+│   ├── SocketDNSSEC.h   # DNSSEC validation (RFC 4033-4035)
+│   ├── SocketDNSCookie.h # DNS cookies (RFC 7873)
+│   ├── SocketDNSResolver.h # High-level resolver API
+│   ├── SocketDNSWire.h  # Wire format encoding/decoding
+│   ├── SocketDNSTransport.h # UDP/TCP transport layer
+│   ├── SocketDNSNegCache.h # Negative response caching
+│   └── SocketDNSError.h # Extended DNS errors (RFC 8914)
 ├── poll/          # Event system
 │   └── SocketPoll.h     # Cross-platform polling
 ├── pool/          # Connection management
@@ -2072,13 +2133,29 @@ include/
 │   ├── SocketDTLS.h     # DTLS operations
 │   ├── SocketDTLSContext.h # DTLS context management
 │   └── SocketDTLSConfig.h # DTLS configuration constants
-└── http/          # HTTP protocol stack
-    ├── SocketHTTP.h     # HTTP core (RFC 9110)
-    ├── SocketHTTP1.h    # HTTP/1.1 (RFC 9112)
-    ├── SocketHPACK.h    # HPACK (RFC 7541)
-    ├── SocketHTTP2.h    # HTTP/2 (RFC 9113)
-    ├── SocketHTTPClient.h # HTTP client API
-    └── SocketHTTPServer.h # HTTP server API
+├── http/          # HTTP protocol stack
+│   ├── SocketHTTP.h     # HTTP core (RFC 9110)
+│   ├── SocketHTTP1.h    # HTTP/1.1 (RFC 9112)
+│   ├── SocketHPACK.h    # HPACK (RFC 7541)
+│   ├── SocketHTTP2.h    # HTTP/2 (RFC 9113)
+│   ├── SocketHTTPClient.h # HTTP client API
+│   └── SocketHTTPServer.h # HTTP server API
+├── quic/          # QUIC transport layer
+│   ├── SocketQUICConnection.h # Connection management (RFC 9000)
+│   ├── SocketQUICStream.h   # Stream multiplexing
+│   ├── SocketQUICPacket.h   # Packet parsing/serialization
+│   ├── SocketQUICFrame.h    # Frame encoding/decoding
+│   ├── SocketQUICHandshake.h # TLS 1.3 handshake integration
+│   ├── SocketQUICFlow.h     # Flow control
+│   ├── SocketQUICLoss.h     # Loss detection (RFC 9002)
+│   ├── SocketQUICMigration.h # Path migration
+│   └── SocketQUICVersion.h  # Version negotiation
+└── simple/        # Return-code based convenience API
+    ├── SocketSimple.h       # Core simple socket API
+    ├── SocketSimple-http.h  # Simple HTTP client
+    ├── SocketSimple-tls.h   # Simple TLS connections
+    ├── SocketSimple-ws.h    # Simple WebSocket
+    └── SocketSimple-dns.h   # Simple DNS resolution
 ```
 
 ### Layered Architecture
@@ -2087,7 +2164,7 @@ include/
 2. **Utilities**: `SocketUtil` (Logging, Metrics, Events, Error Handling), `SocketTimer`, `SocketRateLimit`, `SocketUTF8`, `SocketRetry`
 3. **Base Abstraction**: `SocketCommon` (Shared base `SocketBase_T` for Socket/SocketDgram)
 4. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketIO` (I/O helpers)
-5. **DNS**: `SocketDNS` (Async DNS with worker threads)
+5. **DNS**: `SocketDNS` (Async DNS with worker threads), `SocketDNSoverTLS`, `SocketDNSoverHTTPS`, `SocketDNSSEC`
 6. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction), `SocketAsync` (Async I/O integration)
 7. **Connection Helpers**: `SocketHappyEyeballs` (RFC 8305), `SocketReconnect` (Auto-reconnection), `SocketProxy` (HTTP CONNECT, SOCKS4/5)
 8. **Security**: `SocketSYNProtect` (SYN flood protection), `SocketIPTracker` (Per-IP limits)
@@ -2095,6 +2172,8 @@ include/
 10. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management), `SocketDTLS`, `SocketDTLSContext`
 11. **HTTP**: `SocketHTTP`, `SocketHTTP1`, `SocketHPACK`, `SocketHTTP2`, `SocketHTTPClient`, `SocketHTTPServer`
 12. **WebSocket**: `SocketWS` (RFC 6455 with permessage-deflate)
+13. **QUIC**: `SocketQUICConnection`, `SocketQUICStream`, `SocketQUICPacket`, `SocketQUICHandshake`, `SocketQUICLoss`
+14. **Simple API**: `SocketSimple` (Return-code based wrappers for all modules - no TRY/EXCEPT needed)
 
 ## Thread Safety
 
@@ -2254,7 +2333,7 @@ The library includes comprehensive tests in `src/test/`:
 
 ### Fuzz Testing
 
-65+ fuzz harnesses in `src/fuzz/` covering:
+130+ fuzz harnesses in `src/fuzz/` covering:
 - HTTP/1.1 parser and request smuggling prevention
 - HTTP/2 frame parsing and HPACK encoding
 - WebSocket framing and permessage-deflate
@@ -2270,16 +2349,13 @@ The library includes comprehensive tests in `src/test/`:
 # Build with fuzzing
 cmake -S . -B build -DENABLE_FUZZING=ON -DCMAKE_C_COMPILER=clang
 cmake --build build
-
-# Run parallel fuzzing (optimized for 64 cores)
-./scripts/run_fuzz_parallel.sh
 ```
 
 ### Test Coverage
 
 The library includes comprehensive test coverage:
 
-- **47 unit tests** covering all major functionality
+- **140+ unit tests** covering all major functionality
 - **Fuzzing harnesses** for protocol parsing and buffer operations
 - **Integration tests** for end-to-end functionality
 - **Stress tests** for connection pools and high-load scenarios
