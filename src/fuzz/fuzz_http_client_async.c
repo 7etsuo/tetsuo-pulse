@@ -142,13 +142,13 @@ create_socketpair (Socket_T *sock1_out, Socket_T *sock2_out, Arena_T arena)
 
     *sock1_out = sock1;
     *sock2_out = sock2;
-    return 0;
+    RETURN 0;
   }
   EXCEPT (Socket_Failed)
   {
     close (fds[0]);
     close (fds[1]);
-    return -1;
+    RETURN -1;
   }
   END_TRY;
 
