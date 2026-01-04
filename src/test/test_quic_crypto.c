@@ -26,8 +26,8 @@
  */
 
 /* DCID from RFC test vector */
-static const uint8_t rfc_dcid_data[] = { 0x83, 0x94, 0xc8, 0xf0,
-                                         0x3e, 0x51, 0x57, 0x08 };
+static const uint8_t rfc_dcid_data[]
+    = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
 
 /* Expected initial_secret (32 bytes) */
 static const uint8_t rfc_initial_secret[]
@@ -132,9 +132,9 @@ TEST (quic_crypto_get_salt_null_params)
   const uint8_t *salt;
   size_t salt_len;
 
-  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
-             SocketQUICCrypto_get_initial_salt (QUIC_VERSION_1, NULL,
-                                                &salt_len));
+  ASSERT_EQ (
+      QUIC_CRYPTO_ERROR_NULL,
+      SocketQUICCrypto_get_initial_salt (QUIC_VERSION_1, NULL, &salt_len));
   ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
              SocketQUICCrypto_get_initial_salt (QUIC_VERSION_1, &salt, NULL));
 }
@@ -158,7 +158,8 @@ TEST (quic_crypto_derive_rfc_initial_secret)
       &dcid, QUIC_VERSION_1, &secrets, &keys);
 
   ASSERT_EQ (QUIC_CRYPTO_OK, result);
-  ASSERT (memcmp (secrets.initial_secret, rfc_initial_secret,
+  ASSERT (memcmp (secrets.initial_secret,
+                  rfc_initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           == 0);
 
@@ -178,7 +179,8 @@ TEST (quic_crypto_derive_rfc_client_secret)
       &dcid, QUIC_VERSION_1, &secrets, &keys);
 
   ASSERT_EQ (QUIC_CRYPTO_OK, result);
-  ASSERT (memcmp (secrets.client_initial_secret, rfc_client_initial_secret,
+  ASSERT (memcmp (secrets.client_initial_secret,
+                  rfc_client_initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           == 0);
 
@@ -198,7 +200,8 @@ TEST (quic_crypto_derive_rfc_server_secret)
       &dcid, QUIC_VERSION_1, &secrets, &keys);
 
   ASSERT_EQ (QUIC_CRYPTO_OK, result);
-  ASSERT (memcmp (secrets.server_initial_secret, rfc_server_initial_secret,
+  ASSERT (memcmp (secrets.server_initial_secret,
+                  rfc_server_initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           == 0);
 
@@ -260,13 +263,16 @@ TEST (quic_crypto_derive_full_rfc)
   ASSERT_EQ (1, keys.initialized);
 
   /* Verify all secrets */
-  ASSERT (memcmp (secrets.initial_secret, rfc_initial_secret,
+  ASSERT (memcmp (secrets.initial_secret,
+                  rfc_initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           == 0);
-  ASSERT (memcmp (secrets.client_initial_secret, rfc_client_initial_secret,
+  ASSERT (memcmp (secrets.client_initial_secret,
+                  rfc_client_initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           == 0);
-  ASSERT (memcmp (secrets.server_initial_secret, rfc_server_initial_secret,
+  ASSERT (memcmp (secrets.server_initial_secret,
+                  rfc_server_initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           == 0);
 
@@ -422,14 +428,17 @@ TEST (quic_crypto_derive_v2_secrets_differ)
   ASSERT_EQ (QUIC_CRYPTO_OK, result_v2);
 
   /* Initial secrets MUST differ due to different salts */
-  ASSERT (memcmp (secrets_v1.initial_secret, secrets_v2.initial_secret,
+  ASSERT (memcmp (secrets_v1.initial_secret,
+                  secrets_v2.initial_secret,
                   SOCKET_CRYPTO_SHA256_SIZE)
           != 0);
   ASSERT (memcmp (secrets_v1.client_initial_secret,
-                  secrets_v2.client_initial_secret, SOCKET_CRYPTO_SHA256_SIZE)
+                  secrets_v2.client_initial_secret,
+                  SOCKET_CRYPTO_SHA256_SIZE)
           != 0);
   ASSERT (memcmp (secrets_v1.server_initial_secret,
-                  secrets_v2.server_initial_secret, SOCKET_CRYPTO_SHA256_SIZE)
+                  secrets_v2.server_initial_secret,
+                  SOCKET_CRYPTO_SHA256_SIZE)
           != 0);
 
   SocketQUICCryptoSecrets_clear (&secrets_v1);
@@ -471,9 +480,8 @@ TEST (quic_crypto_derive_null_secrets_ok)
   SocketQUICConnectionID_set (&dcid, rfc_dcid_data, sizeof (rfc_dcid_data));
 
   /* NULL secrets is allowed (function just skips copying them) */
-  SocketQUICCrypto_Result result
-      = SocketQUICCrypto_derive_initial_secrets (&dcid, QUIC_VERSION_1, NULL,
-                                                 &keys);
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_initial_secrets (
+      &dcid, QUIC_VERSION_1, NULL, &keys);
 
   ASSERT_EQ (QUIC_CRYPTO_OK, result);
   ASSERT_EQ (1, keys.initialized);
@@ -530,21 +538,17 @@ TEST (quic_crypto_traffic_keys_null_params)
   uint8_t hp[QUIC_INITIAL_HP_KEY_LEN];
 
   ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
-             SocketQUICCrypto_derive_traffic_keys (NULL,
-                                                   SOCKET_CRYPTO_SHA256_SIZE,
-                                                   key, iv, hp));
+             SocketQUICCrypto_derive_traffic_keys (
+                 NULL, SOCKET_CRYPTO_SHA256_SIZE, key, iv, hp));
   ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
-             SocketQUICCrypto_derive_traffic_keys (secret,
-                                                   SOCKET_CRYPTO_SHA256_SIZE,
-                                                   NULL, iv, hp));
+             SocketQUICCrypto_derive_traffic_keys (
+                 secret, SOCKET_CRYPTO_SHA256_SIZE, NULL, iv, hp));
   ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
-             SocketQUICCrypto_derive_traffic_keys (secret,
-                                                   SOCKET_CRYPTO_SHA256_SIZE,
-                                                   key, NULL, hp));
+             SocketQUICCrypto_derive_traffic_keys (
+                 secret, SOCKET_CRYPTO_SHA256_SIZE, key, NULL, hp));
   ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
-             SocketQUICCrypto_derive_traffic_keys (secret,
-                                                   SOCKET_CRYPTO_SHA256_SIZE,
-                                                   key, iv, NULL));
+             SocketQUICCrypto_derive_traffic_keys (
+                 secret, SOCKET_CRYPTO_SHA256_SIZE, key, iv, NULL));
 }
 
 TEST (quic_crypto_traffic_keys_invalid_secret_len)
@@ -589,6 +593,470 @@ TEST (quic_crypto_keys_clear)
 #endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
+ * AEAD Algorithm Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_sizes_aes128)
+{
+  size_t key_len, iv_len, hp_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_key_sizes (
+      QUIC_AEAD_AES_128_GCM, &key_len, &iv_len, &hp_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (16, key_len);
+  ASSERT_EQ (12, iv_len);
+  ASSERT_EQ (16, hp_len);
+}
+
+TEST (quic_crypto_aead_sizes_aes256)
+{
+  size_t key_len, iv_len, hp_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_key_sizes (
+      QUIC_AEAD_AES_256_GCM, &key_len, &iv_len, &hp_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, key_len);
+  ASSERT_EQ (12, iv_len);
+  ASSERT_EQ (32, hp_len);
+}
+
+TEST (quic_crypto_aead_sizes_chacha20)
+{
+  size_t key_len, iv_len, hp_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_key_sizes (
+      QUIC_AEAD_CHACHA20_POLY1305, &key_len, &iv_len, &hp_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, key_len);
+  ASSERT_EQ (12, iv_len);
+  ASSERT_EQ (32, hp_len);
+}
+
+TEST (quic_crypto_aead_sizes_invalid)
+{
+  size_t key_len, iv_len, hp_len;
+
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_get_aead_key_sizes (99, &key_len, &iv_len, &hp_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+TEST (quic_crypto_aead_sizes_null_outputs)
+{
+  /* Should succeed with NULL output pointers */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_key_sizes (
+      QUIC_AEAD_AES_128_GCM, NULL, NULL, NULL);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+}
+
+TEST (quic_crypto_aead_sizes_negative)
+{
+  /* Test negative AEAD value */
+  size_t key_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_key_sizes (
+      (SocketQUIC_AEAD)-1, &key_len, NULL, NULL);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+/* ============================================================================
+ * AEAD Secret Length Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_secret_len_aes128)
+{
+  size_t secret_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_secret_len (
+      QUIC_AEAD_AES_128_GCM, &secret_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, secret_len); /* SHA-256 */
+}
+
+TEST (quic_crypto_aead_secret_len_aes256)
+{
+  size_t secret_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_secret_len (
+      QUIC_AEAD_AES_256_GCM, &secret_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (48, secret_len); /* SHA-384 */
+}
+
+TEST (quic_crypto_aead_secret_len_chacha20)
+{
+  size_t secret_len;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_get_aead_secret_len (
+      QUIC_AEAD_CHACHA20_POLY1305, &secret_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, secret_len); /* SHA-256 */
+}
+
+TEST (quic_crypto_aead_secret_len_invalid)
+{
+  size_t secret_len;
+
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_get_aead_secret_len (99, &secret_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+TEST (quic_crypto_aead_secret_len_negative)
+{
+  size_t secret_len;
+
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_get_aead_secret_len ((SocketQUIC_AEAD)-1, &secret_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+TEST (quic_crypto_aead_secret_len_null_output)
+{
+  /* Should succeed with NULL output pointer */
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_get_aead_secret_len (QUIC_AEAD_AES_128_GCM, NULL);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+}
+
+TEST (quic_crypto_aead_string)
+{
+  ASSERT (strcmp (SocketQUIC_AEAD_string (QUIC_AEAD_AES_128_GCM), "AES-128-GCM")
+          == 0);
+  ASSERT (strcmp (SocketQUIC_AEAD_string (QUIC_AEAD_AES_256_GCM), "AES-256-GCM")
+          == 0);
+  ASSERT (strcmp (SocketQUIC_AEAD_string (QUIC_AEAD_CHACHA20_POLY1305),
+                  "ChaCha20-Poly1305")
+          == 0);
+  ASSERT (strcmp (SocketQUIC_AEAD_string (99), "UNKNOWN") == 0);
+}
+
+/* ============================================================================
+ * Packet Protection Keys Tests (RFC 9001 Section 5.1)
+ * ============================================================================
+ */
+
+TEST (quic_crypto_packet_keys_init)
+{
+  SocketQUICPacketKeys_T keys;
+
+  /* Fill with non-zero pattern */
+  memset (&keys, 0xCC, sizeof (keys));
+
+  SocketQUICPacketKeys_init (&keys);
+
+  /* Verify all bytes are zero */
+  uint8_t *ptr = (uint8_t *)&keys;
+  for (size_t i = 0; i < sizeof (keys); i++)
+    {
+      ASSERT_EQ (0, ptr[i]);
+    }
+  ASSERT_EQ (0, keys.key_len);
+  ASSERT_EQ (0, keys.hp_len);
+}
+
+TEST (quic_crypto_packet_keys_init_null)
+{
+  /* Should not crash */
+  SocketQUICPacketKeys_init (NULL);
+}
+
+TEST (quic_crypto_packet_keys_clear)
+{
+  SocketQUICPacketKeys_T keys;
+
+  /* Fill with non-zero pattern */
+  memset (&keys, 0xDD, sizeof (keys));
+  keys.key_len = 16;
+  keys.hp_len = 16;
+  keys.aead = QUIC_AEAD_AES_128_GCM;
+
+  SocketQUICPacketKeys_clear (&keys);
+
+  /* Verify all bytes are zero */
+  uint8_t *ptr = (uint8_t *)&keys;
+  for (size_t i = 0; i < sizeof (keys); i++)
+    {
+      ASSERT_EQ (0, ptr[i]);
+    }
+}
+
+TEST (quic_crypto_packet_keys_clear_null)
+{
+  /* Should not crash */
+  SocketQUICPacketKeys_clear (NULL);
+}
+
+#ifdef SOCKET_HAS_TLS
+
+TEST (quic_crypto_packet_keys_aes128)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[SOCKET_CRYPTO_SHA256_SIZE];
+
+  /* Use a deterministic secret for testing */
+  memset (secret, 0x42, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (16, keys.key_len);
+  ASSERT_EQ (16, keys.hp_len);
+  ASSERT_EQ (QUIC_AEAD_AES_128_GCM, keys.aead);
+
+  /* Verify keys are non-zero (derived from secret) */
+  int has_nonzero = 0;
+  for (size_t i = 0; i < keys.key_len; i++)
+    {
+      if (keys.key[i] != 0)
+        has_nonzero = 1;
+    }
+  ASSERT_EQ (1, has_nonzero);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_packet_keys_aes256)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[48]; /* SHA-384 size required for AES-256-GCM */
+
+  memset (secret, 0x43, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_256_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, keys.key_len);
+  ASSERT_EQ (32, keys.hp_len);
+  ASSERT_EQ (QUIC_AEAD_AES_256_GCM, keys.aead);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_packet_keys_chacha20)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[SOCKET_CRYPTO_SHA256_SIZE];
+
+  memset (secret, 0x44, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_CHACHA20_POLY1305, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, keys.key_len);
+  ASSERT_EQ (32, keys.hp_len);
+  ASSERT_EQ (QUIC_AEAD_CHACHA20_POLY1305, keys.aead);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_packet_keys_null_secret)
+{
+  SocketQUICPacketKeys_T keys;
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      NULL, SOCKET_CRYPTO_SHA256_SIZE, QUIC_AEAD_AES_128_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+}
+
+TEST (quic_crypto_packet_keys_null_keys)
+{
+  uint8_t secret[SOCKET_CRYPTO_SHA256_SIZE] = { 0 };
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, NULL);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+}
+
+TEST (quic_crypto_packet_keys_invalid_aead)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[SOCKET_CRYPTO_SHA256_SIZE] = { 0 };
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), 99, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+TEST (quic_crypto_packet_keys_invalid_secret_len)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[16] = { 0 }; /* Too short */
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_SECRET_LEN, result);
+}
+
+TEST (quic_crypto_packet_keys_secret_len_boundary_31)
+{
+  /* Test secret length just below SHA-256 size */
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[31];
+  memset (secret, 0x46, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_SECRET_LEN, result);
+}
+
+TEST (quic_crypto_packet_keys_secret_len_boundary_33)
+{
+  /* Test secret length just above SHA-256 size */
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[33];
+  memset (secret, 0x47, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_SECRET_LEN, result);
+}
+
+TEST (quic_crypto_packet_keys_secret_len_boundary_47)
+{
+  /* Test secret length just below SHA-384 size */
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[47];
+  memset (secret, 0x48, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_256_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_SECRET_LEN, result);
+}
+
+TEST (quic_crypto_packet_keys_secret_len_boundary_49)
+{
+  /* Test secret length just above SHA-384 size */
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[49];
+  memset (secret, 0x49, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_256_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_SECRET_LEN, result);
+}
+
+TEST (quic_crypto_packet_keys_aes256_requires_sha384)
+{
+  /* AES-256-GCM MUST use 48-byte SHA-384 secrets per RFC 9001 */
+  SocketQUICPacketKeys_T keys;
+  uint8_t sha256_secret[32]; /* Wrong size for AES-256 */
+
+  memset (sha256_secret, 0x50, sizeof (sha256_secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      sha256_secret, sizeof (sha256_secret), QUIC_AEAD_AES_256_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_SECRET_LEN, result);
+}
+
+TEST (quic_crypto_packet_keys_sha384_secret)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[48]; /* SHA-384 size for AES-256-GCM */
+
+  memset (secret, 0x45, sizeof (secret));
+
+  /* AES-256-GCM REQUIRES 48-byte SHA-384 secrets */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_256_GCM, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (32, keys.key_len);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_packet_keys_negative_aead)
+{
+  /* Test negative AEAD value (cast to enum) */
+  SocketQUICPacketKeys_T keys;
+  uint8_t secret[32];
+  memset (secret, 0x51, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), (SocketQUIC_AEAD)-1, &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+TEST (quic_crypto_packet_keys_rfc_vector)
+{
+  /* Use RFC 9001 Appendix A.1 client_initial_secret to validate derivation */
+  SocketQUICPacketKeys_T keys;
+
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                             SOCKET_CRYPTO_SHA256_SIZE,
+                                             QUIC_AEAD_AES_128_GCM,
+                                             &keys);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (16, keys.key_len);
+  ASSERT_EQ (16, keys.hp_len);
+
+  /* Verify matches expected RFC values */
+  ASSERT (memcmp (keys.key, rfc_client_key, QUIC_INITIAL_KEY_LEN) == 0);
+  ASSERT (memcmp (keys.iv, rfc_client_iv, QUIC_INITIAL_IV_LEN) == 0);
+  ASSERT (memcmp (keys.hp_key, rfc_client_hp, QUIC_INITIAL_HP_KEY_LEN) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_packet_keys_different_secrets)
+{
+  SocketQUICPacketKeys_T keys1, keys2;
+  uint8_t secret1[SOCKET_CRYPTO_SHA256_SIZE];
+  uint8_t secret2[SOCKET_CRYPTO_SHA256_SIZE];
+
+  memset (secret1, 0x01, sizeof (secret1));
+  memset (secret2, 0x02, sizeof (secret2));
+
+  SocketQUICCrypto_Result result1 = SocketQUICCrypto_derive_packet_keys (
+      secret1, sizeof (secret1), QUIC_AEAD_AES_128_GCM, &keys1);
+  SocketQUICCrypto_Result result2 = SocketQUICCrypto_derive_packet_keys (
+      secret2, sizeof (secret2), QUIC_AEAD_AES_128_GCM, &keys2);
+
+  ASSERT_EQ (QUIC_CRYPTO_OK, result1);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result2);
+
+  /* Different secrets should produce different keys */
+  ASSERT (memcmp (keys1.key, keys2.key, keys1.key_len) != 0);
+  ASSERT (memcmp (keys1.iv, keys2.iv, QUIC_PACKET_IV_LEN) != 0);
+  ASSERT (memcmp (keys1.hp_key, keys2.hp_key, keys1.hp_len) != 0);
+
+  SocketQUICPacketKeys_clear (&keys1);
+  SocketQUICPacketKeys_clear (&keys2);
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/* ============================================================================
  * Result String Tests
  * ============================================================================
  */
@@ -600,6 +1068,9 @@ TEST (quic_crypto_result_string)
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_VERSION));
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_HKDF));
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_NO_TLS));
+  ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_AEAD));
+  ASSERT_NOT_NULL (
+      SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_SECRET_LEN));
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (99)); /* Unknown */
 }
 

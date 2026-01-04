@@ -6,26 +6,27 @@
 
 /**
  * @file SocketQUICCrypto.h
- * @brief QUIC Initial Secrets Derivation (RFC 9001 Section 5.2).
+ * @brief QUIC Packet Protection Keys (RFC 9001 Sections 5.1-5.2).
  *
- * Provides cryptographic key derivation for QUIC Initial packets. Keys are
- * derived from the client's Destination Connection ID using HKDF-Extract
- * and HKDF-Expand-Label per RFC 9001.
+ * Provides cryptographic key derivation for QUIC packet protection:
+ * - Initial packets: Keys derived from client DCID (Section 5.2)
+ * - Handshake/1-RTT packets: Keys derived from TLS secrets (Section 5.1)
  *
- * Derivation process:
- *   1. HKDF-Extract(salt, DCID) -> initial_secret
- *   2. HKDF-Expand-Label(initial_secret, "client in", "") -> client_initial_secret
- *   3. HKDF-Expand-Label(initial_secret, "server in", "") -> server_initial_secret
- *   4. HKDF-Expand-Label(client_initial_secret, "quic key", "") -> client_key
- *   5. HKDF-Expand-Label(client_initial_secret, "quic iv", "")  -> client_iv
- *   6. HKDF-Expand-Label(client_initial_secret, "quic hp", "")  -> client_hp_key
- *   7. (Repeat 4-6 for server using server_initial_secret)
+ * Derivation process (Section 5.1):
+ *   key    = HKDF-Expand-Label(secret, "quic key", "", key_len)
+ *   iv     = HKDF-Expand-Label(secret, "quic iv", "", 12)
+ *   hp_key = HKDF-Expand-Label(secret, "quic hp", "", hp_len)
+ *
+ * Key sizes and hash functions depend on the AEAD algorithm (RFC 9001 §5.1):
+ *   AES-128-GCM:       key=16, iv=12, hp=16, hash=SHA-256 (32-byte secret)
+ *   AES-256-GCM:       key=32, iv=12, hp=32, hash=SHA-384 (48-byte secret)
+ *   ChaCha20-Poly1305: key=32, iv=12, hp=32, hash=SHA-256 (32-byte secret)
  *
  * Thread Safety: All functions are thread-safe (no shared state).
  *
  * @defgroup quic_crypto QUIC Cryptographic Module
  * @{
- * @see https://www.rfc-editor.org/rfc/rfc9001#section-5.2
+ * @see https://www.rfc-editor.org/rfc/rfc9001#section-5.1
  */
 
 #ifndef SOCKETQUICCRYPTO_INCLUDED
@@ -64,8 +65,64 @@ typedef enum
   QUIC_CRYPTO_ERROR_NULL,      /**< NULL pointer argument */
   QUIC_CRYPTO_ERROR_VERSION,   /**< Unsupported QUIC version */
   QUIC_CRYPTO_ERROR_HKDF,      /**< HKDF operation failed */
-  QUIC_CRYPTO_ERROR_NO_TLS     /**< TLS support not available */
+  QUIC_CRYPTO_ERROR_NO_TLS,    /**< TLS support not available */
+  QUIC_CRYPTO_ERROR_AEAD,      /**< Invalid AEAD algorithm */
+  QUIC_CRYPTO_ERROR_SECRET_LEN /**< Secret length doesn't match AEAD */
 } SocketQUICCrypto_Result;
+
+/* ============================================================================
+ * AEAD Algorithm Types (RFC 9001 Section 5.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief AEAD algorithms supported for QUIC packet protection.
+ *
+ * These correspond to TLS 1.3 cipher suites. Each algorithm has
+ * different key/IV/HP sizes per RFC 9001 Section 5.1.
+ */
+typedef enum
+{
+  QUIC_AEAD_AES_128_GCM = 0,   /**< TLS_AES_128_GCM_SHA256 */
+  QUIC_AEAD_AES_256_GCM,       /**< TLS_AES_256_GCM_SHA384 */
+  QUIC_AEAD_CHACHA20_POLY1305, /**< TLS_CHACHA20_POLY1305_SHA256 */
+  QUIC_AEAD_COUNT              /**< Number of supported algorithms */
+} SocketQUIC_AEAD;
+
+/* ============================================================================
+ * Packet Protection Keys (RFC 9001 Section 5.1)
+ * ============================================================================
+ */
+
+/** Maximum AEAD key length (AES-256 / ChaCha20) */
+#define QUIC_PACKET_KEY_MAX_LEN 32
+
+/** AEAD IV length (fixed for all algorithms) */
+#define QUIC_PACKET_IV_LEN 12
+
+/** Maximum header protection key length (AES-256 / ChaCha20) */
+#define QUIC_PACKET_HP_MAX_LEN 32
+
+/**
+ * @brief Packet protection keys for any encryption level.
+ *
+ * Generalized structure that holds keys for any AEAD algorithm.
+ * Key sizes are algorithm-dependent; actual lengths stored in key_len/hp_len.
+ *
+ * Per RFC 9001 Section 5.1:
+ *   key    = HKDF-Expand-Label(secret, "quic key", "", key_len)
+ *   iv     = HKDF-Expand-Label(secret, "quic iv", "", 12)
+ *   hp_key = HKDF-Expand-Label(secret, "quic hp", "", hp_len)
+ */
+typedef struct SocketQUICPacketKeys
+{
+  uint8_t key[QUIC_PACKET_KEY_MAX_LEN];   /**< AEAD encryption key */
+  uint8_t iv[QUIC_PACKET_IV_LEN];         /**< AEAD initialization vector */
+  uint8_t hp_key[QUIC_PACKET_HP_MAX_LEN]; /**< Header protection key */
+  size_t key_len;                         /**< Actual key length in bytes */
+  size_t hp_len;                          /**< Actual HP key length in bytes */
+  SocketQUIC_AEAD aead;                   /**< Algorithm in use */
+} SocketQUICPacketKeys_T;
 
 /* ============================================================================
  * Intermediate Secrets Structure (for testing)
@@ -197,8 +254,93 @@ SocketQUICCrypto_get_initial_salt (uint32_t version,
  *
  * @param secrets Secrets structure to clear (may be NULL).
  */
-extern void
-SocketQUICCryptoSecrets_clear (SocketQUICCryptoSecrets_T *secrets);
+extern void SocketQUICCryptoSecrets_clear (SocketQUICCryptoSecrets_T *secrets);
+
+/* ============================================================================
+ * Packet Protection Key Derivation (RFC 9001 Section 5.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Derive packet protection keys from a TLS secret.
+ *
+ * Derives key, IV, and header protection key using HKDF-Expand-Label
+ * with "quic key", "quic iv", and "quic hp" labels. Key sizes depend
+ * on the specified AEAD algorithm.
+ *
+ * @param secret     TLS secret (32 or 48 bytes depending on cipher suite).
+ * @param secret_len Length of secret.
+ * @param aead       AEAD algorithm determining key sizes.
+ * @param keys       Output: derived packet protection keys.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ *
+ * @see RFC 9001 Section 5.1
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_derive_packet_keys (const uint8_t *secret,
+                                     size_t secret_len,
+                                     SocketQUIC_AEAD aead,
+                                     SocketQUICPacketKeys_T *keys);
+
+/**
+ * @brief Get key sizes for an AEAD algorithm.
+ *
+ * Returns the key, IV, and HP key lengths for the specified algorithm.
+ *
+ * @param aead    AEAD algorithm.
+ * @param key_len Output: key length in bytes (may be NULL).
+ * @param iv_len  Output: IV length in bytes (may be NULL).
+ * @param hp_len  Output: HP key length in bytes (may be NULL).
+ *
+ * @return QUIC_CRYPTO_OK on success, QUIC_CRYPTO_ERROR_AEAD if invalid.
+ */
+extern SocketQUICCrypto_Result SocketQUICCrypto_get_aead_key_sizes (
+    SocketQUIC_AEAD aead, size_t *key_len, size_t *iv_len, size_t *hp_len);
+
+/**
+ * @brief Get required secret length for an AEAD algorithm.
+ *
+ * Returns the expected TLS secret length based on the hash function
+ * used by the cipher suite:
+ *   - AES-128-GCM (SHA-256): 32 bytes
+ *   - AES-256-GCM (SHA-384): 48 bytes
+ *   - ChaCha20-Poly1305 (SHA-256): 32 bytes
+ *
+ * @param aead       AEAD algorithm.
+ * @param secret_len Output: required secret length in bytes (may be NULL).
+ *
+ * @return QUIC_CRYPTO_OK on success, QUIC_CRYPTO_ERROR_AEAD if invalid.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_get_aead_secret_len (SocketQUIC_AEAD aead, size_t *secret_len);
+
+/**
+ * @brief Initialize packet keys structure.
+ *
+ * Zeros all fields including key material.
+ *
+ * @param keys Keys structure to initialize (may be NULL).
+ */
+extern void SocketQUICPacketKeys_init (SocketQUICPacketKeys_T *keys);
+
+/**
+ * @brief Securely clear packet protection keys.
+ *
+ * Overwrites all key material with zeros using secure clear.
+ *
+ * @param keys Keys structure to clear (may be NULL).
+ */
+extern void SocketQUICPacketKeys_clear (SocketQUICPacketKeys_T *keys);
+
+/**
+ * @brief Get string name for AEAD algorithm.
+ *
+ * @param aead AEAD algorithm.
+ *
+ * @return Human-readable algorithm name, or "UNKNOWN" if invalid.
+ */
+extern const char *SocketQUIC_AEAD_string (SocketQUIC_AEAD aead);
 
 /* ============================================================================
  * Utility Functions

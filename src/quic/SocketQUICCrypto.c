@@ -68,12 +68,51 @@ static const char label_quic_hp[] = "quic hp";
  * ============================================================================
  */
 
-static const char *result_strings[] = {
-  [QUIC_CRYPTO_OK] = "OK",
-  [QUIC_CRYPTO_ERROR_NULL] = "NULL pointer argument",
-  [QUIC_CRYPTO_ERROR_VERSION] = "Unsupported QUIC version",
-  [QUIC_CRYPTO_ERROR_HKDF] = "HKDF operation failed",
-  [QUIC_CRYPTO_ERROR_NO_TLS] = "TLS support not available"
+static const char *result_strings[]
+    = { [QUIC_CRYPTO_OK] = "OK",
+        [QUIC_CRYPTO_ERROR_NULL] = "NULL pointer argument",
+        [QUIC_CRYPTO_ERROR_VERSION] = "Unsupported QUIC version",
+        [QUIC_CRYPTO_ERROR_HKDF] = "HKDF operation failed",
+        [QUIC_CRYPTO_ERROR_NO_TLS] = "TLS support not available",
+        [QUIC_CRYPTO_ERROR_AEAD] = "Invalid AEAD algorithm",
+        [QUIC_CRYPTO_ERROR_SECRET_LEN] = "Secret length mismatch for AEAD" };
+
+/* ============================================================================
+ * AEAD Algorithm Tables (RFC 9001 Section 5.1)
+ * ============================================================================
+ */
+
+/**
+ * AEAD algorithm parameters per RFC 9001 Section 5.1.
+ *
+ * Each TLS 1.3 cipher suite specifies:
+ *   - AEAD key/IV/HP sizes
+ *   - Hash function for HKDF (determines secret length)
+ *
+ * TLS_AES_128_GCM_SHA256:       SHA-256, 32-byte secrets
+ * TLS_AES_256_GCM_SHA384:       SHA-384, 48-byte secrets
+ * TLS_CHACHA20_POLY1305_SHA256: SHA-256, 32-byte secrets
+ */
+static const struct
+{
+  size_t key_len;
+  size_t iv_len;
+  size_t hp_len;
+  size_t secret_len;    /**< Required secret length (hash output size) */
+  const char *hash_alg; /**< OpenSSL hash algorithm name */
+} aead_params[QUIC_AEAD_COUNT] = {
+  [QUIC_AEAD_AES_128_GCM] = { 16, 12, 16, 32, "SHA256" },
+  [QUIC_AEAD_AES_256_GCM] = { 32, 12, 32, 48, "SHA384" },
+  [QUIC_AEAD_CHACHA20_POLY1305] = { 32, 12, 32, 32, "SHA256" },
+};
+
+/**
+ * Human-readable names for AEAD algorithms.
+ */
+static const char *aead_strings[QUIC_AEAD_COUNT] = {
+  [QUIC_AEAD_AES_128_GCM] = "AES-128-GCM",
+  [QUIC_AEAD_AES_256_GCM] = "AES-256-GCM",
+  [QUIC_AEAD_CHACHA20_POLY1305] = "ChaCha20-Poly1305",
 };
 
 #define RESULT_COUNT (sizeof (result_strings) / sizeof (result_strings[0]))
@@ -186,17 +225,30 @@ build_hkdf_label (const char *label,
 }
 
 /**
- * HKDF-Expand-Label for TLS 1.3 / QUIC.
+ * HKDF-Expand-Label for TLS 1.3 / QUIC with configurable hash.
+ *
+ * @param secret      Input secret.
+ * @param secret_len  Secret length.
+ * @param hash_alg    OpenSSL hash algorithm name ("SHA256" or "SHA384").
+ * @param label       HKDF label (without "tls13 " prefix).
+ * @param label_len   Label length.
+ * @param context     Context data (usually empty for QUIC).
+ * @param context_len Context length.
+ * @param output      Output buffer.
+ * @param output_len  Desired output length.
+ *
+ * @return 0 on success, -1 on failure.
  */
 static int
-hkdf_expand_label (const uint8_t *secret,
-                   size_t secret_len,
-                   const char *label,
-                   size_t label_len,
-                   const uint8_t *context,
-                   size_t context_len,
-                   uint8_t *output,
-                   size_t output_len)
+hkdf_expand_label_ex (const uint8_t *secret,
+                      size_t secret_len,
+                      const char *hash_alg,
+                      const char *label,
+                      size_t label_len,
+                      const uint8_t *context,
+                      size_t context_len,
+                      uint8_t *output,
+                      size_t output_len)
 {
   EVP_KDF *kdf = NULL;
   EVP_KDF_CTX *kctx = NULL;
@@ -206,8 +258,13 @@ hkdf_expand_label (const uint8_t *secret,
   int result = -1;
   int mode = EVP_KDF_HKDF_MODE_EXPAND_ONLY;
 
-  if (build_hkdf_label (label, label_len, context, context_len, output_len,
-                        hkdf_label, &hkdf_label_len)
+  if (build_hkdf_label (label,
+                        label_len,
+                        context,
+                        context_len,
+                        output_len,
+                        hkdf_label,
+                        &hkdf_label_len)
       < 0)
     goto cleanup;
 
@@ -219,12 +276,12 @@ hkdf_expand_label (const uint8_t *secret,
   if (kctx == NULL)
     goto cleanup;
 
-  params[0]
-      = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST, "SHA256", 0);
+  params[0] = OSSL_PARAM_construct_utf8_string (
+      OSSL_KDF_PARAM_DIGEST, (char *)hash_alg, 0);
   params[1] = OSSL_PARAM_construct_octet_string (
       OSSL_KDF_PARAM_KEY, (void *)secret, secret_len);
-  params[2] = OSSL_PARAM_construct_octet_string (OSSL_KDF_PARAM_INFO,
-                                                 hkdf_label, hkdf_label_len);
+  params[2] = OSSL_PARAM_construct_octet_string (
+      OSSL_KDF_PARAM_INFO, hkdf_label, hkdf_label_len);
   params[3] = OSSL_PARAM_construct_int (OSSL_KDF_PARAM_MODE, &mode);
   params[4] = OSSL_PARAM_construct_end ();
 
@@ -238,6 +295,32 @@ cleanup:
   EVP_KDF_free (kdf);
   SocketCrypto_secure_clear (hkdf_label, sizeof (hkdf_label));
   return result;
+}
+
+/**
+ * HKDF-Expand-Label for TLS 1.3 / QUIC (SHA-256 only).
+ *
+ * Convenience wrapper for Initial packet derivation which always uses SHA-256.
+ */
+static int
+hkdf_expand_label (const uint8_t *secret,
+                   size_t secret_len,
+                   const char *label,
+                   size_t label_len,
+                   const uint8_t *context,
+                   size_t context_len,
+                   uint8_t *output,
+                   size_t output_len)
+{
+  return hkdf_expand_label_ex (secret,
+                               secret_len,
+                               "SHA256",
+                               label,
+                               label_len,
+                               context,
+                               context_len,
+                               output,
+                               output_len);
 }
 
 #endif /* SOCKET_HAS_TLS */
@@ -307,22 +390,37 @@ SocketQUICCrypto_derive_traffic_keys (const uint8_t *secret,
     return QUIC_CRYPTO_ERROR_HKDF;
 
   /* Derive key */
-  if (hkdf_expand_label (secret, secret_len, label_quic_key,
-                         STRLEN_LIT (label_quic_key), NULL, 0, key,
+  if (hkdf_expand_label (secret,
+                         secret_len,
+                         label_quic_key,
+                         STRLEN_LIT (label_quic_key),
+                         NULL,
+                         0,
+                         key,
                          QUIC_INITIAL_KEY_LEN)
       < 0)
     return QUIC_CRYPTO_ERROR_HKDF;
 
   /* Derive IV */
-  if (hkdf_expand_label (secret, secret_len, label_quic_iv,
-                         STRLEN_LIT (label_quic_iv), NULL, 0, iv,
+  if (hkdf_expand_label (secret,
+                         secret_len,
+                         label_quic_iv,
+                         STRLEN_LIT (label_quic_iv),
+                         NULL,
+                         0,
+                         iv,
                          QUIC_INITIAL_IV_LEN)
       < 0)
     return QUIC_CRYPTO_ERROR_HKDF;
 
   /* Derive header protection key */
-  if (hkdf_expand_label (secret, secret_len, label_quic_hp,
-                         STRLEN_LIT (label_quic_hp), NULL, 0, hp_key,
+  if (hkdf_expand_label (secret,
+                         secret_len,
+                         label_quic_hp,
+                         STRLEN_LIT (label_quic_hp),
+                         NULL,
+                         0,
+                         hp_key,
                          QUIC_INITIAL_HP_KEY_LEN)
       < 0)
     return QUIC_CRYPTO_ERROR_HKDF;
@@ -372,7 +470,11 @@ SocketQUICCrypto_derive_initial_secrets (const SocketQUICConnectionID_T *dcid,
     return result;
 
   /* Step 1: initial_secret = HKDF-Extract(salt, DCID) */
-  if (hkdf_extract (salt, salt_len, dcid->data, dcid->len, local_initial_secret,
+  if (hkdf_extract (salt,
+                    salt_len,
+                    dcid->data,
+                    dcid->len,
+                    local_initial_secret,
                     SOCKET_CRYPTO_SHA256_SIZE)
       < 0)
     {
@@ -381,9 +483,14 @@ SocketQUICCrypto_derive_initial_secrets (const SocketQUICConnectionID_T *dcid,
     }
 
   /* Step 2: client_initial_secret = HKDF-Expand-Label(..., "client in", "") */
-  if (hkdf_expand_label (local_initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                         label_client_in, STRLEN_LIT (label_client_in), NULL, 0,
-                         local_client_secret, SOCKET_CRYPTO_SHA256_SIZE)
+  if (hkdf_expand_label (local_initial_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE,
+                         label_client_in,
+                         STRLEN_LIT (label_client_in),
+                         NULL,
+                         0,
+                         local_client_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE)
       < 0)
     {
       result = QUIC_CRYPTO_ERROR_HKDF;
@@ -391,9 +498,14 @@ SocketQUICCrypto_derive_initial_secrets (const SocketQUICConnectionID_T *dcid,
     }
 
   /* Step 3: server_initial_secret = HKDF-Expand-Label(..., "server in", "") */
-  if (hkdf_expand_label (local_initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                         label_server_in, STRLEN_LIT (label_server_in), NULL, 0,
-                         local_server_secret, SOCKET_CRYPTO_SHA256_SIZE)
+  if (hkdf_expand_label (local_initial_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE,
+                         label_server_in,
+                         STRLEN_LIT (label_server_in),
+                         NULL,
+                         0,
+                         local_server_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE)
       < 0)
     {
       result = QUIC_CRYPTO_ERROR_HKDF;
@@ -403,25 +515,32 @@ SocketQUICCrypto_derive_initial_secrets (const SocketQUICConnectionID_T *dcid,
   /* Copy intermediate secrets if requested */
   if (secrets != NULL)
     {
-      memcpy (secrets->initial_secret, local_initial_secret,
+      memcpy (secrets->initial_secret,
+              local_initial_secret,
               SOCKET_CRYPTO_SHA256_SIZE);
-      memcpy (secrets->client_initial_secret, local_client_secret,
+      memcpy (secrets->client_initial_secret,
+              local_client_secret,
               SOCKET_CRYPTO_SHA256_SIZE);
-      memcpy (secrets->server_initial_secret, local_server_secret,
+      memcpy (secrets->server_initial_secret,
+              local_server_secret,
               SOCKET_CRYPTO_SHA256_SIZE);
     }
 
   /* Step 4: Derive client keys */
-  result = SocketQUICCrypto_derive_traffic_keys (
-      local_client_secret, SOCKET_CRYPTO_SHA256_SIZE, keys->client_key,
-      keys->client_iv, keys->client_hp_key);
+  result = SocketQUICCrypto_derive_traffic_keys (local_client_secret,
+                                                 SOCKET_CRYPTO_SHA256_SIZE,
+                                                 keys->client_key,
+                                                 keys->client_iv,
+                                                 keys->client_hp_key);
   if (result != QUIC_CRYPTO_OK)
     goto cleanup;
 
   /* Step 5: Derive server keys */
-  result = SocketQUICCrypto_derive_traffic_keys (
-      local_server_secret, SOCKET_CRYPTO_SHA256_SIZE, keys->server_key,
-      keys->server_iv, keys->server_hp_key);
+  result = SocketQUICCrypto_derive_traffic_keys (local_server_secret,
+                                                 SOCKET_CRYPTO_SHA256_SIZE,
+                                                 keys->server_key,
+                                                 keys->server_iv,
+                                                 keys->server_hp_key);
   if (result != QUIC_CRYPTO_OK)
     {
       SocketQUICInitialKeys_clear (keys);
@@ -434,10 +553,8 @@ SocketQUICCrypto_derive_initial_secrets (const SocketQUICConnectionID_T *dcid,
 cleanup:
   SocketCrypto_secure_clear (local_initial_secret,
                              sizeof (local_initial_secret));
-  SocketCrypto_secure_clear (local_client_secret,
-                             sizeof (local_client_secret));
-  SocketCrypto_secure_clear (local_server_secret,
-                             sizeof (local_server_secret));
+  SocketCrypto_secure_clear (local_client_secret, sizeof (local_client_secret));
+  SocketCrypto_secure_clear (local_server_secret, sizeof (local_server_secret));
   return result;
 
 #else
@@ -455,4 +572,162 @@ SocketQUICCrypto_derive_initial_keys (const SocketQUICConnectionID_T *dcid,
                                       SocketQUICInitialKeys_T *keys)
 {
   return SocketQUICCrypto_derive_initial_secrets (dcid, version, NULL, keys);
+}
+
+/* ============================================================================
+ * AEAD Algorithm Functions
+ * ============================================================================
+ */
+
+const char *
+SocketQUIC_AEAD_string (SocketQUIC_AEAD aead)
+{
+  if (aead >= 0 && aead < QUIC_AEAD_COUNT)
+    return aead_strings[aead];
+  return "UNKNOWN";
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_get_aead_key_sizes (SocketQUIC_AEAD aead,
+                                     size_t *key_len,
+                                     size_t *iv_len,
+                                     size_t *hp_len)
+{
+  if (aead < 0 || aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  if (key_len != NULL)
+    *key_len = aead_params[aead].key_len;
+  if (iv_len != NULL)
+    *iv_len = aead_params[aead].iv_len;
+  if (hp_len != NULL)
+    *hp_len = aead_params[aead].hp_len;
+
+  return QUIC_CRYPTO_OK;
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_get_aead_secret_len (SocketQUIC_AEAD aead, size_t *secret_len)
+{
+  if (aead < 0 || aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  if (secret_len != NULL)
+    *secret_len = aead_params[aead].secret_len;
+
+  return QUIC_CRYPTO_OK;
+}
+
+/* ============================================================================
+ * Packet Protection Keys (RFC 9001 Section 5.1)
+ * ============================================================================
+ */
+
+void
+SocketQUICPacketKeys_init (SocketQUICPacketKeys_T *keys)
+{
+  if (keys == NULL)
+    return;
+  memset (keys, 0, sizeof (*keys));
+}
+
+void
+SocketQUICPacketKeys_clear (SocketQUICPacketKeys_T *keys)
+{
+  if (keys == NULL)
+    return;
+  SocketCrypto_secure_clear (keys, sizeof (*keys));
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_derive_packet_keys (const uint8_t *secret,
+                                     size_t secret_len,
+                                     SocketQUIC_AEAD aead,
+                                     SocketQUICPacketKeys_T *keys)
+{
+#ifdef SOCKET_HAS_TLS
+  size_t key_len, iv_len, hp_len;
+  const char *hash_alg;
+
+  if (secret == NULL || keys == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  /* Validate AEAD algorithm */
+  if (aead < 0 || aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Get algorithm parameters from dispatch table */
+  key_len = aead_params[aead].key_len;
+  iv_len = aead_params[aead].iv_len;
+  hp_len = aead_params[aead].hp_len;
+  hash_alg = aead_params[aead].hash_alg;
+
+  /* Validate secret length matches AEAD requirement (RFC 9001 §5.1) */
+  if (secret_len != aead_params[aead].secret_len)
+    return QUIC_CRYPTO_ERROR_SECRET_LEN;
+
+  /* Initialize output structure */
+  SocketQUICPacketKeys_init (keys);
+
+  /* Derive AEAD key using algorithm-specific hash */
+  if (hkdf_expand_label_ex (secret,
+                            secret_len,
+                            hash_alg,
+                            label_quic_key,
+                            STRLEN_LIT (label_quic_key),
+                            NULL,
+                            0,
+                            keys->key,
+                            key_len)
+      < 0)
+    {
+      SocketQUICPacketKeys_clear (keys);
+      return QUIC_CRYPTO_ERROR_HKDF;
+    }
+
+  /* Derive IV */
+  if (hkdf_expand_label_ex (secret,
+                            secret_len,
+                            hash_alg,
+                            label_quic_iv,
+                            STRLEN_LIT (label_quic_iv),
+                            NULL,
+                            0,
+                            keys->iv,
+                            iv_len)
+      < 0)
+    {
+      SocketQUICPacketKeys_clear (keys);
+      return QUIC_CRYPTO_ERROR_HKDF;
+    }
+
+  /* Derive header protection key */
+  if (hkdf_expand_label_ex (secret,
+                            secret_len,
+                            hash_alg,
+                            label_quic_hp,
+                            STRLEN_LIT (label_quic_hp),
+                            NULL,
+                            0,
+                            keys->hp_key,
+                            hp_len)
+      < 0)
+    {
+      SocketQUICPacketKeys_clear (keys);
+      return QUIC_CRYPTO_ERROR_HKDF;
+    }
+
+  keys->key_len = key_len;
+  keys->hp_len = hp_len;
+  keys->aead = aead;
+
+  return QUIC_CRYPTO_OK;
+
+#else
+  (void)secret;
+  (void)secret_len;
+  (void)aead;
+  (void)keys;
+  return QUIC_CRYPTO_ERROR_NO_TLS;
+#endif
 }
