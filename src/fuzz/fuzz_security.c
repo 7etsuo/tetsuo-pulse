@@ -89,10 +89,6 @@ test_size_validation (const uint8_t *data, size_t size)
   int result = SocketSecurity_check_size (test_size);
   (void)result;
 
-  /* Test macro version */
-  int macro_result = SOCKET_SECURITY_VALID_SIZE (test_size);
-  (void)macro_result;
-
   /* Results should be consistent for valid sizes */
   if (test_size > 0 && test_size <= SOCKET_SECURITY_MAX_ALLOCATION)
     {
@@ -148,19 +144,6 @@ test_size_boundaries (void)
     {
       /* 1 should be valid */
     }
-
-  /* Test macro boundaries */
-  int m0 = SOCKET_SECURITY_VALID_SIZE (0);
-  int m1 = SOCKET_SECURITY_VALID_SIZE (1);
-  int m2 = SOCKET_SECURITY_VALID_SIZE (max_alloc);
-  int m3 = SOCKET_SECURITY_VALID_SIZE (max_alloc + 1);
-  int m4 = SOCKET_SECURITY_VALID_SIZE (SIZE_MAX);
-
-  (void)m0;
-  (void)m1;
-  (void)m2;
-  (void)m3;
-  (void)m4;
 }
 
 /**
@@ -204,10 +187,6 @@ test_multiply_overflow (const uint8_t *data, size_t size)
     {
       /* Should return 0 on overflow */
     }
-
-  /* Test macro */
-  int macro_safe = SOCKET_SECURITY_CHECK_OVERFLOW_MUL (a, b);
-  (void)macro_safe;
 }
 
 /**
@@ -304,10 +283,6 @@ test_add_overflow (const uint8_t *data, size_t size)
     {
       /* Should return SIZE_MAX on overflow */
     }
-
-  /* Test macro */
-  int macro_safe = SOCKET_SECURITY_CHECK_OVERFLOW_ADD (a, b);
-  (void)macro_safe;
 }
 
 /**

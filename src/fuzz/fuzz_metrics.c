@@ -24,7 +24,7 @@
  * 2. Invalid Metric Indices:
  *    - Out-of-bounds metric enum values
  *    - Negative indices (if applicable)
- *    - Boundary values (SOCKET_METRIC_COUNT)
+ *    - Boundary values
  *
  * 3. Snapshot Consistency:
  *    - Snapshot during rapid updates
@@ -44,6 +44,7 @@
  * ./fuzz_metrics corpus/metrics/ -fork=16 -max_len=1024
  */
 
+#include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -84,22 +85,22 @@ test_counter_increment (const uint8_t *data, size_t size)
   int metric_idx = data[0];
 
   /* Get increment value from fuzz data */
-  unsigned long increment_value = ((unsigned long)data[1] << 24)
-                                  | ((unsigned long)data[2] << 16)
-                                  | ((unsigned long)data[3] << 8) | data[4];
+  uint64_t increment_value = ((uint64_t)data[1] << 24)
+                             | ((uint64_t)data[2] << 16)
+                             | ((uint64_t)data[3] << 8) | data[4];
 
-  /* Test valid metric indices */
-  if (metric_idx < SOCKET_METRIC_COUNT)
+  /* Test valid counter indices */
+  if (metric_idx < SOCKET_COUNTER_METRIC_COUNT)
     {
-      SocketMetric metric = (SocketMetric)metric_idx;
-      SocketMetrics_increment (metric, increment_value);
+      SocketCounterMetric metric = (SocketCounterMetric)metric_idx;
+      SocketMetrics_counter_add (metric, increment_value);
 
       /* Verify by snapshot */
-      SocketMetricsSnapshot snapshot;
-      SocketMetrics_getsnapshot (&snapshot);
+      SocketMetrics_Snapshot snapshot;
+      SocketMetrics_get (&snapshot);
 
       /* Access the value */
-      unsigned long long val = SocketMetrics_snapshot_value (&snapshot, metric);
+      uint64_t val = snapshot.counters[metric];
       (void)val;
     }
 }
@@ -110,50 +111,90 @@ test_counter_increment (const uint8_t *data, size_t size)
 static void
 test_all_metrics (void)
 {
-  /* Test all valid metric indices */
-  for (int i = 0; i < SOCKET_METRIC_COUNT; i++)
+  /* Test all valid counter indices */
+  for (int i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     {
-      /* Increment each metric */
-      SocketMetrics_increment ((SocketMetric)i, 1);
+      /* Increment each counter */
+      SocketMetrics_counter_inc ((SocketCounterMetric)i);
 
-      /* Get metric name */
-      const char *name = SocketMetrics_name ((SocketMetric)i);
+      /* Get counter name */
+      const char *name = SocketMetrics_counter_name ((SocketCounterMetric)i);
+      (void)name;
+    }
+
+  /* Test all valid gauge indices */
+  for (int i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
+    {
+      /* Set gauge value */
+      SocketMetrics_gauge_set ((SocketGaugeMetric)i, 1);
+
+      /* Get gauge name */
+      const char *name = SocketMetrics_gauge_name ((SocketGaugeMetric)i);
+      (void)name;
+    }
+
+  /* Test all valid histogram indices */
+  for (int i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
+    {
+      /* Observe histogram value */
+      SocketMetrics_histogram_observe ((SocketHistogramMetric)i, 1.0);
+
+      /* Get histogram name */
+      const char *name
+          = SocketMetrics_histogram_name ((SocketHistogramMetric)i);
       (void)name;
     }
 }
 
 /**
- * Test metric name retrieval for all indices
+ * Test metric name retrieval for all indices including invalid ones
  */
 static void
 test_metric_names (void)
 {
-  size_t count = SocketMetrics_count ();
-
-  for (size_t i = 0; i < count; i++)
+  /* Test counter names including out-of-bounds */
+  for (int i = 0; i <= SOCKET_COUNTER_METRIC_COUNT + 5; i++)
     {
-      const char *name = SocketMetrics_name ((SocketMetric)i);
+      const char *name = SocketMetrics_counter_name ((SocketCounterMetric)i);
       if (name)
         {
-          /* Verify name is not empty */
           size_t len = strlen (name);
           (void)len;
         }
     }
 
-  /* Test out-of-bounds indices */
+  /* Test gauge names including out-of-bounds */
+  for (int i = 0; i <= SOCKET_GAUGE_METRIC_COUNT + 5; i++)
+    {
+      const char *name = SocketMetrics_gauge_name ((SocketGaugeMetric)i);
+      if (name)
+        {
+          size_t len = strlen (name);
+          (void)len;
+        }
+    }
+
+  /* Test histogram names including out-of-bounds */
+  for (int i = 0; i <= SOCKET_HISTOGRAM_METRIC_COUNT + 5; i++)
+    {
+      const char *name
+          = SocketMetrics_histogram_name ((SocketHistogramMetric)i);
+      if (name)
+        {
+          size_t len = strlen (name);
+          (void)len;
+        }
+    }
+
+  /* Test with negative-ish values (cast from signed) */
   const char *invalid_name
-      = SocketMetrics_name ((SocketMetric)SOCKET_METRIC_COUNT);
+      = SocketMetrics_counter_name ((SocketCounterMetric)-1);
   (void)invalid_name;
 
-  invalid_name = SocketMetrics_name ((SocketMetric)(SOCKET_METRIC_COUNT + 1));
+  invalid_name = SocketMetrics_gauge_name ((SocketGaugeMetric)-1);
   (void)invalid_name;
 
-  invalid_name = SocketMetrics_name ((SocketMetric)255);
-  (void)invalid_name;
-
-  /* Test negative-ish values (cast from signed) */
-  invalid_name = SocketMetrics_name ((SocketMetric)-1);
+  invalid_name = SocketMetrics_histogram_name ((SocketHistogramMetric)-1);
   (void)invalid_name;
 }
 
@@ -167,52 +208,39 @@ test_snapshots (const uint8_t *data, size_t size)
     return;
 
   /* Take multiple snapshots */
-  SocketMetricsSnapshot snap1, snap2, snap3;
+  SocketMetrics_Snapshot snap1, snap2, snap3;
   memset (&snap1, 0, sizeof (snap1));
   memset (&snap2, 0, sizeof (snap2));
   memset (&snap3, 0, sizeof (snap3));
 
-  SocketMetrics_getsnapshot (&snap1);
+  SocketMetrics_get (&snap1);
 
-  /* Increment some metrics */
-  int metric_idx = data[0] % SOCKET_METRIC_COUNT;
-  unsigned long increment = data[1] + 1;
-  SocketMetrics_increment ((SocketMetric)metric_idx, increment);
+  /* Increment some counters */
+  int counter_idx = data[0] % SOCKET_COUNTER_METRIC_COUNT;
+  uint64_t increment = data[1] + 1;
+  SocketMetrics_counter_add ((SocketCounterMetric)counter_idx, increment);
 
-  SocketMetrics_getsnapshot (&snap2);
+  SocketMetrics_get (&snap2);
 
-  /* Verify snap2 >= snap1 for the incremented metric */
-  unsigned long long val1
-      = SocketMetrics_snapshot_value (&snap1, (SocketMetric)metric_idx);
-  unsigned long long val2
-      = SocketMetrics_snapshot_value (&snap2, (SocketMetric)metric_idx);
+  /* Verify snap2 >= snap1 for the incremented counter */
+  uint64_t val1 = snap1.counters[counter_idx];
+  uint64_t val2 = snap2.counters[counter_idx];
 
   /* val2 should be >= val1 (accounting for potential wrapping) */
   (void)val1;
   (void)val2;
 
   /* Test snapshot_value with NULL */
-  unsigned long long null_val
-      = SocketMetrics_snapshot_value (NULL, (SocketMetric)metric_idx);
-  (void)null_val;
-
-  /* Test snapshot_value with invalid metric */
-  unsigned long long invalid_val = SocketMetrics_snapshot_value (
-      &snap2, (SocketMetric)SOCKET_METRIC_COUNT);
-  (void)invalid_val;
-
-  invalid_val = SocketMetrics_snapshot_value (&snap2, (SocketMetric)255);
-  (void)invalid_val;
+  SocketMetrics_get (NULL);
 
   /* Test reset and snapshot after */
-  SocketMetrics_legacy_reset ();
-  SocketMetrics_getsnapshot (&snap3);
+  SocketMetrics_reset ();
+  SocketMetrics_get (&snap3);
 
-  /* Verify all values are 0 or minimal after reset */
-  for (int i = 0; i < SOCKET_METRIC_COUNT; i++)
+  /* Verify all counter values are 0 after reset */
+  for (int i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     {
-      unsigned long long val
-          = SocketMetrics_snapshot_value (&snap3, (SocketMetric)i);
+      uint64_t val = snap3.counters[i];
       (void)val;
     }
 }
@@ -228,17 +256,17 @@ test_rapid_increments (const uint8_t *data, size_t size)
 
   /* Perform many rapid increments */
   int iterations = (data[0] % 100) + 1;
-  int metric_idx = data[1] % SOCKET_METRIC_COUNT;
+  int counter_idx = data[1] % SOCKET_COUNTER_METRIC_COUNT;
 
   for (int i = 0; i < iterations; i++)
     {
-      unsigned long increment = (data[2 + (i % 14)] % 100) + 1;
-      SocketMetrics_increment ((SocketMetric)metric_idx, increment);
+      uint64_t increment = (data[2 + (i % 14)] % 100) + 1;
+      SocketMetrics_counter_add ((SocketCounterMetric)counter_idx, increment);
     }
 
   /* Snapshot after rapid increments */
-  SocketMetricsSnapshot snapshot;
-  SocketMetrics_getsnapshot (&snapshot);
+  SocketMetrics_Snapshot snapshot;
+  SocketMetrics_get (&snapshot);
 }
 
 /**
@@ -250,49 +278,98 @@ test_overflow (const uint8_t *data, size_t size)
   if (size < 10)
     return;
 
-  int metric_idx = data[0] % SOCKET_METRIC_COUNT;
+  int counter_idx = data[0] % SOCKET_COUNTER_METRIC_COUNT;
 
   /* Test with maximum value */
-  unsigned long max_val = (unsigned long)-1;
-  SocketMetrics_increment ((SocketMetric)metric_idx, max_val);
+  uint64_t max_val = (uint64_t)-1;
+  SocketMetrics_counter_add ((SocketCounterMetric)counter_idx, max_val);
 
-  SocketMetricsSnapshot snapshot;
-  SocketMetrics_getsnapshot (&snapshot);
+  SocketMetrics_Snapshot snapshot;
+  SocketMetrics_get (&snapshot);
 
   /* Increment again to test wrapping */
-  SocketMetrics_increment ((SocketMetric)metric_idx, 1);
+  SocketMetrics_counter_inc ((SocketCounterMetric)counter_idx);
 
-  SocketMetrics_getsnapshot (&snapshot);
+  SocketMetrics_get (&snapshot);
 
   /* Test with fuzzed large values */
   if (size >= 8)
     {
       unsigned long long fuzz_val = read_u64 (data + 2);
-      /* Truncate to unsigned long */
-      unsigned long increment = (unsigned long)(fuzz_val & 0xFFFFFFFF);
-      SocketMetrics_increment ((SocketMetric)metric_idx, increment);
+      uint64_t increment = fuzz_val;
+      SocketMetrics_counter_add ((SocketCounterMetric)counter_idx, increment);
     }
 }
 
 /**
- * Test count function
+ * Test gauge operations
  */
 static void
-test_count (void)
+test_gauges (const uint8_t *data, size_t size)
 {
-  size_t count = SocketMetrics_count ();
+  if (size < 8)
+    return;
 
-  /* Verify count matches expected */
-  if (count != SOCKET_METRIC_COUNT)
-    {
-      /* Inconsistency */
-    }
+  int gauge_idx = data[0] % SOCKET_GAUGE_METRIC_COUNT;
+  int64_t value = (int64_t) (((uint64_t)data[1] << 24)
+                             | ((uint64_t)data[2] << 16)
+                             | ((uint64_t)data[3] << 8) | data[4]);
 
-  /* Verify count is reasonable */
-  if (count > 1000)
-    {
-      /* Suspicious - possible corruption */
-    }
+  /* Test set */
+  SocketMetrics_gauge_set ((SocketGaugeMetric)gauge_idx, value);
+
+  /* Test inc/dec */
+  SocketMetrics_gauge_inc ((SocketGaugeMetric)gauge_idx);
+  SocketMetrics_gauge_dec ((SocketGaugeMetric)gauge_idx);
+
+  /* Test add */
+  SocketMetrics_gauge_add ((SocketGaugeMetric)gauge_idx, (int64_t)data[5]);
+
+  /* Test get */
+  int64_t current = SocketMetrics_gauge_get ((SocketGaugeMetric)gauge_idx);
+  (void)current;
+}
+
+/**
+ * Test histogram operations
+ */
+static void
+test_histograms (const uint8_t *data, size_t size)
+{
+  if (size < 8)
+    return;
+
+  int hist_idx = data[0] % SOCKET_HISTOGRAM_METRIC_COUNT;
+  double value = (double)data[1] + (double)data[2] / 256.0;
+
+  /* Test observe */
+  SocketMetrics_histogram_observe ((SocketHistogramMetric)hist_idx, value);
+
+  /* Test percentile */
+  double pct = SocketMetrics_histogram_percentile (
+      (SocketHistogramMetric)hist_idx, 50.0);
+  (void)pct;
+
+  pct = SocketMetrics_histogram_percentile ((SocketHistogramMetric)hist_idx,
+                                            95.0);
+  (void)pct;
+
+  pct = SocketMetrics_histogram_percentile ((SocketHistogramMetric)hist_idx,
+                                            99.0);
+  (void)pct;
+
+  /* Test count and sum */
+  uint64_t count
+      = SocketMetrics_histogram_count ((SocketHistogramMetric)hist_idx);
+  (void)count;
+
+  double sum = SocketMetrics_histogram_sum ((SocketHistogramMetric)hist_idx);
+  (void)sum;
+
+  /* Test histogram snapshot */
+  SocketMetrics_HistogramSnapshot hist_snap;
+  SocketMetrics_histogram_snapshot ((SocketHistogramMetric)hist_idx,
+                                    &hist_snap);
 }
 
 /**
@@ -309,54 +386,167 @@ test_operation_sequence (const uint8_t *data, size_t size)
   while (offset + 5 < size)
     {
       uint8_t op = data[offset++];
-      int metric_idx = data[offset++] % SOCKET_METRIC_COUNT;
+      int idx = data[offset++];
 
-      switch (op % 5)
+      switch (op % 8)
         {
-        case 0: /* Increment */
+        case 0: /* Counter increment */
           {
-            unsigned long val
-                = ((unsigned long)data[offset] << 8) | data[offset + 1];
+            int counter_idx = idx % SOCKET_COUNTER_METRIC_COUNT;
+            uint64_t val
+                = ((uint64_t)data[offset] << 8) | data[offset + 1];
             offset += 2;
-            SocketMetrics_increment ((SocketMetric)metric_idx, val + 1);
+            SocketMetrics_counter_add ((SocketCounterMetric)counter_idx,
+                                       val + 1);
           }
           break;
 
         case 1: /* Snapshot */
           {
-            SocketMetricsSnapshot snap;
-            SocketMetrics_getsnapshot (&snap);
+            SocketMetrics_Snapshot snap;
+            SocketMetrics_get (&snap);
             offset += 2;
           }
           break;
 
-        case 2: /* Get name */
+        case 2: /* Get counter name */
           {
-            const char *name = SocketMetrics_name ((SocketMetric)metric_idx);
+            int counter_idx = idx % SOCKET_COUNTER_METRIC_COUNT;
+            const char *name
+                = SocketMetrics_counter_name ((SocketCounterMetric)counter_idx);
             (void)name;
             offset += 2;
           }
           break;
 
-        case 3: /* Get count */
+        case 3: /* Gauge set */
           {
-            size_t count = SocketMetrics_count ();
-            (void)count;
+            int gauge_idx = idx % SOCKET_GAUGE_METRIC_COUNT;
+            int64_t val = (int64_t)data[offset];
+            SocketMetrics_gauge_set ((SocketGaugeMetric)gauge_idx, val);
             offset += 2;
           }
           break;
 
-        case 4: /* Snapshot value */
+        case 4: /* Histogram observe */
           {
-            SocketMetricsSnapshot snap;
-            SocketMetrics_getsnapshot (&snap);
-            unsigned long long val = SocketMetrics_snapshot_value (
-                &snap, (SocketMetric)metric_idx);
-            (void)val;
+            int hist_idx = idx % SOCKET_HISTOGRAM_METRIC_COUNT;
+            double val = (double)data[offset];
+            SocketMetrics_histogram_observe ((SocketHistogramMetric)hist_idx,
+                                             val);
+            offset += 2;
+          }
+          break;
+
+        case 5: /* Get gauge name */
+          {
+            int gauge_idx = idx % SOCKET_GAUGE_METRIC_COUNT;
+            const char *name
+                = SocketMetrics_gauge_name ((SocketGaugeMetric)gauge_idx);
+            (void)name;
+            offset += 2;
+          }
+          break;
+
+        case 6: /* Get histogram name */
+          {
+            int hist_idx = idx % SOCKET_HISTOGRAM_METRIC_COUNT;
+            const char *name
+                = SocketMetrics_histogram_name ((SocketHistogramMetric)hist_idx);
+            (void)name;
+            offset += 2;
+          }
+          break;
+
+        case 7: /* Export */
+          {
+            char buffer[4096];
+            SocketMetrics_export_prometheus (buffer, sizeof (buffer));
             offset += 2;
           }
           break;
         }
+    }
+}
+
+/**
+ * Test export functions
+ */
+static void
+test_exports (void)
+{
+  char buffer[8192];
+
+  /* Test Prometheus export */
+  size_t len = SocketMetrics_export_prometheus (buffer, sizeof (buffer));
+  (void)len;
+
+  /* Test StatsD export */
+  len = SocketMetrics_export_statsd (buffer, sizeof (buffer), "test");
+  (void)len;
+
+  len = SocketMetrics_export_statsd (buffer, sizeof (buffer), NULL);
+  (void)len;
+
+  /* Test JSON export */
+  len = SocketMetrics_export_json (buffer, sizeof (buffer));
+  (void)len;
+
+  /* Test with small buffers */
+  char small[64];
+  SocketMetrics_export_prometheus (small, sizeof (small));
+  SocketMetrics_export_statsd (small, sizeof (small), "x");
+  SocketMetrics_export_json (small, sizeof (small));
+
+  /* Test with NULL/zero */
+  SocketMetrics_export_prometheus (NULL, 0);
+  SocketMetrics_export_statsd (NULL, 0, NULL);
+  SocketMetrics_export_json (NULL, 0);
+}
+
+/**
+ * Test category names
+ */
+static void
+test_category_names (void)
+{
+  for (int i = 0; i < SOCKET_METRIC_CAT_COUNT; i++)
+    {
+      const char *name = SocketMetrics_category_name ((SocketMetricCategory)i);
+      (void)name;
+    }
+
+  /* Test out-of-bounds */
+  const char *name
+      = SocketMetrics_category_name ((SocketMetricCategory)SOCKET_METRIC_CAT_COUNT);
+  (void)name;
+
+  name = SocketMetrics_category_name ((SocketMetricCategory)-1);
+  (void)name;
+}
+
+/**
+ * Test help text functions
+ */
+static void
+test_help_texts (void)
+{
+  for (int i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
+    {
+      const char *help = SocketMetrics_counter_help ((SocketCounterMetric)i);
+      (void)help;
+    }
+
+  for (int i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
+    {
+      const char *help = SocketMetrics_gauge_help ((SocketGaugeMetric)i);
+      (void)help;
+    }
+
+  for (int i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
+    {
+      const char *help = SocketMetrics_histogram_help ((SocketHistogramMetric)i);
+      (void)help;
     }
 }
 
@@ -365,6 +555,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   if (size == 0)
     return 0;
+
+  /* Initialize metrics system */
+  SocketMetrics_init ();
 
   TRY
   {
@@ -399,19 +592,39 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     test_overflow (data, size);
 
     /* ====================================================================
-     * Test 7: Count function
+     * Test 7: Gauge operations
      * ==================================================================== */
-    test_count ();
+    test_gauges (data, size);
 
     /* ====================================================================
-     * Test 8: Operation sequences
+     * Test 8: Histogram operations
+     * ==================================================================== */
+    test_histograms (data, size);
+
+    /* ====================================================================
+     * Test 9: Operation sequences
      * ==================================================================== */
     test_operation_sequence (data, size);
 
     /* ====================================================================
-     * Test 9: Reset after all tests
+     * Test 10: Export functions
      * ==================================================================== */
-    SocketMetrics_legacy_reset ();
+    test_exports ();
+
+    /* ====================================================================
+     * Test 11: Category names
+     * ==================================================================== */
+    test_category_names ();
+
+    /* ====================================================================
+     * Test 12: Help texts
+     * ==================================================================== */
+    test_help_texts ();
+
+    /* ====================================================================
+     * Test 13: Reset after all tests
+     * ==================================================================== */
+    SocketMetrics_reset ();
   }
   EXCEPT (Arena_Failed)
   { /* Unlikely but handle */
