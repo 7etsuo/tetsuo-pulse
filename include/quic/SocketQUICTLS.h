@@ -36,6 +36,32 @@
 #include "quic/SocketQUICHandshake.h"
 
 /* ============================================================================
+ * Transport Parameters Extension Constants (RFC 9001 §8.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief TLS extension type for QUIC transport parameters (RFC 9001 §8.2).
+ *
+ * Extension type 0x39 (57 decimal) carries transport parameters in
+ * ClientHello (client) and EncryptedExtensions (server).
+ */
+#define QUIC_TRANSPORT_PARAMS_EXT_TYPE 0x39
+
+/**
+ * @brief QUIC error code for missing transport parameters (RFC 9001 §8.2).
+ *
+ * If the transport parameters extension is absent, the endpoint MUST
+ * close the connection with error code 0x016d (TRANSPORT_PARAMETER_ERROR).
+ */
+#define QUIC_ERROR_MISSING_TRANSPORT_PARAMS 0x016d
+
+/**
+ * @brief QUIC transport parameter error code (RFC 9000 §20).
+ */
+#define QUIC_ERROR_TRANSPORT_PARAMETER 0x08
+
+/* ============================================================================
  * Result Codes
  * ============================================================================
  */
@@ -73,12 +99,12 @@ typedef enum
  */
 typedef struct SocketQUICTLSConfig
 {
-  const char *cert_file;  /**< Server certificate file (PEM) */
-  const char *key_file;   /**< Server private key file (PEM) */
-  const char *ca_file;    /**< CA certificates file (PEM) */
-  const char *alpn;       /**< ALPN protocol (e.g., "h3") */
-  int verify_peer;        /**< Verify peer certificate (1=yes) */
-  int enable_0rtt;        /**< Enable 0-RTT early data (1=yes) */
+  const char *cert_file; /**< Server certificate file (PEM) */
+  const char *key_file;  /**< Server private key file (PEM) */
+  const char *ca_file;   /**< CA certificates file (PEM) */
+  const char *alpn;      /**< ALPN protocol (e.g., "h3") */
+  int verify_peer;       /**< Verify peer certificate (1=yes) */
+  int enable_0rtt;       /**< Enable 0-RTT early data (1=yes) */
 } SocketQUICTLSConfig_T;
 
 /* ============================================================================
@@ -307,6 +333,50 @@ extern SocketQUICTLS_Result
 SocketQUICTLS_get_peer_transport_params (SocketQUICHandshake_T handshake,
                                          const uint8_t **params,
                                          size_t *len);
+
+/**
+ * @brief Set local transport parameters on TLS context (RFC 9001 §8.2).
+ *
+ * Encodes local_params from handshake context and sets on SSL object.
+ * MUST be called before handshake starts. OpenSSL handles extension type
+ * 0x39 internally via SSL_set_quic_transport_params().
+ *
+ * @param handshake Handshake context with local_params populated.
+ *
+ * @return QUIC_TLS_OK on success, error code otherwise.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_set_local_transport_params (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if peer provided transport parameters extension.
+ *
+ * Per RFC 9001 §8.2, endpoints MUST send the quic_transport_parameters
+ * extension. Missing extension should trigger error 0x016d.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if peer params available, 0 otherwise.
+ */
+extern int
+SocketQUICTLS_has_peer_transport_params (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Retrieve and decode peer transport parameters (RFC 9001 §8.2).
+ *
+ * Gets raw params from TLS via SSL_get_peer_quic_transport_params() and
+ * decodes them into handshake->peer_params. Also validates required
+ * parameters are present.
+ *
+ * Per RFC 9001 §8.2: If the transport parameters extension is absent,
+ * sets error code to QUIC_ERROR_MISSING_TRANSPORT_PARAMS (0x016d).
+ *
+ * @param handshake Handshake context.
+ *
+ * @return QUIC_TLS_OK on success, QUIC_TLS_ERROR_TRANSPORT if missing/invalid.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake);
 
 /* ============================================================================
  * Utility Functions

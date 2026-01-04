@@ -316,7 +316,8 @@ create_test_handshake (Arena_T arena, SocketQUICConnection_Role role)
 TEST (tls_init_context_client_no_config)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* Init with NULL config should use defaults */
@@ -333,7 +334,8 @@ TEST (tls_init_context_client_no_config)
 TEST (tls_init_context_server_no_config)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_SERVER);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_SERVER);
   ASSERT (hs != NULL);
 
   SocketQUICTLS_Result result = SocketQUICTLS_init_context (hs, NULL);
@@ -347,7 +349,8 @@ TEST (tls_init_context_server_no_config)
 TEST (tls_create_ssl_without_context)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* tls_ctx is NULL, should fail with INIT error */
@@ -362,7 +365,8 @@ TEST (tls_create_ssl_without_context)
 TEST (tls_do_handshake_without_ssl)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* tls_ssl is NULL, should fail with INIT error */
@@ -377,7 +381,8 @@ TEST (tls_do_handshake_without_ssl)
 TEST (tls_provide_data_invalid_level)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   uint8_t data[] = { 0x01, 0x02 };
@@ -394,7 +399,8 @@ TEST (tls_provide_data_invalid_level)
 TEST (tls_provide_data_null_data)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   SocketQUICTLS_Result result
@@ -408,7 +414,8 @@ TEST (tls_provide_data_null_data)
 TEST (tls_consume_data_invalid_level)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   SocketQUICTLS_Result result
@@ -423,7 +430,8 @@ TEST (tls_consume_data_invalid_level)
 TEST (tls_derive_keys_invalid_level)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   SocketQUICTLS_Result result
@@ -437,7 +445,8 @@ TEST (tls_derive_keys_invalid_level)
 TEST (tls_set_transport_params_null_params)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   SocketQUICTLS_Result result
@@ -451,7 +460,8 @@ TEST (tls_set_transport_params_null_params)
 TEST (tls_get_peer_transport_params_null_output)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   const uint8_t *params;
@@ -470,7 +480,8 @@ TEST (tls_get_peer_transport_params_null_output)
 TEST (tls_get_data_null_output_params)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   SocketQUICCryptoLevel level;
@@ -496,7 +507,8 @@ TEST (tls_get_data_null_output_params)
 TEST (tls_is_complete_with_handshake)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* Without SSL, should return 0 */
@@ -510,7 +522,8 @@ TEST (tls_is_complete_with_handshake)
 TEST (tls_has_keys_with_handshake)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* Without TLS state, should return 0 */
@@ -524,7 +537,8 @@ TEST (tls_has_keys_with_handshake)
 TEST (tls_get_error_with_handshake)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* No error initially */
@@ -541,7 +555,8 @@ TEST (tls_get_error_with_handshake)
 TEST (tls_free_with_handshake)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
   ASSERT (hs != NULL);
 
   /* Initialize context if possible */
@@ -553,6 +568,122 @@ TEST (tls_free_with_handshake)
   /* Verify pointers cleared */
   ASSERT (hs->tls_ctx == NULL);
   ASSERT (hs->tls_ssl == NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+/* ============================================================================
+ * Transport Parameters Extension Tests (RFC 9001 §8.2)
+ * ============================================================================
+ */
+
+TEST (tls_transport_params_ext_type)
+{
+  /* Verify extension type constant matches RFC 9001 §8.2 */
+  ASSERT_EQ (QUIC_TRANSPORT_PARAMS_EXT_TYPE, 0x39);
+}
+
+TEST (tls_missing_ext_error_code)
+{
+  /* Verify error code for missing extension per RFC 9001 §8.2 */
+  ASSERT_EQ (QUIC_ERROR_MISSING_TRANSPORT_PARAMS, 0x016d);
+}
+
+TEST (tls_transport_param_error_code)
+{
+  /* Verify transport parameter error code per RFC 9000 §20 */
+  ASSERT_EQ (QUIC_ERROR_TRANSPORT_PARAMETER, 0x08);
+}
+
+TEST (tls_set_local_transport_params_null)
+{
+  SocketQUICTLS_Result result = SocketQUICTLS_set_local_transport_params (NULL);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+}
+
+TEST (tls_has_peer_transport_params_null)
+{
+  int has = SocketQUICTLS_has_peer_transport_params (NULL);
+  ASSERT_EQ (has, 0);
+}
+
+TEST (tls_get_peer_params_null)
+{
+  SocketQUICTLS_Result result = SocketQUICTLS_get_peer_params (NULL);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+}
+
+TEST (tls_set_local_transport_params_no_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+  hs->tls_ssl = NULL;
+
+  SocketQUICTLS_Result result = SocketQUICTLS_set_local_transport_params (hs);
+  ASSERT (result == QUIC_TLS_ERROR_INIT || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_has_peer_transport_params_no_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+  hs->tls_ssl = NULL;
+
+  int has = SocketQUICTLS_has_peer_transport_params (hs);
+  ASSERT_EQ (has, 0);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_get_peer_params_no_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+  hs->tls_ssl = NULL;
+
+  SocketQUICTLS_Result result = SocketQUICTLS_get_peer_params (hs);
+  ASSERT (result == QUIC_TLS_ERROR_INIT || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_set_local_transport_params_server_no_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_SERVER);
+  ASSERT (hs != NULL);
+  hs->tls_ssl = NULL;
+
+  SocketQUICTLS_Result result = SocketQUICTLS_set_local_transport_params (hs);
+  ASSERT (result == QUIC_TLS_ERROR_INIT || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_get_peer_params_server_no_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_SERVER);
+  ASSERT (hs != NULL);
+  hs->tls_ssl = NULL;
+
+  SocketQUICTLS_Result result = SocketQUICTLS_get_peer_params (hs);
+  ASSERT (result == QUIC_TLS_ERROR_INIT || result == QUIC_TLS_ERROR_NO_TLS);
 
   SocketQUICHandshake_free (&hs);
   Arena_dispose (&arena);
