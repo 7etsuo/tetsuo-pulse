@@ -251,6 +251,213 @@ SocketCrypto_hmac_sha256 (const void *key,
 #endif
 }
 
+/* ============================================================================
+ * HKDF Functions (RFC 5869, RFC 8446 §7.1)
+ * ============================================================================
+ */
+
+#define HKDF_LABEL_PREFIX "tls13 "
+#define HKDF_LABEL_PREFIX_LEN 6
+#define HKDF_MAX_LABEL_LEN 255
+#define HKDF_MAX_OUTPUT_LEN 255
+#define HKDF_MAX_INFO_LEN 512
+
+/*
+ * build_expand_input - Build HMAC input for one HKDF-Expand iteration
+ *
+ * Constructs: T(i-1) | info | counter
+ *
+ * Returns: Length of constructed input.
+ */
+static size_t
+build_expand_input (unsigned char *out,
+                    const unsigned char *t_prev,
+                    size_t t_prev_len,
+                    const unsigned char *info,
+                    size_t info_len,
+                    unsigned char counter)
+{
+  size_t pos = 0;
+
+  if (t_prev_len > 0)
+    {
+      memcpy (out, t_prev, t_prev_len);
+      pos = t_prev_len;
+    }
+
+  memcpy (&out[pos], info, info_len);
+  pos += info_len;
+  out[pos++] = counter;
+
+  return pos;
+}
+
+/*
+ * copy_expand_output - Copy expansion block to output buffer
+ *
+ * Copies up to hash_len bytes from block to output at offset.
+ * Returns: Number of bytes copied.
+ */
+static size_t
+copy_expand_output (unsigned char *output,
+                    size_t offset,
+                    size_t output_len,
+                    const unsigned char *block,
+                    size_t hash_len)
+{
+  size_t remaining = output_len - offset;
+  size_t to_copy = (remaining < hash_len) ? remaining : hash_len;
+  memcpy (&output[offset], block, to_copy);
+  return to_copy;
+}
+
+/*
+ * hkdf_expand - RFC 5869 §2.3 HKDF-Expand
+ *
+ * T(0) = empty string
+ * T(i) = HMAC-Hash(PRK, T(i-1) | info | i)
+ * OKM = T(1) | T(2) | ... | T(N)
+ */
+static void
+hkdf_expand (const unsigned char *prk,
+             size_t prk_len,
+             const unsigned char *info,
+             size_t info_len,
+             unsigned char *output,
+             size_t output_len)
+{
+  unsigned char t[SOCKET_CRYPTO_SHA256_SIZE];
+  unsigned char hmac_input[SOCKET_CRYPTO_SHA256_SIZE + HKDF_MAX_INFO_LEN + 1];
+  unsigned char counter = 1;
+  size_t t_len = 0;
+  size_t offset = 0;
+
+  while (offset < output_len)
+    {
+      size_t input_len
+          = build_expand_input (hmac_input, t, t_len, info, info_len, counter);
+
+      SocketCrypto_hmac_sha256 (prk, prk_len, hmac_input, input_len, t);
+      t_len = SOCKET_CRYPTO_SHA256_SIZE;
+
+      offset += copy_expand_output (output, offset, output_len, t, t_len);
+      counter++;
+    }
+
+  SocketCrypto_secure_clear (hmac_input, sizeof (hmac_input));
+  SocketCrypto_secure_clear (t, sizeof (t));
+}
+
+void
+SocketCrypto_hkdf_extract (const void *salt,
+                           size_t salt_len,
+                           const void *ikm,
+                           size_t ikm_len,
+                           unsigned char prk[SOCKET_CRYPTO_SHA256_SIZE])
+{
+  assert (prk);
+  SOCKET_CRYPTO_CHECK_INPUT (ikm, ikm_len, "HKDF-Extract IKM");
+
+  /* RFC 5869 §2.2: If salt not provided, use HashLen zero bytes */
+  static const unsigned char zero_salt[SOCKET_CRYPTO_SHA256_SIZE] = { 0 };
+
+  const void *actual_salt = salt;
+  size_t actual_salt_len = salt_len;
+
+  if (!salt || salt_len == 0)
+    {
+      actual_salt = zero_salt;
+      actual_salt_len = SOCKET_CRYPTO_SHA256_SIZE;
+    }
+
+  /* PRK = HMAC-SHA256(salt, IKM) */
+  SocketCrypto_hmac_sha256 (actual_salt, actual_salt_len, ikm, ikm_len, prk);
+}
+
+/*
+ * build_hkdf_label - Construct HkdfLabel structure per RFC 8446 §7.1
+ *
+ * struct {
+ *   uint16 length = output_len;
+ *   opaque label<7..255> = "tls13 " + label;
+ *   opaque context<0..255> = context;
+ * } HkdfLabel;
+ *
+ * Returns: Length of constructed label in bytes.
+ */
+static size_t
+build_hkdf_label (unsigned char *out,
+                  size_t output_len,
+                  const char *label,
+                  size_t label_len,
+                  const void *context,
+                  size_t context_len)
+{
+  size_t pos = 0;
+
+  /* Length (2 bytes, big-endian) */
+  out[pos++] = (unsigned char)(output_len >> 8);
+  out[pos++] = (unsigned char)(output_len & 0xFF);
+
+  /* Label: length byte + "tls13 " + label */
+  size_t full_label_len = HKDF_LABEL_PREFIX_LEN + label_len;
+  out[pos++] = (unsigned char)full_label_len;
+  memcpy (&out[pos], HKDF_LABEL_PREFIX, HKDF_LABEL_PREFIX_LEN);
+  pos += HKDF_LABEL_PREFIX_LEN;
+  memcpy (&out[pos], label, label_len);
+  pos += label_len;
+
+  /* Context: length byte + context data */
+  out[pos++] = (unsigned char)context_len;
+  if (context_len > 0)
+    {
+      memcpy (&out[pos], context, context_len);
+      pos += context_len;
+    }
+
+  return pos;
+}
+
+void
+SocketCrypto_hkdf_expand_label (const unsigned char *prk,
+                                size_t prk_len,
+                                const char *label,
+                                const void *context,
+                                size_t context_len,
+                                unsigned char *output,
+                                size_t output_len)
+{
+  assert (prk && output);
+  assert (label);
+
+  size_t label_len = strlen (label);
+
+  /* Validate lengths per RFC 8446 */
+  if (output_len > HKDF_MAX_OUTPUT_LEN)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "HKDF-Expand-Label: output_len %zu > 255",
+                      output_len);
+
+  if (label_len + HKDF_LABEL_PREFIX_LEN > HKDF_MAX_LABEL_LEN)
+    SOCKET_RAISE_MSG (
+        SocketCrypto, SocketCrypto_Failed, "HKDF-Expand-Label: label too long");
+
+  if (context_len > HKDF_MAX_LABEL_LEN)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "HKDF-Expand-Label: context too long");
+
+  /* Build HkdfLabel structure */
+  unsigned char hkdf_label[2 + 1 + HKDF_LABEL_PREFIX_LEN + 255 + 1 + 255];
+  size_t hkdf_label_len = build_hkdf_label (
+      hkdf_label, output_len, label, label_len, context, context_len);
+
+  /* Expand and clear */
+  hkdf_expand (prk, prk_len, hkdf_label, hkdf_label_len, output, output_len);
+  SocketCrypto_secure_clear (hkdf_label, sizeof (hkdf_label));
+}
+
 size_t
 SocketCrypto_base64_encoded_size (size_t input_len)
 {
