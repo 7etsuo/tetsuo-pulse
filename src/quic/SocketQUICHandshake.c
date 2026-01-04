@@ -10,6 +10,7 @@
  */
 
 #include "quic/SocketQUICHandshake.h"
+#include "quic/SocketQUICTLS.h"
 #include "quic/SocketQUICVarInt.h"
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -610,13 +611,47 @@ SocketQUICHandshake_process (SocketQUICHandshake_T handshake)
       return QUIC_HANDSHAKE_ERROR_NULL;
     }
 
-  /* TODO: Advance TLS state machine
-   * 1. Call SSL_do_handshake() or equivalent
-   * 2. Extract CRYPTO data to send via SSL_quic_read_level()
-   * 3. Check for handshake completion
-   * 4. Extract peer transport parameters
-   * 5. Update handshake state
+  /* Set local transport params before first TLS handshake call (RFC 9001 §8.2)
    */
+  if (handshake->state == QUIC_HANDSHAKE_STATE_INITIAL
+      && handshake->tls_ssl != NULL)
+    {
+      SocketQUICTLS_Result tls_res
+          = SocketQUICTLS_set_local_transport_params (handshake);
+
+      /* NO_TLS is acceptable - means OpenSSL < 3.2 */
+      if (tls_res != QUIC_TLS_OK && tls_res != QUIC_TLS_ERROR_NO_TLS)
+        {
+          return QUIC_HANDSHAKE_ERROR_TRANSPORT;
+        }
+    }
+
+  /* Advance TLS state machine */
+  if (handshake->tls_ssl != NULL)
+    {
+      SocketQUICTLS_Result tls_res = SocketQUICTLS_do_handshake (handshake);
+
+      /* Handle TLS results */
+      if (tls_res == QUIC_TLS_ERROR_HANDSHAKE
+          || tls_res == QUIC_TLS_ERROR_ALERT)
+        {
+          handshake->state = QUIC_HANDSHAKE_STATE_FAILED;
+          return QUIC_HANDSHAKE_ERROR_TLS;
+        }
+    }
+
+  /* After handshake complete, retrieve and decode peer params (RFC 9001 §8.2)
+   */
+  if (SocketQUICTLS_is_complete (handshake) && !handshake->params_received)
+    {
+      SocketQUICTLS_Result tls_res = SocketQUICTLS_get_peer_params (handshake);
+
+      if (tls_res != QUIC_TLS_OK)
+        {
+          handshake->state = QUIC_HANDSHAKE_STATE_FAILED;
+          return QUIC_HANDSHAKE_ERROR_TRANSPORT;
+        }
+    }
 
   return QUIC_HANDSHAKE_OK;
 }

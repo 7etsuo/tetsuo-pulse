@@ -11,9 +11,11 @@
 
 #include "quic/SocketQUICTLS.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "core/SocketConfig.h"
+#include "quic/SocketQUICTransportParams.h"
 
 #if SOCKET_HAS_TLS
 
@@ -25,8 +27,9 @@
  * SSL_QUIC_METHOD was added in OpenSSL 3.2.0.
  * We check for the presence of the SSL_set_quic_method macro.
  */
-#if defined(SSL_set_quic_method) \
-    || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30200000L)
+#if defined(SSL_set_quic_method)        \
+    || (defined(OPENSSL_VERSION_NUMBER) \
+        && OPENSSL_VERSION_NUMBER >= 0x30200000L)
 #define HAVE_OPENSSL_QUIC 1
 #else
 #define HAVE_OPENSSL_QUIC 0
@@ -83,21 +86,18 @@ typedef struct
  * ============================================================================
  */
 
-static int
-quic_set_encryption_secrets (SSL *ssl,
-                             OSSL_ENCRYPTION_LEVEL level,
-                             const uint8_t *read_secret,
-                             const uint8_t *write_secret,
-                             size_t secret_len);
+static int quic_set_encryption_secrets (SSL *ssl,
+                                        OSSL_ENCRYPTION_LEVEL level,
+                                        const uint8_t *read_secret,
+                                        const uint8_t *write_secret,
+                                        size_t secret_len);
 
-static int
-quic_add_handshake_data (SSL *ssl,
-                         OSSL_ENCRYPTION_LEVEL level,
-                         const uint8_t *data,
-                         size_t len);
+static int quic_add_handshake_data (SSL *ssl,
+                                    OSSL_ENCRYPTION_LEVEL level,
+                                    const uint8_t *data,
+                                    size_t len);
 
-static int
-quic_flush_flight (SSL *ssl);
+static int quic_flush_flight (SSL *ssl);
 
 static int
 quic_send_alert (SSL *ssl, OSSL_ENCRYPTION_LEVEL level, uint8_t alert);
@@ -330,8 +330,8 @@ quic_add_handshake_data (SSL *ssl,
   if (qlevel >= QUIC_CRYPTO_LEVEL_COUNT)
     return 0;
 
-  return crypto_buffer_append (hs->arena, &state->crypto_out[qlevel], data,
-                               len);
+  return crypto_buffer_append (
+      hs->arena, &state->crypto_out[qlevel], data, len);
 }
 
 /**
@@ -457,8 +457,8 @@ tls_load_credentials (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
 
   if (config->cert_file != NULL)
     {
-      if (SSL_CTX_use_certificate_file (ctx, config->cert_file,
-                                        SSL_FILETYPE_PEM)
+      if (SSL_CTX_use_certificate_file (
+              ctx, config->cert_file, SSL_FILETYPE_PEM)
           != 1)
         return QUIC_TLS_ERROR_CERT;
     }
@@ -487,8 +487,8 @@ tls_configure_verification (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
 {
   if (config != NULL && config->verify_peer)
     {
-      SSL_CTX_set_verify (ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-                          NULL);
+      SSL_CTX_set_verify (
+          ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
     }
 }
 
@@ -500,8 +500,9 @@ tls_configure_alpn (SSL_CTX *ctx,
                     const SocketQUICTLSConfig_T *config,
                     SocketQUICConnection_Role role)
 {
-  const char *alpn
-      = (config != NULL && config->alpn != NULL) ? config->alpn : QUIC_TLS_DEFAULT_ALPN;
+  const char *alpn = (config != NULL && config->alpn != NULL)
+                         ? config->alpn
+                         : QUIC_TLS_DEFAULT_ALPN;
 
   if (role == QUIC_CONN_ROLE_SERVER)
     {
@@ -698,8 +699,10 @@ SocketQUICTLS_do_handshake (SocketQUICHandshake_T handshake)
         unsigned long ossl_err = ERR_peek_error ();
         char buf[256];
         ERR_error_string_n (ossl_err, buf, sizeof (buf));
-        snprintf (handshake->error_reason, sizeof (handshake->error_reason),
-                  "TLS error: %s", buf);
+        snprintf (handshake->error_reason,
+                  sizeof (handshake->error_reason),
+                  "TLS error: %s",
+                  buf);
         return QUIC_TLS_ERROR_HANDSHAKE;
       }
     default:
@@ -931,6 +934,118 @@ SocketQUICTLS_get_peer_transport_params (SocketQUICHandshake_T handshake,
   return QUIC_TLS_OK;
 }
 
+/* ============================================================================
+ * Transport Parameters Integration (RFC 9001 §8.2)
+ * ============================================================================
+ */
+
+SocketQUICTLS_Result
+SocketQUICTLS_set_local_transport_params (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  /* Encode local transport parameters to wire format */
+  uint8_t encoded[QUIC_TP_MAX_ENCODED_SIZE];
+  SocketQUICRole role = (handshake->role == QUIC_CONN_ROLE_CLIENT)
+                            ? QUIC_ROLE_CLIENT
+                            : QUIC_ROLE_SERVER;
+
+  size_t len = SocketQUICTransportParams_encode (
+      &handshake->local_params, role, encoded, sizeof (encoded));
+
+  if (len == 0)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* OpenSSL handles extension type 0x39 internally */
+  if (!SSL_set_quic_transport_params (ssl, encoded, len))
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  return QUIC_TLS_OK;
+}
+
+int
+SocketQUICTLS_has_peer_transport_params (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return 0;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return 0;
+
+  const uint8_t *params = NULL;
+  size_t len = 0;
+  SSL_get_peer_quic_transport_params (ssl, &params, &len);
+
+  return (params != NULL && len > 0);
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  /* Get raw params from TLS */
+  const uint8_t *raw_params = NULL;
+  size_t raw_len = 0;
+  SSL_get_peer_quic_transport_params (ssl, &raw_params, &raw_len);
+
+  /* RFC 9001 §8.2: missing extension is error 0x016d */
+  if (raw_params == NULL || raw_len == 0)
+    {
+      handshake->error_code = QUIC_ERROR_MISSING_TRANSPORT_PARAMS;
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "Missing quic_transport_parameters extension (0x%02x)",
+                QUIC_TRANSPORT_PARAMS_EXT_TYPE);
+      return QUIC_TLS_ERROR_TRANSPORT;
+    }
+
+  /* Decode into peer_params - peer role is opposite of ours */
+  SocketQUICRole peer_role = (handshake->role == QUIC_CONN_ROLE_CLIENT)
+                                 ? QUIC_ROLE_SERVER
+                                 : QUIC_ROLE_CLIENT;
+  size_t consumed;
+  SocketQUICTransportParams_Result res = SocketQUICTransportParams_decode (
+      raw_params, raw_len, peer_role, &handshake->peer_params, &consumed);
+
+  if (res != QUIC_TP_OK)
+    {
+      handshake->error_code = QUIC_ERROR_TRANSPORT_PARAMETER;
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "Transport parameter decode error: %s",
+                SocketQUICTransportParams_result_string (res));
+      return QUIC_TLS_ERROR_TRANSPORT;
+    }
+
+  /* Validate required parameters present */
+  res = SocketQUICTransportParams_validate_required (&handshake->peer_params,
+                                                     peer_role);
+  if (res != QUIC_TP_OK)
+    {
+      handshake->error_code = QUIC_ERROR_TRANSPORT_PARAMETER;
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "Transport parameter validation error: %s",
+                SocketQUICTransportParams_result_string (res));
+      return QUIC_TLS_ERROR_TRANSPORT;
+    }
+
+  handshake->params_received = 1;
+  return QUIC_TLS_OK;
+}
+
 #endif /* HAVE_OPENSSL_QUIC */
 
 /* ============================================================================
@@ -1071,6 +1186,29 @@ SocketQUICTLS_get_peer_transport_params (SocketQUICHandshake_T handshake,
                                          size_t *len)
 {
   if (handshake == NULL || params == NULL || len == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_set_local_transport_params (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+int
+SocketQUICTLS_has_peer_transport_params (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return 0;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
     return QUIC_TLS_ERROR_NULL;
   return QUIC_TLS_ERROR_NO_TLS;
 }
@@ -1219,6 +1357,27 @@ SocketQUICTLS_get_peer_transport_params (SocketQUICHandshake_T handshake,
   (void)handshake;
   (void)params;
   (void)len;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_set_local_transport_params (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+int
+SocketQUICTLS_has_peer_transport_params (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return 0;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
   return QUIC_TLS_ERROR_NO_TLS;
 }
 
