@@ -63,6 +63,7 @@ typedef struct
   atomic_int upgrade_complete;
   int port;
   Arena_T arena;
+  int thread_started; /* Track if pthread_create succeeded */
 } UpgradeTestServer;
 
 static void
@@ -150,11 +151,13 @@ upgrade_test_server_start (UpgradeTestServer *server)
 {
   int port = get_mp_test_port ();
 
+  memset (server, 0, sizeof (*server));
   server->arena = Arena_new ();
   server->port = port;
   server->running = 1;
   server->upgrade_complete = 0;
   server->client_socket = NULL;
+  server->thread_started = 0;
 
   /* Create listening socket */
   server->listen_socket = Socket_listen_tcp ("127.0.0.1", port, 5);
@@ -163,20 +166,24 @@ upgrade_test_server_start (UpgradeTestServer *server)
   /* Start server thread */
   ASSERT_EQ (
       pthread_create (&server->thread, NULL, upgrade_server_thread, server), 0);
+  server->thread_started = 1;
 }
 
 static void
 upgrade_test_server_stop (UpgradeTestServer *server)
 {
   server->running = 0;
-  pthread_join (server->thread, NULL);
+
+  if (server->thread_started)
+    pthread_join (server->thread, NULL);
 
   if (server->client_socket)
     Socket_free (&server->client_socket);
   if (server->listen_socket)
     Socket_free (&server->listen_socket);
 
-  Arena_dispose (&server->arena);
+  if (server->arena)
+    Arena_dispose (&server->arena);
 }
 
 /* ============================================================================
@@ -195,6 +202,7 @@ typedef struct
   atomic_int ipv6_connections;
   int port;
   Arena_T arena;
+  int thread_started; /* Track if pthread_create succeeded */
 } DualStackServer;
 
 static void *
@@ -256,11 +264,13 @@ dual_stack_server_start (DualStackServer *server)
 {
   int port = get_mp_test_port ();
 
+  memset (server, 0, sizeof (*server));
   server->arena = Arena_new ();
   server->port = port;
   server->running = 1;
   server->ipv4_connections = 0;
   server->ipv6_connections = 0;
+  server->thread_started = 0;
 
   /* Create IPv4 listening socket */
   server->listen_socket_ipv4 = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -276,6 +286,7 @@ dual_stack_server_start (DualStackServer *server)
   ASSERT_EQ (
       pthread_create (&server->thread, NULL, dual_stack_server_thread, server),
       0);
+  server->thread_started = 1;
 
   /* Give server time to start */
   usleep (50000);
@@ -285,11 +296,16 @@ static void
 dual_stack_server_stop (DualStackServer *server)
 {
   server->running = 0;
-  pthread_join (server->thread, NULL);
 
-  Socket_free (&server->listen_socket_ipv6);
-  Socket_free (&server->listen_socket_ipv4);
-  Arena_dispose (&server->arena);
+  if (server->thread_started)
+    pthread_join (server->thread, NULL);
+
+  if (server->listen_socket_ipv6)
+    Socket_free (&server->listen_socket_ipv6);
+  if (server->listen_socket_ipv4)
+    Socket_free (&server->listen_socket_ipv4);
+  if (server->arena)
+    Arena_dispose (&server->arena);
 }
 
 /* ============================================================================
@@ -300,106 +316,125 @@ dual_stack_server_stop (DualStackServer *server)
 TEST (integration_http_websocket_upgrade_handshake)
 {
   UpgradeTestServer server;
-  Socket_T client = NULL;
+  volatile Socket_T client = NULL;
 
   signal (SIGPIPE, SIG_IGN);
+  memset (&server, 0, sizeof (server));
 
-  /* Start upgrade server */
-  upgrade_test_server_start (&server);
+  TRY
+  {
+    /* Start upgrade server */
+    upgrade_test_server_start (&server);
 
-  /* Connect to server */
-  client = Socket_connect_tcp ("127.0.0.1", server.port, 1000);
-  ASSERT_NOT_NULL (client);
+    /* Connect to server */
+    client = Socket_connect_tcp ("127.0.0.1", server.port, 1000);
+    ASSERT_NOT_NULL (client);
 
-  /* Send WebSocket upgrade request */
-  const char *upgrade_request
-      = "GET /ws HTTP/1.1\r\n"
-        "Host: localhost\r\n"
-        "Upgrade: websocket\r\n"
-        "Connection: Upgrade\r\n"
-        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-        "Sec-WebSocket-Version: 13\r\n"
-        "\r\n";
+    /* Send WebSocket upgrade request */
+    const char *upgrade_request
+        = "GET /ws HTTP/1.1\r\n"
+          "Host: localhost\r\n"
+          "Upgrade: websocket\r\n"
+          "Connection: Upgrade\r\n"
+          "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+          "Sec-WebSocket-Version: 13\r\n"
+          "\r\n";
 
-  ssize_t sent
-      = Socket_send (client, upgrade_request, strlen (upgrade_request));
-  ASSERT_EQ (sent, (ssize_t)strlen (upgrade_request));
+    ssize_t sent
+        = Socket_send (client, upgrade_request, strlen (upgrade_request));
+    ASSERT_EQ (sent, (ssize_t)strlen (upgrade_request));
 
-  /* Give server time to process and respond */
-  usleep (200000); /* 200ms */
+    /* Give server time to process and respond */
+    usleep (200000); /* 200ms */
 
-  /* Verify upgrade was completed (server parsed the request) */
-  ASSERT_EQ (server.upgrade_complete, 1);
+    /* Verify upgrade was completed (server parsed the request) */
+    ASSERT_EQ (server.upgrade_complete, 1);
 
-  /* Read the upgrade response */
-  char response_buf[1024] = { 0 };
-  ssize_t received = Socket_recv (client, response_buf, sizeof (response_buf));
-  ASSERT (received > 0);
+    /* Read the upgrade response */
+    char response_buf[1024] = { 0 };
+    ssize_t received
+        = Socket_recv (client, response_buf, sizeof (response_buf));
+    ASSERT (received > 0);
 
-  /* Verify it's a switching protocols response */
-  ASSERT (strstr (response_buf, "101 Switching Protocols") != NULL);
-  ASSERT (strstr (response_buf, "Upgrade: websocket") != NULL);
-
-  /* Cleanup */
-  Socket_free (&client);
-  upgrade_test_server_stop (&server);
+    /* Verify it's a switching protocols response */
+    ASSERT (strstr (response_buf, "101 Switching Protocols") != NULL);
+    ASSERT (strstr (response_buf, "Upgrade: websocket") != NULL);
+  }
+  FINALLY
+  {
+    /* Cleanup - always runs even on exception */
+    if (client)
+      Socket_free ((Socket_T *)&client);
+    upgrade_test_server_stop (&server);
+  }
+  END_TRY;
 }
 
 TEST (integration_ipv6_dual_stack)
 {
   DualStackServer server;
-  Socket_T ipv4_client = NULL;
-  Socket_T ipv6_client = NULL;
+  volatile Socket_T ipv4_client = NULL;
+  volatile Socket_T ipv6_client = NULL;
 
   signal (SIGPIPE, SIG_IGN);
+  memset (&server, 0, sizeof (server));
 
-  /* Start dual-stack server */
-  dual_stack_server_start (&server);
+  TRY
+  {
+    /* Start dual-stack server */
+    dual_stack_server_start (&server);
 
-  /* Test IPv4 connection */
-  ipv4_client = Socket_connect_tcp ("127.0.0.1", server.port, 1000);
-  ASSERT_NOT_NULL (ipv4_client);
+    /* Test IPv4 connection */
+    ipv4_client = Socket_connect_tcp ("127.0.0.1", server.port, 1000);
+    ASSERT_NOT_NULL (ipv4_client);
 
-  /* Send test message over IPv4 */
-  const char *ipv4_msg = "Hello from IPv4";
-  ssize_t sent = Socket_send (ipv4_client, ipv4_msg, strlen (ipv4_msg));
-  ASSERT_EQ (sent, (ssize_t)strlen (ipv4_msg));
+    /* Send test message over IPv4 */
+    const char *ipv4_msg = "Hello from IPv4";
+    ssize_t sent = Socket_send (ipv4_client, ipv4_msg, strlen (ipv4_msg));
+    ASSERT_EQ (sent, (ssize_t)strlen (ipv4_msg));
 
-  /* Receive echo */
-  char ipv4_buf[1024] = { 0 };
-  ssize_t received = Socket_recv (ipv4_client, ipv4_buf, sizeof (ipv4_buf));
-  ASSERT_EQ (received, sent);
-  ASSERT_EQ (strcmp (ipv4_buf, ipv4_msg), 0);
+    /* Receive echo */
+    char ipv4_buf[1024] = { 0 };
+    ssize_t received
+        = Socket_recv (ipv4_client, ipv4_buf, sizeof (ipv4_buf));
+    ASSERT_EQ (received, sent);
+    ASSERT_EQ (strcmp (ipv4_buf, ipv4_msg), 0);
 
-  /* Test IPv6 connection */
-  ipv6_client = Socket_new (AF_INET6, SOCK_STREAM, 0);
-  ASSERT_NOT_NULL (ipv6_client);
+    /* Test IPv6 connection */
+    ipv6_client = Socket_new (AF_INET6, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (ipv6_client);
 
-  /* Connect to IPv6 localhost */
-  Socket_connect (ipv6_client, "::1", server.port);
+    /* Connect to IPv6 localhost */
+    Socket_connect (ipv6_client, "::1", server.port);
 
-  /* Send test message over IPv6 */
-  const char *ipv6_msg = "Hello from IPv6";
-  sent = Socket_send (ipv6_client, ipv6_msg, strlen (ipv6_msg));
-  ASSERT_EQ (sent, (ssize_t)strlen (ipv6_msg));
+    /* Send test message over IPv6 */
+    const char *ipv6_msg = "Hello from IPv6";
+    sent = Socket_send (ipv6_client, ipv6_msg, strlen (ipv6_msg));
+    ASSERT_EQ (sent, (ssize_t)strlen (ipv6_msg));
 
-  /* Receive echo */
-  char ipv6_buf[1024] = { 0 };
-  received = Socket_recv (ipv6_client, ipv6_buf, sizeof (ipv6_buf));
-  ASSERT_EQ (received, sent);
-  ASSERT_EQ (strcmp (ipv6_buf, ipv6_msg), 0);
+    /* Receive echo */
+    char ipv6_buf[1024] = { 0 };
+    received = Socket_recv (ipv6_client, ipv6_buf, sizeof (ipv6_buf));
+    ASSERT_EQ (received, sent);
+    ASSERT_EQ (strcmp (ipv6_buf, ipv6_msg), 0);
 
-  /* Wait for server to process connections */
-  usleep (100000); /* 100ms */
+    /* Wait for server to process connections */
+    usleep (100000); /* 100ms */
 
-  /* Verify both connections were handled */
-  ASSERT (server.ipv4_connections > 0);
-  ASSERT (server.ipv6_connections > 0);
-
-  /* Cleanup */
-  Socket_free (&ipv6_client);
-  Socket_free (&ipv4_client);
-  dual_stack_server_stop (&server);
+    /* Verify both connections were handled */
+    ASSERT (server.ipv4_connections > 0);
+    ASSERT (server.ipv6_connections > 0);
+  }
+  FINALLY
+  {
+    /* Cleanup - always runs even on exception */
+    if (ipv6_client)
+      Socket_free ((Socket_T *)&ipv6_client);
+    if (ipv4_client)
+      Socket_free ((Socket_T *)&ipv4_client);
+    dual_stack_server_stop (&server);
+  }
+  END_TRY;
 }
 
 int

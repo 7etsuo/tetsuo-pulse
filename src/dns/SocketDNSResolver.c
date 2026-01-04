@@ -492,11 +492,9 @@ query_list_remove (T resolver, struct SocketDNSResolver_Query *q)
 static void
 cache_entry_free (struct CacheEntry *entry)
 {
-  if (entry && entry->hostname)
-    {
-      free (entry->hostname);
-      entry->hostname = NULL;
-    }
+  /* All cache entry memory (including hostname) is arena-allocated.
+   * Arena_dispose frees everything; no free() needed here. */
+  (void)entry;
 }
 
 static void
