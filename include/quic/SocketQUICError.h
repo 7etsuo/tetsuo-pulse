@@ -194,6 +194,58 @@ typedef enum
 #define QUIC_CRYPTO_ALERT(code) ((code) & 0xff)
 
 /* ============================================================================
+ * TLS 1.3 Alert Descriptions (RFC 8446 Section 6)
+ * ============================================================================
+ */
+
+/**
+ * @brief TLS 1.3 AlertDescription values for QUIC crypto errors.
+ *
+ * These values are added to 0x0100 to form QUIC CRYPTO_ERROR codes
+ * per RFC 9001 Section 4.8.
+ *
+ * @see RFC 8446 Section 6.2
+ */
+typedef enum
+{
+  TLS_ALERT_CLOSE_NOTIFY = 0,
+  TLS_ALERT_UNEXPECTED_MESSAGE = 10,
+  TLS_ALERT_BAD_RECORD_MAC = 20,
+  TLS_ALERT_RECORD_OVERFLOW = 22,
+  TLS_ALERT_HANDSHAKE_FAILURE = 40,
+  TLS_ALERT_BAD_CERTIFICATE = 42,
+  TLS_ALERT_UNSUPPORTED_CERTIFICATE = 43,
+  TLS_ALERT_CERTIFICATE_REVOKED = 44,
+  TLS_ALERT_CERTIFICATE_EXPIRED = 45,
+  TLS_ALERT_CERTIFICATE_UNKNOWN = 46,
+  TLS_ALERT_ILLEGAL_PARAMETER = 47,
+  TLS_ALERT_UNKNOWN_CA = 48,
+  TLS_ALERT_ACCESS_DENIED = 49,
+  TLS_ALERT_DECODE_ERROR = 50,
+  TLS_ALERT_DECRYPT_ERROR = 51,
+  TLS_ALERT_PROTOCOL_VERSION = 70,
+  TLS_ALERT_INSUFFICIENT_SECURITY = 71,
+  TLS_ALERT_INTERNAL_ERROR = 80,
+  TLS_ALERT_INAPPROPRIATE_FALLBACK = 86,
+  TLS_ALERT_USER_CANCELED = 90,
+  TLS_ALERT_MISSING_EXTENSION = 109,
+  TLS_ALERT_UNSUPPORTED_EXTENSION = 110,
+  TLS_ALERT_UNRECOGNIZED_NAME = 112,
+  TLS_ALERT_BAD_CERTIFICATE_STATUS = 113,
+  TLS_ALERT_UNKNOWN_PSK_IDENTITY = 115,
+  TLS_ALERT_CERTIFICATE_REQUIRED = 116,
+  TLS_ALERT_NO_APPLICATION_PROTOCOL = 120
+} SocketTLS_Alert;
+
+/**
+ * @brief Get human-readable name for a TLS alert.
+ *
+ * @param alert TLS AlertDescription value (0-255).
+ * @return Static string for the alert name, or NULL if unknown.
+ */
+extern const char *SocketQUIC_tls_alert_string (uint8_t alert);
+
+/* ============================================================================
  * Application Error Codes (RFC 9000 Section 20.2)
  * ============================================================================
  */
@@ -306,11 +358,12 @@ SocketQUIC_is_transport_error (uint64_t code)
 /**
  * @brief Maximum buffer size for crypto error string formatting.
  *
- * The buffer is used to format strings like "CRYPTO_ERROR(0x%02x)",
- * which requires at most 19 bytes plus null terminator. 32 bytes
- * provides adequate headroom.
+ * The buffer is used to format strings like "CRYPTO_ERROR(alert_name)",
+ * where the longest alert name is "bad_certificate_status_response" (31 chars).
+ * Total: "CRYPTO_ERROR(" (13) + name (31) + ")" (1) + null (1) = 46 bytes.
+ * 64 bytes provides adequate headroom.
  */
-#define QUIC_CRYPTO_ERROR_STRING_MAX 32
+#define QUIC_CRYPTO_ERROR_STRING_MAX 64
 
 /**
  * @brief Get human-readable string for a QUIC error code.

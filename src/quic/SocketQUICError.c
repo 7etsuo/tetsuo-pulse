@@ -45,15 +45,62 @@ static const char *transport_error_names[] = {
   (sizeof (transport_error_names) / sizeof (transport_error_names[0]))
 
 /* ============================================================================
- * String Conversion
+ * TLS Alert Names (RFC 8446 Section 6)
  * ============================================================================
  */
 
-/**
- * Buffer size for crypto error string formatting.
- * Format "CRYPTO_ERROR(0x%02x)" produces at most 19 bytes + null terminator.
+typedef struct
+{
+  uint8_t code;
+  const char *name;
+} TLSAlertEntry;
+
+static const TLSAlertEntry tls_alert_names[]
+    = { { 0, "close_notify" },
+        { 10, "unexpected_message" },
+        { 20, "bad_record_mac" },
+        { 22, "record_overflow" },
+        { 40, "handshake_failure" },
+        { 42, "bad_certificate" },
+        { 43, "unsupported_certificate" },
+        { 44, "certificate_revoked" },
+        { 45, "certificate_expired" },
+        { 46, "certificate_unknown" },
+        { 47, "illegal_parameter" },
+        { 48, "unknown_ca" },
+        { 49, "access_denied" },
+        { 50, "decode_error" },
+        { 51, "decrypt_error" },
+        { 70, "protocol_version" },
+        { 71, "insufficient_security" },
+        { 80, "internal_error" },
+        { 86, "inappropriate_fallback" },
+        { 90, "user_canceled" },
+        { 109, "missing_extension" },
+        { 110, "unsupported_extension" },
+        { 112, "unrecognized_name" },
+        { 113, "bad_certificate_status_response" },
+        { 115, "unknown_psk_identity" },
+        { 116, "certificate_required" },
+        { 120, "no_application_protocol" } };
+
+#define TLS_ALERT_COUNT (sizeof (tls_alert_names) / sizeof (tls_alert_names[0]))
+
+const char *
+SocketQUIC_tls_alert_string (uint8_t alert)
+{
+  for (size_t i = 0; i < TLS_ALERT_COUNT; i++)
+    {
+      if (tls_alert_names[i].code == alert)
+        return tls_alert_names[i].name;
+    }
+  return NULL;
+}
+
+/* ============================================================================
+ * String Conversion
+ * ============================================================================
  */
-#define QUIC_CRYPTO_ERROR_STRING_MAX 32
 
 const char *
 SocketQUIC_error_string (uint64_t code)
@@ -68,10 +115,20 @@ SocketQUIC_error_string (uint64_t code)
   /* Crypto errors: 0x0100-0x01ff */
   if (QUIC_IS_CRYPTO_ERROR (code))
     {
-      int ret = snprintf (crypto_buf,
-                          sizeof (crypto_buf),
-                          "CRYPTO_ERROR(0x%02x)",
-                          (uint8_t)QUIC_CRYPTO_ALERT (code));
+      uint8_t alert = (uint8_t)QUIC_CRYPTO_ALERT (code);
+      const char *name = SocketQUIC_tls_alert_string (alert);
+
+      int ret;
+      if (name != NULL)
+        {
+          ret = snprintf (
+              crypto_buf, sizeof (crypto_buf), "CRYPTO_ERROR(%s)", name);
+        }
+      else
+        {
+          ret = snprintf (
+              crypto_buf, sizeof (crypto_buf), "CRYPTO_ERROR(0x%02x)", alert);
+        }
 
       /* Defensive check: should never happen with current format */
       if (SOCKET_SNPRINTF_CHECK (ret, sizeof (crypto_buf)) < 0)
