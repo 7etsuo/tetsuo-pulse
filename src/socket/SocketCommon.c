@@ -95,6 +95,13 @@ init_global_dns_resolver (void)
   }
   EXCEPT (SocketDNS_Failed)
   {
+    /* Ensure resolver is freed on partial init failure to avoid leaks
+     * or dangling pointers. Also clear g_dns_resolver to NULL. */
+    if (g_dns_resolver)
+      {
+        SocketDNS_free (&g_dns_resolver);
+        g_dns_resolver = NULL;
+      }
     SOCKET_LOG_ERROR_MSG ("Failed to initialize global DNS resolver: %s",
                           Except_frame.exception->reason);
     RERAISE;
