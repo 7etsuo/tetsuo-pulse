@@ -213,7 +213,15 @@ initialize_dns_components (struct SocketDNS_T *dns)
   }
   EXCEPT (SocketDNSResolver_Failed)
   {
+    /* Free resolver before arena - resolver may have internal pointers to
+     * arena-allocated memory. Freeing in wrong order causes dangling ptrs. */
+    if (dns->resolver)
+      {
+        SocketDNSResolver_free (&dns->resolver);
+        dns->resolver = NULL;
+      }
     Arena_dispose (&dns->resolver_arena);
+    dns->resolver_arena = NULL;
     cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
     RERAISE;
   }
@@ -291,17 +299,24 @@ destroy_dns_resources (T d)
   cleanup_mutex_cond (d);
 
   /* Free resolver backend - must call _free before Arena_dispose
-   * so it can clean up transport sockets which have their own arenas */
+   * so it can clean up transport sockets which have their own arenas.
+   * Defensive NULL assignment prevents double-free if called multiple times. */
   if (d->resolver)
     {
       SocketDNSResolver_free (&d->resolver);
+      d->resolver = NULL; /* Defensive: prevent double-free */
     }
   if (d->resolver_arena)
     {
       Arena_dispose (&d->resolver_arena);
+      d->resolver_arena = NULL; /* Defensive: prevent double-dispose */
     }
 
-  Arena_dispose (&d->arena);
+  if (d->arena)
+    {
+      Arena_dispose (&d->arena);
+      d->arena = NULL;
+    }
   free (d);
 }
 

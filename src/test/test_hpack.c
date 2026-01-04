@@ -1256,7 +1256,6 @@ test_hpack_bomb_absolute_limit (void)
 
   /* Generate headers with 50 byte names and 50 byte values = 100 bytes each */
   /* 11 headers * 100 = 1100 bytes > 1024 limit */
-  int generated = 0;
   for (int i = 0; i < 15; i++)
     {
       /* Each header needs 2 + 50 + 2 + 50 = 104 bytes */
@@ -1270,7 +1269,6 @@ test_hpack_bomb_absolute_limit (void)
       input[pos++] = 0x32; /* Value length = 50 */
       for (int j = 0; j < 50; j++)
         input[pos++] = 'y';
-      generated++;
     }
 
   result = SocketHPACK_Decoder_decode (

@@ -475,7 +475,6 @@ test_header_dos_protection (void)
   /* Add many headers with same hash to trigger collision detection */
   /* This test relies on internal bucket size limits */
   int added = 0;
-  int failed = 0;
 
   /* Try to add many headers - should eventually hit chain length limit */
   for (int i = 0; i < 100; i++)
@@ -488,8 +487,6 @@ test_header_dos_protection (void)
       int result = SocketHTTP_Headers_add (headers, name, value);
       if (result == 0)
         added++;
-      else
-        failed++;
     }
 
   /* We should be able to add most headers, but may hit limits */

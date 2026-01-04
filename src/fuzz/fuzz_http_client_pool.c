@@ -580,7 +580,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (size < MIN_INPUT_SIZE)
     return 0;
 
-  const FuzzInput *input = (const FuzzInput *)data;
+  /* Copy to aligned local storage to avoid UBSan misaligned access errors.
+   * The fuzzer-provided data buffer may not be properly aligned for the
+   * struct's uint16_t members. Zero-initialize first to ensure padding
+   * bytes are deterministic. */
+  FuzzInput input_storage = { 0 };
+  memcpy (&input_storage, data, sizeof (FuzzInput));
+  const FuzzInput *input = &input_storage;
   const uint8_t *extra_data = data + MIN_INPUT_SIZE;
   size_t extra_len = size - MIN_INPUT_SIZE;
 
