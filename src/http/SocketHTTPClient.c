@@ -343,12 +343,31 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
 
   client->config = *config;
 
-  if (config->user_agent != NULL)
-    httpclient_validate_user_agent (client, arena, config->user_agent);
+  /* Normalize boolean config fields to 0 or 1.
+   * Prevents undefined behavior from arbitrary non-boolean values
+   * (e.g., fuzzer input with enable_async_io=10 instead of 0/1). */
+  client->config.allow_http2_cleartext = !!client->config.allow_http2_cleartext;
+  client->config.enable_connection_pool
+      = !!client->config.enable_connection_pool;
+  client->config.follow_redirects = !!client->config.follow_redirects;
+  client->config.redirect_on_post = !!client->config.redirect_on_post;
+  client->config.auto_decompress = !!client->config.auto_decompress;
+  client->config.verify_ssl = !!client->config.verify_ssl;
+  client->config.enable_retry = !!client->config.enable_retry;
+  client->config.retry_on_connection_error
+      = !!client->config.retry_on_connection_error;
+  client->config.retry_on_timeout = !!client->config.retry_on_timeout;
+  client->config.retry_on_5xx = !!client->config.retry_on_5xx;
+  client->config.enforce_samesite = !!client->config.enforce_samesite;
+  client->config.discard_body = !!client->config.discard_body;
+  client->config.enable_async_io = !!client->config.enable_async_io;
 
-  httpclient_init_pool (client, config);
+  if (client->config.user_agent != NULL)
+    httpclient_validate_user_agent (client, arena, client->config.user_agent);
 
-  if (config->enable_async_io)
+  httpclient_init_pool (client, &client->config);
+
+  if (client->config.enable_async_io)
     httpclient_async_init (client);
 
   client->last_error = HTTPCLIENT_OK;
