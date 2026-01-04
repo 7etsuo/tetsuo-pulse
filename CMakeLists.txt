@@ -422,6 +422,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICFlow.c
     src/quic/SocketQUICAck.c
     src/quic/SocketQUICLoss.c
+    src/quic/SocketQUICTLS.c
 
 )
 
@@ -650,6 +651,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICHandshake.h
     include/quic/SocketQUICAck.h
     include/quic/SocketQUICLoss.h
+    include/quic/SocketQUICTLS.h
 )
 
 set(SIMPLE_HEADERS
@@ -839,6 +841,7 @@ if(SOCKET_HAS_TLS)
         # QUIC Initial packet tests (requires TLS for crypto)
         test_quic_crypto
         test_quic_initial
+        test_quic_tls
         test_tls_ct
         test_tls_integration
         test_tls_ocsp
