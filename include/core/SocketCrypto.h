@@ -186,6 +186,114 @@ extern void SocketCrypto_hkdf_expand_label (const unsigned char *prk,
                                             size_t output_len);
 
 /* ============================================================================
+ * AEAD Constants (RFC 5116, RFC 9001)
+ * ============================================================================
+ */
+
+/** @brief AEAD authentication tag size in bytes (RFC 9001 §5.3). */
+#define SOCKET_CRYPTO_AEAD_TAG_SIZE 16
+
+/** @brief AEAD nonce/IV size in bytes (RFC 9001 §5.3). */
+#define SOCKET_CRYPTO_AEAD_IV_SIZE 12
+
+/** @brief AES-128-GCM key size in bytes. */
+#define SOCKET_CRYPTO_AES128_KEY_SIZE 16
+
+/** @brief AES-256-GCM key size in bytes. */
+#define SOCKET_CRYPTO_AES256_KEY_SIZE 32
+
+/** @brief ChaCha20-Poly1305 key size in bytes. */
+#define SOCKET_CRYPTO_CHACHA20_KEY_SIZE 32
+
+/**
+ * @brief AEAD algorithm selection for QUIC packet protection.
+ *
+ * Maps to TLS 1.3 cipher suites per RFC 9001 §5.3.
+ */
+typedef enum
+{
+  SOCKET_CRYPTO_AEAD_AES_128_GCM = 0,      /**< TLS_AES_128_GCM_SHA256 */
+  SOCKET_CRYPTO_AEAD_AES_256_GCM = 1,      /**< TLS_AES_256_GCM_SHA384 */
+  SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305 = 2 /**< TLS_CHACHA20_POLY1305_SHA256 */
+} SocketCrypto_AeadAlg;
+
+/* ============================================================================
+ * AEAD Functions (RFC 5116, RFC 9001 §5.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief AEAD encryption for QUIC packet protection.
+ *
+ * Encrypts plaintext and produces ciphertext with authentication tag.
+ * Implements RFC 5116 AEAD interface for QUIC per RFC 9001 §5.3.
+ *
+ * @param[in] alg AEAD algorithm to use.
+ * @param[in] key Encryption key (size depends on algorithm).
+ * @param[in] key_len Key length in bytes.
+ * @param[in] nonce Nonce/IV (SOCKET_CRYPTO_AEAD_IV_SIZE bytes).
+ * @param[in] nonce_len Nonce length (must be SOCKET_CRYPTO_AEAD_IV_SIZE).
+ * @param[in] plaintext Input plaintext data.
+ * @param[in] plaintext_len Plaintext length in bytes.
+ * @param[in] aad Additional authenticated data (QUIC header).
+ * @param[in] aad_len AAD length in bytes.
+ * @param[out] ciphertext Output buffer (must be >= plaintext_len).
+ * @param[out] tag Authentication tag (SOCKET_CRYPTO_AEAD_TAG_SIZE bytes).
+ *
+ * Raises: SocketCrypto_Failed on error, invalid parameters, or TLS unavailable.
+ * @threadsafe Yes.
+ */
+extern void
+SocketCrypto_aead_encrypt (SocketCrypto_AeadAlg alg,
+                           const unsigned char *key,
+                           size_t key_len,
+                           const unsigned char *nonce,
+                           size_t nonce_len,
+                           const unsigned char *plaintext,
+                           size_t plaintext_len,
+                           const unsigned char *aad,
+                           size_t aad_len,
+                           unsigned char *ciphertext,
+                           unsigned char tag[SOCKET_CRYPTO_AEAD_TAG_SIZE]);
+
+/**
+ * @brief AEAD decryption for QUIC packet protection.
+ *
+ * Decrypts ciphertext and verifies authentication tag.
+ * Implements RFC 5116 AEAD interface for QUIC per RFC 9001 §5.3.
+ *
+ * @param[in] alg AEAD algorithm to use.
+ * @param[in] key Decryption key (size depends on algorithm).
+ * @param[in] key_len Key length in bytes.
+ * @param[in] nonce Nonce/IV (SOCKET_CRYPTO_AEAD_IV_SIZE bytes).
+ * @param[in] nonce_len Nonce length (must be SOCKET_CRYPTO_AEAD_IV_SIZE).
+ * @param[in] ciphertext Input ciphertext data.
+ * @param[in] ciphertext_len Ciphertext length in bytes.
+ * @param[in] aad Additional authenticated data (QUIC header).
+ * @param[in] aad_len AAD length in bytes.
+ * @param[in] tag Authentication tag to verify (SOCKET_CRYPTO_AEAD_TAG_SIZE).
+ * @param[out] plaintext Output buffer (must be >= ciphertext_len).
+ *
+ * Returns: 0 on success (tag verified), -1 on authentication failure.
+ * Raises: SocketCrypto_Failed on error, invalid parameters, or TLS unavailable.
+ * @threadsafe Yes.
+ * @note Returns error code for tag failure (not exception) for timing-safe
+ *       handling.
+ */
+extern int
+SocketCrypto_aead_decrypt (SocketCrypto_AeadAlg alg,
+                           const unsigned char *key,
+                           size_t key_len,
+                           const unsigned char *nonce,
+                           size_t nonce_len,
+                           const unsigned char *ciphertext,
+                           size_t ciphertext_len,
+                           const unsigned char *aad,
+                           size_t aad_len,
+                           const unsigned char tag[SOCKET_CRYPTO_AEAD_TAG_SIZE],
+                           unsigned char *plaintext);
+
+/* ============================================================================
  * Base64 Encoding (RFC 4648)
  * ============================================================================
  */
