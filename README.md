@@ -10,6 +10,8 @@
 
 # Socket Library
 
+> **Maturity Notice**: This library is functional and well-tested but newly released. It is appropriate for development, internal tooling, and controlled environments. Production deployment with untrusted network input should wait until the codebase has accumulated several months of real-world hardening.
+
 High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern C API for TCP, UDP, Unix domain sockets, HTTP/1.1, HTTP/2, QUIC, WebSocket, and TLS/DTLS with comprehensive error handling, zero-copy I/O, and cross-platform event polling.
 
 ## Features
