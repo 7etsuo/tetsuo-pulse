@@ -102,5 +102,7 @@ examples/tags
 
 clean.md
 
-# Claude Code state files
-.claude/issue-state/
+# AI assistant config files (local only)
+.claude/
+CLAUDE.md
+GEMINI.md
