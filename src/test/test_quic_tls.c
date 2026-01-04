@@ -689,6 +689,148 @@ TEST (tls_get_peer_params_server_no_ssl)
   Arena_dispose (&arena);
 }
 
+TEST (tls_get_peer_params_sets_error_code_on_missing)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Initialize TLS context and SSL object */
+  SocketQUICTLS_Result res = SocketQUICTLS_init_context (hs, NULL);
+  if (res != QUIC_TLS_OK)
+    {
+      /* TLS not available - skip */
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  res = SocketQUICTLS_create_ssl (hs);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICTLS_free (hs);
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  /* Before handshake, peer params are missing - should set 0x016d */
+  res = SocketQUICTLS_get_peer_params (hs);
+  ASSERT_EQ (res, QUIC_TLS_ERROR_TRANSPORT);
+  ASSERT_EQ (hs->error_code, QUIC_ERROR_MISSING_TRANSPORT_PARAMS);
+
+  SocketQUICTLS_free (hs);
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_set_local_transport_params_with_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Initialize TLS context and SSL object */
+  SocketQUICTLS_Result res = SocketQUICTLS_init_context (hs, NULL);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  res = SocketQUICTLS_create_ssl (hs);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICTLS_free (hs);
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  /* Should succeed with valid SSL object and default params */
+  res = SocketQUICTLS_set_local_transport_params (hs);
+  ASSERT_EQ (res, QUIC_TLS_OK);
+
+  SocketQUICTLS_free (hs);
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_has_peer_transport_params_with_ssl_no_handshake)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  SocketQUICTLS_Result res = SocketQUICTLS_init_context (hs, NULL);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  res = SocketQUICTLS_create_ssl (hs);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICTLS_free (hs);
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  /* Before handshake completes, peer params should not be available */
+  int has = SocketQUICTLS_has_peer_transport_params (hs);
+  ASSERT_EQ (has, 0);
+
+  SocketQUICTLS_free (hs);
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_params_received_flag_not_set_on_error)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs
+      = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Verify flag is initially 0 */
+  ASSERT_EQ (hs->params_received, 0);
+
+  SocketQUICTLS_Result res = SocketQUICTLS_init_context (hs, NULL);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  res = SocketQUICTLS_create_ssl (hs);
+  if (res != QUIC_TLS_OK)
+    {
+      SocketQUICTLS_free (hs);
+      SocketQUICHandshake_free (&hs);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  /* Call get_peer_params - should fail (no handshake done) */
+  res = SocketQUICTLS_get_peer_params (hs);
+  ASSERT_EQ (res, QUIC_TLS_ERROR_TRANSPORT);
+
+  /* Flag should still be 0 after failure */
+  ASSERT_EQ (hs->params_received, 0);
+
+  SocketQUICTLS_free (hs);
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * Level Boundary Tests
  * ============================================================================
