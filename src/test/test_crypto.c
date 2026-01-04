@@ -856,6 +856,537 @@ TEST (hkdf_extract_null_salt)
   ASSERT (memcmp (prk1, prk2, 32) == 0);
 }
 
+/* ============================================================================
+ * AEAD Tests (RFC 5116, RFC 9001 §5.3, NIST SP 800-38D)
+ * ============================================================================
+ */
+
+TEST (aead_aes128gcm_empty)
+{
+  /* NIST GCM Test Case 1: Empty plaintext, empty AAD
+   * Key = 00000000000000000000000000000000
+   * IV  = 000000000000000000000000
+   * Expected Tag = 58e2fccefa7e3061367f1d57a4e7455a
+   */
+  unsigned char key[16], iv[12], expected_tag[16], tag[16];
+
+  hex_to_bytes ("00000000000000000000000000000000", key, 16);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+  hex_to_bytes ("58e2fccefa7e3061367f1d57a4e7455a", expected_tag, 16);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                             key,
+                             16,
+                             iv,
+                             12,
+                             NULL,
+                             0, /* empty plaintext */
+                             NULL,
+                             0, /* empty AAD */
+                             NULL,
+                             tag);
+
+  ASSERT (memcmp (tag, expected_tag, 16) == 0);
+}
+
+TEST (aead_aes128gcm_roundtrip)
+{
+  /* Basic encrypt/decrypt round-trip test */
+  unsigned char key[16], iv[12];
+  const char *plaintext = "Hello, QUIC!";
+  size_t pt_len = strlen (plaintext);
+  unsigned char ct[32], pt_out[32], tag[16];
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                             key,
+                             16,
+                             iv,
+                             12,
+                             (unsigned char *)plaintext,
+                             pt_len,
+                             NULL,
+                             0,
+                             ct,
+                             tag);
+
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                                          key,
+                                          16,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          NULL,
+                                          0,
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == 0);
+  ASSERT (memcmp (pt_out, plaintext, pt_len) == 0);
+}
+
+TEST (aead_aes128gcm_with_aad)
+{
+  /* Encrypt with AAD and verify round-trip */
+  unsigned char key[16], iv[12];
+  const char *plaintext = "Payload";
+  const char *aad = "Header";
+  size_t pt_len = strlen (plaintext);
+  size_t aad_len = strlen (aad);
+  unsigned char ct[32], pt_out[32], tag[16];
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+  hex_to_bytes ("0a0b0c0d0e0f01020304050a", iv, 12);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                             key,
+                             16,
+                             iv,
+                             12,
+                             (unsigned char *)plaintext,
+                             pt_len,
+                             (unsigned char *)aad,
+                             aad_len,
+                             ct,
+                             tag);
+
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                                          key,
+                                          16,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          (unsigned char *)aad,
+                                          aad_len,
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == 0);
+  ASSERT (memcmp (pt_out, plaintext, pt_len) == 0);
+}
+
+TEST (aead_aes128gcm_tag_mismatch)
+{
+  /* Verify tag mismatch returns -1 (not exception) */
+  unsigned char key[16], iv[12], tag[16], bad_tag[16];
+  const char *plaintext = "Test";
+  size_t pt_len = strlen (plaintext);
+  unsigned char ct[16], pt_out[16];
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                             key,
+                             16,
+                             iv,
+                             12,
+                             (unsigned char *)plaintext,
+                             pt_len,
+                             NULL,
+                             0,
+                             ct,
+                             tag);
+
+  /* Corrupt the tag */
+  memcpy (bad_tag, tag, 16);
+  bad_tag[0] ^= 0xFF;
+
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                                          key,
+                                          16,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          NULL,
+                                          0,
+                                          bad_tag,
+                                          pt_out);
+
+  ASSERT (result == -1); /* Auth failure */
+}
+
+TEST (aead_aes256gcm_roundtrip)
+{
+  /* AES-256-GCM round-trip */
+  unsigned char key[32], iv[12];
+  const char *plaintext = "AES-256 test";
+  size_t pt_len = strlen (plaintext);
+  unsigned char ct[32], pt_out[32], tag[16];
+
+  hex_to_bytes (
+      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      key,
+      32);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_256_GCM,
+                             key,
+                             32,
+                             iv,
+                             12,
+                             (unsigned char *)plaintext,
+                             pt_len,
+                             NULL,
+                             0,
+                             ct,
+                             tag);
+
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_AES_256_GCM,
+                                          key,
+                                          32,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          NULL,
+                                          0,
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == 0);
+  ASSERT (memcmp (pt_out, plaintext, pt_len) == 0);
+}
+
+TEST (aead_chacha20poly1305_roundtrip)
+{
+  /* ChaCha20-Poly1305 round-trip */
+  unsigned char key[32], iv[12];
+  const char *plaintext = "ChaCha20 test";
+  size_t pt_len = strlen (plaintext);
+  unsigned char ct[32], pt_out[32], tag[16];
+
+  hex_to_bytes (
+      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      key,
+      32);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305,
+                             key,
+                             32,
+                             iv,
+                             12,
+                             (unsigned char *)plaintext,
+                             pt_len,
+                             NULL,
+                             0,
+                             ct,
+                             tag);
+
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305,
+                                          key,
+                                          32,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          NULL,
+                                          0,
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == 0);
+  ASSERT (memcmp (pt_out, plaintext, pt_len) == 0);
+}
+
+TEST (aead_quic_client_initial)
+{
+  /* RFC 9001 Appendix A.2: Client Initial packet protection
+   * Uses derived keys from A.1:
+   * key = 1f369613dd76d5467730efcbe3b1a22d
+   * iv  = fa044b2f42a3fd3b46fb255c
+   */
+  unsigned char key[16], iv[12];
+  const char *test_payload = "Test QUIC payload";
+  size_t pt_len = strlen (test_payload);
+  unsigned char ct[64], pt_out[64], tag[16];
+
+  hex_to_bytes ("1f369613dd76d5467730efcbe3b1a22d", key, 16);
+  hex_to_bytes ("fa044b2f42a3fd3b46fb255c", iv, 12);
+
+  /* Encrypt */
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                             key,
+                             16,
+                             iv,
+                             12,
+                             (unsigned char *)test_payload,
+                             pt_len,
+                             NULL,
+                             0,
+                             ct,
+                             tag);
+
+  /* Decrypt and verify */
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                                          key,
+                                          16,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          NULL,
+                                          0,
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == 0);
+  ASSERT (memcmp (pt_out, test_payload, pt_len) == 0);
+}
+
+TEST (aead_chacha20_rfc9001_keys)
+{
+  /* RFC 9001 Appendix A.5: ChaCha20-Poly1305 keys
+   * key = c6d98ff3441c3fe1b2182094f69caa2ed4b716b65488960a7a984979fb23e1c8
+   * iv  = e0459b3474bdd0e44a41c144
+   */
+  unsigned char key[32], iv[12];
+  const char *test_payload = "ChaCha20 QUIC test";
+  size_t pt_len = strlen (test_payload);
+  unsigned char ct[64], pt_out[64], tag[16];
+
+  hex_to_bytes (
+      "c6d98ff3441c3fe1b2182094f69caa2ed4b716b65488960a7a984979fb23e1c8",
+      key,
+      32);
+  hex_to_bytes ("e0459b3474bdd0e44a41c144", iv, 12);
+
+  /* Encrypt */
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305,
+                             key,
+                             32,
+                             iv,
+                             12,
+                             (unsigned char *)test_payload,
+                             pt_len,
+                             NULL,
+                             0,
+                             ct,
+                             tag);
+
+  /* Decrypt and verify */
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305,
+                                          key,
+                                          32,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          NULL,
+                                          0,
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == 0);
+  ASSERT (memcmp (pt_out, test_payload, pt_len) == 0);
+}
+
+TEST (aead_aad_tamper_detection)
+{
+  /* Verify that modifying AAD causes auth failure */
+  unsigned char key[16], iv[12];
+  const char *plaintext = "Secret";
+  const char *aad = "AuthenticatedHeader";
+  const char *bad_aad = "ModifiedHeader12345";
+  size_t pt_len = strlen (plaintext);
+  size_t aad_len = strlen (aad);
+  unsigned char ct[32], pt_out[32], tag[16];
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                             key,
+                             16,
+                             iv,
+                             12,
+                             (unsigned char *)plaintext,
+                             pt_len,
+                             (unsigned char *)aad,
+                             aad_len,
+                             ct,
+                             tag);
+
+  /* Decrypt with modified AAD should fail */
+  int result = SocketCrypto_aead_decrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                                          key,
+                                          16,
+                                          iv,
+                                          12,
+                                          ct,
+                                          pt_len,
+                                          (unsigned char *)bad_aad,
+                                          strlen (bad_aad),
+                                          tag,
+                                          pt_out);
+
+  ASSERT (result == -1); /* Auth failure due to AAD mismatch */
+}
+
+TEST (aead_invalid_algorithm)
+{
+  /* Invalid algorithm enum should raise exception */
+  unsigned char key[16], iv[12], ct[16], tag[16];
+  volatile int raised = 0;
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  TRY
+  {
+    SocketCrypto_aead_encrypt ((SocketCrypto_AeadAlg)99, /* invalid */
+                               key,
+                               16,
+                               iv,
+                               12,
+                               NULL,
+                               0,
+                               NULL,
+                               0,
+                               ct,
+                               tag);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT (raised == 1);
+}
+
+TEST (aead_wrong_key_length)
+{
+  /* Wrong key length should raise exception */
+  unsigned char key[15], iv[12], ct[16], tag[16]; /* 15 bytes, not 16 */
+  volatile int raised = 0;
+
+  memset (key, 0, sizeof (key));
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  TRY
+  {
+    SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                               key,
+                               15, /* wrong: should be 16 */
+                               iv,
+                               12,
+                               NULL,
+                               0,
+                               NULL,
+                               0,
+                               ct,
+                               tag);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT (raised == 1);
+}
+
+TEST (aead_null_key)
+{
+  /* NULL key should raise exception */
+  unsigned char iv[12], ct[16], tag[16];
+  volatile int raised = 0;
+
+  hex_to_bytes ("000000000000000000000000", iv, 12);
+
+  TRY
+  {
+    SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                               NULL, /* NULL key */
+                               16,
+                               iv,
+                               12,
+                               NULL,
+                               0,
+                               NULL,
+                               0,
+                               ct,
+                               tag);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT (raised == 1);
+}
+
+TEST (aead_null_nonce)
+{
+  /* NULL nonce should raise exception */
+  unsigned char key[16], ct[16], tag[16];
+  volatile int raised = 0;
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+
+  TRY
+  {
+    SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                               key,
+                               16,
+                               NULL, /* NULL nonce */
+                               12,
+                               NULL,
+                               0,
+                               NULL,
+                               0,
+                               ct,
+                               tag);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT (raised == 1);
+}
+
+TEST (aead_wrong_nonce_length)
+{
+  /* Wrong nonce length should raise exception */
+  unsigned char key[16], iv[11], ct[16], tag[16]; /* 11 bytes, not 12 */
+  volatile int raised = 0;
+
+  hex_to_bytes ("000102030405060708090a0b0c0d0e0f", key, 16);
+  memset (iv, 0, sizeof (iv));
+
+  TRY
+  {
+    SocketCrypto_aead_encrypt (SOCKET_CRYPTO_AEAD_AES_128_GCM,
+                               key,
+                               16,
+                               iv,
+                               11, /* wrong: should be 12 */
+                               NULL,
+                               0,
+                               NULL,
+                               0,
+                               ct,
+                               tag);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT (raised == 1);
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================

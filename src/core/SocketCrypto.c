@@ -458,6 +458,384 @@ SocketCrypto_hkdf_expand_label (const unsigned char *prk,
   SocketCrypto_secure_clear (hkdf_label, sizeof (hkdf_label));
 }
 
+/* ============================================================================
+ * AEAD Functions (RFC 5116, RFC 9001 §5.3)
+ * ============================================================================
+ */
+
+#if SOCKET_HAS_TLS
+/**
+ * Get EVP cipher for AEAD algorithm.
+ */
+static const EVP_CIPHER *
+aead_get_cipher (SocketCrypto_AeadAlg alg)
+{
+  switch (alg)
+    {
+    case SOCKET_CRYPTO_AEAD_AES_128_GCM:
+      return EVP_aes_128_gcm ();
+    case SOCKET_CRYPTO_AEAD_AES_256_GCM:
+      return EVP_aes_256_gcm ();
+    case SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305:
+      return EVP_chacha20_poly1305 ();
+    default:
+      return NULL;
+    }
+}
+
+/**
+ * Get expected key length for AEAD algorithm.
+ */
+static size_t
+aead_key_len (SocketCrypto_AeadAlg alg)
+{
+  switch (alg)
+    {
+    case SOCKET_CRYPTO_AEAD_AES_128_GCM:
+      return SOCKET_CRYPTO_AES128_KEY_SIZE;
+    case SOCKET_CRYPTO_AEAD_AES_256_GCM:
+    case SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305:
+      return SOCKET_CRYPTO_AES256_KEY_SIZE;
+    default:
+      return 0;
+    }
+}
+
+/**
+ * Get algorithm name for error messages.
+ */
+static const char *
+aead_name (SocketCrypto_AeadAlg alg)
+{
+  switch (alg)
+    {
+    case SOCKET_CRYPTO_AEAD_AES_128_GCM:
+      return "AES-128-GCM";
+    case SOCKET_CRYPTO_AEAD_AES_256_GCM:
+      return "AES-256-GCM";
+    case SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305:
+      return "ChaCha20-Poly1305";
+    default:
+      return "Unknown AEAD";
+    }
+}
+
+/**
+ * Validate AEAD parameters.
+ */
+static void
+aead_validate_params (SocketCrypto_AeadAlg alg,
+                      const unsigned char *key,
+                      size_t key_len,
+                      const unsigned char *nonce,
+                      size_t nonce_len,
+                      const char *op_name)
+{
+  if (!key)
+    SOCKET_RAISE_MSG (
+        SocketCrypto, SocketCrypto_Failed, "%s: NULL key", op_name);
+
+  size_t expected_key_len = aead_key_len (alg);
+  if (expected_key_len == 0)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "%s: Invalid algorithm %d",
+                      op_name,
+                      (int)alg);
+
+  if (key_len != expected_key_len)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "%s: Invalid key length %zu (expected %zu)",
+                      op_name,
+                      key_len,
+                      expected_key_len);
+
+  if (!nonce)
+    SOCKET_RAISE_MSG (
+        SocketCrypto, SocketCrypto_Failed, "%s: NULL nonce", op_name);
+
+  if (nonce_len != SOCKET_CRYPTO_AEAD_IV_SIZE)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "%s: Invalid nonce length %zu (expected %d)",
+                      op_name,
+                      nonce_len,
+                      SOCKET_CRYPTO_AEAD_IV_SIZE);
+}
+#endif /* SOCKET_HAS_TLS */
+
+void
+SocketCrypto_aead_encrypt (SocketCrypto_AeadAlg alg,
+                           const unsigned char *key,
+                           size_t key_len,
+                           const unsigned char *nonce,
+                           size_t nonce_len,
+                           const unsigned char *plaintext,
+                           size_t plaintext_len,
+                           const unsigned char *aad,
+                           size_t aad_len,
+                           unsigned char *ciphertext,
+                           unsigned char tag[SOCKET_CRYPTO_AEAD_TAG_SIZE])
+{
+  assert (tag);
+
+  SOCKET_CRYPTO_CHECK_INPUT (
+      plaintext, plaintext_len, "AEAD encrypt plaintext");
+  SOCKET_CRYPTO_CHECK_INPUT (aad, aad_len, "AEAD encrypt AAD");
+
+  if (plaintext_len > 0 && !SocketSecurity_check_size (plaintext_len))
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "AEAD encrypt: plaintext too large: %zu",
+                      plaintext_len);
+
+  if (aad_len > 0 && !SocketSecurity_check_size (aad_len))
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "AEAD encrypt: AAD too large: %zu",
+                      aad_len);
+
+#if SOCKET_HAS_TLS
+  const char *name = aead_name (alg);
+  aead_validate_params (alg, key, key_len, nonce, nonce_len, name);
+
+  const EVP_CIPHER *cipher = aead_get_cipher (alg);
+  EVP_CIPHER_CTX *volatile ctx = NULL;
+
+  TRY
+  {
+    ctx = EVP_CIPHER_CTX_new ();
+    if (!ctx)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s encrypt: Failed to create context",
+                        name);
+
+    /* Initialize encryption with cipher and NULL key/IV */
+    if (EVP_EncryptInit_ex (ctx, cipher, NULL, NULL, NULL) != 1)
+      SOCKET_RAISE_MSG (
+          SocketCrypto, SocketCrypto_Failed, "%s encrypt: Init failed", name);
+
+    /* Set IV length (must be before setting key/IV) */
+    if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_AEAD_SET_IVLEN, (int)nonce_len, NULL)
+        != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s encrypt: Set IV length failed",
+                        name);
+
+    /* Set key and IV */
+    if (EVP_EncryptInit_ex (ctx, NULL, NULL, key, nonce) != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s encrypt: Set key/IV failed",
+                        name);
+
+    int outlen;
+
+    /* Process AAD (if any) */
+    if (aad_len > 0)
+      {
+        if (EVP_EncryptUpdate (ctx, NULL, &outlen, aad, (int)aad_len) != 1)
+          SOCKET_RAISE_MSG (SocketCrypto,
+                            SocketCrypto_Failed,
+                            "%s encrypt: AAD processing failed",
+                            name);
+      }
+
+    /* Encrypt plaintext */
+    if (plaintext_len > 0)
+      {
+        if (EVP_EncryptUpdate (
+                ctx, ciphertext, &outlen, plaintext, (int)plaintext_len)
+            != 1)
+          SOCKET_RAISE_MSG (SocketCrypto,
+                            SocketCrypto_Failed,
+                            "%s encrypt: Encryption failed",
+                            name);
+      }
+
+    /* Finalize (for GCM, no additional output)
+     * Use dummy buffer when ciphertext is NULL to avoid UB from null+0 */
+    unsigned char final_dummy;
+    unsigned char *final_ptr
+        = ciphertext ? ciphertext + plaintext_len : &final_dummy;
+    if (EVP_EncryptFinal_ex (ctx, final_ptr, &outlen) != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s encrypt: Finalize failed",
+                        name);
+
+    /* Get authentication tag */
+    if (EVP_CIPHER_CTX_ctrl (
+            ctx, EVP_CTRL_AEAD_GET_TAG, SOCKET_CRYPTO_AEAD_TAG_SIZE, tag)
+        != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s encrypt: Get tag failed",
+                        name);
+  }
+  FINALLY
+  {
+    if (ctx)
+      EVP_CIPHER_CTX_free (ctx);
+  }
+  END_TRY;
+#else
+  (void)alg;
+  (void)key;
+  (void)key_len;
+  (void)nonce;
+  (void)nonce_len;
+  (void)plaintext;
+  (void)plaintext_len;
+  (void)aad;
+  (void)aad_len;
+  (void)ciphertext;
+  (void)tag;
+  SOCKET_CRYPTO_REQUIRE_TLS;
+#endif
+}
+
+int
+SocketCrypto_aead_decrypt (SocketCrypto_AeadAlg alg,
+                           const unsigned char *key,
+                           size_t key_len,
+                           const unsigned char *nonce,
+                           size_t nonce_len,
+                           const unsigned char *ciphertext,
+                           size_t ciphertext_len,
+                           const unsigned char *aad,
+                           size_t aad_len,
+                           const unsigned char tag[SOCKET_CRYPTO_AEAD_TAG_SIZE],
+                           unsigned char *plaintext)
+{
+  assert (tag);
+
+  SOCKET_CRYPTO_CHECK_INPUT (
+      ciphertext, ciphertext_len, "AEAD decrypt ciphertext");
+  SOCKET_CRYPTO_CHECK_INPUT (aad, aad_len, "AEAD decrypt AAD");
+
+  if (ciphertext_len > 0 && !SocketSecurity_check_size (ciphertext_len))
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "AEAD decrypt: ciphertext too large: %zu",
+                      ciphertext_len);
+
+  if (aad_len > 0 && !SocketSecurity_check_size (aad_len))
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "AEAD decrypt: AAD too large: %zu",
+                      aad_len);
+
+#if SOCKET_HAS_TLS
+  const char *name = aead_name (alg);
+  aead_validate_params (alg, key, key_len, nonce, nonce_len, name);
+
+  const EVP_CIPHER *cipher = aead_get_cipher (alg);
+  EVP_CIPHER_CTX *volatile ctx = NULL;
+  volatile int result = -1;
+
+  TRY
+  {
+    ctx = EVP_CIPHER_CTX_new ();
+    if (!ctx)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s decrypt: Failed to create context",
+                        name);
+
+    /* Initialize decryption with cipher and NULL key/IV */
+    if (EVP_DecryptInit_ex (ctx, cipher, NULL, NULL, NULL) != 1)
+      SOCKET_RAISE_MSG (
+          SocketCrypto, SocketCrypto_Failed, "%s decrypt: Init failed", name);
+
+    /* Set IV length */
+    if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_AEAD_SET_IVLEN, (int)nonce_len, NULL)
+        != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s decrypt: Set IV length failed",
+                        name);
+
+    /* Set key and IV */
+    if (EVP_DecryptInit_ex (ctx, NULL, NULL, key, nonce) != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s decrypt: Set key/IV failed",
+                        name);
+
+    int outlen;
+
+    /* Process AAD (if any) */
+    if (aad_len > 0)
+      {
+        if (EVP_DecryptUpdate (ctx, NULL, &outlen, aad, (int)aad_len) != 1)
+          SOCKET_RAISE_MSG (SocketCrypto,
+                            SocketCrypto_Failed,
+                            "%s decrypt: AAD processing failed",
+                            name);
+      }
+
+    /* Decrypt ciphertext */
+    if (ciphertext_len > 0)
+      {
+        if (EVP_DecryptUpdate (
+                ctx, plaintext, &outlen, ciphertext, (int)ciphertext_len)
+            != 1)
+          SOCKET_RAISE_MSG (SocketCrypto,
+                            SocketCrypto_Failed,
+                            "%s decrypt: Decryption failed",
+                            name);
+      }
+
+    /* Set expected tag for verification */
+    if (EVP_CIPHER_CTX_ctrl (ctx,
+                             EVP_CTRL_AEAD_SET_TAG,
+                             SOCKET_CRYPTO_AEAD_TAG_SIZE,
+                             (void *)tag)
+        != 1)
+      SOCKET_RAISE_MSG (SocketCrypto,
+                        SocketCrypto_Failed,
+                        "%s decrypt: Set tag failed",
+                        name);
+
+    /* Finalize and verify tag (returns 0 on auth failure)
+     * Use dummy buffer when plaintext is NULL to avoid UB from null+0 */
+    unsigned char final_dummy;
+    unsigned char *final_ptr
+        = plaintext ? plaintext + ciphertext_len : &final_dummy;
+    int final_len;
+    if (EVP_DecryptFinal_ex (ctx, final_ptr, &final_len) == 1)
+      result = 0; /* Success - tag verified */
+    /* else result stays -1 (auth failure) */
+  }
+  FINALLY
+  {
+    if (ctx)
+      EVP_CIPHER_CTX_free (ctx);
+  }
+  END_TRY;
+
+  return result;
+#else
+  (void)alg;
+  (void)key;
+  (void)key_len;
+  (void)nonce;
+  (void)nonce_len;
+  (void)ciphertext;
+  (void)ciphertext_len;
+  (void)aad;
+  (void)aad_len;
+  (void)tag;
+  (void)plaintext;
+  SOCKET_CRYPTO_REQUIRE_TLS;
+  return -1;
+#endif
+}
+
 size_t
 SocketCrypto_base64_encoded_size (size_t input_len)
 {
