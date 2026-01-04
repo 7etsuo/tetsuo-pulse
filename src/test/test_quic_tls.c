@@ -290,6 +290,294 @@ TEST (tls_has_keys_invalid_level)
 }
 
 /* ============================================================================
+ * Integration Tests with Real Handshake Contexts
+ * ============================================================================
+ */
+
+#include "quic/SocketQUICConnection.h"
+
+/**
+ * @brief Helper to create a handshake context for testing.
+ */
+static SocketQUICHandshake_T
+create_test_handshake (Arena_T arena, SocketQUICConnection_Role role)
+{
+  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, role);
+  if (conn == NULL)
+    return NULL;
+
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new (arena, conn, role);
+  if (hs != NULL)
+    conn->handshake = hs;
+
+  return hs;
+}
+
+TEST (tls_init_context_client_no_config)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Init with NULL config should use defaults */
+  SocketQUICTLS_Result result = SocketQUICTLS_init_context (hs, NULL);
+
+  /* On systems without OpenSSL QUIC support, this returns NO_TLS */
+  ASSERT (result == QUIC_TLS_OK || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICTLS_free (hs);
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_init_context_server_no_config)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_SERVER);
+  ASSERT (hs != NULL);
+
+  SocketQUICTLS_Result result = SocketQUICTLS_init_context (hs, NULL);
+  ASSERT (result == QUIC_TLS_OK || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICTLS_free (hs);
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_create_ssl_without_context)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* tls_ctx is NULL, should fail with INIT error */
+  hs->tls_ctx = NULL;
+  SocketQUICTLS_Result result = SocketQUICTLS_create_ssl (hs);
+  ASSERT (result == QUIC_TLS_ERROR_INIT || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_do_handshake_without_ssl)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* tls_ssl is NULL, should fail with INIT error */
+  hs->tls_ssl = NULL;
+  SocketQUICTLS_Result result = SocketQUICTLS_do_handshake (hs);
+  ASSERT (result == QUIC_TLS_ERROR_INIT || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_provide_data_invalid_level)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  uint8_t data[] = { 0x01, 0x02 };
+  SocketQUICTLS_Result result
+      = SocketQUICTLS_provide_data (hs, QUIC_CRYPTO_LEVEL_COUNT, data, 2);
+  /* Should fail with level error or no TLS */
+  ASSERT (result == QUIC_TLS_ERROR_LEVEL || result == QUIC_TLS_ERROR_INIT
+          || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_provide_data_null_data)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  SocketQUICTLS_Result result
+      = SocketQUICTLS_provide_data (hs, QUIC_CRYPTO_LEVEL_INITIAL, NULL, 10);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_consume_data_invalid_level)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  SocketQUICTLS_Result result
+      = SocketQUICTLS_consume_data (hs, QUIC_CRYPTO_LEVEL_COUNT, 100);
+  ASSERT (result == QUIC_TLS_ERROR_LEVEL || result == QUIC_TLS_ERROR_INIT
+          || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_derive_keys_invalid_level)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  SocketQUICTLS_Result result
+      = SocketQUICTLS_derive_keys (hs, QUIC_CRYPTO_LEVEL_COUNT);
+  ASSERT (result == QUIC_TLS_ERROR_LEVEL || result == QUIC_TLS_ERROR_NO_TLS);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_set_transport_params_null_params)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  SocketQUICTLS_Result result
+      = SocketQUICTLS_set_transport_params (hs, NULL, 10);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_get_peer_transport_params_null_output)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  const uint8_t *params;
+  SocketQUICTLS_Result result
+      = SocketQUICTLS_get_peer_transport_params (hs, &params, NULL);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  size_t len;
+  result = SocketQUICTLS_get_peer_transport_params (hs, NULL, &len);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_get_data_null_output_params)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  SocketQUICCryptoLevel level;
+  const uint8_t *data;
+  size_t len;
+
+  /* NULL level */
+  SocketQUICTLS_Result result = SocketQUICTLS_get_data (hs, NULL, &data, &len);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  /* NULL data */
+  result = SocketQUICTLS_get_data (hs, &level, NULL, &len);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  /* NULL len */
+  result = SocketQUICTLS_get_data (hs, &level, &data, NULL);
+  ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_is_complete_with_handshake)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Without SSL, should return 0 */
+  int complete = SocketQUICTLS_is_complete (hs);
+  ASSERT_EQ (complete, 0);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_has_keys_with_handshake)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Without TLS state, should return 0 */
+  int has = SocketQUICTLS_has_keys (hs, QUIC_CRYPTO_LEVEL_INITIAL);
+  ASSERT_EQ (has, 0);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_get_error_with_handshake)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* No error initially */
+  uint64_t code = SocketQUICTLS_get_error_code (hs);
+  ASSERT_EQ (code, 0);
+
+  const char *str = SocketQUICTLS_get_error_string (hs);
+  ASSERT (str != NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+TEST (tls_free_with_handshake)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICHandshake_T hs = create_test_handshake (arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT (hs != NULL);
+
+  /* Initialize context if possible */
+  SocketQUICTLS_init_context (hs, NULL);
+
+  /* Free should not crash even with partial init */
+  SocketQUICTLS_free (hs);
+
+  /* Verify pointers cleared */
+  ASSERT (hs->tls_ctx == NULL);
+  ASSERT (hs->tls_ssl == NULL);
+
+  SocketQUICHandshake_free (&hs);
+  Arena_dispose (&arena);
+}
+
+/* ============================================================================
+ * Level Boundary Tests
+ * ============================================================================
+ */
+
+TEST (tls_all_crypto_levels_valid)
+{
+  /* Verify all valid levels don't crash has_keys */
+  int has;
+  has = SocketQUICTLS_has_keys (NULL, QUIC_CRYPTO_LEVEL_INITIAL);
+  ASSERT_EQ (has, 0);
+  has = SocketQUICTLS_has_keys (NULL, QUIC_CRYPTO_LEVEL_0RTT);
+  ASSERT_EQ (has, 0);
+  has = SocketQUICTLS_has_keys (NULL, QUIC_CRYPTO_LEVEL_HANDSHAKE);
+  ASSERT_EQ (has, 0);
+  has = SocketQUICTLS_has_keys (NULL, QUIC_CRYPTO_LEVEL_APPLICATION);
+  ASSERT_EQ (has, 0);
+}
+
+/* ============================================================================
  * Test Runner
  * ============================================================================
  */

@@ -419,6 +419,124 @@ alpn_select_callback (SSL *ssl,
 }
 
 /* ============================================================================
+ * Context Initialization Helpers
+ * ============================================================================
+ */
+
+/**
+ * @brief Create base SSL_CTX with TLS 1.3 and QUIC method.
+ */
+static SocketQUICTLS_Result
+tls_create_base_context (SSL_CTX **out_ctx)
+{
+  SSL_CTX *ctx = SSL_CTX_new (TLS_method ());
+  if (ctx == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  SSL_CTX_set_min_proto_version (ctx, TLS1_3_VERSION);
+  SSL_CTX_set_max_proto_version (ctx, TLS1_3_VERSION);
+
+  if (!SSL_CTX_set_quic_method (ctx, &quic_method))
+    {
+      SSL_CTX_free (ctx);
+      return QUIC_TLS_ERROR_INIT;
+    }
+
+  *out_ctx = ctx;
+  return QUIC_TLS_OK;
+}
+
+/**
+ * @brief Load certificate, private key, and CA certificates.
+ */
+static SocketQUICTLS_Result
+tls_load_credentials (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
+{
+  if (config == NULL)
+    return QUIC_TLS_OK;
+
+  if (config->cert_file != NULL)
+    {
+      if (SSL_CTX_use_certificate_file (ctx, config->cert_file,
+                                        SSL_FILETYPE_PEM)
+          != 1)
+        return QUIC_TLS_ERROR_CERT;
+    }
+
+  if (config->key_file != NULL)
+    {
+      if (SSL_CTX_use_PrivateKey_file (ctx, config->key_file, SSL_FILETYPE_PEM)
+          != 1)
+        return QUIC_TLS_ERROR_KEY;
+    }
+
+  if (config->ca_file != NULL)
+    {
+      if (SSL_CTX_load_verify_locations (ctx, config->ca_file, NULL) != 1)
+        return QUIC_TLS_ERROR_CERT;
+    }
+
+  return QUIC_TLS_OK;
+}
+
+/**
+ * @brief Configure peer certificate verification.
+ */
+static void
+tls_configure_verification (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
+{
+  if (config != NULL && config->verify_peer)
+    {
+      SSL_CTX_set_verify (ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                          NULL);
+    }
+}
+
+/**
+ * @brief Configure ALPN for server or client.
+ */
+static SocketQUICTLS_Result
+tls_configure_alpn (SSL_CTX *ctx,
+                    const SocketQUICTLSConfig_T *config,
+                    SocketQUICConnection_Role role)
+{
+  const char *alpn
+      = (config != NULL && config->alpn != NULL) ? config->alpn : QUIC_TLS_DEFAULT_ALPN;
+
+  if (role == QUIC_CONN_ROLE_SERVER)
+    {
+      SSL_CTX_set_alpn_select_cb (ctx, alpn_select_callback, (void *)alpn);
+    }
+  else
+    {
+      /* Client: set ALPN protocols to offer */
+      size_t alpn_len = strlen (alpn);
+      if (alpn_len > 255)
+        return QUIC_TLS_ERROR_ALPN;
+
+      uint8_t wire_alpn[256];
+      wire_alpn[0] = (uint8_t)alpn_len;
+      memcpy (wire_alpn + 1, alpn, alpn_len);
+
+      if (SSL_CTX_set_alpn_protos (ctx, wire_alpn, (unsigned)(alpn_len + 1))
+          != 0)
+        return QUIC_TLS_ERROR_ALPN;
+    }
+
+  return QUIC_TLS_OK;
+}
+
+/**
+ * @brief Configure 0-RTT early data support.
+ */
+static void
+tls_configure_early_data (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
+{
+  if (config != NULL && config->enable_0rtt)
+    SSL_CTX_set_early_data_enabled (ctx, 1);
+}
+
+/* ============================================================================
  * Context Initialization
  * ============================================================================
  */
@@ -430,77 +548,31 @@ SocketQUICTLS_init_context (SocketQUICHandshake_T handshake,
   if (handshake == NULL)
     return QUIC_TLS_ERROR_NULL;
 
-  /* Create SSL_CTX for TLS 1.3 only */
-  SSL_CTX *ctx = SSL_CTX_new (TLS_method ());
-  if (ctx == NULL)
-    return QUIC_TLS_ERROR_INIT;
+  SSL_CTX *ctx = NULL;
+  SocketQUICTLS_Result result;
 
-  /* TLS 1.3 only */
-  SSL_CTX_set_min_proto_version (ctx, TLS1_3_VERSION);
-  SSL_CTX_set_max_proto_version (ctx, TLS1_3_VERSION);
+  result = tls_create_base_context (&ctx);
+  if (result != QUIC_TLS_OK)
+    return result;
 
-  /* Set QUIC method */
-  if (!SSL_CTX_set_quic_method (ctx, &quic_method))
+  result = tls_load_credentials (ctx, config);
+  if (result != QUIC_TLS_OK)
     {
       SSL_CTX_free (ctx);
-      return QUIC_TLS_ERROR_INIT;
+      return result;
     }
 
-  /* Load certificates if server */
-  if (config != NULL && config->cert_file != NULL)
+  tls_configure_verification (ctx, config);
+
+  result = tls_configure_alpn (ctx, config, handshake->role);
+  if (result != QUIC_TLS_OK)
     {
-      if (SSL_CTX_use_certificate_file (ctx, config->cert_file,
-                                        SSL_FILETYPE_PEM)
-          != 1)
-        {
-          SSL_CTX_free (ctx);
-          return QUIC_TLS_ERROR_CERT;
-        }
+      SSL_CTX_free (ctx);
+      return result;
     }
 
-  if (config != NULL && config->key_file != NULL)
-    {
-      if (SSL_CTX_use_PrivateKey_file (ctx, config->key_file, SSL_FILETYPE_PEM)
-          != 1)
-        {
-          SSL_CTX_free (ctx);
-          return QUIC_TLS_ERROR_KEY;
-        }
-    }
+  tls_configure_early_data (ctx, config);
 
-  /* Load CA certificates */
-  if (config != NULL && config->ca_file != NULL)
-    {
-      if (SSL_CTX_load_verify_locations (ctx, config->ca_file, NULL) != 1)
-        {
-          SSL_CTX_free (ctx);
-          return QUIC_TLS_ERROR_CERT;
-        }
-    }
-
-  /* Configure peer verification */
-  if (config != NULL && config->verify_peer)
-    {
-      SSL_CTX_set_verify (ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-                          NULL);
-    }
-
-  /* Set up ALPN */
-  const char *alpn = (config != NULL && config->alpn != NULL) ? config->alpn
-                                                              : QUIC_TLS_DEFAULT_ALPN;
-
-  if (handshake->role == QUIC_CONNECTION_SERVER)
-    {
-      SSL_CTX_set_alpn_select_cb (ctx, alpn_select_callback, (void *)alpn);
-    }
-
-  /* Enable early data if requested */
-  if (config != NULL && config->enable_0rtt)
-    {
-      SSL_CTX_set_early_data_enabled (ctx, 1);
-    }
-
-  /* Allocate TLS state */
   if (alloc_tls_state (handshake) == NULL)
     {
       SSL_CTX_free (ctx);
@@ -534,7 +606,7 @@ SocketQUICTLS_create_ssl (SocketQUICHandshake_T handshake)
   SSL_set_app_data (ssl, handshake);
 
   /* Set connect or accept state */
-  if (handshake->role == QUIC_CONNECTION_CLIENT)
+  if (handshake->role == QUIC_CONN_ROLE_CLIENT)
     {
       SSL_set_connect_state (ssl);
     }
@@ -558,12 +630,24 @@ SocketQUICTLS_free (SocketQUICHandshake_T handshake)
   if (handshake == NULL)
     return;
 
-  /* Clear secrets before freeing */
+  /* Clear all sensitive data before freeing */
   TLSState_T *state = get_tls_state (handshake);
   if (state != NULL)
     {
+      /* Clear secrets */
       OPENSSL_cleanse (state->read_secret, sizeof (state->read_secret));
       OPENSSL_cleanse (state->write_secret, sizeof (state->write_secret));
+
+      /* Clear CRYPTO output buffers (contain handshake data) */
+      for (int i = 0; i < QUIC_CRYPTO_LEVEL_COUNT; i++)
+        {
+          if (state->crypto_out[i].data != NULL
+              && state->crypto_out[i].capacity > 0)
+            {
+              OPENSSL_cleanse (state->crypto_out[i].data,
+                               state->crypto_out[i].capacity);
+            }
+        }
     }
 
   if (handshake->tls_ssl != NULL)
