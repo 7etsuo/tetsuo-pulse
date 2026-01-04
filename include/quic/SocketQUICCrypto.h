@@ -17,10 +17,10 @@
  *   iv     = HKDF-Expand-Label(secret, "quic iv", "", 12)
  *   hp_key = HKDF-Expand-Label(secret, "quic hp", "", hp_len)
  *
- * Key sizes depend on the AEAD algorithm:
- *   AES-128-GCM:       key=16, iv=12, hp=16
- *   AES-256-GCM:       key=32, iv=12, hp=32
- *   ChaCha20-Poly1305: key=32, iv=12, hp=32
+ * Key sizes and hash functions depend on the AEAD algorithm (RFC 9001 §5.1):
+ *   AES-128-GCM:       key=16, iv=12, hp=16, hash=SHA-256 (32-byte secret)
+ *   AES-256-GCM:       key=32, iv=12, hp=32, hash=SHA-384 (48-byte secret)
+ *   ChaCha20-Poly1305: key=32, iv=12, hp=32, hash=SHA-256 (32-byte secret)
  *
  * Thread Safety: All functions are thread-safe (no shared state).
  *
@@ -61,12 +61,13 @@
  */
 typedef enum
 {
-  QUIC_CRYPTO_OK = 0,        /**< Operation succeeded */
-  QUIC_CRYPTO_ERROR_NULL,    /**< NULL pointer argument */
-  QUIC_CRYPTO_ERROR_VERSION, /**< Unsupported QUIC version */
-  QUIC_CRYPTO_ERROR_HKDF,    /**< HKDF operation failed */
-  QUIC_CRYPTO_ERROR_NO_TLS,  /**< TLS support not available */
-  QUIC_CRYPTO_ERROR_AEAD     /**< Invalid AEAD algorithm */
+  QUIC_CRYPTO_OK = 0,          /**< Operation succeeded */
+  QUIC_CRYPTO_ERROR_NULL,      /**< NULL pointer argument */
+  QUIC_CRYPTO_ERROR_VERSION,   /**< Unsupported QUIC version */
+  QUIC_CRYPTO_ERROR_HKDF,      /**< HKDF operation failed */
+  QUIC_CRYPTO_ERROR_NO_TLS,    /**< TLS support not available */
+  QUIC_CRYPTO_ERROR_AEAD,      /**< Invalid AEAD algorithm */
+  QUIC_CRYPTO_ERROR_SECRET_LEN /**< Secret length doesn't match AEAD */
 } SocketQUICCrypto_Result;
 
 /* ============================================================================
@@ -296,6 +297,23 @@ SocketQUICCrypto_derive_packet_keys (const uint8_t *secret,
  */
 extern SocketQUICCrypto_Result SocketQUICCrypto_get_aead_key_sizes (
     SocketQUIC_AEAD aead, size_t *key_len, size_t *iv_len, size_t *hp_len);
+
+/**
+ * @brief Get required secret length for an AEAD algorithm.
+ *
+ * Returns the expected TLS secret length based on the hash function
+ * used by the cipher suite:
+ *   - AES-128-GCM (SHA-256): 32 bytes
+ *   - AES-256-GCM (SHA-384): 48 bytes
+ *   - ChaCha20-Poly1305 (SHA-256): 32 bytes
+ *
+ * @param aead       AEAD algorithm.
+ * @param secret_len Output: required secret length in bytes (may be NULL).
+ *
+ * @return QUIC_CRYPTO_OK on success, QUIC_CRYPTO_ERROR_AEAD if invalid.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_get_aead_secret_len (SocketQUIC_AEAD aead, size_t *secret_len);
 
 /**
  * @brief Initialize packet keys structure.
