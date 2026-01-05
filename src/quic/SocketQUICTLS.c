@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "core/SocketConfig.h"
+#include "quic/SocketQUICError.h"
 #include "quic/SocketQUICTransportParams.h"
 
 #if SOCKET_HAS_TLS
@@ -381,7 +382,11 @@ quic_send_alert (SSL *ssl, OSSL_ENCRYPTION_LEVEL level, uint8_t alert)
  */
 
 /**
- * @brief ALPN selection callback for server mode.
+ * @brief ALPN selection callback for server mode (RFC 9001 §8.1).
+ *
+ * Per RFC 9001 §8.1, endpoints MUST use ALPN. If no common protocol
+ * is found, this callback returns an alert and sets the error code
+ * to QUIC_ERROR_NO_APPLICATION_PROTOCOL (0x0178).
  */
 static int
 alpn_select_callback (SSL *ssl,
@@ -391,7 +396,6 @@ alpn_select_callback (SSL *ssl,
                       unsigned int inlen,
                       void *arg)
 {
-  (void)ssl;
   const char *alpn = (const char *)arg;
   if (alpn == NULL)
     alpn = QUIC_TLS_DEFAULT_ALPN;
@@ -415,6 +419,19 @@ alpn_select_callback (SSL *ssl,
       p += len;
     }
 
+  /*
+   * RFC 9001 §8.1: No matching ALPN protocol found.
+   * Set error code for QUIC CONNECTION_CLOSE frame.
+   */
+  SocketQUICHandshake_T hs = get_handshake_from_ssl (ssl);
+  if (hs != NULL)
+    {
+      hs->error_code = QUIC_ERROR_NO_APPLICATION_PROTOCOL;
+      snprintf (hs->error_reason,
+                sizeof (hs->error_reason),
+                "No matching ALPN protocol (RFC 9001 §8.1)");
+    }
+
   return SSL_TLSEXT_ERR_ALERT_FATAL;
 }
 
@@ -425,6 +442,10 @@ alpn_select_callback (SSL *ssl,
 
 /**
  * @brief Create base SSL_CTX with TLS 1.3 and QUIC method.
+ *
+ * Configures TLS 1.3 only and disables middlebox compatibility mode
+ * per RFC 9001 §8.4: "QUIC endpoints MUST NOT use the middlebox
+ * compatibility mode."
  */
 static SocketQUICTLS_Result
 tls_create_base_context (SSL_CTX **out_ctx)
@@ -435,6 +456,18 @@ tls_create_base_context (SSL_CTX **out_ctx)
 
   SSL_CTX_set_min_proto_version (ctx, TLS1_3_VERSION);
   SSL_CTX_set_max_proto_version (ctx, TLS1_3_VERSION);
+
+  /*
+   * RFC 9001 §8.4: Disable middlebox compatibility mode.
+   *
+   * QUIC does not use change_cipher_spec messages or non-empty
+   * legacy_session_id fields. Middlebox compatibility mode in TLS 1.3
+   * sends these for compatibility with broken middleboxes, but QUIC
+   * MUST NOT use this mode as it doesn't send TLS records directly.
+   */
+#ifdef SSL_OP_ENABLE_MIDDLEBOX_COMPAT
+  SSL_CTX_clear_options (ctx, SSL_OP_ENABLE_MIDDLEBOX_COMPAT);
+#endif
 
   if (!SSL_CTX_set_quic_method (ctx, &quic_method))
     {
@@ -1046,6 +1079,69 @@ SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
   return QUIC_TLS_OK;
 }
 
+/* ============================================================================
+ * ALPN Functions (RFC 9001 Section 8.1)
+ * ============================================================================
+ */
+
+SocketQUICTLS_Result
+SocketQUICTLS_check_alpn_negotiated (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  /*
+   * RFC 9001 §8.1: ALPN is mandatory for QUIC.
+   * Check if an application protocol was negotiated.
+   */
+  const unsigned char *alpn = NULL;
+  unsigned int alpn_len = 0;
+  SSL_get0_alpn_selected (ssl, &alpn, &alpn_len);
+
+  if (alpn == NULL || alpn_len == 0)
+    {
+      handshake->error_code = QUIC_ERROR_NO_APPLICATION_PROTOCOL;
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "ALPN negotiation failed (RFC 9001 §8.1)");
+      return QUIC_TLS_ERROR_ALPN;
+    }
+
+  return QUIC_TLS_OK;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
+                        const char **alpn,
+                        size_t *len)
+{
+  if (handshake == NULL || alpn == NULL || len == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  const unsigned char *selected = NULL;
+  unsigned int selected_len = 0;
+  SSL_get0_alpn_selected (ssl, &selected, &selected_len);
+
+  if (selected == NULL || selected_len == 0)
+    {
+      *alpn = NULL;
+      *len = 0;
+      return QUIC_TLS_ERROR_ALPN;
+    }
+
+  *alpn = (const char *)selected;
+  *len = selected_len;
+  return QUIC_TLS_OK;
+}
+
 #endif /* HAVE_OPENSSL_QUIC */
 
 /* ============================================================================
@@ -1208,6 +1304,26 @@ SocketQUICTLS_has_peer_transport_params (SocketQUICHandshake_T handshake)
 SocketQUICTLS_Result
 SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
 {
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_check_alpn_negotiated (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
+                        const char **alpn,
+                        size_t *len)
+{
+  (void)alpn;
+  (void)len;
   if (handshake == NULL)
     return QUIC_TLS_ERROR_NULL;
   return QUIC_TLS_ERROR_NO_TLS;
@@ -1378,6 +1494,24 @@ SocketQUICTLS_Result
 SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
 {
   (void)handshake;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_check_alpn_negotiated (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
+                        const char **alpn,
+                        size_t *len)
+{
+  (void)handshake;
+  (void)alpn;
+  (void)len;
   return QUIC_TLS_ERROR_NO_TLS;
 }
 
