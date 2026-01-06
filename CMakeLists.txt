@@ -844,6 +844,7 @@ if(SOCKET_HAS_TLS)
         test_quic_initial
         test_quic_tls
         test_quic_key_update
+        test_quic_retry
         test_tls_ct
         test_tls_integration
         test_tls_ocsp

@@ -794,6 +794,61 @@ SocketQUICInitial_get_salt (uint32_t version,
                             const uint8_t **salt,
                             size_t *salt_len);
 
+/* ============================================================================
+ * Retry Packet Integrity (RFC 9001 §5.8)
+ * ============================================================================
+ */
+
+/**
+ * @brief Compute Retry packet integrity tag (RFC 9001 §5.8).
+ *
+ * Computes the 16-byte integrity tag for a Retry packet using
+ * AEAD_AES_128_GCM with the fixed Retry key and nonce.
+ *
+ * The AAD (additional authenticated data) is formed as:
+ *   - ODCID length (1 byte)
+ *   - Original Destination Connection ID (0..20 bytes)
+ *   - Retry packet (header and Retry Token, without integrity tag)
+ *
+ * @param odcid           Original Destination Connection ID from client.
+ * @param retry_packet    Retry packet data (without integrity tag).
+ * @param retry_packet_len Length of retry packet data.
+ * @param tag             Output: 16-byte integrity tag.
+ *
+ * @return QUIC_PACKET_OK on success, error code otherwise.
+ *
+ * @note Requires TLS support (SOCKET_HAS_TLS). Returns
+ * QUIC_PACKET_ERROR_INVALID if TLS is not enabled.
+ */
+extern SocketQUICPacket_Result
+SocketQUICPacket_compute_retry_tag (const SocketQUICConnectionID_T *odcid,
+                                    const uint8_t *retry_packet,
+                                    size_t retry_packet_len,
+                                    uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN]);
+
+/**
+ * @brief Verify Retry packet integrity tag (RFC 9001 §5.8).
+ *
+ * Verifies that a received Retry packet has a valid integrity tag.
+ * Uses constant-time comparison to prevent timing attacks.
+ *
+ * @param odcid           Original Destination Connection ID sent by client.
+ * @param retry_packet    Complete Retry packet (with integrity tag at end).
+ * @param retry_packet_len Length of complete Retry packet.
+ *
+ * @return QUIC_PACKET_OK if tag is valid,
+ *         QUIC_PACKET_ERROR_INVALID if tag is invalid,
+ *         QUIC_PACKET_ERROR_TRUNCATED if packet too short for tag,
+ *         other error codes on failure.
+ *
+ * @note Requires TLS support (SOCKET_HAS_TLS). Returns
+ * QUIC_PACKET_ERROR_INVALID if TLS is not enabled.
+ */
+extern SocketQUICPacket_Result
+SocketQUICPacket_verify_retry_tag (const SocketQUICConnectionID_T *odcid,
+                                   const uint8_t *retry_packet,
+                                   size_t retry_packet_len);
+
 /** @} */
 
 #endif /* SOCKETQUICPACKET_INCLUDED */
