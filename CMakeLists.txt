@@ -401,6 +401,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICStream-state.c
     src/quic/SocketQUICPacket.c
     src/quic/SocketQUICPacket-initial.c
+    src/quic/SocketQUICPacket-receive.c
     src/quic/SocketQUICCrypto.c
     src/quic/SocketQUICWire.c
     src/quic/SocketQUICFrame.c
@@ -816,6 +817,7 @@ set(TEST_SOURCES
     test_quic_stream
     test_quic_stream_state
     test_quic_packet
+    test_quic_packet_receive
     test_quic_wire
     test_quic_frame
     test_quic_stream_frame_encode

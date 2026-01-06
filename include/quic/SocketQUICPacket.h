@@ -849,6 +849,229 @@ SocketQUICPacket_verify_retry_tag (const SocketQUICConnectionID_T *odcid,
                                    const uint8_t *retry_packet,
                                    size_t retry_packet_len);
 
+/* ============================================================================
+ * Packet Number Spaces (RFC 9000 Section 12.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief QUIC packet number spaces.
+ *
+ * QUIC uses three independent packet number spaces:
+ * - Initial: Used for Initial packets
+ * - Handshake: Used for Handshake packets
+ * - Application: Used for 0-RTT and 1-RTT packets
+ */
+typedef enum
+{
+  QUIC_PN_SPACE_INITIAL = 0, /**< Initial packet number space */
+  QUIC_PN_SPACE_HANDSHAKE,   /**< Handshake packet number space */
+  QUIC_PN_SPACE_APPLICATION, /**< Application data (0-RTT/1-RTT) PN space */
+  QUIC_PN_SPACE_COUNT        /**< Number of packet number spaces */
+} SocketQUIC_PNSpace;
+
+/* ============================================================================
+ * Packet Reception (RFC 9001 Section 5.5)
+ * ============================================================================
+ */
+
+/**
+ * @brief Per-space receive state for packet number tracking.
+ *
+ * Maintains the largest successfully decrypted packet number
+ * for window-based PN reconstruction (RFC 9000 Appendix A).
+ */
+typedef struct SocketQUICRecvState
+{
+  uint64_t largest_pn; /**< Largest successfully decrypted PN */
+  int has_received;    /**< At least one packet received in this space */
+} SocketQUICRecvState_T;
+
+/* Forward declaration for key update state */
+struct SocketQUICKeyUpdate;
+
+/* Forward declaration for generic packet keys */
+struct SocketQUICPacketKeys;
+
+/**
+ * @brief Context for packet reception operations.
+ *
+ * Holds all state needed for receiving protected packets:
+ * - Per-space packet number state
+ * - Key material references
+ * - Decryption failure counters for AEAD limits
+ *
+ * Thread Safety: NOT thread-safe. Caller must synchronize access.
+ */
+typedef struct SocketQUICReceive
+{
+  SocketQUICRecvState_T spaces[QUIC_PN_SPACE_COUNT]; /**< PN state per space */
+
+  /* Key material references (not owned, caller manages lifecycle) */
+  const SocketQUICInitialKeys_T *initial_keys;       /**< Initial packet keys */
+  const struct SocketQUICPacketKeys *handshake_keys; /**< Handshake keys */
+  const struct SocketQUICPacketKeys *zero_rtt_keys;  /**< 0-RTT keys */
+  struct SocketQUICKeyUpdate *key_update;            /**< 1-RTT key state */
+
+  /* AEAD limit tracking (RFC 9001 Section 6.6) */
+  uint64_t decryption_failures; /**< Total failed decryptions */
+
+  /* State flags */
+  int initialized; /**< Structure has been initialized */
+} SocketQUICReceive_T;
+
+/**
+ * @brief Result of packet reception attempt.
+ *
+ * Contains decoded packet information on success.
+ */
+typedef struct SocketQUICReceiveResult
+{
+  SocketQUICPacket_Type type; /**< Packet type */
+  uint64_t packet_number;     /**< Full reconstructed packet number */
+  SocketQUIC_PNSpace pn_space; /**< Packet number space */
+
+  /* Decrypted payload (points into modified input buffer) */
+  uint8_t *payload;     /**< Pointer to decrypted payload */
+  size_t payload_len;   /**< Length of decrypted payload */
+
+  /* Header info */
+  SocketQUICConnectionID_T dcid; /**< Destination Connection ID */
+  SocketQUICConnectionID_T scid; /**< Source Connection ID (long header) */
+
+  /* Short header specific */
+  int key_phase; /**< Key Phase bit (1-RTT only) */
+  int spin_bit;  /**< Spin bit (1-RTT only) */
+} SocketQUICReceiveResult_T;
+
+/**
+ * @brief Result codes for packet reception.
+ */
+typedef enum
+{
+  QUIC_RECEIVE_OK = 0,            /**< Success */
+  QUIC_RECEIVE_ERROR_NULL,        /**< NULL pointer argument */
+  QUIC_RECEIVE_ERROR_TRUNCATED,   /**< Packet too short */
+  QUIC_RECEIVE_ERROR_HEADER,      /**< Header parse error */
+  QUIC_RECEIVE_ERROR_NO_KEYS,     /**< Keys not available for packet type */
+  QUIC_RECEIVE_ERROR_UNPROTECT,   /**< Header protection removal failed */
+  QUIC_RECEIVE_ERROR_DECRYPT,     /**< AEAD decryption/auth failed */
+  QUIC_RECEIVE_ERROR_PN_DECODE,   /**< Packet number decode failed */
+  QUIC_RECEIVE_ERROR_VERSION,     /**< Unsupported version */
+  QUIC_RECEIVE_ERROR_KEY_PHASE    /**< Key phase mismatch */
+} SocketQUICReceive_Result;
+
+/**
+ * @brief Initialize receive context.
+ *
+ * Zeros all fields and sets largest_pn to 0 for each space.
+ *
+ * @param ctx Receive context to initialize (may be NULL, no-op).
+ */
+extern void SocketQUICReceive_init (SocketQUICReceive_T *ctx);
+
+/**
+ * @brief Set Initial packet keys.
+ *
+ * @param ctx   Receive context.
+ * @param keys  Initial keys (caller retains ownership).
+ *
+ * @return QUIC_RECEIVE_OK on success.
+ */
+extern SocketQUICReceive_Result
+SocketQUICReceive_set_initial_keys (SocketQUICReceive_T *ctx,
+                                    const SocketQUICInitialKeys_T *keys);
+
+/**
+ * @brief Set Handshake packet keys.
+ *
+ * @param ctx   Receive context.
+ * @param keys  Handshake keys (caller retains ownership).
+ *
+ * @return QUIC_RECEIVE_OK on success.
+ */
+extern SocketQUICReceive_Result
+SocketQUICReceive_set_handshake_keys (SocketQUICReceive_T *ctx,
+                                      const struct SocketQUICPacketKeys *keys);
+
+/**
+ * @brief Set 0-RTT packet keys.
+ *
+ * @param ctx   Receive context.
+ * @param keys  0-RTT keys (caller retains ownership).
+ *
+ * @return QUIC_RECEIVE_OK on success.
+ */
+extern SocketQUICReceive_Result
+SocketQUICReceive_set_0rtt_keys (SocketQUICReceive_T *ctx,
+                                 const struct SocketQUICPacketKeys *keys);
+
+/**
+ * @brief Set 1-RTT key update state.
+ *
+ * @param ctx    Receive context.
+ * @param state  Key update state (caller retains ownership).
+ *
+ * @return QUIC_RECEIVE_OK on success.
+ */
+extern SocketQUICReceive_Result
+SocketQUICReceive_set_1rtt_keys (SocketQUICReceive_T *ctx,
+                                 struct SocketQUICKeyUpdate *state);
+
+/**
+ * @brief Receive and decrypt a protected QUIC packet (RFC 9001 Section 5.5).
+ *
+ * Performs the complete packet reception pipeline:
+ * 1. Parse unprotected header fields
+ * 2. Remove header protection
+ * 3. Decode packet number using window-based reconstruction
+ * 4. Decrypt AEAD payload
+ * 5. Update largest PN if decryption succeeds
+ *
+ * The packet buffer is modified in-place during decryption.
+ *
+ * @param ctx         Receive context with keys and PN state.
+ * @param packet      Packet buffer (MODIFIED in-place on success).
+ * @param packet_len  Packet length.
+ * @param dcid_len    Expected DCID length for short headers.
+ * @param is_server   1 if receiving as server, 0 as client.
+ * @param result      Output: reception result details.
+ *
+ * @return QUIC_RECEIVE_OK on success, error code on failure.
+ *
+ * @note On decryption failure, largest_pn is NOT updated per RFC 9001 §5.5.
+ * @note Caller should check decryption_failures for AEAD limits (§6.6).
+ */
+extern SocketQUICReceive_Result
+SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
+                          uint8_t *packet,
+                          size_t packet_len,
+                          uint8_t dcid_len,
+                          int is_server,
+                          SocketQUICReceiveResult_T *result);
+
+/**
+ * @brief Get largest received packet number for a space.
+ *
+ * @param ctx     Receive context.
+ * @param space   Packet number space.
+ * @param out_pn  Output: largest PN (undefined if returns 0).
+ *
+ * @return 1 if at least one packet received in space, 0 otherwise.
+ */
+extern int SocketQUICReceive_get_largest_pn (const SocketQUICReceive_T *ctx,
+                                             SocketQUIC_PNSpace space,
+                                             uint64_t *out_pn);
+
+/**
+ * @brief Get string representation of receive result code.
+ *
+ * @param result Result code.
+ *
+ * @return Static string describing the result.
+ */
+extern const char *
+SocketQUICReceive_result_string (SocketQUICReceive_Result result);
 /** @} */
 
 #endif /* SOCKETQUICPACKET_INCLUDED */
