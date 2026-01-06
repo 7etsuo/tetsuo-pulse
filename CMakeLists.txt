@@ -360,6 +360,7 @@ set(LIB_SOURCES
     src/http/hpack/SocketHPACK-table.c
 
     # QPACK Header Compression (RFC 9204)
+    src/http/qpack/SocketQPACK-table.c
     src/http/SocketQPACK.c
 
     # HTTP/2 Protocol (RFC 9113)
@@ -783,6 +784,7 @@ set(TEST_SOURCES
     test_http_core
     test_http1_parser
     test_hpack
+    test_qpack_table
     test_qpack
     test_http2
     test_http2_priority
