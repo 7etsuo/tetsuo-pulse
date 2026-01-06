@@ -38,6 +38,14 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **Path Migration** - Seamless connection migration across network changes
 - **0-RTT Resumption** - Fast reconnection with early data support
 
+### QUIC-TLS (RFC 9001)
+- **Packet Protection** - AEAD encryption (AES-128-GCM, AES-256-GCM, ChaCha20-Poly1305)
+- **Header Protection** - AES-ECB/ChaCha20 mask generation for packet number encryption
+- **Key Derivation** - HKDF-based initial secrets from client DCID, handshake/traffic keys
+- **Key Update** - Key phase bit rotation with AEAD confidentiality limits (RFC 9001 §6)
+- **Retry Integrity** - AEAD tag verification for Retry packets (RFC 9001 §5.8)
+- **Transport Parameters** - TLS extension (type 0x39) for QUIC configuration exchange
+
 ### WebSocket
 - **RFC 6455 Compliant** - Full WebSocket protocol implementation
 - **permessage-deflate** - Compression extension (RFC 7692) via zlib
