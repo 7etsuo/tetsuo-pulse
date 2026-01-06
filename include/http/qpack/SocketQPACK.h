@@ -42,7 +42,7 @@
  */
 
 #if defined(__GNUC__) || defined(__clang__)
-#define QPACK_WARN_UNUSED __attribute__((warn_unused_result))
+#define QPACK_WARN_UNUSED __attribute__ ((warn_unused_result))
 #else
 #define QPACK_WARN_UNUSED
 #endif
@@ -178,10 +178,8 @@ SocketQPACK_relative_to_abs_encoder (uint64_t insert_count,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_abs_to_relative_field (uint64_t base,
-                                   uint64_t abs_index,
-                                   uint64_t *rel_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_relative_field (
+    uint64_t base, uint64_t abs_index, uint64_t *rel_out);
 
 /**
  * @brief Convert field-relative index to absolute index.
@@ -200,10 +198,8 @@ SocketQPACK_abs_to_relative_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_relative_to_abs_field (uint64_t base,
-                                   uint64_t rel_index,
-                                   uint64_t *abs_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_relative_to_abs_field (
+    uint64_t base, uint64_t rel_index, uint64_t *abs_out);
 
 /**
  * @brief Convert absolute index to post-base index.
@@ -223,10 +219,8 @@ SocketQPACK_relative_to_abs_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_abs_to_postbase (uint64_t base,
-                             uint64_t abs_index,
-                             uint64_t *pb_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_postbase (
+    uint64_t base, uint64_t abs_index, uint64_t *pb_out);
 
 /**
  * @brief Convert post-base index to absolute index.
@@ -245,10 +239,8 @@ SocketQPACK_abs_to_postbase (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_postbase_to_abs (uint64_t base,
-                             uint64_t pb_index,
-                             uint64_t *abs_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_postbase_to_abs (
+    uint64_t base, uint64_t pb_index, uint64_t *abs_out);
 
 /* ============================================================================
  * INDEX VALIDATION FUNCTIONS
@@ -307,10 +299,8 @@ SocketQPACK_is_valid_relative_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_is_valid_postbase (uint64_t base,
-                               uint64_t insert_count,
-                               uint64_t pb_index);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_postbase (
+    uint64_t base, uint64_t insert_count, uint64_t pb_index);
 
 /**
  * @brief Validate absolute index against table bounds.
@@ -325,10 +315,85 @@ SocketQPACK_is_valid_postbase (uint64_t base,
  *
  * @since 1.0.0
  */
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_absolute (
+    uint64_t insert_count, uint64_t dropped_count, uint64_t abs_index);
+
+/* ============================================================================
+ * SET DYNAMIC TABLE CAPACITY (RFC 9204 Section 4.3.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode Set Dynamic Table Capacity instruction.
+ *
+ * RFC 9204 Section 4.3.1: Encodes the instruction to set dynamic table
+ * capacity. Uses 3-bit pattern 001 (0x20 mask) with 5-bit prefix integer.
+ *
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 1 |   Capacity (5+)   |
+ * +---+---+---+-------------------+
+ *
+ * @param capacity     Capacity value to encode
+ * @param output       Output buffer (must not be NULL)
+ * @param output_size  Size of output buffer
+ * @param[out] written Output: number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output or written is NULL,
+ *         QPACK_ERR_TABLE_SIZE if output buffer too small
+ *
+ * @since 1.0.0
+ */
 extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_is_valid_absolute (uint64_t insert_count,
-                               uint64_t dropped_count,
-                               uint64_t abs_index);
+SocketQPACK_encode_set_capacity (uint64_t capacity,
+                                 unsigned char *output,
+                                 size_t output_size,
+                                 size_t *written);
+
+/**
+ * @brief Decode Set Dynamic Table Capacity instruction.
+ *
+ * RFC 9204 Section 4.3.1: Decodes the capacity instruction from the encoder
+ * stream. The first byte must have bits 7-5 equal to 001 (0x20 mask).
+ *
+ * @param input        Input buffer (must not be NULL if input_len > 0)
+ * @param input_len    Length of input buffer
+ * @param[out] capacity Output: decoded capacity value (must not be NULL)
+ * @param[out] consumed Output: number of bytes consumed (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if capacity or consumed is NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_INTEGER if integer decoding failed
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_set_capacity (const unsigned char *input,
+                                 size_t input_len,
+                                 uint64_t *capacity,
+                                 size_t *consumed);
+
+/**
+ * @brief Apply Set Dynamic Table Capacity to a table.
+ *
+ * RFC 9204 Section 4.3.1: Updates the dynamic table capacity. If the new
+ * capacity is smaller than the current size, entries are evicted (FIFO order)
+ * until the size fits within the new capacity.
+ *
+ * @param table        Dynamic table to update (must not be NULL)
+ * @param capacity     New capacity in bytes
+ * @param max_capacity Maximum allowed capacity (decoder-advertised limit)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if table is NULL,
+ *         QPACK_ERR_TABLE_SIZE if capacity exceeds max_capacity
+ *
+ * @note Setting capacity to 0 evicts all entries and effectively disables
+ *       the dynamic table.
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_apply_set_capacity (
+    SocketQPACK_Table_T table, uint64_t capacity, uint64_t max_capacity);
 
 /* ============================================================================
  * UTILITY FUNCTIONS
