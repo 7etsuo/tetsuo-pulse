@@ -425,6 +425,9 @@ set(LIB_SOURCES
     src/quic/SocketQUICLoss.c
     src/quic/SocketQUICTLS.c
 
+    # QPACK Header Compression (RFC 9204)
+    src/quic/SocketQPACK-decoder.c
+
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -653,6 +656,8 @@ set(QUIC_HEADERS
     include/quic/SocketQUICAck.h
     include/quic/SocketQUICLoss.h
     include/quic/SocketQUICTLS.h
+    include/quic/SocketQPACK.h
+    include/quic/SocketQPACK-private.h
 )
 
 set(SIMPLE_HEADERS
@@ -837,6 +842,8 @@ set(TEST_SOURCES
     test_quic_loss
     test_quic_key_discard
     test_quic_0rtt
+    # QPACK tests (RFC 9204)
+    test_qpack_section_ack
 )
 
 # TLS tests (only built when TLS is enabled)
