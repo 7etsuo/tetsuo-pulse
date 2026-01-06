@@ -360,8 +360,7 @@ set(LIB_SOURCES
     src/http/hpack/SocketHPACK-table.c
 
     # QPACK Header Compression (RFC 9204)
-    src/http/qpack/SocketQPACK-table.c
-    src/http/SocketQPACK.c
+    src/http/qpack/SocketQPACK-index.c
 
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
@@ -637,6 +636,11 @@ set(HTTP_HEADERS
     include/http/SocketHTTPServer.h
 )
 
+set(QPACK_HEADERS
+    include/http/qpack/SocketQPACK.h
+    include/http/qpack/SocketQPACK-private.h
+)
+
 set(TEST_HEADERS
     include/test/Test.h
 )
@@ -690,6 +694,7 @@ install(FILES ${POLL_HEADERS} DESTINATION include/poll)
 install(FILES ${POOL_HEADERS} DESTINATION include/pool)
 install(FILES ${TLS_HEADERS} DESTINATION include/tls)
 install(FILES ${HTTP_HEADERS} DESTINATION include/http)
+install(FILES ${QPACK_HEADERS} DESTINATION include/http/qpack)
 install(FILES ${TEST_HEADERS} DESTINATION include/test)
 install(FILES ${QUIC_HEADERS} DESTINATION include/quic)
 install(FILES ${SIMPLE_HEADERS} DESTINATION include/simple)
@@ -784,8 +789,6 @@ set(TEST_SOURCES
     test_http_core
     test_http1_parser
     test_hpack
-    test_qpack_table
-    test_qpack
     test_http2
     test_http2_priority
     test_http2_rate_limit
@@ -793,6 +796,8 @@ set(TEST_SOURCES
     test_proxy
     test_websocket
     test_security
+    # QPACK tests (RFC 9204)
+    test_qpack_index
     test_http_integration
     test_ws_integration
     test_http2_integration
