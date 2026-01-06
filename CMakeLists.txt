@@ -367,6 +367,9 @@ set(LIB_SOURCES
     src/http/h2/SocketHTTP2-validate.c
     src/http/h2/SocketHTTP2-priority.c
 
+    # QPACK Header Compression (RFC 9204)
+    src/http/qpack/SocketQPACK-encoder.c
+
     # HTTP Client API
     src/http/SocketHTTPClient.c
     src/http/client/SocketHTTPClient-pool.c
@@ -837,6 +840,8 @@ set(TEST_SOURCES
     test_quic_loss
     test_quic_key_discard
     test_quic_0rtt
+    # QPACK tests (RFC 9204)
+    test_qpack_krc
 )
 
 # TLS tests (only built when TLS is enabled)
