@@ -586,6 +586,123 @@ SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
                                         size_t *bytes_consumed);
 
 /* ============================================================================
+ * FIELD SECTION PREFIX (RFC 9204 Section 4.5.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Decoded Field Section Prefix.
+ *
+ * RFC 9204 Section 4.5.1: The Field Section Prefix is transmitted before
+ * encoded field sections and contains Required Insert Count and Base.
+ */
+typedef struct
+{
+  uint64_t required_insert_count; /**< Required Insert Count (RIC) */
+  int64_t delta_base;             /**< Signed delta base value */
+  uint64_t base;                  /**< Computed absolute base */
+} SocketQPACK_FieldSectionPrefix;
+
+/**
+ * @brief Encode Field Section Prefix.
+ *
+ * RFC 9204 Section 4.5.1: Encodes the Required Insert Count and Base
+ * into the Field Section Prefix format.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * |   Required Insert Count (8+)  |
+ * +---+---+---+---+---+---+---+---+
+ * | S |      Delta Base (7+)      |
+ * +---+---------------------------+
+ *
+ * @param required_insert_count Required Insert Count for this field section
+ * @param base                  Base value for relative indexing
+ * @param max_entries           MaxEntries = MaxTableCapacity / 32
+ * @param output                Output buffer (must not be NULL)
+ * @param output_size           Size of output buffer
+ * @param[out] bytes_written    Number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_ERR_TABLE_SIZE if buffer too small or max_entries is 0,
+ *         QPACK_ERR_INTEGER if integer encoding failed
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_prefix (uint64_t required_insert_count,
+                           uint64_t base,
+                           uint64_t max_entries,
+                           unsigned char *output,
+                           size_t output_size,
+                           size_t *bytes_written);
+
+/**
+ * @brief Decode Field Section Prefix.
+ *
+ * RFC 9204 Section 4.5.1: Decodes the Required Insert Count and Base
+ * from the Field Section Prefix. Validates that Required Insert Count
+ * does not exceed the decoder's current Insert Count.
+ *
+ * @param input               Input buffer (must not be NULL if input_len > 0)
+ * @param input_len           Length of input buffer
+ * @param max_entries         MaxEntries = MaxTableCapacity / 32
+ * @param total_insert_count  Decoder's current total Insert Count
+ * @param[out] prefix         Decoded prefix values (must not be NULL)
+ * @param[out] bytes_consumed Number of bytes consumed (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if prefix or bytes_consumed is NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_TABLE_SIZE if max_entries is 0,
+ *         QPACK_ERR_INTEGER if integer decoding failed,
+ *         QPACK_ERR_DECOMPRESSION if RIC > total_insert_count or invalid
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_prefix (const unsigned char *input,
+                           size_t input_len,
+                           uint64_t max_entries,
+                           uint64_t total_insert_count,
+                           SocketQPACK_FieldSectionPrefix *prefix,
+                           size_t *bytes_consumed);
+
+/**
+ * @brief Validate Field Section Prefix.
+ *
+ * RFC 9204 Section 4.5.1: Validates that the prefix values are consistent
+ * and within valid bounds. Checks Required Insert Count against total
+ * insertions and verifies Base computation.
+ *
+ * @param prefix              Prefix to validate (must not be NULL)
+ * @param total_insert_count  Decoder's current total Insert Count
+ * @return QPACK_OK if valid,
+ *         QPACK_ERR_NULL_PARAM if prefix is NULL,
+ *         QPACK_ERR_DECOMPRESSION if RIC > total_insert_count,
+ *         QPACK_ERR_BASE_OVERFLOW if Base computation is invalid
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_validate_prefix (
+    const SocketQPACK_FieldSectionPrefix *prefix, uint64_t total_insert_count);
+
+/**
+ * @brief Compute MaxEntries from maximum table capacity.
+ *
+ * RFC 9204 Section 4.5.1.1: MaxEntries is derived from the maximum
+ * dynamic table capacity advertised by the decoder.
+ *
+ *   MaxEntries = floor(MaxTableCapacity / 32)
+ *
+ * @param max_table_capacity Maximum table capacity in bytes
+ * @return MaxEntries value for use in prefix encoding/decoding
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_compute_max_entries (uint64_t max_table_capacity);
+
+/* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
  */
