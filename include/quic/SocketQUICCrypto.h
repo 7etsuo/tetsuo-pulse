@@ -61,16 +61,16 @@
  */
 typedef enum
 {
-  QUIC_CRYPTO_OK = 0,          /**< Operation succeeded */
-  QUIC_CRYPTO_ERROR_NULL,      /**< NULL pointer argument */
-  QUIC_CRYPTO_ERROR_VERSION,   /**< Unsupported QUIC version */
-  QUIC_CRYPTO_ERROR_HKDF,      /**< HKDF operation failed */
-  QUIC_CRYPTO_ERROR_NO_TLS,    /**< TLS support not available */
-  QUIC_CRYPTO_ERROR_AEAD,      /**< Invalid AEAD algorithm */
+  QUIC_CRYPTO_OK = 0,           /**< Operation succeeded */
+  QUIC_CRYPTO_ERROR_NULL,       /**< NULL pointer argument */
+  QUIC_CRYPTO_ERROR_VERSION,    /**< Unsupported QUIC version */
+  QUIC_CRYPTO_ERROR_HKDF,       /**< HKDF operation failed */
+  QUIC_CRYPTO_ERROR_NO_TLS,     /**< TLS support not available */
+  QUIC_CRYPTO_ERROR_AEAD,       /**< Invalid AEAD algorithm */
   QUIC_CRYPTO_ERROR_SECRET_LEN, /**< Secret length doesn't match AEAD */
-  QUIC_CRYPTO_ERROR_BUFFER,    /**< Output buffer too small */
-  QUIC_CRYPTO_ERROR_TAG,       /**< AEAD tag verification failed */
-  QUIC_CRYPTO_ERROR_INPUT      /**< Invalid input (e.g., too short) */
+  QUIC_CRYPTO_ERROR_BUFFER,     /**< Output buffer too small */
+  QUIC_CRYPTO_ERROR_TAG,        /**< AEAD tag verification failed */
+  QUIC_CRYPTO_ERROR_INPUT       /**< Invalid input (e.g., too short) */
 } SocketQUICCrypto_Result;
 
 /* ============================================================================
@@ -415,6 +415,101 @@ SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
                                   size_t ciphertext_len,
                                   uint8_t *plaintext,
                                   size_t *plaintext_len);
+
+/* ============================================================================
+ * Header Protection (RFC 9001 Section 5.4)
+ * ============================================================================
+ */
+
+/** Header protection sample size in bytes. */
+#define QUIC_HP_SAMPLE_LEN 16
+
+/** Header protection mask size in bytes. */
+#define QUIC_HP_MASK_LEN 5
+
+/**
+ * @brief Apply header protection to a QUIC packet (RFC 9001 §5.4).
+ *
+ * Protects the packet number and lower bits of the first byte by XORing
+ * with a mask derived from the header protection key and ciphertext sample.
+ *
+ * @param hp_key     Header protection key.
+ * @param hp_key_len Key length (16 for AES-128, 32 for AES-256/ChaCha20).
+ * @param aead       AEAD algorithm (determines mask generation method).
+ * @param packet     Packet buffer (modified in place).
+ * @param packet_len Packet length in bytes.
+ * @param pn_offset  Offset of packet number field in packet.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_protect_header (const uint8_t *hp_key,
+                                 size_t hp_key_len,
+                                 SocketQUIC_AEAD aead,
+                                 uint8_t *packet,
+                                 size_t packet_len,
+                                 size_t pn_offset);
+
+/**
+ * @brief Remove header protection from a QUIC packet (RFC 9001 §5.4).
+ *
+ * Removes protection from packet number and first byte by XORing with
+ * the same mask used during protection.
+ *
+ * @param hp_key     Header protection key.
+ * @param hp_key_len Key length (16 for AES-128, 32 for AES-256/ChaCha20).
+ * @param aead       AEAD algorithm.
+ * @param packet     Packet buffer (modified in place).
+ * @param packet_len Packet length in bytes.
+ * @param pn_offset  Offset of packet number field in packet.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_unprotect_header (const uint8_t *hp_key,
+                                   size_t hp_key_len,
+                                   SocketQUIC_AEAD aead,
+                                   uint8_t *packet,
+                                   size_t packet_len,
+                                   size_t pn_offset);
+
+/**
+ * @brief Apply header protection using packet keys struct.
+ *
+ * Convenience wrapper that extracts hp_key, hp_len, and aead from
+ * SocketQUICPacketKeys_T.
+ *
+ * @param keys       Packet protection keys containing HP key and algorithm.
+ * @param packet     Packet buffer (modified in place).
+ * @param packet_len Packet length in bytes.
+ * @param pn_offset  Offset of packet number field.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_protect_header_ex (const SocketQUICPacketKeys_T *keys,
+                                    uint8_t *packet,
+                                    size_t packet_len,
+                                    size_t pn_offset);
+
+/**
+ * @brief Remove header protection using packet keys struct.
+ *
+ * Convenience wrapper that extracts hp_key, hp_len, and aead from
+ * SocketQUICPacketKeys_T.
+ *
+ * @param keys       Packet protection keys containing HP key and algorithm.
+ * @param packet     Packet buffer (modified in place).
+ * @param packet_len Packet length in bytes.
+ * @param pn_offset  Offset of packet number field.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_unprotect_header_ex (const SocketQUICPacketKeys_T *keys,
+                                      uint8_t *packet,
+                                      size_t packet_len,
+                                      size_t pn_offset);
 
 /* ============================================================================
  * Utility Functions
