@@ -393,6 +393,228 @@ TEST (quic_retry_tag_compute_then_verify)
 }
 
 /* ============================================================================
+ * Boundary Condition Tests
+ * ============================================================================
+ */
+
+TEST (quic_retry_tag_packet_at_max_size)
+{
+  SocketQUICConnectionID_T odcid;
+  uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN];
+  SocketQUICPacket_Result result;
+
+  /* Create a packet exactly at the 1500 byte limit */
+  uint8_t large_packet[1500];
+  memset (large_packet, 0xAB, sizeof (large_packet));
+
+  /* Set valid header structure */
+  large_packet[0] = 0xff; /* Long header, Retry type */
+  large_packet[1] = 0x00;
+  large_packet[2] = 0x00;
+  large_packet[3] = 0x00;
+  large_packet[4] = 0x01; /* Version */
+  large_packet[5] = 0x00; /* DCID len */
+  large_packet[6] = 0x04; /* SCID len */
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = 8;
+  memset (odcid.data, 0x42, 8);
+
+  /* Should succeed at exactly 1500 bytes */
+  result = SocketQUICPacket_compute_retry_tag (
+      &odcid, large_packet, sizeof (large_packet), tag);
+  ASSERT_EQ (result, QUIC_PACKET_OK);
+}
+
+TEST (quic_retry_tag_packet_exceeds_max_size)
+{
+  SocketQUICConnectionID_T odcid;
+  uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN];
+  SocketQUICPacket_Result result;
+
+  /* Create a packet that exceeds 1500 byte limit */
+  uint8_t oversized_packet[1501];
+  memset (oversized_packet, 0xAB, sizeof (oversized_packet));
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = 4;
+
+  /* Should fail with buffer error */
+  result = SocketQUICPacket_compute_retry_tag (
+      &odcid, oversized_packet, sizeof (oversized_packet), tag);
+  ASSERT_EQ (result, QUIC_PACKET_ERROR_BUFFER);
+}
+
+TEST (quic_retry_tag_packet_exactly_tag_size)
+{
+  SocketQUICConnectionID_T odcid;
+  SocketQUICPacket_Result result;
+
+  /* Packet exactly 16 bytes (tag size) - minimal valid for verify */
+  uint8_t minimal_packet[QUIC_RETRY_INTEGRITY_TAG_LEN];
+  memset (minimal_packet, 0x00, sizeof (minimal_packet));
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = 4;
+  memset (odcid.data, 0x11, 4);
+
+  /* Verify with 16-byte packet means 0-byte payload + 16-byte tag */
+  /* This should work (verification will fail due to wrong tag, but no crash) */
+  result = SocketQUICPacket_verify_retry_tag (
+      &odcid, minimal_packet, sizeof (minimal_packet));
+
+  /* Tag won't match, so should return INVALID */
+  ASSERT_EQ (result, QUIC_PACKET_ERROR_INVALID);
+}
+
+TEST (quic_retry_tag_wrong_odcid_verification)
+{
+  SocketQUICConnectionID_T correct_odcid;
+  SocketQUICConnectionID_T wrong_odcid;
+  SocketQUICPacket_Result result;
+
+  /* Use RFC test vector packet with correct tag */
+  /* But verify with wrong ODCID - should fail */
+
+  SocketQUICConnectionID_init (&correct_odcid);
+  correct_odcid.len = sizeof (RFC_ODCID);
+  memcpy (correct_odcid.data, RFC_ODCID, sizeof (RFC_ODCID));
+
+  /* Create wrong ODCID (different from RFC vector) */
+  SocketQUICConnectionID_init (&wrong_odcid);
+  wrong_odcid.len = sizeof (RFC_ODCID);
+  memset (wrong_odcid.data, 0xFF, sizeof (RFC_ODCID)); /* All 0xFF */
+
+  /* Verify with correct ODCID should pass */
+  result = SocketQUICPacket_verify_retry_tag (
+      &correct_odcid, RFC_RETRY_PACKET, sizeof (RFC_RETRY_PACKET));
+  ASSERT_EQ (result, QUIC_PACKET_OK);
+
+  /* Verify with wrong ODCID should fail */
+  result = SocketQUICPacket_verify_retry_tag (
+      &wrong_odcid, RFC_RETRY_PACKET, sizeof (RFC_RETRY_PACKET));
+  ASSERT_EQ (result, QUIC_PACKET_ERROR_INVALID);
+}
+
+TEST (quic_retry_tag_single_bit_flip_in_tag)
+{
+  SocketQUICConnectionID_T odcid;
+  SocketQUICPacket_Result result;
+
+  /* Copy RFC packet */
+  uint8_t packet[sizeof (RFC_RETRY_PACKET)];
+  memcpy (packet, RFC_RETRY_PACKET, sizeof (RFC_RETRY_PACKET));
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = sizeof (RFC_ODCID);
+  memcpy (odcid.data, RFC_ODCID, sizeof (RFC_ODCID));
+
+  /* Verify original is valid */
+  result = SocketQUICPacket_verify_retry_tag (&odcid, packet, sizeof (packet));
+  ASSERT_EQ (result, QUIC_PACKET_OK);
+
+  /* Flip single bit in tag (first byte of tag, bit 0) */
+  packet[sizeof (packet) - QUIC_RETRY_INTEGRITY_TAG_LEN] ^= 0x01;
+
+  /* Should now fail */
+  result = SocketQUICPacket_verify_retry_tag (&odcid, packet, sizeof (packet));
+  ASSERT_EQ (result, QUIC_PACKET_ERROR_INVALID);
+}
+
+TEST (quic_retry_tag_single_bit_flip_in_packet_body)
+{
+  SocketQUICConnectionID_T odcid;
+  SocketQUICPacket_Result result;
+
+  /* Copy RFC packet */
+  uint8_t packet[sizeof (RFC_RETRY_PACKET)];
+  memcpy (packet, RFC_RETRY_PACKET, sizeof (RFC_RETRY_PACKET));
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = sizeof (RFC_ODCID);
+  memcpy (odcid.data, RFC_ODCID, sizeof (RFC_ODCID));
+
+  /* Verify original is valid */
+  result = SocketQUICPacket_verify_retry_tag (&odcid, packet, sizeof (packet));
+  ASSERT_EQ (result, QUIC_PACKET_OK);
+
+  /* Flip single bit in packet body (version byte, bit 0) */
+  packet[1] ^= 0x01;
+
+  /* Should now fail - tag was computed over original data */
+  result = SocketQUICPacket_verify_retry_tag (&odcid, packet, sizeof (packet));
+  ASSERT_EQ (result, QUIC_PACKET_ERROR_INVALID);
+}
+
+TEST (quic_retry_tag_single_bit_flip_in_retry_token)
+{
+  SocketQUICConnectionID_T odcid;
+  SocketQUICPacket_Result result;
+
+  /* Copy RFC packet */
+  uint8_t packet[sizeof (RFC_RETRY_PACKET)];
+  memcpy (packet, RFC_RETRY_PACKET, sizeof (RFC_RETRY_PACKET));
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = sizeof (RFC_ODCID);
+  memcpy (odcid.data, RFC_ODCID, sizeof (RFC_ODCID));
+
+  /* Flip bit in Retry Token ("token" starts at offset 15) */
+  packet[15] ^= 0x01;
+
+  /* Should fail */
+  result = SocketQUICPacket_verify_retry_tag (&odcid, packet, sizeof (packet));
+  ASSERT_EQ (result, QUIC_PACKET_ERROR_INVALID);
+}
+
+TEST (quic_retry_tag_all_zeros_packet)
+{
+  SocketQUICConnectionID_T odcid;
+  uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN];
+  SocketQUICPacket_Result result;
+
+  /* All zeros packet */
+  uint8_t zeros[64] = { 0 };
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = 0; /* Empty ODCID */
+
+  /* Should compute successfully (even if packet is malformed) */
+  result
+      = SocketQUICPacket_compute_retry_tag (&odcid, zeros, sizeof (zeros), tag);
+  ASSERT_EQ (result, QUIC_PACKET_OK);
+
+  /* Tag should not be all zeros (AEAD output is pseudorandom) */
+  int all_zeros = 1;
+  for (int i = 0; i < QUIC_RETRY_INTEGRITY_TAG_LEN; i++)
+    {
+      if (tag[i] != 0)
+        {
+          all_zeros = 0;
+          break;
+        }
+    }
+  ASSERT_EQ (all_zeros, 0);
+}
+
+TEST (quic_retry_tag_empty_packet)
+{
+  SocketQUICConnectionID_T odcid;
+  uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN];
+  SocketQUICPacket_Result result;
+
+  SocketQUICConnectionID_init (&odcid);
+  odcid.len = 4;
+  memset (odcid.data, 0xAA, 4);
+
+  /* Empty packet (0 bytes) - should still work for compute */
+  uint8_t empty_packet[1] = { 0 }; /* Need at least 1 byte for valid pointer */
+
+  result = SocketQUICPacket_compute_retry_tag (&odcid, empty_packet, 0, tag);
+  ASSERT_EQ (result, QUIC_PACKET_OK);
+}
+
+/* ============================================================================
  * Main
  * ============================================================================
  */

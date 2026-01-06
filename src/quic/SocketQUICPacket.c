@@ -11,6 +11,7 @@
  * packet types: Initial, 0-RTT, Handshake, Retry, and 1-RTT.
  */
 
+#include <limits.h>
 #include <string.h>
 
 #include "quic/SocketQUICPacket.h"
@@ -979,6 +980,10 @@ compute_retry_aead_tag (const uint8_t *aad,
 
   if (aad == NULL || tag == NULL)
     return QUIC_PACKET_ERROR_NULL;
+
+  /* Prevent overflow when casting to int for OpenSSL API */
+  if (aad_len > INT_MAX)
+    return QUIC_PACKET_ERROR_BUFFER;
 
   ctx = EVP_CIPHER_CTX_new ();
   if (ctx == NULL)
