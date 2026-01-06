@@ -6,20 +6,18 @@
 
 /**
  * @file SocketQPACK.h
- * @brief QPACK Primitives for HTTP/3 header compression (RFC 9204 Section 4.1).
+ * @brief QPACK header compression for HTTP/3 (RFC 9204).
  *
- * Implements the primitive encoding/decoding functions for QPACK:
- * - Integer encoding/decoding with variable prefix sizes (3-8 bits)
- * - String literal encoding/decoding with optional Huffman compression
+ * Implements QPACK algorithm with static table (99 entries), dynamic table,
+ * encoder stream instructions, and decoder stream acknowledgments.
+ * This initial implementation covers the Duplicate instruction (Section 4.3.4).
  *
- * QPACK uses the same Huffman table as HPACK (RFC 7541 Appendix B) but
- * supports additional prefix sizes for various instruction types.
- *
- * Thread Safety: All functions are thread-safe (no shared state).
+ * Thread Safety: Encoder/decoder instances are NOT thread-safe. One instance
+ * per connection/thread recommended. Static functions are thread-safe.
  *
  * @defgroup qpack QPACK Header Compression Module
  * @{
- * @see https://www.rfc-editor.org/rfc/rfc9204#section-4.1
+ * @see https://www.rfc-editor.org/rfc/rfc9204
  */
 
 #ifndef SOCKETQPACK_INCLUDED
@@ -29,244 +27,320 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-/**
- * @brief Maximum integer value representable in QPACK (RFC 9204).
- *
- * QPACK integers can represent values up to 2^62-1 (4,611,686,018,427,387,903).
+#include "core/Arena.h"
+#include "core/Except.h"
+
+/* ============================================================================
+ * Configuration Constants
+ * ============================================================================
  */
-#define SOCKETQPACK_INT_MAX ((uint64_t)4611686018427387903ULL)
+
+/** Default dynamic table capacity in bytes (RFC 9204 recommends 0 initially).
+ */
+#ifndef SOCKETQPACK_DEFAULT_TABLE_CAPACITY
+#define SOCKETQPACK_DEFAULT_TABLE_CAPACITY 4096
+#endif
+
+/** Maximum dynamic table capacity in bytes. */
+#ifndef SOCKETQPACK_MAX_TABLE_CAPACITY
+#define SOCKETQPACK_MAX_TABLE_CAPACITY (64 * 1024)
+#endif
+
+/** Maximum allowed blocked streams (RFC 9204 transport parameter). */
+#ifndef SOCKETQPACK_MAX_BLOCKED_STREAMS
+#define SOCKETQPACK_MAX_BLOCKED_STREAMS 100
+#endif
+
+/** Entry overhead: 32 bytes per RFC 9204 Section 3.2.1. */
+#define SOCKETQPACK_ENTRY_OVERHEAD 32
+
+/** Number of entries in the QPACK static table (RFC 9204 Appendix A). */
+#define SOCKETQPACK_STATIC_TABLE_SIZE 99
+
+/* ============================================================================
+ * Wire Format Constants (RFC 9204 Section 4.3)
+ * ============================================================================
+ */
+
+/** Duplicate instruction pattern: 000xxxxx (Section 4.3.4). */
+#define QPACK_DUPLICATE_PATTERN 0x00
+
+/** Duplicate instruction prefix bits for relative index. */
+#define QPACK_DUPLICATE_PREFIX 5
+
+/** Mask for duplicate instruction detection (top 3 bits). */
+#define QPACK_DUPLICATE_MASK 0xE0
+
+/* ============================================================================
+ * Exception and Result Types
+ * ============================================================================
+ */
+
+/** Exception raised on QPACK encoding/decoding errors. */
+extern const Except_T SocketQPACK_Error;
 
 /**
- * @brief Minimum valid prefix size for QPACK integers.
- */
-#define SOCKETQPACK_PREFIX_MIN 3
-
-/**
- * @brief Maximum valid prefix size for QPACK integers.
- */
-#define SOCKETQPACK_PREFIX_MAX 8
-
-/**
- * @brief Result codes for QPACK primitive operations.
+ * @brief Result codes for QPACK operations.
  */
 typedef enum
 {
-  QPACK_OK = 0,        /**< Operation succeeded */
-  QPACK_ERROR,         /**< Generic error */
-  QPACK_INCOMPLETE,    /**< Need more input data */
-  QPACK_ERROR_INTEGER, /**< Integer overflow or invalid encoding */
-  QPACK_ERROR_HUFFMAN, /**< Huffman encoding/decoding error */
-  QPACK_ERROR_BUFFER,  /**< Output buffer too small */
-  QPACK_ERROR_PREFIX,  /**< Invalid prefix bits (must be 3-8) */
-  QPACK_ERROR_NULL     /**< NULL pointer argument */
+  QPACK_OK = 0,               /**< Operation succeeded */
+  QPACK_INCOMPLETE,           /**< Need more input data */
+  QPACK_ERROR,                /**< Generic error */
+  QPACK_ERROR_INVALID_INDEX,  /**< Relative index out of bounds */
+  QPACK_ERROR_TABLE_FULL,     /**< Dynamic table capacity exhausted */
+  QPACK_ERROR_PARSE,          /**< Malformed wire format */
+  QPACK_ERROR_ENCODER_STREAM, /**< Encoder stream error */
+  QPACK_ERROR_DECODER_STREAM  /**< Decoder stream error */
 } SocketQPACK_Result;
 
-/**
- * @brief Huffman encoding mode for string literals.
+/* ============================================================================
+ * Data Structures
+ * ============================================================================
  */
-typedef enum
+
+/**
+ * @brief Field line (name-value pair) as stored in tables.
+ */
+typedef struct
 {
-  QPACK_HUFFMAN_PLAIN = 0,  /**< Plain text encoding (no compression) */
-  QPACK_HUFFMAN_ENCODED = 1 /**< Huffman-compressed encoding */
-} SocketQPACK_Huffman_T;
+  const char *name;  /**< Header field name. */
+  size_t name_len;   /**< Length of name in bytes. */
+  const char *value; /**< Header field value. */
+  size_t value_len;  /**< Length of value in bytes. */
+  int never_index;   /**< Never-indexed flag. */
+} SocketQPACK_FieldLine;
 
 /**
- * @brief Encode a prefixed integer (RFC 9204 Section 4.1.1).
- *
- * Encodes an integer value using the QPACK/HPACK integer encoding scheme.
- * The prefix_bits parameter specifies how many bits of the first byte are
- * available for the integer value.
- *
- * QPACK-specific prefix sizes by instruction type:
- * - 8 bits: Required Insert Count
- * - 7 bits: Section Ack, Delta Base
- * - 6 bits: Insert Name Reference, Stream Cancel, Insert Count Increment,
- *           Indexed Field Line
- * - 5 bits: Set Dynamic Table Capacity, Insert Literal Name, Duplicate
- * - 4 bits: Post-Base Indexed, Literal Name Reference
- * - 3 bits: Post-Base Name Reference, Literal Name
- *
- * @param value       Integer value to encode (0 to 2^62-1).
- * @param prefix_bits Number of bits available in first byte (3-8).
- * @param output      Output buffer for encoded bytes.
- * @param output_size Size of output buffer in bytes.
- *
- * @return Number of bytes written on success, -1 on error.
- *
- * @note The first byte's high bits (above prefix_bits) are preserved
- *       and should be set by the caller for instruction type flags.
- *
- * Example:
- * @code
- * unsigned char buf[16];
- * // Encode value 1337 with 5-bit prefix
- * ssize_t len = SocketQPACK_int_encode(1337, 5, buf, sizeof(buf));
- * // len = 3, buf = {0x1f, 0x9a, 0x0a}
- * @endcode
+ * @brief Dynamic table entry with absolute index tracking.
  */
-extern ssize_t SocketQPACK_int_encode (uint64_t value,
-                                       int prefix_bits,
-                                       unsigned char *output,
-                                       size_t output_size);
+typedef struct QPACK_DynamicEntry
+{
+  char *name;       /**< Allocated field name. */
+  size_t name_len;  /**< Length of name. */
+  char *value;      /**< Allocated field value. */
+  size_t value_len; /**< Length of value. */
+  size_t abs_index; /**< Absolute index assigned at insertion. */
+} QPACK_DynamicEntry;
+
+/** Forward declaration for dynamic table. */
+typedef struct SocketQPACK_Table *SocketQPACK_Table_T;
+
+/* ============================================================================
+ * Dynamic Table API
+ * ============================================================================
+ */
 
 /**
- * @brief Decode a prefixed integer (RFC 9204 Section 4.1.1).
+ * @brief Create a new QPACK dynamic table.
  *
- * Decodes an integer value from QPACK/HPACK encoding. The prefix_bits
- * parameter specifies how many bits of the first byte contain the
- * integer value (the rest are instruction flags).
+ * @param max_capacity  Maximum table capacity in bytes.
+ * @param arena         Arena for memory allocation.
  *
- * @param input       Input buffer containing encoded integer.
- * @param input_len   Size of input buffer in bytes.
- * @param prefix_bits Number of bits used for integer in first byte (3-8).
- * @param value       Output: decoded integer value.
- * @param consumed    Output: number of bytes consumed from input.
+ * @return New table instance.
+ * @raises SocketQPACK_Error on allocation failure.
+ */
+extern SocketQPACK_Table_T
+SocketQPACK_Table_new (size_t max_capacity, Arena_T arena);
+
+/**
+ * @brief Free a dynamic table (sets pointer to NULL).
+ *
+ * @param table  Pointer to table to free.
+ */
+extern void SocketQPACK_Table_free (SocketQPACK_Table_T *table);
+
+/**
+ * @brief Get current table size in bytes.
+ *
+ * @param table  Table instance.
+ * @return Current size (sum of entry sizes with overhead).
+ */
+extern size_t SocketQPACK_Table_size (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get current entry count.
+ *
+ * @param table  Table instance.
+ * @return Number of entries in table.
+ */
+extern size_t SocketQPACK_Table_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get maximum table capacity.
+ *
+ * @param table  Table instance.
+ * @return Maximum capacity in bytes.
+ */
+extern size_t SocketQPACK_Table_max_capacity (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get the current insertion count (absolute index for next entry).
+ *
+ * @param table  Table instance.
+ * @return Number of entries ever inserted (used for absolute indexing).
+ */
+extern size_t SocketQPACK_Table_insertion_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Update maximum table capacity.
+ *
+ * Evicts oldest entries if new capacity is smaller.
+ *
+ * @param table         Table instance.
+ * @param max_capacity  New maximum capacity in bytes.
+ */
+extern void
+SocketQPACK_Table_set_capacity (SocketQPACK_Table_T table, size_t max_capacity);
+
+/**
+ * @brief Get entry by relative index (RFC 9204 Section 3.2.4).
+ *
+ * Relative index 0 = newest entry, higher = older toward eviction.
+ *
+ * @param table       Table instance.
+ * @param rel_index   Relative index (0 = newest).
+ * @param field_line  Output: field line data (pointers into table).
+ *
+ * @return QPACK_OK on success, QPACK_ERROR_INVALID_INDEX if out of bounds.
+ */
+extern SocketQPACK_Result
+SocketQPACK_Table_get (SocketQPACK_Table_T table,
+                       size_t rel_index,
+                       SocketQPACK_FieldLine *field_line);
+
+/**
+ * @brief Add entry to table (RFC 9204 Section 3.2.2).
+ *
+ * Evicts oldest entries if needed to fit. Entry is assigned the next
+ * absolute index. If entry is larger than capacity, table is cleared.
+ *
+ * @param table      Table instance.
+ * @param name       Field name.
+ * @param name_len   Length of name.
+ * @param value      Field value.
+ * @param value_len  Length of value.
+ *
+ * @return QPACK_OK on success, QPACK_ERROR on allocation failure.
+ */
+extern SocketQPACK_Result SocketQPACK_Table_add (SocketQPACK_Table_T table,
+                                                 const char *name,
+                                                 size_t name_len,
+                                                 const char *value,
+                                                 size_t value_len);
+
+/* ============================================================================
+ * Duplicate Instruction API (RFC 9204 Section 4.3.4)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode a duplicate instruction.
+ *
+ * Encodes the 3-bit pattern (000) followed by 5-bit prefix relative index.
+ *
+ * @param rel_index    Relative index of entry to duplicate (0 = newest).
+ * @param output       Output buffer for encoded instruction.
+ * @param output_size  Size of output buffer.
+ *
+ * @return Number of bytes written, or 0 on error (buffer too small).
+ */
+extern size_t SocketQPACK_encode_duplicate (size_t rel_index,
+                                            uint8_t *output,
+                                            size_t output_size);
+
+/**
+ * @brief Decode a duplicate instruction.
+ *
+ * Parses the 5-bit prefix integer encoding for relative index.
+ *
+ * @param input      Input buffer containing encoded instruction.
+ * @param input_len  Length of input buffer.
+ * @param rel_index  Output: decoded relative index.
+ * @param consumed   Output: bytes consumed from input.
  *
  * @return QPACK_OK on success, error code otherwise.
- *
- * @retval QPACK_OK           Successfully decoded.
- * @retval QPACK_INCOMPLETE   Input truncated (need more bytes).
- * @retval QPACK_ERROR_PREFIX Invalid prefix_bits (must be 3-8).
- * @retval QPACK_ERROR_INTEGER Integer overflow (value > 2^62-1).
- * @retval QPACK_ERROR_NULL   NULL pointer argument.
- *
- * Example:
- * @code
- * const unsigned char data[] = {0x1f, 0x9a, 0x0a};
- * uint64_t value;
- * size_t consumed;
- * SocketQPACK_Result res = SocketQPACK_int_decode(data, 3, 5, &value,
- * &consumed);
- * // value = 1337, consumed = 3
- * @endcode
  */
-extern SocketQPACK_Result SocketQPACK_int_decode (const unsigned char *input,
-                                                  size_t input_len,
-                                                  int prefix_bits,
-                                                  uint64_t *value,
-                                                  size_t *consumed);
+extern SocketQPACK_Result SocketQPACK_decode_duplicate (const uint8_t *input,
+                                                        size_t input_len,
+                                                        size_t *rel_index,
+                                                        size_t *consumed);
 
 /**
- * @brief Encode a string literal (RFC 9204 Section 4.1.2).
+ * @brief Process a duplicate instruction on the dynamic table.
  *
- * Encodes a string using optional Huffman compression (RFC 7541 Appendix B).
- * The first byte contains:
- * - Bit 7 (in position prefix_bits-1): Huffman flag (1=compressed, 0=plain)
- * - Remaining bits: length prefix
+ * Retrieves the entry at relative index, copies it, and inserts the copy
+ * at the end of the table with a new absolute index.
  *
- * QPACK string prefix sizes depend on the instruction context:
- * - 7 bits: Most common (same as HPACK)
- * - Other sizes: Used in specific QPACK instructions
- *
- * @param input       Input string data.
- * @param input_len   Length of input string in bytes.
- * @param use_huffman 1 to enable Huffman compression, 0 for plain text.
- * @param prefix_bits Number of bits for length prefix (3-8).
- * @param output      Output buffer for encoded bytes.
- * @param output_size Size of output buffer in bytes.
- *
- * @return Number of bytes written on success, -1 on error.
- *
- * @note When use_huffman is 1, the function will encode using Huffman
- *       only if it reduces the size; otherwise plain encoding is used.
- *
- * Example:
- * @code
- * unsigned char buf[256];
- * const char *str = "www.example.org";
- * ssize_t len = SocketQPACK_string_encode(
- *     (const unsigned char *)str, strlen(str), 1, 7, buf, sizeof(buf));
- * // Returns encoded length with Huffman compression
- * @endcode
- */
-extern ssize_t SocketQPACK_string_encode (const unsigned char *input,
-                                          size_t input_len,
-                                          int use_huffman,
-                                          int prefix_bits,
-                                          unsigned char *output,
-                                          size_t output_size);
-
-/**
- * @brief Decode a string literal (RFC 9204 Section 4.1.2).
- *
- * Decodes a string from QPACK encoding, handling both plain and
- * Huffman-compressed representations.
- *
- * @param input       Input buffer containing encoded string.
- * @param input_len   Size of input buffer in bytes.
- * @param prefix_bits Number of bits for length prefix (3-8).
- * @param output      Output buffer for decoded string.
- * @param output_size Size of output buffer in bytes.
- * @param decoded_len Output: actual length of decoded string.
- * @param consumed    Output: number of bytes consumed from input.
+ * @param table      Dynamic table to operate on.
+ * @param rel_index  Relative index of entry to duplicate (0 = newest).
  *
  * @return QPACK_OK on success, error code otherwise.
- *
- * @retval QPACK_OK           Successfully decoded.
- * @retval QPACK_INCOMPLETE   Input truncated (need more bytes).
- * @retval QPACK_ERROR_PREFIX Invalid prefix_bits (must be 3-8).
- * @retval QPACK_ERROR_HUFFMAN Huffman decoding failed.
- * @retval QPACK_ERROR_BUFFER Output buffer too small.
- * @retval QPACK_ERROR_NULL   NULL pointer argument.
- *
- * Example:
- * @code
- * const unsigned char encoded[] = {...};
- * unsigned char decoded[256];
- * size_t decoded_len, consumed;
- * SocketQPACK_Result res = SocketQPACK_string_decode(
- *     encoded, sizeof(encoded), 7, decoded, sizeof(decoded),
- *     &decoded_len, &consumed);
- * @endcode
+ *   - QPACK_ERROR_INVALID_INDEX: relative index >= table count
+ *   - QPACK_ERROR: allocation or insertion failure
  */
-extern SocketQPACK_Result SocketQPACK_string_decode (const unsigned char *input,
-                                                     size_t input_len,
-                                                     int prefix_bits,
-                                                     unsigned char *output,
-                                                     size_t output_size,
-                                                     size_t *decoded_len,
-                                                     size_t *consumed);
+extern SocketQPACK_Result
+SocketQPACK_process_duplicate (SocketQPACK_Table_T table, size_t rel_index);
+
+/* ============================================================================
+ * Utility Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Calculate entry size with overhead (RFC 9204 Section 3.2.1).
+ *
+ * @param name_len   Length of field name.
+ * @param value_len  Length of field value.
+ *
+ * @return Entry size = name_len + value_len + 32, or SIZE_MAX on overflow.
+ */
+extern size_t SocketQPACK_entry_size (size_t name_len, size_t value_len);
 
 /**
  * @brief Get string representation of result code.
  *
- * @param result Result code to convert.
- *
+ * @param result  Result code to convert.
  * @return Human-readable string describing the result.
  */
 extern const char *SocketQPACK_result_string (SocketQPACK_Result result);
 
-/**
- * @brief Calculate encoded size for an integer value.
- *
- * Returns the number of bytes needed to encode the given value
- * with the specified prefix size.
- *
- * @param value       Value to calculate size for.
- * @param prefix_bits Number of bits in prefix (3-8).
- *
- * @return Number of bytes needed, or 0 if value exceeds maximum
- *         or prefix_bits is invalid.
+/* ============================================================================
+ * Integer Encoding (RFC 9204 Section 4.1.1, derived from HPACK RFC 7541)
+ * ============================================================================
  */
-extern size_t SocketQPACK_int_size (uint64_t value, int prefix_bits);
 
 /**
- * @brief Calculate encoded size for a string.
+ * @brief Encode integer with N-bit prefix (RFC 7541 Section 5.1).
  *
- * Returns the number of bytes needed to encode the string
- * with the specified settings.
+ * @param value        Value to encode.
+ * @param prefix_bits  Number of bits in prefix (1-8).
+ * @param output       Output buffer.
+ * @param output_size  Size of output buffer.
  *
- * @param input       Input string data.
- * @param input_len   Length of input string.
- * @param use_huffman 1 for Huffman encoding, 0 for plain.
- * @param prefix_bits Number of bits for length prefix (3-8).
- *
- * @return Number of bytes needed, or 0 on error.
+ * @return Number of bytes written, or 0 on error.
  */
-extern size_t SocketQPACK_string_size (const unsigned char *input,
-                                       size_t input_len,
-                                       int use_huffman,
-                                       int prefix_bits);
+extern size_t SocketQPACK_int_encode (uint64_t value,
+                                      int prefix_bits,
+                                      uint8_t *output,
+                                      size_t output_size);
+
+/**
+ * @brief Decode integer with N-bit prefix (RFC 7541 Section 5.1).
+ *
+ * @param input        Input buffer.
+ * @param input_len    Length of input buffer.
+ * @param prefix_bits  Number of bits in prefix (1-8).
+ * @param value        Output: decoded value.
+ * @param consumed     Output: bytes consumed.
+ *
+ * @return QPACK_OK on success, error code otherwise.
+ */
+extern SocketQPACK_Result SocketQPACK_int_decode (const uint8_t *input,
+                                                  size_t input_len,
+                                                  int prefix_bits,
+                                                  uint64_t *value,
+                                                  size_t *consumed);
 
 /** @} */
 

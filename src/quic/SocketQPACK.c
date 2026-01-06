@@ -5,43 +5,52 @@
  */
 
 /**
- * SocketQPACK.c - QPACK Primitives (RFC 9204 Section 4.1)
+ * @file SocketQPACK.c
+ * @brief QPACK Header Compression (RFC 9204)
  *
- * Integer and string encoding/decoding for QPACK header compression.
- * Reuses HPACK Huffman encoding (RFC 7541 Appendix B) but adds support
- * for QPACK-specific prefix sizes.
+ * Implements QPACK dynamic table and encoder instructions.
+ * This file provides the Duplicate instruction (Section 4.3.4).
  */
 
+#include <assert.h>
 #include <string.h>
 
 #include "quic/SocketQPACK.h"
-#include "http/SocketHPACK.h"
+
+#include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
+
+#define T SocketQPACK_Table_T
 
 /* ============================================================================
  * Constants
  * ============================================================================
  */
 
-/* Maximum continuation bytes for integer encoding.
- * Each continuation byte carries 7 bits.
- * For 62-bit values: ceil(62/7) = 9 continuation bytes max.
- * We use 10 for safety margin. */
-#define QPACK_MAX_INT_CONTINUATION_BYTES 10
+/** Minimum dynamic table entry capacity (power of 2 for ring buffer). */
+#define QPACK_MIN_TABLE_CAPACITY 16
 
-/* Bit masks for integer encoding */
+/** Average entry size estimate for capacity calculation. */
+#define QPACK_AVERAGE_ENTRY_SIZE 50
+
+/** Integer encoding max continuation bytes (same as HPACK). */
+#define QPACK_INT_MAX_CONTINUATION 10
+
+/** Maximum safe shift for integer decoding. */
+#define QPACK_INT_MAX_SHIFT 56
+
+/* Integer continuation masks */
 #define QPACK_INT_CONTINUATION_MASK 0x80
 #define QPACK_INT_PAYLOAD_MASK 0x7F
-#define QPACK_INT_CONTINUATION_VAL 128
+#define QPACK_INT_CONTINUATION_VALUE 128
 
-/* Maximum safe shift to avoid overflow during decoding.
- * 64 bits - 8 bits for last byte = 56 bits. */
-#define QPACK_MAX_SAFE_SHIFT 56
+/* ============================================================================
+ * Exception Definition
+ * ============================================================================
+ */
 
-/* Huffman flag position (highest bit in prefix) */
-#define QPACK_STRING_HUFFMAN_FLAG 0x80
-
-/* Conservative Huffman decode buffer ratio (worst-case is ~1.6x) */
-#define QPACK_HUFFMAN_DECODE_RATIO 2
+const Except_T SocketQPACK_Error
+    = { &SocketQPACK_Error, "QPACK compression error" };
 
 /* ============================================================================
  * Result Strings
@@ -50,155 +59,392 @@
 
 static const char *result_strings[] = {
   [QPACK_OK] = "OK",
-  [QPACK_ERROR] = "Generic error",
   [QPACK_INCOMPLETE] = "Incomplete - need more data",
-  [QPACK_ERROR_INTEGER] = "Integer overflow or invalid encoding",
-  [QPACK_ERROR_HUFFMAN] = "Huffman encoding/decoding error",
-  [QPACK_ERROR_BUFFER] = "Output buffer too small",
-  [QPACK_ERROR_PREFIX] = "Invalid prefix bits (must be 3-8)",
-  [QPACK_ERROR_NULL] = "NULL pointer argument",
+  [QPACK_ERROR] = "Generic error",
+  [QPACK_ERROR_INVALID_INDEX] = "Invalid relative index",
+  [QPACK_ERROR_TABLE_FULL] = "Dynamic table capacity exhausted",
+  [QPACK_ERROR_PARSE] = "Malformed wire format",
+  [QPACK_ERROR_ENCODER_STREAM] = "Encoder stream error",
+  [QPACK_ERROR_DECODER_STREAM] = "Decoder stream error",
 };
 
 const char *
 SocketQPACK_result_string (SocketQPACK_Result result)
 {
-  if (result < 0 || result > QPACK_ERROR_NULL)
+  if (result > QPACK_ERROR_DECODER_STREAM)
     return "Unknown error";
   return result_strings[result];
 }
 
 /* ============================================================================
- * Validation Helpers
+ * Dynamic Table Structure
  * ============================================================================
  */
 
-static inline int
-valid_prefix_bits (int prefix_bits)
+struct SocketQPACK_Table
 {
-  return prefix_bits >= SOCKETQPACK_PREFIX_MIN
-         && prefix_bits <= SOCKETQPACK_PREFIX_MAX;
+  QPACK_DynamicEntry *entries; /**< Circular buffer of entries. */
+  size_t capacity;             /**< Number of entry slots (power of 2). */
+  size_t head;                 /**< Index of oldest entry. */
+  size_t tail;                 /**< Index for next insertion. */
+  size_t count;                /**< Current number of entries. */
+  size_t size;                 /**< Current size in bytes. */
+  size_t max_capacity;         /**< Maximum allowed size in bytes. */
+  size_t insertion_count;      /**< Total entries ever inserted (abs index). */
+  Arena_T arena;               /**< Memory arena for allocations. */
+};
+
+/* ============================================================================
+ * Internal Helpers
+ * ============================================================================
+ */
+
+size_t
+SocketQPACK_entry_size (size_t name_len, size_t value_len)
+{
+  size_t temp;
+  if (SocketSecurity_check_add (name_len, value_len, &temp)
+      && SocketSecurity_check_add (temp, SOCKETQPACK_ENTRY_OVERHEAD, &temp))
+    {
+      return temp;
+    }
+  return SIZE_MAX;
+}
+
+static int
+qpack_validate_table (const SocketQPACK_Table_T table, const char *func)
+{
+  if (table == NULL)
+    return 0;
+  (void)func;
+  return 1;
+}
+
+static inline int
+qpack_valid_prefix_bits (int prefix_bits)
+{
+  return prefix_bits >= 1 && prefix_bits <= 8;
+}
+
+/**
+ * Calculate initial capacity (power-of-2) based on max size.
+ */
+static size_t
+qpack_initial_capacity (size_t max_size)
+{
+  size_t est_entries;
+
+  if (max_size == 0)
+    return QPACK_MIN_TABLE_CAPACITY;
+
+  est_entries = max_size / QPACK_AVERAGE_ENTRY_SIZE;
+  if (est_entries < QPACK_MIN_TABLE_CAPACITY)
+    est_entries = QPACK_MIN_TABLE_CAPACITY;
+
+  /* Round up to power of 2 using compiler intrinsic */
+  return NEXT_POW2_32 ((uint32_t)est_entries);
+}
+
+/**
+ * Convert relative index to slot index in circular buffer.
+ * Relative index 0 = newest (tail - 1), higher = older toward head.
+ */
+static inline size_t
+qpack_rel_to_slot (const SocketQPACK_Table_T table, size_t rel_index)
+{
+  /* tail points to next insertion slot, so newest is at tail-1 */
+  size_t offset = rel_index;
+  return RINGBUF_WRAP (table->tail + table->capacity - 1 - offset,
+                       table->capacity);
+}
+
+/**
+ * Evict oldest entries until required_space can fit.
+ */
+static size_t
+qpack_table_evict (SocketQPACK_Table_T table, size_t required_space)
+{
+  size_t evicted = 0;
+
+  while (table->count > 0 && table->size + required_space > table->max_capacity)
+    {
+      QPACK_DynamicEntry *entry = &table->entries[table->head];
+      size_t entry_size
+          = SocketQPACK_entry_size (entry->name_len, entry->value_len);
+
+      if (entry_size > table->size)
+        {
+          /* Corruption detected - reset table */
+          table->size = 0;
+          table->count = 0;
+          return evicted;
+        }
+
+      table->size -= entry_size;
+      table->head = RINGBUF_WRAP (table->head + 1, table->capacity);
+      table->count--;
+      evicted++;
+    }
+
+  return evicted;
+}
+
+/**
+ * Clear the table without resetting insertion count.
+ */
+static void
+qpack_table_clear (SocketQPACK_Table_T table)
+{
+  assert (table != NULL);
+  table->head = 0;
+  table->tail = 0;
+  table->count = 0;
+  table->size = 0;
+  /* Note: insertion_count is NOT reset - absolute indices are monotonic */
+}
+
+/**
+ * Duplicate string into arena.
+ */
+static char *
+qpack_strdup (Arena_T arena, const char *str, size_t len)
+{
+  char *copy;
+
+  if (str == NULL || len == 0)
+    {
+      copy = ALLOC (arena, 1);
+      if (copy)
+        copy[0] = '\0';
+      return copy;
+    }
+
+  copy = ALLOC (arena, len + 1);
+  if (copy == NULL)
+    return NULL;
+
+  memcpy (copy, str, len);
+  copy[len] = '\0';
+  return copy;
 }
 
 /* ============================================================================
- * Integer Encoding (RFC 9204 Section 4.1.1)
+ * Dynamic Table Implementation
  * ============================================================================
  */
 
-/**
- * Encode continuation bytes for values that exceed prefix capacity.
- */
-static size_t
-encode_int_continuation (uint64_t value,
-                         unsigned char *output,
-                         size_t pos,
-                         size_t output_size)
+SocketQPACK_Table_T
+SocketQPACK_Table_new (size_t max_capacity, Arena_T arena)
 {
-  while (value >= QPACK_INT_CONTINUATION_VAL && pos < output_size)
+  SocketQPACK_Table_T table;
+  size_t initial_cap;
+
+  assert (arena != NULL);
+
+  table = ALLOC (arena, sizeof (*table));
+  if (table == NULL)
+    RAISE (SocketQPACK_Error);
+
+  initial_cap = qpack_initial_capacity (max_capacity);
+
+  table->entries = CALLOC (arena, initial_cap, sizeof (QPACK_DynamicEntry));
+  if (table->entries == NULL)
+    RAISE (SocketQPACK_Error);
+
+  table->capacity = initial_cap;
+  table->head = 0;
+  table->tail = 0;
+  table->count = 0;
+  table->size = 0;
+  table->max_capacity = max_capacity;
+  table->insertion_count = 0;
+  table->arena = arena;
+
+  return table;
+}
+
+void
+SocketQPACK_Table_free (SocketQPACK_Table_T *table)
+{
+  if (table == NULL || *table == NULL)
+    return;
+  /* Arena handles all memory - just NULL the pointer */
+  *table = NULL;
+}
+
+size_t
+SocketQPACK_Table_size (SocketQPACK_Table_T table)
+{
+  if (!qpack_validate_table (table, "Table_size"))
+    return 0;
+  return table->size;
+}
+
+size_t
+SocketQPACK_Table_count (SocketQPACK_Table_T table)
+{
+  if (!qpack_validate_table (table, "Table_count"))
+    return 0;
+  return table->count;
+}
+
+size_t
+SocketQPACK_Table_max_capacity (SocketQPACK_Table_T table)
+{
+  if (!qpack_validate_table (table, "Table_max_capacity"))
+    return 0;
+  return table->max_capacity;
+}
+
+size_t
+SocketQPACK_Table_insertion_count (SocketQPACK_Table_T table)
+{
+  if (!qpack_validate_table (table, "Table_insertion_count"))
+    return 0;
+  return table->insertion_count;
+}
+
+void
+SocketQPACK_Table_set_capacity (SocketQPACK_Table_T table, size_t max_capacity)
+{
+  if (!qpack_validate_table (table, "Table_set_capacity"))
+    return;
+
+  if (max_capacity > SOCKETQPACK_MAX_TABLE_CAPACITY)
+    max_capacity = SOCKETQPACK_MAX_TABLE_CAPACITY;
+
+  table->max_capacity = max_capacity;
+
+  if (max_capacity == 0)
+    qpack_table_clear (table);
+  else
+    qpack_table_evict (table, 0);
+}
+
+SocketQPACK_Result
+SocketQPACK_Table_get (SocketQPACK_Table_T table,
+                       size_t rel_index,
+                       SocketQPACK_FieldLine *field_line)
+{
+  QPACK_DynamicEntry *entry;
+  size_t slot;
+
+  if (table == NULL || field_line == NULL)
+    return QPACK_ERROR;
+
+  if (rel_index >= table->count)
+    return QPACK_ERROR_INVALID_INDEX;
+
+  slot = qpack_rel_to_slot (table, rel_index);
+  entry = &table->entries[slot];
+
+  field_line->name = entry->name;
+  field_line->name_len = entry->name_len;
+  field_line->value = entry->value;
+  field_line->value_len = entry->value_len;
+  field_line->never_index = 0;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_Table_add (SocketQPACK_Table_T table,
+                       const char *name,
+                       size_t name_len,
+                       const char *value,
+                       size_t value_len)
+{
+  size_t entry_size;
+  QPACK_DynamicEntry *entry;
+
+  if (table == NULL)
+    return QPACK_ERROR;
+
+  if ((name == NULL && name_len != 0) || (value == NULL && value_len != 0))
+    return QPACK_ERROR;
+
+  entry_size = SocketQPACK_entry_size (name_len, value_len);
+  if (entry_size == SIZE_MAX)
+    return QPACK_ERROR;
+
+  /* If entry is larger than max capacity, clear table per RFC 9204 */
+  if (entry_size > table->max_capacity)
     {
-      output[pos++] = (unsigned char)(QPACK_INT_CONTINUATION_MASK
-                                      | (value & QPACK_INT_PAYLOAD_MASK));
+      qpack_table_clear (table);
+      table->insertion_count++;
+      return QPACK_OK;
+    }
+
+  /* Evict entries to make room */
+  qpack_table_evict (table, entry_size);
+
+  /* Insert at tail */
+  entry = &table->entries[table->tail];
+  entry->name = qpack_strdup (table->arena, name, name_len);
+  entry->value = qpack_strdup (table->arena, value, value_len);
+
+  if ((name_len > 0 && entry->name == NULL)
+      || (value_len > 0 && entry->value == NULL))
+    return QPACK_ERROR;
+
+  entry->name_len = name_len;
+  entry->value_len = value_len;
+  entry->abs_index = table->insertion_count;
+
+  table->tail = RINGBUF_WRAP (table->tail + 1, table->capacity);
+  table->count++;
+  table->size += entry_size;
+  table->insertion_count++;
+
+  return QPACK_OK;
+}
+
+/* ============================================================================
+ * Integer Encoding (RFC 7541 Section 5.1, used by QPACK)
+ * ============================================================================
+ */
+
+size_t
+SocketQPACK_int_encode (uint64_t value,
+                        int prefix_bits,
+                        uint8_t *output,
+                        size_t output_size)
+{
+  uint64_t max_prefix;
+  size_t pos;
+
+  if (output == NULL || output_size == 0
+      || !qpack_valid_prefix_bits (prefix_bits))
+    return 0;
+
+  max_prefix = ((uint64_t)1 << prefix_bits) - 1;
+
+  if (value < max_prefix)
+    {
+      output[0] = (uint8_t)value;
+      return 1;
+    }
+
+  output[0] = (uint8_t)max_prefix;
+  value -= max_prefix;
+  pos = 1;
+
+  while (value >= QPACK_INT_CONTINUATION_VALUE && pos < output_size)
+    {
+      output[pos++] = (uint8_t)(QPACK_INT_CONTINUATION_MASK
+                                | (value & QPACK_INT_PAYLOAD_MASK));
       value >>= 7;
     }
 
   if (pos >= output_size)
     return 0;
 
-  output[pos++] = (unsigned char)value;
+  output[pos++] = (uint8_t)value;
   return pos;
 }
 
-ssize_t
-SocketQPACK_int_encode (uint64_t value,
-                        int prefix_bits,
-                        unsigned char *output,
-                        size_t output_size)
-{
-  uint64_t max_prefix;
-
-  if (output == NULL)
-    return -1;
-
-  if (output_size == 0)
-    return -1;
-
-  if (!valid_prefix_bits (prefix_bits))
-    return -1;
-
-  /* Check maximum representable value */
-  if (value > SOCKETQPACK_INT_MAX)
-    return -1;
-
-  /* Calculate maximum value that fits in prefix */
-  max_prefix = ((uint64_t)1 << prefix_bits) - 1;
-
-  /* Value fits in prefix - single byte encoding */
-  if (value < max_prefix)
-    {
-      output[0] = (unsigned char)value;
-      return 1;
-    }
-
-  /* Value exceeds prefix - use continuation bytes */
-  output[0] = (unsigned char)max_prefix;
-  size_t result
-      = encode_int_continuation (value - max_prefix, output, 1, output_size);
-  if (result == 0)
-    return -1;
-
-  return (ssize_t)result;
-}
-
-/* ============================================================================
- * Integer Decoding (RFC 9204 Section 4.1.1)
- * ============================================================================
- */
-
-/**
- * Decode continuation bytes for multi-byte integers.
- */
-static SocketQPACK_Result
-decode_int_continuation (const unsigned char *input,
-                         size_t input_len,
-                         size_t *pos,
-                         uint64_t *result,
-                         unsigned int *shift)
-{
-  uint64_t byte_val;
-  unsigned int continuation_count = 0;
-
-  do
-    {
-      if (*pos >= input_len)
-        return QPACK_INCOMPLETE;
-
-      continuation_count++;
-      if (continuation_count > QPACK_MAX_INT_CONTINUATION_BYTES)
-        return QPACK_ERROR_INTEGER;
-
-      byte_val = input[(*pos)++];
-
-      /* Check for overflow before shifting */
-      if (*shift > QPACK_MAX_SAFE_SHIFT)
-        return QPACK_ERROR_INTEGER;
-
-      uint64_t add_val = (byte_val & QPACK_INT_PAYLOAD_MASK) << *shift;
-      if (*result > UINT64_MAX - add_val)
-        return QPACK_ERROR_INTEGER;
-
-      *result += add_val;
-      *shift += 7;
-    }
-  while (byte_val & QPACK_INT_CONTINUATION_MASK);
-
-  /* Final overflow check against QPACK maximum */
-  if (*result > SOCKETQPACK_INT_MAX)
-    return QPACK_ERROR_INTEGER;
-
-  return QPACK_OK;
-}
-
 SocketQPACK_Result
-SocketQPACK_int_decode (const unsigned char *input,
+SocketQPACK_int_decode (const uint8_t *input,
                         size_t input_len,
                         int prefix_bits,
                         uint64_t *value,
@@ -208,21 +454,20 @@ SocketQPACK_int_decode (const unsigned char *input,
   uint64_t max_prefix;
   uint64_t result;
   unsigned int shift = 0;
+  unsigned int continuation_count = 0;
 
   if (input == NULL || value == NULL || consumed == NULL)
-    return QPACK_ERROR_NULL;
+    return QPACK_ERROR;
 
   if (input_len == 0)
     return QPACK_INCOMPLETE;
 
-  if (!valid_prefix_bits (prefix_bits))
-    return QPACK_ERROR_PREFIX;
+  if (!qpack_valid_prefix_bits (prefix_bits))
+    return QPACK_ERROR_PARSE;
 
-  /* Extract prefix mask and initial value */
   max_prefix = ((uint64_t)1 << prefix_bits) - 1;
   result = input[pos++] & max_prefix;
 
-  /* Single-byte encoding: value fits in prefix */
   if (result < max_prefix)
     {
       *value = result;
@@ -230,11 +475,32 @@ SocketQPACK_int_decode (const unsigned char *input,
       return QPACK_OK;
     }
 
-  /* Multi-byte encoding: decode continuation bytes */
-  SocketQPACK_Result cont_result
-      = decode_int_continuation (input, input_len, &pos, &result, &shift);
-  if (cont_result != QPACK_OK)
-    return cont_result;
+  /* Multi-byte encoding */
+  do
+    {
+      if (pos >= input_len)
+        return QPACK_INCOMPLETE;
+
+      continuation_count++;
+      if (continuation_count > QPACK_INT_MAX_CONTINUATION)
+        return QPACK_ERROR_PARSE;
+
+      uint8_t byte_val = input[pos++];
+
+      if (shift > QPACK_INT_MAX_SHIFT)
+        return QPACK_ERROR_PARSE;
+
+      uint64_t add_val = (uint64_t)(byte_val & QPACK_INT_PAYLOAD_MASK) << shift;
+      if (result > UINT64_MAX - add_val)
+        return QPACK_ERROR_PARSE;
+
+      result += add_val;
+      shift += 7;
+
+      if (!(byte_val & QPACK_INT_CONTINUATION_MASK))
+        break;
+    }
+  while (1);
 
   *value = result;
   *consumed = pos;
@@ -242,255 +508,92 @@ SocketQPACK_int_decode (const unsigned char *input,
 }
 
 /* ============================================================================
- * Integer Size Calculation
+ * Duplicate Instruction (RFC 9204 Section 4.3.4)
  * ============================================================================
  */
 
 size_t
-SocketQPACK_int_size (uint64_t value, int prefix_bits)
+SocketQPACK_encode_duplicate (size_t rel_index,
+                              uint8_t *output,
+                              size_t output_size)
 {
-  uint64_t max_prefix;
-  size_t size;
+  uint8_t int_buf[16];
+  size_t int_len;
 
-  if (!valid_prefix_bits (prefix_bits))
+  if (output == NULL || output_size == 0)
     return 0;
 
-  if (value > SOCKETQPACK_INT_MAX)
+  /* Encode relative index with 5-bit prefix */
+  int_len = SocketQPACK_int_encode (
+      (uint64_t)rel_index, QPACK_DUPLICATE_PREFIX, int_buf, sizeof (int_buf));
+  if (int_len == 0 || int_len > output_size)
     return 0;
 
-  max_prefix = ((uint64_t)1 << prefix_bits) - 1;
+  /* Apply the 3-bit pattern (000) to first byte */
+  output[0] = (uint8_t)(QPACK_DUPLICATE_PATTERN | int_buf[0]);
 
-  /* Value fits in prefix */
-  if (value < max_prefix)
-    return 1;
-
-  /* Count continuation bytes needed */
-  size = 1; /* prefix byte */
-  value -= max_prefix;
-  while (value >= QPACK_INT_CONTINUATION_VAL)
-    {
-      size++;
-      value >>= 7;
-    }
-  size++; /* final byte */
-
-  return size;
-}
-
-/* ============================================================================
- * String Encoding (RFC 9204 Section 4.1.2)
- * ============================================================================
- */
-
-/**
- * Encode integer with flag bit in the appropriate position.
- * The flag is placed at position (8 - prefix_bits) in the first byte.
- */
-static ssize_t
-encode_int_with_flag (uint64_t value,
-                      int prefix_bits,
-                      unsigned char flag,
-                      unsigned char *output,
-                      size_t output_size)
-{
-  ssize_t int_len
-      = SocketQPACK_int_encode (value, prefix_bits, output, output_size);
-  if (int_len <= 0)
-    return -1;
-
-  /* Set flag bit in the position determined by prefix_bits.
-   * For prefix_bits=7, the Huffman flag is at bit 7 (0x80).
-   * For prefix_bits=6, it's at bit 6 (0x40), etc. */
-  unsigned char flag_mask = (unsigned char)(1 << (prefix_bits));
-  if (flag)
-    output[0] |= flag_mask;
+  /* Copy continuation bytes if any */
+  for (size_t i = 1; i < int_len; i++)
+    output[i] = int_buf[i];
 
   return int_len;
 }
 
-ssize_t
-SocketQPACK_string_encode (const unsigned char *input,
-                           size_t input_len,
-                           int use_huffman,
-                           int prefix_bits,
-                           unsigned char *output,
-                           size_t output_size)
-{
-  size_t pos = 0;
-  ssize_t encoded;
-  size_t data_len = input_len;
-  int use_huffman_actual = 0;
-
-  if (output == NULL)
-    return -1;
-
-  if (output_size == 0)
-    return -1;
-
-  if (!valid_prefix_bits (prefix_bits))
-    return -1;
-
-  /* For non-empty strings, check if Huffman compression helps */
-  if (use_huffman && input != NULL && input_len > 0)
-    {
-      size_t huffman_size = SocketHPACK_huffman_encoded_size (input, input_len);
-      if (huffman_size < input_len)
-        {
-          data_len = huffman_size;
-          use_huffman_actual = 1;
-        }
-    }
-
-  /* Encode length with Huffman flag */
-  encoded = encode_int_with_flag (data_len,
-                                  prefix_bits,
-                                  (unsigned char)use_huffman_actual,
-                                  output,
-                                  output_size);
-  if (encoded < 0)
-    return -1;
-  pos = (size_t)encoded;
-
-  /* Encode string data */
-  if (input_len > 0)
-    {
-      if (input == NULL)
-        return -1;
-
-      if (use_huffman_actual)
-        {
-          encoded = SocketHPACK_huffman_encode (
-              input, input_len, output + pos, output_size - pos);
-          if (encoded < 0)
-            return -1;
-        }
-      else
-        {
-          if (pos + input_len > output_size)
-            return -1;
-          memcpy (output + pos, input, input_len);
-          encoded = (ssize_t)input_len;
-        }
-      pos += (size_t)encoded;
-    }
-
-  return (ssize_t)pos;
-}
-
-/* ============================================================================
- * String Decoding (RFC 9204 Section 4.1.2)
- * ============================================================================
- */
-
 SocketQPACK_Result
-SocketQPACK_string_decode (const unsigned char *input,
-                           size_t input_len,
-                           int prefix_bits,
-                           unsigned char *output,
-                           size_t output_size,
-                           size_t *decoded_len,
-                           size_t *consumed)
+SocketQPACK_decode_duplicate (const uint8_t *input,
+                              size_t input_len,
+                              size_t *rel_index,
+                              size_t *consumed)
 {
-  size_t pos = 0;
-  int huffman;
-  uint64_t str_len;
+  uint64_t value;
   SocketQPACK_Result result;
 
-  if (input == NULL || decoded_len == NULL || consumed == NULL)
-    return QPACK_ERROR_NULL;
-
-  if (!valid_prefix_bits (prefix_bits))
-    return QPACK_ERROR_PREFIX;
+  if (input == NULL || rel_index == NULL || consumed == NULL)
+    return QPACK_ERROR;
 
   if (input_len == 0)
     return QPACK_INCOMPLETE;
 
-  /* Extract Huffman flag from first byte */
-  unsigned char flag_mask = (unsigned char)(1 << prefix_bits);
-  huffman = (input[0] & flag_mask) != 0;
+  /* Verify this is a duplicate instruction (top 3 bits = 000) */
+  if ((input[0] & QPACK_DUPLICATE_MASK) != QPACK_DUPLICATE_PATTERN)
+    return QPACK_ERROR_PARSE;
 
-  /* Decode string length */
-  result
-      = SocketQPACK_int_decode (input, input_len, prefix_bits, &str_len, &pos);
+  /* Decode 5-bit prefix integer */
+  result = SocketQPACK_int_decode (
+      input, input_len, QPACK_DUPLICATE_PREFIX, &value, consumed);
   if (result != QPACK_OK)
     return result;
 
-  /* Validate string length */
-  if (str_len > SIZE_MAX)
-    return QPACK_ERROR_INTEGER;
+  /* Check for size_t overflow on 32-bit systems */
+  if (value > SIZE_MAX)
+    return QPACK_ERROR_PARSE;
 
-  size_t len = (size_t)str_len;
-
-  /* Check if we have enough input data */
-  if (pos + len > input_len)
-    return QPACK_INCOMPLETE;
-
-  /* Handle empty string */
-  if (len == 0)
-    {
-      *decoded_len = 0;
-      *consumed = pos;
-      return QPACK_OK;
-    }
-
-  /* Output buffer is required for non-empty strings */
-  if (output == NULL)
-    return QPACK_ERROR_NULL;
-
-  /* Decode string data */
-  if (huffman)
-    {
-      /* Huffman-decode the string */
-      ssize_t decoded
-          = SocketHPACK_huffman_decode (input + pos, len, output, output_size);
-      if (decoded < 0)
-        return QPACK_ERROR_HUFFMAN;
-
-      *decoded_len = (size_t)decoded;
-    }
-  else
-    {
-      /* Plain text - just copy */
-      if (len > output_size)
-        return QPACK_ERROR_BUFFER;
-
-      memcpy (output, input + pos, len);
-      *decoded_len = len;
-    }
-
-  *consumed = pos + len;
+  *rel_index = (size_t)value;
   return QPACK_OK;
 }
 
-/* ============================================================================
- * String Size Calculation
- * ============================================================================
- */
-
-size_t
-SocketQPACK_string_size (const unsigned char *input,
-                         size_t input_len,
-                         int use_huffman,
-                         int prefix_bits)
+SocketQPACK_Result
+SocketQPACK_process_duplicate (SocketQPACK_Table_T table, size_t rel_index)
 {
-  size_t data_len = input_len;
-  size_t header_len;
+  SocketQPACK_FieldLine field_line;
+  SocketQPACK_Result result;
 
-  if (!valid_prefix_bits (prefix_bits))
-    return 0;
+  if (table == NULL)
+    return QPACK_ERROR;
 
-  /* Check if Huffman compression reduces size */
-  if (use_huffman && input != NULL && input_len > 0)
-    {
-      size_t huffman_size = SocketHPACK_huffman_encoded_size (input, input_len);
-      if (huffman_size < input_len)
-        data_len = huffman_size;
-    }
+  /* Get the entry to duplicate */
+  result = SocketQPACK_Table_get (table, rel_index, &field_line);
+  if (result != QPACK_OK)
+    return result;
 
-  /* Calculate header (length prefix) size */
-  header_len = SocketQPACK_int_size (data_len, prefix_bits);
-  if (header_len == 0)
-    return 0;
+  /* Insert a copy at the end of the table */
+  result = SocketQPACK_Table_add (table,
+                                  field_line.name,
+                                  field_line.name_len,
+                                  field_line.value,
+                                  field_line.value_len);
 
-  return header_len + data_len;
+  return result;
 }
+
+#undef T
