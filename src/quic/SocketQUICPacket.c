@@ -11,12 +11,36 @@
  * packet types: Initial, 0-RTT, Handshake, Retry, and 1-RTT.
  */
 
+#include <limits.h>
 #include <string.h>
 
 #include "quic/SocketQUICPacket.h"
 #include "quic/SocketQUICVarInt.h"
 #include "quic/SocketQUICConstants.h"
 #include "core/SocketUtil.h"
+
+#ifdef SOCKET_HAS_TLS
+#include <openssl/evp.h>
+#include <openssl/crypto.h>
+#endif
+
+/* ============================================================================
+ * RFC 9001 §5.8 - Retry Packet Integrity Constants
+ *
+ * Fixed key and nonce for computing Retry packet integrity tags.
+ * Derived from HKDF-Expand-Label with secret:
+ *   0xd9c9943e6101fd200021506bcc02814c73030f25c79d71ce876eca876e6fca8e
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_TLS
+static const uint8_t RETRY_KEY[16]
+    = { 0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a,
+        0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e };
+
+static const uint8_t RETRY_NONCE[12] = { 0x46, 0x15, 0x99, 0xd3, 0x5d, 0x63,
+                                         0x2b, 0xf2, 0x23, 0x98, 0x25, 0xbb };
+#endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
  * Result String Table
@@ -874,3 +898,224 @@ SocketQUICPacket_decode_pn (uint32_t truncated_pn,
 
   return candidate_pn;
 }
+
+/* ============================================================================
+ * Retry Packet Integrity (RFC 9001 §5.8)
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_TLS
+
+/**
+ * @brief Build Retry pseudo-packet for AEAD AAD.
+ *
+ * The pseudo-packet format per RFC 9001 §5.8:
+ *   ODCID Length (1 byte)
+ *   Original Destination Connection ID (0..20 bytes)
+ *   Retry packet header and payload (without integrity tag)
+ *
+ * @param odcid           Original Destination Connection ID.
+ * @param retry_packet    Retry packet data (without integrity tag).
+ * @param retry_packet_len Length of retry packet.
+ * @param pseudo_packet   Output buffer (must be at least
+ *                        1 + QUIC_CONNECTION_ID_MAX_LEN + retry_packet_len).
+ * @param pseudo_packet_len Output: actual length written.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+build_retry_pseudo_packet (const SocketQUICConnectionID_T *odcid,
+                           const uint8_t *retry_packet,
+                           size_t retry_packet_len,
+                           uint8_t *pseudo_packet,
+                           size_t *pseudo_packet_len)
+{
+  size_t offset = 0;
+
+  if (odcid == NULL || retry_packet == NULL || pseudo_packet == NULL
+      || pseudo_packet_len == NULL)
+    return -1;
+
+  if (odcid->len > QUIC_CONNID_MAX_LEN)
+    return -1;
+
+  /* Write ODCID length (1 byte) */
+  pseudo_packet[offset++] = odcid->len;
+
+  /* Write ODCID data */
+  if (odcid->len > 0)
+    {
+      memcpy (pseudo_packet + offset, odcid->data, odcid->len);
+      offset += odcid->len;
+    }
+
+  /* Write retry packet (without integrity tag) */
+  memcpy (pseudo_packet + offset, retry_packet, retry_packet_len);
+  offset += retry_packet_len;
+
+  *pseudo_packet_len = offset;
+  return 0;
+}
+
+/**
+ * @brief Compute AEAD tag using fixed Retry key and nonce.
+ *
+ * Uses AEAD_AES_128_GCM with empty plaintext. The AAD is the
+ * Retry pseudo-packet.
+ *
+ * @param aad     Associated data (Retry pseudo-packet).
+ * @param aad_len Length of AAD.
+ * @param tag     Output: 16-byte integrity tag.
+ *
+ * @return QUIC_PACKET_OK on success, error code otherwise.
+ */
+static SocketQUICPacket_Result
+compute_retry_aead_tag (const uint8_t *aad,
+                        size_t aad_len,
+                        uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN])
+{
+  EVP_CIPHER_CTX *ctx = NULL;
+  int len;
+  int ret = QUIC_PACKET_ERROR_INVALID;
+
+  if (aad == NULL || tag == NULL)
+    return QUIC_PACKET_ERROR_NULL;
+
+  /* Prevent overflow when casting to int for OpenSSL API */
+  if (aad_len > INT_MAX)
+    return QUIC_PACKET_ERROR_BUFFER;
+
+  ctx = EVP_CIPHER_CTX_new ();
+  if (ctx == NULL)
+    return QUIC_PACKET_ERROR_INVALID;
+
+  /* Initialize AES-128-GCM encryption */
+  if (EVP_EncryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) != 1)
+    goto cleanup;
+
+  /* Set IV length to 12 bytes */
+  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN, 12, NULL) != 1)
+    goto cleanup;
+
+  /* Set key and nonce */
+  if (EVP_EncryptInit_ex (ctx, NULL, NULL, RETRY_KEY, RETRY_NONCE) != 1)
+    goto cleanup;
+
+  /* Provide AAD (no output for AAD) */
+  if (EVP_EncryptUpdate (ctx, NULL, &len, aad, (int)aad_len) != 1)
+    goto cleanup;
+
+  /* Finalize encryption (empty plaintext) */
+  if (EVP_EncryptFinal_ex (ctx, NULL, &len) != 1)
+    goto cleanup;
+
+  /* Get the authentication tag */
+  if (EVP_CIPHER_CTX_ctrl (
+          ctx, EVP_CTRL_GCM_GET_TAG, QUIC_RETRY_INTEGRITY_TAG_LEN, tag)
+      != 1)
+    goto cleanup;
+
+  ret = QUIC_PACKET_OK;
+
+cleanup:
+  EVP_CIPHER_CTX_free (ctx);
+  return ret;
+}
+
+SocketQUICPacket_Result
+SocketQUICPacket_compute_retry_tag (const SocketQUICConnectionID_T *odcid,
+                                    const uint8_t *retry_packet,
+                                    size_t retry_packet_len,
+                                    uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN])
+{
+  /*
+   * Maximum pseudo-packet size:
+   * 1 (ODCID length) + 20 (max ODCID) + retry_packet_len
+   *
+   * We use a stack buffer for reasonable sizes, with bounds check.
+   */
+  uint8_t pseudo_packet[1 + QUIC_CONNID_MAX_LEN + 1500];
+  size_t pseudo_packet_len;
+
+  if (odcid == NULL || retry_packet == NULL || tag == NULL)
+    return QUIC_PACKET_ERROR_NULL;
+
+  /* Bounds check for our stack buffer */
+  if (retry_packet_len > 1500)
+    return QUIC_PACKET_ERROR_BUFFER;
+
+  /* Build the pseudo-packet (AAD) */
+  if (build_retry_pseudo_packet (odcid,
+                                 retry_packet,
+                                 retry_packet_len,
+                                 pseudo_packet,
+                                 &pseudo_packet_len)
+      != 0)
+    return QUIC_PACKET_ERROR_INVALID;
+
+  /* Compute the AEAD tag */
+  return compute_retry_aead_tag (pseudo_packet, pseudo_packet_len, tag);
+}
+
+SocketQUICPacket_Result
+SocketQUICPacket_verify_retry_tag (const SocketQUICConnectionID_T *odcid,
+                                   const uint8_t *retry_packet,
+                                   size_t retry_packet_len)
+{
+  uint8_t computed_tag[QUIC_RETRY_INTEGRITY_TAG_LEN];
+  const uint8_t *expected_tag;
+  size_t packet_without_tag_len;
+  SocketQUICPacket_Result result;
+
+  if (odcid == NULL || retry_packet == NULL)
+    return QUIC_PACKET_ERROR_NULL;
+
+  /* Retry packet must have at least the 16-byte integrity tag */
+  if (retry_packet_len < QUIC_RETRY_INTEGRITY_TAG_LEN)
+    return QUIC_PACKET_ERROR_TRUNCATED;
+
+  /* Split packet: data before tag and the tag itself */
+  packet_without_tag_len = retry_packet_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
+  expected_tag = retry_packet + packet_without_tag_len;
+
+  /* Compute tag over packet without the trailing tag */
+  result = SocketQUICPacket_compute_retry_tag (
+      odcid, retry_packet, packet_without_tag_len, computed_tag);
+  if (result != QUIC_PACKET_OK)
+    return result;
+
+  /* Constant-time comparison to prevent timing attacks */
+  if (CRYPTO_memcmp (computed_tag, expected_tag, QUIC_RETRY_INTEGRITY_TAG_LEN)
+      != 0)
+    return QUIC_PACKET_ERROR_INVALID;
+
+  return QUIC_PACKET_OK;
+}
+
+#else /* !SOCKET_HAS_TLS */
+
+SocketQUICPacket_Result
+SocketQUICPacket_compute_retry_tag (const SocketQUICConnectionID_T *odcid,
+                                    const uint8_t *retry_packet,
+                                    size_t retry_packet_len,
+                                    uint8_t tag[QUIC_RETRY_INTEGRITY_TAG_LEN])
+{
+  (void)odcid;
+  (void)retry_packet;
+  (void)retry_packet_len;
+  (void)tag;
+  return QUIC_PACKET_ERROR_INVALID; /* TLS support required */
+}
+
+SocketQUICPacket_Result
+SocketQUICPacket_verify_retry_tag (const SocketQUICConnectionID_T *odcid,
+                                   const uint8_t *retry_packet,
+                                   size_t retry_packet_len)
+{
+  (void)odcid;
+  (void)retry_packet;
+  (void)retry_packet_len;
+  return QUIC_PACKET_ERROR_INVALID; /* TLS support required */
+}
+
+#endif /* SOCKET_HAS_TLS */
