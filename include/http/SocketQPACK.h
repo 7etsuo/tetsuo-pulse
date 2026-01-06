@@ -6,16 +6,22 @@
 
 /**
  * @file SocketQPACK.h
- * @brief QPACK field compression for HTTP/3 (RFC 9204).
+ * @brief QPACK header compression/decompression for HTTP/3 (RFC 9204).
  *
- * Implements QPACK algorithm with static table (99 entries), dynamic table
- * with out-of-order delivery support, and Huffman encoding. Uses 0-based
- * indexing (unlike HPACK's 1-based indexing).
+ * Implements RFC 9204 Section 6 - Error Handling. QPACK is the header
+ * compression format used by HTTP/3, evolved from HPACK (RFC 7541) to work
+ * with QUIC's out-of-order delivery.
+ *
+ * Error codes:
+ *   - 0x0200: QPACK_DECOMPRESSION_FAILED - decoder cannot interpret field
+ * section
+ *   - 0x0201: QPACK_ENCODER_STREAM_ERROR - invalid encoder stream instruction
+ *   - 0x0202: QPACK_DECODER_STREAM_ERROR - invalid decoder stream instruction
  *
  * Thread Safety: Encoder/decoder instances are NOT thread-safe. One instance
- * per connection/thread recommended. Static table functions are thread-safe.
+ * per connection/thread recommended. Static functions are thread-safe.
  *
- * @defgroup qpack QPACK Field Compression Module
+ * @defgroup qpack QPACK Header Compression Module
  * @{
  * @see https://www.rfc-editor.org/rfc/rfc9204
  */
@@ -26,120 +32,268 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/**
- * @brief Number of entries in the QPACK static table.
- *
- * RFC 9204 Section 3.1 and Appendix A define exactly 99 predefined field line
- * entries with indices 0-98.
+#include "core/Except.h"
+
+/* ============================================================================
+ * QPACK Result Codes (Internal Error Handling)
+ * ============================================================================
  */
-#define SOCKETQPACK_STATIC_TABLE_SIZE 99
 
 /**
- * @brief QPACK entry overhead (per RFC 9204 Section 3.2.1).
+ * @brief Internal QPACK operation result codes.
  *
- * Each entry has an overhead of 32 bytes for the entry structure,
- * in addition to the name and value lengths.
- */
-#define SOCKETQPACK_ENTRY_OVERHEAD 32
-
-/**
- * @brief Result codes for QPACK operations.
+ * These codes provide granular error information for internal API calls.
+ * They are mapped to HTTP/3 error codes (0x0200-0x0202) when errors need
+ * to be communicated over the wire via QUIC CONNECTION_CLOSE frames.
  */
 typedef enum
 {
-  SOCKETQPACK_OK = 0,              /**< Operation succeeded */
-  SOCKETQPACK_ERROR_INVALID_INDEX, /**< Index out of valid range */
-  SOCKETQPACK_ERROR_NOT_FOUND      /**< No matching entry found */
+  /** Operation completed successfully. */
+  QPACK_OK = 0,
+
+  /** Need more data to complete operation. */
+  QPACK_INCOMPLETE,
+
+  /** Waiting for dynamic table state from encoder stream. */
+  QPACK_BLOCKED,
+
+  /** Generic error (unspecified). */
+  QPACK_ERROR,
+
+  /** Invalid static or dynamic table index. */
+  QPACK_ERROR_INVALID_INDEX,
+
+  /** Dynamic table capacity exceeds configured limit. */
+  QPACK_ERROR_INVALID_CAPACITY,
+
+  /** Huffman decoding error. */
+  QPACK_ERROR_HUFFMAN,
+
+  /** Integer decoding error (overflow or malformed). */
+  QPACK_ERROR_INTEGER,
+
+  /** String decoding error (length or encoding). */
+  QPACK_ERROR_STRING,
+
+  /** Individual header exceeds size limit. */
+  QPACK_ERROR_HEADER_SIZE,
+
+  /** Total header list exceeds size limit. */
+  QPACK_ERROR_LIST_SIZE,
+
+  /** Invalid Required Insert Count in encoded field section. */
+  QPACK_ERROR_REQUIRED_INSERT,
+
+  /** Invalid Base delta in encoded field section. */
+  QPACK_ERROR_BASE,
+
+  /**
+   * Duplicate encoder or decoder stream on connection.
+   * RFC 9204 §4.2: Maps to H3_STREAM_CREATION_ERROR (0x0101).
+   */
+  QPACK_ERROR_DUPLICATE_STREAM,
+
+  /**
+   * Critical unidirectional stream was closed.
+   * RFC 9204 §4.2: Maps to H3_CLOSED_CRITICAL_STREAM (0x0104).
+   */
+  QPACK_ERROR_STREAM_CLOSED,
+
+  /** Count of result codes (for array bounds checking). */
+  QPACK_RESULT_COUNT
+
 } SocketQPACK_Result;
 
-/**
- * @brief Static table entry structure.
- *
- * Contains the field name and value with precomputed lengths for efficient
- * lookup. All entries are immutable and have fixed indices per RFC 9204.
+/* ============================================================================
+ * HTTP/3 Error Codes (RFC 9204 Section 6)
+ * ============================================================================
  */
-typedef struct
-{
-  const char *name;  /**< Field name (case-insensitive per RFC 7230) */
-  size_t name_len;   /**< Length of name string */
-  const char *value; /**< Field value (may be empty string) */
-  size_t value_len;  /**< Length of value string */
-} SocketQPACK_StaticEntry;
 
 /**
- * @brief Retrieve a static table entry by 0-based index.
+ * @brief Duplicate critical stream error code.
  *
- * RFC 9204 Section 3.1: Static table uses 0-based indexing with 99 entries
- * (indices 0-98). The entries are predefined and immutable.
+ * RFC 9204 §4.2: "Receipt of a second instance of either stream type
+ * MUST be treated as a connection error of type H3_STREAM_CREATION_ERROR."
  *
- * @param index     0-based index into static table (0-98 valid)
- * @param entry_out Output pointer to receive the entry (must not be NULL)
- * @return SOCKETQPACK_OK on success
- * @return SOCKETQPACK_ERROR_INVALID_INDEX if index >= 99 or entry_out is NULL
+ * This is an HTTP/3 error code (RFC 9114), not a QPACK error code, but
+ * is used for QPACK stream management violations.
  */
-extern SocketQPACK_Result
-SocketQPACK_static_get (size_t index, SocketQPACK_StaticEntry *entry_out);
+#define H3_STREAM_CREATION_ERROR 0x0101
 
 /**
- * @brief Find static table entry matching name and value.
+ * @brief Critical stream closed error code.
  *
- * Searches the static table for an entry with matching field name and value.
- * Name comparison is case-insensitive per RFC 7230.
+ * RFC 9204 §4.2: "Closure of either unidirectional stream type MUST be
+ * treated as a connection error of type H3_CLOSED_CRITICAL_STREAM."
  *
- * @param name      Field name to match
- * @param name_len  Length of name
- * @param value     Field value to match (NULL to match name only)
- * @param value_len Length of value (ignored if value is NULL)
- * @return Index of matching entry (0-98) on exact match
- * @return -1 if no match found
- *
- * @note For name-only matching, pass NULL for value parameter.
+ * This is an HTTP/3 error code (RFC 9114), not a QPACK error code, but
+ * is used when the encoder or decoder stream is prematurely closed.
  */
-extern int SocketQPACK_static_find (const char *name,
-                                    size_t name_len,
-                                    const char *value,
-                                    size_t value_len);
+#define H3_CLOSED_CRITICAL_STREAM 0x0104
 
 /**
- * @brief Find static table entry matching name only.
+ * @brief QPACK decompression failed error code.
  *
- * Searches the static table for the first entry with matching field name.
- * Name comparison is case-insensitive per RFC 7230.
+ * RFC 9204 Section 6: "An error in the encoded data that indicates
+ * a violation of QPACK. This error is raised when the decoder cannot
+ * interpret an encoded field section."
  *
- * @param name     Field name to match
- * @param name_len Length of name
- * @return Index of first matching entry (0-98) on match
- * @return -1 if no match found
+ * Used in CONNECTION_CLOSE frames (type 0x1d) to indicate that the
+ * decoder encountered malformed or invalid QPACK-encoded data.
  */
-extern int SocketQPACK_static_find_name (const char *name, size_t name_len);
+#define QPACK_DECOMPRESSION_FAILED 0x0200
 
 /**
- * @brief Get the length of a static table entry's name.
+ * @brief QPACK encoder stream error code.
  *
- * Optimization function to retrieve name length without copying the entry.
+ * RFC 9204 Section 6: "An error on the encoder stream. This error is
+ * raised when the decoder fails to interpret an instruction on the
+ * encoder stream."
  *
- * @param index 0-based index into static table (0-98 valid)
- * @return Name length, or 0 if index is invalid
+ * Used in CONNECTION_CLOSE frames (type 0x1d) when an invalid
+ * instruction is received on the encoder stream.
  */
-extern size_t SocketQPACK_static_name_len (size_t index);
+#define QPACK_ENCODER_STREAM_ERROR 0x0201
 
 /**
- * @brief Get the length of a static table entry's value.
+ * @brief QPACK decoder stream error code.
  *
- * Optimization function to retrieve value length without copying the entry.
+ * RFC 9204 Section 6: "An error on the decoder stream. This error is
+ * raised when the encoder fails to interpret an instruction on the
+ * decoder stream."
  *
- * @param index 0-based index into static table (0-98 valid)
- * @return Value length, or 0 if index is invalid
+ * Used in CONNECTION_CLOSE frames (type 0x1d) when an invalid
+ * instruction is received on the decoder stream.
  */
-extern size_t SocketQPACK_static_value_len (size_t index);
+#define QPACK_DECODER_STREAM_ERROR 0x0202
+
+/* ============================================================================
+ * Exception Type
+ * ============================================================================
+ */
 
 /**
- * @brief Convert QPACK result code to string description.
+ * @brief Exception raised on QPACK encoding/decoding errors.
  *
- * @param result Result code to convert
- * @return Human-readable string describing the result
+ * This exception is raised when QPACK operations encounter fatal errors
+ * that cannot be recovered. The exception's reason field contains a
+ * human-readable description of the error.
+ *
+ * Example usage:
+ * @code
+ * TRY {
+ *     result = SocketQPACK_decode(...);
+ * } EXCEPT(SocketQPACK_Error) {
+ *     // Handle QPACK error
+ * } END_TRY;
+ * @endcode
+ */
+extern const Except_T SocketQPACK_Error;
+
+/* ============================================================================
+ * Error Handling Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Convert internal result code to human-readable string.
+ *
+ * Returns a static string describing the given result code. This function
+ * is useful for logging and debugging QPACK operations.
+ *
+ * @param result QPACK operation result code.
+ * @return Static string describing the result. Never returns NULL.
+ *
+ * @note Thread-safe: Returns pointer to static read-only string.
+ *
+ * Example:
+ * @code
+ * SocketQPACK_Result r = QPACK_ERROR_INVALID_INDEX;
+ * printf("Error: %s\n", SocketQPACK_result_string(r));
+ * // Output: "Error: Invalid table index"
+ * @endcode
  */
 extern const char *SocketQPACK_result_string (SocketQPACK_Result result);
+
+/**
+ * @brief Map internal result code to HTTP/3 error code.
+ *
+ * Converts an internal QPACK result code to the appropriate HTTP/3
+ * error code for use in QUIC CONNECTION_CLOSE frames. The mapping
+ * follows RFC 9204:
+ *
+ *   - Field section decoding errors -> QPACK_DECOMPRESSION_FAILED (0x0200)
+ *   - Encoder stream instruction errors -> QPACK_ENCODER_STREAM_ERROR (0x0201)
+ *   - Decoder stream instruction errors -> QPACK_DECODER_STREAM_ERROR (0x0202)
+ *   - Duplicate stream (§4.2) -> H3_STREAM_CREATION_ERROR (0x0101)
+ *   - Stream closed (§4.2) -> H3_CLOSED_CRITICAL_STREAM (0x0104)
+ *
+ * @param result Internal QPACK result code.
+ * @return HTTP/3 error code, or 0 if result is not an error.
+ *
+ * @note For QPACK_OK, QPACK_INCOMPLETE, and QPACK_BLOCKED, returns 0
+ *       since these are not error conditions requiring connection closure.
+ *
+ * Example:
+ * @code
+ * if (result != QPACK_OK) {
+ *     uint64_t http3_error = SocketQPACK_error_code(result);
+ *     SocketQUIC_send_connection_close(conn, http3_error, NULL, 0, buf, len);
+ * }
+ * @endcode
+ */
+extern uint64_t SocketQPACK_error_code (SocketQPACK_Result result);
+
+/**
+ * @brief Get human-readable string for HTTP/3 QPACK error code.
+ *
+ * Returns a static string describing the given HTTP/3 error code.
+ * Handles both QPACK-specific error codes (0x0200-0x0202) and
+ * HTTP/3 error codes used by QPACK (0x0101, 0x0104).
+ *
+ * @param code HTTP/3 error code.
+ * @return Static string for recognized errors, or NULL if code is not
+ *         a QPACK-related error.
+ *
+ * @note Thread-safe: Returns pointer to static read-only string.
+ */
+extern const char *SocketQPACK_http3_error_string (uint64_t code);
+
+/**
+ * @brief Check if HTTP/3 error code is a QPACK-specific error.
+ *
+ * Returns true only for QPACK error codes defined in RFC 9204 §6
+ * (0x0200-0x0202). Does NOT return true for HTTP/3 errors that
+ * QPACK uses (H3_STREAM_CREATION_ERROR, H3_CLOSED_CRITICAL_STREAM).
+ *
+ * @param code HTTP/3 error code to check.
+ * @return Non-zero if code is in QPACK error range (0x0200-0x0202),
+ *         0 otherwise.
+ */
+static inline int
+SocketQPACK_is_qpack_error (uint64_t code)
+{
+  return code >= QPACK_DECOMPRESSION_FAILED
+         && code <= QPACK_DECODER_STREAM_ERROR;
+}
+
+/**
+ * @brief Check if HTTP/3 error code is QPACK-related (including H3 errors).
+ *
+ * Returns true for any error code that can be generated by QPACK
+ * operations, including both RFC 9204 §6 errors and HTTP/3 errors
+ * referenced in RFC 9204 §4.2.
+ *
+ * @param code HTTP/3 error code to check.
+ * @return Non-zero if code is QPACK-related, 0 otherwise.
+ */
+static inline int
+SocketQPACK_is_qpack_related_error (uint64_t code)
+{
+  return SocketQPACK_is_qpack_error (code)
+         || code == H3_STREAM_CREATION_ERROR
+         || code == H3_CLOSED_CRITICAL_STREAM;
+}
 
 /** @} */
 
