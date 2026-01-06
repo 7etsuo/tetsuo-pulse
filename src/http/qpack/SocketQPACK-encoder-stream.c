@@ -242,16 +242,16 @@ encode_huffman_string (unsigned char *buf,
   ssize_t huff_result;
 
   /* Encode length with H=1 flag */
-  prefix_len = SocketHPACK_int_encode (huffman_len, QPACK_VALUE_LENGTH_PREFIX,
-                                       buf, QPACK_INT_ENCODE_BUF_SIZE);
+  prefix_len = SocketHPACK_int_encode (
+      huffman_len, QPACK_VALUE_LENGTH_PREFIX, buf, QPACK_INT_ENCODE_BUF_SIZE);
   if (prefix_len == 0)
     return QPACK_STREAM_ERR_INTERNAL;
 
   buf[0] |= QPACK_VALUE_HUFFMAN_MASK;
 
   /* Huffman-encode the string */
-  huff_result
-      = SocketHPACK_huffman_encode (str, len, buf + prefix_len, buf_size - prefix_len);
+  huff_result = SocketHPACK_huffman_encode (
+      str, len, buf + prefix_len, buf_size - prefix_len);
   if (huff_result < 0)
     return QPACK_STREAM_ERR_INTERNAL;
 
@@ -271,8 +271,8 @@ encode_literal_string (unsigned char *buf,
   size_t prefix_len;
 
   /* Encode length with H=0 flag */
-  prefix_len = SocketHPACK_int_encode (len, QPACK_VALUE_LENGTH_PREFIX, buf,
-                                       QPACK_INT_ENCODE_BUF_SIZE);
+  prefix_len = SocketHPACK_int_encode (
+      len, QPACK_VALUE_LENGTH_PREFIX, buf, QPACK_INT_ENCODE_BUF_SIZE);
   if (prefix_len == 0)
     return QPACK_STREAM_ERR_INTERNAL;
 
@@ -319,8 +319,8 @@ encode_and_append_string (SocketQPACK_EncoderStream_T stream,
 
   /* Calculate required buffer size: length prefix + string data */
   size_t data_len = actually_use_huffman ? huffman_len : len;
-  if (!SocketSecurity_check_add (QPACK_INT_ENCODE_BUF_SIZE, data_len,
-                                 &temp_buf_size))
+  if (!SocketSecurity_check_add (
+          QPACK_INT_ENCODE_BUF_SIZE, data_len, &temp_buf_size))
     return QPACK_STREAM_ERR_BUFFER_FULL;
 
   /* Ensure we have space */
@@ -335,8 +335,8 @@ encode_and_append_string (SocketQPACK_EncoderStream_T stream,
 
   /* Encode string (Huffman or literal) */
   if (actually_use_huffman)
-    result = encode_huffman_string (temp_buf, temp_buf_size, str, len,
-                                    huffman_len, &encoded_len);
+    result = encode_huffman_string (
+        temp_buf, temp_buf_size, str, len, huffman_len, &encoded_len);
   else
     result = encode_literal_string (temp_buf, str, len, &encoded_len);
 
@@ -688,4 +688,276 @@ SocketQPACK_EncoderStream_buffer_size (SocketQPACK_EncoderStream_T stream)
     return 0;
 
   return stream->buffer_len;
+}
+
+/* ============================================================================
+ * INSERT WITH NAME REFERENCE PRIMITIVES (RFC 9204 Section 4.3.2)
+ * ============================================================================
+ */
+
+SocketQPACKStream_Result
+SocketQPACK_encode_insert_nameref (unsigned char *output,
+                                   size_t output_size,
+                                   bool is_static,
+                                   uint64_t name_index,
+                                   const unsigned char *value,
+                                   size_t value_len,
+                                   bool use_huffman,
+                                   size_t *bytes_written)
+{
+  /*
+   * RFC 9204 Section 4.3.2: Insert with Name Reference
+   *
+   *   0   1   2   3   4   5   6   7
+   * +---+---+---+---+---+---+---+---+
+   * | 1 | T |    Name Index (6+)    |
+   * +---+---+-----------------------+
+   * | H |     Value Length (7+)     |
+   * +---+---------------------------+
+   * |  Value String (Length bytes)  |
+   * +-------------------------------+
+   */
+  unsigned char int_buf[QPACK_INT_ENCODE_BUF_SIZE];
+  size_t pos = 0;
+  size_t int_len;
+  unsigned char first_byte;
+  size_t huffman_len = 0;
+  bool actually_use_huffman = false;
+
+  /* Parameter validation */
+  if (output == NULL || bytes_written == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  if (value == NULL && value_len > 0)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  /* Validate static table index (0-98 per RFC 9204 Appendix A) */
+  if (is_static && name_index >= SOCKETQPACK_STATIC_TABLE_SIZE)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  *bytes_written = 0;
+
+  /* Build first byte: 1 | T | index... */
+  first_byte = QPACK_INSTR_INSERT_NAMEREF_MASK; /* bit 7 = 1 */
+  if (is_static)
+    first_byte |= QPACK_INSTR_INSERT_NAMEREF_STATIC; /* bit 6 = T */
+
+  /* Encode name index with 6-bit prefix */
+  int_len = SocketHPACK_int_encode (
+      name_index, QPACK_INSTR_INSERT_NAMEREF_PREFIX, int_buf, sizeof (int_buf));
+  if (int_len == 0)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Merge first byte flags with integer encoding */
+  int_buf[0] |= first_byte;
+
+  /* Check if we have room for the index */
+  if (pos + int_len > output_size)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  memcpy (output + pos, int_buf, int_len);
+  pos += int_len;
+
+  /* Determine if Huffman encoding is beneficial */
+  if (use_huffman && value_len > 0)
+    {
+      huffman_len = SocketHPACK_huffman_encoded_size (value, value_len);
+      if (huffman_len < value_len)
+        actually_use_huffman = true;
+    }
+
+  /* Encode value length with 7-bit prefix */
+  size_t encoded_value_len = actually_use_huffman ? huffman_len : value_len;
+  int_len = SocketHPACK_int_encode (
+      encoded_value_len, QPACK_VALUE_LENGTH_PREFIX, int_buf, sizeof (int_buf));
+  if (int_len == 0)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Set Huffman flag if using Huffman encoding */
+  if (actually_use_huffman)
+    int_buf[0] |= QPACK_VALUE_HUFFMAN_MASK;
+
+  /* Check if we have room for value length + value data */
+  if (pos + int_len + encoded_value_len > output_size)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  memcpy (output + pos, int_buf, int_len);
+  pos += int_len;
+
+  /* Encode value string */
+  if (value_len > 0)
+    {
+      if (actually_use_huffman)
+        {
+          ssize_t huff_result = SocketHPACK_huffman_encode (
+              value, value_len, output + pos, output_size - pos);
+          if (huff_result < 0)
+            return QPACK_STREAM_ERR_INTERNAL;
+          pos += (size_t)huff_result;
+        }
+      else
+        {
+          memcpy (output + pos, value, value_len);
+          pos += value_len;
+        }
+    }
+
+  *bytes_written = pos;
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_decode_insert_nameref (const unsigned char *input,
+                                   size_t input_len,
+                                   Arena_T arena,
+                                   SocketQPACK_InsertNameRef *result,
+                                   size_t *consumed)
+{
+  /*
+   * RFC 9204 Section 4.3.2: Insert with Name Reference
+   *
+   * First byte: 1T xxxxxx
+   * - Bit 7: Always 1 for this instruction type
+   * - Bit 6 (T): 1=static table, 0=dynamic table
+   * - Bits 5-0: Start of 6+ prefix integer for name index
+   */
+  size_t pos = 0;
+  uint64_t name_index;
+  uint64_t value_len;
+  size_t int_consumed;
+  SocketHPACK_Result hpack_result;
+  bool is_static;
+  bool value_huffman;
+
+  /* Parameter validation */
+  if (input == NULL || arena == NULL || result == NULL || consumed == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *consumed = 0;
+
+  /* Need at least one byte */
+  if (input_len < 1)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  /* Verify this is an insert with name reference instruction */
+  if ((input[0] & QPACK_INSTR_INSERT_NAMEREF_MASK)
+      != QPACK_INSTR_INSERT_NAMEREF_MASK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Extract T bit (static/dynamic flag) */
+  is_static = (input[0] & QPACK_INSTR_INSERT_NAMEREF_STATIC) != 0;
+
+  /* Decode name index (6-bit prefix integer) */
+  hpack_result = SocketHPACK_int_decode (input,
+                                         input_len,
+                                         QPACK_INSTR_INSERT_NAMEREF_PREFIX,
+                                         &name_index,
+                                         &int_consumed);
+  if (hpack_result == HPACK_INCOMPLETE)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+  if (hpack_result != HPACK_OK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  pos += int_consumed;
+
+  /* Decode value length (7-bit prefix integer) */
+  if (pos >= input_len)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  value_huffman = (input[pos] & QPACK_VALUE_HUFFMAN_MASK) != 0;
+
+  hpack_result = SocketHPACK_int_decode (input + pos,
+                                         input_len - pos,
+                                         QPACK_VALUE_LENGTH_PREFIX,
+                                         &value_len,
+                                         &int_consumed);
+  if (hpack_result == HPACK_INCOMPLETE)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+  if (hpack_result != HPACK_OK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  pos += int_consumed;
+
+  /* Check if we have enough bytes for the value string */
+  if (pos + value_len > input_len)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  /* Populate result */
+  result->is_static = is_static;
+  result->name_index = name_index;
+  result->value_huffman = value_huffman;
+
+  if (value_len == 0)
+    {
+      result->value = NULL;
+      result->value_len = 0;
+    }
+  else if (value_huffman)
+    {
+      /* Huffman-decode the value */
+      /* Allocate decode buffer (worst case 2x expansion) */
+      size_t decode_buf_size = value_len * 2;
+      if (decode_buf_size < 64)
+        decode_buf_size = 64;
+
+      unsigned char *decode_buf = ALLOC (arena, decode_buf_size);
+      if (decode_buf == NULL)
+        return QPACK_STREAM_ERR_INTERNAL;
+
+      ssize_t decoded_len = SocketHPACK_huffman_decode (
+          input + pos, value_len, decode_buf, decode_buf_size);
+      if (decoded_len < 0)
+        return QPACK_STREAM_ERR_INTERNAL;
+
+      result->value = decode_buf;
+      result->value_len = (size_t)decoded_len;
+    }
+  else
+    {
+      /* Literal value - point directly into input buffer */
+      result->value = input + pos;
+      result->value_len = value_len;
+    }
+
+  pos += value_len;
+  *consumed = pos;
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_validate_nameref_index (bool is_static,
+                                    uint64_t name_index,
+                                    uint64_t insert_count,
+                                    uint64_t dropped_count)
+{
+  /*
+   * RFC 9204 Section 4.3.2: Validate name reference index
+   *
+   * For static table: index must be 0-98 (99 entries)
+   * For dynamic table: index is encoder-relative, must reference
+   *                    a valid (non-evicted, non-future) entry
+   */
+  if (is_static)
+    {
+      /* Static table has 99 entries (indices 0-98) */
+      if (name_index >= SOCKETQPACK_STATIC_TABLE_SIZE)
+        return QPACK_STREAM_ERR_INVALID_INDEX;
+      return QPACK_STREAM_OK;
+    }
+
+  /* Dynamic table: encoder-relative index validation */
+  /* rel_index must be < insert_count to reference a valid entry */
+  if (name_index >= insert_count)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  /* Convert to absolute index and check eviction */
+  /* absolute = insert_count - relative - 1 */
+  uint64_t abs_index = insert_count - name_index - 1;
+
+  /* Check if entry has been evicted */
+  if (abs_index < dropped_count)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  return QPACK_STREAM_OK;
 }
