@@ -424,6 +424,125 @@ SocketQPACK_EncoderStream_buffer_size (SocketQPACK_EncoderStream_T stream);
 extern const char *
 SocketQPACKStream_result_string (SocketQPACKStream_Result result);
 
+/* ============================================================================
+ * INSERT WITH NAME REFERENCE PRIMITIVES (RFC 9204 Section 4.3.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Decoded Insert with Name Reference instruction.
+ *
+ * RFC 9204 Section 4.3.2: Represents the decoded form of an insert with
+ * name reference instruction.
+ */
+typedef struct
+{
+  bool is_static;             /**< True if name references static table */
+  uint64_t name_index;        /**< Index into static or dynamic table */
+  const unsigned char *value; /**< Value string (points into input buffer) */
+  size_t value_len;           /**< Length of value string */
+  bool value_huffman;         /**< True if value was Huffman-encoded */
+} SocketQPACK_InsertNameRef;
+
+/**
+ * @brief Encode Insert with Name Reference instruction to buffer.
+ *
+ * RFC 9204 Section 4.3.2: Encodes an insert instruction with name reference
+ * into the provided output buffer. This is a low-level function for building
+ * encoder stream data without using the stream abstraction.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 1 | T |    Name Index (6+)    |
+ * +---+---+-----------------------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ *
+ * @param output        Output buffer (must not be NULL)
+ * @param output_size   Size of output buffer
+ * @param is_static     True to reference static table, false for dynamic
+ * @param name_index    Index of entry with name to reference
+ * @param value         Value string (may be NULL if value_len == 0)
+ * @param value_len     Length of value string
+ * @param use_huffman   True to Huffman-encode the value
+ * @param[out] bytes_written Number of bytes written to output (must not be
+ * NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if name_index is invalid for static
+ * table, QPACK_STREAM_ERR_BUFFER_FULL if output buffer is too small
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_encode_insert_nameref (unsigned char *output,
+                                   size_t output_size,
+                                   bool is_static,
+                                   uint64_t name_index,
+                                   const unsigned char *value,
+                                   size_t value_len,
+                                   bool use_huffman,
+                                   size_t *bytes_written);
+
+/**
+ * @brief Decode Insert with Name Reference instruction from buffer.
+ *
+ * RFC 9204 Section 4.3.2: Decodes an insert instruction with name reference
+ * from the input buffer. The value pointer in the result points into the
+ * input buffer (for Huffman-decoded values, decoding is done in-place or
+ * to a provided arena).
+ *
+ * @param input         Input buffer containing the instruction
+ * @param input_len     Length of input buffer
+ * @param arena         Memory arena for Huffman decoding (must not be NULL)
+ * @param[out] result   Decoded instruction (must not be NULL)
+ * @param[out] consumed Number of bytes consumed from input (must not be NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if any required parameter is NULL,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if input is incomplete,
+ *         QPACK_STREAM_ERR_INTERNAL on decoding error
+ *
+ * @note The first byte of input must have the top bit set (0x80 mask)
+ * @note The value pointer in result is valid until arena is disposed
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_decode_insert_nameref (const unsigned char *input,
+                                   size_t input_len,
+                                   Arena_T arena,
+                                   SocketQPACK_InsertNameRef *result,
+                                   size_t *consumed);
+
+/**
+ * @brief Validate name reference index for Insert instruction.
+ *
+ * RFC 9204 Section 4.3.2: Validates that a name index is valid for use
+ * in an Insert with Name Reference instruction. For static table references,
+ * checks against the static table size (0-98). For dynamic table references,
+ * checks against the current insert count and dropped count.
+ *
+ * @param is_static     True if referencing static table
+ * @param name_index    Index to validate
+ * @param insert_count  Current Insert Count (only used for dynamic table)
+ * @param dropped_count Number of evicted entries (only used for dynamic table)
+ * @return QPACK_STREAM_OK if index is valid,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if static index >= 99,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if dynamic index references future
+ * entry, QPACK_STREAM_ERR_INVALID_INDEX if dynamic index references evicted
+ * entry
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_validate_nameref_index (bool is_static,
+                                    uint64_t name_index,
+                                    uint64_t insert_count,
+                                    uint64_t dropped_count);
+
 /** @} */
 
 #endif /* SOCKETQPACK_ENCODER_STREAM_INCLUDED */

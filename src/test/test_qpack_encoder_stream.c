@@ -1051,6 +1051,563 @@ run_security_tests (void)
   test_large_values ();
 }
 
+/* ============================================================================
+ * INSERT WITH NAME REFERENCE PRIMITIVE TESTS (RFC 9204 Section 4.3.2)
+ * ============================================================================
+ */
+
+/**
+ * Test encode_insert_nameref basic functionality.
+ */
+static void
+test_encode_insert_nameref_basic (void)
+{
+  unsigned char output[256];
+  size_t bytes_written;
+  SocketQPACKStream_Result result;
+
+  printf ("  encode_insert_nameref basic... ");
+
+  /* Static table index 0, empty value */
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), true, 0, NULL, 0, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "static idx=0 empty value");
+  TEST_ASSERT (bytes_written >= 2, "at least 2 bytes");
+  /* First byte: 11 000000 = 0xC0 (1=nameref, 1=static, 0=index) */
+  TEST_ASSERT ((output[0] & 0xC0) == 0xC0, "11 prefix for static nameref");
+  TEST_ASSERT ((output[0] & 0x3F) == 0, "index 0");
+  /* Second byte: value length = 0 */
+  TEST_ASSERT ((output[1] & 0x7F) == 0, "value length 0");
+
+  /* Static table index 15, value "test" */
+  const unsigned char *value = (const unsigned char *)"test";
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), true, 15, value, 4, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "static idx=15 with value");
+  TEST_ASSERT ((output[0] & 0xC0) == 0xC0, "11 prefix");
+  TEST_ASSERT ((output[0] & 0x3F) == 15, "index 15");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test encode_insert_nameref with dynamic table reference.
+ */
+static void
+test_encode_insert_nameref_dynamic (void)
+{
+  unsigned char output[256];
+  size_t bytes_written;
+  SocketQPACKStream_Result result;
+
+  printf ("  encode_insert_nameref dynamic... ");
+
+  /* Dynamic table index 0, value "value" */
+  const unsigned char *value = (const unsigned char *)"value";
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), false, 0, value, 5, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "dynamic idx=0 success");
+  /* First byte: 10 000000 = 0x80 (1=nameref, 0=dynamic, 0=index) */
+  TEST_ASSERT ((output[0] & 0xC0) == 0x80, "10 prefix for dynamic nameref");
+  TEST_ASSERT ((output[0] & 0x3F) == 0, "index 0");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test encode_insert_nameref with Huffman encoding.
+ */
+static void
+test_encode_insert_nameref_with_huffman (void)
+{
+  unsigned char output_no_huff[256];
+  unsigned char output_huff[256];
+  size_t bytes_no_huff, bytes_huff;
+  SocketQPACKStream_Result result;
+
+  printf ("  encode_insert_nameref Huffman... ");
+
+  /* Value that compresses well with Huffman */
+  const unsigned char *value = (const unsigned char *)"www.example.com";
+
+  /* Without Huffman */
+  result = SocketQPACK_encode_insert_nameref (output_no_huff,
+                                              sizeof (output_no_huff),
+                                              true,
+                                              0,
+                                              value,
+                                              15,
+                                              false,
+                                              &bytes_no_huff);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "no huffman success");
+
+  /* With Huffman */
+  result = SocketQPACK_encode_insert_nameref (
+      output_huff, sizeof (output_huff), true, 0, value, 15, true, &bytes_huff);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "huffman success");
+
+  /* Huffman should produce smaller encoding */
+  TEST_ASSERT (bytes_huff < bytes_no_huff, "Huffman smaller");
+
+  /* Verify Huffman flag is set */
+  TEST_ASSERT ((output_huff[1] & 0x80) == 0x80, "H flag set");
+  TEST_ASSERT ((output_no_huff[1] & 0x80) == 0x00, "H flag not set");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test encode_insert_nameref error cases.
+ */
+static void
+test_encode_insert_nameref_errors (void)
+{
+  unsigned char output[256];
+  size_t bytes_written;
+  SocketQPACKStream_Result result;
+
+  printf ("  encode_insert_nameref errors... ");
+
+  /* NULL output */
+  result = SocketQPACK_encode_insert_nameref (
+      NULL, 256, true, 0, NULL, 0, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "NULL output fails");
+
+  /* NULL bytes_written */
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), true, 0, NULL, 0, false, NULL);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM,
+               "NULL bytes_written fails");
+
+  /* NULL value with non-zero length */
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), true, 0, NULL, 5, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM,
+               "NULL value with len fails");
+
+  /* Invalid static index */
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), true, 99, NULL, 0, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX, "static idx 99 fails");
+
+  result = SocketQPACK_encode_insert_nameref (
+      output, sizeof (output), true, 100, NULL, 0, false, &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "static idx 100 fails");
+
+  /* Buffer too small */
+  result = SocketQPACK_encode_insert_nameref (output,
+                                              1,
+                                              true,
+                                              0,
+                                              (const unsigned char *)"test",
+                                              4,
+                                              false,
+                                              &bytes_written);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_BUFFER_FULL, "small buffer fails");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test decode_insert_nameref basic functionality.
+ */
+static void
+test_decode_insert_nameref_basic (void)
+{
+  Arena_T arena;
+  unsigned char encoded[256];
+  size_t encoded_len;
+  SocketQPACK_InsertNameRef decoded;
+  size_t consumed;
+  SocketQPACKStream_Result result;
+
+  printf ("  decode_insert_nameref basic... ");
+
+  arena = Arena_new ();
+  TEST_ASSERT (arena != NULL, "arena creation");
+
+  /* Encode static index 0, empty value */
+  result = SocketQPACK_encode_insert_nameref (
+      encoded, sizeof (encoded), true, 0, NULL, 0, false, &encoded_len);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "encode success");
+
+  /* Decode */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, encoded_len, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "decode success");
+  TEST_ASSERT (consumed == encoded_len, "consumed all bytes");
+  TEST_ASSERT (decoded.is_static == true, "is_static correct");
+  TEST_ASSERT (decoded.name_index == 0, "name_index correct");
+  TEST_ASSERT (decoded.value_len == 0, "value_len correct");
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+/**
+ * Test decode_insert_nameref with value.
+ */
+static void
+test_decode_insert_nameref_with_value (void)
+{
+  Arena_T arena;
+  unsigned char encoded[256];
+  size_t encoded_len;
+  SocketQPACK_InsertNameRef decoded;
+  size_t consumed;
+  SocketQPACKStream_Result result;
+
+  printf ("  decode_insert_nameref with value... ");
+
+  arena = Arena_new ();
+
+  /* Encode static index 15, value "test" */
+  const unsigned char *value = (const unsigned char *)"test";
+  result = SocketQPACK_encode_insert_nameref (
+      encoded, sizeof (encoded), true, 15, value, 4, false, &encoded_len);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "encode success");
+
+  /* Decode */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, encoded_len, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "decode success");
+  TEST_ASSERT (decoded.is_static == true, "is_static correct");
+  TEST_ASSERT (decoded.name_index == 15, "name_index correct");
+  TEST_ASSERT (decoded.value_len == 4, "value_len correct");
+  TEST_ASSERT (memcmp (decoded.value, "test", 4) == 0, "value correct");
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+/**
+ * Test decode_insert_nameref with Huffman-encoded value.
+ */
+static void
+test_decode_insert_nameref_huffman_value (void)
+{
+  Arena_T arena;
+  unsigned char encoded[256];
+  size_t encoded_len;
+  SocketQPACK_InsertNameRef decoded;
+  size_t consumed;
+  SocketQPACKStream_Result result;
+
+  printf ("  decode_insert_nameref Huffman value... ");
+
+  arena = Arena_new ();
+
+  /* Encode with Huffman-encoded value */
+  const unsigned char *value = (const unsigned char *)"www.example.com";
+  result = SocketQPACK_encode_insert_nameref (
+      encoded, sizeof (encoded), true, 0, value, 15, true, &encoded_len);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "encode success");
+
+  /* Decode */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, encoded_len, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "decode success");
+  TEST_ASSERT (decoded.is_static == true, "is_static correct");
+  TEST_ASSERT (decoded.name_index == 0, "name_index correct");
+  TEST_ASSERT (decoded.value_len == 15, "value_len correct");
+  TEST_ASSERT (memcmp (decoded.value, "www.example.com", 15) == 0,
+               "value correctly decoded");
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+/**
+ * Test decode_insert_nameref with dynamic table reference.
+ */
+static void
+test_decode_insert_nameref_dynamic_ref (void)
+{
+  Arena_T arena;
+  unsigned char encoded[256];
+  size_t encoded_len;
+  SocketQPACK_InsertNameRef decoded;
+  size_t consumed;
+  SocketQPACKStream_Result result;
+
+  printf ("  decode_insert_nameref dynamic ref... ");
+
+  arena = Arena_new ();
+
+  /* Encode dynamic index 5, value "dynamic-value" */
+  const unsigned char *value = (const unsigned char *)"dynamic-value";
+  result = SocketQPACK_encode_insert_nameref (
+      encoded, sizeof (encoded), false, 5, value, 13, false, &encoded_len);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "encode success");
+
+  /* Decode */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, encoded_len, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "decode success");
+  TEST_ASSERT (decoded.is_static == false, "is_static false");
+  TEST_ASSERT (decoded.name_index == 5, "name_index correct");
+  TEST_ASSERT (decoded.value_len == 13, "value_len correct");
+  TEST_ASSERT (memcmp (decoded.value, "dynamic-value", 13) == 0,
+               "value correct");
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+/**
+ * Test decode_insert_nameref error cases.
+ */
+static void
+test_decode_insert_nameref_errors (void)
+{
+  Arena_T arena;
+  unsigned char encoded[256];
+  SocketQPACK_InsertNameRef decoded;
+  size_t consumed;
+  SocketQPACKStream_Result result;
+
+  printf ("  decode_insert_nameref errors... ");
+
+  arena = Arena_new ();
+
+  /* NULL input */
+  result = SocketQPACK_decode_insert_nameref (
+      NULL, 10, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "NULL input fails");
+
+  /* NULL arena */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, 10, NULL, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "NULL arena fails");
+
+  /* NULL result */
+  result
+      = SocketQPACK_decode_insert_nameref (encoded, 10, arena, NULL, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "NULL result fails");
+
+  /* NULL consumed */
+  result
+      = SocketQPACK_decode_insert_nameref (encoded, 10, arena, &decoded, NULL);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "NULL consumed fails");
+
+  /* Empty input */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, 0, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_BUFFER_FULL, "empty input fails");
+
+  /* Truncated input (only first byte) */
+  encoded[0] = 0xC0; /* Static nameref */
+  result = SocketQPACK_decode_insert_nameref (
+      encoded, 1, arena, &decoded, &consumed);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_BUFFER_FULL, "truncated input fails");
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+/**
+ * Test validate_nameref_index for static table.
+ */
+static void
+test_validate_nameref_index_static (void)
+{
+  SocketQPACKStream_Result result;
+
+  printf ("  validate_nameref_index static... ");
+
+  /* Valid static indices (0-98) */
+  result = SocketQPACK_validate_nameref_index (true, 0, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "static index 0 valid");
+
+  result = SocketQPACK_validate_nameref_index (true, 98, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "static index 98 valid");
+
+  result = SocketQPACK_validate_nameref_index (true, 50, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "static index 50 valid");
+
+  /* Invalid static indices (>= 99) */
+  result = SocketQPACK_validate_nameref_index (true, 99, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "static index 99 invalid");
+
+  result = SocketQPACK_validate_nameref_index (true, 100, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "static index 100 invalid");
+
+  result = SocketQPACK_validate_nameref_index (true, 1000, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "static index 1000 invalid");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test validate_nameref_index for dynamic table.
+ */
+static void
+test_validate_nameref_index_dynamic (void)
+{
+  SocketQPACKStream_Result result;
+
+  printf ("  validate_nameref_index dynamic... ");
+
+  /* insert_count=10, dropped_count=0: valid indices are 0-9 */
+  result = SocketQPACK_validate_nameref_index (false, 0, 10, 0);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "dynamic index 0 valid (ic=10)");
+
+  result = SocketQPACK_validate_nameref_index (false, 9, 10, 0);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "dynamic index 9 valid (ic=10)");
+
+  /* Index >= insert_count is invalid (future reference) */
+  result = SocketQPACK_validate_nameref_index (false, 10, 10, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "dynamic index 10 invalid (ic=10)");
+
+  result = SocketQPACK_validate_nameref_index (false, 100, 10, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "dynamic index 100 invalid (ic=10)");
+
+  /* With eviction: insert_count=10, dropped_count=5
+   * Valid absolute indices: 5-9
+   * Relative 0 -> abs 9 (valid)
+   * Relative 4 -> abs 5 (valid)
+   * Relative 5 -> abs 4 (evicted) */
+  result = SocketQPACK_validate_nameref_index (false, 0, 10, 5);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "rel 0 -> abs 9 valid");
+
+  result = SocketQPACK_validate_nameref_index (false, 4, 10, 5);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "rel 4 -> abs 5 valid");
+
+  result = SocketQPACK_validate_nameref_index (false, 5, 10, 5);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "rel 5 -> abs 4 evicted");
+
+  result = SocketQPACK_validate_nameref_index (false, 9, 10, 5);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "rel 9 -> abs 0 evicted");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test validate_nameref_index edge cases.
+ */
+static void
+test_validate_nameref_index_edge_cases (void)
+{
+  SocketQPACKStream_Result result;
+
+  printf ("  validate_nameref_index edge cases... ");
+
+  /* Empty table (insert_count=0) */
+  result = SocketQPACK_validate_nameref_index (false, 0, 0, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX, "empty table invalid");
+
+  /* Single entry (insert_count=1, dropped_count=0) */
+  result = SocketQPACK_validate_nameref_index (false, 0, 1, 0);
+  TEST_ASSERT (result == QPACK_STREAM_OK, "single entry index 0 valid");
+
+  result = SocketQPACK_validate_nameref_index (false, 1, 1, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "single entry index 1 invalid");
+
+  /* All entries evicted */
+  result = SocketQPACK_validate_nameref_index (false, 0, 10, 10);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX, "all evicted invalid");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test encode/decode roundtrip with various inputs.
+ */
+static void
+test_encode_decode_roundtrip (void)
+{
+  Arena_T arena;
+  unsigned char encoded[256];
+  size_t encoded_len;
+  SocketQPACK_InsertNameRef decoded;
+  size_t consumed;
+  SocketQPACKStream_Result result;
+
+  printf ("  encode/decode roundtrip... ");
+
+  arena = Arena_new ();
+
+  /* Test various combinations */
+  struct
+  {
+    bool is_static;
+    uint64_t name_index;
+    const char *value;
+    bool use_huffman;
+  } test_cases[] = {
+    { true, 0, "", false },
+    { true, 15, "GET", false },
+    { true, 98, "value", false },
+    { false, 0, "dynamic-value", false },
+    { true, 0, "www.example.com", true },
+    { true, 50, "application/json", true },
+    { false, 10, "compress-this-value", true },
+  };
+
+  for (size_t i = 0; i < sizeof (test_cases) / sizeof (test_cases[0]); i++)
+    {
+      const unsigned char *value = (const unsigned char *)test_cases[i].value;
+      size_t value_len = strlen (test_cases[i].value);
+
+      /* Encode */
+      result = SocketQPACK_encode_insert_nameref (encoded,
+                                                  sizeof (encoded),
+                                                  test_cases[i].is_static,
+                                                  test_cases[i].name_index,
+                                                  value,
+                                                  value_len,
+                                                  test_cases[i].use_huffman,
+                                                  &encoded_len);
+      TEST_ASSERT (result == QPACK_STREAM_OK, "encode roundtrip");
+
+      /* Decode */
+      result = SocketQPACK_decode_insert_nameref (
+          encoded, encoded_len, arena, &decoded, &consumed);
+      TEST_ASSERT (result == QPACK_STREAM_OK, "decode roundtrip");
+      TEST_ASSERT (consumed == encoded_len, "consumed all");
+      TEST_ASSERT (decoded.is_static == test_cases[i].is_static,
+                   "is_static match");
+      TEST_ASSERT (decoded.name_index == test_cases[i].name_index,
+                   "name_index match");
+      TEST_ASSERT (decoded.value_len == value_len, "value_len match");
+      if (value_len > 0)
+        TEST_ASSERT (memcmp (decoded.value, value, value_len) == 0,
+                     "value match");
+    }
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+static void
+run_nameref_primitive_tests (void)
+{
+  printf (
+      "Insert with Name Reference Primitive Tests (RFC 9204 Section 4.3.2):\n");
+  test_encode_insert_nameref_basic ();
+  test_encode_insert_nameref_dynamic ();
+  test_encode_insert_nameref_with_huffman ();
+  test_encode_insert_nameref_errors ();
+  test_decode_insert_nameref_basic ();
+  test_decode_insert_nameref_with_value ();
+  test_decode_insert_nameref_huffman_value ();
+  test_decode_insert_nameref_dynamic_ref ();
+  test_decode_insert_nameref_errors ();
+  test_validate_nameref_index_static ();
+  test_validate_nameref_index_dynamic ();
+  test_validate_nameref_index_edge_cases ();
+  test_encode_decode_roundtrip ();
+}
+
 int
 main (void)
 {
@@ -1081,6 +1638,9 @@ main (void)
   printf ("\n");
 
   run_security_tests ();
+  printf ("\n");
+
+  run_nameref_primitive_tests ();
   printf ("\n");
 
   printf ("=== All tests passed! ===\n");
