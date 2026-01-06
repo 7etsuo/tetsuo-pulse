@@ -361,6 +361,7 @@ set(LIB_SOURCES
 
     # QPACK Header Compression (RFC 9204)
     src/http/qpack/SocketQPACK-index.c
+    src/http/qpack/SocketQPACK-encoder-stream.c
 
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
@@ -639,6 +640,7 @@ set(HTTP_HEADERS
 set(QPACK_HEADERS
     include/http/qpack/SocketQPACK.h
     include/http/qpack/SocketQPACK-private.h
+    include/http/qpack/SocketQPACKEncoderStream.h
 )
 
 set(TEST_HEADERS
@@ -798,6 +800,7 @@ set(TEST_SOURCES
     test_security
     # QPACK tests (RFC 9204)
     test_qpack_index
+    test_qpack_encoder_stream
     test_http_integration
     test_ws_integration
     test_http2_integration
