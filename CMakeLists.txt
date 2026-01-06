@@ -833,6 +833,7 @@ set(TEST_SOURCES
     test_quic_crypto_frame_encode
     test_quic_ack
     test_quic_loss
+    test_quic_key_discard
 )
 
 # TLS tests (only built when TLS is enabled)

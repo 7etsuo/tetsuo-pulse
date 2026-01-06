@@ -703,6 +703,195 @@ SocketQUICHandshake_discard_keys (SocketQUICHandshake_T handshake,
 }
 
 /* ============================================================================
+ * Key Discard Triggers (RFC 9001 Section 4.9)
+ * ============================================================================
+ */
+
+void
+SocketQUICHandshake_on_handshake_packet_sent (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  /* Only clients discard Initial keys when sending Handshake (§4.9.1) */
+  if (handshake->role != QUIC_CONN_ROLE_CLIENT)
+    return;
+
+  /* Idempotent: only process once */
+  if (handshake->first_handshake_sent)
+    return;
+
+  handshake->first_handshake_sent = 1;
+  SocketQUICHandshake_discard_keys (handshake, QUIC_CRYPTO_LEVEL_INITIAL);
+  handshake->initial_keys_discarded = 1;
+}
+
+void
+SocketQUICHandshake_on_handshake_packet_received (
+    SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  /* Only servers discard Initial keys when receiving Handshake (§4.9.1) */
+  if (handshake->role != QUIC_CONN_ROLE_SERVER)
+    return;
+
+  /* Idempotent: only process once */
+  if (handshake->first_handshake_received)
+    return;
+
+  handshake->first_handshake_received = 1;
+  SocketQUICHandshake_discard_keys (handshake, QUIC_CRYPTO_LEVEL_INITIAL);
+  handshake->initial_keys_discarded = 1;
+}
+
+void
+SocketQUICHandshake_on_confirmed (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  /* Idempotent: only discard once */
+  if (handshake->handshake_keys_discarded)
+    return;
+
+  /* Both endpoints discard Handshake keys when confirmed (§4.9.2) */
+  SocketQUICHandshake_discard_keys (handshake, QUIC_CRYPTO_LEVEL_HANDSHAKE);
+  handshake->handshake_keys_discarded = 1;
+
+  /* Update state to confirmed */
+  handshake->state = QUIC_HANDSHAKE_STATE_CONFIRMED;
+}
+
+void
+SocketQUICHandshake_on_1rtt_keys_installed (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  /* Client SHOULD discard 0-RTT keys when 1-RTT keys installed (§4.9.3) */
+  if (handshake->role != QUIC_CONN_ROLE_CLIENT)
+    return;
+
+  /* Idempotent: only discard once */
+  if (handshake->zero_rtt_keys_discarded)
+    return;
+
+  SocketQUICHandshake_discard_keys (handshake, QUIC_CRYPTO_LEVEL_0RTT);
+  handshake->zero_rtt_keys_discarded = 1;
+}
+
+void
+SocketQUICHandshake_on_1rtt_packet_received (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  /* Server MAY discard 0-RTT keys on 1-RTT receipt (§4.9.3) */
+  if (handshake->role != QUIC_CONN_ROLE_SERVER)
+    return;
+
+  /* Idempotent: only discard once */
+  if (handshake->zero_rtt_keys_discarded)
+    return;
+
+  SocketQUICHandshake_discard_keys (handshake, QUIC_CRYPTO_LEVEL_0RTT);
+  handshake->zero_rtt_keys_discarded = 1;
+}
+
+/* ============================================================================
+ * Key Availability Checks (RFC 9001 Section 4.9)
+ * ============================================================================
+ */
+
+int
+SocketQUICHandshake_can_send_initial (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* Cannot send Initial after keys discarded (§4.9.1) */
+  if (handshake->initial_keys_discarded)
+    return 0;
+
+  return handshake->keys_available[QUIC_CRYPTO_LEVEL_INITIAL];
+}
+
+int
+SocketQUICHandshake_can_receive_initial (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* Cannot receive Initial after keys discarded (§4.9.1) */
+  if (handshake->initial_keys_discarded)
+    return 0;
+
+  return handshake->keys_available[QUIC_CRYPTO_LEVEL_INITIAL];
+}
+
+int
+SocketQUICHandshake_can_send_handshake (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* Cannot send Handshake after keys discarded (§4.9.2) */
+  if (handshake->handshake_keys_discarded)
+    return 0;
+
+  return handshake->keys_available[QUIC_CRYPTO_LEVEL_HANDSHAKE];
+}
+
+int
+SocketQUICHandshake_can_receive_handshake (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* Cannot receive Handshake after keys discarded (§4.9.2) */
+  if (handshake->handshake_keys_discarded)
+    return 0;
+
+  return handshake->keys_available[QUIC_CRYPTO_LEVEL_HANDSHAKE];
+}
+
+int
+SocketQUICHandshake_can_send_0rtt (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* Only clients send 0-RTT */
+  if (handshake->role != QUIC_CONN_ROLE_CLIENT)
+    return 0;
+
+  /* Cannot send 0-RTT after keys discarded (§4.9.3) */
+  if (handshake->zero_rtt_keys_discarded)
+    return 0;
+
+  return handshake->keys_available[QUIC_CRYPTO_LEVEL_0RTT];
+}
+
+int
+SocketQUICHandshake_can_receive_0rtt (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* Only servers receive 0-RTT */
+  if (handshake->role != QUIC_CONN_ROLE_SERVER)
+    return 0;
+
+  /* Cannot receive 0-RTT after keys discarded (§4.9.3) */
+  if (handshake->zero_rtt_keys_discarded)
+    return 0;
+
+  return handshake->keys_available[QUIC_CRYPTO_LEVEL_0RTT];
+}
+
+/* ============================================================================
  * State Query Functions
  * ============================================================================
  */
