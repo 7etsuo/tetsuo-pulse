@@ -42,7 +42,7 @@
  */
 
 #if defined(__GNUC__) || defined(__clang__)
-#define QPACK_WARN_UNUSED __attribute__((warn_unused_result))
+#define QPACK_WARN_UNUSED __attribute__ ((warn_unused_result))
 #else
 #define QPACK_WARN_UNUSED
 #endif
@@ -178,10 +178,8 @@ SocketQPACK_relative_to_abs_encoder (uint64_t insert_count,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_abs_to_relative_field (uint64_t base,
-                                   uint64_t abs_index,
-                                   uint64_t *rel_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_relative_field (
+    uint64_t base, uint64_t abs_index, uint64_t *rel_out);
 
 /**
  * @brief Convert field-relative index to absolute index.
@@ -200,10 +198,8 @@ SocketQPACK_abs_to_relative_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_relative_to_abs_field (uint64_t base,
-                                   uint64_t rel_index,
-                                   uint64_t *abs_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_relative_to_abs_field (
+    uint64_t base, uint64_t rel_index, uint64_t *abs_out);
 
 /**
  * @brief Convert absolute index to post-base index.
@@ -223,10 +219,8 @@ SocketQPACK_relative_to_abs_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_abs_to_postbase (uint64_t base,
-                             uint64_t abs_index,
-                             uint64_t *pb_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_postbase (
+    uint64_t base, uint64_t abs_index, uint64_t *pb_out);
 
 /**
  * @brief Convert post-base index to absolute index.
@@ -245,10 +239,8 @@ SocketQPACK_abs_to_postbase (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_postbase_to_abs (uint64_t base,
-                             uint64_t pb_index,
-                             uint64_t *abs_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_postbase_to_abs (
+    uint64_t base, uint64_t pb_index, uint64_t *abs_out);
 
 /* ============================================================================
  * INDEX VALIDATION FUNCTIONS
@@ -307,10 +299,8 @@ SocketQPACK_is_valid_relative_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_is_valid_postbase (uint64_t base,
-                               uint64_t insert_count,
-                               uint64_t pb_index);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_postbase (
+    uint64_t base, uint64_t insert_count, uint64_t pb_index);
 
 /**
  * @brief Validate absolute index against table bounds.
@@ -325,10 +315,224 @@ SocketQPACK_is_valid_postbase (uint64_t base,
  *
  * @since 1.0.0
  */
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_absolute (
+    uint64_t insert_count, uint64_t dropped_count, uint64_t abs_index);
+
+/* ============================================================================
+ * DYNAMIC TABLE FUNCTIONS (RFC 9204 Section 3.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Create a new QPACK dynamic table.
+ *
+ * RFC 9204 Section 3.2.1: Creates a dynamic table for header compression.
+ * Uses a circular buffer with absolute indexing.
+ *
+ * @param arena    Memory arena for allocations (must not be NULL)
+ * @param max_size Maximum table size in bytes
+ * @return New table instance, or NULL on allocation failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Table_T
+SocketQPACK_Table_new (Arena_T arena, size_t max_size);
+
+/**
+ * @brief Insert entry with literal name into dynamic table.
+ *
+ * RFC 9204 Section 4.3.3: Inserts a new entry with both name and value
+ * provided as string literals. The entry is assigned the next absolute index.
+ *
+ * @param table      Dynamic table
+ * @param name       Field name (must not be NULL if name_len > 0)
+ * @param name_len   Length of name string
+ * @param value      Field value (must not be NULL if value_len > 0)
+ * @param value_len  Length of value string
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
 extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_is_valid_absolute (uint64_t insert_count,
-                               uint64_t dropped_count,
-                               uint64_t abs_index);
+SocketQPACK_Table_insert_literal (SocketQPACK_Table_T table,
+                                  const char *name,
+                                  size_t name_len,
+                                  const char *value,
+                                  size_t value_len);
+
+/**
+ * @brief Get current table size in bytes.
+ *
+ * @param table Dynamic table
+ * @return Current size in bytes, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t SocketQPACK_Table_size (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get current entry count.
+ *
+ * @param table Dynamic table
+ * @return Number of entries, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t SocketQPACK_Table_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get maximum table size.
+ *
+ * @param table Dynamic table
+ * @return Maximum size in bytes, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t SocketQPACK_Table_max_size (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get Insert Count (total entries ever inserted).
+ *
+ * RFC 9204 Section 3.2.4: Insert Count is a monotonically increasing counter.
+ *
+ * @param table Dynamic table
+ * @return Insert Count, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_Table_insert_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get Dropped Count (number of evicted entries).
+ *
+ * RFC 9204 Section 3.2.4: Dropped Count is the absolute index of the oldest
+ * valid entry.
+ *
+ * @param table Dynamic table
+ * @return Dropped Count, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_Table_dropped_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Set maximum table size.
+ *
+ * RFC 9204 Section 4.3.1: Updates the dynamic table capacity. Evicts oldest
+ * entries if current size exceeds new maximum.
+ *
+ * @param table    Dynamic table
+ * @param max_size New maximum size in bytes
+ *
+ * @since 1.0.0
+ */
+extern void
+SocketQPACK_Table_set_max_size (SocketQPACK_Table_T table, size_t max_size);
+
+/**
+ * @brief Get entry by absolute index.
+ *
+ * RFC 9204 Section 3.2.4: Retrieves an entry by its absolute index.
+ *
+ * @param table      Dynamic table
+ * @param abs_index  Absolute index of entry
+ * @param[out] name      Output: pointer to name string
+ * @param[out] name_len  Output: length of name
+ * @param[out] value     Output: pointer to value string
+ * @param[out] value_len Output: length of value
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Table_get (SocketQPACK_Table_T table,
+                       uint64_t abs_index,
+                       const char **name,
+                       size_t *name_len,
+                       const char **value,
+                       size_t *value_len);
+
+/* ============================================================================
+ * INSERT WITH LITERAL NAME ENCODING/DECODING (RFC 9204 Section 4.3.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode Insert with Literal Name instruction.
+ *
+ * RFC 9204 Section 4.3.3: Encodes an instruction to insert a new entry
+ * with both name and value provided as string literals.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 1 | H | Name Length (5+)  |
+ * +---+---+---+-------------------+
+ * |  Name String (Length bytes)   |
+ * +---+---------------------------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ *
+ * @param buf            Output buffer for encoded instruction
+ * @param buf_size       Size of output buffer
+ * @param name           Field name (must not be NULL if name_len > 0)
+ * @param name_len       Length of name string
+ * @param name_huffman   true to Huffman-encode the name
+ * @param value          Field value (must not be NULL if value_len > 0)
+ * @param value_len      Length of value string
+ * @param value_huffman  true to Huffman-encode the value
+ * @param[out] bytes_written Output: number of bytes written
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_insert_literal_name (unsigned char *buf,
+                                        size_t buf_size,
+                                        const unsigned char *name,
+                                        size_t name_len,
+                                        bool name_huffman,
+                                        const unsigned char *value,
+                                        size_t value_len,
+                                        bool value_huffman,
+                                        size_t *bytes_written);
+
+/**
+ * @brief Decode Insert with Literal Name instruction.
+ *
+ * RFC 9204 Section 4.3.3: Decodes an Insert with Literal Name instruction
+ * from the encoder stream and optionally inserts the entry into the
+ * dynamic table.
+ *
+ * @param buf             Input buffer containing encoded instruction
+ * @param buf_len         Length of input buffer
+ * @param table           Dynamic table to insert into, or NULL to decode only
+ * @param name_out        Output buffer for decoded name
+ * @param name_out_size   Size of name output buffer
+ * @param[out] name_len_out   Output: length of decoded name
+ * @param value_out       Output buffer for decoded value
+ * @param value_out_size  Size of value output buffer
+ * @param[out] value_len_out  Output: length of decoded value
+ * @param[out] bytes_consumed Output: number of bytes consumed from input
+ * @return QPACK_OK on success,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
+                                        size_t buf_len,
+                                        SocketQPACK_Table_T table,
+                                        unsigned char *name_out,
+                                        size_t name_out_size,
+                                        size_t *name_len_out,
+                                        unsigned char *value_out,
+                                        size_t value_out_size,
+                                        size_t *value_len_out,
+                                        size_t *bytes_consumed);
 
 /* ============================================================================
  * UTILITY FUNCTIONS
