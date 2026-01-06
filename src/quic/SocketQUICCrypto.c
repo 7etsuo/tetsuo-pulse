@@ -757,8 +757,7 @@ quic_form_nonce (const uint8_t iv[QUIC_PACKET_IV_LEN],
   /* XOR packet number (big-endian) into last 8 bytes of nonce */
   for (int i = 0; i < 8; i++)
     {
-      nonce[QUIC_PACKET_IV_LEN - 1 - i]
-          ^= (uint8_t)(packet_number >> (8 * i));
+      nonce[QUIC_PACKET_IV_LEN - 1 - i] ^= (uint8_t)(packet_number >> (8 * i));
     }
 }
 
@@ -938,4 +937,381 @@ SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
   (void)plaintext_len;
   return QUIC_CRYPTO_ERROR_NO_TLS;
 #endif
+}
+
+/* ============================================================================
+ * Header Protection (RFC 9001 Section 5.4)
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_TLS
+
+/** Offset from pn_offset to sample start (RFC 9001 §5.4.2). */
+#define HP_SAMPLE_OFFSET 4
+
+/** Long header form bit (RFC 9000 §17.2). */
+#define HEADER_FORM_LONG 0x80
+
+/** Mask for lower 4 bits (long header protection). */
+#define HP_LONG_HEADER_MASK 0x0F
+
+/** Mask for lower 5 bits (short header protection). */
+#define HP_SHORT_HEADER_MASK 0x1F
+
+/** Packet number length mask in first byte (after unprotection). */
+#define PN_LENGTH_MASK 0x03
+
+/**
+ * Extract header protection sample from packet.
+ *
+ * Per RFC 9001 §5.4.2: sample starts at pn_offset + 4.
+ */
+static SocketQUICCrypto_Result
+extract_hp_sample (const uint8_t *packet,
+                   size_t packet_len,
+                   size_t pn_offset,
+                   uint8_t sample[QUIC_HP_SAMPLE_LEN])
+{
+  size_t sample_offset = pn_offset + HP_SAMPLE_OFFSET;
+
+  /* Validate packet has enough bytes for sample */
+  if (sample_offset + QUIC_HP_SAMPLE_LEN > packet_len)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  memcpy (sample, packet + sample_offset, QUIC_HP_SAMPLE_LEN);
+  return QUIC_CRYPTO_OK;
+}
+
+/**
+ * Generate header protection mask using AES-ECB (RFC 9001 §5.4.3).
+ *
+ * mask = AES-ECB(hp_key, sample)[0..4]
+ */
+static SocketQUICCrypto_Result
+hp_mask_aes (const uint8_t *hp_key,
+             size_t hp_key_len,
+             const uint8_t sample[QUIC_HP_SAMPLE_LEN],
+             uint8_t mask[QUIC_HP_MASK_LEN])
+{
+  EVP_CIPHER_CTX *ctx = NULL;
+  const EVP_CIPHER *cipher = NULL;
+  uint8_t encrypted[16];
+  int out_len = 0;
+  SocketQUICCrypto_Result result = QUIC_CRYPTO_ERROR_HKDF;
+
+  /* Select cipher based on key length */
+  if (hp_key_len == 16)
+    cipher = EVP_aes_128_ecb ();
+  else if (hp_key_len == 32)
+    cipher = EVP_aes_256_ecb ();
+  else
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  ctx = EVP_CIPHER_CTX_new ();
+  if (ctx == NULL)
+    goto cleanup;
+
+  /* Disable padding - we process exactly one block */
+  if (EVP_EncryptInit_ex (ctx, cipher, NULL, hp_key, NULL) != 1)
+    goto cleanup;
+  if (EVP_CIPHER_CTX_set_padding (ctx, 0) != 1)
+    goto cleanup;
+
+  /* Encrypt sample (exactly 16 bytes in, 16 bytes out) */
+  if (EVP_EncryptUpdate (ctx, encrypted, &out_len, sample, QUIC_HP_SAMPLE_LEN)
+      != 1)
+    goto cleanup;
+
+  /* No EVP_EncryptFinal needed for ECB without padding */
+
+  /* Take first 5 bytes as mask */
+  memcpy (mask, encrypted, QUIC_HP_MASK_LEN);
+  result = QUIC_CRYPTO_OK;
+
+cleanup:
+  EVP_CIPHER_CTX_free (ctx);
+  SocketCrypto_secure_clear (encrypted, sizeof (encrypted));
+  return result;
+}
+
+/**
+ * Generate header protection mask using ChaCha20 (RFC 9001 §5.4.4).
+ *
+ * counter = sample[0..3] (little-endian)
+ * nonce   = sample[4..15]
+ * mask    = ChaCha20(hp_key, counter, nonce, {0,0,0,0,0})[0..4]
+ */
+static SocketQUICCrypto_Result
+hp_mask_chacha20 (const uint8_t hp_key[32],
+                  const uint8_t sample[QUIC_HP_SAMPLE_LEN],
+                  uint8_t mask[QUIC_HP_MASK_LEN])
+{
+  EVP_CIPHER_CTX *ctx = NULL;
+  uint8_t chacha_iv[16];
+  uint8_t zeros[5] = { 0 };
+  uint8_t output[5];
+  int out_len = 0;
+  SocketQUICCrypto_Result result = QUIC_CRYPTO_ERROR_HKDF;
+
+  /*
+   * ChaCha20 IV format: 4-byte counter (little-endian) + 12-byte nonce
+   * Per RFC 9001 §5.4.4:
+   *   counter = sample[0..3] (already little-endian in sample)
+   *   nonce   = sample[4..15]
+   */
+  memcpy (chacha_iv, sample, 4);          /* counter from sample[0..3] */
+  memcpy (chacha_iv + 4, sample + 4, 12); /* nonce from sample[4..15] */
+
+  ctx = EVP_CIPHER_CTX_new ();
+  if (ctx == NULL)
+    goto cleanup;
+
+  if (EVP_EncryptInit_ex (ctx, EVP_chacha20 (), NULL, hp_key, chacha_iv) != 1)
+    goto cleanup;
+
+  /* Encrypt 5 zero bytes to get mask */
+  if (EVP_EncryptUpdate (ctx, output, &out_len, zeros, QUIC_HP_MASK_LEN) != 1)
+    goto cleanup;
+
+  memcpy (mask, output, QUIC_HP_MASK_LEN);
+  result = QUIC_CRYPTO_OK;
+
+cleanup:
+  EVP_CIPHER_CTX_free (ctx);
+  SocketCrypto_secure_clear (chacha_iv, sizeof (chacha_iv));
+  SocketCrypto_secure_clear (output, sizeof (output));
+  return result;
+}
+
+/**
+ * Generate header protection mask using appropriate algorithm.
+ */
+static SocketQUICCrypto_Result
+hp_generate_mask (const uint8_t *hp_key,
+                  size_t hp_key_len,
+                  SocketQUIC_AEAD aead,
+                  const uint8_t sample[QUIC_HP_SAMPLE_LEN],
+                  uint8_t mask[QUIC_HP_MASK_LEN])
+{
+  switch (aead)
+    {
+    case QUIC_AEAD_AES_128_GCM:
+    case QUIC_AEAD_AES_256_GCM:
+      return hp_mask_aes (hp_key, hp_key_len, sample, mask);
+
+    case QUIC_AEAD_CHACHA20_POLY1305:
+      if (hp_key_len != 32)
+        return QUIC_CRYPTO_ERROR_AEAD;
+      return hp_mask_chacha20 (hp_key, sample, mask);
+
+    default:
+      return QUIC_CRYPTO_ERROR_AEAD;
+    }
+}
+
+/**
+ * Apply header protection mask to packet (RFC 9001 §5.4.1).
+ *
+ * XOR is symmetric, so this applies and removes protection.
+ *
+ * For long header:  packet[0] ^= mask[0] & 0x0F  (4 bits)
+ * For short header: packet[0] ^= mask[0] & 0x1F  (5 bits)
+ *
+ * @param packet    Packet buffer (modified in place).
+ * @param pn_offset Offset of packet number field.
+ * @param pn_length Packet number length (1-4 bytes).
+ * @param mask      5-byte mask.
+ */
+static void
+apply_hp_mask (uint8_t *packet,
+               size_t pn_offset,
+               size_t pn_length,
+               const uint8_t mask[QUIC_HP_MASK_LEN])
+{
+  /* Determine header form and apply appropriate mask bits */
+  if (packet[0] & HEADER_FORM_LONG)
+    packet[0] ^= mask[0] & HP_LONG_HEADER_MASK;
+  else
+    packet[0] ^= mask[0] & HP_SHORT_HEADER_MASK;
+
+  /* XOR packet number bytes with mask[1..pn_length] */
+  for (size_t i = 0; i < pn_length; i++)
+    packet[pn_offset + i] ^= mask[1 + i];
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/* ============================================================================
+ * Public Header Protection API
+ * ============================================================================
+ */
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_protect_header (const uint8_t *hp_key,
+                                 size_t hp_key_len,
+                                 SocketQUIC_AEAD aead,
+                                 uint8_t *packet,
+                                 size_t packet_len,
+                                 size_t pn_offset)
+{
+#ifdef SOCKET_HAS_TLS
+  uint8_t sample[QUIC_HP_SAMPLE_LEN];
+  uint8_t mask[QUIC_HP_MASK_LEN];
+  size_t pn_length;
+  SocketQUICCrypto_Result result;
+
+  /* Parameter validation */
+  if (hp_key == NULL || packet == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  if (packet_len == 0 || pn_offset == 0)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  /* Validate AEAD algorithm */
+  if (aead < 0 || aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Extract pn_length from unprotected first byte (lower 2 bits + 1) */
+  pn_length = (packet[0] & PN_LENGTH_MASK) + 1;
+
+  /* Validate pn_offset + pn_length doesn't exceed packet */
+  if (pn_offset + pn_length > packet_len)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  /* Validate packet is long enough for sample extraction */
+  result = extract_hp_sample (packet, packet_len, pn_offset, sample);
+  if (result != QUIC_CRYPTO_OK)
+    return result;
+
+  /* Generate mask using appropriate algorithm */
+  result = hp_generate_mask (hp_key, hp_key_len, aead, sample, mask);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketCrypto_secure_clear (sample, sizeof (sample));
+      return result;
+    }
+
+  /* Apply mask to header and packet number */
+  apply_hp_mask (packet, pn_offset, pn_length, mask);
+
+  /* Clear sensitive data */
+  SocketCrypto_secure_clear (sample, sizeof (sample));
+  SocketCrypto_secure_clear (mask, sizeof (mask));
+
+  return QUIC_CRYPTO_OK;
+
+#else
+  (void)hp_key;
+  (void)hp_key_len;
+  (void)aead;
+  (void)packet;
+  (void)packet_len;
+  (void)pn_offset;
+  return QUIC_CRYPTO_ERROR_NO_TLS;
+#endif
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_unprotect_header (const uint8_t *hp_key,
+                                   size_t hp_key_len,
+                                   SocketQUIC_AEAD aead,
+                                   uint8_t *packet,
+                                   size_t packet_len,
+                                   size_t pn_offset)
+{
+#ifdef SOCKET_HAS_TLS
+  uint8_t sample[QUIC_HP_SAMPLE_LEN];
+  uint8_t mask[QUIC_HP_MASK_LEN];
+  size_t pn_length;
+  SocketQUICCrypto_Result result;
+  uint8_t first_byte_mask;
+
+  /* Parameter validation */
+  if (hp_key == NULL || packet == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  if (packet_len == 0 || pn_offset == 0)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  /* Validate AEAD algorithm */
+  if (aead < 0 || aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Extract sample */
+  result = extract_hp_sample (packet, packet_len, pn_offset, sample);
+  if (result != QUIC_CRYPTO_OK)
+    return result;
+
+  /* Generate mask */
+  result = hp_generate_mask (hp_key, hp_key_len, aead, sample, mask);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketCrypto_secure_clear (sample, sizeof (sample));
+      return result;
+    }
+
+  /*
+   * Unprotect first byte to get pn_length (RFC 9001 §5.4.2).
+   * Must unprotect first byte BEFORE reading pn_length.
+   */
+  first_byte_mask = (packet[0] & HEADER_FORM_LONG) ? HP_LONG_HEADER_MASK
+                                                   : HP_SHORT_HEADER_MASK;
+  packet[0] ^= mask[0] & first_byte_mask;
+
+  /* Now extract pn_length from unprotected first byte */
+  pn_length = (packet[0] & PN_LENGTH_MASK) + 1;
+
+  /* Validate pn_offset + pn_length doesn't exceed packet */
+  if (pn_offset + pn_length > packet_len)
+    {
+      SocketCrypto_secure_clear (sample, sizeof (sample));
+      SocketCrypto_secure_clear (mask, sizeof (mask));
+      return QUIC_CRYPTO_ERROR_INPUT;
+    }
+
+  /* Unprotect packet number bytes */
+  for (size_t i = 0; i < pn_length; i++)
+    packet[pn_offset + i] ^= mask[1 + i];
+
+  /* Clear sensitive data */
+  SocketCrypto_secure_clear (sample, sizeof (sample));
+  SocketCrypto_secure_clear (mask, sizeof (mask));
+
+  return QUIC_CRYPTO_OK;
+
+#else
+  (void)hp_key;
+  (void)hp_key_len;
+  (void)aead;
+  (void)packet;
+  (void)packet_len;
+  (void)pn_offset;
+  return QUIC_CRYPTO_ERROR_NO_TLS;
+#endif
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_protect_header_ex (const SocketQUICPacketKeys_T *keys,
+                                    uint8_t *packet,
+                                    size_t packet_len,
+                                    size_t pn_offset)
+{
+  if (keys == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  return SocketQUICCrypto_protect_header (
+      keys->hp_key, keys->hp_len, keys->aead, packet, packet_len, pn_offset);
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_unprotect_header_ex (const SocketQUICPacketKeys_T *keys,
+                                      uint8_t *packet,
+                                      size_t packet_len,
+                                      size_t pn_offset)
+{
+  if (keys == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  return SocketQUICCrypto_unprotect_header (
+      keys->hp_key, keys->hp_len, keys->aead, packet, packet_len, pn_offset);
 }
