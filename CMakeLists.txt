@@ -359,6 +359,9 @@ set(LIB_SOURCES
     src/http/hpack/SocketHPACK-huffman.c
     src/http/hpack/SocketHPACK-table.c
 
+    # QPACK Field Compression (RFC 9204)
+    src/http/qpack/SocketQPACK-static.c
+
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
     src/http/h2/SocketHTTP2-connection.c
@@ -424,6 +427,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICAck.c
     src/quic/SocketQUICLoss.c
     src/quic/SocketQUICTLS.c
+    src/quic/SocketQPACK.c
 
     # QPACK Header Compression (RFC 9204)
     src/quic/SocketQPACK.c
@@ -656,6 +660,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICAck.h
     include/quic/SocketQUICLoss.h
     include/quic/SocketQUICTLS.h
+    include/quic/SocketQPACK.h
 )
 
 set(SIMPLE_HEADERS
@@ -783,6 +788,7 @@ set(TEST_SOURCES
     test_http_core
     test_http1_parser
     test_hpack
+    test_qpack_static
     test_http2
     test_http2_priority
     test_http2_rate_limit
