@@ -396,6 +396,196 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_apply_set_capacity (
     SocketQPACK_Table_T table, uint64_t capacity, uint64_t max_capacity);
 
 /* ============================================================================
+ * DYNAMIC TABLE MANAGEMENT (RFC 9204 Section 3.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Create a new QPACK dynamic table.
+ *
+ * Allocates a dynamic table with specified maximum size. The table uses
+ * a ring buffer internally for FIFO eviction.
+ *
+ * @param arena    Memory arena for allocations (must not be NULL)
+ * @param max_size Maximum table size in bytes
+ * @return New table instance, or NULL on allocation failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Table_T
+SocketQPACK_Table_new (Arena_T arena, size_t max_size);
+
+/**
+ * @brief Get the current size of the dynamic table in bytes.
+ *
+ * @param table Dynamic table (must not be NULL)
+ * @return Current size in bytes, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t SocketQPACK_Table_size (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get the current number of entries in the dynamic table.
+ *
+ * @param table Dynamic table (must not be NULL)
+ * @return Number of entries, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t SocketQPACK_Table_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get the maximum size of the dynamic table in bytes.
+ *
+ * @param table Dynamic table (must not be NULL)
+ * @return Maximum size in bytes, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t SocketQPACK_Table_max_size (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get the Insert Count (total entries ever inserted).
+ *
+ * @param table Dynamic table (must not be NULL)
+ * @return Insert Count, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_Table_insert_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Get the number of entries that have been evicted.
+ *
+ * @param table Dynamic table (must not be NULL)
+ * @return Dropped count, or 0 if table is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_Table_dropped_count (SocketQPACK_Table_T table);
+
+/**
+ * @brief Set the maximum size of the dynamic table.
+ *
+ * Evicts entries if the new max size is smaller than current size.
+ *
+ * @param table    Dynamic table (must not be NULL)
+ * @param max_size New maximum size in bytes
+ *
+ * @since 1.0.0
+ */
+extern void
+SocketQPACK_Table_set_max_size (SocketQPACK_Table_T table, size_t max_size);
+
+/**
+ * @brief Insert a literal name-value entry into the dynamic table.
+ *
+ * @param table     Dynamic table
+ * @param name      Header name
+ * @param name_len  Length of name
+ * @param value     Header value
+ * @param value_len Length of value
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Table_insert_literal (SocketQPACK_Table_T table,
+                                  const char *name,
+                                  size_t name_len,
+                                  const char *value,
+                                  size_t value_len);
+
+/**
+ * @brief Get an entry from the dynamic table by absolute index.
+ *
+ * @param table     Dynamic table
+ * @param abs_index Absolute index of entry
+ * @param[out] name      Output: pointer to name
+ * @param[out] name_len  Output: name length
+ * @param[out] value     Output: pointer to value
+ * @param[out] value_len Output: value length
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Table_get (SocketQPACK_Table_T table,
+                       uint64_t abs_index,
+                       const char **name,
+                       size_t *name_len,
+                       const char **value,
+                       size_t *value_len);
+
+/* ============================================================================
+ * INSERT WITH LITERAL NAME (RFC 9204 Section 4.3.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode Insert With Literal Name instruction.
+ *
+ * RFC 9204 Section 4.3.3: Encodes an instruction to insert a new entry
+ * with both name and value as literals into the dynamic table.
+ *
+ * @param buf           Output buffer
+ * @param buf_size      Size of output buffer
+ * @param name          Header name
+ * @param name_len      Length of name
+ * @param name_huffman  Whether to use Huffman encoding for name
+ * @param value         Header value
+ * @param value_len     Length of value
+ * @param value_huffman Whether to use Huffman encoding for value
+ * @param[out] bytes_written Output: number of bytes written
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_insert_literal_name (unsigned char *buf,
+                                        size_t buf_size,
+                                        const unsigned char *name,
+                                        size_t name_len,
+                                        bool name_huffman,
+                                        const unsigned char *value,
+                                        size_t value_len,
+                                        bool value_huffman,
+                                        size_t *bytes_written);
+
+/**
+ * @brief Decode Insert With Literal Name instruction.
+ *
+ * RFC 9204 Section 4.3.3: Decodes an instruction to insert a new entry
+ * with both name and value as literals.
+ *
+ * @param buf            Input buffer
+ * @param buf_len        Length of input buffer
+ * @param table          Dynamic table for insertion (may be NULL)
+ * @param name_out       Output buffer for decoded name
+ * @param name_out_size  Size of name output buffer
+ * @param[out] name_len_out  Output: actual name length
+ * @param value_out      Output buffer for decoded value
+ * @param value_out_size Size of value output buffer
+ * @param[out] value_len_out Output: actual value length
+ * @param[out] bytes_consumed Output: bytes consumed
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
+                                        size_t buf_len,
+                                        SocketQPACK_Table_T table,
+                                        unsigned char *name_out,
+                                        size_t name_out_size,
+                                        size_t *name_len_out,
+                                        unsigned char *value_out,
+                                        size_t value_out_size,
+                                        size_t *value_len_out,
+                                        size_t *bytes_consumed);
+
+/* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
  */
