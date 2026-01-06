@@ -38,6 +38,20 @@
 #include "quic/SocketQUICTransportParams.h"
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief CRYPTO stream receive buffer size per encryption level.
+ *
+ * Must accommodate largest possible TLS message (16KB + overhead).
+ */
+#ifndef QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE
+#define QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE 16384
+#endif
+
+/* ============================================================================
  * Types
  * ============================================================================
  */
@@ -144,6 +158,13 @@ struct SocketQUICHandshake
   /* Key material (opaque to allow different crypto backends) */
   void *keys[QUIC_CRYPTO_LEVEL_COUNT];         /**< Packet protection keys */
   int keys_available[QUIC_CRYPTO_LEVEL_COUNT]; /**< Key availability flags */
+
+  /* Key discard state tracking (RFC 9001 §4.9) */
+  int initial_keys_discarded;   /**< Initial keys discarded (§4.9.1) */
+  int handshake_keys_discarded; /**< Handshake keys discarded (§4.9.2) */
+  int zero_rtt_keys_discarded;  /**< 0-RTT keys discarded (§4.9.3) */
+  int first_handshake_sent;     /**< Client: first Handshake packet sent */
+  int first_handshake_received; /**< Server: first Handshake packet processed */
 
   /* Error tracking */
   uint64_t error_code;    /**< TLS alert or crypto error */
@@ -313,6 +334,142 @@ extern void *SocketQUICHandshake_get_keys (SocketQUICHandshake_T handshake,
  */
 extern void SocketQUICHandshake_discard_keys (SocketQUICHandshake_T handshake,
                                               SocketQUICCryptoLevel level);
+
+/* ============================================================================
+ * Key Discard Triggers (RFC 9001 Section 4.9)
+ * ============================================================================
+ */
+
+/**
+ * @brief Notify that client sent first Handshake packet (RFC 9001 §4.9.1).
+ *
+ * Client MUST discard Initial keys when it first sends a Handshake packet.
+ * This function is idempotent; subsequent calls have no effect.
+ *
+ * @param handshake Handshake context.
+ */
+extern void
+SocketQUICHandshake_on_handshake_packet_sent (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Notify that server processed first Handshake packet (RFC 9001 §4.9.1).
+ *
+ * Server MUST discard Initial keys when it first successfully processes
+ * a Handshake packet. This function is idempotent.
+ *
+ * @param handshake Handshake context.
+ */
+extern void SocketQUICHandshake_on_handshake_packet_received (
+    SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Notify that handshake is confirmed (RFC 9001 §4.9.2).
+ *
+ * Both endpoints MUST discard Handshake keys when the TLS handshake
+ * is confirmed. This function is idempotent.
+ *
+ * @param handshake Handshake context.
+ */
+extern void SocketQUICHandshake_on_confirmed (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Notify that 1-RTT keys are installed (RFC 9001 §4.9.3).
+ *
+ * Client SHOULD discard 0-RTT keys as soon as 1-RTT keys are installed.
+ * This function is idempotent.
+ *
+ * @param handshake Handshake context.
+ */
+extern void
+SocketQUICHandshake_on_1rtt_keys_installed (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Notify that server received 1-RTT packet (RFC 9001 §4.9.3).
+ *
+ * Server MAY discard 0-RTT keys when it receives a 1-RTT packet.
+ * Server MUST discard 0-RTT keys within 3×PTO after first 1-RTT packet.
+ * This function is idempotent.
+ *
+ * @param handshake Handshake context.
+ */
+extern void
+SocketQUICHandshake_on_1rtt_packet_received (SocketQUICHandshake_T handshake);
+
+/* ============================================================================
+ * Key Availability Checks (RFC 9001 Section 4.9)
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if Initial packets can be sent.
+ *
+ * Returns false after Initial keys are discarded per RFC 9001 §4.9.1.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if Initial packets can be sent, 0 otherwise.
+ */
+extern int
+SocketQUICHandshake_can_send_initial (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if Initial packets can be received and processed.
+ *
+ * Returns false after Initial keys are discarded per RFC 9001 §4.9.1.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if Initial packets can be received, 0 otherwise.
+ */
+extern int
+SocketQUICHandshake_can_receive_initial (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if Handshake packets can be sent.
+ *
+ * Returns false after Handshake keys are discarded per RFC 9001 §4.9.2.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if Handshake packets can be sent, 0 otherwise.
+ */
+extern int
+SocketQUICHandshake_can_send_handshake (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if Handshake packets can be received and processed.
+ *
+ * Returns false after Handshake keys are discarded per RFC 9001 §4.9.2.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if Handshake packets can be received, 0 otherwise.
+ */
+extern int
+SocketQUICHandshake_can_receive_handshake (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if 0-RTT packets can be sent (client only).
+ *
+ * Returns false after 0-RTT keys are discarded per RFC 9001 §4.9.3.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if 0-RTT packets can be sent, 0 otherwise.
+ */
+extern int SocketQUICHandshake_can_send_0rtt (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if 0-RTT packets can be received (server only).
+ *
+ * Returns false after 0-RTT keys are discarded per RFC 9001 §4.9.3.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if 0-RTT packets can be received, 0 otherwise.
+ */
+extern int
+SocketQUICHandshake_can_receive_0rtt (SocketQUICHandshake_T handshake);
 
 /* ============================================================================
  * State Query Functions
