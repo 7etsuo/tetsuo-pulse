@@ -629,6 +629,33 @@ TEST (qpack_integration_insert_duplicate_reference)
 }
 
 /* ============================================================================
+ * Security Tests
+ * ============================================================================
+ */
+
+TEST (qpack_int_decode_malicious_continuation)
+{
+  /* Test malicious input with >10 continuation bytes.
+   * Each byte has the continuation bit (0x80) set, forcing the decoder
+   * to keep reading. The decoder must reject this after 10 bytes. */
+  uint8_t malicious[16];
+  uint64_t value;
+  size_t consumed;
+
+  /* Build malicious sequence: prefix maxed + 12 continuation bytes */
+  malicious[0] = 0x1f; /* 5-bit prefix maxed out (31) */
+  for (int i = 1; i <= 12; i++)
+    malicious[i] = 0x80; /* Continuation bit set, payload 0 */
+  malicious[13] = 0x00; /* Final byte (no continuation) */
+
+  SocketQPACK_Result res
+      = SocketQPACK_int_decode (malicious, sizeof (malicious), 5, &value, &consumed);
+
+  /* Must reject - too many continuation bytes */
+  ASSERT_EQ (QPACK_ERROR_PARSE, res);
+}
+
+/* ============================================================================
  * Main
  * ============================================================================
  */

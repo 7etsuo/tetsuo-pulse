@@ -71,7 +71,7 @@ static const char *result_strings[] = {
 const char *
 SocketQPACK_result_string (SocketQPACK_Result result)
 {
-  if (result < 0 || result > QPACK_ERROR_DECODER_STREAM)
+  if (result > QPACK_ERROR_DECODER_STREAM)
     return "Unknown error";
   return result_strings[result];
 }
