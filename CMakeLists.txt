@@ -359,6 +359,9 @@ set(LIB_SOURCES
     src/http/hpack/SocketHPACK-huffman.c
     src/http/hpack/SocketHPACK-table.c
 
+    # QPACK Header Compression (RFC 9204)
+    src/http/qpack/SocketQPACK.c
+
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
     src/http/h2/SocketHTTP2-connection.c
@@ -631,6 +634,7 @@ set(HTTP_HEADERS
     include/http/SocketHTTPClient.h
     include/http/SocketHTTPClient-private.h
     include/http/SocketHTTPServer.h
+    include/http/qpack/SocketQPACK.h
 )
 
 set(TEST_HEADERS
@@ -837,6 +841,8 @@ set(TEST_SOURCES
     test_quic_loss
     test_quic_key_discard
     test_quic_0rtt
+    # QPACK tests (RFC 9204)
+    test_qpack_insert_count_inc
 )
 
 # TLS tests (only built when TLS is enabled)
