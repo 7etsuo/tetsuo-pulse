@@ -19,6 +19,7 @@
 
 #include "http/SocketQPACK.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -520,6 +521,85 @@ test_invalid_parameters (void)
   printf ("PASS\n");
 }
 
+/**
+ * Test finding entry with empty value
+ */
+static void
+test_find_empty_value (void)
+{
+  int idx;
+
+  printf ("  Find entry with empty value... ");
+
+  /* :authority has empty value at index 0 */
+  idx = SocketQPACK_static_find (":authority", 10, "", 0);
+  TEST_ASSERT (idx == 0, "Should find :authority with empty value at index 0");
+
+  /* cookie has empty value at index 5 */
+  idx = SocketQPACK_static_find ("cookie", 6, "", 0);
+  TEST_ASSERT (idx == 5, "Should find cookie with empty value at index 5");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test SIZE_MAX index handling
+ */
+static void
+test_size_max_index (void)
+{
+  SocketQPACK_StaticEntry entry;
+  SocketQPACK_Result result;
+  size_t len;
+
+  printf ("  SIZE_MAX index... ");
+
+  result = SocketQPACK_static_get (SIZE_MAX, &entry);
+  TEST_ASSERT (result == SOCKETQPACK_ERROR_INVALID_INDEX,
+               "SIZE_MAX index should fail");
+
+  len = SocketQPACK_static_name_len (SIZE_MAX);
+  TEST_ASSERT (len == 0, "SIZE_MAX name_len should return 0");
+
+  len = SocketQPACK_static_value_len (SIZE_MAX);
+  TEST_ASSERT (len == 0, "SIZE_MAX value_len should return 0");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test pseudo-header lookups (names starting with ':')
+ */
+static void
+test_pseudo_header_lookups (void)
+{
+  int idx;
+
+  printf ("  Pseudo-header lookups... ");
+
+  /* All pseudo-headers should be findable */
+  idx = SocketQPACK_static_find_name (":authority", 10);
+  TEST_ASSERT (idx == 0, ":authority should be at index 0");
+
+  idx = SocketQPACK_static_find_name (":path", 5);
+  TEST_ASSERT (idx == 1, ":path should be at index 1");
+
+  idx = SocketQPACK_static_find_name (":method", 7);
+  TEST_ASSERT (idx >= 15 && idx <= 21, ":method should be in 15-21");
+
+  idx = SocketQPACK_static_find_name (":scheme", 7);
+  TEST_ASSERT (idx >= 22 && idx <= 23, ":scheme should be in 22-23");
+
+  idx = SocketQPACK_static_find_name (":status", 7);
+  TEST_ASSERT (idx >= 24 && idx <= 71, ":status should be in valid range");
+
+  /* Non-existent pseudo-header */
+  idx = SocketQPACK_static_find_name (":invalid", 8);
+  TEST_ASSERT (idx == -1, ":invalid should not be found");
+
+  printf ("PASS\n");
+}
+
 /* ============================================================================
  * Main Test Runner
  * ============================================================================
@@ -564,6 +644,11 @@ main (void)
   test_rfc9204_appendix_a_samples ();
   test_result_string ();
   test_invalid_parameters ();
+
+  printf ("\nEdge Case Tests:\n");
+  test_find_empty_value ();
+  test_size_max_index ();
+  test_pseudo_header_lookups ();
 
   printf ("\n====================================================\n");
   printf ("All QPACK Static Table tests passed!\n");
