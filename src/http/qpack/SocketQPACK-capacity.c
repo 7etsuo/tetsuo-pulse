@@ -45,9 +45,6 @@
 /** Set Dynamic Table Capacity prefix bits (5-bit integer) */
 #define SET_CAPACITY_PREFIX 5
 
-/** Maximum integer encoding buffer size (1 prefix + 10 continuation bytes) */
-#define INT_ENCODE_MAX_SIZE 16
-
 /* ============================================================================
  * ENCODE SET CAPACITY
  * ============================================================================
@@ -216,10 +213,23 @@ SocketQPACK_apply_set_capacity (SocketQPACK_Table_T table,
    * "Reducing the capacity of the dynamic table can cause entries to be
    * evicted."
    *
+   * RFC 9204 Section 2.1.1:
+   * "This MUST NOT cause the eviction of entries that are not evictable."
+   * Entries are not evictable while they are referenced by unacknowledged
+   * field sections.
+   *
    * Evict entries in FIFO order (oldest first) until size <= new capacity.
    */
   while (table->count > 0 && table->size > capacity)
-    evict_oldest_entry (table);
+    {
+      QPACK_DynamicEntry *oldest = &table->entries[table->head];
+
+      /* Cannot evict entries still referenced by unacknowledged field sections */
+      if (oldest->meta.ref_count > 0)
+        return QPACK_ERR_TABLE_SIZE;
+
+      evict_oldest_entry (table);
+    }
 
   /* Update the maximum size limit */
   table->max_size = (size_t)capacity;
