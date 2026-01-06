@@ -129,6 +129,56 @@ typedef struct
 } SocketQUICCryptoStream_T;
 
 /**
+ * @brief 0-RTT state machine states (RFC 9001 Section 4.6).
+ *
+ * Tracks the lifecycle of 0-RTT early data from offer through
+ * acceptance or rejection.
+ */
+typedef enum
+{
+  QUIC_0RTT_STATE_NONE = 0, /**< No 0-RTT attempted */
+  QUIC_0RTT_STATE_OFFERED,  /**< Client: session ticket set, will offer */
+  QUIC_0RTT_STATE_PENDING,  /**< Waiting for server response */
+  QUIC_0RTT_STATE_ACCEPTED, /**< Server accepted early data */
+  QUIC_0RTT_STATE_REJECTED  /**< Server rejected early data */
+} SocketQUIC0RTT_State;
+
+/**
+ * @brief 0-RTT early data context (RFC 9001 Section 4.6).
+ *
+ * Manages session resumption state including:
+ * - Session ticket storage and metadata
+ * - Saved transport parameters for validation
+ * - Early data buffer for replay on rejection
+ *
+ * Thread Safety: Not thread-safe; one context per connection.
+ */
+typedef struct SocketQUIC0RTT
+{
+  SocketQUIC0RTT_State state; /**< Current 0-RTT state */
+
+  /* Session ticket (from previous connection) */
+  uint8_t *ticket_data;          /**< Serialized session ticket */
+  size_t ticket_len;             /**< Ticket length in bytes */
+  uint64_t ticket_age_add;       /**< Obfuscation for ticket age */
+  uint64_t ticket_issued_ms;     /**< When ticket was issued (ms) */
+  uint32_t ticket_max_early_data; /**< max_early_data_size from ticket */
+
+  /* Saved parameters from original connection (for validation) */
+  SocketQUICTransportParams_T saved_params; /**< Original transport params */
+  int saved_params_valid;                   /**< Params were saved */
+  char saved_alpn[256];                     /**< Original ALPN protocol */
+  size_t saved_alpn_len;                    /**< ALPN string length */
+
+  /* Early data tracking */
+  uint8_t *early_data_buffer;  /**< Buffer for replay on rejection */
+  size_t early_data_len;       /**< Bytes in early_data_buffer */
+  size_t early_data_capacity;  /**< Allocated buffer size */
+
+  int keys_derived; /**< 0-RTT keys have been derived */
+} SocketQUIC0RTT_T;
+
+/**
  * @brief Opaque handshake context.
  */
 typedef struct SocketQUICHandshake *SocketQUICHandshake_T;
@@ -169,6 +219,10 @@ struct SocketQUICHandshake
   /* Error tracking */
   uint64_t error_code;    /**< TLS alert or crypto error */
   char error_reason[256]; /**< Human-readable error */
+
+  /* 0-RTT early data support (RFC 9001 §4.6) */
+  SocketQUIC0RTT_T zero_rtt;   /**< 0-RTT state and data */
+  int hello_retry_received;    /**< HRR received (forces 0-RTT rejection) */
 };
 
 /* ============================================================================
@@ -470,6 +524,114 @@ extern int SocketQUICHandshake_can_send_0rtt (SocketQUICHandshake_T handshake);
  */
 extern int
 SocketQUICHandshake_can_receive_0rtt (SocketQUICHandshake_T handshake);
+
+/* ============================================================================
+ * 0-RTT Early Data Functions (RFC 9001 Section 4.6)
+ * ============================================================================
+ */
+
+/**
+ * @brief Initialize 0-RTT state to default values.
+ *
+ * Sets state to NONE and zeros all fields. Called automatically
+ * by SocketQUICHandshake_new() but can be called to reset state.
+ *
+ * @param handshake Handshake context.
+ */
+extern void SocketQUICHandshake_0rtt_init (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if 0-RTT early data is available for this connection.
+ *
+ * Returns true if:
+ * - A valid session ticket is stored
+ * - No HelloRetryRequest was received
+ * - State is OFFERED or PENDING
+ *
+ * Client should check this before sending 0-RTT data.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if 0-RTT is available, 0 otherwise.
+ */
+extern int SocketQUICHandshake_0rtt_available (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Store session ticket for 0-RTT resumption (RFC 9001 §4.6).
+ *
+ * Copies session ticket data and associated parameters for use in
+ * subsequent connection. Client should call this after receiving
+ * NewSessionTicket from a previous connection.
+ *
+ * Per RFC 9001 §4.6.1: Only tickets with max_early_data_size=0xffffffff
+ * are valid for QUIC 0-RTT. Tickets with other values MUST be rejected.
+ *
+ * @param handshake   Handshake context.
+ * @param ticket      Serialized session ticket.
+ * @param ticket_len  Ticket length in bytes.
+ * @param params      Transport parameters from original connection.
+ * @param alpn        ALPN protocol from original connection.
+ * @param alpn_len    ALPN string length.
+ *
+ * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
+ */
+extern SocketQUICHandshake_Result
+SocketQUICHandshake_0rtt_set_ticket (SocketQUICHandshake_T handshake,
+                                     const uint8_t *ticket,
+                                     size_t ticket_len,
+                                     const SocketQUICTransportParams_T *params,
+                                     const char *alpn,
+                                     size_t alpn_len);
+
+/**
+ * @brief Get current 0-RTT state.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Current 0-RTT state.
+ */
+extern SocketQUIC0RTT_State
+SocketQUICHandshake_0rtt_get_state (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Check if 0-RTT was accepted by server.
+ *
+ * Valid only after handshake completes. Returns true if server
+ * included early_data extension in EncryptedExtensions.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if 0-RTT was accepted, 0 otherwise.
+ */
+extern int SocketQUICHandshake_0rtt_accepted (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Handle 0-RTT rejection by server (RFC 9001 §4.6.2).
+ *
+ * Called when server does not accept early data. Per RFC 9001:
+ * - Discards 0-RTT keys
+ * - Resets stream state for 0-RTT data
+ * - Transitions state to REJECTED
+ *
+ * Client MUST resend all 0-RTT data as 1-RTT data after this.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return QUIC_HANDSHAKE_OK on success.
+ */
+extern SocketQUICHandshake_Result
+SocketQUICHandshake_0rtt_handle_rejection (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Notify that HelloRetryRequest was received (RFC 9001 §4.6.2).
+ *
+ * Per RFC 9001 §4.6.2: A HelloRetryRequest always rejects 0-RTT.
+ * This function sets the HRR flag which forces 0-RTT rejection.
+ *
+ * @param handshake Handshake context.
+ */
+extern void
+SocketQUICHandshake_on_hello_retry_request (SocketQUICHandshake_T handshake);
 
 /* ============================================================================
  * State Query Functions

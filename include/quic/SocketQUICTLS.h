@@ -432,4 +432,101 @@ SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
                         const char **alpn,
                         size_t *len);
 
+/* ============================================================================
+ * 0-RTT Session Ticket Functions (RFC 9001 Section 4.6)
+ * ============================================================================
+ */
+
+/**
+ * @brief Enable session ticket issuance for 0-RTT (RFC 9001 §4.6.1).
+ *
+ * Configures SSL_CTX to issue NewSessionTicket messages with
+ * max_early_data_size=0xffffffff as required by QUIC.
+ *
+ * Per RFC 9001 §4.6.1: The TLS max_early_data_size parameter for QUIC
+ * MUST be 0xffffffff. Endpoints MUST NOT use tickets with any other value.
+ *
+ * @param handshake Handshake context with tls_ctx set.
+ *
+ * @return QUIC_TLS_OK on success, error code otherwise.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_enable_session_tickets (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Set session ticket for resumption (RFC 9001 §4.6).
+ *
+ * Deserializes session ticket and sets on SSL object for 0-RTT.
+ * Validates that max_early_data_size equals 0xffffffff per RFC 9001 §4.6.1.
+ *
+ * @param handshake Handshake context.
+ * @param ticket    Serialized session ticket.
+ * @param len       Ticket length in bytes.
+ *
+ * @return QUIC_TLS_OK on success, QUIC_TLS_ERROR_HANDSHAKE if invalid ticket.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_set_session (SocketQUICHandshake_T handshake,
+                           const uint8_t *ticket,
+                           size_t len);
+
+/**
+ * @brief Get session ticket for future resumption.
+ *
+ * Serializes the current SSL_SESSION into a buffer for storage.
+ * Client should call this after receiving NewSessionTicket.
+ *
+ * @param handshake Handshake context.
+ * @param ticket    Output buffer for serialized ticket.
+ * @param len       On input: buffer size. On output: bytes written.
+ *
+ * @return QUIC_TLS_OK on success, QUIC_TLS_ERROR_HANDSHAKE if no session.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_get_session_ticket (SocketQUICHandshake_T handshake,
+                                  uint8_t *ticket,
+                                  size_t *len);
+
+/**
+ * @brief Check if server accepted early data (RFC 9001 §4.6.2).
+ *
+ * Wraps SSL_get_early_data_status() to check if 0-RTT was accepted.
+ * Call after handshake completes.
+ *
+ * Per RFC 9001 §4.6.2: Server accepts 0-RTT by including early_data
+ * extension in EncryptedExtensions. Rejects by omitting it.
+ *
+ * @param handshake Handshake context.
+ *
+ * @return Non-zero if early data accepted, 0 if rejected or not offered.
+ */
+extern int SocketQUICTLS_early_data_accepted (SocketQUICHandshake_T handshake);
+
+/**
+ * @brief Validate transport parameters for 0-RTT (RFC 9001 §4.6.3).
+ *
+ * Server MUST NOT reduce parameters that affect 0-RTT data acceptance.
+ * This validates that resumed parameters are not more restrictive.
+ *
+ * Per RFC 9001 §4.6.3, these MUST NOT be reduced:
+ * - initial_max_data
+ * - initial_max_stream_data_bidi_local
+ * - initial_max_stream_data_bidi_remote
+ * - initial_max_stream_data_uni
+ * - initial_max_streams_bidi
+ * - initial_max_streams_uni
+ *
+ * Additionally checks:
+ * - active_connection_id_limit (MUST NOT be reduced)
+ * - disable_active_migration (MUST NOT change to true)
+ *
+ * @param original Original transport parameters from session ticket.
+ * @param resumed  Transport parameters from resumed connection.
+ *
+ * @return QUIC_TLS_OK if valid, QUIC_TLS_ERROR_TRANSPORT if violated.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
+                                    const SocketQUICTransportParams_T *resumed);
+
 #endif /* SOCKETQUICTLS_INCLUDED */
