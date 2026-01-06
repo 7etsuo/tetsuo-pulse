@@ -67,7 +67,10 @@ typedef enum
   QUIC_CRYPTO_ERROR_HKDF,      /**< HKDF operation failed */
   QUIC_CRYPTO_ERROR_NO_TLS,    /**< TLS support not available */
   QUIC_CRYPTO_ERROR_AEAD,      /**< Invalid AEAD algorithm */
-  QUIC_CRYPTO_ERROR_SECRET_LEN /**< Secret length doesn't match AEAD */
+  QUIC_CRYPTO_ERROR_SECRET_LEN, /**< Secret length doesn't match AEAD */
+  QUIC_CRYPTO_ERROR_BUFFER,    /**< Output buffer too small */
+  QUIC_CRYPTO_ERROR_TAG,       /**< AEAD tag verification failed */
+  QUIC_CRYPTO_ERROR_INPUT      /**< Invalid input (e.g., too short) */
 } SocketQUICCrypto_Result;
 
 /* ============================================================================
@@ -341,6 +344,77 @@ extern void SocketQUICPacketKeys_clear (SocketQUICPacketKeys_T *keys);
  * @return Human-readable algorithm name, or "UNKNOWN" if invalid.
  */
 extern const char *SocketQUIC_AEAD_string (SocketQUIC_AEAD aead);
+
+/* ============================================================================
+ * AEAD Packet Payload Encryption/Decryption (RFC 9001 Section 5.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encrypt a QUIC packet payload using AEAD (RFC 9001 §5.3).
+ *
+ * Encrypts the payload and appends the 16-byte authentication tag.
+ * The nonce is formed by XORing the IV with the packet number.
+ *
+ * @param keys           Packet protection keys (key, IV, algorithm).
+ * @param packet_number  Full 62-bit packet number (for nonce construction).
+ * @param header         Packet header bytes (used as AAD).
+ * @param header_len     Length of header in bytes.
+ * @param plaintext      Input plaintext payload.
+ * @param plaintext_len  Length of plaintext in bytes.
+ * @param ciphertext     Output buffer for ciphertext + tag.
+ * @param ciphertext_len Input: buffer size. Output: bytes written.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ *
+ * @note Output size = plaintext_len + 16 (authentication tag).
+ * @note Buffer must be at least plaintext_len + 16 bytes.
+ *
+ * @see RFC 9001 Section 5.3 "AEAD Usage"
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_encrypt_payload (const SocketQUICPacketKeys_T *keys,
+                                  uint64_t packet_number,
+                                  const uint8_t *header,
+                                  size_t header_len,
+                                  const uint8_t *plaintext,
+                                  size_t plaintext_len,
+                                  uint8_t *ciphertext,
+                                  size_t *ciphertext_len);
+
+/**
+ * @brief Decrypt a QUIC packet payload using AEAD (RFC 9001 §5.3).
+ *
+ * Verifies the authentication tag and decrypts the ciphertext.
+ * The nonce is formed by XORing the IV with the packet number.
+ *
+ * @param keys           Packet protection keys (key, IV, algorithm).
+ * @param packet_number  Full 62-bit packet number (for nonce construction).
+ * @param header         Packet header bytes (used as AAD).
+ * @param header_len     Length of header in bytes.
+ * @param ciphertext     Input ciphertext including 16-byte tag.
+ * @param ciphertext_len Length of ciphertext (including tag).
+ * @param plaintext      Output buffer for decrypted payload.
+ * @param plaintext_len  Input: buffer size. Output: bytes written.
+ *
+ * @return QUIC_CRYPTO_OK on success.
+ *         QUIC_CRYPTO_ERROR_TAG if authentication fails.
+ *         Other error codes for invalid parameters.
+ *
+ * @note Input must be at least 16 bytes (tag only, zero payload).
+ * @note Output size = ciphertext_len - 16.
+ *
+ * @see RFC 9001 Section 5.3 "AEAD Usage"
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
+                                  uint64_t packet_number,
+                                  const uint8_t *header,
+                                  size_t header_len,
+                                  const uint8_t *ciphertext,
+                                  size_t ciphertext_len,
+                                  uint8_t *plaintext,
+                                  size_t *plaintext_len);
 
 /* ============================================================================
  * Utility Functions

@@ -1057,6 +1057,697 @@ TEST (quic_crypto_packet_keys_different_secrets)
 #endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
+ * AEAD Payload Encryption/Decryption Tests (RFC 9001 Section 5.3)
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_TLS
+
+/* Sample plaintext for AEAD tests */
+static const uint8_t test_plaintext[]
+    = { 0x06, 0x00, 0x40, 0xf1, 0x01, 0x00, 0x00, 0xed, 0x03, 0x03, 0xeb, 0xf8,
+        0xfa, 0x56, 0xf1, 0x29, 0x39, 0xb9, 0x58, 0x4a, 0x38, 0x96, 0x47, 0x2e };
+
+/* Sample header (AAD) for AEAD tests */
+static const uint8_t test_header[]
+    = { 0xc0, 0x00, 0x00, 0x01, 0x08, 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57,
+        0x08, 0x00, 0x00, 0x44, 0x9e, 0x00, 0x00, 0x00, 0x02 };
+
+/* ============================================================================
+ * AEAD Parameter Validation Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_encrypt_null_keys)
+{
+  uint8_t ciphertext[64];
+  size_t ciphertext_len = sizeof (ciphertext);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      NULL, 0, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+}
+
+TEST (quic_crypto_encrypt_null_header)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[64];
+  size_t ciphertext_len = sizeof (ciphertext);
+
+  /* Derive valid keys first */
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_encrypt_payload (&keys, 0, NULL, 10, test_plaintext,
+                                          sizeof (test_plaintext), ciphertext,
+                                          &ciphertext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_encrypt_null_plaintext)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[64];
+  size_t ciphertext_len = sizeof (ciphertext);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), NULL, 10, ciphertext,
+      &ciphertext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_encrypt_null_ciphertext)
+{
+  SocketQUICPacketKeys_T keys;
+  size_t ciphertext_len = 64;
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), NULL, &ciphertext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_encrypt_null_ciphertext_len)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[64];
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, NULL);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_encrypt_buffer_too_small)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[16]; /* Too small - need plaintext_len + 16 */
+  size_t ciphertext_len = sizeof (ciphertext);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_BUFFER, result);
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_decrypt_null_keys)
+{
+  uint8_t plaintext[64];
+  size_t plaintext_len = sizeof (plaintext);
+  uint8_t fake_ciphertext[32];
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_decrypt_payload (
+      NULL, 0, test_header, sizeof (test_header), fake_ciphertext,
+      sizeof (fake_ciphertext), plaintext, &plaintext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL, result);
+}
+
+TEST (quic_crypto_decrypt_ciphertext_too_short)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t plaintext[64];
+  size_t plaintext_len = sizeof (plaintext);
+  uint8_t short_ciphertext[15]; /* Less than 16-byte tag */
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_decrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), short_ciphertext,
+      sizeof (short_ciphertext), plaintext, &plaintext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_INPUT, result);
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_encrypt_invalid_aead)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[64];
+  size_t ciphertext_len = sizeof (ciphertext);
+
+  /* Manually construct keys with invalid AEAD */
+  SocketQUICPacketKeys_init (&keys);
+  memset (keys.key, 0x42, 16);
+  memset (keys.iv, 0x42, QUIC_PACKET_IV_LEN);
+  keys.key_len = 16;
+  keys.aead = (SocketQUIC_AEAD)99; /* Invalid */
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+TEST (quic_crypto_decrypt_invalid_aead)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t plaintext[64];
+  size_t plaintext_len = sizeof (plaintext);
+  uint8_t fake_ciphertext[32];
+
+  /* Manually construct keys with invalid AEAD */
+  SocketQUICPacketKeys_init (&keys);
+  memset (keys.key, 0x42, 16);
+  memset (keys.iv, 0x42, QUIC_PACKET_IV_LEN);
+  keys.key_len = 16;
+  keys.aead = (SocketQUIC_AEAD)-1; /* Invalid negative */
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_decrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), fake_ciphertext,
+      sizeof (fake_ciphertext), plaintext, &plaintext_len);
+
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
+}
+
+/* ============================================================================
+ * AEAD Round-Trip Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_roundtrip_aes128)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+  uint64_t packet_number = 2;
+
+  /* Derive keys from RFC test vector */
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                             SOCKET_CRYPTO_SHA256_SIZE,
+                                             QUIC_AEAD_AES_128_GCM, &keys);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Encrypt */
+  result = SocketQUICCrypto_encrypt_payload (
+      &keys, packet_number, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (sizeof (test_plaintext) + QUIC_INITIAL_TAG_LEN, ciphertext_len);
+
+  /* Decrypt */
+  result = SocketQUICCrypto_decrypt_payload (&keys, packet_number, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (sizeof (test_plaintext), decrypted_len);
+  ASSERT (memcmp (decrypted, test_plaintext, decrypted_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_roundtrip_aes256)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+  uint64_t packet_number = 42;
+
+  /* SHA-384 size secret for AES-256-GCM */
+  uint8_t secret[48];
+  memset (secret, 0x55, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_256_GCM, &keys);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Encrypt */
+  result = SocketQUICCrypto_encrypt_payload (
+      &keys, packet_number, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Decrypt */
+  result = SocketQUICCrypto_decrypt_payload (&keys, packet_number, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT (memcmp (decrypted, test_plaintext, decrypted_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_roundtrip_chacha20)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+  uint64_t packet_number = 0x123456;
+
+  uint8_t secret[SOCKET_CRYPTO_SHA256_SIZE];
+  memset (secret, 0x66, sizeof (secret));
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_CHACHA20_POLY1305, &keys);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Encrypt */
+  result = SocketQUICCrypto_encrypt_payload (
+      &keys, packet_number, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Decrypt */
+  result = SocketQUICCrypto_decrypt_payload (&keys, packet_number, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT (memcmp (decrypted, test_plaintext, decrypted_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+/* ============================================================================
+ * AEAD Nonce Formation Tests (RFC 9001 §5.3)
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_packet_number_zero)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Packet number 0: nonce should equal IV */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  result = SocketQUICCrypto_decrypt_payload (&keys, 0, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT (memcmp (decrypted, test_plaintext, decrypted_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_large_packet_number)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+  /* Max 62-bit packet number */
+  uint64_t large_pn = 0x3FFFFFFFFFFFFFFFULL;
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, large_pn, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  result = SocketQUICCrypto_decrypt_payload (&keys, large_pn, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT (memcmp (decrypted, test_plaintext, decrypted_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_different_packet_numbers_produce_different_ciphertext)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext1[256];
+  uint8_t ciphertext2[256];
+  size_t ciphertext1_len = sizeof (ciphertext1);
+  size_t ciphertext2_len = sizeof (ciphertext2);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt with packet number 1 */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 1, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext1, &ciphertext1_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Encrypt with packet number 2 */
+  result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext2, &ciphertext2_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Same plaintext with different packet numbers -> different ciphertext */
+  ASSERT (memcmp (ciphertext1, ciphertext2, ciphertext1_len) != 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+/* ============================================================================
+ * AEAD Security Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_modified_ciphertext_fails)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Modify one byte of ciphertext (not tag) */
+  ciphertext[0] ^= 0x01;
+
+  /* Decryption should fail with tag error */
+  result = SocketQUICCrypto_decrypt_payload (&keys, 2, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_TAG, result);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_modified_tag_fails)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Modify the last byte (part of tag) */
+  ciphertext[ciphertext_len - 1] ^= 0x01;
+
+  /* Decryption should fail */
+  result = SocketQUICCrypto_decrypt_payload (&keys, 2, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_TAG, result);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_modified_aad_fails)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+  uint8_t modified_header[sizeof (test_header)];
+
+  memcpy (modified_header, test_header, sizeof (test_header));
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt with original header */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Modify AAD */
+  modified_header[0] ^= 0x01;
+
+  /* Decryption with modified AAD should fail */
+  result = SocketQUICCrypto_decrypt_payload (
+      &keys, 2, modified_header, sizeof (modified_header), ciphertext,
+      ciphertext_len, decrypted, &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_TAG, result);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_wrong_packet_number_fails)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt with packet number 2 */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Decrypt with different packet number */
+  result = SocketQUICCrypto_decrypt_payload (&keys, 3, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_TAG, result);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_wrong_key_fails)
+{
+  SocketQUICPacketKeys_T keys1, keys2;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+  uint8_t secret2[SOCKET_CRYPTO_SHA256_SIZE];
+
+  /* Different secrets for keys1 and keys2 */
+  memset (secret2, 0x77, sizeof (secret2));
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys1);
+  SocketQUICCrypto_derive_packet_keys (secret2, sizeof (secret2),
+                                       QUIC_AEAD_AES_128_GCM, &keys2);
+
+  /* Encrypt with keys1 */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys1, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Decrypt with keys2 - should fail */
+  result = SocketQUICCrypto_decrypt_payload (&keys2, 2, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_ERROR_TAG, result);
+
+  SocketQUICPacketKeys_clear (&keys1);
+  SocketQUICPacketKeys_clear (&keys2);
+}
+
+/* ============================================================================
+ * AEAD Edge Case Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_empty_plaintext)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[32];
+  uint8_t decrypted[32];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt empty plaintext - result is just the tag */
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_encrypt_payload (&keys, 0, test_header,
+                                          sizeof (test_header), test_plaintext,
+                                          0, ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (QUIC_INITIAL_TAG_LEN, ciphertext_len);
+
+  /* Decrypt - should succeed with empty output */
+  result = SocketQUICCrypto_decrypt_payload (&keys, 0, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (0, decrypted_len);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_empty_header)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[256];
+  uint8_t decrypted[256];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt with zero-length AAD */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 0, test_header, 0, test_plaintext, sizeof (test_plaintext),
+      ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Decrypt with zero-length AAD */
+  result = SocketQUICCrypto_decrypt_payload (&keys, 0, test_header, 0,
+                                             ciphertext, ciphertext_len,
+                                             decrypted, &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT (memcmp (decrypted, test_plaintext, decrypted_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+TEST (quic_crypto_aead_tag_only_input)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext[QUIC_INITIAL_TAG_LEN];
+  uint8_t decrypted[32];
+  size_t ciphertext_len = sizeof (ciphertext);
+  size_t decrypted_len = sizeof (decrypted);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt empty payload to get valid tag-only ciphertext */
+  SocketQUICCrypto_Result result
+      = SocketQUICCrypto_encrypt_payload (&keys, 5, test_header,
+                                          sizeof (test_header), test_plaintext,
+                                          0, ciphertext, &ciphertext_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (QUIC_INITIAL_TAG_LEN, ciphertext_len);
+
+  /* Decrypt should succeed */
+  result = SocketQUICCrypto_decrypt_payload (&keys, 5, test_header,
+                                             sizeof (test_header), ciphertext,
+                                             ciphertext_len, decrypted,
+                                             &decrypted_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+  ASSERT_EQ (0, decrypted_len);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+/* ============================================================================
+ * AEAD Consistency Tests
+ * ============================================================================
+ */
+
+TEST (quic_crypto_aead_same_input_same_output)
+{
+  SocketQUICPacketKeys_T keys;
+  uint8_t ciphertext1[256];
+  uint8_t ciphertext2[256];
+  size_t ciphertext1_len = sizeof (ciphertext1);
+  size_t ciphertext2_len = sizeof (ciphertext2);
+
+  SocketQUICCrypto_derive_packet_keys (rfc_client_initial_secret,
+                                       SOCKET_CRYPTO_SHA256_SIZE,
+                                       QUIC_AEAD_AES_128_GCM, &keys);
+
+  /* Encrypt twice with same inputs */
+  SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext1, &ciphertext1_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  result = SocketQUICCrypto_encrypt_payload (
+      &keys, 2, test_header, sizeof (test_header), test_plaintext,
+      sizeof (test_plaintext), ciphertext2, &ciphertext2_len);
+  ASSERT_EQ (QUIC_CRYPTO_OK, result);
+
+  /* Deterministic: same input -> same output */
+  ASSERT_EQ (ciphertext1_len, ciphertext2_len);
+  ASSERT (memcmp (ciphertext1, ciphertext2, ciphertext1_len) == 0);
+
+  SocketQUICPacketKeys_clear (&keys);
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/* ============================================================================
  * Result String Tests
  * ============================================================================
  */
@@ -1071,6 +1762,9 @@ TEST (quic_crypto_result_string)
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_AEAD));
   ASSERT_NOT_NULL (
       SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_SECRET_LEN));
+  ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_BUFFER));
+  ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_TAG));
+  ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_INPUT));
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (99)); /* Unknown */
 }
 
