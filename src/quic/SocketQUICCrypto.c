@@ -1315,3 +1315,650 @@ SocketQUICCrypto_unprotect_header_ex (const SocketQUICPacketKeys_T *keys,
   return SocketQUICCrypto_unprotect_header (
       keys->hp_key, keys->hp_len, keys->aead, packet, packet_len, pn_offset);
 }
+
+/* ============================================================================
+ * Key Update (RFC 9001 Section 6)
+ * ============================================================================
+ */
+
+/* HKDF-Expand-Label label for key update (RFC 9001 §6.1) */
+static const char label_quic_ku[] = "quic ku";
+
+void
+SocketQUICKeyUpdate_init (SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL)
+    return;
+  memset (state, 0, sizeof (*state));
+  state->lowest_pn_current_phase = UINT64_MAX;
+  state->initialized = 0;
+}
+
+void
+SocketQUICKeyUpdate_clear (SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL)
+    return;
+
+  /* Securely clear all key material */
+  SocketQUICPacketKeys_clear (&state->write_keys);
+  SocketQUICPacketKeys_clear (&state->read_keys);
+  SocketQUICPacketKeys_clear (&state->prev_read_keys);
+  SocketQUICPacketKeys_clear (&state->next_read_keys);
+
+  SocketCrypto_secure_clear (state->write_secret, sizeof (state->write_secret));
+  SocketCrypto_secure_clear (state->read_secret, sizeof (state->read_secret));
+  SocketCrypto_secure_clear (state->next_read_secret,
+                             sizeof (state->next_read_secret));
+
+  /* Clear remaining fields */
+  memset (state, 0, sizeof (*state));
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_derive_next_secret (const uint8_t *current_secret,
+                                     size_t secret_len,
+                                     SocketQUIC_AEAD aead,
+                                     uint8_t *next_secret)
+{
+#ifdef SOCKET_HAS_TLS
+  if (current_secret == NULL || next_secret == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  if (aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Verify secret length matches AEAD algorithm */
+  if (secret_len != aead_params[aead].secret_len)
+    return QUIC_CRYPTO_ERROR_SECRET_LEN;
+
+  /* Derive next secret: HKDF-Expand-Label(secret, "quic ku", "", secret_len) */
+  if (hkdf_expand_label_ex (current_secret,
+                            secret_len,
+                            aead_params[aead].hash_alg,
+                            label_quic_ku,
+                            STRLEN_LIT (label_quic_ku),
+                            NULL,
+                            0,
+                            next_secret,
+                            secret_len)
+      < 0)
+    return QUIC_CRYPTO_ERROR_HKDF;
+
+  return QUIC_CRYPTO_OK;
+
+#else
+  (void)current_secret;
+  (void)secret_len;
+  (void)aead;
+  (void)next_secret;
+  return QUIC_CRYPTO_ERROR_NO_TLS;
+#endif
+}
+
+/**
+ * Pre-compute next read keys for timing side-channel protection.
+ * Per RFC 9001 §6.3, endpoints should have next keys ready.
+ */
+static SocketQUICCrypto_Result
+precompute_next_read_keys (SocketQUICKeyUpdate_T *state)
+{
+  SocketQUICCrypto_Result result;
+
+  /* Derive next read secret */
+  result = SocketQUICCrypto_derive_next_secret (state->read_secret,
+                                                state->read_secret_len,
+                                                state->aead,
+                                                state->next_read_secret);
+  if (result != QUIC_CRYPTO_OK)
+    return result;
+
+  /* Derive next read keys from next secret */
+  result = SocketQUICCrypto_derive_packet_keys (state->next_read_secret,
+                                                state->read_secret_len,
+                                                state->aead,
+                                                &state->next_read_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketCrypto_secure_clear (state->next_read_secret,
+                                 sizeof (state->next_read_secret));
+      return result;
+    }
+
+  state->next_read_keys_valid = 1;
+  return QUIC_CRYPTO_OK;
+}
+
+/* ============================================================================
+ * Key Update Helper Functions (Internal)
+ *
+ * Small, single-purpose functions for key rotation operations.
+ * Each function does exactly one thing and is independently testable.
+ * ============================================================================
+ */
+
+/**
+ * Save current read keys as previous for delayed packet handling.
+ * Per RFC 9001 §6.5, packets may arrive out of order during key update.
+ */
+static void
+save_prev_read_keys (SocketQUICKeyUpdate_T *state)
+{
+  SocketQUICPacketKeys_clear (&state->prev_read_keys);
+  memcpy (&state->prev_read_keys, &state->read_keys, sizeof (state->read_keys));
+  state->prev_read_keys_valid = 1;
+}
+
+/**
+ * Securely update a secret buffer.
+ * Clears old secret before copying new one.
+ */
+static void
+commit_secret (uint8_t *dest, size_t dest_size, const uint8_t *src,
+               size_t src_len)
+{
+  SocketCrypto_secure_clear (dest, dest_size);
+  memcpy (dest, src, src_len);
+}
+
+/**
+ * Update packet keys while preserving header protection key.
+ * Per RFC 9001 §6: "The header protection key is not updated".
+ * Only AEAD key and IV are rotated.
+ */
+static void
+commit_keys_preserving_hp (SocketQUICPacketKeys_T *dest,
+                           const SocketQUICPacketKeys_T *src)
+{
+  memcpy (dest->key, src->key, src->key_len);
+  memcpy (dest->iv, src->iv, QUIC_PACKET_IV_LEN);
+  dest->key_len = src->key_len;
+  /* HP key intentionally unchanged */
+}
+
+/**
+ * Derive a complete key generation (secret + packet keys).
+ * Returns error if any derivation fails, leaving outputs undefined.
+ */
+static SocketQUICCrypto_Result
+derive_key_generation (const uint8_t *current_secret, size_t secret_len,
+                       SocketQUIC_AEAD aead, uint8_t *next_secret,
+                       SocketQUICPacketKeys_T *next_keys)
+{
+  SocketQUICCrypto_Result result;
+
+  result
+      = SocketQUICCrypto_derive_next_secret (current_secret, secret_len, aead,
+                                             next_secret);
+  if (result != QUIC_CRYPTO_OK)
+    return result;
+
+  result = SocketQUICCrypto_derive_packet_keys (next_secret, secret_len, aead,
+                                                next_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketCrypto_secure_clear (next_secret, secret_len);
+      return result;
+    }
+
+  return QUIC_CRYPTO_OK;
+}
+
+/**
+ * Reset key update state after successful rotation.
+ */
+static void
+reset_key_update_state (SocketQUICKeyUpdate_T *state, int new_phase)
+{
+  state->key_phase = new_phase;
+  state->generation++;
+  state->packets_encrypted = 0;
+  state->lowest_pn_current_phase = UINT64_MAX;
+  state->update_permitted = 0;
+}
+
+/**
+ * Clear temporary key material used during derivation.
+ */
+static void
+clear_temp_secrets (uint8_t *s1, uint8_t *s2, uint8_t *s3, size_t size)
+{
+  if (s1)
+    SocketCrypto_secure_clear (s1, size);
+  if (s2)
+    SocketCrypto_secure_clear (s2, size);
+  if (s3)
+    SocketCrypto_secure_clear (s3, size);
+}
+
+/**
+ * Clear temporary packet keys used during derivation.
+ */
+static void
+clear_temp_keys (SocketQUICPacketKeys_T *k1, SocketQUICPacketKeys_T *k2,
+                 SocketQUICPacketKeys_T *k3)
+{
+  if (k1)
+    SocketQUICPacketKeys_clear (k1);
+  if (k2)
+    SocketQUICPacketKeys_clear (k2);
+  if (k3)
+    SocketQUICPacketKeys_clear (k3);
+}
+
+/**
+ * Copy precomputed read keys to temporaries.
+ * Used when next_read_keys_valid is set.
+ */
+static void
+copy_precomputed_read (const SocketQUICKeyUpdate_T *state,
+                       uint8_t *new_read_secret, SocketQUICPacketKeys_T *new_keys)
+{
+  memcpy (new_read_secret, state->next_read_secret, state->read_secret_len);
+  memcpy (new_keys, &state->next_read_keys, sizeof (*new_keys));
+}
+
+SocketQUICCrypto_Result
+SocketQUICKeyUpdate_set_initial_keys (SocketQUICKeyUpdate_T *state,
+                                      const uint8_t *write_secret,
+                                      const uint8_t *read_secret,
+                                      size_t secret_len,
+                                      SocketQUIC_AEAD aead)
+{
+  SocketQUICCrypto_Result result;
+
+  if (state == NULL || write_secret == NULL || read_secret == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  if (aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  if (secret_len != aead_params[aead].secret_len)
+    return QUIC_CRYPTO_ERROR_SECRET_LEN;
+
+  /* Initialize the state */
+  SocketQUICKeyUpdate_init (state);
+  state->aead = aead;
+  state->write_secret_len = secret_len;
+  state->read_secret_len = secret_len;
+
+  /* Store secrets */
+  memcpy (state->write_secret, write_secret, secret_len);
+  memcpy (state->read_secret, read_secret, secret_len);
+
+  /* Derive write keys */
+  result = SocketQUICCrypto_derive_packet_keys (
+      write_secret, secret_len, aead, &state->write_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketQUICKeyUpdate_clear (state);
+      return result;
+    }
+
+  /* Derive read keys */
+  result = SocketQUICCrypto_derive_packet_keys (
+      read_secret, secret_len, aead, &state->read_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketQUICKeyUpdate_clear (state);
+      return result;
+    }
+
+  /* Pre-compute next read keys for timing protection (RFC 9001 §6.3) */
+  result = precompute_next_read_keys (state);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      SocketQUICKeyUpdate_clear (state);
+      return result;
+    }
+
+  /* Initial key phase is 0 */
+  state->key_phase = 0;
+  state->generation = 0;
+  state->update_permitted = 0; /* Must wait for first ACK */
+  state->initialized = 1;
+
+  return QUIC_CRYPTO_OK;
+}
+
+int
+SocketQUICKeyUpdate_can_initiate (const SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL || !state->initialized)
+    return 0;
+
+  /* Per RFC 9001 §6.1: Must have received ACK for packet in current phase */
+  return state->update_permitted;
+}
+
+SocketQUICCrypto_Result
+SocketQUICKeyUpdate_initiate (SocketQUICKeyUpdate_T *state)
+{
+  SocketQUICCrypto_Result result;
+  uint8_t new_write_secret[QUIC_SECRET_MAX_LEN];
+  uint8_t new_read_secret[QUIC_SECRET_MAX_LEN];
+  uint8_t next_read_secret[QUIC_SECRET_MAX_LEN];
+  SocketQUICPacketKeys_T new_write_keys;
+  SocketQUICPacketKeys_T new_read_keys;
+  SocketQUICPacketKeys_T next_read_keys;
+
+  if (state == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+  if (!state->initialized)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  /*
+   * Phase 1: Derive all into temporaries (state unchanged on error).
+   */
+  result = derive_key_generation (state->write_secret, state->write_secret_len,
+                                  state->aead, new_write_secret,
+                                  &new_write_keys);
+  if (result != QUIC_CRYPTO_OK)
+    return result;
+
+  result = derive_key_generation (state->read_secret, state->read_secret_len,
+                                  state->aead, new_read_secret, &new_read_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      clear_temp_secrets (new_write_secret, NULL, NULL, QUIC_SECRET_MAX_LEN);
+      clear_temp_keys (&new_write_keys, NULL, NULL);
+      return result;
+    }
+
+  result = derive_key_generation (new_read_secret, state->read_secret_len,
+                                  state->aead, next_read_secret,
+                                  &next_read_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      clear_temp_secrets (new_write_secret, new_read_secret, NULL,
+                          QUIC_SECRET_MAX_LEN);
+      clear_temp_keys (&new_write_keys, &new_read_keys, NULL);
+      return result;
+    }
+
+  /*
+   * Phase 2: Commit all changes atomically (no errors possible).
+   */
+  save_prev_read_keys (state);
+
+  commit_secret (state->write_secret, sizeof (state->write_secret),
+                 new_write_secret, state->write_secret_len);
+  commit_keys_preserving_hp (&state->write_keys, &new_write_keys);
+
+  commit_secret (state->read_secret, sizeof (state->read_secret),
+                 new_read_secret, state->read_secret_len);
+  commit_keys_preserving_hp (&state->read_keys, &new_read_keys);
+
+  commit_secret (state->next_read_secret, sizeof (state->next_read_secret),
+                 next_read_secret, state->read_secret_len);
+  commit_keys_preserving_hp (&state->next_read_keys, &next_read_keys);
+  state->next_read_keys_valid = 1;
+
+  reset_key_update_state (state, state->key_phase ? 0 : 1);
+
+  clear_temp_secrets (new_write_secret, new_read_secret, next_read_secret,
+                      QUIC_SECRET_MAX_LEN);
+  return QUIC_CRYPTO_OK;
+}
+
+SocketQUICCrypto_Result
+SocketQUICKeyUpdate_process_received (SocketQUICKeyUpdate_T *state,
+                                      int received_phase)
+{
+  SocketQUICCrypto_Result result;
+  uint8_t new_read_secret[QUIC_SECRET_MAX_LEN];
+  uint8_t new_write_secret[QUIC_SECRET_MAX_LEN];
+  uint8_t next_read_secret[QUIC_SECRET_MAX_LEN];
+  SocketQUICPacketKeys_T new_read_keys;
+  SocketQUICPacketKeys_T new_write_keys;
+  SocketQUICPacketKeys_T next_read_keys;
+  int used_precomputed = 0;
+
+  if (state == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+  if (!state->initialized)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  received_phase = received_phase ? 1 : 0;
+  if (received_phase == state->key_phase)
+    return QUIC_CRYPTO_OK;
+
+  /* Phase 1: Derive/copy all into temporaries */
+  if (state->next_read_keys_valid)
+    {
+      copy_precomputed_read (state, new_read_secret, &new_read_keys);
+      used_precomputed = 1;
+    }
+  else
+    {
+      result = derive_key_generation (state->read_secret, state->read_secret_len,
+                                      state->aead, new_read_secret, &new_read_keys);
+      if (result != QUIC_CRYPTO_OK)
+        return result;
+    }
+
+  result = derive_key_generation (state->write_secret, state->write_secret_len,
+                                  state->aead, new_write_secret, &new_write_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      if (!used_precomputed)
+        {
+          clear_temp_secrets (new_read_secret, NULL, NULL, QUIC_SECRET_MAX_LEN);
+          clear_temp_keys (&new_read_keys, NULL, NULL);
+        }
+      return result;
+    }
+
+  result = derive_key_generation (new_read_secret, state->read_secret_len,
+                                  state->aead, next_read_secret, &next_read_keys);
+  if (result != QUIC_CRYPTO_OK)
+    {
+      if (!used_precomputed)
+        {
+          clear_temp_secrets (new_read_secret, NULL, NULL, QUIC_SECRET_MAX_LEN);
+          clear_temp_keys (&new_read_keys, NULL, NULL);
+        }
+      clear_temp_secrets (new_write_secret, NULL, NULL, QUIC_SECRET_MAX_LEN);
+      clear_temp_keys (&new_write_keys, NULL, NULL);
+      return result;
+    }
+
+  /* Phase 2: Commit all atomically */
+  save_prev_read_keys (state);
+
+  commit_secret (state->read_secret, sizeof (state->read_secret),
+                 new_read_secret, state->read_secret_len);
+  commit_keys_preserving_hp (&state->read_keys, &new_read_keys);
+
+  commit_secret (state->write_secret, sizeof (state->write_secret),
+                 new_write_secret, state->write_secret_len);
+  commit_keys_preserving_hp (&state->write_keys, &new_write_keys);
+
+  commit_secret (state->next_read_secret, sizeof (state->next_read_secret),
+                 next_read_secret, state->read_secret_len);
+  commit_keys_preserving_hp (&state->next_read_keys, &next_read_keys);
+  state->next_read_keys_valid = 1;
+
+  reset_key_update_state (state, received_phase);
+
+  clear_temp_secrets (new_read_secret, new_write_secret, next_read_secret,
+                      QUIC_SECRET_MAX_LEN);
+  return QUIC_CRYPTO_OK;
+}
+
+SocketQUICCrypto_Result
+SocketQUICKeyUpdate_get_read_keys (const SocketQUICKeyUpdate_T *state,
+                                   int received_phase,
+                                   uint64_t packet_number,
+                                   const SocketQUICPacketKeys_T **keys)
+{
+  if (state == NULL || keys == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  if (!state->initialized)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  /* Normalize received phase */
+  received_phase = received_phase ? 1 : 0;
+
+  if (received_phase == state->key_phase)
+    {
+      /*
+       * Key phase matches. Use packet number to determine if this is
+       * current or previous key phase (RFC 9001 §6.5).
+       */
+      if (state->prev_read_keys_valid
+          && state->lowest_pn_current_phase != UINT64_MAX
+          && packet_number < state->lowest_pn_current_phase)
+        {
+          /* Packet from previous key phase (delayed) */
+          *keys = &state->prev_read_keys;
+        }
+      else
+        {
+          /* Packet from current key phase */
+          *keys = &state->read_keys;
+        }
+    }
+  else
+    {
+      /*
+       * Key phase differs. This could be:
+       * - Next key phase (peer initiated update)
+       * - Previous key phase (if key phase bit wrapped)
+       */
+      if (state->next_read_keys_valid)
+        {
+          /* Try next keys first */
+          *keys = &state->next_read_keys;
+        }
+      else if (state->prev_read_keys_valid)
+        {
+          /* Fall back to previous keys */
+          *keys = &state->prev_read_keys;
+        }
+      else
+        {
+          return QUIC_CRYPTO_ERROR_INPUT;
+        }
+    }
+
+  return QUIC_CRYPTO_OK;
+}
+
+void
+SocketQUICKeyUpdate_on_packet_sent (SocketQUICKeyUpdate_T *state,
+                                    uint64_t packet_number)
+{
+  if (state == NULL || !state->initialized)
+    return;
+
+  if (packet_number < state->lowest_pn_current_phase)
+    state->lowest_pn_current_phase = packet_number;
+}
+
+void
+SocketQUICKeyUpdate_on_ack_received (SocketQUICKeyUpdate_T *state,
+                                     uint64_t acked_pn)
+{
+  if (state == NULL || !state->initialized)
+    return;
+
+  if (acked_pn > state->highest_acked_pn)
+    state->highest_acked_pn = acked_pn;
+
+  /* Per RFC 9001 §6.1: Update is permitted once we've received
+   * an ACK for a packet sent with current keys */
+  if (state->lowest_pn_current_phase != UINT64_MAX
+      && acked_pn >= state->lowest_pn_current_phase)
+    {
+      state->update_permitted = 1;
+    }
+}
+
+void
+SocketQUICKeyUpdate_on_encrypt (SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL || !state->initialized)
+    return;
+
+  state->packets_encrypted++;
+}
+
+void
+SocketQUICKeyUpdate_on_decrypt (SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL || !state->initialized)
+    return;
+
+  state->packets_decrypted++;
+}
+
+void
+SocketQUICKeyUpdate_on_decrypt_failure (SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL || !state->initialized)
+    return;
+
+  state->decryption_failures++;
+}
+
+uint64_t
+SocketQUICCrypto_get_confidentiality_limit (SocketQUIC_AEAD aead)
+{
+  switch (aead)
+    {
+    case QUIC_AEAD_AES_128_GCM:
+    case QUIC_AEAD_AES_256_GCM:
+      return QUIC_AEAD_AES_GCM_CONFIDENTIALITY_LIMIT;
+
+    case QUIC_AEAD_CHACHA20_POLY1305:
+      /* ChaCha20 has no practical confidentiality limit */
+      return UINT64_MAX;
+
+    default:
+      return 0;
+    }
+}
+
+uint64_t
+SocketQUICCrypto_get_integrity_limit (SocketQUIC_AEAD aead)
+{
+  switch (aead)
+    {
+    case QUIC_AEAD_AES_128_GCM:
+    case QUIC_AEAD_AES_256_GCM:
+      return QUIC_AEAD_AES_GCM_INTEGRITY_LIMIT;
+
+    case QUIC_AEAD_CHACHA20_POLY1305:
+      return QUIC_AEAD_CHACHA20_INTEGRITY_LIMIT;
+
+    default:
+      return 0;
+    }
+}
+
+int
+SocketQUICKeyUpdate_confidentiality_limit_reached (
+    const SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL || !state->initialized)
+    return 0;
+
+  uint64_t limit = SocketQUICCrypto_get_confidentiality_limit (state->aead);
+
+  /* Return true if approaching limit (use 90% threshold for safety margin) */
+  return state->packets_encrypted >= (limit * 9 / 10);
+}
+
+int
+SocketQUICKeyUpdate_integrity_limit_exceeded (
+    const SocketQUICKeyUpdate_T *state)
+{
+  if (state == NULL || !state->initialized)
+    return 0;
+
+  uint64_t limit = SocketQUICCrypto_get_integrity_limit (state->aead);
+
+  return state->decryption_failures >= limit;
+}

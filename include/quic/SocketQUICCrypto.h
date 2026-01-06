@@ -512,6 +512,370 @@ SocketQUICCrypto_unprotect_header_ex (const SocketQUICPacketKeys_T *keys,
                                       size_t pn_offset);
 
 /* ============================================================================
+ * Key Update (RFC 9001 Section 6)
+ * ============================================================================
+ */
+
+/**
+ * @defgroup quic_key_update QUIC Key Update Mechanism
+ * @brief Post-handshake key rotation using Key Phase bit.
+ *
+ * RFC 9001 Section 6 defines the key update mechanism for 1-RTT packets:
+ * - Key Phase bit in short header toggles to signal key update
+ * - New secrets derived: secret_<n+1> = HKDF-Expand-Label(secret_<n>, "quic
+ * ku", "", Hash.length)
+ * - Header protection key is NOT updated (remains constant)
+ * - Both endpoints must update keys when key phase changes
+ *
+ * @{
+ */
+
+/**
+ * @brief Maximum secret length (SHA-384 output for AES-256-GCM).
+ */
+#define QUIC_SECRET_MAX_LEN 48
+
+/**
+ * @brief AEAD confidentiality limit for AES-GCM (2^23 packets).
+ *
+ * Per RFC 9001 Section 6.6 and Appendix B.1, endpoints MUST initiate
+ * a key update before encrypting more than this many packets.
+ */
+#define QUIC_AEAD_AES_GCM_CONFIDENTIALITY_LIMIT (1ULL << 23)
+
+/**
+ * @brief AEAD integrity limit for AES-GCM (2^52 failed decryptions).
+ *
+ * Per RFC 9001 Section 6.6, if this many packets fail authentication
+ * across all keys, the connection MUST be closed with AEAD_LIMIT_REACHED.
+ */
+#define QUIC_AEAD_AES_GCM_INTEGRITY_LIMIT (1ULL << 52)
+
+/**
+ * @brief AEAD integrity limit for ChaCha20-Poly1305 (2^36 failed decryptions).
+ *
+ * Per RFC 9001 Section 6.6, ChaCha20 has no practical confidentiality limit
+ * but does have an integrity limit.
+ */
+#define QUIC_AEAD_CHACHA20_INTEGRITY_LIMIT (1ULL << 36)
+
+/**
+ * @brief Key Phase bit position in short header first byte.
+ *
+ * Per RFC 9000 Section 17.3.1, the Key Phase bit is bit 2 (0x04) of
+ * the first byte of a short header packet.
+ */
+#define QUIC_KEY_PHASE_BIT 0x04
+
+/**
+ * @brief Key update state tracking.
+ *
+ * Manages the key rotation lifecycle per RFC 9001 Section 6:
+ * - Tracks current, previous, and next key generations
+ * - Maintains secrets for deriving subsequent key generations
+ * - Counts packets for AEAD usage limits
+ * - Tracks whether key update is permitted (acknowledgment received)
+ *
+ * Thread Safety: NOT thread-safe. Caller must synchronize access.
+ */
+typedef struct SocketQUICKeyUpdate
+{
+  /* Current write keys (used for sending) */
+  SocketQUICPacketKeys_T write_keys;
+  uint8_t write_secret[QUIC_SECRET_MAX_LEN];
+  size_t write_secret_len;
+
+  /* Current read keys (used for receiving) */
+  SocketQUICPacketKeys_T read_keys;
+  uint8_t read_secret[QUIC_SECRET_MAX_LEN];
+  size_t read_secret_len;
+
+  /* Previous read keys (for delayed packets during key update) */
+  SocketQUICPacketKeys_T prev_read_keys;
+  int prev_read_keys_valid;
+
+  /* Next read keys (pre-computed for timing side-channel protection) */
+  SocketQUICPacketKeys_T next_read_keys;
+  uint8_t next_read_secret[QUIC_SECRET_MAX_LEN];
+  int next_read_keys_valid;
+
+  /* Key phase tracking */
+  int key_phase;       /**< Current key phase bit (0 or 1) */
+  uint32_t generation; /**< Key generation counter (starts at 0) */
+
+  /* Key update permission tracking (RFC 9001 §6.1) */
+  uint64_t lowest_pn_current_phase; /**< Lowest PN sent with current keys */
+  uint64_t highest_acked_pn;        /**< Highest acknowledged PN */
+  int update_permitted;             /**< Can initiate another key update */
+
+  /* AEAD usage counters (RFC 9001 §6.6) */
+  uint64_t packets_encrypted;   /**< Packets encrypted with current write key */
+  uint64_t packets_decrypted;   /**< Packets decrypted (any key) */
+  uint64_t decryption_failures; /**< Total failed decryptions (all keys) */
+
+  /* Algorithm for limit checking */
+  SocketQUIC_AEAD aead;
+
+  /* State flags */
+  int initialized; /**< Structure has been initialized */
+
+} SocketQUICKeyUpdate_T;
+
+/**
+ * @brief Initialize key update state structure.
+ *
+ * Zeros all fields and marks as uninitialized.
+ *
+ * @param state Key update state to initialize (may be NULL).
+ */
+extern void SocketQUICKeyUpdate_init (SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Securely clear key update state.
+ *
+ * Overwrites all key material with zeros using secure clear.
+ *
+ * @param state Key update state to clear (may be NULL).
+ */
+extern void SocketQUICKeyUpdate_clear (SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Set initial 1-RTT keys for key update tracking.
+ *
+ * Called after TLS handshake completes to install the first set of
+ * 1-RTT keys. Pre-computes next read keys for timing protection.
+ *
+ * @param state         Key update state.
+ * @param write_secret  Initial write secret from TLS.
+ * @param read_secret   Initial read secret from TLS.
+ * @param secret_len    Secret length (32 for SHA-256, 48 for SHA-384).
+ * @param aead          AEAD algorithm.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICKeyUpdate_set_initial_keys (SocketQUICKeyUpdate_T *state,
+                                      const uint8_t *write_secret,
+                                      const uint8_t *read_secret,
+                                      size_t secret_len,
+                                      SocketQUIC_AEAD aead);
+
+/**
+ * @brief Derive next secret from current secret (RFC 9001 §6.1).
+ *
+ * Computes: secret_<n+1> = HKDF-Expand-Label(secret_<n>, "quic ku", "",
+ * Hash.length)
+ *
+ * @param current_secret Current traffic secret.
+ * @param secret_len     Secret length.
+ * @param aead           AEAD algorithm (determines hash function).
+ * @param next_secret    Output: next generation secret.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICCrypto_derive_next_secret (const uint8_t *current_secret,
+                                     size_t secret_len,
+                                     SocketQUIC_AEAD aead,
+                                     uint8_t *next_secret);
+
+/**
+ * @brief Check if a key update can be initiated (RFC 9001 §6.1).
+ *
+ * A key update can be initiated only after:
+ * 1. Handshake is confirmed
+ * 2. An acknowledgment has been received for a packet sent with current keys
+ *
+ * @param state Key update state.
+ *
+ * @return 1 if key update is permitted, 0 otherwise.
+ */
+extern int
+SocketQUICKeyUpdate_can_initiate (const SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Initiate a key update (RFC 9001 §6.1).
+ *
+ * Updates write keys and toggles key phase bit. Also updates read
+ * keys since the peer will respond with updated keys.
+ *
+ * @param state Key update state.
+ *
+ * @return QUIC_CRYPTO_OK on success, error code otherwise.
+ *
+ * @note Caller must verify update is permitted via
+ * SocketQUICKeyUpdate_can_initiate().
+ */
+extern SocketQUICCrypto_Result
+SocketQUICKeyUpdate_initiate (SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Process a received packet with different key phase (RFC 9001 §6.2).
+ *
+ * When a packet is received with a key phase different from the current
+ * sending key phase, this indicates the peer has initiated a key update.
+ * The endpoint must update its send keys in response.
+ *
+ * @param state           Key update state.
+ * @param received_phase  Key phase bit from received packet (0 or 1).
+ *
+ * @return QUIC_CRYPTO_OK if key update processed successfully,
+ *         error code if update is invalid.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICKeyUpdate_process_received (SocketQUICKeyUpdate_T *state,
+                                      int received_phase);
+
+/**
+ * @brief Get keys for decrypting a packet based on key phase.
+ *
+ * Returns the appropriate keys for decryption considering:
+ * - Current keys (key phase matches)
+ * - Next keys (key phase differs, peer initiated update)
+ * - Previous keys (for delayed packets after key update)
+ *
+ * Uses packet number to disambiguate when key phase matches but
+ * could be previous or next generation.
+ *
+ * @param state            Key update state.
+ * @param received_phase   Key phase bit from received packet.
+ * @param packet_number    Recovered packet number.
+ * @param keys             Output: pointer to appropriate keys.
+ *
+ * @return QUIC_CRYPTO_OK if keys found, error otherwise.
+ */
+extern SocketQUICCrypto_Result
+SocketQUICKeyUpdate_get_read_keys (const SocketQUICKeyUpdate_T *state,
+                                   int received_phase,
+                                   uint64_t packet_number,
+                                   const SocketQUICPacketKeys_T **keys);
+
+/**
+ * @brief Record that a packet was sent (for key update tracking).
+ *
+ * Updates the lowest packet number for current key phase if needed.
+ *
+ * @param state         Key update state.
+ * @param packet_number Packet number of sent packet.
+ */
+extern void SocketQUICKeyUpdate_on_packet_sent (SocketQUICKeyUpdate_T *state,
+                                                uint64_t packet_number);
+
+/**
+ * @brief Record that an acknowledgment was received.
+ *
+ * Updates highest acknowledged packet number and checks if key
+ * update is now permitted.
+ *
+ * @param state         Key update state.
+ * @param acked_pn      Highest packet number acknowledged.
+ */
+extern void SocketQUICKeyUpdate_on_ack_received (SocketQUICKeyUpdate_T *state,
+                                                 uint64_t acked_pn);
+
+/**
+ * @brief Record successful packet encryption.
+ *
+ * Increments encrypted packet counter for AEAD limit tracking.
+ *
+ * @param state Key update state.
+ */
+extern void SocketQUICKeyUpdate_on_encrypt (SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Record successful packet decryption.
+ *
+ * Increments decrypted packet counter for AEAD limit tracking.
+ *
+ * @param state Key update state.
+ */
+extern void SocketQUICKeyUpdate_on_decrypt (SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Record failed packet decryption.
+ *
+ * Increments failure counter for AEAD integrity limit tracking.
+ *
+ * @param state Key update state.
+ */
+extern void
+SocketQUICKeyUpdate_on_decrypt_failure (SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Check if AEAD confidentiality limit requires key update.
+ *
+ * Returns true if encrypted packet count is approaching the limit
+ * for the current AEAD algorithm.
+ *
+ * @param state Key update state.
+ *
+ * @return 1 if key update should be initiated, 0 otherwise.
+ */
+extern int SocketQUICKeyUpdate_confidentiality_limit_reached (
+    const SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Check if AEAD integrity limit is exceeded.
+ *
+ * If true, the connection MUST be closed with AEAD_LIMIT_REACHED.
+ *
+ * @param state Key update state.
+ *
+ * @return 1 if integrity limit exceeded, 0 otherwise.
+ */
+extern int SocketQUICKeyUpdate_integrity_limit_exceeded (
+    const SocketQUICKeyUpdate_T *state);
+
+/**
+ * @brief Get confidentiality limit for an AEAD algorithm.
+ *
+ * @param aead AEAD algorithm.
+ *
+ * @return Maximum packets that can be encrypted, or UINT64_MAX if no limit.
+ */
+extern uint64_t
+SocketQUICCrypto_get_confidentiality_limit (SocketQUIC_AEAD aead);
+
+/**
+ * @brief Get integrity limit for an AEAD algorithm.
+ *
+ * @param aead AEAD algorithm.
+ *
+ * @return Maximum failed decryptions allowed.
+ */
+extern uint64_t SocketQUICCrypto_get_integrity_limit (SocketQUIC_AEAD aead);
+
+/**
+ * @brief Extract Key Phase bit from short header packet.
+ *
+ * @param first_byte First byte of short header packet.
+ *
+ * @return Key phase bit value (0 or 1).
+ */
+static inline int
+SocketQUICCrypto_get_key_phase (uint8_t first_byte)
+{
+  return (first_byte & QUIC_KEY_PHASE_BIT) ? 1 : 0;
+}
+
+/**
+ * @brief Set Key Phase bit in short header packet.
+ *
+ * @param first_byte Pointer to first byte of short header.
+ * @param phase      Key phase bit value (0 or 1).
+ */
+static inline void
+SocketQUICCrypto_set_key_phase (uint8_t *first_byte, int phase)
+{
+  if (phase)
+    *first_byte |= QUIC_KEY_PHASE_BIT;
+  else
+    *first_byte &= (uint8_t)~QUIC_KEY_PHASE_BIT;
+}
+
+/** @} */ /* End of quic_key_update group */
+
+/* ============================================================================
  * Utility Functions
  * ============================================================================
  */

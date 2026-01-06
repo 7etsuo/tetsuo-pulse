@@ -1225,7 +1225,7 @@ TEST (quic_crypto_decrypt_null_keys)
 {
   uint8_t plaintext[64];
   size_t plaintext_len = sizeof (plaintext);
-  uint8_t fake_ciphertext[32];
+  uint8_t fake_ciphertext[32] = { 0 };
 
   SocketQUICCrypto_Result result
       = SocketQUICCrypto_decrypt_payload (NULL,

@@ -423,7 +423,6 @@ set(LIB_SOURCES
     src/quic/SocketQUICAck.c
     src/quic/SocketQUICLoss.c
     src/quic/SocketQUICTLS.c
-    src/quic/SocketQUICSession.c
 
 )
 
@@ -653,7 +652,6 @@ set(QUIC_HEADERS
     include/quic/SocketQUICAck.h
     include/quic/SocketQUICLoss.h
     include/quic/SocketQUICTLS.h
-    include/quic/SocketQUICSession.h
 )
 
 set(SIMPLE_HEADERS
@@ -836,7 +834,6 @@ set(TEST_SOURCES
     test_quic_ack
     test_quic_loss
     test_quic_key_discard
-    test_quic_session
 )
 
 # TLS tests (only built when TLS is enabled)
@@ -846,6 +843,7 @@ if(SOCKET_HAS_TLS)
         test_quic_crypto
         test_quic_initial
         test_quic_tls
+        test_quic_key_update
         test_tls_ct
         test_tls_integration
         test_tls_ocsp
