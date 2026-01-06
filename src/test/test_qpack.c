@@ -744,6 +744,400 @@ TEST (qpack_int_encode_values_0_to_100)
 }
 
 /* ============================================================================
+ * Indexed Field Line with Post-Base Index Tests (RFC 9204 Section 4.5.3)
+ * ============================================================================
+ */
+
+TEST (qpack_postbase_encode_small_index)
+{
+  unsigned char buf[16];
+  ssize_t len;
+
+  /* Post-base index 0 should encode as single byte 0x10 (pattern 0001, index
+   * 0) */
+  len = SocketQPACK_encode_indexed_postbase (0, buf, sizeof (buf));
+  ASSERT_EQ (1, len);
+  ASSERT_EQ (0x10, buf[0]);
+
+  /* Post-base index 5 should encode as single byte 0x15 (pattern 0001, index
+   * 5) */
+  len = SocketQPACK_encode_indexed_postbase (5, buf, sizeof (buf));
+  ASSERT_EQ (1, len);
+  ASSERT_EQ (0x15, buf[0]);
+
+  /* Post-base index 14 should encode as single byte 0x1E (pattern 0001, index
+   * 14) */
+  len = SocketQPACK_encode_indexed_postbase (14, buf, sizeof (buf));
+  ASSERT_EQ (1, len);
+  ASSERT_EQ (0x1E, buf[0]);
+}
+
+TEST (qpack_postbase_encode_boundary)
+{
+  unsigned char buf[16];
+  ssize_t len;
+
+  /* Post-base index 15 is the maximum for 4-bit prefix, needs continuation */
+  len = SocketQPACK_encode_indexed_postbase (15, buf, sizeof (buf));
+  ASSERT_EQ (2, len);
+  ASSERT_EQ (0x1F, buf[0]); /* Pattern 0001 + prefix filled (0x0F) */
+  ASSERT_EQ (0x00, buf[1]); /* Continuation: 15 - 15 = 0 */
+}
+
+TEST (qpack_postbase_encode_multi_byte)
+{
+  unsigned char buf[16];
+  ssize_t len;
+
+  /* Post-base index 100 needs continuation bytes */
+  len = SocketQPACK_encode_indexed_postbase (100, buf, sizeof (buf));
+  ASSERT (len >= 2);
+  ASSERT_EQ (0x1F, buf[0]); /* Pattern 0001 + prefix filled */
+  /* 100 - 15 = 85 = 0x55, fits in one continuation byte */
+  ASSERT_EQ (0x55, buf[1]);
+}
+
+TEST (qpack_postbase_encode_large_index)
+{
+  unsigned char buf[16];
+  ssize_t len;
+
+  /* Large index value */
+  len = SocketQPACK_encode_indexed_postbase (1000, buf, sizeof (buf));
+  ASSERT (len >= 2);
+  ASSERT_EQ (0x1F, buf[0]); /* Pattern 0001 + prefix filled */
+}
+
+TEST (qpack_postbase_encode_null_buffer)
+{
+  ssize_t len = SocketQPACK_encode_indexed_postbase (5, NULL, 16);
+  ASSERT_EQ (-1, len);
+}
+
+TEST (qpack_postbase_encode_buffer_too_small)
+{
+  unsigned char buf[1];
+
+  /* Large index needs more than 1 byte */
+  ssize_t len
+      = SocketQPACK_encode_indexed_postbase (1000000, buf, sizeof (buf));
+  ASSERT_EQ (-1, len);
+}
+
+TEST (qpack_postbase_decode_small_index)
+{
+  unsigned char data[] = { 0x15 }; /* Pattern 0001, index 5 */
+  uint64_t index;
+  size_t consumed;
+  SocketQPACK_Result res;
+
+  res = SocketQPACK_decode_indexed_postbase (
+      data, sizeof (data), &index, &consumed);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (5, index);
+  ASSERT_EQ (1, consumed);
+}
+
+TEST (qpack_postbase_decode_zero_index)
+{
+  unsigned char data[] = { 0x10 }; /* Pattern 0001, index 0 */
+  uint64_t index;
+  size_t consumed;
+  SocketQPACK_Result res;
+
+  res = SocketQPACK_decode_indexed_postbase (
+      data, sizeof (data), &index, &consumed);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (0, index);
+  ASSERT_EQ (1, consumed);
+}
+
+TEST (qpack_postbase_decode_boundary)
+{
+  unsigned char data[] = { 0x1F, 0x00 }; /* Pattern 0001, prefix filled, cont=0
+                                            -> index 15 */
+  uint64_t index;
+  size_t consumed;
+  SocketQPACK_Result res;
+
+  res = SocketQPACK_decode_indexed_postbase (
+      data, sizeof (data), &index, &consumed);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (15, index);
+  ASSERT_EQ (2, consumed);
+}
+
+TEST (qpack_postbase_decode_multi_byte)
+{
+  unsigned char data[] = { 0x1F, 0x55 }; /* Pattern 0001, index 100 (15 + 85) */
+  uint64_t index;
+  size_t consumed;
+  SocketQPACK_Result res;
+
+  res = SocketQPACK_decode_indexed_postbase (
+      data, sizeof (data), &index, &consumed);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (100, index);
+  ASSERT_EQ (2, consumed);
+}
+
+TEST (qpack_postbase_decode_wrong_pattern)
+{
+  /* Test with other patterns that should fail */
+  unsigned char data1[] = { 0x00 }; /* Pattern 0000 */
+  unsigned char data2[] = { 0x20 }; /* Pattern 0010 */
+  unsigned char data3[] = { 0x80 }; /* Pattern 1000 */
+  unsigned char data4[] = { 0xC0 }; /* Pattern 1100 */
+  uint64_t index;
+  size_t consumed;
+
+  ASSERT_EQ (QPACK_ERROR,
+             SocketQPACK_decode_indexed_postbase (
+                 data1, sizeof (data1), &index, &consumed));
+  ASSERT_EQ (QPACK_ERROR,
+             SocketQPACK_decode_indexed_postbase (
+                 data2, sizeof (data2), &index, &consumed));
+  ASSERT_EQ (QPACK_ERROR,
+             SocketQPACK_decode_indexed_postbase (
+                 data3, sizeof (data3), &index, &consumed));
+  ASSERT_EQ (QPACK_ERROR,
+             SocketQPACK_decode_indexed_postbase (
+                 data4, sizeof (data4), &index, &consumed));
+}
+
+TEST (qpack_postbase_decode_incomplete)
+{
+  /* Multi-byte encoding truncated */
+  unsigned char data[] = { 0x1F };
+  uint64_t index;
+  size_t consumed;
+
+  SocketQPACK_Result res = SocketQPACK_decode_indexed_postbase (
+      data, sizeof (data), &index, &consumed);
+  ASSERT_EQ (QPACK_INCOMPLETE, res);
+}
+
+TEST (qpack_postbase_decode_null_pointers)
+{
+  unsigned char data[] = { 0x15 };
+  uint64_t index;
+  size_t consumed;
+
+  ASSERT_EQ (QPACK_ERROR_NULL,
+             SocketQPACK_decode_indexed_postbase (NULL, 1, &index, &consumed));
+  ASSERT_EQ (QPACK_ERROR_NULL,
+             SocketQPACK_decode_indexed_postbase (data, 1, NULL, &consumed));
+  ASSERT_EQ (QPACK_ERROR_NULL,
+             SocketQPACK_decode_indexed_postbase (data, 1, &index, NULL));
+}
+
+TEST (qpack_postbase_decode_empty_input)
+{
+  unsigned char data[] = { 0x15 };
+  uint64_t index;
+  size_t consumed;
+
+  SocketQPACK_Result res
+      = SocketQPACK_decode_indexed_postbase (data, 0, &index, &consumed);
+  ASSERT_EQ (QPACK_INCOMPLETE, res);
+}
+
+TEST (qpack_postbase_roundtrip)
+{
+  unsigned char buf[16];
+  uint64_t test_indices[] = { 0, 1, 5, 14, 15, 16, 100, 1000, 65535, 1000000 };
+
+  for (size_t i = 0; i < sizeof (test_indices) / sizeof (test_indices[0]); i++)
+    {
+      uint64_t orig = test_indices[i];
+      ssize_t len
+          = SocketQPACK_encode_indexed_postbase (orig, buf, sizeof (buf));
+      ASSERT (len > 0);
+
+      uint64_t decoded;
+      size_t consumed;
+      SocketQPACK_Result res = SocketQPACK_decode_indexed_postbase (
+          buf, (size_t)len, &decoded, &consumed);
+      ASSERT_EQ (QPACK_OK, res);
+      ASSERT_EQ (orig, decoded);
+      ASSERT_EQ ((size_t)len, consumed);
+    }
+}
+
+TEST (qpack_postbase_is_indexed_postbase)
+{
+  /* Should match pattern 0001xxxx */
+  ASSERT (SocketQPACK_is_indexed_postbase (0x10));
+  ASSERT (SocketQPACK_is_indexed_postbase (0x15));
+  ASSERT (SocketQPACK_is_indexed_postbase (0x1F));
+  ASSERT (SocketQPACK_is_indexed_postbase (0x1E));
+  ASSERT (SocketQPACK_is_indexed_postbase (0x11));
+
+  /* Should NOT match other patterns */
+  ASSERT (!SocketQPACK_is_indexed_postbase (0x00)); /* 0000xxxx */
+  ASSERT (!SocketQPACK_is_indexed_postbase (0x20)); /* 0010xxxx */
+  ASSERT (!SocketQPACK_is_indexed_postbase (0x30)); /* 0011xxxx */
+  ASSERT (!SocketQPACK_is_indexed_postbase (0x80)); /* 1000xxxx */
+  ASSERT (!SocketQPACK_is_indexed_postbase (0xC0)); /* 1100xxxx */
+  ASSERT (!SocketQPACK_is_indexed_postbase (0xFF)); /* 1111xxxx */
+}
+
+/* ============================================================================
+ * Post-Base Index Validation Tests
+ * ============================================================================
+ */
+
+TEST (qpack_postbase_validate_valid)
+{
+  /* Base=10, Insert Count=20, Post-Base Index=5 -> Absolute=15 (< 20) */
+  ASSERT_EQ (QPACK_OK, SocketQPACK_validate_postbase_index (10, 20, 5));
+
+  /* Base=0, Insert Count=10, Post-Base Index=0 -> Absolute=0 (< 10) */
+  ASSERT_EQ (QPACK_OK, SocketQPACK_validate_postbase_index (0, 10, 0));
+
+  /* Base=5, Insert Count=100, Post-Base Index=50 -> Absolute=55 (< 100) */
+  ASSERT_EQ (QPACK_OK, SocketQPACK_validate_postbase_index (5, 100, 50));
+
+  /* Edge case: Base=10, Insert Count=11, Post-Base Index=0 -> Absolute=10 (<
+   * 11) */
+  ASSERT_EQ (QPACK_OK, SocketQPACK_validate_postbase_index (10, 11, 0));
+}
+
+TEST (qpack_postbase_validate_invalid_future_reference)
+{
+  /* Base=10, Insert Count=15, Post-Base Index=5 -> Absolute=15 (>= 15, invalid)
+   */
+  ASSERT_EQ (QPACK_ERROR, SocketQPACK_validate_postbase_index (10, 15, 5));
+
+  /* Base=10, Insert Count=10, Post-Base Index=0 -> Absolute=10 (>= 10, invalid)
+   */
+  ASSERT_EQ (QPACK_ERROR, SocketQPACK_validate_postbase_index (10, 10, 0));
+
+  /* Base=0, Insert Count=0, Post-Base Index=0 -> Absolute=0 (>= 0, invalid) */
+  ASSERT_EQ (QPACK_ERROR, SocketQPACK_validate_postbase_index (0, 0, 0));
+}
+
+TEST (qpack_postbase_validate_overflow)
+{
+  /* Test overflow in Base + post_base_index */
+  ASSERT_EQ (QPACK_ERROR_INTEGER,
+             SocketQPACK_validate_postbase_index (UINT64_MAX, 100, 1));
+  ASSERT_EQ (QPACK_ERROR_INTEGER,
+             SocketQPACK_validate_postbase_index (
+                 UINT64_MAX / 2 + 1, 100, UINT64_MAX / 2 + 1));
+}
+
+/* ============================================================================
+ * Post-Base to Absolute Index Conversion Tests
+ * ============================================================================
+ */
+
+TEST (qpack_postbase_to_absolute_basic)
+{
+  uint64_t abs_index;
+  SocketQPACK_Result res;
+
+  /* Base=10, Post-Base=5 -> Absolute=15 */
+  res = SocketQPACK_postbase_to_absolute (10, 5, &abs_index);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (15, abs_index);
+
+  /* Base=0, Post-Base=0 -> Absolute=0 */
+  res = SocketQPACK_postbase_to_absolute (0, 0, &abs_index);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (0, abs_index);
+
+  /* Base=100, Post-Base=200 -> Absolute=300 */
+  res = SocketQPACK_postbase_to_absolute (100, 200, &abs_index);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (300, abs_index);
+}
+
+TEST (qpack_postbase_to_absolute_overflow)
+{
+  uint64_t abs_index;
+
+  /* Test overflow */
+  ASSERT_EQ (QPACK_ERROR_INTEGER,
+             SocketQPACK_postbase_to_absolute (UINT64_MAX, 1, &abs_index));
+  ASSERT_EQ (QPACK_ERROR_INTEGER,
+             SocketQPACK_postbase_to_absolute (
+                 UINT64_MAX / 2 + 1, UINT64_MAX / 2 + 1, &abs_index));
+}
+
+TEST (qpack_postbase_to_absolute_null)
+{
+  ASSERT_EQ (QPACK_ERROR_NULL, SocketQPACK_postbase_to_absolute (10, 5, NULL));
+}
+
+/* ============================================================================
+ * Integration Tests
+ * ============================================================================
+ */
+
+TEST (qpack_postbase_integration_encode_decode_validate)
+{
+  unsigned char buf[16];
+  uint64_t base = 50;
+  uint64_t insert_count = 100;
+  uint64_t post_base_index = 25; /* Absolute = 75 < 100, valid */
+
+  /* Encode */
+  ssize_t len = SocketQPACK_encode_indexed_postbase (
+      post_base_index, buf, sizeof (buf));
+  ASSERT (len > 0);
+
+  /* Decode */
+  uint64_t decoded_index;
+  size_t consumed;
+  SocketQPACK_Result res = SocketQPACK_decode_indexed_postbase (
+      buf, (size_t)len, &decoded_index, &consumed);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (post_base_index, decoded_index);
+
+  /* Validate */
+  res = SocketQPACK_validate_postbase_index (base, insert_count, decoded_index);
+  ASSERT_EQ (QPACK_OK, res);
+
+  /* Convert to absolute */
+  uint64_t abs_index;
+  res = SocketQPACK_postbase_to_absolute (base, decoded_index, &abs_index);
+  ASSERT_EQ (QPACK_OK, res);
+  ASSERT_EQ (75, abs_index);
+}
+
+TEST (qpack_postbase_wire_format_verification)
+{
+  unsigned char buf[16];
+
+  /* RFC 9204 Section 4.5.3 wire format:
+   *   0   1   2   3   4   5   6   7
+   * +---+---+---+---+---+---+---+---+
+   * | 0 | 0 | 0 | 1 |  Index (4+)   |
+   * +---+---+---+---+---------------+
+   */
+
+  /* Index 0: 0001 0000 = 0x10 */
+  ssize_t len = SocketQPACK_encode_indexed_postbase (0, buf, sizeof (buf));
+  ASSERT_EQ (1, len);
+  ASSERT_EQ (0x10, buf[0]);
+
+  /* Index 7: 0001 0111 = 0x17 */
+  len = SocketQPACK_encode_indexed_postbase (7, buf, sizeof (buf));
+  ASSERT_EQ (1, len);
+  ASSERT_EQ (0x17, buf[0]);
+
+  /* Verify pattern bits are always 0001 in top 4 bits */
+  for (uint64_t i = 0; i <= 14; i++)
+    {
+      len = SocketQPACK_encode_indexed_postbase (i, buf, sizeof (buf));
+      ASSERT_EQ (1, len);
+      ASSERT_EQ (0x10, buf[0] & 0xF0); /* Top 4 bits = 0001 */
+      ASSERT_EQ (i, buf[0] & 0x0F);    /* Lower 4 bits = index */
+    }
+}
+
+/* ============================================================================
  * Main
  * ============================================================================
  */

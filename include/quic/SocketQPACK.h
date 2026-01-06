@@ -268,6 +268,171 @@ extern size_t SocketQPACK_string_size (const unsigned char *input,
                                        int use_huffman,
                                        int prefix_bits);
 
+/* ============================================================================
+ * Indexed Field Line with Post-Base Index (RFC 9204 Section 4.5.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Wire format pattern for indexed field line with post-base index.
+ *
+ * RFC 9204 Section 4.5.3: The pattern 0001 indicates an indexed field line
+ * using post-base indexing (4 most significant bits).
+ */
+#define SOCKETQPACK_POSTBASE_PATTERN 0x10
+
+/**
+ * @brief Mask for detecting post-base indexed field line pattern.
+ *
+ * Check top 4 bits: (byte & 0xF0) == 0x10
+ */
+#define SOCKETQPACK_POSTBASE_MASK 0xF0
+
+/**
+ * @brief Number of prefix bits for post-base index (4 bits).
+ */
+#define SOCKETQPACK_POSTBASE_PREFIX 4
+
+/**
+ * @brief Encode an indexed field line with post-base index (RFC 9204 Section
+ * 4.5.3).
+ *
+ * Encodes the pattern 0001 followed by a 4-bit prefix post-base index.
+ *
+ * Wire format:
+ * @code
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 0 | 1 |  Index (4+)   |
+ * +---+---+---+---+---------------+
+ * @endcode
+ *
+ * @param post_base_index Post-base index value (0 = entry at Base).
+ * @param output          Output buffer for encoded bytes.
+ * @param output_size     Size of output buffer in bytes.
+ *
+ * @return Number of bytes written on success, -1 on error.
+ *
+ * @note Post-base index 0 references the entry at absolute index Base.
+ *       Post-base index N references the entry at absolute index Base + N.
+ *
+ * Example:
+ * @code
+ * unsigned char buf[16];
+ * // Encode post-base index 5
+ * ssize_t len = SocketQPACK_encode_indexed_postbase(5, buf, sizeof(buf));
+ * // len = 1, buf[0] = 0x15 (0001 0101)
+ * @endcode
+ */
+extern ssize_t SocketQPACK_encode_indexed_postbase (uint64_t post_base_index,
+                                                    unsigned char *output,
+                                                    size_t output_size);
+
+/**
+ * @brief Decode an indexed field line with post-base index (RFC 9204 Section
+ * 4.5.3).
+ *
+ * Decodes a post-base indexed field line from the wire format.
+ *
+ * @param input           Input buffer containing encoded field line.
+ * @param input_len       Size of input buffer in bytes.
+ * @param post_base_index Output: decoded post-base index.
+ * @param consumed        Output: number of bytes consumed from input.
+ *
+ * @return QPACK_OK on success, error code otherwise.
+ *
+ * @retval QPACK_OK             Successfully decoded.
+ * @retval QPACK_INCOMPLETE     Input truncated (need more bytes).
+ * @retval QPACK_ERROR_INTEGER  Integer decoding error.
+ * @retval QPACK_ERROR_NULL     NULL pointer argument.
+ * @retval QPACK_ERROR          Pattern mismatch (not a post-base indexed
+ * field).
+ *
+ * Example:
+ * @code
+ * const unsigned char data[] = {0x15}; // Post-base index 5
+ * uint64_t post_base_index;
+ * size_t consumed;
+ * SocketQPACK_Result res = SocketQPACK_decode_indexed_postbase(
+ *     data, sizeof(data), &post_base_index, &consumed);
+ * // post_base_index = 5, consumed = 1
+ * @endcode
+ */
+extern SocketQPACK_Result
+SocketQPACK_decode_indexed_postbase (const unsigned char *input,
+                                     size_t input_len,
+                                     uint64_t *post_base_index,
+                                     size_t *consumed);
+
+/**
+ * @brief Validate a post-base index against current state.
+ *
+ * RFC 9204 Section 3.2.6: Post-base indices reference entries inserted
+ * after Base. The absolute index must be less than Insert Count.
+ *
+ * @param base          Base value for the field section.
+ * @param insert_count  Current Insert Count (total entries ever inserted).
+ * @param post_base_index Post-base index to validate.
+ *
+ * @return QPACK_OK if valid, error code otherwise.
+ *
+ * @retval QPACK_OK             Index is valid.
+ * @retval QPACK_ERROR_INTEGER  Overflow computing absolute index.
+ * @retval QPACK_ERROR          Absolute index >= Insert Count (future
+ * reference).
+ *
+ * @note The check performed is: Base + post_base_index < insert_count
+ */
+extern SocketQPACK_Result
+SocketQPACK_validate_postbase_index (uint64_t base,
+                                     uint64_t insert_count,
+                                     uint64_t post_base_index);
+
+/**
+ * @brief Convert post-base index to absolute index.
+ *
+ * RFC 9204 Section 3.2.6: The absolute index is computed as:
+ * absolute_index = Base + post_base_index
+ *
+ * @param base            Base value for the field section.
+ * @param post_base_index Post-base index to convert.
+ * @param absolute_index  Output: computed absolute index.
+ *
+ * @return QPACK_OK on success, error code otherwise.
+ *
+ * @retval QPACK_OK             Successfully converted.
+ * @retval QPACK_ERROR_INTEGER  Overflow in addition.
+ * @retval QPACK_ERROR_NULL     NULL pointer argument.
+ *
+ * Example:
+ * @code
+ * uint64_t abs_index;
+ * // Base = 10, post_base_index = 5 -> absolute_index = 15
+ * SocketQPACK_Result res = SocketQPACK_postbase_to_absolute(10, 5, &abs_index);
+ * // abs_index = 15
+ * @endcode
+ */
+extern SocketQPACK_Result
+SocketQPACK_postbase_to_absolute (uint64_t base,
+                                  uint64_t post_base_index,
+                                  uint64_t *absolute_index);
+
+/**
+ * @brief Check if a byte represents a post-base indexed field line.
+ *
+ * Tests if the pattern bits of the first byte match 0001 (post-base indexed).
+ *
+ * @param first_byte First byte of the encoded field line.
+ *
+ * @return 1 if this is a post-base indexed field line, 0 otherwise.
+ */
+static inline int
+SocketQPACK_is_indexed_postbase (unsigned char first_byte)
+{
+  return (first_byte & SOCKETQPACK_POSTBASE_MASK)
+         == SOCKETQPACK_POSTBASE_PATTERN;
+}
+
 /** @} */
 
 #endif /* SOCKETQPACK_INCLUDED */

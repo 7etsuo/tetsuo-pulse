@@ -494,3 +494,103 @@ SocketQPACK_string_size (const unsigned char *input,
 
   return header_len + data_len;
 }
+
+/* ============================================================================
+ * Indexed Field Line with Post-Base Index (RFC 9204 Section 4.5.3)
+ * ============================================================================
+ */
+
+ssize_t
+SocketQPACK_encode_indexed_postbase (uint64_t post_base_index,
+                                     unsigned char *output,
+                                     size_t output_size)
+{
+  ssize_t int_len;
+
+  if (output == NULL)
+    return -1;
+
+  if (output_size == 0)
+    return -1;
+
+  /* Check maximum representable value */
+  if (post_base_index > SOCKETQPACK_INT_MAX)
+    return -1;
+
+  /* Encode the post-base index with 4-bit prefix */
+  int_len = SocketQPACK_int_encode (
+      post_base_index, SOCKETQPACK_POSTBASE_PREFIX, output, output_size);
+  if (int_len < 0)
+    return -1;
+
+  /* Apply the pattern bits 0001 to the first byte.
+   * The 4-bit prefix means bits 0-3 hold the index (or 0x0F if multi-byte),
+   * and we need to set bits 4-7 to 0001 (0x10). */
+  output[0]
+      = (unsigned char)((output[0] & 0x0F) | SOCKETQPACK_POSTBASE_PATTERN);
+
+  return int_len;
+}
+
+SocketQPACK_Result
+SocketQPACK_decode_indexed_postbase (const unsigned char *input,
+                                     size_t input_len,
+                                     uint64_t *post_base_index,
+                                     size_t *consumed)
+{
+  SocketQPACK_Result result;
+
+  if (input == NULL || post_base_index == NULL || consumed == NULL)
+    return QPACK_ERROR_NULL;
+
+  if (input_len == 0)
+    return QPACK_INCOMPLETE;
+
+  /* Verify this is a post-base indexed field line (pattern 0001) */
+  if ((input[0] & SOCKETQPACK_POSTBASE_MASK) != SOCKETQPACK_POSTBASE_PATTERN)
+    return QPACK_ERROR;
+
+  /* Decode the 4-bit prefix integer */
+  result = SocketQPACK_int_decode (
+      input, input_len, SOCKETQPACK_POSTBASE_PREFIX, post_base_index, consumed);
+
+  return result;
+}
+
+SocketQPACK_Result
+SocketQPACK_validate_postbase_index (uint64_t base,
+                                     uint64_t insert_count,
+                                     uint64_t post_base_index)
+{
+  uint64_t absolute_index;
+
+  /* Check for overflow in Base + post_base_index */
+  if (base > UINT64_MAX - post_base_index)
+    return QPACK_ERROR_INTEGER;
+
+  absolute_index = base + post_base_index;
+
+  /* RFC 9204 Section 3.2.6: Absolute index must be less than Insert Count.
+   * This ensures we're not referencing an entry that hasn't been inserted yet.
+   */
+  if (absolute_index >= insert_count)
+    return QPACK_ERROR;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_postbase_to_absolute (uint64_t base,
+                                  uint64_t post_base_index,
+                                  uint64_t *absolute_index)
+{
+  if (absolute_index == NULL)
+    return QPACK_ERROR_NULL;
+
+  /* Check for overflow in Base + post_base_index */
+  if (base > UINT64_MAX - post_base_index)
+    return QPACK_ERROR_INTEGER;
+
+  *absolute_index = base + post_base_index;
+  return QPACK_OK;
+}
