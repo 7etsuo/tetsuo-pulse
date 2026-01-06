@@ -75,7 +75,10 @@ static const char *result_strings[]
         [QUIC_CRYPTO_ERROR_HKDF] = "HKDF operation failed",
         [QUIC_CRYPTO_ERROR_NO_TLS] = "TLS support not available",
         [QUIC_CRYPTO_ERROR_AEAD] = "Invalid AEAD algorithm",
-        [QUIC_CRYPTO_ERROR_SECRET_LEN] = "Secret length mismatch for AEAD" };
+        [QUIC_CRYPTO_ERROR_SECRET_LEN] = "Secret length mismatch for AEAD",
+        [QUIC_CRYPTO_ERROR_BUFFER] = "Output buffer too small",
+        [QUIC_CRYPTO_ERROR_TAG] = "AEAD tag verification failed",
+        [QUIC_CRYPTO_ERROR_INPUT] = "Invalid input" };
 
 /* ============================================================================
  * AEAD Algorithm Tables (RFC 9001 Section 5.1)
@@ -728,6 +731,211 @@ SocketQUICCrypto_derive_packet_keys (const uint8_t *secret,
   (void)secret_len;
   (void)aead;
   (void)keys;
+  return QUIC_CRYPTO_ERROR_NO_TLS;
+#endif
+}
+
+/* ============================================================================
+ * AEAD Packet Payload Encryption/Decryption (RFC 9001 Section 5.3)
+ * ============================================================================
+ */
+
+/**
+ * Form AEAD nonce by XORing IV with packet number (RFC 9001 §5.3).
+ *
+ * The 62-bit packet number is left-padded with zeros to 12 bytes,
+ * then XORed with the IV.
+ */
+static void
+quic_form_nonce (const uint8_t iv[QUIC_PACKET_IV_LEN],
+                 uint64_t packet_number,
+                 uint8_t nonce[QUIC_PACKET_IV_LEN])
+{
+  /* Copy IV to nonce */
+  memcpy (nonce, iv, QUIC_PACKET_IV_LEN);
+
+  /* XOR packet number (big-endian) into last 8 bytes of nonce */
+  for (int i = 0; i < 8; i++)
+    {
+      nonce[QUIC_PACKET_IV_LEN - 1 - i]
+          ^= (uint8_t)(packet_number >> (8 * i));
+    }
+}
+
+/**
+ * Map QUIC AEAD enum to SocketCrypto AEAD enum.
+ */
+static SocketCrypto_AeadAlg
+quic_aead_to_crypto_alg (SocketQUIC_AEAD aead)
+{
+  static const SocketCrypto_AeadAlg map[QUIC_AEAD_COUNT] = {
+    [QUIC_AEAD_AES_128_GCM] = SOCKET_CRYPTO_AEAD_AES_128_GCM,
+    [QUIC_AEAD_AES_256_GCM] = SOCKET_CRYPTO_AEAD_AES_256_GCM,
+    [QUIC_AEAD_CHACHA20_POLY1305] = SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305,
+  };
+  return map[aead];
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_encrypt_payload (const SocketQUICPacketKeys_T *keys,
+                                  uint64_t packet_number,
+                                  const uint8_t *header,
+                                  size_t header_len,
+                                  const uint8_t *plaintext,
+                                  size_t plaintext_len,
+                                  uint8_t *ciphertext,
+                                  size_t *ciphertext_len)
+{
+#ifdef SOCKET_HAS_TLS
+  uint8_t nonce[QUIC_PACKET_IV_LEN];
+  uint8_t tag[SOCKET_CRYPTO_AEAD_TAG_SIZE];
+  size_t required_size;
+  SocketCrypto_AeadAlg alg;
+
+  /* Parameter validation */
+  if (keys == NULL || ciphertext == NULL || ciphertext_len == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  /* Header can be zero-length but not NULL */
+  if (header == NULL && header_len > 0)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  /* Plaintext can be zero-length (auth-only) but not NULL if len > 0 */
+  if (plaintext == NULL && plaintext_len > 0)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  /* Validate AEAD algorithm */
+  if (keys->aead < 0 || keys->aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Check output buffer size */
+  required_size = plaintext_len + SOCKET_CRYPTO_AEAD_TAG_SIZE;
+  if (*ciphertext_len < required_size)
+    return QUIC_CRYPTO_ERROR_BUFFER;
+
+  /* Form nonce: IV XOR packet_number (RFC 9001 §5.3) */
+  quic_form_nonce (keys->iv, packet_number, nonce);
+
+  /* Map QUIC AEAD to SocketCrypto AEAD */
+  alg = quic_aead_to_crypto_alg (keys->aead);
+
+  /* Perform AEAD encryption */
+  SocketCrypto_aead_encrypt (alg,
+                             keys->key,
+                             keys->key_len,
+                             nonce,
+                             QUIC_PACKET_IV_LEN,
+                             plaintext,
+                             plaintext_len,
+                             header,
+                             header_len,
+                             ciphertext,
+                             tag);
+
+  /* Append tag to ciphertext */
+  memcpy (ciphertext + plaintext_len, tag, SOCKET_CRYPTO_AEAD_TAG_SIZE);
+
+  /* Set output length */
+  *ciphertext_len = required_size;
+
+  /* Clear sensitive data */
+  SocketCrypto_secure_clear (nonce, sizeof (nonce));
+
+  return QUIC_CRYPTO_OK;
+
+#else
+  (void)keys;
+  (void)packet_number;
+  (void)header;
+  (void)header_len;
+  (void)plaintext;
+  (void)plaintext_len;
+  (void)ciphertext;
+  (void)ciphertext_len;
+  return QUIC_CRYPTO_ERROR_NO_TLS;
+#endif
+}
+
+SocketQUICCrypto_Result
+SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
+                                  uint64_t packet_number,
+                                  const uint8_t *header,
+                                  size_t header_len,
+                                  const uint8_t *ciphertext,
+                                  size_t ciphertext_len,
+                                  uint8_t *plaintext,
+                                  size_t *plaintext_len)
+{
+#ifdef SOCKET_HAS_TLS
+  uint8_t nonce[QUIC_PACKET_IV_LEN];
+  size_t payload_len;
+  int decrypt_result;
+  SocketCrypto_AeadAlg alg;
+
+  /* Parameter validation */
+  if (keys == NULL || plaintext == NULL || plaintext_len == NULL)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  /* Header can be zero-length but not NULL */
+  if (header == NULL && header_len > 0)
+    return QUIC_CRYPTO_ERROR_NULL;
+
+  /* Ciphertext must be at least tag size */
+  if (ciphertext == NULL || ciphertext_len < SOCKET_CRYPTO_AEAD_TAG_SIZE)
+    return QUIC_CRYPTO_ERROR_INPUT;
+
+  /* Validate AEAD algorithm */
+  if (keys->aead < 0 || keys->aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Calculate payload length (ciphertext minus tag) */
+  payload_len = ciphertext_len - SOCKET_CRYPTO_AEAD_TAG_SIZE;
+
+  /* Check output buffer size */
+  if (*plaintext_len < payload_len)
+    return QUIC_CRYPTO_ERROR_BUFFER;
+
+  /* Form nonce: IV XOR packet_number (RFC 9001 §5.3) */
+  quic_form_nonce (keys->iv, packet_number, nonce);
+
+  /* Map QUIC AEAD to SocketCrypto AEAD */
+  alg = quic_aead_to_crypto_alg (keys->aead);
+
+  /* Perform AEAD decryption with tag verification */
+  decrypt_result
+      = SocketCrypto_aead_decrypt (alg,
+                                   keys->key,
+                                   keys->key_len,
+                                   nonce,
+                                   QUIC_PACKET_IV_LEN,
+                                   ciphertext,
+                                   payload_len,
+                                   header,
+                                   header_len,
+                                   ciphertext + payload_len, /* tag at end */
+                                   plaintext);
+
+  /* Clear sensitive data */
+  SocketCrypto_secure_clear (nonce, sizeof (nonce));
+
+  /* Check for authentication failure */
+  if (decrypt_result != 0)
+    return QUIC_CRYPTO_ERROR_TAG;
+
+  /* Set output length */
+  *plaintext_len = payload_len;
+
+  return QUIC_CRYPTO_OK;
+
+#else
+  (void)keys;
+  (void)packet_number;
+  (void)header;
+  (void)header_len;
+  (void)ciphertext;
+  (void)ciphertext_len;
+  (void)plaintext;
+  (void)plaintext_len;
   return QUIC_CRYPTO_ERROR_NO_TLS;
 #endif
 }
