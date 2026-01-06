@@ -321,27 +321,92 @@ extern size_t
 SocketQPACK_DecoderStream_buffer_size (SocketQPACK_DecoderStream_T stream);
 
 /* ============================================================================
- * STREAM CANCELLATION INSTRUCTION DECODING (RFC 9204 Section 4.4.2)
+ * DECODER INSTRUCTION DECODING (RFC 9204 Section 4.4)
+ *
+ * These functions decode decoder instructions received from the peer's
+ * decoder stream. Used by the encoder to process acknowledgments.
  * ============================================================================
  */
 
 /**
- * @brief Decoded Stream Cancellation instruction result.
+ * @brief Decoder instruction type enumeration.
  *
- * RFC 9204 Section 4.4.2: Contains the parsed stream ID from a
- * Stream Cancellation instruction.
+ * Identifies which decoder instruction was parsed from the stream.
+ */
+typedef enum
+{
+  QPACK_DINSTR_TYPE_SECTION_ACK,      /**< Section Acknowledgment (4.4.1) */
+  QPACK_DINSTR_TYPE_STREAM_CANCEL,    /**< Stream Cancellation (4.4.2) */
+  QPACK_DINSTR_TYPE_INSERT_COUNT_INC, /**< Insert Count Increment (4.4.3) */
+  QPACK_DINSTR_TYPE_UNKNOWN           /**< Unknown/invalid instruction */
+} SocketQPACK_DecoderInstrType;
+
+/**
+ * @brief Decoded decoder instruction.
+ *
+ * Contains the parsed result of a decoder instruction from the stream.
  */
 typedef struct
 {
-  uint64_t stream_id; /**< The cancelled stream ID */
-} SocketQPACK_StreamCancel;
+  SocketQPACK_DecoderInstrType type; /**< Instruction type */
+  uint64_t value;                    /**< Stream ID or increment value */
+} SocketQPACK_DecoderInstruction;
 
 /**
- * @brief Decode Stream Cancellation instruction from input buffer.
+ * @brief Identify decoder instruction type from first byte.
  *
- * RFC 9204 Section 4.4.2: Decodes a Stream Cancellation instruction from
- * the decoder stream. The instruction has format:
+ * RFC 9204 Section 4.4: Determines the instruction type by examining
+ * the bit pattern of the first byte:
+ * - 1xxxxxxx: Section Acknowledgment
+ * - 01xxxxxx: Stream Cancellation
+ * - 00xxxxxx: Insert Count Increment
  *
+ * @param first_byte First byte of the instruction
+ * @return Instruction type
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_DecoderInstrType
+SocketQPACK_identify_decoder_instruction (uint8_t first_byte);
+
+/**
+ * @brief Decode Section Acknowledgment instruction.
+ *
+ * RFC 9204 Section 4.4.1: Decodes a Section Acknowledgment from the
+ * decoder stream. The stream ID is extracted using a 7-bit prefix integer.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 1 |      Stream ID (7+)       |
+ * +---+---------------------------+
+ *
+ * @param input      Input buffer containing the instruction
+ * @param input_len  Length of input buffer
+ * @param[out] stream_id Output: decoded stream ID (must not be NULL)
+ * @param[out] consumed  Output: bytes consumed from input (must not be NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if output params are NULL,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if more data needed,
+ *         QPACK_STREAM_ERR_INTERNAL on decode error
+ *
+ * @note First byte must have bit 7 set (0x80 mask) to be valid
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_decode_section_ack (const unsigned char *input,
+                                size_t input_len,
+                                uint64_t *stream_id,
+                                size_t *consumed);
+
+/**
+ * @brief Decode Stream Cancellation instruction.
+ *
+ * RFC 9204 Section 4.4.2: Decodes a Stream Cancellation from the
+ * decoder stream. The stream ID is extracted using a 6-bit prefix integer.
+ *
+ * Wire format:
  *   0   1   2   3   4   5   6   7
  * +---+---+---+---+---+---+---+---+
  * | 0 | 1 |     Stream ID (6+)    |
@@ -349,21 +414,19 @@ typedef struct
  *
  * @param input      Input buffer containing the instruction
  * @param input_len  Length of input buffer
- * @param[out] result Decoded instruction (must not be NULL)
- * @param[out] consumed Number of bytes consumed from input (must not be NULL)
+ * @param[out] stream_id Output: decoded stream ID (must not be NULL)
+ * @param[out] consumed  Output: bytes consumed from input (must not be NULL)
  * @return QPACK_STREAM_OK on success,
- *         QPACK_STREAM_ERR_NULL_PARAM if any required parameter is NULL,
- *         QPACK_STREAM_ERR_BUFFER_FULL if input is incomplete,
- *         QPACK_STREAM_ERR_INTERNAL on decoding error
- *
- * @note The first byte of input must have bits 7-6 equal to 01 (0x40 mask)
+ *         QPACK_STREAM_ERR_NULL_PARAM if output params are NULL,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if more data needed,
+ *         QPACK_STREAM_ERR_INTERNAL on decode error
  *
  * @since 1.0.0
  */
 extern SocketQPACKStream_Result
 SocketQPACK_decode_stream_cancel (const unsigned char *input,
                                   size_t input_len,
-                                  SocketQPACK_StreamCancel *result,
+                                  uint64_t *stream_id,
                                   size_t *consumed);
 
 /**
@@ -371,15 +434,11 @@ SocketQPACK_decode_stream_cancel (const unsigned char *input,
  *
  * RFC 9204 Section 4.4.2: Validates that a stream ID is valid for
  * cancellation. Stream ID 0 is reserved for the connection control stream
- * and should not be cancelled. Also provides a warning if the stream ID
- * is not found in tracking (stale cancellation).
+ * and should not be cancelled.
  *
  * @param stream_id  Stream ID to validate
  * @return QPACK_STREAM_OK if valid,
  *         QPACK_STREAM_ERR_INVALID_INDEX if stream_id is 0 (reserved)
- *
- * @note This validation is for basic validity. Stream not found in tracking
- *       is a warning condition, not an error, per the RFC recommendation.
  *
  * @since 1.0.0
  */
@@ -390,18 +449,12 @@ SocketQPACK_stream_cancel_validate_id (uint64_t stream_id);
  * @brief Release dynamic table references for a cancelled stream.
  *
  * RFC 9204 Section 4.4.2: When a stream is cancelled, all dynamic table
- * references associated with that stream should be released. This decrements
- * the reference count for each entry referenced by the stream.
+ * references associated with that stream should be released.
  *
  * @param table     Dynamic table (may be NULL if no dynamic table)
  * @param stream_id Stream ID whose references should be released
  * @return QPACK_STREAM_OK on success (including when table is NULL),
  *         QPACK_STREAM_ERR_INTERNAL on reference tracking corruption
- *
- * @note If the stream has no outstanding references (not in tracking),
- *       this function succeeds silently as per RFC recommendation.
- * @note When an entry's reference count reaches 0, it becomes eligible
- *       for eviction on the next table update.
  *
  * @since 1.0.0
  */
@@ -410,33 +463,10 @@ SocketQPACK_stream_cancel_release_refs (SocketQPACK_Table_T table,
                                         uint64_t stream_id);
 
 /**
- * @brief Check if a byte is a Stream Cancellation instruction.
+ * @brief Decode Insert Count Increment instruction.
  *
- * RFC 9204 Section 4.4.2: Stream Cancellation has bit pattern 01xxxxxx.
- *
- * @param first_byte First byte of the instruction
- * @return true if this is a Stream Cancellation instruction, false otherwise
- *
- * @since 1.0.0
- */
-static inline bool
-SocketQPACK_is_stream_cancel (unsigned char first_byte)
-{
-  /* Bit pattern: 01xxxxxx (bits 7-6 = 01) */
-  return (first_byte & 0xC0) == QPACK_DINSTR_STREAM_CANCEL_MASK;
-}
-
-/* ============================================================================
- * INSERT COUNT INCREMENT PRIMITIVES (RFC 9204 Section 4.4.3)
- * ============================================================================
- */
-
-/**
- * @brief Encode Insert Count Increment instruction to buffer.
- *
- * RFC 9204 Section 4.4.3: Encodes an increment instruction into the provided
- * output buffer. This is a low-level function for building decoder stream
- * data without using the stream abstraction.
+ * RFC 9204 Section 4.4.3: Decodes an Insert Count Increment from the
+ * decoder stream. The increment value is extracted using a 6-bit prefix.
  *
  * Wire format:
  *   0   1   2   3   4   5   6   7
@@ -444,11 +474,36 @@ SocketQPACK_is_stream_cancel (unsigned char first_byte)
  * | 0 | 0 |     Increment (6+)    |
  * +---+---+-----------------------+
  *
+ * @param input      Input buffer containing the instruction
+ * @param input_len  Length of input buffer
+ * @param[out] increment Output: decoded increment value (must not be NULL)
+ * @param[out] consumed  Output: bytes consumed from input (must not be NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if output params are NULL,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if more data needed,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0,
+ *         QPACK_STREAM_ERR_INTERNAL on decode error
+ *
+ * @note An increment of 0 is an error per RFC 9204 Section 4.4.3
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_decode_insert_count_inc (const unsigned char *input,
+                                     size_t input_len,
+                                     uint64_t *increment,
+                                     size_t *consumed);
+
+/**
+ * @brief Encode Insert Count Increment instruction to buffer.
+ *
+ * RFC 9204 Section 4.4.3: Encodes an increment instruction into the provided
+ * output buffer.
+ *
  * @param output        Output buffer (must not be NULL)
  * @param output_size   Size of output buffer
  * @param increment     Number of entries to increment (must be > 0)
- * @param[out] bytes_written Number of bytes written to output (must not be
- * NULL)
+ * @param[out] bytes_written Number of bytes written to output
  * @return QPACK_STREAM_OK on success,
  *         QPACK_STREAM_ERR_NULL_PARAM if output or bytes_written is NULL,
  *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0,
@@ -463,38 +518,10 @@ SocketQPACK_encode_insert_count_inc (unsigned char *output,
                                      size_t *bytes_written);
 
 /**
- * @brief Decode Insert Count Increment instruction from buffer.
- *
- * RFC 9204 Section 4.4.3: Decodes an increment instruction from the input
- * buffer. Returns the increment value which should be added to the
- * Known Received Count.
- *
- * @param input         Input buffer containing the instruction
- * @param input_len     Length of input buffer
- * @param[out] increment Decoded increment value (must not be NULL)
- * @param[out] consumed  Number of bytes consumed from input (must not be NULL)
- * @return QPACK_STREAM_OK on success,
- *         QPACK_STREAM_ERR_NULL_PARAM if any required parameter is NULL,
- *         QPACK_STREAM_ERR_BUFFER_FULL if input is incomplete,
- *         QPACK_STREAM_ERR_INVALID_INDEX if decoded increment is 0,
- *         QPACK_STREAM_ERR_INTERNAL on decoding error
- *
- * @note The first byte of input must have bits 7-6 equal to 00
- *
- * @since 1.0.0
- */
-extern SocketQPACKStream_Result
-SocketQPACK_decode_insert_count_inc (const unsigned char *input,
-                                     size_t input_len,
-                                     uint64_t *increment,
-                                     size_t *consumed);
-
-/**
  * @brief Apply Insert Count Increment to encoder state.
  *
  * RFC 9204 Section 4.4.3: Updates the Known Received Count based on the
- * received increment. This function is called by the encoder when it
- * receives an Insert Count Increment instruction from the decoder.
+ * received increment.
  *
  * @param known_received_count Current Known Received Count (updated in-place)
  * @param insert_count         Current Insert Count (total entries sent)
@@ -503,10 +530,6 @@ SocketQPACK_decode_insert_count_inc (const unsigned char *input,
  *         QPACK_STREAM_ERR_NULL_PARAM if known_received_count is NULL,
  *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0,
  *         QPACK_STREAM_ERR_INVALID_INDEX if new count would exceed insert_count
- *
- * @note The encoder tracks Known Received Count to know which dynamic table
- *       entries have been acknowledged by the decoder. Entries with absolute
- *       index < Known Received Count are safe to reference.
  *
  * @since 1.0.0
  */
@@ -518,9 +541,7 @@ SocketQPACK_apply_insert_count_inc (uint64_t *known_received_count,
 /**
  * @brief Validate Insert Count Increment value.
  *
- * RFC 9204 Section 4.4.3: Validates that an increment value is valid:
- * - Increment must be non-zero
- * - Increment must not cause Known Received Count to exceed Insert Count
+ * RFC 9204 Section 4.4.3: Validates that an increment value is valid.
  *
  * @param known_received_count Current Known Received Count
  * @param insert_count         Current Insert Count (total entries sent)
@@ -535,6 +556,159 @@ extern SocketQPACKStream_Result
 SocketQPACK_validate_insert_count_inc (uint64_t known_received_count,
                                        uint64_t insert_count,
                                        uint64_t increment);
+
+/**
+ * @brief Decode next decoder instruction from buffer.
+ *
+ * Parses the next decoder instruction from the input buffer and returns
+ * the instruction type and value. This is a convenience function that
+ * identifies the instruction type and calls the appropriate decoder.
+ *
+ * @param input      Input buffer containing instruction(s)
+ * @param input_len  Length of input buffer
+ * @param[out] instr Output: decoded instruction (must not be NULL)
+ * @param[out] consumed Output: bytes consumed (must not be NULL)
+ * @return QPACK_STREAM_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_decode_decoder_instruction (const unsigned char *input,
+                                        size_t input_len,
+                                        SocketQPACK_DecoderInstruction *instr,
+                                        size_t *consumed);
+
+/* ============================================================================
+ * KNOWN RECEIVED COUNT MANAGEMENT (RFC 9204 Section 3.3)
+ *
+ * Tracks the encoder's view of which dynamic table entries the decoder
+ * has acknowledged receiving.
+ * ============================================================================
+ */
+
+/**
+ * @brief Opaque type for QPACK acknowledgment state.
+ *
+ * Tracks Known Received Count and pending section acknowledgments
+ * at the encoder side.
+ */
+typedef struct SocketQPACK_AckState *SocketQPACK_AckState_T;
+
+/**
+ * @brief Create a new QPACK acknowledgment state tracker.
+ *
+ * @param arena Memory arena for allocations (must not be NULL)
+ * @return New acknowledgment state, or NULL on allocation failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_AckState_T SocketQPACK_AckState_new (Arena_T arena);
+
+/**
+ * @brief Register a field section that needs acknowledgment.
+ *
+ * Called by the encoder when sending a field section that references
+ * dynamic table entries. The encoder tracks the Required Insert Count
+ * for each stream to update Known Received Count on acknowledgment.
+ *
+ * @param state     Acknowledgment state
+ * @param stream_id Stream ID carrying the field section
+ * @param required_insert_count Required Insert Count for this section
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if state is NULL
+ *
+ * @note Only sections with RIC > 0 should be registered
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_AckState_register_section (SocketQPACK_AckState_T state,
+                                       uint64_t stream_id,
+                                       uint64_t required_insert_count);
+
+/**
+ * @brief Process Section Acknowledgment from decoder.
+ *
+ * RFC 9204 Section 4.4.1: Updates the Known Received Count based on
+ * the acknowledged section.
+ *
+ * @param state     Acknowledgment state
+ * @param stream_id Stream ID from Section Acknowledgment
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if state is NULL,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if stream has no pending RIC
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_AckState_process_section_ack (SocketQPACK_AckState_T state,
+                                          uint64_t stream_id);
+
+/**
+ * @brief Process Stream Cancellation from decoder.
+ *
+ * RFC 9204 Section 4.4.2: Removes the stream from pending acknowledgments
+ * without updating Known Received Count.
+ *
+ * @param state     Acknowledgment state
+ * @param stream_id Stream ID from Stream Cancellation
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if state is NULL
+ *
+ * @note Cancelling an unknown stream is not an error (idempotent)
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_AckState_process_stream_cancel (SocketQPACK_AckState_T state,
+                                            uint64_t stream_id);
+
+/**
+ * @brief Process Insert Count Increment from decoder.
+ *
+ * RFC 9204 Section 4.4.3: Increases the Known Received Count by the
+ * specified increment value.
+ *
+ * @param state     Acknowledgment state
+ * @param increment Increment value (must be > 0)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if state is NULL,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_AckState_process_insert_count_inc (SocketQPACK_AckState_T state,
+                                               uint64_t increment);
+
+/**
+ * @brief Get the current Known Received Count.
+ *
+ * RFC 9204 Section 3.3: Returns the maximum insert count that has been
+ * acknowledged by the decoder.
+ *
+ * @param state Acknowledgment state
+ * @return Current Known Received Count, or 0 if state is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_AckState_get_known_received_count (SocketQPACK_AckState_T state);
+
+/**
+ * @brief Check if an entry can be safely evicted.
+ *
+ * An entry can be evicted if its absolute index is less than the
+ * Known Received Count.
+ *
+ * @param state     Acknowledgment state
+ * @param abs_index Absolute index of entry to check
+ * @return true if entry can be safely evicted, false otherwise
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_AckState_can_evict (SocketQPACK_AckState_T state,
+                                            uint64_t abs_index);
 /** @} */
 
 #endif /* SOCKETQPACK_DECODER_STREAM_INCLUDED */

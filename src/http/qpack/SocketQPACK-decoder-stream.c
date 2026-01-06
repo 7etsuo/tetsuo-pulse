@@ -409,14 +409,86 @@ SocketQPACK_DecoderStream_buffer_size (SocketQPACK_DecoderStream_T stream)
 }
 
 /* ============================================================================
- * STREAM CANCELLATION INSTRUCTION DECODING (RFC 9204 Section 4.4.2)
+ * DECODER INSTRUCTION DECODING (RFC 9204 Section 4.4)
+ *
+ * These functions decode decoder instructions received from the peer's
+ * decoder stream. Used by the encoder to process acknowledgments.
  * ============================================================================
  */
+
+SocketQPACK_DecoderInstrType
+SocketQPACK_identify_decoder_instruction (uint8_t first_byte)
+{
+  /*
+   * RFC 9204 Section 4.4: Decoder instruction identification
+   *
+   * Bit patterns:
+   * - 1xxxxxxx: Section Acknowledgment (bit 7 set)
+   * - 01xxxxxx: Stream Cancellation (bits 7-6 = 01)
+   * - 00xxxxxx: Insert Count Increment (bits 7-6 = 00)
+   */
+  if ((first_byte & 0x80) != 0)
+    return QPACK_DINSTR_TYPE_SECTION_ACK;
+
+  if ((first_byte & 0xC0) == 0x40)
+    return QPACK_DINSTR_TYPE_STREAM_CANCEL;
+
+  if ((first_byte & 0xC0) == 0x00)
+    return QPACK_DINSTR_TYPE_INSERT_COUNT_INC;
+
+  return QPACK_DINSTR_TYPE_UNKNOWN;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_decode_section_ack (const unsigned char *input,
+                                size_t input_len,
+                                uint64_t *stream_id,
+                                size_t *consumed)
+{
+  /*
+   * RFC 9204 Section 4.4.1: Section Acknowledgment
+   *
+   *   0   1   2   3   4   5   6   7
+   * +---+---+---+---+---+---+---+---+
+   * | 1 |      Stream ID (7+)       |
+   * +---+---------------------------+
+   *
+   * Bit pattern: 1xxxxxxx (0x80 mask)
+   * Uses 7-bit prefix integer encoding for stream ID.
+   */
+  SocketHPACK_Result hpack_result;
+
+  if (input == NULL || stream_id == NULL || consumed == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *consumed = 0;
+
+  /* Need at least one byte */
+  if (input_len < 1)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  /* Verify bit pattern (bit 7 must be set) */
+  if ((input[0] & QPACK_DINSTR_SECTION_ACK_MASK)
+      != QPACK_DINSTR_SECTION_ACK_MASK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Decode stream ID using 7-bit prefix integer */
+  hpack_result = SocketHPACK_int_decode (
+      input, input_len, QPACK_DINSTR_SECTION_ACK_PREFIX, stream_id, consumed);
+
+  if (hpack_result == HPACK_INCOMPLETE)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  if (hpack_result != HPACK_OK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  return QPACK_STREAM_OK;
+}
 
 SocketQPACKStream_Result
 SocketQPACK_decode_stream_cancel (const unsigned char *input,
                                   size_t input_len,
-                                  SocketQPACK_StreamCancel *result,
+                                  uint64_t *stream_id,
                                   size_t *consumed)
 {
   /*
@@ -427,43 +499,33 @@ SocketQPACK_decode_stream_cancel (const unsigned char *input,
    * | 0 | 1 |     Stream ID (6+)    |
    * +---+---+-----------------------+
    *
-   * First byte: 01xxxxxx
-   * - Bits 7-6: 01 (Stream Cancellation pattern)
-   * - Bits 5-0: Start of 6+ prefix integer for stream ID
+   * Bit pattern: 01xxxxxx (0x40 mask)
+   * Uses 6-bit prefix integer encoding for stream ID.
    */
-  uint64_t stream_id;
-  size_t int_consumed;
   SocketHPACK_Result hpack_result;
 
-  /* Parameter validation */
-  if (result == NULL || consumed == NULL)
+  if (input == NULL || stream_id == NULL || consumed == NULL)
     return QPACK_STREAM_ERR_NULL_PARAM;
 
   *consumed = 0;
 
   /* Need at least one byte */
-  if (input == NULL || input_len < 1)
+  if (input_len < 1)
     return QPACK_STREAM_ERR_BUFFER_FULL;
 
-  /* Verify this is a Stream Cancellation instruction (bits 7-6 = 01) */
-  if (!SocketQPACK_is_stream_cancel (input[0]))
+  /* Verify bit pattern (bits 7-6 must be 01) */
+  if ((input[0] & 0xC0) != QPACK_DINSTR_STREAM_CANCEL_MASK)
     return QPACK_STREAM_ERR_INTERNAL;
 
-  /* Decode stream ID (6-bit prefix integer) */
-  hpack_result = SocketHPACK_int_decode (input,
-                                         input_len,
-                                         QPACK_DINSTR_STREAM_CANCEL_PREFIX,
-                                         &stream_id,
-                                         &int_consumed);
+  /* Decode stream ID using 6-bit prefix integer */
+  hpack_result = SocketHPACK_int_decode (
+      input, input_len, QPACK_DINSTR_STREAM_CANCEL_PREFIX, stream_id, consumed);
 
   if (hpack_result == HPACK_INCOMPLETE)
     return QPACK_STREAM_ERR_BUFFER_FULL;
+
   if (hpack_result != HPACK_OK)
     return QPACK_STREAM_ERR_INTERNAL;
-
-  /* Populate result */
-  result->stream_id = stream_id;
-  *consumed = int_consumed;
 
   return QPACK_STREAM_OK;
 }
@@ -475,15 +537,8 @@ SocketQPACK_stream_cancel_validate_id (uint64_t stream_id)
    * RFC 9204 Section 4.4.2: Stream Cancellation validation
    *
    * Stream ID 0 is typically reserved for the connection control stream
-   * in HTTP/3 and should not be cancelled via QPACK. While the RFC doesn't
-   * explicitly forbid this, cancelling stream 0 is almost certainly an error.
-   *
-   * Note: The RFC says we SHOULD gracefully handle cancellation for streams
-   * with no outstanding references. That's a warning condition handled
-   * in the release_refs function, not an error here.
+   * in HTTP/3 and should not be cancelled via QPACK.
    */
-
-  /* Stream ID 0 is reserved (connection control in HTTP/3) */
   if (stream_id == 0)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
@@ -498,91 +553,16 @@ SocketQPACK_stream_cancel_release_refs (SocketQPACK_Table_T table,
    * RFC 9204 Section 4.4.2: Release dynamic table references
    *
    * When a Stream Cancellation is received, we need to release all
-   * dynamic table references held by that stream. This allows entries
-   * to be evicted if their reference count reaches 0.
+   * dynamic table references held by that stream.
    *
-   * Current implementation:
-   * - The dynamic table tracks reference counts per entry (ref_count field)
-   * - Per-stream reference tracking would require additional data structures
-   * - For now, we accept the stream_id but don't track per-stream refs
-   * - This is correct behavior when max_dynamic_table_capacity = 0
-   *
-   * Future enhancement: Implement per-stream reference tracking with
-   * an inverted index mapping stream_id -> [entry_indices] for efficient
-   * cleanup on stream cancellation.
-   *
-   * Note: If no dynamic table exists (table is NULL), this is valid and
-   * we return success. If the stream has no outstanding references, we
-   * also return success per RFC 9204's guidance to handle gracefully.
+   * Note: Per-stream reference tracking is not yet implemented.
+   * NULL table is valid (no dynamic table configured).
    */
-  (void)stream_id; /* Silence unused parameter warning */
+  (void)stream_id;
 
-  /* NULL table is valid (no dynamic table configured) */
   if (table == NULL)
     return QPACK_STREAM_OK;
 
-  /*
-   * Per-stream reference tracking is not yet implemented.
-   * The table structure has ref_count per entry but not per-stream tracking.
-   *
-   * For full RFC compliance, we would:
-   * 1. Maintain stream_refs[stream_id] -> list of entry absolute indices
-   * 2. On cancellation, iterate that list and decrement each entry's ref_count
-   * 3. Clear the stream from tracking
-   *
-   * Currently, entries are evicted based on FIFO order when capacity is needed,
-   * which is correct behavior for the encoder side. The decoder side (which
-   * receives these cancellation instructions) needs this for knowing when
-   * entries are safe to evict.
-   */
-
-  return QPACK_STREAM_OK;
-}
-
-/* ============================================================================
- * INSERT COUNT INCREMENT PRIMITIVES (RFC 9204 Section 4.4.3)
- * ============================================================================
- */
-
-SocketQPACKStream_Result
-SocketQPACK_encode_insert_count_inc (unsigned char *output,
-                                     size_t output_size,
-                                     uint64_t increment,
-                                     size_t *bytes_written)
-{
-  /*
-   * RFC 9204 Section 4.4.3: Insert Count Increment
-   *
-   *   0   1   2   3   4   5   6   7
-   * +---+---+---+---+---+---+---+---+
-   * | 0 | 0 |     Increment (6+)    |
-   * +---+---+-----------------------+
-   *
-   * Bit pattern: 00xxxxxx (0x00 mask)
-   * The 6-bit prefix encodes the increment value.
-   */
-  size_t int_len;
-
-  /* Parameter validation */
-  if (output == NULL || bytes_written == NULL)
-    return QPACK_STREAM_ERR_NULL_PARAM;
-
-  *bytes_written = 0;
-
-  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
-  if (increment == 0)
-    return QPACK_STREAM_ERR_INVALID_INDEX;
-
-  /* Encode the increment with 6-bit prefix */
-  int_len = SocketHPACK_int_encode (
-      increment, QPACK_DINSTR_INSERT_COUNT_INC_PREFIX, output, output_size);
-  if (int_len == 0)
-    return QPACK_STREAM_ERR_BUFFER_FULL;
-
-  /* First two bits are already 00 from int_encode (since mask is 0x00) */
-  /* No need to OR with mask as it's 0x00 */
-
-  *bytes_written = int_len;
   return QPACK_STREAM_OK;
 }
 
@@ -595,35 +575,40 @@ SocketQPACK_decode_insert_count_inc (const unsigned char *input,
   /*
    * RFC 9204 Section 4.4.3: Insert Count Increment
    *
-   * First byte: 00 xxxxxx
-   * - Bits 7-6: Always 00 for this instruction type
-   * - Bits 5-0: Start of 6+ prefix integer for increment
+   *   0   1   2   3   4   5   6   7
+   * +---+---+---+---+---+---+---+---+
+   * | 0 | 0 |     Increment (6+)    |
+   * +---+---+-----------------------+
+   *
+   * Bit pattern: 00xxxxxx (0x00 mask)
+   * Uses 6-bit prefix integer encoding for increment.
+   * An increment of 0 is an error (QPACK_DECOMPRESSION_FAILED).
    */
   SocketHPACK_Result hpack_result;
 
-  /* Parameter validation */
   if (input == NULL || increment == NULL || consumed == NULL)
     return QPACK_STREAM_ERR_NULL_PARAM;
 
-  *increment = 0;
   *consumed = 0;
 
   /* Need at least one byte */
   if (input_len < 1)
     return QPACK_STREAM_ERR_BUFFER_FULL;
 
-  /* Verify this is an insert count increment instruction (bits 7-6 = 00) */
+  /* Verify bit pattern (bits 7-6 must be 00) */
   if ((input[0] & 0xC0) != 0x00)
     return QPACK_STREAM_ERR_INTERNAL;
 
-  /* Decode increment (6-bit prefix integer) */
+  /* Decode increment using 6-bit prefix integer */
   hpack_result = SocketHPACK_int_decode (input,
                                          input_len,
                                          QPACK_DINSTR_INSERT_COUNT_INC_PREFIX,
                                          increment,
                                          consumed);
+
   if (hpack_result == HPACK_INCOMPLETE)
     return QPACK_STREAM_ERR_BUFFER_FULL;
+
   if (hpack_result != HPACK_OK)
     return QPACK_STREAM_ERR_INTERNAL;
 
@@ -631,6 +616,37 @@ SocketQPACK_decode_insert_count_inc (const unsigned char *input,
   if (*increment == 0)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_encode_insert_count_inc (unsigned char *output,
+                                     size_t output_size,
+                                     uint64_t increment,
+                                     size_t *bytes_written)
+{
+  /*
+   * RFC 9204 Section 4.4.3: Insert Count Increment
+   *
+   * Bit pattern: 00xxxxxx (0x00 mask)
+   * The 6-bit prefix encodes the increment value.
+   */
+  size_t int_len;
+
+  if (output == NULL || bytes_written == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *bytes_written = 0;
+
+  if (increment == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  int_len = SocketHPACK_int_encode (
+      increment, QPACK_DINSTR_INSERT_COUNT_INC_PREFIX, output, output_size);
+  if (int_len == 0)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  *bytes_written = int_len;
   return QPACK_STREAM_OK;
 }
 
@@ -643,30 +659,20 @@ SocketQPACK_apply_insert_count_inc (uint64_t *known_received_count,
    * RFC 9204 Section 4.4.3: Insert Count Increment
    *
    * Updates the Known Received Count based on the received increment.
-   * The encoder uses this to track which dynamic table entries have
-   * been acknowledged by the decoder.
-   *
-   * Validation:
-   * 1. Increment must be non-zero
-   * 2. known_received_count + increment must not exceed insert_count
    */
   uint64_t new_count;
 
-  /* Parameter validation */
   if (known_received_count == NULL)
     return QPACK_STREAM_ERR_NULL_PARAM;
 
-  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
   if (increment == 0)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
-  /* Check for overflow */
   if (increment > UINT64_MAX - *known_received_count)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
   new_count = *known_received_count + increment;
 
-  /* RFC 9204 Section 4.4.3: increment must not exceed entries sent */
   if (new_count > insert_count)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
@@ -681,25 +687,302 @@ SocketQPACK_validate_insert_count_inc (uint64_t known_received_count,
 {
   /*
    * RFC 9204 Section 4.4.3: Validate increment value
-   *
-   * 1. Increment must be non-zero
-   * 2. known_received_count + increment must not exceed insert_count
    */
   uint64_t new_count;
 
-  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
   if (increment == 0)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
-  /* Check for overflow */
   if (increment > UINT64_MAX - known_received_count)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
   new_count = known_received_count + increment;
 
-  /* RFC 9204 Section 4.4.3: increment must not exceed entries sent */
   if (new_count > insert_count)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
   return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_decode_decoder_instruction (const unsigned char *input,
+                                        size_t input_len,
+                                        SocketQPACK_DecoderInstruction *instr,
+                                        size_t *consumed)
+{
+  SocketQPACK_DecoderInstrType type;
+  SocketQPACKStream_Result result;
+
+  if (instr == NULL || consumed == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *consumed = 0;
+  instr->type = QPACK_DINSTR_TYPE_UNKNOWN;
+  instr->value = 0;
+
+  if (input_len < 1)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  type = SocketQPACK_identify_decoder_instruction (input[0]);
+
+  switch (type)
+    {
+    case QPACK_DINSTR_TYPE_SECTION_ACK:
+      result = SocketQPACK_decode_section_ack (
+          input, input_len, &instr->value, consumed);
+      break;
+
+    case QPACK_DINSTR_TYPE_STREAM_CANCEL:
+      result = SocketQPACK_decode_stream_cancel (
+          input, input_len, &instr->value, consumed);
+      break;
+
+    case QPACK_DINSTR_TYPE_INSERT_COUNT_INC:
+      result = SocketQPACK_decode_insert_count_inc (
+          input, input_len, &instr->value, consumed);
+      break;
+
+    default:
+      return QPACK_STREAM_ERR_INTERNAL;
+    }
+
+  if (result == QPACK_STREAM_OK)
+    instr->type = type;
+
+  return result;
+}
+
+/* ============================================================================
+ * ACKNOWLEDGMENT STATE MANAGEMENT (RFC 9204 Section 3.3)
+ *
+ * Simple hash table to track pending stream RICs and Known Received Count.
+ * ============================================================================
+ */
+
+/** Default capacity for pending stream tracking (power of 2) */
+#define QPACK_ACK_STATE_DEFAULT_CAPACITY 64
+
+/** Maximum pending streams (to prevent unbounded growth) */
+#define QPACK_ACK_STATE_MAX_PENDING 4096
+
+/** Hash table entry for tracking stream RIC */
+typedef struct
+{
+  uint64_t stream_id;             /**< Stream ID (0 = empty slot) */
+  uint64_t required_insert_count; /**< RIC for this stream */
+  int occupied;                   /**< Is this slot occupied? */
+} QPACKPendingEntry;
+
+/**
+ * @brief QPACK acknowledgment state internal structure.
+ */
+struct SocketQPACK_AckState
+{
+  Arena_T arena;                 /**< Memory arena for allocations */
+  uint64_t known_received_count; /**< Known Received Count (KRC) */
+  QPACKPendingEntry *pending;    /**< Hash table of pending stream RICs */
+  size_t pending_capacity;       /**< Hash table capacity */
+  size_t pending_count;          /**< Number of occupied entries */
+};
+
+/**
+ * @brief Hash function for stream ID.
+ */
+static inline size_t
+hash_stream_id (uint64_t stream_id, size_t capacity)
+{
+  uint64_t hash = stream_id * 0x9E3779B97F4A7C15ULL;
+  return (size_t)(hash & (capacity - 1));
+}
+
+/**
+ * @brief Find slot for stream ID in hash table.
+ */
+static bool
+find_pending_slot (SocketQPACK_AckState_T state,
+                   uint64_t stream_id,
+                   size_t *idx)
+{
+  size_t start = hash_stream_id (stream_id, state->pending_capacity);
+  size_t i = start;
+
+  do
+    {
+      QPACKPendingEntry *entry = &state->pending[i];
+
+      if (!entry->occupied)
+        {
+          *idx = i;
+          return false;
+        }
+
+      if (entry->stream_id == stream_id)
+        {
+          *idx = i;
+          return true;
+        }
+
+      i = (i + 1) & (state->pending_capacity - 1);
+    }
+  while (i != start);
+
+  *idx = start;
+  return false;
+}
+
+SocketQPACK_AckState_T
+SocketQPACK_AckState_new (Arena_T arena)
+{
+  SocketQPACK_AckState_T state;
+
+  if (arena == NULL)
+    return NULL;
+
+  state = CALLOC (arena, 1, sizeof (*state));
+  if (state == NULL)
+    return NULL;
+
+  state->arena = arena;
+  state->known_received_count = 0;
+  state->pending_count = 0;
+
+  state->pending_capacity = QPACK_ACK_STATE_DEFAULT_CAPACITY;
+  state->pending
+      = CALLOC (arena, state->pending_capacity, sizeof (QPACKPendingEntry));
+  if (state->pending == NULL)
+    return NULL;
+
+  return state;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_AckState_register_section (SocketQPACK_AckState_T state,
+                                       uint64_t stream_id,
+                                       uint64_t required_insert_count)
+{
+  size_t idx;
+  bool found;
+
+  if (state == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  if (required_insert_count == 0)
+    return QPACK_STREAM_OK;
+
+  if (state->pending_count >= (state->pending_capacity * 3 / 4))
+    {
+      if (state->pending_capacity >= QPACK_ACK_STATE_MAX_PENDING)
+        return QPACK_STREAM_ERR_BUFFER_FULL;
+    }
+
+  found = find_pending_slot (state, stream_id, &idx);
+
+  if (found)
+    {
+      if (required_insert_count > state->pending[idx].required_insert_count)
+        state->pending[idx].required_insert_count = required_insert_count;
+    }
+  else
+    {
+      state->pending[idx].stream_id = stream_id;
+      state->pending[idx].required_insert_count = required_insert_count;
+      state->pending[idx].occupied = 1;
+      state->pending_count++;
+    }
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_AckState_process_section_ack (SocketQPACK_AckState_T state,
+                                          uint64_t stream_id)
+{
+  size_t idx;
+  bool found;
+  uint64_t ric;
+
+  if (state == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  found = find_pending_slot (state, stream_id, &idx);
+
+  if (!found)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  ric = state->pending[idx].required_insert_count;
+
+  if (ric > state->known_received_count)
+    state->known_received_count = ric;
+
+  state->pending[idx].occupied = 0;
+  state->pending[idx].stream_id = 0;
+  state->pending[idx].required_insert_count = 0;
+  state->pending_count--;
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_AckState_process_stream_cancel (SocketQPACK_AckState_T state,
+                                            uint64_t stream_id)
+{
+  size_t idx;
+  bool found;
+
+  if (state == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  found = find_pending_slot (state, stream_id, &idx);
+
+  if (found)
+    {
+      state->pending[idx].occupied = 0;
+      state->pending[idx].stream_id = 0;
+      state->pending[idx].required_insert_count = 0;
+      state->pending_count--;
+    }
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_AckState_process_insert_count_inc (SocketQPACK_AckState_T state,
+                                               uint64_t increment)
+{
+  uint64_t new_krc;
+
+  if (state == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  if (increment == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  if (!SocketSecurity_check_add (
+          state->known_received_count, increment, &new_krc))
+    {
+      new_krc = UINT64_MAX;
+    }
+
+  state->known_received_count = new_krc;
+
+  return QPACK_STREAM_OK;
+}
+
+uint64_t
+SocketQPACK_AckState_get_known_received_count (SocketQPACK_AckState_T state)
+{
+  if (state == NULL)
+    return 0;
+
+  return state->known_received_count;
+}
+
+bool
+SocketQPACK_AckState_can_evict (SocketQPACK_AckState_T state,
+                                uint64_t abs_index)
+{
+  if (state == NULL)
+    return false;
+
+  return abs_index < state->known_received_count;
 }
