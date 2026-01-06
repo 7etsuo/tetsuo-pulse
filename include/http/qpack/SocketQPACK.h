@@ -178,8 +178,10 @@ SocketQPACK_relative_to_abs_encoder (uint64_t insert_count,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_relative_field (
-    uint64_t base, uint64_t abs_index, uint64_t *rel_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_abs_to_relative_field (uint64_t base,
+                                   uint64_t abs_index,
+                                   uint64_t *rel_out);
 
 /**
  * @brief Convert field-relative index to absolute index.
@@ -198,8 +200,10 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_relative_field (
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_relative_to_abs_field (
-    uint64_t base, uint64_t rel_index, uint64_t *abs_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_relative_to_abs_field (uint64_t base,
+                                   uint64_t rel_index,
+                                   uint64_t *abs_out);
 
 /**
  * @brief Convert absolute index to post-base index.
@@ -219,8 +223,10 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_relative_to_abs_field (
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_postbase (
-    uint64_t base, uint64_t abs_index, uint64_t *pb_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_abs_to_postbase (uint64_t base,
+                             uint64_t abs_index,
+                             uint64_t *pb_out);
 
 /**
  * @brief Convert post-base index to absolute index.
@@ -239,8 +245,10 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_postbase (
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_postbase_to_abs (
-    uint64_t base, uint64_t pb_index, uint64_t *abs_out);
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_postbase_to_abs (uint64_t base,
+                             uint64_t pb_index,
+                             uint64_t *abs_out);
 
 /* ============================================================================
  * INDEX VALIDATION FUNCTIONS
@@ -299,8 +307,10 @@ SocketQPACK_is_valid_relative_field (uint64_t base,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_postbase (
-    uint64_t base, uint64_t insert_count, uint64_t pb_index);
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_is_valid_postbase (uint64_t base,
+                               uint64_t insert_count,
+                               uint64_t pb_index);
 
 /**
  * @brief Validate absolute index against table bounds.
@@ -315,13 +325,30 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_postbase (
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_absolute (
-    uint64_t insert_count, uint64_t dropped_count, uint64_t abs_index);
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_is_valid_absolute (uint64_t insert_count,
+                               uint64_t dropped_count,
+                               uint64_t abs_index);
 
 /* ============================================================================
  * DYNAMIC TABLE FUNCTIONS (RFC 9204 Section 3.2)
  * ============================================================================
  */
+
+/**
+ * @brief Estimate ring buffer capacity for a given maximum table size.
+ *
+ * Used internally by SocketQPACK_Table_new() to allocate an appropriately
+ * sized ring buffer. Capacity is rounded up to a power of 2 for efficient
+ * indexing.
+ *
+ * @param max_size Maximum table size in bytes
+ * @return Estimated capacity (number of entry slots)
+ *
+ * @since 1.0.0
+ */
+extern size_t
+SocketQPACK_estimate_capacity (size_t max_size);
 
 /**
  * @brief Create a new QPACK dynamic table.

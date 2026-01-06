@@ -615,6 +615,40 @@ SocketQPACK_Table_set_max_size (SocketQPACK_Table_T table, size_t max_size)
     }
 }
 
+/* ============================================================================
+ * CAPACITY ESTIMATION
+ * ============================================================================
+ */
+
+/** Minimum ring buffer capacity (prevents degenerate case) */
+#define QPACK_MIN_TABLE_CAPACITY 16
+
+/** Average entry size estimate for capacity calculation (name + value + 32) */
+#define QPACK_AVG_ENTRY_SIZE 64
+
+size_t
+SocketQPACK_estimate_capacity (size_t max_size)
+{
+  size_t estimated;
+  size_t capacity;
+
+  /* Handle edge case: zero or very small max_size */
+  if (max_size < QPACK_AVG_ENTRY_SIZE)
+    return QPACK_MIN_TABLE_CAPACITY;
+
+  /* Estimate number of entries based on average entry size */
+  estimated = max_size / QPACK_AVG_ENTRY_SIZE;
+  if (estimated < QPACK_MIN_TABLE_CAPACITY)
+    estimated = QPACK_MIN_TABLE_CAPACITY;
+
+  /* Round up to next power of 2 for efficient ring buffer operations */
+  capacity = 1;
+  while (capacity < estimated)
+    capacity <<= 1;
+
+  return capacity;
+}
+
 SocketQPACK_Result
 SocketQPACK_Table_get (SocketQPACK_Table_T table,
                        uint64_t abs_index,
