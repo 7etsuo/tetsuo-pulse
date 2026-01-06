@@ -367,6 +367,9 @@ set(LIB_SOURCES
     src/http/h2/SocketHTTP2-validate.c
     src/http/h2/SocketHTTP2-priority.c
 
+    # QPACK Header Compression (RFC 9204)
+    src/http/qpack/SocketQPACK-error.c
+
     # HTTP Client API
     src/http/SocketHTTPClient.c
     src/http/client/SocketHTTPClient-pool.c
@@ -628,6 +631,7 @@ set(HTTP_HEADERS
     include/http/SocketHPACK-private.h
     include/http/SocketHTTP2.h
     include/http/SocketHTTP2-private.h
+    include/http/SocketQPACK.h
     include/http/SocketHTTPClient.h
     include/http/SocketHTTPClient-private.h
     include/http/SocketHTTPServer.h
@@ -780,6 +784,7 @@ set(TEST_SOURCES
     test_http_core
     test_http1_parser
     test_hpack
+    test_qpack_error
     test_http2
     test_http2_priority
     test_http2_rate_limit
