@@ -359,6 +359,9 @@ set(LIB_SOURCES
     src/http/hpack/SocketHPACK-huffman.c
     src/http/hpack/SocketHPACK-table.c
 
+    # QPACK Header Compression (RFC 9204)
+    src/http/hpack/SocketQPACK.c
+
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
     src/http/h2/SocketHTTP2-connection.c
@@ -626,6 +629,8 @@ set(HTTP_HEADERS
     include/http/SocketHTTP1-private.h
     include/http/SocketHPACK.h
     include/http/SocketHPACK-private.h
+    include/http/SocketQPACK.h
+    include/http/SocketQPACK-private.h
     include/http/SocketHTTP2.h
     include/http/SocketHTTP2-private.h
     include/http/SocketHTTPClient.h
@@ -780,6 +785,7 @@ set(TEST_SOURCES
     test_http_core
     test_http1_parser
     test_hpack
+    test_qpack
     test_http2
     test_http2_priority
     test_http2_rate_limit
