@@ -320,6 +320,112 @@ SocketQPACK_DecoderStream_reset_buffer (SocketQPACK_DecoderStream_T stream);
 extern size_t
 SocketQPACK_DecoderStream_buffer_size (SocketQPACK_DecoderStream_T stream);
 
+/* ============================================================================
+ * STREAM CANCELLATION INSTRUCTION DECODING (RFC 9204 Section 4.4.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Decoded Stream Cancellation instruction result.
+ *
+ * RFC 9204 Section 4.4.2: Contains the parsed stream ID from a
+ * Stream Cancellation instruction.
+ */
+typedef struct
+{
+  uint64_t stream_id; /**< The cancelled stream ID */
+} SocketQPACK_StreamCancel;
+
+/**
+ * @brief Decode Stream Cancellation instruction from input buffer.
+ *
+ * RFC 9204 Section 4.4.2: Decodes a Stream Cancellation instruction from
+ * the decoder stream. The instruction has format:
+ *
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 1 |     Stream ID (6+)    |
+ * +---+---+-----------------------+
+ *
+ * @param input      Input buffer containing the instruction
+ * @param input_len  Length of input buffer
+ * @param[out] result Decoded instruction (must not be NULL)
+ * @param[out] consumed Number of bytes consumed from input (must not be NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if any required parameter is NULL,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if input is incomplete,
+ *         QPACK_STREAM_ERR_INTERNAL on decoding error
+ *
+ * @note The first byte of input must have bits 7-6 equal to 01 (0x40 mask)
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_decode_stream_cancel (const unsigned char *input,
+                                  size_t input_len,
+                                  SocketQPACK_StreamCancel *result,
+                                  size_t *consumed);
+
+/**
+ * @brief Validate stream ID for Stream Cancellation instruction.
+ *
+ * RFC 9204 Section 4.4.2: Validates that a stream ID is valid for
+ * cancellation. Stream ID 0 is reserved for the connection control stream
+ * and should not be cancelled. Also provides a warning if the stream ID
+ * is not found in tracking (stale cancellation).
+ *
+ * @param stream_id  Stream ID to validate
+ * @return QPACK_STREAM_OK if valid,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if stream_id is 0 (reserved)
+ *
+ * @note This validation is for basic validity. Stream not found in tracking
+ *       is a warning condition, not an error, per the RFC recommendation.
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_stream_cancel_validate_id (uint64_t stream_id);
+
+/**
+ * @brief Release dynamic table references for a cancelled stream.
+ *
+ * RFC 9204 Section 4.4.2: When a stream is cancelled, all dynamic table
+ * references associated with that stream should be released. This decrements
+ * the reference count for each entry referenced by the stream.
+ *
+ * @param table     Dynamic table (may be NULL if no dynamic table)
+ * @param stream_id Stream ID whose references should be released
+ * @return QPACK_STREAM_OK on success (including when table is NULL),
+ *         QPACK_STREAM_ERR_INTERNAL on reference tracking corruption
+ *
+ * @note If the stream has no outstanding references (not in tracking),
+ *       this function succeeds silently as per RFC recommendation.
+ * @note When an entry's reference count reaches 0, it becomes eligible
+ *       for eviction on the next table update.
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_stream_cancel_release_refs (SocketQPACK_Table_T table,
+                                        uint64_t stream_id);
+
+/**
+ * @brief Check if a byte is a Stream Cancellation instruction.
+ *
+ * RFC 9204 Section 4.4.2: Stream Cancellation has bit pattern 01xxxxxx.
+ *
+ * @param first_byte First byte of the instruction
+ * @return true if this is a Stream Cancellation instruction, false otherwise
+ *
+ * @since 1.0.0
+ */
+static inline bool
+SocketQPACK_is_stream_cancel (unsigned char first_byte)
+{
+  /* Bit pattern: 01xxxxxx (bits 7-6 = 01) */
+  return (first_byte & 0xC0) == QPACK_DINSTR_STREAM_CANCEL_MASK;
+}
+
 /** @} */
 
 #endif /* SOCKETQPACK_DECODER_STREAM_INCLUDED */

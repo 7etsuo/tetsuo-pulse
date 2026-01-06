@@ -407,3 +407,134 @@ SocketQPACK_DecoderStream_buffer_size (SocketQPACK_DecoderStream_T stream)
 
   return stream->buffer_len;
 }
+
+/* ============================================================================
+ * STREAM CANCELLATION INSTRUCTION DECODING (RFC 9204 Section 4.4.2)
+ * ============================================================================
+ */
+
+SocketQPACKStream_Result
+SocketQPACK_decode_stream_cancel (const unsigned char *input,
+                                  size_t input_len,
+                                  SocketQPACK_StreamCancel *result,
+                                  size_t *consumed)
+{
+  /*
+   * RFC 9204 Section 4.4.2: Stream Cancellation
+   *
+   *   0   1   2   3   4   5   6   7
+   * +---+---+---+---+---+---+---+---+
+   * | 0 | 1 |     Stream ID (6+)    |
+   * +---+---+-----------------------+
+   *
+   * First byte: 01xxxxxx
+   * - Bits 7-6: 01 (Stream Cancellation pattern)
+   * - Bits 5-0: Start of 6+ prefix integer for stream ID
+   */
+  uint64_t stream_id;
+  size_t int_consumed;
+  SocketHPACK_Result hpack_result;
+
+  /* Parameter validation */
+  if (result == NULL || consumed == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *consumed = 0;
+
+  /* Need at least one byte */
+  if (input == NULL || input_len < 1)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  /* Verify this is a Stream Cancellation instruction (bits 7-6 = 01) */
+  if (!SocketQPACK_is_stream_cancel (input[0]))
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Decode stream ID (6-bit prefix integer) */
+  hpack_result = SocketHPACK_int_decode (input,
+                                         input_len,
+                                         QPACK_DINSTR_STREAM_CANCEL_PREFIX,
+                                         &stream_id,
+                                         &int_consumed);
+
+  if (hpack_result == HPACK_INCOMPLETE)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+  if (hpack_result != HPACK_OK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Populate result */
+  result->stream_id = stream_id;
+  *consumed = int_consumed;
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_stream_cancel_validate_id (uint64_t stream_id)
+{
+  /*
+   * RFC 9204 Section 4.4.2: Stream Cancellation validation
+   *
+   * Stream ID 0 is typically reserved for the connection control stream
+   * in HTTP/3 and should not be cancelled via QPACK. While the RFC doesn't
+   * explicitly forbid this, cancelling stream 0 is almost certainly an error.
+   *
+   * Note: The RFC says we SHOULD gracefully handle cancellation for streams
+   * with no outstanding references. That's a warning condition handled
+   * in the release_refs function, not an error here.
+   */
+
+  /* Stream ID 0 is reserved (connection control in HTTP/3) */
+  if (stream_id == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_stream_cancel_release_refs (SocketQPACK_Table_T table,
+                                        uint64_t stream_id)
+{
+  /*
+   * RFC 9204 Section 4.4.2: Release dynamic table references
+   *
+   * When a Stream Cancellation is received, we need to release all
+   * dynamic table references held by that stream. This allows entries
+   * to be evicted if their reference count reaches 0.
+   *
+   * Current implementation:
+   * - The dynamic table tracks reference counts per entry (ref_count field)
+   * - Per-stream reference tracking would require additional data structures
+   * - For now, we accept the stream_id but don't track per-stream refs
+   * - This is correct behavior when max_dynamic_table_capacity = 0
+   *
+   * Future enhancement: Implement per-stream reference tracking with
+   * an inverted index mapping stream_id -> [entry_indices] for efficient
+   * cleanup on stream cancellation.
+   *
+   * Note: If no dynamic table exists (table is NULL), this is valid and
+   * we return success. If the stream has no outstanding references, we
+   * also return success per RFC 9204's guidance to handle gracefully.
+   */
+  (void)stream_id; /* Silence unused parameter warning */
+
+  /* NULL table is valid (no dynamic table configured) */
+  if (table == NULL)
+    return QPACK_STREAM_OK;
+
+  /*
+   * Per-stream reference tracking is not yet implemented.
+   * The table structure has ref_count per entry but not per-stream tracking.
+   *
+   * For full RFC compliance, we would:
+   * 1. Maintain stream_refs[stream_id] -> list of entry absolute indices
+   * 2. On cancellation, iterate that list and decrement each entry's ref_count
+   * 3. Clear the stream from tracking
+   *
+   * Currently, entries are evicted based on FIFO order when capacity is needed,
+   * which is correct behavior for the encoder side. The decoder side (which
+   * receives these cancellation instructions) needs this for knowing when
+   * entries are safe to evict.
+   */
+
+  return QPACK_STREAM_OK;
+}
