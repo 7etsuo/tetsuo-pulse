@@ -359,6 +359,9 @@ set(LIB_SOURCES
     src/http/hpack/SocketHPACK-huffman.c
     src/http/hpack/SocketHPACK-table.c
 
+    # QPACK Header Compression (RFC 9204)
+    src/http/qpack/SocketQPACK.c
+
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
     src/http/h2/SocketHTTP2-connection.c
@@ -633,6 +636,10 @@ set(HTTP_HEADERS
     include/http/SocketHTTPServer.h
 )
 
+set(QPACK_HEADERS
+    include/http/qpack/SocketQPACK.h
+)
+
 set(TEST_HEADERS
     include/test/Test.h
 )
@@ -686,6 +693,7 @@ install(FILES ${POLL_HEADERS} DESTINATION include/poll)
 install(FILES ${POOL_HEADERS} DESTINATION include/pool)
 install(FILES ${TLS_HEADERS} DESTINATION include/tls)
 install(FILES ${HTTP_HEADERS} DESTINATION include/http)
+install(FILES ${QPACK_HEADERS} DESTINATION include/http/qpack)
 install(FILES ${TEST_HEADERS} DESTINATION include/test)
 install(FILES ${QUIC_HEADERS} DESTINATION include/quic)
 install(FILES ${SIMPLE_HEADERS} DESTINATION include/simple)
@@ -837,6 +845,8 @@ set(TEST_SOURCES
     test_quic_loss
     test_quic_key_discard
     test_quic_0rtt
+    # QPACK tests (RFC 9204)
+    test_qpack_literal
 )
 
 # TLS tests (only built when TLS is enabled)
