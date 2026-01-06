@@ -1142,6 +1142,228 @@ SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
   return QUIC_TLS_OK;
 }
 
+/* ============================================================================
+ * 0-RTT Session Ticket Functions (RFC 9001 Section 4.6)
+ * ============================================================================
+ */
+
+/** QUIC sentinel value for max_early_data_size per RFC 9001 §4.6.1 */
+#define QUIC_MAX_EARLY_DATA_SENTINEL 0xffffffff
+
+SocketQUICTLS_Result
+SocketQUICTLS_enable_session_tickets (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL_CTX *ctx = (SSL_CTX *)handshake->tls_ctx;
+  if (ctx == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  /*
+   * RFC 9001 §4.6.1: For QUIC, max_early_data_size MUST be 0xffffffff.
+   * This sentinel value indicates that QUIC handles early data limits,
+   * not TLS. Session tickets with other values MUST NOT be used.
+   */
+  SSL_CTX_set_max_early_data (ctx, QUIC_MAX_EARLY_DATA_SENTINEL);
+
+  /* Enable session ticket generation */
+  SSL_CTX_set_options (ctx, SSL_OP_NO_TICKET);
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TICKET);
+
+  return QUIC_TLS_OK;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_set_session (SocketQUICHandshake_T handshake,
+                           const uint8_t *ticket,
+                           size_t len)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  if (ticket == NULL || len == 0)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  /* Deserialize session from ticket data */
+  const unsigned char *p = ticket;
+  SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
+  if (session == NULL)
+    {
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "Failed to deserialize session ticket");
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  /*
+   * RFC 9001 §4.6.1: Validate max_early_data_size equals sentinel.
+   * Tickets with other values MUST NOT be used for QUIC 0-RTT.
+   */
+  uint32_t max_early = SSL_SESSION_get_max_early_data (session);
+  if (max_early != QUIC_MAX_EARLY_DATA_SENTINEL)
+    {
+      SSL_SESSION_free (session);
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "Invalid max_early_data_size: 0x%08x (expected 0x%08x per RFC "
+                "9001 §4.6.1)",
+                max_early,
+                QUIC_MAX_EARLY_DATA_SENTINEL);
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  /* Store max_early_data in 0-RTT context */
+  handshake->zero_rtt.ticket_max_early_data = max_early;
+
+  /* Set session on SSL object for resumption */
+  if (!SSL_set_session (ssl, session))
+    {
+      SSL_SESSION_free (session);
+      snprintf (handshake->error_reason,
+                sizeof (handshake->error_reason),
+                "Failed to set session for resumption");
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  SSL_SESSION_free (session);
+  return QUIC_TLS_OK;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_session_ticket (SocketQUICHandshake_T handshake,
+                                  uint8_t *ticket,
+                                  size_t *len)
+{
+  if (handshake == NULL || len == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  SSL_SESSION *session = SSL_get_session (ssl);
+  if (session == NULL)
+    {
+      *len = 0;
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  /* Get serialized size first */
+  int needed = i2d_SSL_SESSION (session, NULL);
+  if (needed <= 0)
+    {
+      *len = 0;
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  /* Check buffer size */
+  if (ticket == NULL)
+    {
+      /* Caller just wants the required size */
+      *len = (size_t)needed;
+      return QUIC_TLS_OK;
+    }
+
+  if (*len < (size_t)needed)
+    {
+      *len = (size_t)needed;
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  /* Serialize session */
+  unsigned char *p = ticket;
+  int written = i2d_SSL_SESSION (session, &p);
+  if (written <= 0)
+    {
+      *len = 0;
+      return QUIC_TLS_ERROR_HANDSHAKE;
+    }
+
+  *len = (size_t)written;
+  return QUIC_TLS_OK;
+}
+
+int
+SocketQUICTLS_early_data_accepted (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return 0;
+
+  SSL *ssl = (SSL *)handshake->tls_ssl;
+  if (ssl == NULL)
+    return 0;
+
+  /*
+   * RFC 9001 §4.6.2: Server accepts 0-RTT by including early_data
+   * extension in EncryptedExtensions. SSL_get_early_data_status()
+   * returns SSL_EARLY_DATA_ACCEPTED if server accepted.
+   */
+  return SSL_get_early_data_status (ssl) == SSL_EARLY_DATA_ACCEPTED;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
+                                    const SocketQUICTransportParams_T *resumed)
+{
+  if (original == NULL || resumed == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  /*
+   * RFC 9001 §4.6.3: Server MUST NOT reduce certain parameters.
+   * These limits affect how much 0-RTT data the client can send.
+   *
+   * "A server MUST NOT reduce any limits or alter any values that
+   *  might be violated by the client with its 0-RTT data."
+   */
+
+  /* initial_max_data: MUST NOT be reduced */
+  if (resumed->initial_max_data < original->initial_max_data)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* initial_max_stream_data_bidi_local: MUST NOT be reduced */
+  if (resumed->initial_max_stream_data_bidi_local
+      < original->initial_max_stream_data_bidi_local)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* initial_max_stream_data_bidi_remote: MUST NOT be reduced */
+  if (resumed->initial_max_stream_data_bidi_remote
+      < original->initial_max_stream_data_bidi_remote)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* initial_max_stream_data_uni: MUST NOT be reduced */
+  if (resumed->initial_max_stream_data_uni
+      < original->initial_max_stream_data_uni)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* initial_max_streams_bidi: MUST NOT be reduced */
+  if (resumed->initial_max_streams_bidi < original->initial_max_streams_bidi)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* initial_max_streams_uni: MUST NOT be reduced */
+  if (resumed->initial_max_streams_uni < original->initial_max_streams_uni)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /* active_connection_id_limit: MUST NOT be reduced */
+  if (resumed->active_connection_id_limit
+      < original->active_connection_id_limit)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  /*
+   * disable_active_migration: MUST NOT change from false to true.
+   * If client sent 0-RTT assuming migration was allowed, server
+   * cannot later disable it.
+   */
+  if (!original->disable_active_migration && resumed->disable_active_migration)
+    return QUIC_TLS_ERROR_TRANSPORT;
+
+  return QUIC_TLS_OK;
+}
+
 #endif /* HAVE_OPENSSL_QUIC */
 
 /* ============================================================================
@@ -1329,6 +1551,56 @@ SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
   return QUIC_TLS_ERROR_NO_TLS;
 }
 
+SocketQUICTLS_Result
+SocketQUICTLS_enable_session_tickets (SocketQUICHandshake_T handshake)
+{
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_set_session (SocketQUICHandshake_T handshake,
+                           const uint8_t *ticket,
+                           size_t len)
+{
+  /* Check NULL even in stub for consistent error reporting */
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  if (ticket == NULL || len == 0)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_session_ticket (SocketQUICHandshake_T handshake,
+                                  uint8_t *ticket,
+                                  size_t *len)
+{
+  (void)ticket;
+  if (handshake == NULL || len == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  *len = 0;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+int
+SocketQUICTLS_early_data_accepted (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return 0;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
+                                    const SocketQUICTransportParams_T *resumed)
+{
+  /* Check NULL even in stub for consistent error reporting */
+  if (original == NULL || resumed == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
 #endif /* !HAVE_OPENSSL_QUIC */
 
 #endif /* SOCKET_HAS_TLS */
@@ -1512,6 +1784,56 @@ SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
   (void)handshake;
   (void)alpn;
   (void)len;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_enable_session_tickets (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_set_session (SocketQUICHandshake_T handshake,
+                           const uint8_t *ticket,
+                           size_t len)
+{
+  /* Check NULL even in stub for consistent error reporting */
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  if (ticket == NULL || len == 0)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_session_ticket (SocketQUICHandshake_T handshake,
+                                  uint8_t *ticket,
+                                  size_t *len)
+{
+  (void)ticket;
+  /* Check NULL even in stub for consistent error reporting */
+  if (handshake == NULL || len == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  *len = 0;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+int
+SocketQUICTLS_early_data_accepted (SocketQUICHandshake_T handshake)
+{
+  (void)handshake;
+  return 0;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
+                                    const SocketQUICTransportParams_T *resumed)
+{
+  /* Check NULL even in stub for consistent error reporting */
+  if (original == NULL || resumed == NULL)
+    return QUIC_TLS_ERROR_NULL;
   return QUIC_TLS_ERROR_NO_TLS;
 }
 

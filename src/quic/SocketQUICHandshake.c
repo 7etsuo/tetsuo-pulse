@@ -343,6 +343,9 @@ SocketQUICHandshake_new (Arena_T arena,
       &hs->local_params,
       role == QUIC_CONN_ROLE_CLIENT ? QUIC_ROLE_CLIENT : QUIC_ROLE_SERVER);
 
+  /* Initialize 0-RTT state (RFC 9001 §4.6) */
+  SocketQUICHandshake_0rtt_init (hs);
+
   return hs;
 }
 
@@ -392,6 +395,20 @@ SocketQUICHandshake_free (SocketQUICHandshake_T *handshake)
           SocketCrypto_secure_clear (hs->keys[i], QUIC_MAX_KEY_MATERIAL_SIZE);
           hs->keys[i] = NULL;
         }
+    }
+
+  /* Securely clear 0-RTT session ticket (CWE-226, CWE-244) */
+  if (hs->zero_rtt.ticket_data && hs->zero_rtt.ticket_len > 0)
+    {
+      SocketCrypto_secure_clear (hs->zero_rtt.ticket_data,
+                                 hs->zero_rtt.ticket_len);
+    }
+
+  /* Securely clear early data buffer */
+  if (hs->zero_rtt.early_data_buffer && hs->zero_rtt.early_data_capacity > 0)
+    {
+      SocketCrypto_secure_clear (hs->zero_rtt.early_data_buffer,
+                                 hs->zero_rtt.early_data_capacity);
     }
 
   *handshake = NULL;
@@ -653,6 +670,47 @@ SocketQUICHandshake_process (SocketQUICHandshake_T handshake)
         }
     }
 
+  /*
+   * RFC 9001 §4.6: Process 0-RTT status after handshake completes.
+   * Check if server accepted or rejected early data.
+   */
+  if (SocketQUICTLS_is_complete (handshake)
+      && (handshake->zero_rtt.state == QUIC_0RTT_STATE_OFFERED
+          || handshake->zero_rtt.state == QUIC_0RTT_STATE_PENDING))
+    {
+      if (SocketQUICTLS_early_data_accepted (handshake))
+        {
+          /*
+           * RFC 9001 §4.6.2: Server accepted 0-RTT.
+           * Validate that server didn't reduce transport parameters.
+           */
+          if (handshake->zero_rtt.saved_params_valid)
+            {
+              SocketQUICTLS_Result param_res = SocketQUICTLS_validate_0rtt_params (
+                  &handshake->zero_rtt.saved_params, &handshake->peer_params);
+
+              if (param_res != QUIC_TLS_OK)
+                {
+                  /* RFC 9001 §4.6.3: Parameter reduction is a protocol error */
+                  handshake->error_code = QUIC_ERROR_TRANSPORT_PARAMETER;
+                  snprintf (handshake->error_reason,
+                            sizeof (handshake->error_reason),
+                            "Server reduced transport params for 0-RTT (RFC "
+                            "9001 §4.6.3)");
+                  handshake->state = QUIC_HANDSHAKE_STATE_FAILED;
+                  return QUIC_HANDSHAKE_ERROR_TRANSPORT;
+                }
+            }
+
+          handshake->zero_rtt.state = QUIC_0RTT_STATE_ACCEPTED;
+        }
+      else
+        {
+          /* RFC 9001 §4.6.2: Server rejected 0-RTT */
+          SocketQUICHandshake_0rtt_handle_rejection (handshake);
+        }
+    }
+
   return QUIC_HANDSHAKE_OK;
 }
 
@@ -889,6 +947,174 @@ SocketQUICHandshake_can_receive_0rtt (SocketQUICHandshake_T handshake)
     return 0;
 
   return handshake->keys_available[QUIC_CRYPTO_LEVEL_0RTT];
+}
+
+/* ============================================================================
+ * 0-RTT Early Data Functions (RFC 9001 Section 4.6)
+ * ============================================================================
+ */
+
+void
+SocketQUICHandshake_0rtt_init (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  memset (&handshake->zero_rtt, 0, sizeof (handshake->zero_rtt));
+  handshake->zero_rtt.state = QUIC_0RTT_STATE_NONE;
+  handshake->hello_retry_received = 0;
+}
+
+int
+SocketQUICHandshake_0rtt_available (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  /* HRR forces 0-RTT rejection (RFC 9001 §4.6.2) */
+  if (handshake->hello_retry_received)
+    return 0;
+
+  /* Must have ticket stored */
+  if (!handshake->zero_rtt.ticket_data || handshake->zero_rtt.ticket_len == 0)
+    return 0;
+
+  /* Check state allows 0-RTT */
+  SocketQUIC0RTT_State state = handshake->zero_rtt.state;
+  return (state == QUIC_0RTT_STATE_OFFERED || state == QUIC_0RTT_STATE_PENDING);
+}
+
+SocketQUICHandshake_Result
+SocketQUICHandshake_0rtt_set_ticket (SocketQUICHandshake_T handshake,
+                                     const uint8_t *ticket,
+                                     size_t ticket_len,
+                                     const SocketQUICTransportParams_T *params,
+                                     const char *alpn,
+                                     size_t alpn_len)
+{
+  if (!handshake)
+    return QUIC_HANDSHAKE_ERROR_NULL;
+
+  if (!ticket || ticket_len == 0)
+    return QUIC_HANDSHAKE_ERROR_NULL;
+
+  if (!params)
+    return QUIC_HANDSHAKE_ERROR_NULL;
+
+  /*
+   * Validate ticket length to prevent memory exhaustion.
+   * TLS session tickets are typically 1-2KB; 16KB is generous.
+   */
+#define QUIC_MAX_SESSION_TICKET_SIZE (16 * 1024)
+  if (ticket_len > QUIC_MAX_SESSION_TICKET_SIZE)
+    return QUIC_HANDSHAKE_ERROR_BUFFER;
+
+  /* Validate ALPN length fits in buffer */
+  if (alpn_len >= sizeof (handshake->zero_rtt.saved_alpn))
+    return QUIC_HANDSHAKE_ERROR_BUFFER;
+
+  /* Clear any existing ticket securely */
+  if (handshake->zero_rtt.ticket_data && handshake->zero_rtt.ticket_len > 0)
+    {
+      SocketCrypto_secure_clear (handshake->zero_rtt.ticket_data,
+                                 handshake->zero_rtt.ticket_len);
+    }
+
+  /* Allocate and copy ticket */
+  handshake->zero_rtt.ticket_data
+      = Arena_alloc (handshake->arena, ticket_len, __FILE__, __LINE__);
+  if (!handshake->zero_rtt.ticket_data)
+    return QUIC_HANDSHAKE_ERROR_MEMORY;
+
+  memcpy (handshake->zero_rtt.ticket_data, ticket, ticket_len);
+  handshake->zero_rtt.ticket_len = ticket_len;
+
+  /* Copy transport parameters for validation */
+  SocketQUICTransportParams_Result tp_res
+      = SocketQUICTransportParams_copy (&handshake->zero_rtt.saved_params,
+                                        params);
+  if (tp_res != QUIC_TP_OK)
+    return QUIC_HANDSHAKE_ERROR_TRANSPORT;
+
+  handshake->zero_rtt.saved_params_valid = 1;
+
+  /* Copy ALPN if provided */
+  if (alpn && alpn_len > 0)
+    {
+      memcpy (handshake->zero_rtt.saved_alpn, alpn, alpn_len);
+      handshake->zero_rtt.saved_alpn_len = alpn_len;
+    }
+  else
+    {
+      handshake->zero_rtt.saved_alpn[0] = '\0';
+      handshake->zero_rtt.saved_alpn_len = 0;
+    }
+
+  /* Transition to OFFERED state */
+  handshake->zero_rtt.state = QUIC_0RTT_STATE_OFFERED;
+
+  return QUIC_HANDSHAKE_OK;
+}
+
+SocketQUIC0RTT_State
+SocketQUICHandshake_0rtt_get_state (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return QUIC_0RTT_STATE_NONE;
+
+  return handshake->zero_rtt.state;
+}
+
+int
+SocketQUICHandshake_0rtt_accepted (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return 0;
+
+  return handshake->zero_rtt.state == QUIC_0RTT_STATE_ACCEPTED;
+}
+
+SocketQUICHandshake_Result
+SocketQUICHandshake_0rtt_handle_rejection (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return QUIC_HANDSHAKE_ERROR_NULL;
+
+  /* Discard 0-RTT keys (RFC 9001 §4.6.2) */
+  SocketQUICHandshake_discard_keys (handshake, QUIC_CRYPTO_LEVEL_0RTT);
+  handshake->zero_rtt_keys_discarded = 1;
+  handshake->zero_rtt.keys_derived = 0;
+
+  /* Clear early data buffer (client must resend as 1-RTT) */
+  if (handshake->zero_rtt.early_data_buffer
+      && handshake->zero_rtt.early_data_capacity > 0)
+    {
+      SocketCrypto_secure_clear (handshake->zero_rtt.early_data_buffer,
+                                 handshake->zero_rtt.early_data_capacity);
+    }
+  handshake->zero_rtt.early_data_len = 0;
+
+  /* Transition to REJECTED state */
+  handshake->zero_rtt.state = QUIC_0RTT_STATE_REJECTED;
+
+  return QUIC_HANDSHAKE_OK;
+}
+
+void
+SocketQUICHandshake_on_hello_retry_request (SocketQUICHandshake_T handshake)
+{
+  if (!handshake)
+    return;
+
+  /* Mark HRR received - this forces 0-RTT rejection (RFC 9001 §4.6.2) */
+  handshake->hello_retry_received = 1;
+
+  /* If 0-RTT was offered, force rejection */
+  if (handshake->zero_rtt.state == QUIC_0RTT_STATE_OFFERED
+      || handshake->zero_rtt.state == QUIC_0RTT_STATE_PENDING)
+    {
+      SocketQUICHandshake_0rtt_handle_rejection (handshake);
+    }
 }
 
 /* ============================================================================

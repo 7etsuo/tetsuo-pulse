@@ -834,6 +834,7 @@ set(TEST_SOURCES
     test_quic_ack
     test_quic_loss
     test_quic_key_discard
+    test_quic_0rtt
 )
 
 # TLS tests (only built when TLS is enabled)
