@@ -598,6 +598,355 @@ TEST (qpack_encode_prefix_multi_byte_delta)
 }
 
 /* ============================================================================
+ * MAX ENTRIES ALIAS TESTS
+ * ============================================================================
+ */
+
+TEST (qpack_max_entries_alias)
+{
+  /* Verify alias function produces same results */
+  ASSERT_EQ (SocketQPACK_max_entries (0), SocketQPACK_compute_max_entries (0));
+  ASSERT_EQ (SocketQPACK_max_entries (4096),
+             SocketQPACK_compute_max_entries (4096));
+  ASSERT_EQ (SocketQPACK_max_entries (65536),
+             SocketQPACK_compute_max_entries (65536));
+}
+
+/* ============================================================================
+ * ENCODE REQUIRED INSERT COUNT TESTS (RFC 9204 Section 4.5.1.1)
+ * ============================================================================
+ */
+
+TEST (qpack_encode_ric_null_output)
+{
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (10, 128, NULL);
+  ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
+}
+
+TEST (qpack_encode_ric_zero)
+{
+  uint64_t encoded = 999;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (0, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 0);
+}
+
+TEST (qpack_encode_ric_zero_with_zero_max_entries)
+{
+  /* RIC=0 should succeed even with max_entries=0 */
+  uint64_t encoded = 999;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (0, 0, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 0);
+}
+
+TEST (qpack_encode_ric_nonzero_with_zero_max_entries)
+{
+  /* Non-zero RIC with max_entries=0 should fail */
+  uint64_t encoded = 999;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (10, 0, &encoded);
+  ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
+}
+
+TEST (qpack_encode_ric_one)
+{
+  /* MaxEntries=128, FullRange=256
+   * RIC=1: EncodedRIC = (1 % 256) + 1 = 2
+   */
+  uint64_t encoded = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (1, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 2);
+}
+
+TEST (qpack_encode_ric_wraps_at_full_range)
+{
+  /* MaxEntries=128, FullRange=256
+   * RIC=300: EncodedRIC = (300 % 256) + 1 = 45
+   */
+  uint64_t encoded = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (300, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 45);
+}
+
+TEST (qpack_encode_ric_at_boundary)
+{
+  /* MaxEntries=128, FullRange=256
+   * RIC=256: EncodedRIC = (256 % 256) + 1 = 1
+   */
+  uint64_t encoded = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (256, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 1);
+}
+
+TEST (qpack_encode_ric_max_in_range)
+{
+  /* MaxEntries=128, FullRange=256
+   * RIC=255: EncodedRIC = (255 % 256) + 1 = 256
+   */
+  uint64_t encoded = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (255, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 256);
+}
+
+/* ============================================================================
+ * DECODE REQUIRED INSERT COUNT TESTS (RFC 9204 Section 4.5.1.1)
+ * ============================================================================
+ */
+
+TEST (qpack_decode_ric_null_output)
+{
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (10, 128, 100, NULL);
+  ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
+}
+
+TEST (qpack_decode_ric_zero)
+{
+  uint64_t ric = 999;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (0, 128, 100, &ric);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (ric, 0);
+}
+
+TEST (qpack_decode_ric_zero_with_zero_max_entries)
+{
+  /* EncodedRIC=0 should succeed even with max_entries=0 */
+  uint64_t ric = 999;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (0, 0, 0, &ric);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (ric, 0);
+}
+
+TEST (qpack_decode_ric_nonzero_with_zero_max_entries)
+{
+  /* Non-zero EncodedRIC with max_entries=0 should fail */
+  uint64_t ric = 999;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (10, 0, 100, &ric);
+  ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
+}
+
+TEST (qpack_decode_ric_simple)
+{
+  /* MaxEntries=128, FullRange=256
+   * EncodedRIC=2, TotalInserts=100
+   * MaxValue = 100 + 128 = 228
+   * MaxWrapped = floor(228/256)*256 = 0
+   * RIC = 0 + 2 - 1 = 1
+   */
+  uint64_t ric = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (2, 128, 100, &ric);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (ric, 1);
+}
+
+TEST (qpack_decode_ric_with_wraparound)
+{
+  /* MaxEntries=128, FullRange=256
+   * EncodedRIC=45, TotalInserts=350
+   * MaxValue = 350 + 128 = 478
+   * MaxWrapped = floor(478/256)*256 = 256
+   * RIC = 256 + 45 - 1 = 300
+   * 300 <= 478, no adjustment needed
+   */
+  uint64_t ric = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (45, 128, 350, &ric);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (ric, 300);
+}
+
+TEST (qpack_decode_ric_exceeds_full_range)
+{
+  /* EncodedRIC > FullRange should fail
+   * MaxEntries=128, FullRange=256
+   * EncodedRIC=300 > 256
+   */
+  uint64_t ric = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (300, 128, 100, &ric);
+  ASSERT_EQ (result, QPACK_ERR_DECOMPRESSION);
+}
+
+TEST (qpack_decode_ric_exceeds_total_inserts)
+{
+  /* Decoded RIC > TotalInserts should fail
+   * MaxEntries=128, FullRange=256
+   * EncodedRIC=100, TotalInserts=50
+   * MaxValue = 50 + 128 = 178
+   * MaxWrapped = 0
+   * RIC = 0 + 100 - 1 = 99
+   * 99 > 50, so error
+   */
+  uint64_t ric = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (100, 128, 50, &ric);
+  ASSERT_EQ (result, QPACK_ERR_DECOMPRESSION);
+}
+
+TEST (qpack_decode_ric_at_full_range_boundary)
+{
+  /* MaxEntries=128, FullRange=256
+   * EncodedRIC=256 (max valid), TotalInserts=300
+   * MaxValue = 300 + 128 = 428
+   * MaxWrapped = 256
+   * RIC = 256 + 256 - 1 = 511
+   * 511 > 428, so RIC = 511 - 256 = 255
+   * 255 <= 300, valid
+   */
+  uint64_t ric = 0;
+  SocketQPACK_Result result
+      = SocketQPACK_decode_required_insert_count (256, 128, 300, &ric);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (ric, 255);
+}
+
+/* ============================================================================
+ * ENCODE/DECODE ROUND-TRIP TESTS (RFC 9204 Section 4.5.1.1)
+ * ============================================================================
+ */
+
+TEST (qpack_ric_roundtrip_zero)
+{
+  uint64_t encoded = 999;
+  uint64_t decoded = 999;
+
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (0, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+
+  result
+      = SocketQPACK_decode_required_insert_count (encoded, 128, 100, &decoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (decoded, 0);
+}
+
+TEST (qpack_ric_roundtrip_small)
+{
+  uint64_t encoded = 0;
+  uint64_t decoded = 0;
+
+  /* Encode RIC=42 */
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (42, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+
+  /* Decode with TotalInserts=100 (> 42) */
+  result
+      = SocketQPACK_decode_required_insert_count (encoded, 128, 100, &decoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (decoded, 42);
+}
+
+TEST (qpack_ric_roundtrip_with_wrap)
+{
+  uint64_t encoded = 0;
+  uint64_t decoded = 0;
+
+  /* Encode RIC=300 with MaxEntries=128 (FullRange=256)
+   * EncodedRIC = (300 % 256) + 1 = 45
+   */
+  SocketQPACK_Result result
+      = SocketQPACK_encode_required_insert_count (300, 128, &encoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (encoded, 45);
+
+  /* Decode with TotalInserts=350 (> 300)
+   * MaxValue = 350 + 128 = 478
+   * MaxWrapped = 256
+   * RIC = 256 + 45 - 1 = 300
+   */
+  result
+      = SocketQPACK_decode_required_insert_count (encoded, 128, 350, &decoded);
+  ASSERT_EQ (result, QPACK_OK);
+  ASSERT_EQ (decoded, 300);
+}
+
+TEST (qpack_ric_roundtrip_various_capacities)
+{
+  /* Test with different MaxEntries values
+   *
+   * RFC 9204 Section 4.5.1.1: The decoder must have TotalInserts within
+   * MaxEntries of the actual RIC for wrap-around detection to work.
+   * So we use total_inserts = ric (encoder and decoder are synchronized).
+   */
+  uint64_t test_rics[] = { 1, 10, 50, 100, 200, 500, 1000 };
+  uint64_t max_entries_vals[] = { 16, 64, 128, 256, 512, 2048 };
+
+  for (size_t i = 0; i < sizeof (test_rics) / sizeof (test_rics[0]); i++)
+    {
+      uint64_t ric = test_rics[i];
+
+      for (size_t j = 0;
+           j < sizeof (max_entries_vals) / sizeof (max_entries_vals[0]);
+           j++)
+        {
+          uint64_t max_entries = max_entries_vals[j];
+          uint64_t encoded = 0;
+          uint64_t decoded = 0;
+
+          SocketQPACK_Result result = SocketQPACK_encode_required_insert_count (
+              ric, max_entries, &encoded);
+          ASSERT_EQ (result, QPACK_OK);
+
+          /*
+           * For correct wrap-around detection, TotalInserts must be within
+           * MaxEntries of RIC. Use TotalInserts = RIC for synchronized
+           * encoder/decoder.
+           */
+          uint64_t total_inserts = ric;
+          result = SocketQPACK_decode_required_insert_count (
+              encoded, max_entries, total_inserts, &decoded);
+          ASSERT_EQ (result, QPACK_OK);
+          ASSERT_EQ (decoded, ric);
+        }
+    }
+}
+
+TEST (qpack_ric_roundtrip_values_0_to_512)
+{
+  /* Per test plan: round-trip for values 0 to 512
+   *
+   * RFC 9204 Section 4.5.1.1: The wrap-around detection requires
+   * TotalInserts to be within MaxEntries of the actual RIC.
+   * Use TotalInserts = RIC for synchronized encoder/decoder.
+   */
+  uint64_t max_entries = 128; /* FullRange = 256 */
+
+  for (uint64_t ric = 0; ric <= 512; ric++)
+    {
+      uint64_t encoded = 0;
+      uint64_t decoded = 0;
+
+      SocketQPACK_Result result = SocketQPACK_encode_required_insert_count (
+          ric, max_entries, &encoded);
+      ASSERT_EQ (result, QPACK_OK);
+
+      /* Use TotalInserts = RIC for synchronized state */
+      uint64_t total_inserts = ric;
+      result = SocketQPACK_decode_required_insert_count (
+          encoded, max_entries, total_inserts, &decoded);
+      ASSERT_EQ (result, QPACK_OK);
+      ASSERT_EQ (decoded, ric);
+    }
+}
+
+/* ============================================================================
  * MAIN
  * ============================================================================
  */

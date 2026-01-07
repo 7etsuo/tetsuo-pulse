@@ -369,3 +369,115 @@ SocketQPACK_compute_max_entries (uint64_t max_table_capacity)
    */
   return max_table_capacity / SOCKETQPACK_ENTRY_OVERHEAD;
 }
+
+uint64_t
+SocketQPACK_max_entries (uint64_t max_table_capacity)
+{
+  return SocketQPACK_compute_max_entries (max_table_capacity);
+}
+
+/* ============================================================================
+ * REQUIRED INSERT COUNT ENCODING (RFC 9204 Section 4.5.1.1)
+ * ============================================================================
+ */
+
+SocketQPACK_Result
+SocketQPACK_encode_required_insert_count (uint64_t required_insert_count,
+                                          uint64_t max_entries,
+                                          uint64_t *encoded_ric)
+{
+  if (encoded_ric == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  /*
+   * RFC 9204 Section 4.5.1.1: Encoding the Required Insert Count
+   *
+   * If Required Insert Count is 0, encode as 0.
+   * Otherwise, encode using modular arithmetic:
+   *   EncodedRIC = (RIC mod (2 * MaxEntries)) + 1
+   *
+   * MaxEntries is derived from SETTINGS_QPACK_MAX_TABLE_CAPACITY / 32.
+   */
+  if (required_insert_count == 0)
+    {
+      *encoded_ric = 0;
+      return QPACK_OK;
+    }
+
+  /* Non-zero RIC requires non-zero MaxEntries */
+  if (max_entries == 0)
+    return QPACK_ERR_TABLE_SIZE;
+
+  uint64_t full_range = 2 * max_entries;
+  *encoded_ric = (required_insert_count % full_range) + 1;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_decode_required_insert_count (uint64_t encoded_ric,
+                                          uint64_t max_entries,
+                                          uint64_t total_insert_count,
+                                          uint64_t *required_insert_count)
+{
+  if (required_insert_count == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  /*
+   * RFC 9204 Section 4.5.1.1: Decoding the Required Insert Count
+   *
+   * If EncodedRIC == 0, then RIC = 0.
+   * Otherwise, recover RIC using wrap-around detection:
+   *   FullRange = 2 * MaxEntries
+   *   MaxValue = TotalInsertCount + MaxEntries
+   *   MaxWrapped = floor(MaxValue / FullRange) * FullRange
+   *   RIC = MaxWrapped + EncodedRIC - 1
+   *
+   *   If RIC > MaxValue:
+   *     If RIC <= FullRange: ERROR (cannot wrap)
+   *     RIC -= FullRange
+   *
+   *   If RIC == 0: ERROR (invalid decoded result)
+   */
+  if (encoded_ric == 0)
+    {
+      *required_insert_count = 0;
+      return QPACK_OK;
+    }
+
+  /* Non-zero EncodedRIC requires non-zero MaxEntries */
+  if (max_entries == 0)
+    return QPACK_ERR_TABLE_SIZE;
+
+  uint64_t full_range = 2 * max_entries;
+
+  /* RFC 9204: EncodedRIC MUST NOT exceed FullRange */
+  if (encoded_ric > full_range)
+    return QPACK_ERR_DECOMPRESSION;
+
+  uint64_t max_value = total_insert_count + max_entries;
+  uint64_t max_wrapped = (max_value / full_range) * full_range;
+
+  uint64_t ric = max_wrapped + encoded_ric - 1;
+
+  /* Handle wrap-around */
+  if (ric > max_value)
+    {
+      /* If RIC > MaxValue but <= FullRange, wrap is impossible */
+      if (ric <= full_range)
+        return QPACK_ERR_DECOMPRESSION;
+
+      ric -= full_range;
+    }
+
+  /* RFC 9204: Decoded RIC of 0 is an error (should have been encoded as 0) */
+  if (ric == 0)
+    return QPACK_ERR_DECOMPRESSION;
+
+  /* Validate RIC does not reference future entries */
+  if (ric > total_insert_count)
+    return QPACK_ERR_DECOMPRESSION;
+
+  *required_insert_count = ric;
+  return QPACK_OK;
+}
