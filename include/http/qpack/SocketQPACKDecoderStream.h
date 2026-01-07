@@ -426,6 +426,115 @@ SocketQPACK_is_stream_cancel (unsigned char first_byte)
   return (first_byte & 0xC0) == QPACK_DINSTR_STREAM_CANCEL_MASK;
 }
 
+/* ============================================================================
+ * INSERT COUNT INCREMENT PRIMITIVES (RFC 9204 Section 4.4.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode Insert Count Increment instruction to buffer.
+ *
+ * RFC 9204 Section 4.4.3: Encodes an increment instruction into the provided
+ * output buffer. This is a low-level function for building decoder stream
+ * data without using the stream abstraction.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 |     Increment (6+)    |
+ * +---+---+-----------------------+
+ *
+ * @param output        Output buffer (must not be NULL)
+ * @param output_size   Size of output buffer
+ * @param increment     Number of entries to increment (must be > 0)
+ * @param[out] bytes_written Number of bytes written to output (must not be
+ * NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if output buffer is too small
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_encode_insert_count_inc (unsigned char *output,
+                                     size_t output_size,
+                                     uint64_t increment,
+                                     size_t *bytes_written);
+
+/**
+ * @brief Decode Insert Count Increment instruction from buffer.
+ *
+ * RFC 9204 Section 4.4.3: Decodes an increment instruction from the input
+ * buffer. Returns the increment value which should be added to the
+ * Known Received Count.
+ *
+ * @param input         Input buffer containing the instruction
+ * @param input_len     Length of input buffer
+ * @param[out] increment Decoded increment value (must not be NULL)
+ * @param[out] consumed  Number of bytes consumed from input (must not be NULL)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if any required parameter is NULL,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if input is incomplete,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if decoded increment is 0,
+ *         QPACK_STREAM_ERR_INTERNAL on decoding error
+ *
+ * @note The first byte of input must have bits 7-6 equal to 00
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_decode_insert_count_inc (const unsigned char *input,
+                                     size_t input_len,
+                                     uint64_t *increment,
+                                     size_t *consumed);
+
+/**
+ * @brief Apply Insert Count Increment to encoder state.
+ *
+ * RFC 9204 Section 4.4.3: Updates the Known Received Count based on the
+ * received increment. This function is called by the encoder when it
+ * receives an Insert Count Increment instruction from the decoder.
+ *
+ * @param known_received_count Current Known Received Count (updated in-place)
+ * @param insert_count         Current Insert Count (total entries sent)
+ * @param increment            Increment value from decoder (must be > 0)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if known_received_count is NULL,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if new count would exceed insert_count
+ *
+ * @note The encoder tracks Known Received Count to know which dynamic table
+ *       entries have been acknowledged by the decoder. Entries with absolute
+ *       index < Known Received Count are safe to reference.
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_apply_insert_count_inc (uint64_t *known_received_count,
+                                    uint64_t insert_count,
+                                    uint64_t increment);
+
+/**
+ * @brief Validate Insert Count Increment value.
+ *
+ * RFC 9204 Section 4.4.3: Validates that an increment value is valid:
+ * - Increment must be non-zero
+ * - Increment must not cause Known Received Count to exceed Insert Count
+ *
+ * @param known_received_count Current Known Received Count
+ * @param insert_count         Current Insert Count (total entries sent)
+ * @param increment            Increment value to validate
+ * @return QPACK_STREAM_OK if valid,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if increment is 0,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if it would exceed insert_count
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_validate_insert_count_inc (uint64_t known_received_count,
+                                       uint64_t insert_count,
+                                       uint64_t increment);
 /** @} */
 
 #endif /* SOCKETQPACK_DECODER_STREAM_INCLUDED */

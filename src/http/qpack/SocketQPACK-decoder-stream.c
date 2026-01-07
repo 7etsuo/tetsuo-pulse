@@ -538,3 +538,168 @@ SocketQPACK_stream_cancel_release_refs (SocketQPACK_Table_T table,
 
   return QPACK_STREAM_OK;
 }
+
+/* ============================================================================
+ * INSERT COUNT INCREMENT PRIMITIVES (RFC 9204 Section 4.4.3)
+ * ============================================================================
+ */
+
+SocketQPACKStream_Result
+SocketQPACK_encode_insert_count_inc (unsigned char *output,
+                                     size_t output_size,
+                                     uint64_t increment,
+                                     size_t *bytes_written)
+{
+  /*
+   * RFC 9204 Section 4.4.3: Insert Count Increment
+   *
+   *   0   1   2   3   4   5   6   7
+   * +---+---+---+---+---+---+---+---+
+   * | 0 | 0 |     Increment (6+)    |
+   * +---+---+-----------------------+
+   *
+   * Bit pattern: 00xxxxxx (0x00 mask)
+   * The 6-bit prefix encodes the increment value.
+   */
+  size_t int_len;
+
+  /* Parameter validation */
+  if (output == NULL || bytes_written == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *bytes_written = 0;
+
+  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
+  if (increment == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  /* Encode the increment with 6-bit prefix */
+  int_len = SocketHPACK_int_encode (
+      increment, QPACK_DINSTR_INSERT_COUNT_INC_PREFIX, output, output_size);
+  if (int_len == 0)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  /* First two bits are already 00 from int_encode (since mask is 0x00) */
+  /* No need to OR with mask as it's 0x00 */
+
+  *bytes_written = int_len;
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_decode_insert_count_inc (const unsigned char *input,
+                                     size_t input_len,
+                                     uint64_t *increment,
+                                     size_t *consumed)
+{
+  /*
+   * RFC 9204 Section 4.4.3: Insert Count Increment
+   *
+   * First byte: 00 xxxxxx
+   * - Bits 7-6: Always 00 for this instruction type
+   * - Bits 5-0: Start of 6+ prefix integer for increment
+   */
+  SocketHPACK_Result hpack_result;
+
+  /* Parameter validation */
+  if (input == NULL || increment == NULL || consumed == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  *increment = 0;
+  *consumed = 0;
+
+  /* Need at least one byte */
+  if (input_len < 1)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+
+  /* Verify this is an insert count increment instruction (bits 7-6 = 00) */
+  if ((input[0] & 0xC0) != 0x00)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* Decode increment (6-bit prefix integer) */
+  hpack_result = SocketHPACK_int_decode (input,
+                                         input_len,
+                                         QPACK_DINSTR_INSERT_COUNT_INC_PREFIX,
+                                         increment,
+                                         consumed);
+  if (hpack_result == HPACK_INCOMPLETE)
+    return QPACK_STREAM_ERR_BUFFER_FULL;
+  if (hpack_result != HPACK_OK)
+    return QPACK_STREAM_ERR_INTERNAL;
+
+  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
+  if (*increment == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_apply_insert_count_inc (uint64_t *known_received_count,
+                                    uint64_t insert_count,
+                                    uint64_t increment)
+{
+  /*
+   * RFC 9204 Section 4.4.3: Insert Count Increment
+   *
+   * Updates the Known Received Count based on the received increment.
+   * The encoder uses this to track which dynamic table entries have
+   * been acknowledged by the decoder.
+   *
+   * Validation:
+   * 1. Increment must be non-zero
+   * 2. known_received_count + increment must not exceed insert_count
+   */
+  uint64_t new_count;
+
+  /* Parameter validation */
+  if (known_received_count == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
+  if (increment == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  /* Check for overflow */
+  if (increment > UINT64_MAX - *known_received_count)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  new_count = *known_received_count + increment;
+
+  /* RFC 9204 Section 4.4.3: increment must not exceed entries sent */
+  if (new_count > insert_count)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  *known_received_count = new_count;
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_validate_insert_count_inc (uint64_t known_received_count,
+                                       uint64_t insert_count,
+                                       uint64_t increment)
+{
+  /*
+   * RFC 9204 Section 4.4.3: Validate increment value
+   *
+   * 1. Increment must be non-zero
+   * 2. known_received_count + increment must not exceed insert_count
+   */
+  uint64_t new_count;
+
+  /* RFC 9204 Section 4.4.3: increment of 0 is an error */
+  if (increment == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  /* Check for overflow */
+  if (increment > UINT64_MAX - known_received_count)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  new_count = known_received_count + increment;
+
+  /* RFC 9204 Section 4.4.3: increment must not exceed entries sent */
+  if (new_count > insert_count)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  return QPACK_STREAM_OK;
+}
