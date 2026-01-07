@@ -1322,6 +1322,159 @@ extern const char *SocketQPACK_result_string (SocketQPACK_Result result);
  */
 extern size_t SocketQPACK_estimate_capacity (size_t max_size);
 
+/* ============================================================================
+ * LITERAL FIELD LINE WITH POST-BASE NAME REFERENCE (RFC 9204 Section 4.5.5)
+ * ============================================================================
+ */
+
+/**
+ * @brief Decoded Literal Field Line with Post-Base Name Reference.
+ *
+ * RFC 9204 Section 4.5.5: Represents a literal field line where the name
+ * is taken from a post-base dynamic table entry (an entry inserted during
+ * the encoding of the current field section, after the Base index).
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 0 | 0 | N |NameIdx(3+)|
+ * +---+---+---+---+---+-----------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ */
+typedef struct
+{
+  uint64_t name_index;        /**< Post-base index (3-bit prefix) */
+  int never_index;            /**< N bit: 1 = never index this field */
+  int value_huffman;          /**< H bit: 1 = value is Huffman-encoded */
+  const unsigned char *value; /**< Value string (points into input buffer) */
+  size_t value_len;           /**< Length of value string */
+} SocketQPACK_LiteralPostBaseName;
+
+/**
+ * @brief Encode Literal Field Line with Post-Base Name Reference.
+ *
+ * RFC 9204 Section 4.5.5: Encodes a literal field line where the name
+ * is referenced from a post-base dynamic table entry (an entry with
+ * absolute index >= Base).
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 0 | 0 | N |NameIdx(3+)|
+ * +---+---+---+---+---+-----------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ *
+ * @param output        Output buffer (must not be NULL)
+ * @param output_size   Size of output buffer
+ * @param name_index    Post-base index (relative to Base)
+ * @param never_index   N bit: 1 to indicate this field should never be indexed
+ * @param value         Value string (may be NULL if value_len == 0)
+ * @param value_len     Length of value string
+ * @param use_huffman   True to Huffman-encode the value
+ * @param[out] bytes_written Number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_ERR_INTEGER if integer encoding failed,
+ *         QPACK_ERR_HUFFMAN if Huffman encoding failed,
+ *         QPACK_ERR_TABLE_SIZE if output buffer is too small
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_literal_postbase_name (unsigned char *output,
+                                          size_t output_size,
+                                          uint64_t name_index,
+                                          int never_index,
+                                          const unsigned char *value,
+                                          size_t value_len,
+                                          int use_huffman,
+                                          size_t *bytes_written);
+
+/**
+ * @brief Decode Literal Field Line with Post-Base Name Reference.
+ *
+ * RFC 9204 Section 4.5.5: Decodes a literal field line with post-base
+ * name reference from the input buffer.
+ *
+ * @param input         Input buffer (must not be NULL if input_len > 0)
+ * @param input_len     Length of input buffer
+ * @param arena         Memory arena for Huffman decoding (must not be NULL)
+ * @param[out] result   Decoded field line (must not be NULL)
+ * @param[out] consumed Number of bytes consumed (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if required parameters are NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_INTEGER if integer decoding failed,
+ *         QPACK_ERR_HUFFMAN if Huffman decoding failed
+ *
+ * @note The first byte must have pattern 0000xxxx (bits 7-4 = 0)
+ * @note The value pointer is valid until arena is disposed
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_literal_postbase_name (
+    const unsigned char *input,
+    size_t input_len,
+    Arena_T arena,
+    SocketQPACK_LiteralPostBaseName *result,
+    size_t *consumed);
+
+/**
+ * @brief Validate post-base name index for Literal Field Line.
+ *
+ * RFC 9204 Section 4.5.5: Validates that a post-base name index is valid
+ * for use in a Literal Field Line with Post-Base Name Reference.
+ *
+ * For a post-base reference to be valid:
+ * 1. The absolute index (base + post_base_index) must be < insert_count
+ * 2. The post_base_index must not cause integer overflow when added to base
+ *
+ * @param base          Base value from the field section prefix
+ * @param insert_count  Current Insert Count (total entries inserted)
+ * @param post_base_idx Post-base index to validate
+ * @return QPACK_OK if valid,
+ *         QPACK_ERR_FUTURE_INDEX if index references a not-yet-inserted entry,
+ *         QPACK_ERR_INVALID_INDEX if integer overflow would occur
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_validate_literal_postbase_index (uint64_t base,
+                                             uint64_t insert_count,
+                                             uint64_t post_base_idx);
+
+/**
+ * @brief Resolve post-base name reference to header name.
+ *
+ * RFC 9204 Section 4.5.5: Resolves a post-base name index to the actual
+ * header name by looking up the dynamic table entry.
+ *
+ * @param table         Dynamic table (must not be NULL)
+ * @param base          Base value from field section prefix
+ * @param post_base_idx Post-base index from the literal field line
+ * @param[out] name     Output: pointer to name string (must not be NULL)
+ * @param[out] name_len Output: length of name string (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if any required parameter is NULL,
+ *         QPACK_ERR_FUTURE_INDEX if index references future entry,
+ *         QPACK_ERR_EVICTED_INDEX if entry has been evicted
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_resolve_postbase_name (SocketQPACK_Table_T table,
+                                   uint64_t base,
+                                   uint64_t post_base_idx,
+                                   const char **name,
+                                   size_t *name_len);
+
 /** @} */
 
 #endif /* SOCKETQPACK_INCLUDED */
