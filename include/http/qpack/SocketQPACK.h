@@ -1295,6 +1295,132 @@ SocketQPACK_resolve_literal_name_ref (bool is_static,
                                       size_t *name_len);
 
 /* ============================================================================
+ * LITERAL FIELD LINE WITH LITERAL NAME (RFC 9204 Section 4.5.6)
+ * ============================================================================
+ */
+
+/**
+ * @brief Decoded Literal Field Line with Literal Name.
+ *
+ * RFC 9204 Section 4.5.6: Represents the decoded form of a field line
+ * where both name and value are encoded as string literals.
+ */
+typedef struct
+{
+  const unsigned char *name;  /**< Field name (points into decoded buffer) */
+  size_t name_len;            /**< Length of name string */
+  const unsigned char *value; /**< Field value (points into decoded buffer) */
+  size_t value_len;           /**< Length of value string */
+  bool never_indexed; /**< N bit: field must not be added to dynamic table */
+} SocketQPACK_LiteralFieldLine;
+
+/**
+ * @brief Encode Literal Field Line with Literal Name.
+ *
+ * RFC 9204 Section 4.5.6: Encodes a field line where both the field name
+ * and value are represented as string literals. This is the most general
+ * encoding form in QPACK.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 1 | N | H |NameLen(3+)|
+ * +---+---+---+---+---+-----------+
+ * |  Name String (Length bytes)   |
+ * +---+---------------------------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ *
+ * @param output         Output buffer (must not be NULL)
+ * @param output_size    Size of output buffer
+ * @param name           Field name (must not be NULL if name_len > 0)
+ * @param name_len       Length of name string
+ * @param name_huffman   true to Huffman-encode the name (if beneficial)
+ * @param value          Field value (must not be NULL if value_len > 0)
+ * @param value_len      Length of value string
+ * @param value_huffman  true to Huffman-encode the value (if beneficial)
+ * @param never_indexed  true if field must not be added to dynamic table
+ * @param[out] bytes_written Number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if required parameter is NULL,
+ *         QPACK_ERR_TABLE_SIZE if output buffer is too small,
+ *         QPACK_ERR_HUFFMAN if Huffman encoding failed,
+ *         QPACK_ERR_INTEGER if integer encoding failed
+ *
+ * @note The N bit (never_indexed) is critical for sensitive headers like
+ *       passwords, tokens, and cookies. When set, the field MUST NOT be
+ *       added to the dynamic table.
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_literal_field_literal_name (unsigned char *output,
+                                               size_t output_size,
+                                               const unsigned char *name,
+                                               size_t name_len,
+                                               bool name_huffman,
+                                               const unsigned char *value,
+                                               size_t value_len,
+                                               bool value_huffman,
+                                               bool never_indexed,
+                                               size_t *bytes_written);
+
+/**
+ * @brief Decode Literal Field Line with Literal Name.
+ *
+ * RFC 9204 Section 4.5.6: Decodes a field line where both name and value
+ * are encoded as string literals. The decoded strings are written to the
+ * provided output buffers.
+ *
+ * @param input           Input buffer (must not be NULL if input_len > 0)
+ * @param input_len       Length of input buffer
+ * @param name_out        Output buffer for decoded name (must not be NULL)
+ * @param name_out_size   Size of name output buffer
+ * @param[out] name_len   Output: actual name length (must not be NULL)
+ * @param value_out       Output buffer for decoded value (must not be NULL)
+ * @param value_out_size  Size of value output buffer
+ * @param[out] value_len  Output: actual value length (must not be NULL)
+ * @param[out] never_indexed Output: N bit value (must not be NULL)
+ * @param[out] bytes_consumed Number of bytes consumed (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if required parameter is NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_HUFFMAN if Huffman decoding failed,
+ *         QPACK_ERR_INTEGER if integer decoding failed,
+ *         QPACK_ERR_HEADER_SIZE if output buffer is too small
+ *
+ * @note The first byte must have pattern 001xxxxx (bits 7-5).
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_literal_field_literal_name (const unsigned char *input,
+                                               size_t input_len,
+                                               unsigned char *name_out,
+                                               size_t name_out_size,
+                                               size_t *name_len,
+                                               unsigned char *value_out,
+                                               size_t value_out_size,
+                                               size_t *value_len,
+                                               bool *never_indexed,
+                                               size_t *bytes_consumed);
+
+/**
+ * @brief Validate Literal Field Line with Literal Name pattern.
+ *
+ * RFC 9204 Section 4.5.6: Checks if the first byte has the correct
+ * pattern bits (001) for a Literal Field Line with Literal Name instruction.
+ *
+ * @param first_byte First byte of the instruction
+ * @return true if pattern matches 001xxxxx, false otherwise
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_is_literal_field_literal_name (uint8_t first_byte);
+
+/* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
  */

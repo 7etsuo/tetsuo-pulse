@@ -33,6 +33,36 @@
 #define QPACK_MIN_TABLE_CAPACITY 16
 
 /* ============================================================================
+ * FIELD LINE INSTRUCTION PATTERNS (RFC 9204 Section 4.5)
+ *
+ * Wire format patterns for field section instructions.
+ * ============================================================================
+ */
+
+/**
+ * @brief Literal Field Line with Literal Name instruction pattern.
+ *
+ * RFC 9204 Section 4.5.6:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 1 | N | H |NameLen(3+)|
+ * +---+---+---+---+---+-----------+
+ * |  Name String (Length bytes)   |
+ * +---+---------------------------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ */
+#define QPACK_FIELD_LITERAL_LITERAL_PATTERN 0x20 /**< 001xxxxx pattern mask */
+#define QPACK_FIELD_LITERAL_LITERAL_MASK 0xE0    /**< Top 3 bits mask */
+#define QPACK_FIELD_LITERAL_NEVER_INDEX 0x10     /**< N bit (never index) */
+#define QPACK_FIELD_LITERAL_NAME_HUFFMAN 0x08    /**< H bit for name */
+#define QPACK_FIELD_LITERAL_NAME_PREFIX 3        /**< Name length prefix bits */
+#define QPACK_FIELD_LITERAL_VALUE_HUFFMAN 0x80   /**< H bit for value */
+#define QPACK_FIELD_LITERAL_VALUE_PREFIX 7 /**< Value length prefix bits */
+
+/* ============================================================================
  * INDEX METADATA (Internal)
  *
  * Tracks metadata for dynamic table entries as per RFC 9204 Section 3.2.4.

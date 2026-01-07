@@ -371,6 +371,7 @@ set(LIB_SOURCES
     src/http/qpack/SocketQPACK-indexed.c
     src/http/qpack/SocketQPACK-literal-name-ref.c
     src/http/qpack/SocketQPACK-literal-postbase.c
+    src/http/qpack/SocketQPACK-field-literal.c
 
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
@@ -819,6 +820,7 @@ set(TEST_SOURCES
     test_qpack_indexed_postbase
     test_qpack_literal_name_ref
     test_qpack_literal_postbase
+    test_qpack_field_literal
     test_http_integration
     test_ws_integration
     test_http2_integration
