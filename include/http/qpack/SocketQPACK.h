@@ -874,6 +874,109 @@ SocketQPACK_encode_base (uint64_t req_insert_count,
                          uint64_t *delta_out);
 
 /* ============================================================================
+ * INDEXED FIELD LINE (RFC 9204 Section 4.5.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode an Indexed Field Line.
+ *
+ * RFC 9204 Section 4.5.2: Encodes a reference to a field line in either
+ * the static table or dynamic table using the Indexed Field Line format.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 1 | T |      Index (6+)       |
+ * +---+---+-----------------------+
+ *
+ * @param output        Output buffer (must not be NULL)
+ * @param output_size   Size of output buffer
+ * @param index         Table index (static: 0-98, dynamic: relative to Base)
+ * @param is_static     1 for static table, 0 for dynamic table
+ * @param[out] bytes_written Number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_ERR_TABLE_SIZE if buffer too small,
+ *         QPACK_ERR_INVALID_INDEX if static index > 98,
+ *         QPACK_ERR_INTEGER if integer encoding failed
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_indexed_field (unsigned char *output,
+                                  size_t output_size,
+                                  uint64_t index,
+                                  int is_static,
+                                  size_t *bytes_written);
+
+/**
+ * @brief Decode an Indexed Field Line.
+ *
+ * RFC 9204 Section 4.5.2: Decodes an Indexed Field Line to extract the
+ * table type (static/dynamic) and index value.
+ *
+ * @param input          Input buffer (must not be NULL if input_len > 0)
+ * @param input_len      Length of input buffer
+ * @param[out] index     Decoded index value (must not be NULL)
+ * @param[out] is_static 1 if static table, 0 if dynamic (must not be NULL)
+ * @param[out] bytes_consumed Number of bytes consumed (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output parameters are NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_INTEGER if integer decoding failed,
+ *         QPACK_ERR_INVALID_INDEX if static index > 98,
+ *         QPACK_ERR_INTERNAL if not an indexed field line pattern
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_indexed_field (const unsigned char *input,
+                                  size_t input_len,
+                                  uint64_t *index,
+                                  int *is_static,
+                                  size_t *bytes_consumed);
+
+/**
+ * @brief Resolve an Indexed Field Line to absolute index.
+ *
+ * RFC 9204 Section 4.5.2: Converts a decoded indexed field line to an
+ * absolute index suitable for table lookup. For static table references,
+ * validates the index range. For dynamic table references, converts from
+ * relative (Base-relative) indexing to absolute indexing.
+ *
+ * @param index         Decoded index from SocketQPACK_decode_indexed_field
+ * @param is_static     Table type (1=static, 0=dynamic)
+ * @param base          Base value from Field Section Prefix (for dynamic)
+ * @param dropped_count Number of evicted entries (for dynamic validation)
+ * @param[out] abs_index Resulting absolute index (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if abs_index is NULL,
+ *         QPACK_ERR_INVALID_INDEX if index out of range,
+ *         QPACK_ERR_EVICTED_INDEX if dynamic entry was evicted
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_resolve_indexed_field (uint64_t index,
+                                   int is_static,
+                                   uint64_t base,
+                                   uint64_t dropped_count,
+                                   uint64_t *abs_index);
+
+/**
+ * @brief Check if a byte indicates an Indexed Field Line.
+ *
+ * RFC 9204 Section 4.5.2: An Indexed Field Line starts with bit pattern 1x.
+ *
+ * @param byte First byte of a potential Indexed Field Line
+ * @return Non-zero if byte matches Indexed Field Line pattern, 0 otherwise
+ *
+ * @since 1.0.0
+ */
+extern int SocketQPACK_is_indexed_field_line (unsigned char byte);
+
+/* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
  */
