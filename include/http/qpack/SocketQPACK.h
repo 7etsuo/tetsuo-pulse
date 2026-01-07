@@ -1123,6 +1123,178 @@ SocketQPACK_lookup_indexed_postbase (SocketQPACK_Table_T table,
 extern bool SocketQPACK_is_indexed_postbase (uint8_t first_byte);
 
 /* ============================================================================
+ * LITERAL FIELD LINE WITH NAME REFERENCE (RFC 9204 Section 4.5.4)
+ * ============================================================================
+ */
+
+/**
+ * @brief Decoded Literal Field Line with Name Reference.
+ *
+ * RFC 9204 Section 4.5.4: Represents a field line where the name is
+ * referenced from the static or dynamic table, and the value is provided
+ * as a literal.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 1 | N | T |Name Index (4+)|
+ * +---+---+---+---+---------------+
+ * | H |     Value Length (7+)     |
+ * +---+---------------------------+
+ * |  Value String (Length bytes)  |
+ * +-------------------------------+
+ */
+typedef struct
+{
+  uint64_t name_index; /**< Index into static or dynamic table */
+  bool is_static;      /**< T bit: true for static table, false for dynamic */
+  bool never_indexed;  /**< N bit: true to prevent intermediary caching */
+  bool value_huffman;  /**< H bit: true if value was Huffman-encoded */
+  const char *value;   /**< Decoded value string */
+  size_t value_len;    /**< Length of value string */
+} SocketQPACK_LiteralNameRef;
+
+/**
+ * @brief Encode Literal Field Line with Name Reference.
+ *
+ * RFC 9204 Section 4.5.4: Encodes a field line where the name is referenced
+ * from the static or dynamic table, and the value is provided as a literal.
+ * The name index uses field-relative indexing for dynamic table references.
+ *
+ * @param output        Output buffer (must not be NULL)
+ * @param output_size   Size of output buffer
+ * @param is_static     True to reference static table, false for dynamic
+ * @param name_index    Index for name lookup (static index or field-relative)
+ * @param never_indexed True to set N bit (prevent intermediary caching)
+ * @param value         Value string (may be NULL if value_len == 0)
+ * @param value_len     Length of value string
+ * @param use_huffman   True to Huffman-encode the value (if beneficial)
+ * @param[out] bytes_written Number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_ERR_TABLE_SIZE if output buffer too small,
+ *         QPACK_ERR_INTEGER if integer encoding failed,
+ *         QPACK_ERR_HUFFMAN if Huffman encoding failed
+ *
+ * @note For static table: name_index is 0-98 (RFC 9204 Appendix A)
+ * @note For dynamic table: name_index is field-relative (0 = Base - 1)
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_literal_name_ref (unsigned char *output,
+                                     size_t output_size,
+                                     bool is_static,
+                                     uint64_t name_index,
+                                     bool never_indexed,
+                                     const unsigned char *value,
+                                     size_t value_len,
+                                     bool use_huffman,
+                                     size_t *bytes_written);
+
+/**
+ * @brief Decode Literal Field Line with Name Reference.
+ *
+ * RFC 9204 Section 4.5.4: Decodes a field line with name reference from
+ * an encoded field section. Validates the bit pattern and extracts the
+ * name index, N bit, T bit, and value.
+ *
+ * @param input         Input buffer containing the encoded field line
+ * @param input_len     Length of input buffer
+ * @param[out] result   Decoded field line (must not be NULL)
+ * @param[out] consumed Number of bytes consumed from input (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if result or consumed is NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_INTEGER if integer decoding failed,
+ *         QPACK_ERR_HUFFMAN if Huffman decoding failed
+ *
+ * @note The value pointer in result points into the input buffer for
+ *       literal values, or to dynamically decoded data for Huffman values.
+ *       For Huffman values, the caller must provide an arena for allocation.
+ * @note First byte must match pattern 01xx (bits 7-6 = 01)
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_literal_name_ref (const unsigned char *input,
+                                     size_t input_len,
+                                     SocketQPACK_LiteralNameRef *result,
+                                     size_t *consumed);
+
+/**
+ * @brief Decode Literal Field Line with Name Reference (with Huffman support).
+ *
+ * RFC 9204 Section 4.5.4: Extended version that provides arena for Huffman
+ * decoding of the value string.
+ *
+ * @param input         Input buffer containing the encoded field line
+ * @param input_len     Length of input buffer
+ * @param arena         Memory arena for Huffman decoding (must not be NULL)
+ * @param[out] result   Decoded field line (must not be NULL)
+ * @param[out] consumed Number of bytes consumed from input (must not be NULL)
+ * @return QPACK_OK on success, error code on failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_literal_name_ref_arena (const unsigned char *input,
+                                           size_t input_len,
+                                           Arena_T arena,
+                                           SocketQPACK_LiteralNameRef *result,
+                                           size_t *consumed);
+
+/**
+ * @brief Validate name index for Literal Field Line with Name Reference.
+ *
+ * RFC 9204 Section 4.5.4: Validates that a name index is valid for use
+ * in a Literal Field Line with Name Reference instruction.
+ *
+ * @param is_static       True if referencing static table
+ * @param name_index      Index to validate (static or field-relative)
+ * @param base            Base value for field-relative indexing
+ * @param dropped_count   Number of evicted entries (for dynamic table)
+ * @return QPACK_OK if index is valid,
+ *         QPACK_ERR_INVALID_INDEX if static index >= 99,
+ *         QPACK_ERR_INVALID_INDEX if dynamic index is out of bounds,
+ *         QPACK_ERR_EVICTED_INDEX if dynamic entry has been evicted
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_validate_literal_name_ref_index (bool is_static,
+                                             uint64_t name_index,
+                                             uint64_t base,
+                                             uint64_t dropped_count);
+
+/**
+ * @brief Resolve name from Literal Field Line with Name Reference.
+ *
+ * RFC 9204 Section 4.5.4: Looks up the name string from the static or
+ * dynamic table based on the decoded name index.
+ *
+ * @param is_static    True if name is in static table
+ * @param name_index   Index from decoded field line (static or field-relative)
+ * @param base         Base value for field-relative indexing
+ * @param table        Dynamic table (may be NULL if is_static is true)
+ * @param[out] name    Output: pointer to name string (must not be NULL)
+ * @param[out] name_len Output: length of name string (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if name or name_len is NULL,
+ *         QPACK_ERR_INVALID_INDEX if index is out of bounds,
+ *         QPACK_ERR_EVICTED_INDEX if dynamic entry has been evicted
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_resolve_literal_name_ref (bool is_static,
+                                      uint64_t name_index,
+                                      uint64_t base,
+                                      SocketQPACK_Table_T table,
+                                      const char **name,
+                                      size_t *name_len);
+
+/* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
  */
