@@ -366,6 +366,7 @@ set(LIB_SOURCES
     src/http/qpack/SocketQPACK-encoder.c
     src/http/qpack/SocketQPACK-decoder-stream.c
     src/http/qpack/SocketQPACK-prefix.c
+    src/http/qpack/SocketQPACK-base.c
 
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
@@ -809,6 +810,7 @@ set(TEST_SOURCES
     test_qpack_insert_literal
     test_qpack_decoder_stream
     test_qpack_prefix
+    test_qpack_base
     test_http_integration
     test_ws_integration
     test_http2_integration
