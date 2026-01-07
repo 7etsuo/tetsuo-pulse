@@ -762,12 +762,303 @@ run_section_ack_tests (void)
   test_write_section_ack_not_init ();
 }
 
+/* ============================================================================
+ * STREAM CANCELLATION DECODE TESTS (RFC 9204 Section 4.4.2)
+ * ============================================================================
+ */
+
+/**
+ * Test decoding single-octet Stream Cancellation (ID < 64).
+ */
+static void
+test_decode_stream_cancel_single_octet (void)
+{
+  SocketQPACK_StreamCancel result;
+  SocketQPACKStream_Result res;
+  size_t consumed;
+  unsigned char input[16];
+
+  printf ("  Decode stream cancel single-octet... ");
+
+  /* Stream ID 0: 01000000 = 0x40 */
+  input[0] = 0x40;
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "decode stream_id=0 succeeds");
+  TEST_ASSERT (result.stream_id == 0, "stream_id=0");
+  TEST_ASSERT (consumed == 1, "consumed=1");
+
+  /* Stream ID 4: 01000100 = 0x44 */
+  input[0] = 0x44;
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "decode stream_id=4 succeeds");
+  TEST_ASSERT (result.stream_id == 4, "stream_id=4");
+  TEST_ASSERT (consumed == 1, "consumed=1");
+
+  /* Stream ID 62: 01111110 = 0x7E (max single-octet value < 63) */
+  input[0] = 0x7E;
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "decode stream_id=62 succeeds");
+  TEST_ASSERT (result.stream_id == 62, "stream_id=62");
+  TEST_ASSERT (consumed == 1, "consumed=1");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test decoding multi-octet Stream Cancellation (ID >= 63).
+ */
+static void
+test_decode_stream_cancel_multi_octet (void)
+{
+  SocketQPACK_StreamCancel result;
+  SocketQPACKStream_Result res;
+  size_t consumed;
+  unsigned char input[16];
+
+  printf ("  Decode stream cancel multi-octet... ");
+
+  /* Stream ID 63: 01111111 00000000 = 0x7F 0x00 */
+  input[0] = 0x7F;
+  input[1] = 0x00;
+  res = SocketQPACK_decode_stream_cancel (input, 2, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "decode stream_id=63 succeeds");
+  TEST_ASSERT (result.stream_id == 63, "stream_id=63");
+  TEST_ASSERT (consumed == 2, "consumed=2");
+
+  /* Stream ID 127: 63 + 64 = 127 -> 0x7F 0x40 */
+  input[0] = 0x7F;
+  input[1] = 0x40;
+  res = SocketQPACK_decode_stream_cancel (input, 2, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "decode stream_id=127 succeeds");
+  TEST_ASSERT (result.stream_id == 127, "stream_id=127");
+  TEST_ASSERT (consumed == 2, "consumed=2");
+
+  /* Stream ID 1000: larger multi-byte encoding */
+  /* Write using encoder, then decode */
+  Arena_T arena = Arena_new ();
+  SocketQPACK_DecoderStream_T stream = SocketQPACK_DecoderStream_new (arena, 3);
+  SocketQPACK_DecoderStream_init (stream);
+
+  SocketQPACK_DecoderStream_write_stream_cancel (stream, 1000);
+  const unsigned char *buf;
+  size_t len;
+  buf = SocketQPACK_DecoderStream_get_buffer (stream, &len);
+  TEST_ASSERT (len >= 2, "multi-byte encoding for 1000");
+
+  res = SocketQPACK_decode_stream_cancel (buf, len, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "decode stream_id=1000 succeeds");
+  TEST_ASSERT (result.stream_id == 1000, "stream_id=1000");
+  TEST_ASSERT (consumed == len, "consumed all bytes");
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
+/**
+ * Test decoding Stream Cancellation with incomplete input.
+ */
+static void
+test_decode_stream_cancel_incomplete (void)
+{
+  SocketQPACK_StreamCancel result;
+  SocketQPACKStream_Result res;
+  size_t consumed;
+  unsigned char input[16];
+
+  printf ("  Decode stream cancel incomplete... ");
+
+  /* Empty input */
+  res = SocketQPACK_decode_stream_cancel (NULL, 0, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_BUFFER_FULL, "empty input fails");
+
+  /* Multi-byte stream ID but only prefix provided */
+  input[0] = 0x7F; /* Prefix full, continuation expected */
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_BUFFER_FULL, "incomplete multi-byte");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test decoding Stream Cancellation NULL parameters.
+ */
+static void
+test_decode_stream_cancel_null_params (void)
+{
+  SocketQPACK_StreamCancel result;
+  SocketQPACKStream_Result res;
+  size_t consumed;
+  unsigned char input[1] = { 0x40 };
+
+  printf ("  Decode stream cancel NULL params... ");
+
+  res = SocketQPACK_decode_stream_cancel (input, 1, NULL, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_NULL_PARAM, "NULL result fails");
+
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, NULL);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_NULL_PARAM, "NULL consumed fails");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test pattern discrimination (not Stream Cancellation).
+ */
+static void
+test_decode_stream_cancel_wrong_pattern (void)
+{
+  SocketQPACK_StreamCancel result;
+  SocketQPACKStream_Result res;
+  size_t consumed;
+  unsigned char input[1];
+
+  printf ("  Decode stream cancel wrong pattern... ");
+
+  /* Section Ack pattern: 1xxxxxxx */
+  input[0] = 0x80;
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_INTERNAL, "section_ack pattern fails");
+
+  /* Insert Count Inc pattern: 00xxxxxx */
+  input[0] = 0x3F;
+  res = SocketQPACK_decode_stream_cancel (input, 1, &result, &consumed);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_INTERNAL, "insert_count pattern fails");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test is_stream_cancel helper.
+ */
+static void
+test_is_stream_cancel (void)
+{
+  printf ("  is_stream_cancel helper... ");
+
+  /* Valid Stream Cancellation patterns */
+  TEST_ASSERT (SocketQPACK_is_stream_cancel (0x40), "0x40 is stream_cancel");
+  TEST_ASSERT (SocketQPACK_is_stream_cancel (0x7F), "0x7F is stream_cancel");
+  TEST_ASSERT (SocketQPACK_is_stream_cancel (0x55), "0x55 is stream_cancel");
+
+  /* Invalid patterns */
+  TEST_ASSERT (!SocketQPACK_is_stream_cancel (0x80), "0x80 is not");
+  TEST_ASSERT (!SocketQPACK_is_stream_cancel (0xFF), "0xFF is not");
+  TEST_ASSERT (!SocketQPACK_is_stream_cancel (0x00), "0x00 is not");
+  TEST_ASSERT (!SocketQPACK_is_stream_cancel (0x3F), "0x3F is not");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test stream_cancel_validate_id.
+ */
+static void
+test_stream_cancel_validate_id (void)
+{
+  SocketQPACKStream_Result res;
+
+  printf ("  Validate stream ID... ");
+
+  /* Stream ID 0 is reserved/invalid */
+  res = SocketQPACK_stream_cancel_validate_id (0);
+  TEST_ASSERT (res == QPACK_STREAM_ERR_INVALID_INDEX, "stream_id=0 invalid");
+
+  /* Valid stream IDs */
+  res = SocketQPACK_stream_cancel_validate_id (1);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "stream_id=1 valid");
+
+  res = SocketQPACK_stream_cancel_validate_id (100);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "stream_id=100 valid");
+
+  res = SocketQPACK_stream_cancel_validate_id (UINT64_MAX);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "large stream_id valid");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test stream_cancel_release_refs.
+ */
+static void
+test_stream_cancel_release_refs (void)
+{
+  SocketQPACKStream_Result res;
+
+  printf ("  Release refs... ");
+
+  /* NULL table is valid (no dynamic table configured) */
+  res = SocketQPACK_stream_cancel_release_refs (NULL, 5);
+  TEST_ASSERT (res == QPACK_STREAM_OK, "NULL table succeeds");
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test roundtrip encode/decode.
+ */
+static void
+test_stream_cancel_roundtrip (void)
+{
+  Arena_T arena;
+  SocketQPACK_DecoderStream_T stream;
+  SocketQPACK_StreamCancel result;
+  SocketQPACKStream_Result res;
+  const unsigned char *buf;
+  size_t len, consumed;
+
+  printf ("  Roundtrip encode/decode... ");
+
+  arena = Arena_new ();
+  stream = SocketQPACK_DecoderStream_new (arena, 3);
+  SocketQPACK_DecoderStream_init (stream);
+
+  /* Test various stream IDs */
+  uint64_t test_ids[] = { 0, 1, 62, 63, 100, 1000, 10000, 100000 };
+  size_t num_ids = sizeof (test_ids) / sizeof (test_ids[0]);
+
+  for (size_t i = 0; i < num_ids; i++)
+    {
+      SocketQPACK_DecoderStream_reset_buffer (stream);
+
+      /* Encode */
+      res = SocketQPACK_DecoderStream_write_stream_cancel (stream, test_ids[i]);
+      TEST_ASSERT (res == QPACK_STREAM_OK, "encode succeeds");
+
+      buf = SocketQPACK_DecoderStream_get_buffer (stream, &len);
+      TEST_ASSERT (buf != NULL && len > 0, "buffer has data");
+
+      /* Decode */
+      res = SocketQPACK_decode_stream_cancel (buf, len, &result, &consumed);
+      TEST_ASSERT (res == QPACK_STREAM_OK, "decode succeeds");
+      TEST_ASSERT (result.stream_id == test_ids[i], "roundtrip matches");
+      TEST_ASSERT (consumed == len, "all bytes consumed");
+    }
+
+  Arena_dispose (&arena);
+  printf ("PASS\n");
+}
+
 static void
 run_stream_cancel_tests (void)
 {
   printf ("Stream Cancellation Tests (RFC 9204 Section 4.4.2):\n");
   test_write_stream_cancel_basic ();
   test_write_stream_cancel_not_init ();
+}
+
+static void
+run_stream_cancel_decode_tests (void)
+{
+  printf ("Stream Cancellation Decode Tests (RFC 9204 Section 4.4.2):\n");
+  test_decode_stream_cancel_single_octet ();
+  test_decode_stream_cancel_multi_octet ();
+  test_decode_stream_cancel_incomplete ();
+  test_decode_stream_cancel_null_params ();
+  test_decode_stream_cancel_wrong_pattern ();
+  test_is_stream_cancel ();
+  test_stream_cancel_validate_id ();
+  test_stream_cancel_release_refs ();
+  test_stream_cancel_roundtrip ();
 }
 
 static void
@@ -811,6 +1102,9 @@ main (void)
   printf ("\n");
 
   run_stream_cancel_tests ();
+  printf ("\n");
+
+  run_stream_cancel_decode_tests ();
   printf ("\n");
 
   run_insert_count_inc_tests ();
