@@ -821,6 +821,10 @@ set(TEST_SOURCES
     test_qpack_literal_name_ref
     test_qpack_literal_postbase
     test_qpack_field_literal
+    test_qpack_field_section_integration
+    test_qpack_sync_integration
+    test_qpack_http3_integration
+    test_qpack_error_integration
     test_http_integration
     test_ws_integration
     test_http2_integration
