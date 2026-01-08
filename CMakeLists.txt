@@ -368,6 +368,7 @@ set(LIB_SOURCES
     src/http/qpack/SocketQPACK-prefix.c
     src/http/qpack/SocketQPACK-base.c
     src/http/qpack/SocketQPACK-representation.c
+    src/http/qpack/SocketQPACK-indexed.c
 
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
@@ -812,11 +813,16 @@ set(TEST_SOURCES
     test_qpack_decoder_stream
     test_qpack_prefix
 <<<<<<< HEAD
+<<<<<<< HEAD
     test_qpack_base
 ||||||| parent of 3c615e83 (feat(qpack): implement RFC 9204 Section 4.5.2 - Indexed Field Line)
 =======
     test_qpack_indexed_field
 >>>>>>> 3c615e83 (feat(qpack): implement RFC 9204 Section 4.5.2 - Indexed Field Line)
+||||||| parent of 6bf255fd (feat(qpack): implement RFC 9204 Section 4.5.3 - Indexed Field Line with Post-Base Index)
+=======
+    test_qpack_indexed_postbase
+>>>>>>> 6bf255fd (feat(qpack): implement RFC 9204 Section 4.5.3 - Indexed Field Line with Post-Base Index)
     test_http_integration
     test_ws_integration
     test_http2_integration

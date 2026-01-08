@@ -977,6 +977,152 @@ SocketQPACK_resolve_indexed_field (uint64_t index,
 extern int SocketQPACK_is_indexed_field_line (unsigned char byte);
 
 /* ============================================================================
+ * INDEXED FIELD LINE WITH POST-BASE INDEX (RFC 9204 Section 4.5.3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode Indexed Field Line with Post-Base Index.
+ *
+ * RFC 9204 Section 4.5.3: Encodes a field line that references a dynamic
+ * table entry using a post-base index. The entry must have been inserted
+ * at or after the Base value for this field section.
+ *
+ * Wire format:
+ *   0   1   2   3   4   5   6   7
+ * +---+---+---+---+---+---+---+---+
+ * | 0 | 0 | 0 | 1 |  Index (4+)   |
+ * +---+---+---+---+---------------+
+ *
+ * @param post_base_index  Post-base index to encode (0 = entry at Base)
+ * @param output           Output buffer (must not be NULL)
+ * @param output_size      Size of output buffer
+ * @param[out] bytes_written Number of bytes written (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output or bytes_written is NULL,
+ *         QPACK_ERR_TABLE_SIZE if output buffer too small,
+ *         QPACK_ERR_INTEGER if integer encoding failed
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_indexed_postbase (uint64_t post_base_index,
+                                     unsigned char *output,
+                                     size_t output_size,
+                                     size_t *bytes_written);
+
+/**
+ * @brief Decode Indexed Field Line with Post-Base Index.
+ *
+ * RFC 9204 Section 4.5.3: Decodes a field line that references a dynamic
+ * table entry using a post-base index. The caller must verify the pattern
+ * bits (0001) before calling this function.
+ *
+ * @param input             Input buffer (must not be NULL if input_len > 0)
+ * @param input_len         Length of input buffer
+ * @param[out] post_base_index Output: decoded post-base index (must not be NULL)
+ * @param[out] bytes_consumed  Output: bytes consumed from input (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if output params are NULL,
+ *         QPACK_INCOMPLETE if more data needed,
+ *         QPACK_ERR_INVALID_INDEX if pattern bits are not 0001,
+ *         QPACK_ERR_INTEGER if integer decoding failed
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_indexed_postbase (const unsigned char *input,
+                                     size_t input_len,
+                                     uint64_t *post_base_index,
+                                     size_t *bytes_consumed);
+
+/**
+ * @brief Validate post-base index for indexed field line.
+ *
+ * RFC 9204 Section 4.5.3: Validates that a post-base index is within
+ * the valid range. The absolute index (base + post_base_index) must be
+ * less than the current Insert Count.
+ *
+ * @param base             Base value for the field section
+ * @param insert_count     Current Insert Count (total entries inserted)
+ * @param post_base_index  Post-base index to validate
+ * @return QPACK_OK if valid,
+ *         QPACK_ERR_INVALID_INDEX if overflow would occur,
+ *         QPACK_ERR_FUTURE_INDEX if absolute index >= insert_count
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_validate_indexed_postbase (uint64_t base,
+                                       uint64_t insert_count,
+                                       uint64_t post_base_index);
+
+/**
+ * @brief Convert post-base index to absolute index.
+ *
+ * RFC 9204 Section 3.2.6: Converts a post-base index to the corresponding
+ * absolute index in the dynamic table.
+ *
+ * Formula: absolute = base + post_base_index
+ *
+ * @param base               Base value for the field section
+ * @param post_base_index    Post-base index to convert
+ * @param[out] absolute_index Output: resulting absolute index (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if absolute_index is NULL,
+ *         QPACK_ERR_INVALID_INDEX if overflow would occur
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_indexed_postbase_to_absolute (uint64_t base,
+                                          uint64_t post_base_index,
+                                          uint64_t *absolute_index);
+
+/**
+ * @brief Look up dynamic table entry using post-base index.
+ *
+ * RFC 9204 Section 4.5.3: High-level function that validates the post-base
+ * index, converts it to an absolute index, and retrieves the corresponding
+ * entry from the dynamic table.
+ *
+ * @param table             Dynamic table (must not be NULL)
+ * @param base              Base value for the field section
+ * @param post_base_index   Post-base index to look up
+ * @param[out] name         Output: pointer to name (must not be NULL)
+ * @param[out] name_len     Output: name length (must not be NULL)
+ * @param[out] value        Output: pointer to value (must not be NULL)
+ * @param[out] value_len    Output: value length (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if any parameter is NULL,
+ *         QPACK_ERR_FUTURE_INDEX if post-base index >= (insert_count - base),
+ *         QPACK_ERR_INVALID_INDEX if index out of range,
+ *         QPACK_ERR_EVICTED_INDEX if entry has been evicted
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_lookup_indexed_postbase (SocketQPACK_Table_T table,
+                                     uint64_t base,
+                                     uint64_t post_base_index,
+                                     const char **name,
+                                     size_t *name_len,
+                                     const char **value,
+                                     size_t *value_len);
+
+/**
+ * @brief Check if first byte matches Indexed Field Line with Post-Base Index.
+ *
+ * RFC 9204 Section 4.5.3: Identifies the pattern 0001xxxx in the first byte.
+ *
+ * @param first_byte First byte of the encoded field line
+ * @return true if pattern matches 0001xxxx, false otherwise
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_is_indexed_postbase (uint8_t first_byte);
+
+/* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
  */
