@@ -702,6 +702,94 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_validate_prefix (
  */
 extern uint64_t SocketQPACK_compute_max_entries (uint64_t max_table_capacity);
 
+/**
+ * @brief Alias for SocketQPACK_compute_max_entries.
+ *
+ * Provided for symmetry with RFC 9204 Section 4.5.1.1 naming.
+ *
+ * @param max_table_capacity Maximum table capacity in bytes
+ * @return MaxEntries = floor(MaxTableCapacity / 32)
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_max_entries (uint64_t max_table_capacity);
+
+/* ============================================================================
+ * REQUIRED INSERT COUNT ENCODING (RFC 9204 Section 4.5.1.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Encode Required Insert Count for Field Section Prefix.
+ *
+ * RFC 9204 Section 4.5.1.1: Encodes the Required Insert Count (RIC) using
+ * modular arithmetic to reduce the encoded value's size.
+ *
+ * Algorithm:
+ *   - If RIC == 0: EncodedRIC = 0
+ *   - Otherwise: EncodedRIC = (RIC mod (2 * MaxEntries)) + 1
+ *
+ * where MaxEntries = floor(MaxTableCapacity / 32).
+ *
+ * @param required_insert_count Required Insert Count to encode
+ * @param max_entries           MaxEntries value (from max table capacity / 32)
+ * @param[out] encoded_ric      Output: encoded value (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if encoded_ric is NULL,
+ *         QPACK_ERR_TABLE_SIZE if max_entries is 0 and RIC is non-zero
+ *
+ * @note The encoded value is suitable for QPACK integer encoding with an
+ *       8-bit prefix.
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_required_insert_count (uint64_t required_insert_count,
+                                          uint64_t max_entries,
+                                          uint64_t *encoded_ric);
+
+/**
+ * @brief Decode Required Insert Count from Field Section Prefix.
+ *
+ * RFC 9204 Section 4.5.1.1: Decodes the Required Insert Count (RIC) from
+ * its encoded form using the wrap-around recovery algorithm.
+ *
+ * Algorithm:
+ *   - If EncodedRIC == 0: RIC = 0
+ *   - Otherwise:
+ *       FullRange = 2 * MaxEntries
+ *       MaxValue = TotalNumberOfInserts + MaxEntries
+ *       MaxWrapped = floor(MaxValue / FullRange) * FullRange
+ *       RIC = MaxWrapped + EncodedRIC - 1
+ *       If RIC > MaxValue:
+ *         If RIC <= FullRange: ERROR (invalid)
+ *         RIC -= FullRange
+ *       If RIC == 0: ERROR (invalid state)
+ *
+ * @param encoded_ric             Encoded Required Insert Count value
+ * @param max_entries             MaxEntries value (from max table capacity /
+ * 32)
+ * @param total_insert_count      Decoder's current total Insert Count
+ * @param[out] required_insert_count Output: decoded RIC (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if required_insert_count is NULL,
+ *         QPACK_ERR_TABLE_SIZE if max_entries is 0 and encoded_ric is non-zero,
+ *         QPACK_ERR_DECOMPRESSION if:
+ *           - EncodedRIC > FullRange (invalid encoding)
+ *           - Decoded RIC == 0 after unwrapping (invalid state)
+ *           - RIC > MaxValue but RIC <= FullRange (impossible wrap)
+ *           - RIC > total_insert_count (references future entries)
+ *
+ * @note This function performs full validation per RFC 9204 Section 4.5.1.1.
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_decode_required_insert_count (uint64_t encoded_ric,
+                                          uint64_t max_entries,
+                                          uint64_t total_insert_count,
+                                          uint64_t *required_insert_count);
+
 /* ============================================================================
  * UTILITY FUNCTIONS
  * ============================================================================
