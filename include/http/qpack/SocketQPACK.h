@@ -94,7 +94,8 @@ typedef enum
   QPACK_ERR_INTEGER,       /**< Integer decoding error */
   QPACK_ERR_DECOMPRESSION, /**< Decompression failed (bomb protection) */
   QPACK_ERR_NULL_PARAM,    /**< NULL parameter passed to function */
-  QPACK_ERR_INTERNAL       /**< Internal error */
+  QPACK_ERR_INTERNAL,      /**< Internal error */
+  QPACK_ERR_INVALID_BASE   /**< Invalid Base calculation (Section 4.5.1.2) */
 } SocketQPACK_Result;
 
 /* ============================================================================
@@ -789,6 +790,88 @@ SocketQPACK_decode_required_insert_count (uint64_t encoded_ric,
                                           uint64_t max_entries,
                                           uint64_t total_insert_count,
                                           uint64_t *required_insert_count);
+
+/* ============================================================================
+ * BASE ENCODING (RFC 9204 Section 4.5.1.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Calculate Base from Sign bit, Required Insert Count, and Delta Base.
+ *
+ * RFC 9204 Section 4.5.1.2: Computes the Base value used for relative
+ * indexing in field sections. The formula depends on the Sign bit:
+ *
+ *   - Sign = 0 (positive): Base = ReqInsertCount + DeltaBase
+ *   - Sign = 1 (negative): Base = ReqInsertCount - DeltaBase - 1
+ *
+ * @param sign              Sign bit (0 or 1)
+ * @param req_insert_count  Required Insert Count from prefix
+ * @param delta_base        Delta Base value (7-bit prefix variable integer)
+ * @param[out] base_out     Output: computed Base value (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if base_out is NULL,
+ *         QPACK_ERR_INVALID_BASE if Sign=1 and ReqInsertCount <= DeltaBase,
+ *         QPACK_ERR_BASE_OVERFLOW if overflow would occur
+ *
+ * @note For Sign=1 (negative delta), ReqInsertCount MUST be > DeltaBase
+ *       to ensure Base >= 0.
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_calculate_base (int sign,
+                            uint64_t req_insert_count,
+                            uint64_t delta_base,
+                            uint64_t *base_out);
+
+/**
+ * @brief Validate Base calculation constraints.
+ *
+ * RFC 9204 Section 4.5.1.2: Validates that the Sign bit and Delta Base
+ * values are consistent with the Required Insert Count, ensuring the
+ * resulting Base value is non-negative.
+ *
+ * Validation rules:
+ *   - If Sign = 1 (negative delta): ReqInsertCount MUST be > DeltaBase
+ *   - Base value MUST be non-negative (always true for uint64_t)
+ *   - No overflow in Base calculation
+ *
+ * @param sign              Sign bit (0 or 1)
+ * @param req_insert_count  Required Insert Count from prefix
+ * @param delta_base        Delta Base value
+ * @return QPACK_OK if valid,
+ *         QPACK_ERR_INVALID_BASE if constraints violated
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_validate_base (
+    int sign, uint64_t req_insert_count, uint64_t delta_base);
+
+/**
+ * @brief Encode Base as Delta Base with Sign bit for field section prefix.
+ *
+ * RFC 9204 Section 4.5.1.2: Computes the Sign bit and Delta Base value
+ * that will encode the given Base relative to Required Insert Count.
+ *
+ * Encoding rules:
+ *   - If Base >= ReqInsertCount: Sign = 0, DeltaBase = Base - ReqInsertCount
+ *   - If Base < ReqInsertCount: Sign = 1, DeltaBase = ReqInsertCount - Base - 1
+ *
+ * @param req_insert_count  Required Insert Count for the field section
+ * @param base              Absolute Base value to encode
+ * @param[out] sign_out     Output: Sign bit (0 or 1, must not be NULL)
+ * @param[out] delta_out    Output: Delta Base value (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if sign_out or delta_out is NULL
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_encode_base (uint64_t req_insert_count,
+                         uint64_t base,
+                         int *sign_out,
+                         uint64_t *delta_out);
 
 /* ============================================================================
  * UTILITY FUNCTIONS

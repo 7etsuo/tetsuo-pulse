@@ -50,6 +50,7 @@ SocketQPACK_result_string (SocketQPACK_Result result)
     [QPACK_ERR_DECOMPRESSION] = "Decompression failed",
     [QPACK_ERR_NULL_PARAM] = "NULL parameter passed to function",
     [QPACK_ERR_INTERNAL] = "Internal error",
+    [QPACK_ERR_INVALID_BASE] = "Invalid Base calculation",
   };
 
   if (result >= 0 && (size_t)result < ARRAY_LENGTH (strings))
