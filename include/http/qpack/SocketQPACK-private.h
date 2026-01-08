@@ -32,6 +32,15 @@
 /** Minimum dynamic table capacity (entries, power of 2) */
 #define QPACK_MIN_TABLE_CAPACITY 16
 
+/** Default maximum blocked stream bytes (total queued across all streams) */
+#define QPACK_DEFAULT_MAX_BLOCKED_BYTES (256 * 1024)
+
+/** Initial capacity for blocked streams array */
+#define QPACK_BLOCKED_INITIAL_CAPACITY 8
+
+/** Maximum blocked sections per stream */
+#define QPACK_MAX_SECTIONS_PER_STREAM 64
+
 /* ============================================================================
  * FIELD LINE INSTRUCTION PATTERNS (RFC 9204 Section 4.5)
  *
@@ -158,5 +167,82 @@ qpack_entry_size (size_t name_len, size_t value_len)
     }
   return SIZE_MAX;
 }
+
+/* ============================================================================
+ * BLOCKED STREAM MANAGEMENT (RFC 9204 Sections 2.1.2, 2.2.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Queued field section waiting for dynamic table entries.
+ * @internal
+ *
+ * RFC 9204 Section 2.2.1: When the Required Insert Count > Insert Count,
+ * the field section cannot be decoded immediately and must be queued.
+ */
+typedef struct
+{
+  uint64_t required_insert_count; /**< RIC needed to decode this section */
+  unsigned char *data;            /**< Compressed field section bytes */
+  size_t data_len;                /**< Length of compressed data */
+  size_t data_alloc;              /**< Allocated capacity for data */
+} SocketQPACK_BlockedSection;
+
+/**
+ * @brief Blocked stream state (decoder-side).
+ * @internal
+ *
+ * RFC 9204 Section 2.2.1: Tracks all blocked field sections for a single
+ * HTTP/3 stream. Sections are processed in FIFO order when unblocked.
+ */
+typedef struct
+{
+  uint64_t stream_id;                   /**< HTTP/3 stream identifier */
+  SocketQPACK_BlockedSection *sections; /**< Array of blocked sections */
+  size_t section_count;                 /**< Number of blocked sections */
+  size_t section_alloc;                 /**< Allocated capacity */
+  size_t total_bytes;                   /**< Total bytes across all sections */
+  uint64_t min_required_insert_count;   /**< Minimum RIC across sections */
+} SocketQPACK_BlockedStream;
+
+/**
+ * @brief Blocked stream manager (decoder-side).
+ * @internal
+ *
+ * RFC 9204 Section 2.2.1: Manages all blocked streams for a QPACK decoder.
+ * Provides O(1) lookup by stream ID and efficient unblocking when the
+ * dynamic table insert count advances.
+ */
+struct SocketQPACK_BlockedManager
+{
+  Arena_T arena; /**< Memory arena for allocations */
+
+  /* Blocked stream tracking */
+  SocketQPACK_BlockedStream *streams; /**< Array of blocked streams */
+  size_t stream_count;                /**< Number of blocked streams */
+  size_t stream_alloc;                /**< Allocated capacity */
+
+  /* Resource limits (RFC 9204 Section 5) */
+  size_t max_blocked_streams; /**< SETTINGS_QPACK_BLOCKED_STREAMS */
+  size_t max_blocked_bytes;   /**< Maximum total bytes in queues */
+  size_t total_blocked_bytes; /**< Current total bytes queued */
+
+  /* Statistics */
+  uint64_t peak_blocked_count;  /**< Peak number of blocked streams */
+  uint64_t total_unblock_count; /**< Total times streams unblocked */
+};
+
+/**
+ * @brief Encoder-side blocked stream tracking.
+ * @internal
+ *
+ * RFC 9204 Section 2.1.2: Encoder must track streams that would become
+ * blocked if the referenced dynamic table entries aren't acknowledged.
+ */
+typedef struct
+{
+  uint64_t stream_id;             /**< Stream that references dynamic entry */
+  uint64_t required_insert_count; /**< RIC of the blocking entry */
+} SocketQPACK_EncoderBlockedRef;
 
 #endif /* SOCKETQPACK_PRIVATE_INCLUDED */

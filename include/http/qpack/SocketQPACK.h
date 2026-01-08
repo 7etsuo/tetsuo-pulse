@@ -1020,8 +1020,10 @@ SocketQPACK_encode_indexed_postbase (uint64_t post_base_index,
  *
  * @param input             Input buffer (must not be NULL if input_len > 0)
  * @param input_len         Length of input buffer
- * @param[out] post_base_index Output: decoded post-base index (must not be NULL)
- * @param[out] bytes_consumed  Output: bytes consumed from input (must not be NULL)
+ * @param[out] post_base_index Output: decoded post-base index (must not be
+ * NULL)
+ * @param[out] bytes_consumed  Output: bytes consumed from input (must not be
+ * NULL)
  * @return QPACK_OK on success,
  *         QPACK_ERR_NULL_PARAM if output params are NULL,
  *         QPACK_INCOMPLETE if more data needed,
@@ -1067,7 +1069,8 @@ SocketQPACK_validate_indexed_postbase (uint64_t base,
  *
  * @param base               Base value for the field section
  * @param post_base_index    Post-base index to convert
- * @param[out] absolute_index Output: resulting absolute index (must not be NULL)
+ * @param[out] absolute_index Output: resulting absolute index (must not be
+ * NULL)
  * @return QPACK_OK on success,
  *         QPACK_ERR_NULL_PARAM if absolute_index is NULL,
  *         QPACK_ERR_INVALID_INDEX if overflow would occur
@@ -1600,6 +1603,253 @@ SocketQPACK_resolve_postbase_name (SocketQPACK_Table_T table,
                                    uint64_t post_base_idx,
                                    const char **name,
                                    size_t *name_len);
+
+/* ============================================================================
+ * BLOCKED STREAM MANAGEMENT (RFC 9204 Sections 2.1.2, 2.2.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Opaque type for blocked stream manager.
+ *
+ * RFC 9204 Section 2.2.1: Manages blocked field sections for a QPACK decoder.
+ */
+typedef struct SocketQPACK_BlockedManager *SocketQPACK_BlockedManager_T;
+
+/**
+ * @brief Blocked stream management result codes.
+ *
+ * Extended result codes specific to blocked stream operations.
+ */
+typedef enum
+{
+  QPACK_BLOCKED_OK = 0,         /**< Operation successful */
+  QPACK_BLOCKED_WOULD_BLOCK,    /**< Stream would block (RIC > insert count) */
+  QPACK_BLOCKED_LIMIT_STREAMS,  /**< max_blocked_streams limit exceeded */
+  QPACK_BLOCKED_LIMIT_BYTES,    /**< max_blocked_bytes limit exceeded */
+  QPACK_BLOCKED_ERR_NULL_PARAM, /**< NULL parameter passed */
+  QPACK_BLOCKED_ERR_NOT_FOUND,  /**< Stream not found in blocked queue */
+  QPACK_BLOCKED_ERR_INTERNAL,   /**< Internal error */
+  QPACK_BLOCKED_ERR_INVALID_RIC /**< Invalid Required Insert Count */
+} SocketQPACK_BlockedResult;
+
+/**
+ * @brief Configuration for blocked stream manager.
+ *
+ * RFC 9204 Section 5: Configuration limits for blocked stream management.
+ */
+typedef struct
+{
+  size_t
+      max_blocked_streams; /**< SETTINGS_QPACK_BLOCKED_STREAMS (default: 100) */
+  size_t max_blocked_bytes; /**< Max total bytes in blocked queues */
+} SocketQPACK_BlockedConfig;
+
+/**
+ * @brief Callback for processing unblocked field sections.
+ *
+ * Called when a blocked field section becomes unblocked due to the
+ * dynamic table insert count advancing.
+ *
+ * @param stream_id  HTTP/3 stream ID of the unblocked field section
+ * @param data       Compressed field section data
+ * @param data_len   Length of compressed data
+ * @param ric        Required Insert Count for this section
+ * @param user_data  User-provided callback context
+ * @return 0 on success, non-zero to stop processing further sections
+ */
+typedef int (*SocketQPACK_UnblockCallback) (uint64_t stream_id,
+                                            const unsigned char *data,
+                                            size_t data_len,
+                                            uint64_t ric,
+                                            void *user_data);
+
+/**
+ * @brief Create a new blocked stream manager.
+ *
+ * RFC 9204 Section 2.2.1: Creates a manager for tracking blocked streams
+ * in a QPACK decoder. The manager handles queueing, unblocking, and
+ * resource limits.
+ *
+ * @param arena  Memory arena for allocations (must not be NULL)
+ * @param config Configuration for limits (NULL for defaults)
+ * @return New blocked manager instance, or NULL on allocation failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_BlockedManager_T
+SocketQPACK_BlockedManager_new (Arena_T arena,
+                                const SocketQPACK_BlockedConfig *config);
+
+/**
+ * @brief Test if a field section would block.
+ *
+ * RFC 9204 Section 2.2.1: Determines if decoding a field section with
+ * the given Required Insert Count would block, based on the current
+ * Insert Count.
+ *
+ * @param required_insert_count RIC from field section prefix
+ * @param current_insert_count  Decoder's current Insert Count
+ * @return true if RIC > current_insert_count (would block), false otherwise
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_would_block (uint64_t required_insert_count,
+                                     uint64_t current_insert_count);
+
+/**
+ * @brief Queue a field section for a blocked stream.
+ *
+ * RFC 9204 Section 2.2.1: Queues compressed field section data when the
+ * Required Insert Count > Insert Count. The data is copied and stored
+ * until the insert count advances sufficiently.
+ *
+ * @param manager    Blocked stream manager (must not be NULL)
+ * @param stream_id  HTTP/3 stream ID for this field section
+ * @param ric        Required Insert Count from prefix
+ * @param data       Compressed field section data (must not be NULL if len > 0)
+ * @param data_len   Length of compressed data
+ * @return QPACK_BLOCKED_OK on success,
+ *         QPACK_BLOCKED_LIMIT_STREAMS if max_blocked_streams exceeded,
+ *         QPACK_BLOCKED_LIMIT_BYTES if max_blocked_bytes exceeded,
+ *         QPACK_BLOCKED_ERR_NULL_PARAM if manager is NULL,
+ *         QPACK_BLOCKED_ERR_INTERNAL on allocation failure
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_BlockedResult
+SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
+                           uint64_t stream_id,
+                           uint64_t ric,
+                           const unsigned char *data,
+                           size_t data_len);
+
+/**
+ * @brief Process all unblocked streams.
+ *
+ * RFC 9204 Section 2.2.1: Checks all blocked streams and processes those
+ * whose Required Insert Count is now <= the current Insert Count. Invokes
+ * the callback for each unblocked field section in FIFO order per stream.
+ *
+ * @param manager              Blocked stream manager (must not be NULL)
+ * @param current_insert_count Decoder's current Insert Count
+ * @param callback             Callback for processing unblocked sections
+ * @param user_data            User context passed to callback
+ * @param[out] unblocked_count Output: number of sections unblocked (may be
+ * NULL)
+ * @return QPACK_BLOCKED_OK on success,
+ *         QPACK_BLOCKED_ERR_NULL_PARAM if manager or callback is NULL,
+ *         QPACK_BLOCKED_ERR_INTERNAL on callback failure
+ *
+ * @note This function should be called after each dynamic table insert
+ *       to trigger automatic unblocking.
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_BlockedResult
+SocketQPACK_process_unblocked (SocketQPACK_BlockedManager_T manager,
+                               uint64_t current_insert_count,
+                               SocketQPACK_UnblockCallback callback,
+                               void *user_data,
+                               size_t *unblocked_count);
+
+/**
+ * @brief Cancel a blocked stream.
+ *
+ * RFC 9204 Section 4.4.2: Removes all queued field sections for a stream.
+ * Called when an HTTP/3 stream is cancelled or reset.
+ *
+ * @param manager   Blocked stream manager (must not be NULL)
+ * @param stream_id HTTP/3 stream ID to cancel
+ * @return QPACK_BLOCKED_OK on success (even if stream was not blocked),
+ *         QPACK_BLOCKED_ERR_NULL_PARAM if manager is NULL
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_BlockedResult
+SocketQPACK_cancel_blocked_stream (SocketQPACK_BlockedManager_T manager,
+                                   uint64_t stream_id);
+
+/**
+ * @brief Get the current count of blocked streams.
+ *
+ * @param manager Blocked stream manager
+ * @return Number of streams currently blocked, 0 if manager is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t
+SocketQPACK_get_blocked_stream_count (SocketQPACK_BlockedManager_T manager);
+
+/**
+ * @brief Get the total bytes queued across all blocked streams.
+ *
+ * @param manager Blocked stream manager
+ * @return Total bytes in blocked queues, 0 if manager is NULL
+ *
+ * @since 1.0.0
+ */
+extern size_t
+SocketQPACK_get_blocked_bytes (SocketQPACK_BlockedManager_T manager);
+
+/**
+ * @brief Get the peak blocked stream count (for monitoring).
+ *
+ * @param manager Blocked stream manager
+ * @return Peak number of simultaneously blocked streams, 0 if manager is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_get_peak_blocked_count (SocketQPACK_BlockedManager_T manager);
+
+/**
+ * @brief Get the total unblock count (for monitoring).
+ *
+ * @param manager Blocked stream manager
+ * @return Total number of field sections unblocked, 0 if manager is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_get_total_unblock_count (SocketQPACK_BlockedManager_T manager);
+
+/**
+ * @brief Check if a specific stream is currently blocked.
+ *
+ * @param manager   Blocked stream manager
+ * @param stream_id HTTP/3 stream ID to check
+ * @return true if stream has queued blocked sections, false otherwise
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_is_stream_blocked (SocketQPACK_BlockedManager_T manager,
+                                           uint64_t stream_id);
+
+/**
+ * @brief Get the minimum Required Insert Count across all blocked streams.
+ *
+ * Used to determine the earliest insert count that would unblock at least
+ * one stream.
+ *
+ * @param manager Blocked stream manager
+ * @return Minimum RIC across all blocked sections, or 0 if no streams blocked
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_get_min_blocked_ric (SocketQPACK_BlockedManager_T manager);
+
+/**
+ * @brief Get human-readable string for blocked result code.
+ *
+ * @param result Result code to describe
+ * @return Static string describing the result (never NULL)
+ *
+ * @since 1.0.0
+ */
+extern const char *
+SocketQPACK_blocked_result_string (SocketQPACK_BlockedResult result);
 
 /** @} */
 
