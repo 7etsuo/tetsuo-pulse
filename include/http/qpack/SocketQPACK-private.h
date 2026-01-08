@@ -68,6 +68,7 @@
 #define QPACK_FIELD_LITERAL_NEVER_INDEX 0x10     /**< N bit (never index) */
 #define QPACK_FIELD_LITERAL_NAME_HUFFMAN 0x08    /**< H bit for name */
 #define QPACK_FIELD_LITERAL_NAME_PREFIX 3        /**< Name length prefix bits */
+#define QPACK_FIELD_LITERAL_NAME_PREFIX_MASK 0x07 /**< Lower 3 bits for prefix */
 #define QPACK_FIELD_LITERAL_VALUE_HUFFMAN 0x80   /**< H bit for value */
 #define QPACK_FIELD_LITERAL_VALUE_PREFIX 7 /**< Value length prefix bits */
 

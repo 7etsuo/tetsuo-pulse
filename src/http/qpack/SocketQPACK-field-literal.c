@@ -147,7 +147,8 @@ SocketQPACK_encode_literal_field_literal_name (unsigned char *output,
     first_byte |= QPACK_FIELD_LITERAL_NAME_HUFFMAN; /* H bit */
 
   /* Merge flags with the encoded integer (integer encoding uses lower bits) */
-  output[offset] = (output[offset] & 0x07) | first_byte;
+  output[offset]
+      = (output[offset] & QPACK_FIELD_LITERAL_NAME_PREFIX_MASK) | first_byte;
 
   offset += prefix_len;
 

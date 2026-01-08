@@ -444,8 +444,12 @@ decode_literal_name_ref_internal (const unsigned char *input,
       /* Huffman-decode the value */
       if (arena == NULL)
         {
-          /* No arena provided - cannot decode Huffman */
-          /* Point to raw data and let caller handle it */
+          /*
+           * No arena provided - cannot decode Huffman.
+           * Point to raw Huffman data; caller must copy/decode separately.
+           * LIFETIME: result->value points into input buffer; caller must
+           * keep input buffer valid for the lifetime of result.
+           */
           result->value = (const char *)(input + pos);
           result->value_len = value_len;
         }
@@ -474,7 +478,11 @@ decode_literal_name_ref_internal (const unsigned char *input,
     }
   else
     {
-      /* Literal value - point directly into input buffer */
+      /*
+       * Literal value - point directly into input buffer.
+       * LIFETIME: result->value points into input buffer; caller must
+       * keep input buffer valid for the lifetime of result.
+       */
       result->value = (const char *)(input + pos);
       result->value_len = value_len;
     }
