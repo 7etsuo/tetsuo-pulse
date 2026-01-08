@@ -36,7 +36,7 @@
 const char *
 SocketQPACK_result_string (SocketQPACK_Result result)
 {
-  static const char *const strings[] = {
+  static const char *const strings[QPACK_RESULT_COUNT] = {
     [QPACK_OK] = "OK",
     [QPACK_INCOMPLETE] = "Incomplete data",
     [QPACK_ERR_INVALID_INDEX] = "Invalid index",
@@ -51,12 +51,82 @@ SocketQPACK_result_string (SocketQPACK_Result result)
     [QPACK_ERR_NULL_PARAM] = "NULL parameter passed to function",
     [QPACK_ERR_INTERNAL] = "Internal error",
     [QPACK_ERR_INVALID_BASE] = "Invalid Base calculation",
+    [QPACK_ERR_0RTT_MISMATCH] = "0-RTT settings mismatch",
   };
 
-  if (result >= 0 && (size_t)result < ARRAY_LENGTH (strings))
+  if (result >= 0 && (size_t)result < QPACK_RESULT_COUNT)
     return strings[result];
 
   return "Unknown error";
+}
+
+/* ============================================================================
+ * HTTP/3 ERROR CODE MAPPING (RFC 9204 Section 6)
+ * ============================================================================
+ */
+
+uint64_t
+SocketQPACK_result_to_h3_error (SocketQPACK_Result result)
+{
+  /*
+   * RFC 9204 Section 6 defines three QPACK-specific HTTP/3 error codes:
+   * - QPACK_DECOMPRESSION_FAILED (0x0200): Decoder failed to interpret
+   *   an encoded field section
+   * - QPACK_ENCODER_STREAM_ERROR (0x0201): Decoder failed to interpret
+   *   an encoder instruction
+   * - QPACK_DECODER_STREAM_ERROR (0x0202): Encoder failed to interpret
+   *   a decoder instruction
+   */
+  switch (result)
+    {
+    case QPACK_OK:
+    case QPACK_INCOMPLETE:
+      /* Not errors - return 0 to indicate no H3 error needed */
+      return 0;
+
+    case QPACK_ERR_HUFFMAN:
+    case QPACK_ERR_INTEGER:
+    case QPACK_ERR_DECOMPRESSION:
+    case QPACK_ERR_INVALID_INDEX:
+    case QPACK_ERR_EVICTED_INDEX:
+    case QPACK_ERR_FUTURE_INDEX:
+    case QPACK_ERR_INVALID_BASE:
+    case QPACK_ERR_HEADER_SIZE:
+    case QPACK_ERR_BASE_OVERFLOW:
+      /*
+       * RFC 9204 Section 6: "If the decoder encounters an error while
+       * processing an encoded field section, it MUST treat this as a
+       * connection error of type QPACK_DECOMPRESSION_FAILED."
+       *
+       * HEADER_SIZE and BASE_OVERFLOW are field section errors, not
+       * encoder stream errors.
+       */
+      return QPACK_DECOMPRESSION_FAILED;
+
+    case QPACK_ERR_TABLE_SIZE:
+      /*
+       * RFC 9204 Section 6: "If the decoder fails to process an
+       * instruction on the encoder stream, it MUST treat this as a
+       * connection error of type QPACK_ENCODER_STREAM_ERROR."
+       *
+       * TABLE_SIZE errors occur when processing Set Dynamic Table
+       * Capacity encoder instruction (Section 4.3.1).
+       */
+      return QPACK_ENCODER_STREAM_ERROR;
+
+    case QPACK_ERR_0RTT_MISMATCH:
+      /*
+       * RFC 9204 Section 3.2.3: 0-RTT settings mismatch is a decoder
+       * instruction validation failure, treated as QPACK_DECODER_STREAM_ERROR.
+       */
+      return QPACK_DECODER_STREAM_ERROR;
+
+    case QPACK_ERR_NULL_PARAM:
+    case QPACK_ERR_INTERNAL:
+    default:
+      /* Internal/programming errors default to decompression failed */
+      return QPACK_DECOMPRESSION_FAILED;
+    }
 }
 
 /* ============================================================================
