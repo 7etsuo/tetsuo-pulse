@@ -831,6 +831,7 @@ set(TEST_SOURCES
     test_qpack_sync_integration
     test_qpack_http3_integration
     test_qpack_error_integration
+    test_qpack_vectors
     test_http_integration
     test_ws_integration
     test_http2_integration
