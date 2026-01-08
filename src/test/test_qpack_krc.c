@@ -341,6 +341,97 @@ TEST (qpack_insert_count_inc_krc_equals_insert_count)
   Arena_dispose (&arena);
 }
 
+TEST (qpack_insert_count_inc_large_increment_overflow)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Encoder_T encoder = SocketQPACK_Encoder_new (arena, 4096);
+  ASSERT_NOT_NULL (encoder);
+
+  /* Insert one entry so we have something */
+  SocketQPACK_Table_T table = SocketQPACK_Encoder_get_table (encoder);
+  SocketQPACK_Result r
+      = SocketQPACK_Table_insert_literal (table, "name", 4, "value", 5);
+  ASSERT_EQ (r, QPACK_OK);
+
+  /* Try massive increment that would overflow uint64_t */
+  SocketQPACK_Result result
+      = SocketQPACK_Encoder_on_insert_count_inc (encoder, UINT64_MAX);
+  ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
+
+  /* KRC should remain 0 */
+  ASSERT_EQ (SocketQPACK_Encoder_known_received_count (encoder), 0);
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_is_acknowledged_boundary_at_krc)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Encoder_T encoder = SocketQPACK_Encoder_new (arena, 4096);
+  ASSERT_NOT_NULL (encoder);
+
+  /* Insert entries */
+  SocketQPACK_Table_T table = SocketQPACK_Encoder_get_table (encoder);
+  {
+    SocketQPACK_Result r;
+    for (int i = 0; i < 10; i++)
+      {
+        r = SocketQPACK_Table_insert_literal (table, "name", 4, "value", 5);
+        ASSERT_EQ (r, QPACK_OK);
+      }
+  }
+
+  /* Set KRC to 5 via Insert Count Increment */
+  ASSERT_EQ (SocketQPACK_Encoder_on_insert_count_inc (encoder, 5), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Encoder_known_received_count (encoder), 5);
+
+  /* Index 4 (< KRC=5) should be acknowledged */
+  ASSERT (SocketQPACK_Encoder_is_acknowledged (encoder, 4));
+
+  /* Index 5 (== KRC=5) should NOT be acknowledged */
+  ASSERT (!SocketQPACK_Encoder_is_acknowledged (encoder, 5));
+
+  /* Index 6 (> KRC=5) should NOT be acknowledged */
+  ASSERT (!SocketQPACK_Encoder_is_acknowledged (encoder, 6));
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_mixed_section_ack_and_increment)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Encoder_T encoder = SocketQPACK_Encoder_new (arena, 4096);
+  ASSERT_NOT_NULL (encoder);
+
+  /* Insert entries */
+  SocketQPACK_Table_T table = SocketQPACK_Encoder_get_table (encoder);
+  {
+    SocketQPACK_Result r;
+    for (int i = 0; i < 10; i++)
+      {
+        r = SocketQPACK_Table_insert_literal (table, "name", 4, "value", 5);
+        ASSERT_EQ (r, QPACK_OK);
+      }
+  }
+
+  /* Register section with RIC=3 */
+  ASSERT_EQ (SocketQPACK_Encoder_register_section (encoder, 1, 3), QPACK_OK);
+
+  /* Increment KRC to 2 first */
+  ASSERT_EQ (SocketQPACK_Encoder_on_insert_count_inc (encoder, 2), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Encoder_known_received_count (encoder), 2);
+
+  /* Section Ack advances KRC to 3 */
+  ASSERT_EQ (SocketQPACK_Encoder_on_section_ack (encoder, 1), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Encoder_known_received_count (encoder), 3);
+
+  /* Another increment adds to current KRC */
+  ASSERT_EQ (SocketQPACK_Encoder_on_insert_count_inc (encoder, 4), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Encoder_known_received_count (encoder), 7);
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * KRC NEVER DECREASES TEST (Issue #3307 Test Plan Item 4)
  * ============================================================================
