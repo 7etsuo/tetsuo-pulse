@@ -373,6 +373,7 @@ set(LIB_SOURCES
     src/http/qpack/SocketQPACK-literal-postbase.c
     src/http/qpack/SocketQPACK-field-literal.c
     src/http/qpack/SocketQPACK-blocked.c
+    src/http/qpack/SocketQPACK-config.c
 
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
@@ -825,6 +826,7 @@ set(TEST_SOURCES
     test_qpack_blocked
     test_qpack_krc
     test_qpack_decoder_sync
+    test_qpack_config
     test_qpack_field_section_integration
     test_qpack_sync_integration
     test_qpack_http3_integration
