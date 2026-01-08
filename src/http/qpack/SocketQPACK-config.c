@@ -191,6 +191,15 @@ SocketQPACK_Config_store_for_0rtt (SocketQPACK_Config_T config,
   return QPACK_OK;
 }
 
+bool
+SocketQPACK_Config_has_0rtt_settings (SocketQPACK_Config_T config)
+{
+  if (config == NULL)
+    return false;
+
+  return config->has_0rtt;
+}
+
 SocketQPACK_Result
 SocketQPACK_Config_get_0rtt (SocketQPACK_Config_T config,
                              SocketQPACK_Settings *settings)
@@ -223,14 +232,14 @@ SocketQPACK_Config_validate_0rtt (SocketQPACK_Config_T config,
    * same non-zero value in its SETTINGS frame."
    *
    * If stored max_table_capacity > 0 and peer sends a different value,
-   * this is a connection error.
+   * this is a connection error of type QPACK_DECODER_STREAM_ERROR.
    */
   if (config->stored_0rtt.max_table_capacity > 0)
     {
       if (peer_settings->max_table_capacity
           != config->stored_0rtt.max_table_capacity)
         {
-          return QPACK_ERR_INTERNAL;
+          return QPACK_ERR_0RTT_MISMATCH;
         }
     }
 

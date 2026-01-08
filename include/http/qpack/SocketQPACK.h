@@ -136,7 +136,8 @@ typedef enum
   QPACK_ERR_DECOMPRESSION, /**< Decompression failed (bomb protection) */
   QPACK_ERR_NULL_PARAM,    /**< NULL parameter passed to function */
   QPACK_ERR_INTERNAL,      /**< Internal error */
-  QPACK_ERR_INVALID_BASE   /**< Invalid Base calculation (Section 4.5.1.2) */
+  QPACK_ERR_INVALID_BASE,  /**< Invalid Base calculation (Section 4.5.1.2) */
+  QPACK_ERR_0RTT_MISMATCH  /**< 0-RTT settings mismatch (Section 3.2.3) */
 } SocketQPACK_Result;
 
 /* ============================================================================
@@ -2185,6 +2186,16 @@ SocketQPACK_Config_store_for_0rtt (SocketQPACK_Config_T config,
                                    const SocketQPACK_Settings *settings);
 
 /**
+ * @brief Check if 0-RTT settings have been stored.
+ *
+ * @param config Configuration instance
+ * @return true if store_for_0rtt has been called, false otherwise or if NULL
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_Config_has_0rtt_settings (SocketQPACK_Config_T config);
+
+/**
  * @brief Get stored 0-RTT settings.
  *
  * RFC 9204 Section 3.2.3: Retrieves settings for early data encoding.
@@ -2205,14 +2216,15 @@ SocketQPACK_Config_get_0rtt (SocketQPACK_Config_T config,
  * @brief Validate 0-RTT settings after handshake.
  *
  * RFC 9204 Section 3.2.3: If stored 0-RTT max_table_capacity > 0,
- * peer MUST send the same value. Returns error if mismatch.
+ * peer MUST send the same value. Mismatch is a connection error.
  *
  * @param config Configuration instance (must not be NULL)
  * @param peer_settings Peer's actual settings after handshake (must not be
  * NULL)
  * @return QPACK_OK if valid (no 0-RTT stored, or values match, or 0-RTT was 0),
  *         QPACK_ERR_NULL_PARAM if parameters are NULL,
- *         QPACK_ERR_INTERNAL if 0-RTT max_table_capacity > 0 and peer differs
+ *         QPACK_ERR_0RTT_MISMATCH if stored max_table_capacity > 0 and peer
+ *         differs (RFC 9204 Section 3.2.3 connection error)
  *
  * @since 1.0.0
  */

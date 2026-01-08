@@ -429,7 +429,7 @@ TEST (qpack_config_0rtt_validate_nonzero_capacity_mismatch)
 
   /* RFC 9204 Section 3.2.3: Mismatch is a connection error */
   ASSERT_EQ (SocketQPACK_Config_validate_0rtt (config, &peer),
-             QPACK_ERR_INTERNAL);
+             QPACK_ERR_0RTT_MISMATCH);
 
   Arena_dispose (&arena);
 }
@@ -448,7 +448,7 @@ TEST (qpack_config_0rtt_validate_nonzero_capacity_peer_zero)
 
   /* RFC 9204 Section 3.2.3: Peer sending 0 when we had non-zero is error */
   ASSERT_EQ (SocketQPACK_Config_validate_0rtt (config, &peer),
-             QPACK_ERR_INTERNAL);
+             QPACK_ERR_0RTT_MISMATCH);
 
   Arena_dispose (&arena);
 }
@@ -467,6 +467,105 @@ TEST (qpack_config_0rtt_validate_null_peer)
 
   ASSERT_EQ (SocketQPACK_Config_validate_0rtt (config, NULL),
              QPACK_ERR_NULL_PARAM);
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_config_has_0rtt_settings_basic)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Config_T config = SocketQPACK_Config_new (arena);
+  SocketQPACK_Settings settings = { 4096, 100 };
+
+  ASSERT_NOT_NULL (config);
+
+  /* Initially no 0-RTT settings */
+  ASSERT (!SocketQPACK_Config_has_0rtt_settings (config));
+
+  /* Store 0-RTT settings */
+  ASSERT_EQ (SocketQPACK_Config_store_for_0rtt (config, &settings), QPACK_OK);
+
+  /* Now we have 0-RTT settings */
+  ASSERT (SocketQPACK_Config_has_0rtt_settings (config));
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_config_has_0rtt_settings_null)
+{
+  ASSERT (!SocketQPACK_Config_has_0rtt_settings (NULL));
+}
+
+TEST (qpack_config_0rtt_overwrite)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Config_T config = SocketQPACK_Config_new (arena);
+  SocketQPACK_Settings first = { 4096, 100 };
+  SocketQPACK_Settings second = { 8192, 200 };
+  SocketQPACK_Settings out;
+
+  ASSERT_NOT_NULL (config);
+
+  /* Store first settings */
+  ASSERT_EQ (SocketQPACK_Config_store_for_0rtt (config, &first), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Config_get_0rtt (config, &out), QPACK_OK);
+  ASSERT_EQ (out.max_table_capacity, 4096);
+
+  /* Overwrite with second settings */
+  ASSERT_EQ (SocketQPACK_Config_store_for_0rtt (config, &second), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Config_get_0rtt (config, &out), QPACK_OK);
+  ASSERT_EQ (out.max_table_capacity, 8192);
+  ASSERT_EQ (out.blocked_streams, 200);
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_config_apply_peer_update)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Config_T config = SocketQPACK_Config_new (arena);
+  SocketQPACK_Settings first = { 4096, 50 };
+  SocketQPACK_Settings second = { 8192, 100 };
+  SocketQPACK_Settings out;
+
+  ASSERT_NOT_NULL (config);
+
+  /* Apply first peer settings */
+  ASSERT_EQ (SocketQPACK_Config_apply_peer (config, &first), QPACK_OK);
+  ASSERT (SocketQPACK_Config_has_peer_settings (config));
+  ASSERT_EQ (SocketQPACK_Config_get_peer (config, &out), QPACK_OK);
+  ASSERT_EQ (out.max_table_capacity, 4096);
+
+  /* Apply updated peer settings */
+  ASSERT_EQ (SocketQPACK_Config_apply_peer (config, &second), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Config_get_peer (config, &out), QPACK_OK);
+  ASSERT_EQ (out.max_table_capacity, 8192);
+  ASSERT_EQ (out.blocked_streams, 100);
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_config_boundary_values)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Config_T config = SocketQPACK_Config_new (arena);
+  SocketQPACK_Settings settings, out;
+
+  ASSERT_NOT_NULL (config);
+
+  /* Test maximum uint64_t values */
+  settings.max_table_capacity = UINT64_MAX;
+  settings.blocked_streams = UINT64_MAX;
+
+  ASSERT_EQ (SocketQPACK_Config_set_local (config, &settings), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Config_get_local (config, &out), QPACK_OK);
+  ASSERT_EQ (out.max_table_capacity, UINT64_MAX);
+  ASSERT_EQ (out.blocked_streams, UINT64_MAX);
+
+  /* Peer settings with max values should also work */
+  ASSERT_EQ (SocketQPACK_Config_apply_peer (config, &settings), QPACK_OK);
+  ASSERT_EQ (SocketQPACK_Config_get_peer (config, &out), QPACK_OK);
+  ASSERT_EQ (out.max_table_capacity, UINT64_MAX);
 
   Arena_dispose (&arena);
 }
