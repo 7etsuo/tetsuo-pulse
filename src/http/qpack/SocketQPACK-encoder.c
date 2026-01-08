@@ -35,6 +35,7 @@
 
 #include "http/qpack/SocketQPACK-private.h"
 #include "http/qpack/SocketQPACK.h"
+#include "http/qpack/SocketQPACKDecoderStream.h"
 #include "http/qpack/SocketQPACKEncoderStream.h"
 
 #include "core/SocketSecurity.h"
@@ -656,4 +657,197 @@ SocketQPACK_Table_get (SocketQPACK_Table_T table,
   *value_len = entry->value_len;
 
   return QPACK_OK;
+}
+
+/* ============================================================================
+ * QPACK ENCODER (RFC 9204 Section 2.1.4)
+ *
+ * Encoder state management with Known Received Count tracking.
+ * ============================================================================
+ */
+
+/**
+ * @brief QPACK encoder internal structure.
+ *
+ * Bundles dynamic table with acknowledgment state for KRC tracking.
+ */
+struct SocketQPACK_Encoder
+{
+  Arena_T arena;                    /**< Memory arena for allocations */
+  SocketQPACK_Table_T table;        /**< Dynamic table */
+  SocketQPACK_AckState_T ack_state; /**< Acknowledgment state (KRC tracking) */
+};
+
+SocketQPACK_Encoder_T
+SocketQPACK_Encoder_new (Arena_T arena, size_t max_table_size)
+{
+  SocketQPACK_Encoder_T encoder;
+
+  if (arena == NULL)
+    return NULL;
+
+  encoder = CALLOC (arena, 1, sizeof (*encoder));
+  if (encoder == NULL)
+    return NULL;
+
+  encoder->arena = arena;
+
+  /* Create dynamic table */
+  encoder->table = SocketQPACK_Table_new (arena, max_table_size);
+  if (encoder->table == NULL)
+    return NULL;
+
+  /* Create acknowledgment state for KRC tracking */
+  encoder->ack_state = SocketQPACK_AckState_new (arena);
+  if (encoder->ack_state == NULL)
+    return NULL;
+
+  return encoder;
+}
+
+uint64_t
+SocketQPACK_Encoder_known_received_count (SocketQPACK_Encoder_T encoder)
+{
+  if (encoder == NULL)
+    return 0;
+
+  return SocketQPACK_AckState_get_known_received_count (encoder->ack_state);
+}
+
+bool
+SocketQPACK_Encoder_is_acknowledged (SocketQPACK_Encoder_T encoder,
+                                      uint64_t absolute_index)
+{
+  uint64_t krc;
+
+  if (encoder == NULL)
+    return false;
+
+  krc = SocketQPACK_AckState_get_known_received_count (encoder->ack_state);
+
+  /*
+   * RFC 9204 Section 2.1.4: Entry with absolute_index < KRC is safe
+   * to reference in non-blocking representation.
+   */
+  return absolute_index < krc;
+}
+
+SocketQPACK_Result
+SocketQPACK_Encoder_on_section_ack (SocketQPACK_Encoder_T encoder,
+                                    uint64_t stream_id)
+{
+  SocketQPACKStream_Result result;
+  uint64_t krc;
+
+  if (encoder == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  result
+      = SocketQPACK_AckState_process_section_ack (encoder->ack_state, stream_id);
+
+  if (result == QPACK_STREAM_ERR_INVALID_INDEX)
+    return QPACK_ERR_INVALID_INDEX;
+  if (result != QPACK_STREAM_OK)
+    return QPACK_ERR_INTERNAL;
+
+  /* Sync table's known_received with ack_state's KRC */
+  krc = SocketQPACK_AckState_get_known_received_count (encoder->ack_state);
+  encoder->table->known_received = krc;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_Encoder_on_insert_count_inc (SocketQPACK_Encoder_T encoder,
+                                         uint64_t increment)
+{
+  SocketQPACKStream_Result result;
+  uint64_t krc;
+  uint64_t insert_count;
+  uint64_t new_krc;
+
+  if (encoder == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  if (increment == 0)
+    return QPACK_ERR_INVALID_INDEX;
+
+  /* Validate: new KRC cannot exceed insert_count */
+  krc = SocketQPACK_AckState_get_known_received_count (encoder->ack_state);
+  insert_count = encoder->table->insert_count;
+
+  /* Check for overflow and bounds */
+  if (!SocketSecurity_check_add (krc, increment, &new_krc))
+    return QPACK_ERR_INVALID_INDEX; /* Overflow */
+
+  if (new_krc > insert_count)
+    return QPACK_ERR_INVALID_INDEX; /* Exceeds insert count */
+
+  result
+      = SocketQPACK_AckState_process_insert_count_inc (encoder->ack_state,
+                                                        increment);
+  if (result != QPACK_STREAM_OK)
+    return QPACK_ERR_INTERNAL;
+
+  /* Sync table's known_received with ack_state's KRC */
+  krc = SocketQPACK_AckState_get_known_received_count (encoder->ack_state);
+  encoder->table->known_received = krc;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_Encoder_on_stream_cancel (SocketQPACK_Encoder_T encoder,
+                                      uint64_t stream_id)
+{
+  SocketQPACKStream_Result result;
+
+  if (encoder == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  result = SocketQPACK_AckState_process_stream_cancel (encoder->ack_state,
+                                                        stream_id);
+  if (result != QPACK_STREAM_OK)
+    return QPACK_ERR_INTERNAL;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_Encoder_register_section (SocketQPACK_Encoder_T encoder,
+                                      uint64_t stream_id,
+                                      uint64_t required_insert_count)
+{
+  SocketQPACKStream_Result result;
+
+  if (encoder == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  result = SocketQPACK_AckState_register_section (encoder->ack_state,
+                                                   stream_id,
+                                                   required_insert_count);
+  if (result == QPACK_STREAM_ERR_BUFFER_FULL)
+    return QPACK_ERR_TABLE_SIZE;
+  if (result != QPACK_STREAM_OK)
+    return QPACK_ERR_INTERNAL;
+
+  return QPACK_OK;
+}
+
+SocketQPACK_Table_T
+SocketQPACK_Encoder_get_table (SocketQPACK_Encoder_T encoder)
+{
+  if (encoder == NULL)
+    return NULL;
+
+  return encoder->table;
+}
+
+uint64_t
+SocketQPACK_Encoder_insert_count (SocketQPACK_Encoder_T encoder)
+{
+  if (encoder == NULL)
+    return 0;
+
+  return encoder->table->insert_count;
 }
