@@ -10,7 +10,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)  # Enable GNU extensions (_GNU_SOURCE)
 
 # Compiler flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -Wno-nonnull-compare -fno-delete-null-pointer-checks -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
 
 # Executable stack warning is expected and harmless:
 # - Caused by setjmp/longjmp in TRY/EXCEPT/FINALLY exception handling
@@ -939,6 +939,11 @@ foreach(test_name ${TEST_SOURCES})
     endif()
     target_include_directories(${test_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
     target_compile_definitions(${test_name} PRIVATE TESTING)
+    # Allow tests to intentionally pass NULL to test error handling:
+    # - Suppress nonnull warning for test code
+    # - Disable nonnull-attribute UBSan check so tests can verify NULL handling
+    target_compile_options(${test_name} PRIVATE -Wno-nonnull -fno-sanitize=nonnull-attribute)
+    target_link_options(${test_name} PRIVATE -fno-sanitize=nonnull-attribute)
     add_test(NAME ${test_name} COMMAND ${test_name})
     # Set 60 second timeout to prevent test hangs (TLS tests may need more time)
     set_tests_properties(${test_name} PROPERTIES TIMEOUT 60)

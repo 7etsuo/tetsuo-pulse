@@ -47,6 +47,28 @@
 #define QPACK_WARN_UNUSED
 #endif
 
+/**
+ * @brief Compiler hint for non-null pointer parameters.
+ *
+ * Applied to functions where specific pointer parameters must not be NULL.
+ * Enables compiler warnings and optimizations. The argument list specifies
+ * which parameters (1-indexed) must not be NULL.
+ *
+ * @note This macro is NOT applied to functions with defensive NULL checks
+ * (functions that return error codes on NULL input) because the nonnull
+ * attribute allows the compiler to optimize away such checks. The defensive
+ * coding pattern in this library prioritizes runtime safety over optimization.
+ *
+ * Example: QPACK_NONNULL(1, 3) means parameters 1 and 3 must not be NULL.
+ *
+ * @since 1.0.0
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define QPACK_NONNULL(...) __attribute__ ((nonnull (__VA_ARGS__)))
+#else
+#define QPACK_NONNULL(...)
+#endif
+
 /* ============================================================================
  * CONFIGURATION CONSTANTS
  * ============================================================================
