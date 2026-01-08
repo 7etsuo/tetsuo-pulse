@@ -709,6 +709,185 @@ SocketQPACK_AckState_get_known_received_count (SocketQPACK_AckState_T state);
  */
 extern bool SocketQPACK_AckState_can_evict (SocketQPACK_AckState_T state,
                                             uint64_t abs_index);
+
+/* ============================================================================
+ * DECODER SYNCHRONIZATION STATE (RFC 9204 Section 2.2.2)
+ *
+ * Manages automatic generation of decoder instructions in response to:
+ * - Field section decoding (Section Acknowledgment)
+ * - Stream reset/cancellation (Stream Cancellation)
+ * - Dynamic table entry reception (Insert Count Increment)
+ * ============================================================================
+ */
+
+/**
+ * @brief Opaque type for decoder synchronization state.
+ *
+ * Manages automatic generation of decoder instructions per RFC 9204
+ * Section 2.2.2. The decoder sync state wraps a decoder stream and
+ * provides hooks for automatic instruction generation at appropriate times.
+ */
+typedef struct SocketQPACK_DecoderSync *SocketQPACK_DecoderSync_T;
+
+/**
+ * @brief Create decoder synchronization state.
+ *
+ * @param arena         Memory arena for allocations (must not be NULL)
+ * @param decoder_stream Decoder stream for writing instructions (must not be
+ * NULL)
+ * @return New sync state, or NULL on allocation failure or invalid parameters
+ *
+ * @note The decoder stream must be initialized before use.
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_DecoderSync_T
+SocketQPACK_DecoderSync_new (Arena_T arena,
+                             SocketQPACK_DecoderStream_T decoder_stream);
+
+/**
+ * @brief Notify sync state of decoded field section.
+ *
+ * RFC 9204 Section 2.2.2.1: If required_insert_count > 0, automatically
+ * writes a Section Acknowledgment instruction to the decoder stream.
+ *
+ * @param sync     Sync state
+ * @param stream_id Stream ID of decoded field section
+ * @param required_insert_count RIC from field section prefix
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if sync is NULL,
+ *         QPACK_STREAM_ERR_NOT_INIT if decoder stream not initialized,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if instruction buffer overflow
+ *
+ * @note If required_insert_count is 0, no Section Ack is generated.
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_DecoderSync_on_section_decoded (SocketQPACK_DecoderSync_T sync,
+                                            uint64_t stream_id,
+                                            uint64_t required_insert_count);
+
+/**
+ * @brief Notify sync state of stream reset/cancellation.
+ *
+ * RFC 9204 Section 2.2.2.2: Writes a Stream Cancellation instruction
+ * to the decoder stream. This signals that all dynamic table references
+ * on that stream are no longer outstanding.
+ *
+ * @param sync      Sync state
+ * @param stream_id Stream ID being reset
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if sync is NULL,
+ *         QPACK_STREAM_ERR_NOT_INIT if decoder stream not initialized,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if instruction buffer overflow
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_DecoderSync_on_stream_reset (SocketQPACK_DecoderSync_T sync,
+                                         uint64_t stream_id);
+
+/**
+ * @brief Notify sync state of new dynamic table entry.
+ *
+ * RFC 9204 Section 2.2.2.3: Tracks insert count and may emit
+ * Insert Count Increment instruction when coalescing threshold is reached.
+ *
+ * @param sync  Sync state
+ * @param count Number of entries received (usually 1)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if sync is NULL,
+ *         QPACK_STREAM_ERR_NOT_INIT if decoder stream not initialized,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if instruction buffer overflow
+ *
+ * @note Depending on the coalescing threshold, this may or may not
+ *       immediately emit an Insert Count Increment instruction.
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_DecoderSync_on_insert_received (SocketQPACK_DecoderSync_T sync,
+                                            uint64_t count);
+
+/**
+ * @brief Force flush of pending Insert Count Increment.
+ *
+ * Writes accumulated insert count as Insert Count Increment instruction
+ * if there are pending entries that haven't been communicated.
+ *
+ * @param sync Sync state
+ * @return QPACK_STREAM_OK on success (including when nothing to flush),
+ *         QPACK_STREAM_ERR_NULL_PARAM if sync is NULL,
+ *         QPACK_STREAM_ERR_NOT_INIT if decoder stream not initialized,
+ *         QPACK_STREAM_ERR_BUFFER_FULL if instruction buffer overflow
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_DecoderSync_flush (SocketQPACK_DecoderSync_T sync);
+
+/**
+ * @brief Get current local insert count.
+ *
+ * Returns the decoder's view of how many dynamic table entries have
+ * been received from the encoder stream.
+ *
+ * @param sync Sync state
+ * @return Current insert count at decoder, or 0 if sync is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_DecoderSync_get_insert_count (SocketQPACK_DecoderSync_T sync);
+
+/**
+ * @brief Get count of acknowledged inserts.
+ *
+ * Returns how many entries have been acknowledged to the encoder via
+ * Insert Count Increment instructions.
+ *
+ * @param sync Sync state
+ * @return Last communicated insert count, or 0 if sync is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_DecoderSync_get_acknowledged_count (SocketQPACK_DecoderSync_T sync);
+
+/**
+ * @brief Set coalescing threshold for Insert Count Increment.
+ *
+ * Controls how many entries are batched before automatically emitting
+ * an Insert Count Increment instruction.
+ *
+ * Default is 1 (immediate feedback per RFC recommendation for timely
+ * synchronization). Higher values reduce instruction overhead but may
+ * delay encoder's ability to reference newer entries.
+ *
+ * @param sync      Sync state
+ * @param threshold Number of entries before auto-emit (must be >= 1)
+ * @return QPACK_STREAM_OK on success,
+ *         QPACK_STREAM_ERR_NULL_PARAM if sync is NULL,
+ *         QPACK_STREAM_ERR_INVALID_INDEX if threshold is 0
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACKStream_Result
+SocketQPACK_DecoderSync_set_coalesce_threshold (SocketQPACK_DecoderSync_T sync,
+                                                uint64_t threshold);
+
+/**
+ * @brief Get current coalescing threshold.
+ *
+ * @param sync Sync state
+ * @return Current threshold, or 0 if sync is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_DecoderSync_get_coalesce_threshold (SocketQPACK_DecoderSync_T sync);
+
 /** @} */
 
 #endif /* SOCKETQPACK_DECODER_STREAM_INCLUDED */
