@@ -71,6 +71,47 @@
 #define SOCKETQPACK_STATIC_TABLE_SIZE 99
 
 /* ============================================================================
+ * HTTP/3 SETTINGS IDENTIFIERS (RFC 9204 Section 5)
+ * ============================================================================
+ */
+
+/**
+ * @brief SETTINGS_QPACK_MAX_TABLE_CAPACITY identifier (0x01).
+ *
+ * RFC 9204 Section 5: Maximum size of the dynamic table in bytes.
+ * Default is 0 (no dynamic table). Sent in HTTP/3 SETTINGS frame.
+ */
+#define SETTINGS_QPACK_MAX_TABLE_CAPACITY 0x01
+
+/**
+ * @brief SETTINGS_QPACK_BLOCKED_STREAMS identifier (0x07).
+ *
+ * RFC 9204 Section 5: Maximum number of streams that can be blocked.
+ * Default is 0 (no blocking allowed). Sent in HTTP/3 SETTINGS frame.
+ */
+#define SETTINGS_QPACK_BLOCKED_STREAMS 0x07
+
+/**
+ * @brief QPACK settings structure.
+ *
+ * RFC 9204 Section 5: Connection-level QPACK configuration parameters
+ * negotiated via HTTP/3 SETTINGS frame.
+ */
+typedef struct
+{
+  uint64_t max_table_capacity; /**< SETTINGS_QPACK_MAX_TABLE_CAPACITY */
+  uint64_t blocked_streams;    /**< SETTINGS_QPACK_BLOCKED_STREAMS */
+} SocketQPACK_Settings;
+
+/**
+ * @brief QPACK configuration state.
+ *
+ * Tracks local and peer settings for a QPACK encoder/decoder pair.
+ * Used for settings negotiation and 0-RTT resumption.
+ */
+typedef struct SocketQPACK_Config *SocketQPACK_Config_T;
+
+/* ============================================================================
  * ERROR CODES
  * ============================================================================
  */
@@ -95,7 +136,8 @@ typedef enum
   QPACK_ERR_DECOMPRESSION, /**< Decompression failed (bomb protection) */
   QPACK_ERR_NULL_PARAM,    /**< NULL parameter passed to function */
   QPACK_ERR_INTERNAL,      /**< Internal error */
-  QPACK_ERR_INVALID_BASE   /**< Invalid Base calculation (Section 4.5.1.2) */
+  QPACK_ERR_INVALID_BASE,  /**< Invalid Base calculation (Section 4.5.1.2) */
+  QPACK_ERR_0RTT_MISMATCH  /**< 0-RTT settings mismatch (Section 3.2.3) */
 } SocketQPACK_Result;
 
 /* ============================================================================
@@ -1911,7 +1953,7 @@ SocketQPACK_Encoder_known_received_count (SocketQPACK_Encoder_T encoder);
  * @since 1.0.0
  */
 extern bool SocketQPACK_Encoder_is_acknowledged (SocketQPACK_Encoder_T encoder,
-                                                  uint64_t absolute_index);
+                                                 uint64_t absolute_index);
 
 /**
  * @brief Process Section Acknowledgment from decoder.
@@ -1928,9 +1970,8 @@ extern bool SocketQPACK_Encoder_is_acknowledged (SocketQPACK_Encoder_T encoder,
  *
  * @since 1.0.0
  */
-extern QPACK_WARN_UNUSED SocketQPACK_Result
-SocketQPACK_Encoder_on_section_ack (SocketQPACK_Encoder_T encoder,
-                                    uint64_t stream_id);
+extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_Encoder_on_section_ack (
+    SocketQPACK_Encoder_T encoder, uint64_t stream_id);
 
 /**
  * @brief Process Insert Count Increment from decoder.
@@ -1942,7 +1983,8 @@ SocketQPACK_Encoder_on_section_ack (SocketQPACK_Encoder_T encoder,
  * @param increment Number of entries to add to KRC (must be > 0)
  * @return QPACK_OK on success,
  *         QPACK_ERR_NULL_PARAM if encoder is NULL,
- *         QPACK_ERR_INVALID_INDEX if increment is 0 or would exceed insert_count
+ *         QPACK_ERR_INVALID_INDEX if increment is 0 or would exceed
+ * insert_count
  *
  * @since 1.0.0
  */
@@ -2014,7 +2056,191 @@ SocketQPACK_Encoder_get_table (SocketQPACK_Encoder_T encoder);
  *
  * @since 1.0.0
  */
-extern uint64_t SocketQPACK_Encoder_insert_count (SocketQPACK_Encoder_T encoder);
+extern uint64_t
+SocketQPACK_Encoder_insert_count (SocketQPACK_Encoder_T encoder);
+
+/* ============================================================================
+ * QPACK CONFIGURATION (RFC 9204 Section 5)
+ * ============================================================================
+ */
+
+/**
+ * @brief Initialize settings to RFC 9204 defaults.
+ *
+ * RFC 9204 Section 5: Both settings default to 0.
+ *
+ * @param[out] settings Settings structure to initialize
+ * @return QPACK_OK on success, QPACK_ERR_NULL_PARAM if settings is NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_settings_defaults (SocketQPACK_Settings *settings);
+
+/**
+ * @brief Validate received settings values.
+ *
+ * RFC 9204 Section 5: Validates settings are within acceptable bounds.
+ * All valid uint64_t values are accepted per RFC (no upper limit specified).
+ *
+ * @param settings Settings to validate
+ * @return QPACK_OK if valid, QPACK_ERR_NULL_PARAM if settings is NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_settings_validate (const SocketQPACK_Settings *settings);
+
+/**
+ * @brief Create new QPACK configuration.
+ *
+ * Creates configuration with default local settings (0, 0).
+ *
+ * @param arena Memory arena for allocations (must not be NULL)
+ * @return New config instance, or NULL on failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Config_T SocketQPACK_Config_new (Arena_T arena);
+
+/**
+ * @brief Set local settings (what we advertise to peer).
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param settings Local settings to set (must not be NULL)
+ * @return QPACK_OK on success, QPACK_ERR_NULL_PARAM if parameters are NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_set_local (SocketQPACK_Config_T config,
+                              const SocketQPACK_Settings *settings);
+
+/**
+ * @brief Get local settings.
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param[out] settings Output for local settings (must not be NULL)
+ * @return QPACK_OK on success, QPACK_ERR_NULL_PARAM if parameters are NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_get_local (SocketQPACK_Config_T config,
+                              SocketQPACK_Settings *settings);
+
+/**
+ * @brief Apply received peer settings.
+ *
+ * RFC 9204 Section 5: Validates and applies peer's settings.
+ * Updates encoder's max table capacity and decoder's blocked stream limit.
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param settings Peer's settings from SETTINGS frame (must not be NULL)
+ * @return QPACK_OK on success, QPACK_ERR_NULL_PARAM if parameters are NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_apply_peer (SocketQPACK_Config_T config,
+                               const SocketQPACK_Settings *settings);
+
+/**
+ * @brief Get peer settings.
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param[out] settings Output for peer settings (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if parameters are NULL,
+ *         QPACK_ERR_INTERNAL if peer settings not yet received
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_get_peer (SocketQPACK_Config_T config,
+                             SocketQPACK_Settings *settings);
+
+/**
+ * @brief Check if peer settings have been received.
+ *
+ * @param config Configuration instance
+ * @return true if apply_peer has been called, false otherwise or if NULL
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_Config_has_peer_settings (SocketQPACK_Config_T config);
+
+/**
+ * @brief Store settings for 0-RTT resumption.
+ *
+ * RFC 9204 Section 3.2.3: Saves settings for use with early data encoding.
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param settings Settings to store for resumption (must not be NULL)
+ * @return QPACK_OK on success, QPACK_ERR_NULL_PARAM if parameters are NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_store_for_0rtt (SocketQPACK_Config_T config,
+                                   const SocketQPACK_Settings *settings);
+
+/**
+ * @brief Check if 0-RTT settings have been stored.
+ *
+ * @param config Configuration instance
+ * @return true if store_for_0rtt has been called, false otherwise or if NULL
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_Config_has_0rtt_settings (SocketQPACK_Config_T config);
+
+/**
+ * @brief Get stored 0-RTT settings.
+ *
+ * RFC 9204 Section 3.2.3: Retrieves settings for early data encoding.
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param[out] settings Output for stored settings (must not be NULL)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if parameters are NULL,
+ *         QPACK_ERR_INTERNAL if no 0-RTT settings stored
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_get_0rtt (SocketQPACK_Config_T config,
+                             SocketQPACK_Settings *settings);
+
+/**
+ * @brief Validate 0-RTT settings after handshake.
+ *
+ * RFC 9204 Section 3.2.3: If stored 0-RTT max_table_capacity > 0,
+ * peer MUST send the same value. Mismatch is a connection error.
+ *
+ * @param config Configuration instance (must not be NULL)
+ * @param peer_settings Peer's actual settings after handshake (must not be
+ * NULL)
+ * @return QPACK_OK if valid (no 0-RTT stored, or values match, or 0-RTT was 0),
+ *         QPACK_ERR_NULL_PARAM if parameters are NULL,
+ *         QPACK_ERR_0RTT_MISMATCH if stored max_table_capacity > 0 and peer
+ *         differs (RFC 9204 Section 3.2.3 connection error)
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Config_validate_0rtt (SocketQPACK_Config_T config,
+                                  const SocketQPACK_Settings *peer_settings);
+
+/**
+ * @brief Get human-readable string for settings identifier.
+ *
+ * @param setting_id SETTINGS identifier (0x01 or 0x07)
+ * @return Static string describing the setting, or "UNKNOWN" if invalid
+ *
+ * @since 1.0.0
+ */
+extern const char *SocketQPACK_settings_id_string (uint64_t setting_id);
 
 /** @} */
 
