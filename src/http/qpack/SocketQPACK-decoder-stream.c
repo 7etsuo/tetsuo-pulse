@@ -986,3 +986,205 @@ SocketQPACK_AckState_can_evict (SocketQPACK_AckState_T state,
 
   return abs_index < state->known_received_count;
 }
+
+/* ============================================================================
+ * DECODER SYNCHRONIZATION STATE (RFC 9204 Section 2.2.2)
+ *
+ * Manages automatic generation of decoder instructions:
+ * - Section Acknowledgment (2.2.2.1) - after decoding field sections
+ * - Stream Cancellation (2.2.2.2) - on stream reset
+ * - Insert Count Increment (2.2.2.3) - on encoder stream updates
+ * ============================================================================
+ */
+
+/** Default coalescing threshold (emit after each entry for timely feedback) */
+#define QPACK_DECODER_SYNC_DEFAULT_THRESHOLD 1
+
+/**
+ * @brief Decoder synchronization state internal structure.
+ */
+struct SocketQPACK_DecoderSync
+{
+  Arena_T arena;
+  SocketQPACK_DecoderStream_T decoder_stream;
+
+  /* Insert count tracking for coalescing (RFC 9204 Section 2.2.2.3) */
+  uint64_t local_insert_count;      /**< Decoder's view of insert count */
+  uint64_t last_communicated_count; /**< Last sent via Insert Count Increment */
+  uint64_t coalesce_threshold;      /**< Threshold before auto-emit */
+};
+
+SocketQPACK_DecoderSync_T
+SocketQPACK_DecoderSync_new (Arena_T arena,
+                             SocketQPACK_DecoderStream_T decoder_stream)
+{
+  SocketQPACK_DecoderSync_T sync;
+
+  if (arena == NULL || decoder_stream == NULL)
+    return NULL;
+
+  sync = CALLOC (arena, 1, sizeof (*sync));
+  if (sync == NULL)
+    return NULL;
+
+  sync->arena = arena;
+  sync->decoder_stream = decoder_stream;
+  sync->local_insert_count = 0;
+  sync->last_communicated_count = 0;
+  sync->coalesce_threshold = QPACK_DECODER_SYNC_DEFAULT_THRESHOLD;
+
+  return sync;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_DecoderSync_on_section_decoded (SocketQPACK_DecoderSync_T sync,
+                                            uint64_t stream_id,
+                                            uint64_t required_insert_count)
+{
+  /*
+   * RFC 9204 Section 2.2.2.1: Section Acknowledgment
+   *
+   * "After processing an encoded field section whose declared Required
+   * Insert Count is not zero, the decoder MUST emit a Section
+   * Acknowledgment instruction."
+   */
+  if (sync == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  /* No acknowledgment needed for sections that don't reference dynamic table */
+  if (required_insert_count == 0)
+    return QPACK_STREAM_OK;
+
+  return SocketQPACK_DecoderStream_write_section_ack (sync->decoder_stream,
+                                                      stream_id);
+}
+
+SocketQPACKStream_Result
+SocketQPACK_DecoderSync_on_stream_reset (SocketQPACK_DecoderSync_T sync,
+                                         uint64_t stream_id)
+{
+  /*
+   * RFC 9204 Section 2.2.2.2: Stream Cancellation
+   *
+   * "When an endpoint receives a stream reset before the end of a stream
+   * or before all encoded field sections are processed...the decoder emits
+   * a Stream Cancellation instruction."
+   */
+  if (sync == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  return SocketQPACK_DecoderStream_write_stream_cancel (sync->decoder_stream,
+                                                        stream_id);
+}
+
+SocketQPACKStream_Result
+SocketQPACK_DecoderSync_on_insert_received (SocketQPACK_DecoderSync_T sync,
+                                            uint64_t count)
+{
+  /*
+   * RFC 9204 Section 2.2.2.3: Insert Count Increment
+   *
+   * "After receiving new table entries on the encoder stream, the decoder
+   * chooses when to emit Insert Count Increment instructions."
+   *
+   * We support coalescing: emit when (local - communicated) >= threshold.
+   */
+  uint64_t pending;
+  SocketQPACKStream_Result result;
+
+  if (sync == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  /* Track the new entries */
+  if (!SocketSecurity_check_add (
+          sync->local_insert_count, count, &sync->local_insert_count))
+    {
+      /* Overflow - saturate at UINT64_MAX */
+      sync->local_insert_count = UINT64_MAX;
+    }
+
+  /* Check if we should emit based on coalescing threshold */
+  pending = sync->local_insert_count - sync->last_communicated_count;
+  if (pending >= sync->coalesce_threshold)
+    {
+      result = SocketQPACK_DecoderStream_write_insert_count_inc (
+          sync->decoder_stream, pending);
+      if (result != QPACK_STREAM_OK)
+        return result;
+
+      sync->last_communicated_count = sync->local_insert_count;
+    }
+
+  return QPACK_STREAM_OK;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_DecoderSync_flush (SocketQPACK_DecoderSync_T sync)
+{
+  /*
+   * Force emit any pending Insert Count Increment.
+   * This is useful before sending a response or when the application
+   * needs to ensure the encoder knows about received entries.
+   */
+  uint64_t pending;
+  SocketQPACKStream_Result result;
+
+  if (sync == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  pending = sync->local_insert_count - sync->last_communicated_count;
+  if (pending == 0)
+    return QPACK_STREAM_OK; /* Nothing to flush */
+
+  result = SocketQPACK_DecoderStream_write_insert_count_inc (
+      sync->decoder_stream, pending);
+  if (result != QPACK_STREAM_OK)
+    return result;
+
+  sync->last_communicated_count = sync->local_insert_count;
+
+  return QPACK_STREAM_OK;
+}
+
+uint64_t
+SocketQPACK_DecoderSync_get_insert_count (SocketQPACK_DecoderSync_T sync)
+{
+  if (sync == NULL)
+    return 0;
+
+  return sync->local_insert_count;
+}
+
+uint64_t
+SocketQPACK_DecoderSync_get_acknowledged_count (SocketQPACK_DecoderSync_T sync)
+{
+  if (sync == NULL)
+    return 0;
+
+  return sync->last_communicated_count;
+}
+
+SocketQPACKStream_Result
+SocketQPACK_DecoderSync_set_coalesce_threshold (SocketQPACK_DecoderSync_T sync,
+                                                uint64_t threshold)
+{
+  if (sync == NULL)
+    return QPACK_STREAM_ERR_NULL_PARAM;
+
+  /* Threshold of 0 doesn't make sense - would never emit */
+  if (threshold == 0)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
+
+  sync->coalesce_threshold = threshold;
+
+  return QPACK_STREAM_OK;
+}
+
+uint64_t
+SocketQPACK_DecoderSync_get_coalesce_threshold (SocketQPACK_DecoderSync_T sync)
+{
+  if (sync == NULL)
+    return 0;
+
+  return sync->coalesce_threshold;
+}
