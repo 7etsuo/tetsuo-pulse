@@ -22,6 +22,7 @@
 
 #include "core/Arena.h"
 #include "http/qpack/SocketQPACK.h"
+#include "http/qpack/SocketQPACKEncoderStream.h"
 #include "test/Test.h"
 
 /* ============================================================================
@@ -59,9 +60,8 @@ TEST (qpack_error_decode_static_index_out_of_range)
   int is_static = 0;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_indexed_field (buf, sizeof (buf), &index, &is_static,
-                                          &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_indexed_field (
+      buf, sizeof (buf), &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 }
 
@@ -328,9 +328,8 @@ TEST (qpack_error_literal_name_ref_static_invalid)
   size_t name_len = 0;
 
   /* Static index 99 is invalid */
-  SocketQPACK_Result result
-      = SocketQPACK_resolve_literal_name_ref (true, 99, 100, table, &name,
-                                               &name_len);
+  SocketQPACK_Result result = SocketQPACK_resolve_literal_name_ref (
+      true, 99, 100, table, &name, &name_len);
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 
   Arena_dispose (&arena);
@@ -361,9 +360,8 @@ TEST (qpack_error_literal_name_ref_dynamic_evicted)
   size_t name_len = 0;
 
   /* Large relative index with small Base will cause issues */
-  SocketQPACK_Result result
-      = SocketQPACK_resolve_literal_name_ref (false, 9, 10, table, &name,
-                                               &name_len);
+  SocketQPACK_Result result = SocketQPACK_resolve_literal_name_ref (
+      false, 9, 10, table, &name, &name_len);
 
   /* Should either be evicted or invalid */
   ASSERT (result == QPACK_ERR_EVICTED_INDEX || result == QPACK_OK
@@ -407,9 +405,8 @@ TEST (qpack_error_decode_incomplete_indexed)
   int is_static = 0;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_indexed_field (buf, sizeof (buf), &index, &is_static,
-                                          &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_indexed_field (
+      buf, sizeof (buf), &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_INCOMPLETE);
 }
 
@@ -420,9 +417,8 @@ TEST (qpack_error_decode_incomplete_prefix)
   SocketQPACK_FieldSectionPrefix prefix;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_prefix (buf, sizeof (buf), 128, 10, &prefix,
-                                   &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_prefix (
+      buf, sizeof (buf), 128, 10, &prefix, &consumed);
   ASSERT_EQ (result, QPACK_INCOMPLETE);
 }
 
@@ -437,9 +433,17 @@ TEST (qpack_error_decode_incomplete_literal)
   bool never_indexed = false;
   size_t consumed = 0;
 
-  SocketQPACK_Result result = SocketQPACK_decode_literal_field_literal_name (
-      buf, sizeof (buf), name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  SocketQPACK_Result result
+      = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                       sizeof (buf),
+                                                       name_out,
+                                                       sizeof (name_out),
+                                                       &name_len,
+                                                       value_out,
+                                                       sizeof (value_out),
+                                                       &value_len,
+                                                       &never_indexed,
+                                                       &consumed);
   ASSERT_EQ (result, QPACK_INCOMPLETE);
 }
 
@@ -479,13 +483,13 @@ TEST (qpack_error_null_decode_outputs)
 
   /* NULL is_static */
   uint64_t index = 0;
-  result = SocketQPACK_decode_indexed_field (buf, sizeof (buf), &index, NULL,
-                                              &consumed);
+  result = SocketQPACK_decode_indexed_field (
+      buf, sizeof (buf), &index, NULL, &consumed);
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 
   /* NULL consumed */
-  result = SocketQPACK_decode_indexed_field (buf, sizeof (buf), &index,
-                                              &is_static, NULL);
+  result = SocketQPACK_decode_indexed_field (
+      buf, sizeof (buf), &index, &is_static, NULL);
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 }
 
@@ -514,9 +518,8 @@ TEST (qpack_error_empty_input_decode)
   size_t consumed = 0;
 
   /* Empty input for indexed field */
-  SocketQPACK_Result result
-      = SocketQPACK_decode_indexed_field (NULL, 0, &index, &is_static,
-                                          &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_indexed_field (
+      NULL, 0, &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_INCOMPLETE);
   ASSERT_EQ (consumed, 0);
 }
@@ -544,9 +547,8 @@ TEST (qpack_error_decode_indexed_wrong_pattern)
   int is_static = 0;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_indexed_field (buf, sizeof (buf), &index, &is_static,
-                                          &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_indexed_field (
+      buf, sizeof (buf), &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_ERR_INTERNAL);
 }
 
@@ -583,8 +585,16 @@ TEST (qpack_error_huffman_decode_invalid)
 
   /* Encode header with Huffman flag, then corrupt the data */
   SocketQPACK_Result result = SocketQPACK_encode_literal_field_literal_name (
-      buf, sizeof (buf), (const unsigned char *)"test", 4, true,
-      (const unsigned char *)"value", 5, true, false, &written);
+      buf,
+      sizeof (buf),
+      (const unsigned char *)"test",
+      4,
+      true,
+      (const unsigned char *)"value",
+      5,
+      true,
+      false,
+      &written);
   ASSERT_EQ (result, QPACK_OK);
 
   /* Corrupt the Huffman data by overwriting bytes */
@@ -599,9 +609,16 @@ TEST (qpack_error_huffman_decode_invalid)
   bool never_indexed = false;
   size_t consumed = 0;
 
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf, written, name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  result = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                          written,
+                                                          name_out,
+                                                          sizeof (name_out),
+                                                          &name_len,
+                                                          value_out,
+                                                          sizeof (value_out),
+                                                          &value_len,
+                                                          &never_indexed,
+                                                          &consumed);
 
   /* Should fail with Huffman error */
   ASSERT (result == QPACK_ERR_HUFFMAN || result == QPACK_ERR_DECOMPRESSION);
@@ -633,7 +650,8 @@ TEST (qpack_error_table_insert_exceeds_capacity)
       table, large_name, 63, large_value, 63);
 
   /* Should either fail or cause eviction (depends on implementation) */
-  /* Entry too large for table is typically silently rejected or causes eviction */
+  /* Entry too large for table is typically silently rejected or causes eviction
+   */
   (void)result;
 
   Arena_dispose (&arena);
@@ -719,20 +737,175 @@ TEST (qpack_error_field_section_invalid_sequence)
   size_t written = 0;
 
   /* Prefix claims RIC=10 but we reference entry 15 */
-  SocketQPACK_Result result
-      = SocketQPACK_encode_prefix (10, 10, 128, buf + offset,
-                                   sizeof (buf) - offset, &written);
+  SocketQPACK_Result result = SocketQPACK_encode_prefix (
+      10, 10, 128, buf + offset, sizeof (buf) - offset, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* Reference dynamic entry with relative index that would need higher RIC */
   /* This is valid encoding but would fail at resolution time */
-  result = SocketQPACK_encode_indexed_field (buf + offset,
-                                              sizeof (buf) - offset, 0, 0,
-                                              &written);
+  result = SocketQPACK_encode_indexed_field (
+      buf + offset, sizeof (buf) - offset, 0, 0, &written);
   ASSERT_EQ (result, QPACK_OK);
 
   /* Encoding succeeds but decoding/resolution would need to validate */
+}
+
+/* ============================================================================
+ * HTTP/3 ERROR CODE MAPPING (RFC 9204 Section 4.2 & 6)
+ * ============================================================================
+ */
+
+TEST (qpack_error_h3_code_constants)
+{
+  /* RFC 9114 HTTP/3 error codes */
+  ASSERT_EQ (H3_STREAM_CREATION_ERROR, 0x0103);
+  ASSERT_EQ (H3_CLOSED_CRITICAL_STREAM, 0x0104);
+
+  /* RFC 9204 QPACK error codes */
+  ASSERT_EQ (QPACK_DECOMPRESSION_FAILED, 0x0200);
+  ASSERT_EQ (QPACK_ENCODER_STREAM_ERROR, 0x0201);
+  ASSERT_EQ (QPACK_DECODER_STREAM_ERROR, 0x0202);
+}
+
+TEST (qpack_error_result_count_macro)
+{
+  /* QPACK_RESULT_COUNT should equal last error + 1 */
+  ASSERT_EQ (QPACK_RESULT_COUNT, QPACK_ERR_0RTT_MISMATCH + 1);
+
+  /* Verify it's a reasonable count (15 error codes currently) */
+  ASSERT (QPACK_RESULT_COUNT >= 15);
+  ASSERT (QPACK_RESULT_COUNT <= 100);
+}
+
+TEST (qpack_error_result_to_h3_ok)
+{
+  /* Non-errors should return 0 */
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_OK), 0);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_INCOMPLETE), 0);
+}
+
+TEST (qpack_error_result_to_h3_decompression_failed)
+{
+  /* RFC 9204 Section 6: Field section decode errors ->
+   * QPACK_DECOMPRESSION_FAILED
+   */
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_HUFFMAN),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_INTEGER),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_DECOMPRESSION),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_INVALID_INDEX),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_EVICTED_INDEX),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_FUTURE_INDEX),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_INVALID_BASE),
+             QPACK_DECOMPRESSION_FAILED);
+
+  /* These are also field section errors, not encoder stream errors */
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_HEADER_SIZE),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_BASE_OVERFLOW),
+             QPACK_DECOMPRESSION_FAILED);
+}
+
+TEST (qpack_error_result_to_h3_encoder_stream)
+{
+  /* RFC 9204 Section 6: Encoder instruction errors ->
+   * QPACK_ENCODER_STREAM_ERROR
+   *
+   * TABLE_SIZE is the only error that occurs when processing encoder
+   * instructions (Set Dynamic Table Capacity, Section 4.3.1).
+   */
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_TABLE_SIZE),
+             QPACK_ENCODER_STREAM_ERROR);
+}
+
+TEST (qpack_error_result_to_h3_decoder_stream)
+{
+  /* RFC 9204 Section 3.2.3: 0-RTT mismatch -> QPACK_DECODER_STREAM_ERROR */
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_0RTT_MISMATCH),
+             QPACK_DECODER_STREAM_ERROR);
+}
+
+TEST (qpack_error_result_to_h3_internal)
+{
+  /* Internal errors default to QPACK_DECOMPRESSION_FAILED */
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_NULL_PARAM),
+             QPACK_DECOMPRESSION_FAILED);
+  ASSERT_EQ (SocketQPACK_result_to_h3_error (QPACK_ERR_INTERNAL),
+             QPACK_DECOMPRESSION_FAILED);
+}
+
+TEST (qpack_error_stream_to_h3_ok)
+{
+  /* Non-errors should return 0 */
+  ASSERT_EQ (SocketQPACKStream_result_to_h3_error (QPACK_STREAM_OK), 0);
+}
+
+TEST (qpack_error_stream_to_h3_closed_critical)
+{
+  /* RFC 9204 Section 4.2: Stream closure -> H3_CLOSED_CRITICAL_STREAM */
+  ASSERT_EQ (
+      SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_CLOSED_CRITICAL),
+      H3_CLOSED_CRITICAL_STREAM);
+}
+
+TEST (qpack_error_stream_to_h3_creation_error)
+{
+  /* RFC 9204 Section 4.2: Duplicate stream -> H3_STREAM_CREATION_ERROR */
+  ASSERT_EQ (
+      SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_ALREADY_INIT),
+      H3_STREAM_CREATION_ERROR);
+}
+
+TEST (qpack_error_stream_to_h3_encoder_stream)
+{
+  /* RFC 9204 Section 6: Other stream errors -> QPACK_ENCODER_STREAM_ERROR */
+  ASSERT_EQ (
+      SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_BUFFER_FULL),
+      QPACK_ENCODER_STREAM_ERROR);
+  ASSERT_EQ (SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_NOT_INIT),
+             QPACK_ENCODER_STREAM_ERROR);
+  ASSERT_EQ (
+      SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_INVALID_TYPE),
+      QPACK_ENCODER_STREAM_ERROR);
+  ASSERT_EQ (SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_NULL_PARAM),
+             QPACK_ENCODER_STREAM_ERROR);
+  ASSERT_EQ (
+      SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_INVALID_INDEX),
+      QPACK_ENCODER_STREAM_ERROR);
+  ASSERT_EQ (
+      SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_CAPACITY_EXCEED),
+      QPACK_ENCODER_STREAM_ERROR);
+  ASSERT_EQ (SocketQPACKStream_result_to_h3_error (QPACK_STREAM_ERR_INTERNAL),
+             QPACK_ENCODER_STREAM_ERROR);
+}
+
+TEST (qpack_error_result_string_all_codes)
+{
+  /* Verify all result codes have strings */
+  for (int i = 0; i < QPACK_RESULT_COUNT; i++)
+    {
+      const char *str = SocketQPACK_result_string ((SocketQPACK_Result)i);
+      ASSERT (str != NULL);
+      ASSERT (strcmp (str, "Unknown error") != 0);
+    }
+
+  /* Verify 0RTT mismatch string specifically */
+  ASSERT (strcmp (SocketQPACK_result_string (QPACK_ERR_0RTT_MISMATCH),
+                  "0-RTT settings mismatch")
+          == 0);
+}
+
+TEST (qpack_error_result_string_out_of_range)
+{
+  /* Out of range should return "Unknown error" */
+  const char *str = SocketQPACK_result_string ((SocketQPACK_Result)999);
+  ASSERT (strcmp (str, "Unknown error") == 0);
 }
 
 /* ============================================================================

@@ -140,6 +140,55 @@ typedef enum
   QPACK_ERR_0RTT_MISMATCH  /**< 0-RTT settings mismatch (Section 3.2.3) */
 } SocketQPACK_Result;
 
+/**
+ * @brief Number of QPACK result codes.
+ *
+ * Use for bounds checking with result string arrays.
+ */
+#define QPACK_RESULT_COUNT (QPACK_ERR_0RTT_MISMATCH + 1)
+
+/* ============================================================================
+ * HTTP/3 ERROR CODES (RFC 9204 Section 4.2 & 6)
+ * ============================================================================
+ */
+
+/**
+ * @brief HTTP/3 error: Stream creation error (RFC 9114).
+ *
+ * RFC 9204 Section 4.2: Receipt of a second instance of either
+ * encoder or decoder stream type MUST be treated as this error.
+ */
+#define H3_STREAM_CREATION_ERROR 0x0103
+
+/**
+ * @brief HTTP/3 error: Critical stream was closed (RFC 9114).
+ *
+ * RFC 9204 Section 4.2: Closure of either encoder or decoder
+ * stream MUST be treated as this connection error.
+ */
+#define H3_CLOSED_CRITICAL_STREAM 0x0104
+
+/**
+ * @brief QPACK decompression failed (RFC 9204 Section 6).
+ *
+ * The decoder failed to interpret an encoded field section.
+ */
+#define QPACK_DECOMPRESSION_FAILED 0x0200
+
+/**
+ * @brief QPACK encoder stream error (RFC 9204 Section 6).
+ *
+ * The decoder failed to interpret an encoder instruction.
+ */
+#define QPACK_ENCODER_STREAM_ERROR 0x0201
+
+/**
+ * @brief QPACK decoder stream error (RFC 9204 Section 6).
+ *
+ * The encoder failed to interpret a decoder instruction.
+ */
+#define QPACK_DECODER_STREAM_ERROR 0x0202
+
 /* ============================================================================
  * OPAQUE TYPES
  * ============================================================================
@@ -2241,6 +2290,43 @@ SocketQPACK_Config_validate_0rtt (SocketQPACK_Config_T config,
  * @since 1.0.0
  */
 extern const char *SocketQPACK_settings_id_string (uint64_t setting_id);
+
+/* ============================================================================
+ * ERROR CODE MAPPING FUNCTIONS (RFC 9204 Section 6)
+ * ============================================================================
+ */
+
+/**
+ * @brief Get human-readable string for result code.
+ *
+ * @param result QPACK result code
+ * @return Static string describing the result, or "Unknown error" if invalid
+ *
+ * @since 1.0.0
+ */
+extern const char *SocketQPACK_result_string (SocketQPACK_Result result);
+
+/**
+ * @brief Convert internal QPACK result to HTTP/3 wire error code.
+ *
+ * RFC 9204 Section 6: Maps internal error codes to appropriate HTTP/3
+ * application error codes for connection termination.
+ *
+ * Mapping:
+ * - Field section errors (HUFFMAN, INTEGER, DECOMPRESSION, INVALID_INDEX,
+ *   EVICTED_INDEX, FUTURE_INDEX, INVALID_BASE, HEADER_SIZE, BASE_OVERFLOW)
+ *   -> QPACK_DECOMPRESSION_FAILED (0x0200)
+ * - Encoder instruction errors (TABLE_SIZE)
+ *   -> QPACK_ENCODER_STREAM_ERROR (0x0201)
+ * - 0-RTT mismatch (per Section 3.2.3)
+ *   -> QPACK_DECODER_STREAM_ERROR (0x0202)
+ *
+ * @param result Internal QPACK result code
+ * @return HTTP/3 error code (0x0200-0x0202), or 0 if not an error
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_result_to_h3_error (SocketQPACK_Result result);
 
 /** @} */
 

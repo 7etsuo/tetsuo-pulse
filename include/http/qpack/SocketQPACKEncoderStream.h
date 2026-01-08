@@ -424,6 +424,27 @@ SocketQPACK_EncoderStream_buffer_size (SocketQPACK_EncoderStream_T stream);
 extern const char *
 SocketQPACKStream_result_string (SocketQPACKStream_Result result);
 
+/**
+ * @brief Convert stream result to HTTP/3 wire error code.
+ *
+ * RFC 9204 Section 4.2 & 6: Maps stream-level errors to appropriate HTTP/3
+ * application error codes for connection termination.
+ *
+ * Mapping per RFC 9204:
+ * - QPACK_STREAM_ERR_CLOSED_CRITICAL -> H3_CLOSED_CRITICAL_STREAM (0x0104)
+ *   (Section 4.2: Closure of encoder/decoder stream)
+ * - QPACK_STREAM_ERR_ALREADY_INIT -> H3_STREAM_CREATION_ERROR (0x0103)
+ *   (Section 4.2: Receipt of second instance of stream type)
+ * - Other errors -> QPACK_ENCODER_STREAM_ERROR (0x0201)
+ *
+ * @param result Stream result code
+ * @return HTTP/3 error code (0x0103, 0x0104, or 0x0201), or 0 if not an error
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACKStream_result_to_h3_error (SocketQPACKStream_Result result);
+
 /* ============================================================================
  * INSERT WITH NAME REFERENCE PRIMITIVES (RFC 9204 Section 4.3.2)
  * ============================================================================

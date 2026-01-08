@@ -89,6 +89,62 @@ SocketQPACKStream_result_string (SocketQPACKStream_Result result)
 }
 
 /* ============================================================================
+ * HTTP/3 ERROR CODE MAPPING (RFC 9204 Section 4.2 & 6)
+ * ============================================================================
+ */
+
+uint64_t
+SocketQPACKStream_result_to_h3_error (SocketQPACKStream_Result result)
+{
+  /*
+   * RFC 9204 Section 4.2: Stream error to HTTP/3 error mapping:
+   * - Closure of encoder/decoder stream -> H3_CLOSED_CRITICAL_STREAM (0x0104)
+   * - Receipt of second instance of stream type -> H3_STREAM_CREATION_ERROR
+   * (0x0103)
+   *
+   * RFC 9204 Section 6: Other errors map to QPACK_ENCODER_STREAM_ERROR (0x0201)
+   * for encoder stream issues.
+   */
+  switch (result)
+    {
+    case QPACK_STREAM_OK:
+      /* Not an error - return 0 to indicate no H3 error needed */
+      return 0;
+
+    case QPACK_STREAM_ERR_CLOSED_CRITICAL:
+      /*
+       * RFC 9204 Section 4.2: "Closure of either the send or receive side
+       * of the encoder stream by either endpoint MUST be treated as a
+       * connection error of type H3_CLOSED_CRITICAL_STREAM."
+       */
+      return H3_CLOSED_CRITICAL_STREAM;
+
+    case QPACK_STREAM_ERR_ALREADY_INIT:
+      /*
+       * RFC 9204 Section 4.2: "Each endpoint MUST initiate, at most, one
+       * encoder stream and one decoder stream. Receipt of a second instance
+       * of either stream type MUST be treated as a connection error of type
+       * H3_STREAM_CREATION_ERROR."
+       */
+      return H3_STREAM_CREATION_ERROR;
+
+    case QPACK_STREAM_ERR_BUFFER_FULL:
+    case QPACK_STREAM_ERR_NOT_INIT:
+    case QPACK_STREAM_ERR_INVALID_TYPE:
+    case QPACK_STREAM_ERR_NULL_PARAM:
+    case QPACK_STREAM_ERR_INVALID_INDEX:
+    case QPACK_STREAM_ERR_CAPACITY_EXCEED:
+    case QPACK_STREAM_ERR_INTERNAL:
+    default:
+      /*
+       * RFC 9204 Section 6: Other encoder stream errors are treated as
+       * QPACK_ENCODER_STREAM_ERROR.
+       */
+      return QPACK_ENCODER_STREAM_ERROR;
+    }
+}
+
+/* ============================================================================
  * BUFFER MANAGEMENT (INTERNAL)
  * ============================================================================
  */
