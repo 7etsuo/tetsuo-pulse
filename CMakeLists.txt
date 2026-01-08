@@ -823,6 +823,7 @@ set(TEST_SOURCES
     test_qpack_literal_postbase
     test_qpack_field_literal
     test_qpack_blocked
+    test_qpack_krc
     test_qpack_field_section_integration
     test_qpack_sync_integration
     test_qpack_http3_integration

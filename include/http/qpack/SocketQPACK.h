@@ -1852,6 +1852,170 @@ SocketQPACK_get_min_blocked_ric (SocketQPACK_BlockedManager_T manager);
 extern const char *
 SocketQPACK_blocked_result_string (SocketQPACK_BlockedResult result);
 
+/* ============================================================================
+ * QPACK ENCODER (RFC 9204 Section 2.1.4)
+ *
+ * Encoder state management with Known Received Count tracking. The encoder
+ * tracks which dynamic table entries have been acknowledged by the decoder.
+ * ============================================================================
+ */
+
+/**
+ * @brief Opaque type for QPACK encoder state.
+ *
+ * RFC 9204 Section 2.1.4: The encoder maintains the Known Received Count (KRC)
+ * to track which dynamic table entries are safe to reference. Entries with
+ * absolute index < KRC can be safely used in non-blocking representations.
+ */
+typedef struct SocketQPACK_Encoder *SocketQPACK_Encoder_T;
+
+/**
+ * @brief Create a new QPACK encoder.
+ *
+ * Allocates encoder state including dynamic table and acknowledgment tracking.
+ *
+ * @param arena          Memory arena for allocations (must not be NULL)
+ * @param max_table_size Maximum dynamic table size in bytes
+ * @return New encoder instance, or NULL on allocation failure
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Encoder_T
+SocketQPACK_Encoder_new (Arena_T arena, size_t max_table_size);
+
+/**
+ * @brief Get the current Known Received Count.
+ *
+ * RFC 9204 Section 2.1.4: The Known Received Count is the maximum insert count
+ * that the encoder knows the decoder has received and processed.
+ *
+ * @param encoder Encoder state (must not be NULL)
+ * @return Current KRC value, or 0 if encoder is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t
+SocketQPACK_Encoder_known_received_count (SocketQPACK_Encoder_T encoder);
+
+/**
+ * @brief Check if an absolute index is acknowledged (safe to reference).
+ *
+ * RFC 9204 Section 2.1.4: An entry with absolute_index < KRC can be safely
+ * referenced in non-blocking representation because the encoder knows the
+ * decoder has received the corresponding insertion instruction.
+ *
+ * @param encoder       Encoder state
+ * @param absolute_index Absolute index to check
+ * @return true if index < KRC (safe to reference), false otherwise
+ *
+ * @since 1.0.0
+ */
+extern bool SocketQPACK_Encoder_is_acknowledged (SocketQPACK_Encoder_T encoder,
+                                                  uint64_t absolute_index);
+
+/**
+ * @brief Process Section Acknowledgment from decoder.
+ *
+ * RFC 9204 Section 4.4.1: When the decoder processes a field section with
+ * non-zero Required Insert Count, it sends a Section Acknowledgment. This
+ * updates the encoder's Known Received Count.
+ *
+ * @param encoder   Encoder state (must not be NULL)
+ * @param stream_id Stream ID from Section Acknowledgment instruction
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if encoder is NULL,
+ *         QPACK_ERR_INVALID_INDEX if stream has no pending acknowledgment
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Encoder_on_section_ack (SocketQPACK_Encoder_T encoder,
+                                    uint64_t stream_id);
+
+/**
+ * @brief Process Insert Count Increment from decoder.
+ *
+ * RFC 9204 Section 4.4.3: The decoder can directly increment the encoder's
+ * Known Received Count to signal that it has received dynamic table entries.
+ *
+ * @param encoder   Encoder state (must not be NULL)
+ * @param increment Number of entries to add to KRC (must be > 0)
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if encoder is NULL,
+ *         QPACK_ERR_INVALID_INDEX if increment is 0 or would exceed insert_count
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Encoder_on_insert_count_inc (SocketQPACK_Encoder_T encoder,
+                                         uint64_t increment);
+
+/**
+ * @brief Process Stream Cancellation from decoder.
+ *
+ * RFC 9204 Section 4.4.2: When the decoder cancels a stream, the encoder
+ * removes any pending acknowledgment for that stream without updating KRC.
+ *
+ * @param encoder   Encoder state (must not be NULL)
+ * @param stream_id Stream ID from Stream Cancellation instruction
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if encoder is NULL
+ *
+ * @note Cancelling an unknown stream is not an error (idempotent)
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Encoder_on_stream_cancel (SocketQPACK_Encoder_T encoder,
+                                      uint64_t stream_id);
+
+/**
+ * @brief Register a field section for acknowledgment tracking.
+ *
+ * Called when encoding a field section that references dynamic table entries.
+ * The encoder tracks the Required Insert Count for each stream to update
+ * Known Received Count when the Section Acknowledgment is received.
+ *
+ * @param encoder               Encoder state (must not be NULL)
+ * @param stream_id             Stream ID carrying the field section
+ * @param required_insert_count Required Insert Count for this field section
+ * @return QPACK_OK on success,
+ *         QPACK_ERR_NULL_PARAM if encoder is NULL,
+ *         QPACK_ERR_TABLE_SIZE if pending tracking limit exceeded
+ *
+ * @note Only sections with RIC > 0 need to be registered
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_Encoder_register_section (SocketQPACK_Encoder_T encoder,
+                                      uint64_t stream_id,
+                                      uint64_t required_insert_count);
+
+/**
+ * @brief Get the encoder's dynamic table.
+ *
+ * @param encoder Encoder state
+ * @return Dynamic table, or NULL if encoder is NULL
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Table_T
+SocketQPACK_Encoder_get_table (SocketQPACK_Encoder_T encoder);
+
+/**
+ * @brief Get the current Insert Count.
+ *
+ * RFC 9204 Section 3.2.4: The Insert Count is the total number of entries
+ * ever inserted into the dynamic table (monotonically increasing).
+ *
+ * @param encoder Encoder state
+ * @return Current insert count, or 0 if encoder is NULL
+ *
+ * @since 1.0.0
+ */
+extern uint64_t SocketQPACK_Encoder_insert_count (SocketQPACK_Encoder_T encoder);
+
 /** @} */
 
 #endif /* SOCKETQPACK_INCLUDED */
