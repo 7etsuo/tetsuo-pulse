@@ -105,9 +105,11 @@ ensure_stream_capacity (SocketQPACK_BlockedManager_T manager)
  *
  * @param manager Blocked stream manager (for arena)
  * @param stream  Blocked stream to expand
- * @return true on success, false on allocation failure
+ * @return QPACK_BLOCKED_OK on success,
+ *         QPACK_BLOCKED_ERR_SECTION_LIMIT if per-stream limit exceeded,
+ *         QPACK_BLOCKED_ERR_INTERNAL on allocation failure
  */
-static bool
+static SocketQPACK_BlockedResult
 ensure_section_capacity (SocketQPACK_BlockedManager_T manager,
                          SocketQPACK_BlockedStream *stream)
 {
@@ -115,26 +117,26 @@ ensure_section_capacity (SocketQPACK_BlockedManager_T manager,
   SocketQPACK_BlockedSection *new_sections;
 
   if (stream->section_count < stream->section_alloc)
-    return true;
+    return QPACK_BLOCKED_OK;
 
   /* Double the capacity or use initial */
   if (stream->section_alloc == 0)
     new_alloc = INITIAL_SECTION_CAPACITY;
   else if (!SocketSecurity_check_multiply (
                stream->section_alloc, BLOCKED_GROWTH_FACTOR, &new_alloc))
-    return false;
+    return QPACK_BLOCKED_ERR_INTERNAL;
 
   /* Enforce per-stream section limit */
   if (new_alloc > QPACK_MAX_SECTIONS_PER_STREAM)
     new_alloc = QPACK_MAX_SECTIONS_PER_STREAM;
 
   if (stream->section_count >= new_alloc)
-    return false;
+    return QPACK_BLOCKED_ERR_SECTION_LIMIT;
 
   new_sections
       = ALLOC (manager->arena, new_alloc * sizeof (SocketQPACK_BlockedSection));
   if (new_sections == NULL)
-    return false;
+    return QPACK_BLOCKED_ERR_INTERNAL;
 
   /* Copy existing sections */
   if (stream->section_count > 0)
@@ -145,7 +147,7 @@ ensure_section_capacity (SocketQPACK_BlockedManager_T manager,
   stream->sections = new_sections;
   stream->section_alloc = new_alloc;
 
-  return true;
+  return QPACK_BLOCKED_OK;
 }
 
 /**
@@ -335,12 +337,14 @@ SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
     }
 
   /* Ensure section capacity */
-  if (!ensure_section_capacity (manager, stream))
+  SocketQPACK_BlockedResult cap_result
+      = ensure_section_capacity (manager, stream);
+  if (cap_result != QPACK_BLOCKED_OK)
     {
       /* Remove empty stream if we just created it */
       if (is_new_stream && stream->section_count == 0)
         manager->stream_count--;
-      return QPACK_BLOCKED_ERR_INTERNAL;
+      return cap_result;
     }
 
   /* Copy data */
@@ -365,7 +369,6 @@ SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
   section->required_insert_count = ric;
   section->data = data_copy;
   section->data_len = data_len;
-  section->data_alloc = data_len;
   stream->section_count++;
 
   /* Update byte counts */
@@ -566,6 +569,8 @@ SocketQPACK_blocked_result_string (SocketQPACK_BlockedResult result)
       return "Internal error";
     case QPACK_BLOCKED_ERR_INVALID_RIC:
       return "Invalid Required Insert Count";
+    case QPACK_BLOCKED_ERR_SECTION_LIMIT:
+      return "Per-stream section limit exceeded";
     default:
       return "Unknown error";
     }

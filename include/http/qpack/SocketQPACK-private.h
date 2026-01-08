@@ -185,7 +185,6 @@ typedef struct
   uint64_t required_insert_count; /**< RIC needed to decode this section */
   unsigned char *data;            /**< Compressed field section bytes */
   size_t data_len;                /**< Length of compressed data */
-  size_t data_alloc;              /**< Allocated capacity for data */
 } SocketQPACK_BlockedSection;
 
 /**
@@ -210,8 +209,9 @@ typedef struct
  * @internal
  *
  * RFC 9204 Section 2.2.1: Manages all blocked streams for a QPACK decoder.
- * Provides O(1) lookup by stream ID and efficient unblocking when the
- * dynamic table insert count advances.
+ * Provides efficient unblocking when the dynamic table insert count advances.
+ * Stream lookup is O(n) but acceptable given SETTINGS_QPACK_BLOCKED_STREAMS
+ * default of 100.
  */
 struct SocketQPACK_BlockedManager
 {

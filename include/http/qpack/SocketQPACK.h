@@ -1623,14 +1623,15 @@ typedef struct SocketQPACK_BlockedManager *SocketQPACK_BlockedManager_T;
  */
 typedef enum
 {
-  QPACK_BLOCKED_OK = 0,         /**< Operation successful */
-  QPACK_BLOCKED_WOULD_BLOCK,    /**< Stream would block (RIC > insert count) */
-  QPACK_BLOCKED_LIMIT_STREAMS,  /**< max_blocked_streams limit exceeded */
-  QPACK_BLOCKED_LIMIT_BYTES,    /**< max_blocked_bytes limit exceeded */
-  QPACK_BLOCKED_ERR_NULL_PARAM, /**< NULL parameter passed */
-  QPACK_BLOCKED_ERR_NOT_FOUND,  /**< Stream not found in blocked queue */
-  QPACK_BLOCKED_ERR_INTERNAL,   /**< Internal error */
-  QPACK_BLOCKED_ERR_INVALID_RIC /**< Invalid Required Insert Count */
+  QPACK_BLOCKED_OK = 0,          /**< Operation successful */
+  QPACK_BLOCKED_WOULD_BLOCK,     /**< Reserved: stream would block (RIC > IC) */
+  QPACK_BLOCKED_LIMIT_STREAMS,   /**< max_blocked_streams limit exceeded */
+  QPACK_BLOCKED_LIMIT_BYTES,     /**< max_blocked_bytes limit exceeded */
+  QPACK_BLOCKED_ERR_NULL_PARAM,  /**< NULL parameter passed */
+  QPACK_BLOCKED_ERR_NOT_FOUND,   /**< Stream not found in blocked queue */
+  QPACK_BLOCKED_ERR_INTERNAL,    /**< Internal error (allocation, callback) */
+  QPACK_BLOCKED_ERR_INVALID_RIC, /**< Invalid Required Insert Count */
+  QPACK_BLOCKED_ERR_SECTION_LIMIT /**< Per-stream section limit exceeded */
 } SocketQPACK_BlockedResult;
 
 /**

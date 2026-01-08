@@ -307,6 +307,41 @@ TEST (qpack_queue_blocked_limit_bytes)
   Arena_dispose (&arena);
 }
 
+TEST (qpack_queue_blocked_limit_sections_per_stream)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_BlockedConfig config
+      = { .max_blocked_streams = 100, .max_blocked_bytes = 1024 * 1024 };
+
+  SocketQPACK_BlockedManager_T manager
+      = SocketQPACK_BlockedManager_new (arena, &config);
+
+  unsigned char data[] = { 0x01 };
+
+  /* Queue up to the per-stream section limit (QPACK_MAX_SECTIONS_PER_STREAM=64)
+   */
+  for (size_t i = 0; i < QPACK_MAX_SECTIONS_PER_STREAM; i++)
+    {
+      ASSERT_EQ (
+          SocketQPACK_queue_blocked (manager, 1, 10 + i, data, sizeof (data)),
+          QPACK_BLOCKED_OK);
+    }
+
+  /* Verify we have exactly 64 sections queued */
+  ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 1);
+
+  /* 65th section should fail with section limit error */
+  ASSERT_EQ (SocketQPACK_queue_blocked (manager, 1, 100, data, sizeof (data)),
+             QPACK_BLOCKED_ERR_SECTION_LIMIT);
+
+  /* Verify stream still has 64 sections and didn't grow */
+  ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 1);
+  ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
+             QPACK_MAX_SECTIONS_PER_STREAM * sizeof (data));
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * MINIMUM RIC TESTS
  * ============================================================================
@@ -674,6 +709,8 @@ TEST (qpack_blocked_result_string_all_values)
   ASSERT (SocketQPACK_blocked_result_string (QPACK_BLOCKED_ERR_INTERNAL)
           != NULL);
   ASSERT (SocketQPACK_blocked_result_string (QPACK_BLOCKED_ERR_INVALID_RIC)
+          != NULL);
+  ASSERT (SocketQPACK_blocked_result_string (QPACK_BLOCKED_ERR_SECTION_LIMIT)
           != NULL);
   /* Unknown value */
   ASSERT (SocketQPACK_blocked_result_string ((SocketQPACK_BlockedResult)999)
