@@ -1131,6 +1131,8 @@ if(ENABLE_FUZZING)
     set(FUZZ_SOURCES
         fuzz_socketbuf
         fuzz_arena
+        fuzz_hashtable
+        fuzz_socket_common
         fuzz_ip_parse
         fuzz_dns_validate
         fuzz_socketbuf_stress
