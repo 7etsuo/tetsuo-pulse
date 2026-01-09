@@ -1229,6 +1229,17 @@ if(ENABLE_FUZZING)
         fuzz_quic_error
         fuzz_quic_version
         fuzz_quic_connid
+        fuzz_quic_packet_header
+        fuzz_quic_frame
+        fuzz_quic_transport_params
+        fuzz_quic_retry
+        # QPACK fuzzers (RFC 9204 - HTTP/3 header compression)
+        fuzz_qpack_index
+        fuzz_qpack_prefix
+        fuzz_qpack_indexed
+        fuzz_qpack_literal
+        fuzz_qpack_encoder_stream
+        fuzz_qpack_decoder_stream
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)

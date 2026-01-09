@@ -27,6 +27,7 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **HTTP/1.1** - Table-driven DFA parser (RFC 9112), chunked encoding, request smuggling prevention
 - **HTTP/2** - Binary framing, stream multiplexing, flow control, server push (RFC 9113)
 - **HPACK** - Header compression with static/dynamic tables, Huffman coding (RFC 7541)
+- **QPACK** - HTTP/3 header compression (RFC 9204), two-stream architecture, blocked stream management
 - **HTTP Client** - Connection pooling, authentication (Basic/Digest/Bearer), cookies (RFC 6265)
 - **HTTP Server** - Event-driven request handling, keep-alive, graceful shutdown
 
@@ -45,6 +46,14 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **Key Update** - Key phase bit rotation with AEAD confidentiality limits (RFC 9001 §6)
 - **Retry Integrity** - AEAD tag verification for Retry packets (RFC 9001 §5.8)
 - **Transport Parameters** - TLS extension (type 0x39) for QUIC configuration exchange
+
+### QPACK (RFC 9204)
+- **Header Compression** - HTTP/3 header compression avoiding head-of-line blocking
+- **Two-Stream Architecture** - Separate encoder (0x02) and decoder (0x03) streams
+- **Dynamic Table** - Absolute indexing with encoder-relative and field-relative schemes
+- **Static Table** - 99 pre-defined entries (RFC 9204 Appendix A)
+- **State Synchronization** - Section Acknowledgment, Stream Cancellation, Insert Count Increment
+- **Blocked Stream Management** - Configurable blocked stream limits with SETTINGS negotiation
 
 ### WebSocket
 - **RFC 6455 Compliant** - Full WebSocket protocol implementation
