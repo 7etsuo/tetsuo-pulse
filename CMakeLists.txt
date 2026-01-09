@@ -1233,6 +1233,16 @@ if(ENABLE_FUZZING)
         fuzz_quic_frame
         fuzz_quic_transport_params
         fuzz_quic_retry
+        # QUIC protocol fuzzers (RFC 9000/9001/9002)
+        fuzz_quic_crypto
+        fuzz_quic_addr_validation
+        fuzz_quic_ack
+        fuzz_quic_flow
+        fuzz_quic_stream
+        fuzz_quic_loss
+        fuzz_quic_connection
+        fuzz_quic_handshake
+        fuzz_quic_tls
         # QPACK fuzzers (RFC 9204 - HTTP/3 header compression)
         fuzz_qpack_index
         fuzz_qpack_prefix
