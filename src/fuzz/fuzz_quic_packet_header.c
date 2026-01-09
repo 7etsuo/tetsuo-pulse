@@ -8,7 +8,8 @@
  * fuzz_quic_packet_header.c - libFuzzer for QUIC Packet Header (RFC 9000)
  *
  * Fuzzes QUIC packet header parsing and serialization (RFC 9000 Section 17).
- * Tests long and short header formats, packet types, and roundtrip verification.
+ * Tests long and short header formats, packet types, and roundtrip
+ * verification.
  *
  * Targets:
  * - Long header parsing (Initial, 0-RTT, Handshake, Retry)
@@ -19,7 +20,8 @@
  * - Packet number encoding/decoding
  * - Roundtrip verification
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_quic_packet_header
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_quic_packet_header
  * ./fuzz_quic_packet_header -fork=16 -max_len=1024
  */
 
@@ -95,8 +97,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (size > 17)
           {
             SocketQUICPacketHeader_init (&header);
-            res = SocketQUICPacketHeader_parse (data + 17, size - 17, &header,
-                                                &consumed);
+            res = SocketQUICPacketHeader_parse (
+                data + 17, size - 17, &header, &consumed);
             (void)res;
             (void)header.type;
             (void)header.version;
@@ -114,8 +116,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             SocketQUICPacketHeader_init (&header);
             /* Set expected DCID length for short header parsing */
             header.dcid_length = data[13] % 21; /* 0-20 bytes */
-            res = SocketQUICPacketHeader_parse (data + 17, size - 17, &header,
-                                                &consumed);
+            res = SocketQUICPacketHeader_parse (
+                data + 17, size - 17, &header, &consumed);
             (void)res;
             (void)header.spin_bit;
             (void)header.key_phase;
@@ -150,9 +152,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             size_t header_size = SocketQUICPacketHeader_size (&header);
             (void)header_size;
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             (void)written;
           }
       }
@@ -170,16 +171,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint8_t pn_length = (data[15] % 4) + 1;
         uint32_t pn = val32 % 0x3FFFFFFF;
 
-        res = SocketQUICPacketHeader_build_handshake (&header, QUIC_VERSION_1,
-                                                      &dcid, &scid, pn_length,
-                                                      pn);
+        res = SocketQUICPacketHeader_build_handshake (
+            &header, QUIC_VERSION_1, &dcid, &scid, pn_length, pn);
         (void)res;
 
         if (res == QUIC_PACKET_OK)
           {
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             (void)written;
           }
       }
@@ -197,15 +196,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint8_t pn_length = (data[15] % 4) + 1;
         uint32_t pn = val32 % 0x3FFFFFFF;
 
-        res = SocketQUICPacketHeader_build_0rtt (&header, QUIC_VERSION_1, &dcid,
-                                                 &scid, pn_length, pn);
+        res = SocketQUICPacketHeader_build_0rtt (
+            &header, QUIC_VERSION_1, &dcid, &scid, pn_length, pn);
         (void)res;
 
         if (res == QUIC_PACKET_OK)
           {
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             (void)written;
           }
       }
@@ -223,15 +221,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint8_t pn_length = (data[15] % 4) + 1;
         uint32_t pn = val32 % 0x3FFFFFFF;
 
-        res = SocketQUICPacketHeader_build_short (&header, &dcid, spin_bit,
-                                                  key_phase, pn_length, pn);
+        res = SocketQUICPacketHeader_build_short (
+            &header, &dcid, spin_bit, key_phase, pn_length, pn);
         (void)res;
 
         if (res == QUIC_PACKET_OK)
           {
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             (void)written;
           }
       }
@@ -255,15 +252,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         if (res == QUIC_PACKET_OK)
           {
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             if (written > 0)
               {
                 SocketQUICPacketHeader_T parsed;
                 SocketQUICPacketHeader_init (&parsed);
-                res = SocketQUICPacketHeader_parse (output, written, &parsed,
-                                                    &consumed);
+                res = SocketQUICPacketHeader_parse (
+                    output, written, &parsed, &consumed);
                 (void)parsed.type;
                 (void)parsed.is_long_header;
               }
@@ -284,21 +280,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint8_t pn_length = (data[15] % 4) + 1;
         uint32_t pn = val32 % 0xFFFF;
 
-        res = SocketQUICPacketHeader_build_handshake (&header, QUIC_VERSION_1,
-                                                      &dcid, &scid, pn_length,
-                                                      pn);
+        res = SocketQUICPacketHeader_build_handshake (
+            &header, QUIC_VERSION_1, &dcid, &scid, pn_length, pn);
 
         if (res == QUIC_PACKET_OK)
           {
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             if (written > 0)
               {
                 SocketQUICPacketHeader_T parsed;
                 SocketQUICPacketHeader_init (&parsed);
-                res = SocketQUICPacketHeader_parse (output, written, &parsed,
-                                                    &consumed);
+                res = SocketQUICPacketHeader_parse (
+                    output, written, &parsed, &consumed);
                 (void)parsed.type;
               }
           }
@@ -318,21 +312,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint8_t pn_length = (data[15] % 4) + 1;
         uint32_t pn = val32 % 0xFFFF;
 
-        res = SocketQUICPacketHeader_build_short (&header, &dcid, spin_bit,
-                                                  key_phase, pn_length, pn);
+        res = SocketQUICPacketHeader_build_short (
+            &header, &dcid, spin_bit, key_phase, pn_length, pn);
 
         if (res == QUIC_PACKET_OK)
           {
-            size_t written
-                = SocketQUICPacketHeader_serialize (&header, output,
-                                                    sizeof (output));
+            size_t written = SocketQUICPacketHeader_serialize (
+                &header, output, sizeof (output));
             if (written > 0)
               {
                 SocketQUICPacketHeader_T parsed;
                 SocketQUICPacketHeader_init (&parsed);
                 parsed.dcid_length = dcid.len; /* Required for short header */
-                res = SocketQUICPacketHeader_parse (output, written, &parsed,
-                                                    &consumed);
+                res = SocketQUICPacketHeader_parse (
+                    output, written, &parsed, &consumed);
                 (void)parsed.spin_bit;
                 (void)parsed.key_phase;
               }
@@ -344,7 +337,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     case OP_PN_ENCODE_DECODE:
       {
         /* Test packet number encoding and decoding */
-        uint64_t pn = val64 % 0x3FFFFFFFFFFF;
+        uint64_t pn = (val64 % 0x3FFFFFFFFFFF) + 1; /* Ensure non-zero */
         uint64_t largest_ack = (val32 % pn) + 1;
 
         for (uint8_t pn_len = 1; pn_len <= 4; pn_len++)

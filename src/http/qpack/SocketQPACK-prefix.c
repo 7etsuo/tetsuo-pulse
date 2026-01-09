@@ -408,6 +408,10 @@ SocketQPACK_encode_required_insert_count (uint64_t required_insert_count,
   if (max_entries == 0)
     return QPACK_ERR_TABLE_SIZE;
 
+  /* Prevent overflow: 2 * max_entries must fit in uint64_t */
+  if (max_entries > UINT64_MAX / 2)
+    return QPACK_ERR_TABLE_SIZE;
+
   uint64_t full_range = 2 * max_entries;
   *encoded_ric = (required_insert_count % full_range) + 1;
 
