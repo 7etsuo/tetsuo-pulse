@@ -17,7 +17,7 @@
 #   -m MAXLEN   Maximum input length (default: 4096)
 #   -g GROUPS   Fuzzer groups to run (comma-separated, default: all)
 #               Groups: all, core, crypto, utf8, socket, dns, tls, dtls,
-#                       http, http1, hpack, http2
+#                       http, http1, hpack, http2, qpack, quic
 #   -r          Use ramdisk corpus (/mnt/fuzz_corpus)
 #   -c          Continue from existing corpus (don't reset)
 #   -q          Quick mode: 5 minutes, 4 jobs per target
@@ -203,6 +203,26 @@ TARGETS_HTTP2=(
     fuzz_http2_stream
 )
 
+TARGETS_QPACK=(
+    fuzz_qpack_index
+    fuzz_qpack_prefix
+    fuzz_qpack_indexed
+    fuzz_qpack_literal
+    fuzz_qpack_encoder_stream
+    fuzz_qpack_decoder_stream
+)
+
+TARGETS_QUIC=(
+    fuzz_quic_varint
+    fuzz_quic_error
+    fuzz_quic_version
+    fuzz_quic_connid
+    fuzz_quic_packet_header
+    fuzz_quic_frame
+    fuzz_quic_transport_params
+    fuzz_quic_retry
+)
+
 # Build target list from selected groups
 build_target_list() {
     TARGETS=()
@@ -210,7 +230,7 @@ build_target_list() {
     for group in "${GROUP_LIST[@]}"; do
         case "$group" in
             all)
-                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_CRYPTO[@]}" "${TARGETS_UTF8[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}" "${TARGETS_PROXY[@]}" "${TARGETS_WS[@]}" "${TARGETS_HTTP[@]}" "${TARGETS_HTTP1[@]}" "${TARGETS_HPACK[@]}" "${TARGETS_HTTP2[@]}")
+                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_CRYPTO[@]}" "${TARGETS_UTF8[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}" "${TARGETS_PROXY[@]}" "${TARGETS_WS[@]}" "${TARGETS_HTTP[@]}" "${TARGETS_HTTP1[@]}" "${TARGETS_HPACK[@]}" "${TARGETS_HTTP2[@]}" "${TARGETS_QPACK[@]}" "${TARGETS_QUIC[@]}")
                 ;;
             core)
                 TARGETS+=("${TARGETS_CORE[@]}")
@@ -251,9 +271,15 @@ build_target_list() {
             http2)
                 TARGETS+=("${TARGETS_HTTP2[@]}")
                 ;;
+            qpack)
+                TARGETS+=("${TARGETS_QPACK[@]}")
+                ;;
+            quic)
+                TARGETS+=("${TARGETS_QUIC[@]}")
+                ;;
             *)
                 log_error "Unknown group: $group"
-                log_info "Valid groups: all, core, crypto, utf8, socket, dns, tls, dtls, proxy, ws, http, http1, hpack, http2"
+                log_info "Valid groups: all, core, crypto, utf8, socket, dns, tls, dtls, proxy, ws, http, http1, hpack, http2, qpack, quic"
                 exit 1
                 ;;
         esac
@@ -283,7 +309,7 @@ show_usage() {
     echo "  -m MAXLEN   Maximum input length (default: $MAX_LEN)"
     echo "  -g GROUPS   Fuzzer groups to run, comma-separated (default: all)"
     echo "              Groups: all, core, crypto, utf8, socket, dns, tls, dtls,"
-    echo "                      proxy, ws, http, http1, hpack, http2"
+    echo "                      proxy, ws, http, http1, hpack, http2, qpack, quic"
     echo "  -r          Use ramdisk corpus (/mnt/fuzz_corpus)"
     echo "  -c          Continue from existing corpus"
     echo "  -q          Quick mode: 5 min, 4 jobs/target"
@@ -303,13 +329,18 @@ show_usage() {
     echo "  http1  - HTTP/1.1 request, response, chunked, headers, serialize, compression"
     echo "  hpack  - HPACK encode/decode, Huffman, integer coding"
     echo "  http2  - HTTP/2 frames, frames_full, headers, settings, connection"
+    echo "  qpack  - QPACK (RFC 9204) index, prefix, indexed, literal, encoder/decoder stream"
+    echo "  quic   - QUIC (RFC 9000) varint, packet header, frames, transport params, retry"
     echo ""
     echo "Examples:"
     echo "  $0                    # Default: all groups, 2 jobs/target"
     echo "  $0 -g http2           # Only HTTP/2 fuzzers (4 targets)"
     echo "  $0 -g http,http1,http2 # All HTTP fuzzers (20 targets)"
     echo "  $0 -g hpack,http2     # HPACK + HTTP/2 (9 targets)"
-    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (12 targets)"
+    echo "  $0 -g qpack           # QPACK fuzzers (6 targets)"
+    echo "  $0 -g quic            # QUIC fuzzers (8 targets)"
+    echo "  $0 -g qpack,quic      # All HTTP/3 related fuzzers (14 targets)"
+    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (35 targets)"
     echo "  $0 -g ws              # WebSocket fuzzers (5 targets)"
     echo "  $0 -g proxy           # Proxy fuzzers (4 targets)"
     echo "  $0 -g core -j 10      # Core fuzzers with 10 jobs each"
