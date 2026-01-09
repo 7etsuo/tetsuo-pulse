@@ -265,15 +265,14 @@ TEST (integration_platform_socket_duplication)
 
   /* Test that both can be used for I/O */
   const char *msg1 = "Message through original socket";
-  const char *msg2 = "Message through duplicate socket";
 
   /* Send through original socket */
   ssize_t sent1 = Socket_send (client, msg1, strlen (msg1));
   ASSERT_EQ (sent1, (ssize_t)strlen (msg1));
 
   /* Receive echo */
-  char buf1[256];
-  ssize_t received1 = Socket_recv (client, buf1, sizeof (buf1));
+  char buf1[256] = { 0 };
+  ssize_t received1 = Socket_recv (client, buf1, sizeof (buf1) - 1);
   if (received1 > 0)
     {
       ASSERT_EQ (received1, sent1);
@@ -357,8 +356,8 @@ TEST (integration_platform_unix_socket_fd_passing)
       if (recv_result >= 0 && received_fd >= 0)
         {
           /* Verify we can read from the received FD */
-          char buf[256];
-          ssize_t n = read (received_fd, buf, sizeof (buf));
+          char buf[256] = { 0 };
+          ssize_t n = read (received_fd, buf, sizeof (buf) - 1);
           ASSERT (n > 0);
           ASSERT_EQ (strcmp (buf, test_data), 0);
 
