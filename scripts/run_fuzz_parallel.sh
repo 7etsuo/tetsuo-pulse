@@ -50,6 +50,8 @@ TARGETS_CORE=(
     fuzz_except_unwind
     fuzz_synprotect_ip
     fuzz_synprotect_list
+    fuzz_hashtable
+    fuzz_socket_common
 )
 
 TARGETS_CRYPTO=(
