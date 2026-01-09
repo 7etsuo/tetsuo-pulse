@@ -807,6 +807,10 @@ SocketQUICCrypto_encrypt_payload (const SocketQUICPacketKeys_T *keys,
   if (keys->aead < 0 || keys->aead >= QUIC_AEAD_COUNT)
     return QUIC_CRYPTO_ERROR_AEAD;
 
+  /* Validate key length matches AEAD algorithm requirements */
+  if (keys->key_len != aead_params[keys->aead].key_len)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
   /* Check output buffer size */
   required_size = plaintext_len + SOCKET_CRYPTO_AEAD_TAG_SIZE;
   if (*ciphertext_len < required_size)
@@ -885,6 +889,10 @@ SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
 
   /* Validate AEAD algorithm */
   if (keys->aead < 0 || keys->aead >= QUIC_AEAD_COUNT)
+    return QUIC_CRYPTO_ERROR_AEAD;
+
+  /* Validate key length matches AEAD algorithm requirements */
+  if (keys->key_len != aead_params[keys->aead].key_len)
     return QUIC_CRYPTO_ERROR_AEAD;
 
   /* Calculate payload length (ciphertext minus tag) */

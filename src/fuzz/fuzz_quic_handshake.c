@@ -277,7 +277,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           /* Set a ticket (from fuzz data) */
           size_t ticket_len = (data[2] % 100) + 10;
-          if (size >= 3 + ticket_len)
+          if (size >= 3 + ticket_len + 8)
             {
               SocketQUICTransportParams_T saved_params;
               SocketQUICTransportParams_init (&saved_params);
