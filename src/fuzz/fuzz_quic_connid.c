@@ -48,8 +48,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         size_t len
             = (size > 1) ? data[1] % 25 : 0; /* Include invalid lengths */
 
-        SocketQUICConnectionID_Result res
-            = SocketQUICConnectionID_set (&cid, data + 2, len);
+        /* Only call if we have enough data, or if len exceeds max (to test
+         * error path) */
+        SocketQUICConnectionID_Result res;
+        if (len > QUIC_CONNID_MAX_LEN)
+          {
+            /* Test invalid length rejection - don't need data for this */
+            res = SocketQUICConnectionID_set (&cid, NULL, len);
+          }
+        else if (size >= 2 + len)
+          {
+            /* Have enough data for valid call */
+            res = SocketQUICConnectionID_set (&cid, data + 2, len);
+          }
+        else
+          {
+            /* Not enough data - skip this test case */
+            break;
+          }
 
         if (len <= QUIC_CONNID_MAX_LEN && size >= 2 + len)
           {

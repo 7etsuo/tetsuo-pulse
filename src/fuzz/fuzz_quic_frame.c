@@ -98,8 +98,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQUICFrame_init (&frame);
-              res = SocketQUICFrame_parse (data + 17, size - 17, &frame,
-                                           &consumed);
+              res = SocketQUICFrame_parse (
+                  data + 17, size - 17, &frame, &consumed);
               (void)res;
               if (res == QUIC_FRAME_OK)
                 {
@@ -116,8 +116,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQUICFrame_init (&frame);
-              res = SocketQUICFrame_parse_arena (arena_instance, data + 17,
-                                                 size - 17, &frame, &consumed);
+              res = SocketQUICFrame_parse_arena (
+                  arena_instance, data + 17, size - 17, &frame, &consumed);
               (void)res;
               if (res == QUIC_FRAME_OK)
                 {
@@ -151,8 +151,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQUICFrame_init (&frame);
-              res = SocketQUICFrame_parse_arena (arena_instance, data + 17,
-                                                 size - 17, &frame, &consumed);
+              res = SocketQUICFrame_parse_arena (
+                  arena_instance, data + 17, size - 17, &frame, &consumed);
               if (res == QUIC_FRAME_OK)
                 {
                   res = SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL);
@@ -167,8 +167,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQUICFrame_init (&frame);
-              res = SocketQUICFrame_parse_arena (arena_instance, data + 17,
-                                                 size - 17, &frame, &consumed);
+              res = SocketQUICFrame_parse_arena (
+                  arena_instance, data + 17, size - 17, &frame, &consumed);
               if (res == QUIC_FRAME_OK)
                 {
                   res = SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE);
@@ -183,8 +183,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQUICFrame_init (&frame);
-              res = SocketQUICFrame_parse_arena (arena_instance, data + 17,
-                                                 size - 17, &frame, &consumed);
+              res = SocketQUICFrame_parse_arena (
+                  arena_instance, data + 17, size - 17, &frame, &consumed);
               if (res == QUIC_FRAME_OK)
                 {
                   res = SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT);
@@ -199,8 +199,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQUICFrame_init (&frame);
-              res = SocketQUICFrame_parse_arena (arena_instance, data + 17,
-                                                 size - 17, &frame, &consumed);
+              res = SocketQUICFrame_parse_arena (
+                  arena_instance, data + 17, size - 17, &frame, &consumed);
               if (res == QUIC_FRAME_OK)
                 {
                   res = SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT);
@@ -217,8 +217,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           int fin = data[16] & 1;
           size_t data_len = (size > 17) ? ((size - 17) % 100) : 0;
 
-          written = SocketQUICFrame_encode_stream (stream_id, offset, data + 17,
-                                                   data_len, fin, output,
+          written = SocketQUICFrame_encode_stream (stream_id,
+                                                   offset,
+                                                   data + 17,
+                                                   data_len,
+                                                   fin,
+                                                   output,
                                                    sizeof (output));
           (void)written;
         }
@@ -229,8 +233,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t offset = val1 % 0xFFFFFF;
           size_t data_len = (size > 17) ? ((size - 17) % 100) : 0;
 
-          written = SocketQUICFrame_encode_crypto (offset, data + 17, data_len,
-                                                   output, sizeof (output));
+          written = SocketQUICFrame_encode_crypto (
+              offset, data + 17, data_len, output, sizeof (output));
           (void)written;
         }
         break;
@@ -240,36 +244,32 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t max_data = val1;
           uint64_t stream_id = val2 % 0x3FFFFFFF;
 
-          written = SocketQUICFrame_encode_max_data (max_data, output,
-                                                     sizeof (output));
+          written = SocketQUICFrame_encode_max_data (
+              max_data, output, sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_max_stream_data (stream_id, max_data,
-                                                            output,
-                                                            sizeof (output));
+          written = SocketQUICFrame_encode_max_stream_data (
+              stream_id, max_data, output, sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_max_streams (1, val1 % 0xFFFF,
-                                                        output,
-                                                        sizeof (output));
+          written = SocketQUICFrame_encode_max_streams (
+              1, val1 % 0xFFFF, output, sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_max_streams (0, val2 % 0xFFFF,
-                                                        output,
-                                                        sizeof (output));
+          written = SocketQUICFrame_encode_max_streams (
+              0, val2 % 0xFFFF, output, sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_data_blocked (max_data, output,
-                                                         sizeof (output));
+          written = SocketQUICFrame_encode_data_blocked (
+              max_data, output, sizeof (output));
           (void)written;
 
           written = SocketQUICFrame_encode_stream_data_blocked (
               stream_id, max_data, output, sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_streams_blocked (1, val1 % 0xFFFF,
-                                                            output,
-                                                            sizeof (output));
+          written = SocketQUICFrame_encode_streams_blocked (
+              1, val1 % 0xFFFF, output, sizeof (output));
           (void)written;
         }
         break;
@@ -302,21 +302,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           else
             memset (path_data, 0x42, QUIC_PATH_DATA_SIZE);
 
-          written = SocketQUICFrame_encode_path_challenge (path_data, output,
-                                                           sizeof (output));
+          written = SocketQUICFrame_encode_path_challenge (
+              path_data, output, sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_path_response (path_data, output,
-                                                          sizeof (output));
+          written = SocketQUICFrame_encode_path_response (
+              path_data, output, sizeof (output));
           (void)written;
 
           /* Decode */
           if (written > 0)
             {
               uint8_t decoded[QUIC_PATH_DATA_SIZE];
-              int ret
-                  = SocketQUICFrame_decode_path_challenge (output, written,
-                                                           decoded);
+              int ret = SocketQUICFrame_decode_path_challenge (
+                  output, written, decoded);
               (void)ret;
             }
         }
@@ -324,7 +323,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       case OP_ENCODE_NEW_CONNECTION_ID:
         {
-          uint64_t sequence = val1 % 0xFFFF;
+          uint64_t sequence = (val1 % 0xFFFF) + 1; /* Ensure non-zero */
           uint64_t retire_prior = val2 % sequence;
           uint8_t cid_length = (data[16] % 20) + 1;
           uint8_t cid[20];
@@ -335,14 +334,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size >= 17 + cid_length + 16)
             memcpy (reset_token, data + 17 + cid_length, 16);
 
-          written = SocketQUICFrame_encode_new_connection_id (
-              sequence, retire_prior, cid_length, cid, reset_token, output,
-              sizeof (output));
+          written = SocketQUICFrame_encode_new_connection_id (sequence,
+                                                              retire_prior,
+                                                              cid_length,
+                                                              cid,
+                                                              reset_token,
+                                                              output,
+                                                              sizeof (output));
           (void)written;
 
-          written = SocketQUICFrame_encode_retire_connection_id (sequence,
-                                                                 output,
-                                                                 sizeof (output));
+          written = SocketQUICFrame_encode_retire_connection_id (
+              sequence, output, sizeof (output));
           (void)written;
         }
         break;
@@ -353,8 +355,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t offset = val2 % 0xFFFF;
           size_t data_len = (size > 17) ? ((size - 17) % 50) : 0;
 
-          written = SocketQUICFrame_encode_stream (stream_id, offset, data + 17,
-                                                   data_len, 0, output,
+          written = SocketQUICFrame_encode_stream (stream_id,
+                                                   offset,
+                                                   data + 17,
+                                                   data_len,
+                                                   0,
+                                                   output,
                                                    sizeof (output));
           if (written > 0)
             {
@@ -376,8 +382,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t offset = val1 % 0xFFFF;
           size_t data_len = (size > 17) ? ((size - 17) % 50) : 0;
 
-          written = SocketQUICFrame_encode_crypto (offset, data + 17, data_len,
-                                                   output, sizeof (output));
+          written = SocketQUICFrame_encode_crypto (
+              offset, data + 17, data_len, output, sizeof (output));
           if (written > 0)
             {
               SocketQUICFrameCrypto_T decoded;
@@ -438,8 +444,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (test_arena)
       {
         SocketQUICFrame_init (&frame);
-        res = SocketQUICFrame_parse_arena (test_arena, data, size, &frame,
-                                           &consumed);
+        res = SocketQUICFrame_parse_arena (
+            test_arena, data, size, &frame, &consumed);
         (void)res;
         Arena_dispose (&test_arena);
       }
