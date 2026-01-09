@@ -77,12 +77,15 @@ cd "$BUILD_DIR"
 # Configure
 log_info "Configuring with CMake..."
 CMAKE_OPTS="-DENABLE_FUZZING=ON -DCMAKE_BUILD_TYPE=Debug"
+CMAKE_OPTS="$CMAKE_OPTS -DENABLE_HTTP_COMPRESSION=ON"
+CMAKE_OPTS="$CMAKE_OPTS -DENABLE_IO_URING=ON"
 
 if [[ $SANITIZERS -eq 1 ]]; then
     CMAKE_OPTS="$CMAKE_OPTS -DENABLE_SANITIZERS=ON"
     log_info "Sanitizers enabled (ASan + UBSan)"
 fi
 
+log_info "Build options: $CMAKE_OPTS"
 CC=clang cmake .. $CMAKE_OPTS
 
 # Build

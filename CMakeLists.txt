@@ -157,7 +157,7 @@ endif()
 # io_uring support (Linux only - requires liburing and kernel 5.1+)
 set(SOCKET_HAS_IO_URING OFF)
 set(LIBURING_LIBRARIES "")
-option(ENABLE_IO_URING "Enable io_uring async I/O backend (Linux only)" OFF)
+option(ENABLE_IO_URING "Enable io_uring async I/O backend (Linux only)" ON)
 option(PREFER_IO_URING_POLL "Use io_uring instead of epoll for poll backend (Linux only)" OFF)
 
 if(ENABLE_IO_URING)
@@ -212,7 +212,7 @@ if(PREFER_IO_URING_POLL)
 endif()
 
 # HTTP Compression support (optional - requires zlib and/or brotli)
-option(ENABLE_HTTP_COMPRESSION "Enable HTTP gzip/deflate/brotli compression" OFF)
+option(ENABLE_HTTP_COMPRESSION "Enable HTTP gzip/deflate/brotli compression" ON)
 
 set(SOCKETHTTP1_HAS_COMPRESSION OFF)
 set(HTTP_COMPRESSION_LIBS "")
