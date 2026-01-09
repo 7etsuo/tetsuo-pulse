@@ -51,7 +51,7 @@ read_u64 (const uint8_t *data)
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  if (size < 17)
+  if (size < 18)
     return 0;
 
   volatile Arena_T arena = Arena_new ();
