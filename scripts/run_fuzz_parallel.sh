@@ -221,6 +221,15 @@ TARGETS_QUIC=(
     fuzz_quic_frame
     fuzz_quic_transport_params
     fuzz_quic_retry
+    fuzz_quic_crypto
+    fuzz_quic_addr_validation
+    fuzz_quic_ack
+    fuzz_quic_flow
+    fuzz_quic_stream
+    fuzz_quic_loss
+    fuzz_quic_connection
+    fuzz_quic_handshake
+    fuzz_quic_tls
 )
 
 # Build target list from selected groups
@@ -330,7 +339,7 @@ show_usage() {
     echo "  hpack  - HPACK encode/decode, Huffman, integer coding"
     echo "  http2  - HTTP/2 frames, frames_full, headers, settings, connection"
     echo "  qpack  - QPACK (RFC 9204) index, prefix, indexed, literal, encoder/decoder stream"
-    echo "  quic   - QUIC (RFC 9000) varint, packet header, frames, transport params, retry"
+    echo "  quic   - QUIC (RFC 9000/9001/9002) varint, packet header, frames, transport params, crypto, flow, streams, loss"
     echo ""
     echo "Examples:"
     echo "  $0                    # Default: all groups, 2 jobs/target"
@@ -338,8 +347,8 @@ show_usage() {
     echo "  $0 -g http,http1,http2 # All HTTP fuzzers (20 targets)"
     echo "  $0 -g hpack,http2     # HPACK + HTTP/2 (9 targets)"
     echo "  $0 -g qpack           # QPACK fuzzers (6 targets)"
-    echo "  $0 -g quic            # QUIC fuzzers (8 targets)"
-    echo "  $0 -g qpack,quic      # All HTTP/3 related fuzzers (14 targets)"
+    echo "  $0 -g quic            # QUIC fuzzers (17 targets)"
+    echo "  $0 -g qpack,quic      # All HTTP/3 related fuzzers (23 targets)"
     echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (35 targets)"
     echo "  $0 -g ws              # WebSocket fuzzers (5 targets)"
     echo "  $0 -g proxy           # Proxy fuzzers (4 targets)"
