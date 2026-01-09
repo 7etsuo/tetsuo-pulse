@@ -9,8 +9,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)  # Enable GNU extensions (_GNU_SOURCE)
 
-# Compiler flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -Wno-nonnull-compare -fno-delete-null-pointer-checks -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
+# Compiler flags (common to GCC and Clang)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -fno-delete-null-pointer-checks -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
+
+# GCC-specific flags
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-nonnull-compare")
+endif()
 
 # Executable stack warning is expected and harmless:
 # - Caused by setjmp/longjmp in TRY/EXCEPT/FINALLY exception handling
