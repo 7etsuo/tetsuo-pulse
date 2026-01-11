@@ -820,6 +820,195 @@ TEST (fixed_written_zero_on_error)
 }
 
 /*
+ * Additional Coverage Tests
+ */
+
+TEST (fixed_output_buffer_full_literal)
+{
+  /* Output buffer fills during literal decoding */
+  uint8_t encoded[64];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Write more literals than output buffer can hold */
+  write_literal (&bw, 'A');
+  write_literal (&bw, 'B');
+  write_literal (&bw, 'C');
+  write_literal (&bw, 'D');
+  write_literal (&bw, 'E');
+  write_end_of_block (&bw);
+  bitwriter_flush (&bw);
+
+  uint8_t output[3]; /* Only 3 bytes - too small */
+  size_t written;
+  SocketDeflate_Result result;
+
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_fixed_block (
+      reader, output, sizeof (output), &written);
+
+  /* Should return error when output fills before end-of-block */
+  ASSERT_EQ (result, DEFLATE_ERROR);
+  ASSERT_EQ (written, 3);
+}
+
+TEST (fixed_output_buffer_full_copy)
+{
+  /* Output buffer fills during copy operation */
+  uint8_t encoded[64];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  write_literal (&bw, 'X');
+
+  /* Length code 264 = length 10, which would exceed small buffer */
+  write_length_257_264 (&bw, 264);
+  write_distance (&bw, 0, 0, 0); /* distance=1 */
+
+  write_end_of_block (&bw);
+  bitwriter_flush (&bw);
+
+  uint8_t output[5]; /* Only 5 bytes - 1 literal + 10 copy won't fit */
+  size_t written;
+  SocketDeflate_Result result;
+
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_fixed_block (
+      reader, output, sizeof (output), &written);
+
+  /* Copy truncates to fill buffer, then returns error since EOB not reached */
+  ASSERT_EQ (result, DEFLATE_ERROR);
+  ASSERT_EQ (written, 5);
+}
+
+TEST (fixed_length_code_280_with_extra)
+{
+  /* Length code 281 = base 147, 5 extra bits
+   * Simpler test: code 269 = base 19, 2 extra bits
+   * With extra=3: length = 19 + 3 = 22
+   */
+  uint8_t encoded[256];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Write 4 literals "TEST" */
+  write_literal (&bw, 'T');
+  write_literal (&bw, 'E');
+  write_literal (&bw, 'S');
+  write_literal (&bw, 'T');
+
+  /* Length code 269 = base 19, 2 extra bits */
+  /* Code 269 is in range 257-279, uses 7-bit Huffman */
+  write_length_265_279 (&bw, 269, 3, 2); /* extra=3 -> length=22 */
+
+  /* Distance code 3 = distance 4 (0 extra bits) */
+  write_distance (&bw, 3, 0, 0);
+
+  write_end_of_block (&bw);
+  bitwriter_flush (&bw);
+
+  uint8_t output[256];
+  size_t written;
+  SocketDeflate_Result result;
+
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_fixed_block (
+      reader, output, sizeof (output), &written);
+
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (written, 4 + 22); /* 4 literals + 22 copied */
+
+  /* Verify pattern: "TEST" repeated */
+  ASSERT (memcmp (output, "TEST", 4) == 0);
+  ASSERT (memcmp (output + 4, "TEST", 4) == 0);
+}
+
+TEST (fixed_distance_with_many_extra_bits)
+{
+  /* Distance code 10 = base 33, 4 extra bits
+   * With extra=15: distance = 33 + 15 = 48
+   * Need 48 bytes of history first
+   */
+  uint8_t encoded[512];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Write 48 literals to create enough history */
+  for (int i = 0; i < 48; i++)
+    write_literal (&bw, 'A' + (i % 26));
+
+  /* Length code 257 = length 3 */
+  write_length_257_264 (&bw, 257);
+
+  /* Distance code 10 = base 33, 4 extra bits, extra=15 -> dist=48 */
+  write_distance (&bw, 10, 15, 4);
+
+  write_end_of_block (&bw);
+  bitwriter_flush (&bw);
+
+  uint8_t output[256];
+  size_t written;
+  SocketDeflate_Result result;
+
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_fixed_block (
+      reader, output, sizeof (output), &written);
+
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (written, 51); /* 48 literals + 3 copied */
+
+  /* Copied bytes should match bytes from 48 positions back (start) */
+  ASSERT_EQ (output[48], output[0]); /* 'A' */
+  ASSERT_EQ (output[49], output[1]); /* 'B' */
+  ASSERT_EQ (output[50], output[2]); /* 'C' */
+}
+
+TEST (fixed_multiple_backrefs)
+{
+  /* Multiple consecutive back-references */
+  uint8_t encoded[128];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Write "ABCD" */
+  write_literal (&bw, 'A');
+  write_literal (&bw, 'B');
+  write_literal (&bw, 'C');
+  write_literal (&bw, 'D');
+
+  /* First backref: length=4, distance=4 -> copies "ABCD" */
+  write_length_257_264 (&bw, 258);
+  write_distance (&bw, 3, 0, 0);
+
+  /* Second backref: length=3, distance=2 -> copies last 2 bytes pattern */
+  write_length_257_264 (&bw, 257);
+  write_distance (&bw, 1, 0, 0);
+
+  /* Third backref: length=5, distance=1 -> run of same byte */
+  write_length_257_264 (&bw, 259);
+  write_distance (&bw, 0, 0, 0);
+
+  write_end_of_block (&bw);
+  bitwriter_flush (&bw);
+
+  uint8_t output[64];
+  size_t written;
+  SocketDeflate_Result result;
+
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_fixed_block (
+      reader, output, sizeof (output), &written);
+
+  ASSERT_EQ (result, DEFLATE_OK);
+  /* ABCD + 4(ABCD) + 3(CDC) + 5(CCCCC) = 4+4+3+5 = 16 */
+  ASSERT_EQ (written, 16);
+
+  /* Verify: ABCD ABCD CDC CCCCC */
+  ASSERT (memcmp (output, "ABCD", 4) == 0);
+  ASSERT (memcmp (output + 4, "ABCD", 4) == 0);
+}
+
+/*
  * Test Runner
  */
 int
