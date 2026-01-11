@@ -144,65 +144,24 @@ write_codelen_lengths (BitWriter *bw,
 }
 
 /**
- * Build minimal code length Huffman table for testing.
+ * Standard 8-symbol code length table for test encoding.
  *
- * This creates code lengths that result in a valid Huffman tree
- * for the code length alphabet (symbols 0-18).
- *
- * Minimal table:
- * - Symbol 0 (code length 0): length 1 -> code 0
- * - Symbol 8 (code length 8): length 1 -> code 1
- *
- * This allows encoding code lengths of 0 and 8 only.
+ * Symbols: 0, 1, 2, 3, 7, 8, 17, 18 all with length 3.
+ * Canonical codes (sorted by symbol value):
+ *   Symbol 0:  000 -> reversed 000 = 0x0
+ *   Symbol 1:  001 -> reversed 100 = 0x4
+ *   Symbol 2:  010 -> reversed 010 = 0x2
+ *   Symbol 3:  011 -> reversed 110 = 0x6
+ *   Symbol 7:  100 -> reversed 001 = 0x1
+ *   Symbol 8:  101 -> reversed 101 = 0x5
+ *   Symbol 17: 110 -> reversed 011 = 0x3
+ *   Symbol 18: 111 -> reversed 111 = 0x7
  */
-static void
-make_minimal_codelen_table (uint8_t *codelen_lens)
-{
-  memset (codelen_lens, 0, 19);
-  /* Two symbols with length 1 each form a complete tree */
-  codelen_lens[0] = 1; /* Symbol 0 -> code length 0 (unused) */
-  codelen_lens[8] = 1; /* Symbol 8 -> code length 8 */
-}
-
-/**
- * Build code length table that supports literals 0-15 and run-length codes.
- *
- * This creates:
- * - Symbols 0-15: code lengths to encode directly
- * - Symbol 16: copy previous
- * - Symbol 17: repeat zeros 3-10
- * - Symbol 18: repeat zeros 11-138
- */
-static void
-make_full_codelen_table (uint8_t *codelen_lens)
-{
-  memset (codelen_lens, 0, 19);
-  /* Assign lengths to create valid Huffman tree */
-  /* Symbols 0-15: assign length 4 (16 symbols) */
-  for (int i = 0; i <= 15; i++)
-    codelen_lens[i] = 4;
-  /* Symbols 16, 17, 18: assign length 4 */
-  codelen_lens[16] = 4; /* Copy previous */
-  codelen_lens[17] = 4; /* Zeros 3-10 */
-  codelen_lens[18] = 4; /* Zeros 11-138 */
-}
-
-/**
- * Encode a single code length using the code length Huffman table.
- *
- * For the minimal table (symbols 0 and 8 only):
- * - Symbol 0: code 0 (1 bit)
- * - Symbol 8: code 1 (1 bit)
- */
-static void
-write_codelen_minimal (BitWriter *bw, uint8_t symbol)
-{
-  /* Minimal: symbol 0 -> bit 0, symbol 8 -> bit 1 */
-  if (symbol == 0)
-    bitwriter_write (bw, 0, 1);
-  else if (symbol == 8)
-    bitwriter_write (bw, 1, 1);
-}
+#define CODELEN_SYM_0  0x0  /* code length 0 */
+#define CODELEN_SYM_1  0x4  /* code length 1 */
+#define CODELEN_SYM_8  0x5  /* code length 8 */
+#define CODELEN_SYM_17 0x3  /* zeros 3-10 (3 extra bits) */
+#define CODELEN_SYM_18 0x7  /* zeros 11-138 (7 extra bits) */
 
 /*
  * Header Parsing Tests
@@ -291,73 +250,6 @@ TEST (dynamic_header_maximum)
  *
  * These tests construct complete valid dynamic blocks.
  */
-
-/**
- * Build a minimal but valid dynamic block.
- *
- * This creates a block with:
- * - Only end-of-block symbol (256) in literal/length table
- * - Single distance code (not actually used)
- *
- * The result decodes to zero output bytes.
- */
-static size_t
-build_minimal_dynamic_block (uint8_t *buf, size_t capacity)
-{
-  BitWriter bw;
-  bitwriter_init (&bw, buf, capacity);
-
-  /* Header: HLIT=257, HDIST=1, HCLEN=4 */
-  write_dynamic_header (&bw, 257, 1, 4);
-
-  /* Code length code lengths (HCLEN=4 means positions 16,17,18,0)
-   * We'll use:
-   * - Position 0 (symbol 0): length 2 -> code 00
-   * - Position 18 (symbol 18): length 2 -> code 01 (reversed: 10)
-   * Wait - with HCLEN=4, only positions 16,17,18,0 are written.
-   * Symbol 0 is at position 3 in the order.
-   */
-  uint8_t codelen_lens[19] = { 0 };
-  /* Need to set up so symbols 0 and 7 or similar can be used */
-  /* With HCLEN=4, we write lengths for symbols at order[0..3] = 16,17,18,0 */
-  codelen_lens[0] = 2;  /* Symbol 0: length 2 */
-  codelen_lens[18] = 2; /* Symbol 18: length 2 */
-  write_codelen_lengths (&bw, codelen_lens, 4);
-
-  /* Now encode HLIT=257 + HDIST=1 = 258 code lengths using codelen table */
-  /* Symbol 0 with length 2 -> Huffman code: depends on build order */
-  /* Symbol 18 with length 2: repeat 0 for 11-138 times (7 extra bits) */
-
-  /* Encode for canonically built codes:
-   * Symbols in length order: 0, 18 (both length 2)
-   * Symbol 0 -> code 0 (00)
-   * Symbol 18 -> code 1 (01) -> reversed for LSB: 10
-   */
-
-  /* We need:
-   * - 256 zeros for literal codes 0-255 (unused)
-   * - 1 non-zero for code 256 (end-of-block)
-   * - 1 code length for the distance table
-   *
-   * Use symbol 18 twice:
-   * First: extra=127 (max) -> 11+127=138 zeros
-   * Second: extra=107 -> 11+107=118 zeros
-   * Total: 138+118=256 zeros for literals 0-255
-   * Then symbol 7 (if available) for EOB, or another approach needed.
-   */
-
-  /* Actually, with only symbols 0 and 18 available:
-   * - Symbol 0: encodes code length 0 directly
-   * - Symbol 18: encodes 11-138 zeros (with 7 extra bits)
-   *
-   * We need code 256 to have a non-zero length.
-   * This minimal approach won't work easily.
-   * Let's use a slightly larger HCLEN to include more symbols.
-   */
-
-  bitwriter_flush (&bw);
-  return bw.size;
-}
 
 /**
  * Build a simple dynamic block with one literal.
@@ -962,6 +854,202 @@ TEST (dynamic_output_buffer_full)
 
   /* Should fail - output buffer full */
   ASSERT_EQ (result, DEFLATE_ERROR);
+}
+
+TEST (dynamic_with_backreference)
+{
+  /* Test dynamic block with length/distance back-reference.
+   * Decodes to "AAAA" (literal 'A' + copy length=3, distance=1).
+   */
+  uint8_t encoded[512];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Header: HLIT=258 (codes 0-257), HDIST=1, HCLEN=18 */
+  write_dynamic_header (&bw, 258, 1, 18);
+
+  /* Code length code lengths (8 symbols at length 3) */
+  uint8_t codelen_lens[19] = { 0 };
+  codelen_lens[0] = 3;
+  codelen_lens[1] = 3;
+  codelen_lens[2] = 3;
+  codelen_lens[3] = 3;
+  codelen_lens[7] = 3;
+  codelen_lens[8] = 3;
+  codelen_lens[17] = 3;
+  codelen_lens[18] = 3;
+  write_codelen_lengths (&bw, codelen_lens, 18);
+
+  /* Encode code lengths for HLIT=258 + HDIST=1 = 259 total */
+  /* Code 65 ('A'): length 8 */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 54, 7); /* 65 zeros (codes 0-64) */
+  bitwriter_write (&bw, CODELEN_SYM_8, 3); /* Code 65: length 8 */
+
+  /* Codes 66-255: zeros */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 127, 7); /* 138 zeros */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 41, 7); /* 52 zeros */
+
+  /* Code 256 (EOB): length 8 */
+  bitwriter_write (&bw, CODELEN_SYM_8, 3);
+
+  /* Code 257 (length code for length=3): length 8 */
+  bitwriter_write (&bw, CODELEN_SYM_8, 3);
+
+  /* Distance code 0 (distance=1): length 5 */
+  bitwriter_write (&bw, CODELEN_SYM_1, 3); /* Symbol 1 = code length 1 */
+  /* Actually we need distance code with proper bits - use length 1 for single code */
+
+  /* Compressed data:
+   * Litlen codes: 65, 256, 257 all have length 8
+   * Canonical: 65 -> 00000000, 256 -> 00000001, 257 -> 00000010
+   * Reversed: 65 -> 0x00, 256 -> 0x80, 257 -> 0x40
+   */
+  bitwriter_write (&bw, 0x00, 8); /* Literal 'A' (65) */
+  bitwriter_write (&bw, 0x40, 8); /* Length code 257 = length 3 */
+  bitwriter_write (&bw, 0, 1);    /* Distance code 0 = distance 1 (1-bit code) */
+  bitwriter_write (&bw, 0x80, 8); /* EOB (256) */
+
+  bitwriter_flush (&bw);
+
+  uint8_t output[64];
+  size_t written;
+  SocketDeflate_Result result;
+
+  Arena_T block_arena = Arena_new ();
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_dynamic_block (
+      reader, block_arena, output, sizeof (output), &written);
+  Arena_dispose (&block_arena);
+
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (written, 4); /* 'A' + 3 copies = "AAAA" */
+  ASSERT_EQ (output[0], 'A');
+  ASSERT_EQ (output[1], 'A');
+  ASSERT_EQ (output[2], 'A');
+  ASSERT_EQ (output[3], 'A');
+}
+
+TEST (dynamic_max_repeat_138)
+{
+  /* Test symbol 18 with maximum extra bits (127) for 138 zeros */
+  uint8_t encoded[512];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Header: HLIT=257, HDIST=1, HCLEN=18 */
+  write_dynamic_header (&bw, 257, 1, 18);
+
+  /* Code length code lengths */
+  uint8_t codelen_lens[19] = { 0 };
+  codelen_lens[0] = 3;
+  codelen_lens[1] = 3;
+  codelen_lens[8] = 3;
+  codelen_lens[17] = 3;
+  codelen_lens[18] = 3;
+  codelen_lens[2] = 3;
+  codelen_lens[3] = 3;
+  codelen_lens[7] = 3;
+  write_codelen_lengths (&bw, codelen_lens, 18);
+
+  /* Symbol 18 with extra=127: 11+127=138 zeros (maximum) */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 127, 7); /* 138 zeros (codes 0-137) */
+
+  /* Symbol 18 with extra=108: 11+108=119 zeros (codes 138-256) */
+  /* Wait, 138+119 = 257, but code 256 needs non-zero length */
+  /* So: 138 + 118 = 256 zeros, then code 256 = length 8 */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 107, 7); /* 118 zeros (codes 138-255) */
+
+  /* Code 256: length 8 */
+  bitwriter_write (&bw, CODELEN_SYM_8, 3);
+
+  /* Distance code: length 1 */
+  bitwriter_write (&bw, CODELEN_SYM_1, 3);
+
+  /* Compressed data: just EOB */
+  bitwriter_write (&bw, 0x00, 8);
+
+  bitwriter_flush (&bw);
+
+  uint8_t output[64];
+  size_t written;
+  SocketDeflate_Result result;
+
+  Arena_T block_arena = Arena_new ();
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_dynamic_block (
+      reader, block_arena, output, sizeof (output), &written);
+  Arena_dispose (&block_arena);
+
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (written, 0); /* Only EOB */
+}
+
+TEST (dynamic_rle_crosses_boundary)
+{
+  /* Test run-length code that crosses from literal/length to distance alphabet.
+   * Per RFC 1951: "all code lengths form a single sequence of HLIT + HDIST + 258"
+   */
+  uint8_t encoded[512];
+  BitWriter bw;
+  bitwriter_init (&bw, encoded, sizeof (encoded));
+
+  /* Header: HLIT=257, HDIST=5, HCLEN=18 */
+  /* Total code lengths: 257 + 5 = 262 */
+  write_dynamic_header (&bw, 257, 5, 18);
+
+  /* Code length code lengths */
+  uint8_t codelen_lens[19] = { 0 };
+  codelen_lens[0] = 3;
+  codelen_lens[1] = 3;
+  codelen_lens[8] = 3;
+  codelen_lens[17] = 3;
+  codelen_lens[18] = 3;
+  codelen_lens[2] = 3;
+  codelen_lens[3] = 3;
+  codelen_lens[7] = 3;
+  write_codelen_lengths (&bw, codelen_lens, 18);
+
+  /* Fill literal codes 0-255 with zeros (256 codes) */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 127, 7); /* 138 zeros */
+  bitwriter_write (&bw, CODELEN_SYM_18, 3);
+  bitwriter_write (&bw, 107, 7); /* 118 zeros (total 256) */
+
+  /* Code 256 (EOB): length 8 */
+  bitwriter_write (&bw, CODELEN_SYM_8, 3);
+
+  /* Now use symbol 17 (zeros 3-10) that crosses into distance alphabet:
+   * Remaining litlen codes: 0 (we're at code 257, HLIT=257)
+   * Distance codes needed: 5
+   * Symbol 17 with extra=2: 3+2=5 zeros - crosses boundary!
+   */
+  bitwriter_write (&bw, CODELEN_SYM_17, 3);
+  bitwriter_write (&bw, 2, 3); /* 5 zeros for distance codes 0-4 */
+
+  /* Compressed data: just EOB */
+  /* Code 256 is only non-zero, length 8 -> code 0 */
+  bitwriter_write (&bw, 0x00, 8);
+
+  bitwriter_flush (&bw);
+
+  uint8_t output[64];
+  size_t written;
+  SocketDeflate_Result result;
+
+  Arena_T block_arena = Arena_new ();
+  SocketDeflate_BitReader_T reader = make_reader (encoded, bw.size);
+  result = SocketDeflate_decode_dynamic_block (
+      reader, block_arena, output, sizeof (output), &written);
+  Arena_dispose (&block_arena);
+
+  /* Should succeed - RLE crossing boundary is valid per RFC */
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (written, 0);
 }
 
 /*
