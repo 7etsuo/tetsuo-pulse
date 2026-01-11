@@ -288,11 +288,13 @@ extern void SocketDeflate_BitReader_align (SocketDeflate_BitReader_T reader);
 /**
  * Read raw bytes from the stream.
  *
- * Only valid after calling align(). Used for stored block data.
+ * Typically called after align() for stored block data. First consumes
+ * any complete bytes from the bit accumulator, then reads remaining
+ * bytes directly from input.
  *
  * @param reader The bit reader
  * @param dest   Destination buffer
- * @param count  Number of bytes to read
+ * @param count  Number of bytes to read (0 returns immediately with OK)
  * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough data
  */
 extern SocketDeflate_Result

@@ -554,6 +554,182 @@ TEST (bitreader_bytes_remaining)
 }
 
 /*
+ * Edge Case and Validation Tests
+ */
+
+TEST (bitreader_read_zero_bits_returns_error)
+{
+  uint8_t data[] = { 0xAB };
+  SocketDeflate_BitReader_T reader = make_reader (data, 1);
+  uint32_t value = 0xDEAD;
+
+  /* Reading 0 bits should return error */
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 0, &value), DEFLATE_ERROR);
+
+  /* Value should be unchanged */
+  ASSERT_EQ (value, 0xDEAD);
+
+  /* Reader state should be unchanged - can still read normally */
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 8, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xAB);
+}
+
+TEST (bitreader_read_too_many_bits_returns_error)
+{
+  uint8_t data[] = { 0xAB, 0xCD, 0xEF, 0x12 };
+  SocketDeflate_BitReader_T reader = make_reader (data, 4);
+  uint32_t value = 0xDEAD;
+
+  /* Reading more than DEFLATE_MAX_BITS_READ (25) should return error */
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 26, &value), DEFLATE_ERROR);
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 100, &value), DEFLATE_ERROR);
+
+  /* Value should be unchanged */
+  ASSERT_EQ (value, 0xDEAD);
+
+  /* Reader state should be unchanged */
+  ASSERT_EQ (SocketDeflate_BitReader_bits_available (reader), 32);
+}
+
+TEST (bitreader_peek_zero_bits_returns_error)
+{
+  uint8_t data[] = { 0xAB };
+  SocketDeflate_BitReader_T reader = make_reader (data, 1);
+  uint32_t value = 0xDEAD;
+
+  /* Peeking 0 bits should return error */
+  ASSERT_EQ (SocketDeflate_BitReader_peek (reader, 0, &value), DEFLATE_ERROR);
+  ASSERT_EQ (value, 0xDEAD);
+}
+
+TEST (bitreader_peek_too_many_bits_returns_error)
+{
+  uint8_t data[] = { 0xAB, 0xCD, 0xEF, 0x12 };
+  SocketDeflate_BitReader_T reader = make_reader (data, 4);
+  uint32_t value = 0xDEAD;
+
+  /* Peeking more than DEFLATE_MAX_BITS_READ (25) should return error */
+  ASSERT_EQ (SocketDeflate_BitReader_peek (reader, 26, &value), DEFLATE_ERROR);
+  ASSERT_EQ (value, 0xDEAD);
+}
+
+TEST (bitreader_consume_zero_bits)
+{
+  uint8_t data[] = { 0xAB };
+  SocketDeflate_BitReader_T reader = make_reader (data, 1);
+  uint32_t value;
+
+  /* Peek first to load accumulator */
+  SocketDeflate_BitReader_peek (reader, 8, &value);
+
+  /* Consume 0 bits should be a no-op */
+  SocketDeflate_BitReader_consume (reader, 0);
+
+  /* Should still have all 8 bits */
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 8, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xAB);
+}
+
+TEST (bitreader_consume_more_than_available)
+{
+  uint8_t data[] = { 0xAB };
+  SocketDeflate_BitReader_T reader = make_reader (data, 1);
+  uint32_t value;
+
+  /* Peek to load accumulator */
+  SocketDeflate_BitReader_peek (reader, 8, &value);
+
+  /* Try to consume more than available - should clamp */
+  SocketDeflate_BitReader_consume (reader, 100);
+
+  /* Should be at end now */
+  ASSERT_EQ (SocketDeflate_BitReader_at_end (reader), 1);
+}
+
+TEST (bitreader_read_bytes_zero_count)
+{
+  uint8_t data[] = { 0xAB, 0xCD };
+  SocketDeflate_BitReader_T reader = make_reader (data, 2);
+  uint8_t buf[4] = { 0xDE, 0xAD, 0xBE, 0xEF };
+
+  /* Reading 0 bytes should succeed immediately */
+  ASSERT_EQ (SocketDeflate_BitReader_read_bytes (reader, buf, 0), DEFLATE_OK);
+
+  /* Buffer unchanged */
+  ASSERT_EQ (buf[0], 0xDE);
+
+  /* Reader state unchanged */
+  ASSERT_EQ (SocketDeflate_BitReader_bits_available (reader), 16);
+}
+
+TEST (bitreader_read_bytes_without_align)
+{
+  /* Test read_bytes when not aligned - consumes from shifted accumulator.
+   *
+   * After reading 3 bits from [0xAB, 0xCD, 0xEF]:
+   * - Accumulator was loaded with all 3 bytes: 0xEFCDAB (24 bits)
+   * - After consuming 3 bits: 0xEFCDAB >> 3 = 0x1DF9B5 (21 bits)
+   * - read_bytes extracts whole bytes from accumulator:
+   *   buf[0] = 0xB5, buf[1] = 0xF9
+   *
+   * This demonstrates why align() should be called before read_bytes()
+   * for stored block data - otherwise you get shifted data.
+   */
+  uint8_t data[] = { 0xAB, 0xCD, 0xEF };
+  SocketDeflate_BitReader_T reader = make_reader (data, 3);
+  uint32_t value;
+  uint8_t buf[2];
+
+  /* Read 3 bits - accumulator is refilled and shifted */
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 3, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0x3); /* Low 3 bits of 0xAB = 011 */
+
+  /* Read bytes without align - gets shifted accumulator bytes */
+  ASSERT_EQ (SocketDeflate_BitReader_read_bytes (reader, buf, 2), DEFLATE_OK);
+
+  /* Gets bytes from shifted accumulator (0xEFCDAB >> 3 = 0x1DF9B5) */
+  ASSERT_EQ (buf[0], 0xB5); /* Low byte of 0x1DF9B5 */
+  ASSERT_EQ (buf[1], 0xF9); /* Next byte */
+}
+
+TEST (bitreader_reverse_bits_zero_nbits)
+{
+  /* reverse_bits with nbits=0 should return 0 */
+  ASSERT_EQ (SocketDeflate_reverse_bits (0xFFFF, 0), 0);
+  ASSERT_EQ (SocketDeflate_reverse_bits (0, 0), 0);
+}
+
+TEST (bitreader_reverse_bits_too_many_nbits)
+{
+  /* reverse_bits with nbits > 15 should return 0 */
+  ASSERT_EQ (SocketDeflate_reverse_bits (0x1, 16), 0);
+  ASSERT_EQ (SocketDeflate_reverse_bits (0xFFFF, 32), 0);
+}
+
+TEST (bitreader_reinit)
+{
+  /* Test re-initializing a reader with new data */
+  uint8_t data1[] = { 0xAB };
+  uint8_t data2[] = { 0xCD, 0xEF };
+  SocketDeflate_BitReader_T reader = make_reader (data1, 1);
+  uint32_t value;
+
+  /* Read from first data */
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 8, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xAB);
+  ASSERT_EQ (SocketDeflate_BitReader_at_end (reader), 1);
+
+  /* Re-init with new data */
+  SocketDeflate_BitReader_init (reader, data2, 2);
+
+  /* Should now read from new data */
+  ASSERT_EQ (SocketDeflate_BitReader_at_end (reader), 0);
+  ASSERT_EQ (SocketDeflate_BitReader_bits_available (reader), 16);
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 16, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xEFCD);
+}
+
+/*
  * Test Runner
  */
 

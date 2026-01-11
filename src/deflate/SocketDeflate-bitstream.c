@@ -110,6 +110,10 @@ SocketDeflate_Result
 SocketDeflate_BitReader_read (SocketDeflate_BitReader_T reader, unsigned int n,
                               uint32_t *value)
 {
+  /* Validate n is in range 1-25 */
+  if (n == 0 || n > DEFLATE_MAX_BITS_READ)
+    return DEFLATE_ERROR;
+
   /* Ensure we have enough bits */
   refill_bits (reader);
 
@@ -130,6 +134,10 @@ SocketDeflate_Result
 SocketDeflate_BitReader_peek (SocketDeflate_BitReader_T reader, unsigned int n,
                               uint32_t *value)
 {
+  /* Validate n is in range 1-25 */
+  if (n == 0 || n > DEFLATE_MAX_BITS_READ)
+    return DEFLATE_ERROR;
+
   /* Ensure we have enough bits */
   refill_bits (reader);
 
@@ -236,6 +244,10 @@ SocketDeflate_reverse_bits (uint32_t value, unsigned int nbits)
 {
   uint32_t result = 0;
   unsigned int i;
+
+  /* nbits must be 1-15 (max Huffman code length) */
+  if (nbits == 0 || nbits > DEFLATE_MAX_BITS)
+    return 0;
 
   for (i = 0; i < nbits; i++)
     {

@@ -15,6 +15,7 @@
  * - SocketDeflate_BitReader_align byte boundary handling
  * - SocketDeflate_BitReader_read_bytes after alignment
  * - SocketDeflate_reverse_bits with all bit lengths
+ * - Input validation (n=0, n>25, nbits>15)
  * - Edge cases: empty input, partial bytes, boundary conditions
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON && make fuzz_deflate_bitstream
@@ -39,6 +40,7 @@ enum FuzzOp
   OP_REVERSE_BITS,
   OP_QUERY_STATE,
   OP_MULTI_READ,
+  OP_INVALID_PARAMS, /* Test validation of invalid parameters */
   OP_MAX
 };
 
@@ -190,6 +192,44 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (SocketDeflate_BitReader_read (reader, bits_to_read, &value)
                 != DEFLATE_OK)
               break;
+          }
+      }
+      break;
+
+    case OP_INVALID_PARAMS:
+      {
+        /* Test validation with invalid parameters */
+        SocketDeflate_Result result;
+
+        /* read with n=0 should return DEFLATE_ERROR */
+        result = SocketDeflate_BitReader_read (reader, 0, &value);
+        (void)(result == DEFLATE_ERROR);
+
+        /* read with n > 25 should return DEFLATE_ERROR */
+        result = SocketDeflate_BitReader_read (reader, param1 + 26, &value);
+        (void)(result == DEFLATE_ERROR);
+
+        /* peek with n=0 should return DEFLATE_ERROR */
+        result = SocketDeflate_BitReader_peek (reader, 0, &value);
+        (void)(result == DEFLATE_ERROR);
+
+        /* peek with n > 25 should return DEFLATE_ERROR */
+        result = SocketDeflate_BitReader_peek (reader, param2 + 26, &value);
+        (void)(result == DEFLATE_ERROR);
+
+        /* reverse_bits with nbits=0 should return 0 */
+        uint32_t rev = SocketDeflate_reverse_bits (param1, 0);
+        (void)(rev == 0);
+
+        /* reverse_bits with nbits > 15 should return 0 */
+        rev = SocketDeflate_reverse_bits (param1, param2 + 16);
+        (void)(rev == 0);
+
+        /* Valid operations should still work after invalid ones */
+        if (input_size > 0)
+          {
+            result = SocketDeflate_BitReader_read (reader, 1, &value);
+            (void)(result == DEFLATE_OK || result == DEFLATE_INCOMPLETE);
           }
       }
       break;
