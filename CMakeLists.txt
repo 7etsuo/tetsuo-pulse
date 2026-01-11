@@ -450,6 +450,7 @@ set(LIB_SOURCES
     src/deflate/SocketDeflate-static.c
     src/deflate/SocketDeflate-bitstream.c
     src/deflate/SocketDeflate-huffman.c
+    src/deflate/SocketDeflate-stored.c
 
 )
 
@@ -872,6 +873,7 @@ set(TEST_SOURCES
     test_deflate_static
     test_deflate_bitstream
     test_deflate_huffman
+    test_deflate_stored
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error
@@ -1268,6 +1270,7 @@ if(ENABLE_FUZZING)
         fuzz_deflate_static
         fuzz_deflate_bitstream
         fuzz_deflate_huffman
+        fuzz_deflate_stored
     )
 
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)

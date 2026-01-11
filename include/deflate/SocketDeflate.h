@@ -443,6 +443,38 @@ extern SocketDeflate_HuffmanTable_T SocketDeflate_get_fixed_litlen_table (void);
  */
 extern SocketDeflate_HuffmanTable_T SocketDeflate_get_fixed_dist_table (void);
 
+/*
+ * Stored Block Decoder (RFC 1951 Section 3.2.4)
+ *
+ * Non-compressed blocks contain literal bytes with a length header.
+ * The block format is: [align to byte][LEN:16][NLEN:16][DATA:LEN bytes]
+ *
+ * LEN is the number of data bytes (0-65535).
+ * NLEN is the one's complement of LEN for validation.
+ */
+
+/**
+ * Decode a stored block (BTYPE=00) from the bit stream.
+ *
+ * Per RFC 1951 Section 3.2.4:
+ * 1. Aligns to next byte boundary (discards partial byte)
+ * 2. Reads LEN (16-bit length)
+ * 3. Reads NLEN (16-bit one's complement of LEN)
+ * 4. Validates NLEN == ~LEN
+ * 5. Copies LEN bytes to output
+ *
+ * @param reader      Bit reader positioned after BTYPE bits
+ * @param output      Output buffer for decompressed data
+ * @param output_len  Size of output buffer
+ * @param written     Output: number of bytes written
+ * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if need more input,
+ *         DEFLATE_ERROR if NLEN validation fails or output too small
+ */
+extern SocketDeflate_Result
+SocketDeflate_decode_stored_block (SocketDeflate_BitReader_T reader,
+                                   uint8_t *output, size_t output_len,
+                                   size_t *written);
+
 /** @} */ /* end of deflate group */
 
 #endif /* SOCKETDEFLATE_INCLUDED */
