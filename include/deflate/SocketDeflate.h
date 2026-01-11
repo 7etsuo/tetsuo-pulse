@@ -475,6 +475,48 @@ SocketDeflate_decode_stored_block (SocketDeflate_BitReader_T reader,
                                    uint8_t *output, size_t output_len,
                                    size_t *written);
 
+/*
+ * Fixed Huffman Block Decoder (RFC 1951 Section 3.2.6)
+ *
+ * Compressed blocks with fixed Huffman codes use predefined tables:
+ * - Literal/length codes: 7-9 bits (0-143: 8 bits, 144-255: 9 bits,
+ *   256-279: 7 bits, 280-287: 8 bits)
+ * - Distance codes: 5 bits (all 32 codes)
+ *
+ * The decoder implements the LZ77 decompression loop:
+ * - Literal (0-255): Write byte directly to output
+ * - End-of-block (256): Terminate decoding
+ * - Length code (257-285): Decode length, then distance, copy from history
+ */
+
+/**
+ * Decode a fixed Huffman block (BTYPE=01) from the bit stream.
+ *
+ * Per RFC 1951 Section 3.2.6, decodes compressed data using the predefined
+ * fixed Huffman tables. The fixed tables must be initialized via
+ * SocketDeflate_fixed_tables_init() before calling this function.
+ *
+ * The decoder handles the LZ77 decompression with:
+ * - Literal bytes output directly
+ * - Back-references with length/distance pairs
+ * - Overlap handling when distance < length (RFC 1951 §3.2.3)
+ *
+ * @param reader      Bit reader positioned after BTYPE bits
+ * @param output      Output buffer for decompressed data
+ * @param output_len  Size of output buffer
+ * @param written     Output: number of bytes written
+ * @return DEFLATE_OK on success (end-of-block reached),
+ *         DEFLATE_INCOMPLETE if input exhausted before end-of-block,
+ *         DEFLATE_ERROR_INVALID_CODE if invalid literal/length code,
+ *         DEFLATE_ERROR_INVALID_DISTANCE if invalid distance code (30-31),
+ *         DEFLATE_ERROR_DISTANCE_TOO_FAR if distance exceeds output position,
+ *         DEFLATE_ERROR if fixed tables not initialized or output buffer full
+ */
+extern SocketDeflate_Result
+SocketDeflate_decode_fixed_block (SocketDeflate_BitReader_T reader,
+                                  uint8_t *output, size_t output_len,
+                                  size_t *written);
+
 /** @} */ /* end of deflate group */
 
 #endif /* SOCKETDEFLATE_INCLUDED */
