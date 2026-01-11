@@ -417,7 +417,7 @@ TEST (huffman_incomplete_tree)
 }
 
 /*
- * Test: Decode invalid code from incomplete tree.
+ * Test: Decode invalid code from incomplete tree (primary table path).
  *
  * Build an incomplete tree and try to decode an unassigned bit pattern.
  * This should return DEFLATE_ERROR_INVALID_CODE.
@@ -442,6 +442,58 @@ TEST (huffman_decode_invalid_code)
    * Try 0x02 (010 reversed = 010) - not assigned */
   uint8_t invalid_data[] = { 0x02 };
   result = decode_from_bytes (invalid_data, 1, &symbol);
+  ASSERT_EQ (result, DEFLATE_ERROR_INVALID_CODE);
+
+  teardown ();
+}
+
+/*
+ * Test: Decode invalid code from incomplete tree (secondary table path).
+ *
+ * Build an incomplete tree with codes > 9 bits and try to decode an
+ * unassigned bit pattern that requires secondary table lookup.
+ */
+TEST (huffman_decode_invalid_code_secondary)
+{
+  uint8_t lengths[16];
+  SocketDeflate_Result result;
+  uint16_t symbol;
+
+  setup ();
+
+  /* Create tree: 1-bit code for symbol 0, 10-bit code for symbol 1
+   * Symbol 0: 1-bit code 0
+   * Symbol 1: 10-bit code 512 (MSB-first: 1000000000)
+   *           reversed: 0000000001
+   *           primary index = 1 (lower 9 bits)
+   *           secondary index = 0 (bit 9)
+   *
+   * To hit invalid secondary entry, use primary index 1 but
+   * secondary index != 0 (e.g., secondary index 1) */
+  memset (lengths, 0, sizeof (lengths));
+  lengths[0] = 1;  /* Symbol 0: 1-bit */
+  lengths[1] = 10; /* Symbol 1: 10-bit */
+
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 16, DEFLATE_MAX_BITS);
+  ASSERT_EQ (result, DEFLATE_OK);
+
+  /* Valid symbol 1 decode: primary[1] -> secondary[0]
+   * Input: 0x01, 0x00 (bits 0-9 = 0000000001)
+   *
+   * Invalid decode: primary[1] -> secondary[1]
+   * Input: need bit pattern where:
+   *   - Lower 9 bits = 1 (to hit secondary table for prefix 1)
+   *   - Bits 9+ = 1 (to index secondary[1] which is unassigned)
+   * Bit pattern: 0000001 0 00000001 = 0x01, 0x02
+   *              ^^^^^^^ ^
+   *              bits9+  lower 9 bits
+   * Actually: byte[0] = bits 0-7, byte[1] = bits 8-15
+   * We need bits[0-8] = 000000001 (index 1) and bits[9] = 1
+   * byte[0] = 0x01 (bits 0-7 = 00000001)
+   * byte[1] = 0x02 (bits 8-15, bit 9 = 1, so 00000010) */
+  uint8_t invalid_secondary[] = { 0x01, 0x02 };
+  result = decode_from_bytes (invalid_secondary, 2, &symbol);
   ASSERT_EQ (result, DEFLATE_ERROR_INVALID_CODE);
 
   teardown ();
