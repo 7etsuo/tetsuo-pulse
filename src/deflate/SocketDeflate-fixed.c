@@ -166,12 +166,14 @@ copy_from_history (uint8_t *output,
 }
 
 /**
- * Core LZ77 decode loop for fixed Huffman blocks.
+ * Core LZ77 decode loop for Huffman blocks.
  *
  * Decodes symbols until end-of-block (256) or output buffer full:
  * - Literal (0-255): Write byte to output
  * - End-of-block (256): Return success
  * - Length code (257-285): Decode length, distance, copy from history
+ *
+ * This function is shared by both fixed and dynamic block decoders.
  *
  * @param reader       Bit reader with input data
  * @param litlen_table Literal/length Huffman table
@@ -181,7 +183,7 @@ copy_from_history (uint8_t *output,
  * @param written      Output: bytes written
  * @return DEFLATE_OK on success (end-of-block reached)
  */
-static SocketDeflate_Result
+SocketDeflate_Result
 inflate_lz77 (SocketDeflate_BitReader_T reader,
               SocketDeflate_HuffmanTable_T litlen_table,
               SocketDeflate_HuffmanTable_T dist_table,
