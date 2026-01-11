@@ -142,16 +142,47 @@ extern int SocketDeflate_is_valid_litlen_code (unsigned int code);
 extern int SocketDeflate_is_valid_distance_code (unsigned int code);
 
 /*
+ * Extra Bits Query Functions
+ *
+ * These functions return the number of extra bits needed for a given code.
+ * Use these to determine how many bits to read from the stream before decoding.
+ */
+
+/**
+ * Get the number of extra bits for a length code.
+ *
+ * @param code        Length code (257-285)
+ * @param extra_out   Output: number of extra bits (0-5)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_CODE if code invalid
+ */
+extern SocketDeflate_Result
+SocketDeflate_get_length_extra_bits (unsigned int code,
+                                     unsigned int *extra_out);
+
+/**
+ * Get the number of extra bits for a distance code.
+ *
+ * @param code        Distance code (0-29)
+ * @param extra_out   Output: number of extra bits (0-13)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_DISTANCE if code invalid
+ */
+extern SocketDeflate_Result
+SocketDeflate_get_distance_extra_bits (unsigned int code,
+                                       unsigned int *extra_out);
+
+/*
  * Decode Functions
  *
  * These functions decode length and distance values from codes and extra bits.
+ * The extra bits value is masked to the valid range for the code, preventing
+ * overflow from malformed input.
  */
 
 /**
  * Decode a length value from a length code and extra bits.
  *
  * @param code       Length code (257-285)
- * @param extra      Extra bits value (already extracted from stream)
+ * @param extra      Extra bits value (masked to valid range for code)
  * @param length_out Output: decoded length (3-258)
  * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_CODE if code invalid
  */
@@ -163,7 +194,7 @@ SocketDeflate_decode_length (unsigned int code, unsigned int extra,
  * Decode a distance value from a distance code and extra bits.
  *
  * @param code         Distance code (0-29)
- * @param extra        Extra bits value (already extracted from stream)
+ * @param extra        Extra bits value (masked to valid range for code)
  * @param distance_out Output: decoded distance (1-32768)
  * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_DISTANCE if invalid
  */

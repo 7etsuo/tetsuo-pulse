@@ -14,6 +14,8 @@
  * - Distance decode function with arbitrary code/extra values
  * - Validation functions with full input range
  * - Bounds checking on static table access
+ * - Extra bits query functions for length and distance codes
+ * - Extra bits overflow masking in decode functions
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON && make fuzz_deflate_static
  * Run:   ./fuzz_deflate_static corpus/deflate_static/ -fork=16 -max_len=64
@@ -33,6 +35,8 @@ enum FuzzOp
   OP_VALID_DISTANCE,
   OP_TABLE_ACCESS,
   OP_MULTI_DECODE,
+  OP_GET_LENGTH_EXTRA,
+  OP_GET_DISTANCE_EXTRA,
   OP_MAX
 };
 
@@ -197,6 +201,48 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketDeflate_decode_distance (code2, extra2, &distance);
             }
         }
+      break;
+
+    case OP_GET_LENGTH_EXTRA:
+      /*
+       * Test get_length_extra_bits with arbitrary code.
+       * Should return OK for codes 257-285, error for others.
+       */
+      {
+        unsigned int extra_bits;
+        result = SocketDeflate_get_length_extra_bits (code, &extra_bits);
+
+        if (code >= DEFLATE_LENGTH_CODE_MIN && code <= DEFLATE_LENGTH_CODE_MAX)
+          {
+            (void)(result == DEFLATE_OK);
+            (void)(extra_bits <= 5); /* Max 5 extra bits for length codes */
+          }
+        else
+          {
+            (void)(result == DEFLATE_ERROR_INVALID_CODE);
+          }
+      }
+      break;
+
+    case OP_GET_DISTANCE_EXTRA:
+      /*
+       * Test get_distance_extra_bits with arbitrary code.
+       * Should return OK for codes 0-29, error for others.
+       */
+      {
+        unsigned int extra_bits;
+        result = SocketDeflate_get_distance_extra_bits (code, &extra_bits);
+
+        if (code <= DEFLATE_DISTANCE_CODE_MAX)
+          {
+            (void)(result == DEFLATE_OK);
+            (void)(extra_bits <= 13); /* Max 13 extra bits for distance codes */
+          }
+        else
+          {
+            (void)(result == DEFLATE_ERROR_INVALID_DISTANCE);
+          }
+      }
       break;
     }
 

@@ -400,6 +400,214 @@ TEST (deflate_block_type_constants)
   ASSERT_EQ (DEFLATE_BLOCK_RESERVED, 3);
 }
 
+/*
+ * Extra Bits Helper Function Tests
+ */
+
+/* Test get_length_extra_bits for all valid codes */
+TEST (deflate_get_length_extra_bits_all_codes)
+{
+  unsigned int extra_bits;
+
+  /* Code 257-264: 0 extra bits */
+  for (unsigned int code = 257; code <= 264; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_length_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 0);
+    }
+
+  /* Code 265-268: 1 extra bit */
+  for (unsigned int code = 265; code <= 268; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_length_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 1);
+    }
+
+  /* Code 269-272: 2 extra bits */
+  for (unsigned int code = 269; code <= 272; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_length_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 2);
+    }
+
+  /* Code 273-276: 3 extra bits */
+  for (unsigned int code = 273; code <= 276; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_length_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 3);
+    }
+
+  /* Code 277-280: 4 extra bits */
+  for (unsigned int code = 277; code <= 280; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_length_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 4);
+    }
+
+  /* Code 281-284: 5 extra bits */
+  for (unsigned int code = 281; code <= 284; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_length_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 5);
+    }
+
+  /* Code 285: 0 extra bits (special case) */
+  ASSERT_EQ (SocketDeflate_get_length_extra_bits (285, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (extra_bits, 0);
+}
+
+/* Test get_length_extra_bits error handling */
+TEST (deflate_get_length_extra_bits_invalid)
+{
+  unsigned int extra_bits = 99;
+
+  /* Codes below 257 are invalid */
+  ASSERT_EQ (SocketDeflate_get_length_extra_bits (0, &extra_bits),
+             DEFLATE_ERROR_INVALID_CODE);
+  ASSERT_EQ (SocketDeflate_get_length_extra_bits (256, &extra_bits),
+             DEFLATE_ERROR_INVALID_CODE);
+
+  /* Codes above 285 are invalid */
+  ASSERT_EQ (SocketDeflate_get_length_extra_bits (286, &extra_bits),
+             DEFLATE_ERROR_INVALID_CODE);
+  ASSERT_EQ (SocketDeflate_get_length_extra_bits (1000, &extra_bits),
+             DEFLATE_ERROR_INVALID_CODE);
+}
+
+/* Test get_distance_extra_bits for all valid codes */
+TEST (deflate_get_distance_extra_bits_all_codes)
+{
+  unsigned int extra_bits;
+
+  /* Code 0-3: 0 extra bits */
+  for (unsigned int code = 0; code <= 3; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_distance_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 0);
+    }
+
+  /* Code 4-5: 1 extra bit */
+  for (unsigned int code = 4; code <= 5; code++)
+    {
+      ASSERT_EQ (SocketDeflate_get_distance_extra_bits (code, &extra_bits),
+                 DEFLATE_OK);
+      ASSERT_EQ (extra_bits, 1);
+    }
+
+  /* Spot check higher codes */
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (10, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (extra_bits, 4);
+
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (20, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (extra_bits, 9);
+
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (29, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (extra_bits, 13);
+}
+
+/* Test get_distance_extra_bits error handling */
+TEST (deflate_get_distance_extra_bits_invalid)
+{
+  unsigned int extra_bits = 99;
+
+  /* Codes 30-31 are invalid */
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (30, &extra_bits),
+             DEFLATE_ERROR_INVALID_DISTANCE);
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (31, &extra_bits),
+             DEFLATE_ERROR_INVALID_DISTANCE);
+
+  /* Codes above 31 are invalid */
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (32, &extra_bits),
+             DEFLATE_ERROR_INVALID_DISTANCE);
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (1000, &extra_bits),
+             DEFLATE_ERROR_INVALID_DISTANCE);
+}
+
+/*
+ * Extra Bits Overflow/Masking Tests
+ */
+
+/* Length decode masks extra bits to prevent overflow */
+TEST (deflate_decode_length_extra_overflow_masked)
+{
+  unsigned int length;
+
+  /* Code 257 has 0 extra bits - any extra value should be masked to 0 */
+  ASSERT_EQ (SocketDeflate_decode_length (257, 0xFFFF, &length), DEFLATE_OK);
+  ASSERT_EQ (length, 3); /* base=3, extra masked to 0 */
+
+  /* Code 265 has 1 extra bit - extra=0xFF should be masked to 1 */
+  ASSERT_EQ (SocketDeflate_decode_length (265, 0xFF, &length), DEFLATE_OK);
+  ASSERT_EQ (length, 12); /* base=11, extra masked to 1 */
+
+  /* Code 269 has 2 extra bits - extra=0xFF should be masked to 3 */
+  ASSERT_EQ (SocketDeflate_decode_length (269, 0xFF, &length), DEFLATE_OK);
+  ASSERT_EQ (length, 22); /* base=19, extra masked to 3 */
+
+  /* Code 281 has 5 extra bits - extra=0xFF should be masked to 31 */
+  ASSERT_EQ (SocketDeflate_decode_length (281, 0xFF, &length), DEFLATE_OK);
+  ASSERT_EQ (length, 162); /* base=131, extra masked to 31 */
+
+  /* Code 285 has 0 extra bits - any extra value should be masked to 0 */
+  ASSERT_EQ (SocketDeflate_decode_length (285, 0xFFFFFFFF, &length), DEFLATE_OK);
+  ASSERT_EQ (length, 258); /* base=258, extra masked to 0 */
+}
+
+/* Distance decode masks extra bits to prevent overflow */
+TEST (deflate_decode_distance_extra_overflow_masked)
+{
+  unsigned int distance;
+
+  /* Code 0 has 0 extra bits - any extra value should be masked to 0 */
+  ASSERT_EQ (SocketDeflate_decode_distance (0, 0xFFFF, &distance), DEFLATE_OK);
+  ASSERT_EQ (distance, 1); /* base=1, extra masked to 0 */
+
+  /* Code 4 has 1 extra bit - extra=0xFF should be masked to 1 */
+  ASSERT_EQ (SocketDeflate_decode_distance (4, 0xFF, &distance), DEFLATE_OK);
+  ASSERT_EQ (distance, 6); /* base=5, extra masked to 1 */
+
+  /* Code 10 has 4 extra bits - extra=0xFF should be masked to 15 */
+  ASSERT_EQ (SocketDeflate_decode_distance (10, 0xFF, &distance), DEFLATE_OK);
+  ASSERT_EQ (distance, 48); /* base=33, extra masked to 15 */
+
+  /* Code 29 has 13 extra bits - extra=0xFFFF should be masked to 8191 */
+  ASSERT_EQ (SocketDeflate_decode_distance (29, 0xFFFF, &distance), DEFLATE_OK);
+  ASSERT_EQ (distance, 32768); /* base=24577, extra masked to 8191 */
+}
+
+/* Verify masking produces values within valid ranges */
+TEST (deflate_decode_masked_values_in_range)
+{
+  unsigned int length, distance;
+
+  /* Test all length codes with overflow extra - all should be <= MAX_MATCH */
+  for (unsigned int code = DEFLATE_LENGTH_CODE_MIN;
+       code <= DEFLATE_LENGTH_CODE_MAX; code++)
+    {
+      ASSERT_EQ (SocketDeflate_decode_length (code, 0xFFFFFFFF, &length),
+                 DEFLATE_OK);
+      ASSERT (length >= DEFLATE_MIN_MATCH);
+      ASSERT (length <= DEFLATE_MAX_MATCH);
+    }
+
+  /* Test all distance codes with overflow extra - all should be <= WINDOW_SIZE */
+  for (unsigned int code = DEFLATE_DISTANCE_CODE_MIN;
+       code <= DEFLATE_DISTANCE_CODE_MAX; code++)
+    {
+      ASSERT_EQ (SocketDeflate_decode_distance (code, 0xFFFFFFFF, &distance),
+                 DEFLATE_OK);
+      ASSERT (distance >= 1);
+      ASSERT (distance <= DEFLATE_WINDOW_SIZE);
+    }
+}
+
 int
 main (void)
 {

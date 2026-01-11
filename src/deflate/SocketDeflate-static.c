@@ -253,6 +253,38 @@ SocketDeflate_is_valid_distance_code (unsigned int code)
 }
 
 /*
+ * Extra Bits Query Functions
+ */
+
+SocketDeflate_Result
+SocketDeflate_get_length_extra_bits (unsigned int code, unsigned int *extra_out)
+{
+  unsigned int index;
+
+  /* Length codes range from 257 to 285 */
+  if (code < DEFLATE_LENGTH_CODE_MIN || code > DEFLATE_LENGTH_CODE_MAX)
+    return DEFLATE_ERROR_INVALID_CODE;
+
+  index = code - DEFLATE_LENGTH_CODE_MIN;
+  *extra_out = deflate_length_table[index].extra_bits;
+
+  return DEFLATE_OK;
+}
+
+SocketDeflate_Result
+SocketDeflate_get_distance_extra_bits (unsigned int code,
+                                       unsigned int *extra_out)
+{
+  /* Distance codes range from 0 to 29 */
+  if (code > DEFLATE_DISTANCE_CODE_MAX)
+    return DEFLATE_ERROR_INVALID_DISTANCE;
+
+  *extra_out = deflate_distance_table[code].extra_bits;
+
+  return DEFLATE_OK;
+}
+
+/*
  * Decode Functions
  */
 
@@ -262,6 +294,7 @@ SocketDeflate_decode_length (unsigned int code, unsigned int extra,
 {
   unsigned int index;
   const SocketDeflate_CodeEntry *entry;
+  unsigned int extra_mask;
 
   /* Length codes range from 257 to 285 */
   if (code < DEFLATE_LENGTH_CODE_MIN || code > DEFLATE_LENGTH_CODE_MAX)
@@ -270,6 +303,10 @@ SocketDeflate_decode_length (unsigned int code, unsigned int extra,
   /* Table index = code - 257 */
   index = code - DEFLATE_LENGTH_CODE_MIN;
   entry = &deflate_length_table[index];
+
+  /* Mask extra bits to valid range to prevent overflow from malformed input */
+  extra_mask = (1U << entry->extra_bits) - 1;
+  extra &= extra_mask;
 
   /* Length = base + extra bits value */
   *length_out = entry->base + extra;
@@ -282,12 +319,17 @@ SocketDeflate_decode_distance (unsigned int code, unsigned int extra,
                                unsigned int *distance_out)
 {
   const SocketDeflate_CodeEntry *entry;
+  unsigned int extra_mask;
 
   /* Distance codes range from 0 to 29 */
   if (code > DEFLATE_DISTANCE_CODE_MAX)
     return DEFLATE_ERROR_INVALID_DISTANCE;
 
   entry = &deflate_distance_table[code];
+
+  /* Mask extra bits to valid range to prevent overflow from malformed input */
+  extra_mask = (1U << entry->extra_bits) - 1;
+  extra &= extra_mask;
 
   /* Distance = base + extra bits value */
   *distance_out = entry->base + extra;
