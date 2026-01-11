@@ -30,12 +30,12 @@
 /* Fuzz operation opcodes */
 enum FuzzOp
 {
-  OP_BUILD_DECODE = 0,     /* Build table from lengths, decode symbols */
-  OP_FIXED_LITLEN_DECODE,  /* Decode with fixed litlen table */
-  OP_FIXED_DIST_DECODE,    /* Decode with fixed dist table */
-  OP_BUILD_INVALID,        /* Try to build invalid trees */
-  OP_DECODE_SEQUENCE,      /* Build and decode multiple symbols */
-  OP_RESET_REBUILD,        /* Reset and rebuild table */
+  OP_BUILD_DECODE = 0,    /* Build table from lengths, decode symbols */
+  OP_FIXED_LITLEN_DECODE, /* Decode with fixed litlen table */
+  OP_FIXED_DIST_DECODE,   /* Decode with fixed dist table */
+  OP_BUILD_INVALID,       /* Try to build invalid trees */
+  OP_DECODE_SEQUENCE,     /* Build and decode multiple symbols */
+  OP_RESET_REBUILD,       /* Reset and rebuild table */
   OP_MAX
 };
 
@@ -96,8 +96,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           lengths[i] = lengths_data[i] % 16;
 
         /* Try to build table (may fail for invalid trees) */
-        result = SocketDeflate_HuffmanTable_build (table, lengths, alpha_size,
-                                                   DEFLATE_MAX_BITS);
+        result = SocketDeflate_HuffmanTable_build (
+            table, lengths, alpha_size, DEFLATE_MAX_BITS);
 
         if (result == DEFLATE_OK && lengths_size > len_count)
           {
@@ -112,8 +112,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 /* Try to decode symbols until we run out of data */
                 for (i = 0; i < MAX_DECODE_OPS; i++)
                   {
-                    result = SocketDeflate_HuffmanTable_decode (table, reader,
-                                                                &symbol);
+                    result = SocketDeflate_HuffmanTable_decode (
+                        table, reader, &symbol);
                     if (result != DEFLATE_OK)
                       break;
                   }
@@ -133,13 +133,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             if (litlen != NULL && lengths_size > 0)
               {
-                SocketDeflate_BitReader_init (reader, lengths_data,
-                                              lengths_size);
+                SocketDeflate_BitReader_init (
+                    reader, lengths_data, lengths_size);
 
                 for (i = 0; i < MAX_DECODE_OPS; i++)
                   {
-                    result = SocketDeflate_HuffmanTable_decode (litlen, reader,
-                                                                &symbol);
+                    result = SocketDeflate_HuffmanTable_decode (
+                        litlen, reader, &symbol);
                     if (result != DEFLATE_OK)
                       break;
                   }
@@ -159,13 +159,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             if (dist != NULL && lengths_size > 0)
               {
-                SocketDeflate_BitReader_init (reader, lengths_data,
-                                              lengths_size);
+                SocketDeflate_BitReader_init (
+                    reader, lengths_data, lengths_size);
 
                 for (i = 0; i < MAX_DECODE_OPS; i++)
                   {
-                    result = SocketDeflate_HuffmanTable_decode (dist, reader,
-                                                                &symbol);
+                    result = SocketDeflate_HuffmanTable_decode (
+                        dist, reader, &symbol);
                     if (result != DEFLATE_OK)
                       break;
                   }
@@ -185,8 +185,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             lengths[0] = 1;
             lengths[1] = 1;
             lengths[2] = 1;
-            result = SocketDeflate_HuffmanTable_build (table, lengths, 3,
-                                                       DEFLATE_MAX_BITS);
+            result = SocketDeflate_HuffmanTable_build (
+                table, lengths, 3, DEFLATE_MAX_BITS);
             (void)(result == DEFLATE_ERROR_HUFFMAN_TREE);
           }
 
@@ -198,8 +198,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (alpha_size >= 1)
           {
             lengths[0] = 16 + (data[2] % 240); /* 16-255 */
-            result = SocketDeflate_HuffmanTable_build (table, lengths, 1,
-                                                       DEFLATE_MAX_BITS);
+            result = SocketDeflate_HuffmanTable_build (
+                table, lengths, 1, DEFLATE_MAX_BITS);
             /* May or may not fail depending on validation */
           }
 
@@ -207,14 +207,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketDeflate_HuffmanTable_reset (table);
         memset (lengths, 0, sizeof (lengths));
 
-        /* Test 3: Under-subscribed (incomplete tree) */
+        /* Test 3: Under-subscribed (incomplete tree) - allowed for decoders */
         if (alpha_size >= 2)
           {
             lengths[0] = 3;
             lengths[1] = 3;
-            result = SocketDeflate_HuffmanTable_build (table, lengths, 2,
-                                                       DEFLATE_MAX_BITS);
-            (void)(result == DEFLATE_ERROR_HUFFMAN_TREE);
+            result = SocketDeflate_HuffmanTable_build (
+                table, lengths, 2, DEFLATE_MAX_BITS);
+            /* Build succeeds; only decoding unused codes returns error */
+            (void)(result == DEFLATE_OK);
           }
       }
       break;
@@ -228,8 +229,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         lengths[0] = 1;
         lengths[1] = 1;
 
-        result = SocketDeflate_HuffmanTable_build (table, lengths, 2,
-                                                   DEFLATE_MAX_BITS);
+        result = SocketDeflate_HuffmanTable_build (
+            table, lengths, 2, DEFLATE_MAX_BITS);
         if (result == DEFLATE_OK && lengths_size > 0)
           {
             SocketDeflate_BitReader_init (reader, lengths_data, lengths_size);
@@ -237,8 +238,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             /* Decode as many symbols as possible */
             for (i = 0; i < lengths_size * 8; i++)
               {
-                result = SocketDeflate_HuffmanTable_decode (table, reader,
-                                                            &symbol);
+                result = SocketDeflate_HuffmanTable_decode (
+                    table, reader, &symbol);
                 if (result != DEFLATE_OK)
                   break;
               }
@@ -255,8 +256,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         for (i = 0; i < alpha_size && i < lengths_size; i++)
           lengths[i] = lengths_data[i] % 16;
 
-        result = SocketDeflate_HuffmanTable_build (table, lengths, alpha_size,
-                                                   DEFLATE_MAX_BITS);
+        result = SocketDeflate_HuffmanTable_build (
+            table, lengths, alpha_size, DEFLATE_MAX_BITS);
 
         /* Reset */
         SocketDeflate_HuffmanTable_reset (table);
@@ -265,8 +266,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         for (i = 0; i < alpha_size && i < lengths_size; i++)
           lengths[i] = (lengths_data[i] + 1) % 16;
 
-        result = SocketDeflate_HuffmanTable_build (table, lengths, alpha_size,
-                                                   DEFLATE_MAX_BITS);
+        result = SocketDeflate_HuffmanTable_build (
+            table, lengths, alpha_size, DEFLATE_MAX_BITS);
 
         /* Try decoding if build succeeded */
         if (result == DEFLATE_OK && lengths_size > alpha_size)
@@ -278,8 +279,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             for (i = 0; i < MAX_DECODE_OPS; i++)
               {
-                result = SocketDeflate_HuffmanTable_decode (table, reader,
-                                                            &symbol);
+                result = SocketDeflate_HuffmanTable_decode (
+                    table, reader, &symbol);
                 if (result != DEFLATE_OK)
                   break;
               }

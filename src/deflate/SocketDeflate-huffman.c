@@ -31,7 +31,8 @@
 #define HUFFMAN_FAST_SIZE (1 << HUFFMAN_FAST_BITS)
 #define HUFFMAN_FAST_MASK (HUFFMAN_FAST_SIZE - 1)
 
-/* Secondary table marker (must be > DEFLATE_MAX_BITS to distinguish from codes) */
+/* Secondary table marker (must be > DEFLATE_MAX_BITS to distinguish from codes)
+ */
 #define HUFFMAN_SECONDARY_MARKER 16
 
 /* Maximum secondary table entries (for codes 10-15 bits) */
@@ -61,13 +62,13 @@ typedef struct
  */
 struct SocketDeflate_HuffmanTable
 {
-  HuffmanEntry *primary;          /* Primary lookup table (512 entries) */
-  HuffmanEntry *secondary;        /* Secondary tables for long codes */
-  unsigned int secondary_count;   /* Number of secondary sub-tables */
-  unsigned int secondary_size;    /* Total secondary entries allocated */
-  unsigned int max_bits;          /* Maximum code length in this table */
-  unsigned int num_codes;         /* Number of valid codes */
-  Arena_T arena;                  /* Memory arena */
+  HuffmanEntry *primary;        /* Primary lookup table (512 entries) */
+  HuffmanEntry *secondary;      /* Secondary tables for long codes */
+  unsigned int secondary_count; /* Number of secondary sub-tables */
+  unsigned int secondary_size;  /* Total secondary entries allocated */
+  unsigned int max_bits;        /* Maximum code length in this table */
+  unsigned int num_codes;       /* Number of valid codes */
+  Arena_T arena;                /* Memory arena */
 };
 
 /* Global fixed tables (initialized once) */
@@ -83,7 +84,8 @@ static int fixed_tables_initialized = 0;
  * @param bl_count Output: count of codes per length (0-15)
  */
 static void
-count_code_lengths (const uint8_t *lengths, unsigned int count,
+count_code_lengths (const uint8_t *lengths,
+                    unsigned int count,
                     unsigned int bl_count[DEFLATE_MAX_BITS + 1])
 {
   unsigned int i;
@@ -177,8 +179,10 @@ compute_first_codes (const unsigned int bl_count[DEFLATE_MAX_BITS + 1],
  * @param symbol    Symbol to decode
  */
 static void
-fill_primary_entry (SocketDeflate_HuffmanTable_T table, unsigned int code,
-                    unsigned int bits, unsigned int symbol)
+fill_primary_entry (SocketDeflate_HuffmanTable_T table,
+                    unsigned int code,
+                    unsigned int bits,
+                    unsigned int symbol)
 {
   unsigned int reversed;
   unsigned int fill;
@@ -200,47 +204,31 @@ fill_primary_entry (SocketDeflate_HuffmanTable_T table, unsigned int code,
 }
 
 /*
- * Internal: Build secondary table for long codes.
+ * Internal: Get or create secondary table for a prefix.
  *
- * Called for codes > HUFFMAN_FAST_BITS bits. Creates a sub-table
- * indexed by the remaining bits after the first HUFFMAN_FAST_BITS.
- *
- * @param table         The Huffman table
- * @param prefix        First HUFFMAN_FAST_BITS bits of reversed code
- * @param reversed_code Full code bit-reversed for LSB-first lookup
- * @param bits          Total code length
- * @param symbol        Symbol to decode
- * @return DEFLATE_OK on success
+ * @param table   The Huffman table
+ * @param prefix  Primary table index requiring secondary lookup
+ * @return Pointer to secondary table entries
  */
-static SocketDeflate_Result
-add_secondary_entry (SocketDeflate_HuffmanTable_T table, unsigned int prefix,
-                     unsigned int reversed_code, unsigned int bits,
-                     unsigned int symbol)
+static HuffmanEntry *
+get_or_create_secondary (SocketDeflate_HuffmanTable_T table,
+                         unsigned int prefix)
 {
   unsigned int secondary_idx;
-  unsigned int secondary_bits;
-  unsigned int secondary_index;
-  unsigned int fill;
-  unsigned int step;
   unsigned int i;
   HuffmanEntry *secondary_table;
 
-  /* Check if we already have a secondary table for this prefix */
   if (table->primary[prefix].bits == HUFFMAN_SECONDARY_MARKER)
     {
-      /* Use existing secondary table */
       secondary_idx = table->primary[prefix].symbol;
     }
   else
     {
-      /* Create new secondary table */
       secondary_idx = table->secondary_count++;
-
-      /* Initialize primary entry to point to secondary */
       table->primary[prefix].symbol = (uint16_t)secondary_idx;
       table->primary[prefix].bits = HUFFMAN_SECONDARY_MARKER;
 
-      /* Initialize secondary table entries to invalid */
+      /* Initialize new secondary table to invalid */
       secondary_table
           = &table->secondary[secondary_idx * HUFFMAN_MAX_SECONDARY_SIZE];
       for (i = 0; i < HUFFMAN_MAX_SECONDARY_SIZE; i++)
@@ -250,25 +238,33 @@ add_secondary_entry (SocketDeflate_HuffmanTable_T table, unsigned int prefix,
         }
     }
 
-  /* Compute secondary lookup index from remaining bits */
-  secondary_bits = bits - HUFFMAN_FAST_BITS;
-  secondary_index = reversed_code >> HUFFMAN_FAST_BITS;
+  return &table->secondary[secondary_idx * HUFFMAN_MAX_SECONDARY_SIZE];
+}
 
-  /* Get secondary table pointer */
-  secondary_table
-      = &table->secondary[secondary_idx * HUFFMAN_MAX_SECONDARY_SIZE];
-
-  /* Fill entries */
-  fill = 1U << secondary_bits;
-  step = fill;
+/*
+ * Internal: Fill secondary table entry for a long code.
+ *
+ * @param secondary_table  Pointer to secondary table
+ * @param reversed_code    Full code bit-reversed for LSB-first lookup
+ * @param bits             Total code length
+ * @param symbol           Symbol to decode
+ */
+static void
+fill_secondary_entry (HuffmanEntry *secondary_table,
+                      unsigned int reversed_code,
+                      unsigned int bits,
+                      unsigned int symbol)
+{
+  unsigned int secondary_bits = bits - HUFFMAN_FAST_BITS;
+  unsigned int secondary_index = reversed_code >> HUFFMAN_FAST_BITS;
+  unsigned int step = 1U << secondary_bits;
+  unsigned int i;
 
   for (i = secondary_index; i < HUFFMAN_MAX_SECONDARY_SIZE; i += step)
     {
       secondary_table[i].symbol = (uint16_t)symbol;
       secondary_table[i].bits = (uint8_t)bits;
     }
-
-  return DEFLATE_OK;
 }
 
 /*
@@ -287,9 +283,9 @@ SocketDeflate_HuffmanTable_new (Arena_T arena)
 
   /* Allocate space for secondary tables
    * Maximum: one secondary table per primary entry (worst case) */
-  table->secondary
-      = ALLOC (arena, HUFFMAN_FAST_SIZE * HUFFMAN_MAX_SECONDARY_SIZE
-                          * sizeof (HuffmanEntry));
+  table->secondary = ALLOC (arena,
+                            HUFFMAN_FAST_SIZE * HUFFMAN_MAX_SECONDARY_SIZE
+                                * sizeof (HuffmanEntry));
 
   table->secondary_count = 0;
   table->secondary_size = HUFFMAN_FAST_SIZE * HUFFMAN_MAX_SECONDARY_SIZE;
@@ -302,7 +298,8 @@ SocketDeflate_HuffmanTable_new (Arena_T arena)
 
 SocketDeflate_Result
 SocketDeflate_HuffmanTable_build (SocketDeflate_HuffmanTable_T table,
-                                  const uint8_t *lengths, unsigned int count,
+                                  const uint8_t *lengths,
+                                  unsigned int count,
                                   unsigned int max_bits)
 {
   unsigned int bl_count[DEFLATE_MAX_BITS + 1];
@@ -370,14 +367,10 @@ SocketDeflate_HuffmanTable_build (SocketDeflate_HuffmanTable_T table,
       else
         {
           /* Long code: need secondary table */
-          /* Reverse full code, then extract lower 9 bits for primary index */
           unsigned int reversed_code = SocketDeflate_reverse_bits (code, len);
           prefix = reversed_code & HUFFMAN_FAST_MASK;
-
-          result
-              = add_secondary_entry (table, prefix, reversed_code, len, symbol);
-          if (result != DEFLATE_OK)
-            return result;
+          HuffmanEntry *sec = get_or_create_secondary (table, prefix);
+          fill_secondary_entry (sec, reversed_code, len, symbol);
         }
     }
 
@@ -410,8 +403,8 @@ SocketDeflate_HuffmanTable_decode (SocketDeflate_HuffmanTable_T table,
       if (avail == 0)
         return DEFLATE_INCOMPLETE;
 
-      result = SocketDeflate_BitReader_peek (reader, (unsigned int)avail,
-                                             &bits);
+      result
+          = SocketDeflate_BitReader_peek (reader, (unsigned int)avail, &bits);
       if (result != DEFLATE_OK)
         return result;
     }
@@ -436,7 +429,8 @@ SocketDeflate_HuffmanTable_decode (SocketDeflate_HuffmanTable_T table,
           = &table->secondary[secondary_idx * HUFFMAN_MAX_SECONDARY_SIZE];
 
       /* Index with remaining bits */
-      remaining_bits = (bits >> HUFFMAN_FAST_BITS) & (HUFFMAN_MAX_SECONDARY_SIZE - 1);
+      remaining_bits
+          = (bits >> HUFFMAN_FAST_BITS) & (HUFFMAN_MAX_SECONDARY_SIZE - 1);
       entry = secondary_table[remaining_bits];
 
       if (entry.bits > 0)
@@ -482,18 +476,20 @@ SocketDeflate_fixed_tables_init (Arena_T arena)
 
   /* Create fixed literal/length table */
   fixed_litlen_table = SocketDeflate_HuffmanTable_new (arena);
-  result = SocketDeflate_HuffmanTable_build (
-      fixed_litlen_table, deflate_fixed_litlen_lengths, DEFLATE_LITLEN_CODES,
-      DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (fixed_litlen_table,
+                                             deflate_fixed_litlen_lengths,
+                                             DEFLATE_LITLEN_CODES,
+                                             DEFLATE_MAX_BITS);
 
   if (result != DEFLATE_OK)
     return result;
 
   /* Create fixed distance table */
   fixed_dist_table = SocketDeflate_HuffmanTable_new (arena);
-  result = SocketDeflate_HuffmanTable_build (
-      fixed_dist_table, deflate_fixed_dist_lengths, DEFLATE_DIST_CODES,
-      DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (fixed_dist_table,
+                                             deflate_fixed_dist_lengths,
+                                             DEFLATE_DIST_CODES,
+                                             DEFLATE_MAX_BITS);
 
   if (result != DEFLATE_OK)
     return result;

@@ -81,8 +81,8 @@ TEST (huffman_build_simple_tree)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   teardown ();
@@ -109,8 +109,8 @@ TEST (huffman_build_abcdefgh)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 8,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 8, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   teardown ();
@@ -174,8 +174,8 @@ TEST (huffman_decode_single_symbol)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decode B: code=0 (1 bit), input byte 0x00 has LSB=0 */
@@ -239,33 +239,29 @@ TEST (huffman_decode_sequence)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   SocketDeflate_BitReader_init (test_reader, data, sizeof (data));
 
   /* Decode B */
-  result
-      = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
+  result = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (symbol, 1);
 
   /* Decode A */
-  result
-      = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
+  result = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (symbol, 0);
 
   /* Decode C */
-  result
-      = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
+  result = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (symbol, 2);
 
   /* Decode D */
-  result
-      = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
+  result = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (symbol, 3);
 
@@ -303,8 +299,8 @@ TEST (huffman_decode_abcdefgh)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 8,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 8, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decode F: reversed code 00, LSB of 0x00 */
@@ -383,8 +379,8 @@ TEST (huffman_oversubscribed_tree)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 3,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 3, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_ERROR_HUFFMAN_TREE);
 
   teardown ();
@@ -405,8 +401,8 @@ TEST (huffman_incomplete_tree)
   setup ();
 
   /* Build should succeed - incomplete trees are valid for decoders */
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Valid codes should decode:
@@ -416,6 +412,37 @@ TEST (huffman_incomplete_tree)
   result = decode_from_bytes (data_sym0, 1, &symbol);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (symbol, 0);
+
+  teardown ();
+}
+
+/*
+ * Test: Decode invalid code from incomplete tree.
+ *
+ * Build an incomplete tree and try to decode an unassigned bit pattern.
+ * This should return DEFLATE_ERROR_INVALID_CODE.
+ */
+TEST (huffman_decode_invalid_code)
+{
+  uint8_t lengths[] = { 3, 3, 0, 0 }; /* 2 codes at length 3, uses 2/8 leaves */
+  SocketDeflate_Result result;
+  uint16_t symbol;
+
+  setup ();
+
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
+  ASSERT_EQ (result, DEFLATE_OK);
+
+  /* Valid codes (MSB-first):
+   * Symbol 0: 000 → reversed: 000 = 0x00
+   * Symbol 1: 001 → reversed: 100 = 0x04
+   *
+   * Invalid patterns: 010, 011, 100, 101, 110, 111
+   * Try 0x02 (010 reversed = 010) - not assigned */
+  uint8_t invalid_data[] = { 0x02 };
+  result = decode_from_bytes (invalid_data, 1, &symbol);
+  ASSERT_EQ (result, DEFLATE_ERROR_INVALID_CODE);
 
   teardown ();
 }
@@ -435,8 +462,8 @@ TEST (huffman_single_code_tree)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decode the single code (symbol 0) */
@@ -458,8 +485,8 @@ TEST (huffman_max_bits_exceeded)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_ERROR_HUFFMAN_TREE);
 
   teardown ();
@@ -478,8 +505,8 @@ TEST (huffman_all_same_length)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decode all four symbols */
@@ -523,8 +550,8 @@ TEST (huffman_empty_alphabet)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   teardown ();
@@ -560,8 +587,8 @@ TEST (huffman_incomplete_input)
 
   setup ();
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Should decode successfully since we have 8 bits */
@@ -571,8 +598,7 @@ TEST (huffman_incomplete_input)
   /* Now try with empty input */
   uint8_t empty[] = { 0 };
   SocketDeflate_BitReader_init (test_reader, empty, 0);
-  result
-      = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
+  result = SocketDeflate_HuffmanTable_decode (test_table, test_reader, &symbol);
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
 
   teardown ();
@@ -589,7 +615,6 @@ TEST (huffman_secondary_table_codes)
   uint8_t lengths[16];
   SocketDeflate_Result result;
   uint16_t symbol;
-  unsigned int i;
 
   setup ();
 
@@ -598,8 +623,8 @@ TEST (huffman_secondary_table_codes)
   lengths[0] = 1;  /* Symbol 0: 1 bit */
   lengths[1] = 10; /* Symbol 1: 10 bits */
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths, 16,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 16, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decode symbol 0: code 0 (1 bit) */
@@ -621,6 +646,46 @@ TEST (huffman_secondary_table_codes)
 }
 
 /*
+ * Test: Maximum code length (15 bits).
+ *
+ * Create a tree with 15-bit codes to exercise the full secondary table range.
+ */
+TEST (huffman_max_code_length)
+{
+  uint8_t lengths[16];
+  SocketDeflate_Result result;
+  uint16_t symbol;
+
+  setup ();
+
+  /* 1 symbol at 1 bit, 1 at 15 bits */
+  memset (lengths, 0, sizeof (lengths));
+  lengths[0] = 1;  /* Symbol 0: 1 bit, code 0 */
+  lengths[1] = 15; /* Symbol 1: 15 bits */
+
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths, 16, DEFLATE_MAX_BITS);
+  ASSERT_EQ (result, DEFLATE_OK);
+
+  /* Decode symbol 0: code 0 (1 bit) */
+  uint8_t data0[] = { 0x00, 0x00 };
+  result = decode_from_bytes (data0, 2, &symbol);
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (symbol, 0);
+
+  /* Decode symbol 1: canonical code 16384 (15 bits MSB-first)
+   * MSB-first: 100000000000000 (1 followed by 14 zeros)
+   * Reversed for LSB-first: 000000000000001 = 0x0001
+   * In bytes: byte[0]=0x01, byte[1]=0x00 (bits 8-14 = 0) */
+  uint8_t data1[] = { 0x01, 0x00 };
+  result = decode_from_bytes (data1, 2, &symbol);
+  ASSERT_EQ (result, DEFLATE_OK);
+  ASSERT_EQ (symbol, 1);
+
+  teardown ();
+}
+
+/*
  * Test: Table reset and rebuild.
  */
 TEST (huffman_table_reset)
@@ -632,15 +697,15 @@ TEST (huffman_table_reset)
   setup ();
 
   /* Build first table */
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths1, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths1, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Reset and rebuild with different lengths */
   SocketDeflate_HuffmanTable_reset (test_table);
 
-  result = SocketDeflate_HuffmanTable_build (test_table, lengths2, 4,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      test_table, lengths2, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   teardown ();
