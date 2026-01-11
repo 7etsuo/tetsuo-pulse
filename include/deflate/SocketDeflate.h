@@ -339,6 +339,110 @@ extern int SocketDeflate_BitReader_at_end (SocketDeflate_BitReader_T reader);
  */
 extern uint32_t SocketDeflate_reverse_bits (uint32_t value, unsigned int nbits);
 
+/*
+ * Huffman Decoder (RFC 1951 Section 3.2.2)
+ *
+ * Builds canonical Huffman decode tables from code lengths.
+ * Uses a two-level lookup table:
+ * - Primary table (9 bits): Direct lookup for codes <= 9 bits
+ * - Secondary tables: For codes > 9 bits (up to 15)
+ *
+ * DEFLATE Huffman codes are canonical:
+ * - All codes of given length have lexicographically consecutive values
+ * - Shorter codes precede longer codes
+ * - Codes are stored MSB-first in RFC but appear LSB-first in stream
+ */
+
+/** Opaque Huffman table type. */
+typedef struct SocketDeflate_HuffmanTable *SocketDeflate_HuffmanTable_T;
+
+/**
+ * Create a new Huffman table.
+ *
+ * @param arena Arena for allocation (table lifetime tied to arena)
+ * @return New table instance
+ */
+extern SocketDeflate_HuffmanTable_T
+SocketDeflate_HuffmanTable_new (Arena_T arena);
+
+/**
+ * Build Huffman table from code lengths (RFC 1951 §3.2.2).
+ *
+ * Generates canonical Huffman codes and builds lookup tables.
+ * Validates that the tree is neither over-subscribed nor incomplete
+ * (except for single-code trees per RFC 1951 §3.2.7).
+ *
+ * @param table      The table to build
+ * @param lengths    Array of code lengths (0 = symbol not used)
+ * @param count      Number of symbols in alphabet
+ * @param max_bits   Maximum allowed code length (must be ≤ 15)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR_HUFFMAN_TREE on invalid tree
+ */
+extern SocketDeflate_Result
+SocketDeflate_HuffmanTable_build (SocketDeflate_HuffmanTable_T table,
+                                  const uint8_t *lengths, unsigned int count,
+                                  unsigned int max_bits);
+
+/**
+ * Decode one symbol from the bit stream.
+ *
+ * Uses the prebuilt lookup tables for fast decoding.
+ * Peeks bits from the stream, looks up the symbol, and consumes
+ * only the bits actually used by the code.
+ *
+ * @param table   The Huffman table
+ * @param reader  Bit reader with input data
+ * @param symbol  Output: decoded symbol
+ * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough bits,
+ *         DEFLATE_ERROR_INVALID_CODE if invalid code encountered
+ */
+extern SocketDeflate_Result
+SocketDeflate_HuffmanTable_decode (SocketDeflate_HuffmanTable_T table,
+                                   SocketDeflate_BitReader_T reader,
+                                   uint16_t *symbol);
+
+/**
+ * Reset table for reuse.
+ *
+ * Clears all entries without freeing memory. Use before rebuilding
+ * for dynamic Huffman blocks.
+ *
+ * @param table The table to reset
+ */
+extern void SocketDeflate_HuffmanTable_reset (SocketDeflate_HuffmanTable_T table);
+
+/*
+ * Fixed Huffman Tables (RFC 1951 Section 3.2.6)
+ *
+ * Pre-built tables for BTYPE=01 (fixed Huffman codes).
+ * Initialize once at startup, then reuse across all inflate operations.
+ */
+
+/**
+ * Initialize global fixed Huffman tables.
+ *
+ * Must be called before using fixed tables. Thread-safe if called
+ * once at startup before any concurrent inflate operations.
+ *
+ * @param arena Arena for allocation (must outlive all inflate operations)
+ * @return DEFLATE_OK on success
+ */
+extern SocketDeflate_Result SocketDeflate_fixed_tables_init (Arena_T arena);
+
+/**
+ * Get the fixed literal/length Huffman table.
+ *
+ * @return Pre-built fixed litlen table, or NULL if not initialized
+ */
+extern SocketDeflate_HuffmanTable_T SocketDeflate_get_fixed_litlen_table (void);
+
+/**
+ * Get the fixed distance Huffman table.
+ *
+ * @return Pre-built fixed distance table, or NULL if not initialized
+ */
+extern SocketDeflate_HuffmanTable_T SocketDeflate_get_fixed_dist_table (void);
+
 /** @} */ /* end of deflate group */
 
 #endif /* SOCKETDEFLATE_INCLUDED */
