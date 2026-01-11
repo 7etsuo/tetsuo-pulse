@@ -202,6 +202,141 @@ extern SocketDeflate_Result
 SocketDeflate_decode_distance (unsigned int code, unsigned int extra,
                                unsigned int *distance_out);
 
+/*
+ * Bit Stream Reader (RFC 1951 Section 3.1.1)
+ *
+ * DEFLATE uses LSB-first bit ordering:
+ * - Within a byte: bits packed starting with LSB (bit 0)
+ * - Non-Huffman data: packed starting with LSB of data element
+ * - Huffman codes: packed starting with MSB of code (bit-reversed)
+ *
+ * The bit reader handles this ordering transparently, providing a simple
+ * interface for reading bits from a DEFLATE stream.
+ */
+
+/** Maximum bits that can be read in a single operation. */
+#define DEFLATE_MAX_BITS_READ 25 /* 15-bit code + 13-bit extra max */
+
+/** Opaque bit reader type. */
+typedef struct SocketDeflate_BitReader *SocketDeflate_BitReader_T;
+
+/**
+ * Create a new bit reader.
+ *
+ * @param arena Arena for allocation (reader lifetime tied to arena)
+ * @return New bit reader instance
+ */
+extern SocketDeflate_BitReader_T SocketDeflate_BitReader_new (Arena_T arena);
+
+/**
+ * Initialize bit reader with input data.
+ *
+ * @param reader The bit reader
+ * @param data   Input data buffer
+ * @param size   Size of input data in bytes
+ */
+extern void SocketDeflate_BitReader_init (SocketDeflate_BitReader_T reader,
+                                          const uint8_t *data, size_t size);
+
+/**
+ * Read N bits from the stream (LSB-first for non-Huffman data).
+ *
+ * Reads bits in the order they appear in the DEFLATE stream.
+ * For regular data (extra bits, lengths), this gives the correct value.
+ * For Huffman codes, the bits are naturally bit-reversed.
+ *
+ * @param reader The bit reader
+ * @param n      Number of bits to read (1-25)
+ * @param value  Output: the read value, LSB-aligned
+ * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough data
+ */
+extern SocketDeflate_Result SocketDeflate_BitReader_read (
+    SocketDeflate_BitReader_T reader, unsigned int n, uint32_t *value);
+
+/**
+ * Peek N bits without consuming them.
+ *
+ * Used by Huffman decoder to look up code, then consume only bits used.
+ *
+ * @param reader The bit reader
+ * @param n      Number of bits to peek (1-25)
+ * @param value  Output: the peeked value, LSB-aligned
+ * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough data
+ */
+extern SocketDeflate_Result SocketDeflate_BitReader_peek (
+    SocketDeflate_BitReader_T reader, unsigned int n, uint32_t *value);
+
+/**
+ * Consume N bits after a peek operation.
+ *
+ * @param reader The bit reader
+ * @param n      Number of bits to consume (must be <= previously peeked)
+ */
+extern void SocketDeflate_BitReader_consume (SocketDeflate_BitReader_T reader,
+                                             unsigned int n);
+
+/**
+ * Skip to next byte boundary.
+ *
+ * Required before reading raw bytes for stored blocks (BTYPE=00).
+ * Discards any remaining bits in the current byte.
+ *
+ * @param reader The bit reader
+ */
+extern void SocketDeflate_BitReader_align (SocketDeflate_BitReader_T reader);
+
+/**
+ * Read raw bytes from the stream.
+ *
+ * Only valid after calling align(). Used for stored block data.
+ *
+ * @param reader The bit reader
+ * @param dest   Destination buffer
+ * @param count  Number of bytes to read
+ * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough data
+ */
+extern SocketDeflate_Result
+SocketDeflate_BitReader_read_bytes (SocketDeflate_BitReader_T reader,
+                                    uint8_t *dest, size_t count);
+
+/**
+ * Get number of bits available in the stream.
+ *
+ * @param reader The bit reader
+ * @return Number of bits that can still be read
+ */
+extern size_t
+SocketDeflate_BitReader_bits_available (SocketDeflate_BitReader_T reader);
+
+/**
+ * Get number of complete bytes remaining in input.
+ *
+ * @param reader The bit reader
+ * @return Number of unread bytes in input buffer
+ */
+extern size_t
+SocketDeflate_BitReader_bytes_remaining (SocketDeflate_BitReader_T reader);
+
+/**
+ * Check if all input has been consumed.
+ *
+ * @param reader The bit reader
+ * @return 1 if at end of input, 0 otherwise
+ */
+extern int SocketDeflate_BitReader_at_end (SocketDeflate_BitReader_T reader);
+
+/**
+ * Reverse bits in a value.
+ *
+ * Huffman codes in DEFLATE are stored MSB-first in the RFC tables but
+ * appear LSB-first in the bit stream. This helper converts between them.
+ *
+ * @param value  Value to reverse
+ * @param nbits  Number of bits to reverse (1-15)
+ * @return Bit-reversed value
+ */
+extern uint32_t SocketDeflate_reverse_bits (uint32_t value, unsigned int nbits);
+
 /** @} */ /* end of deflate group */
 
 #endif /* SOCKETDEFLATE_INCLUDED */
