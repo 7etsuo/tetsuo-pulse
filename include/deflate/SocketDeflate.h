@@ -517,6 +517,69 @@ SocketDeflate_decode_fixed_block (SocketDeflate_BitReader_T reader,
                                   uint8_t *output, size_t output_len,
                                   size_t *written);
 
+/*
+ * Dynamic Huffman Block Decoder (RFC 1951 Section 3.2.7)
+ *
+ * Compressed blocks with dynamic Huffman codes transmit the code tables
+ * in the block header itself. The header contains:
+ * - HLIT, HDIST, HCLEN counts
+ * - Code length Huffman table (in permuted order)
+ * - Literal/length code lengths (with run-length encoding)
+ * - Distance code lengths (with run-length encoding)
+ *
+ * The dynamic block format is the most complex but most common in real
+ * compressed data, as it allows optimal Huffman codes per block.
+ */
+
+/**
+ * Decode a dynamic Huffman block (BTYPE=10) from the bit stream.
+ *
+ * Per RFC 1951 Section 3.2.7:
+ * 1. Reads HLIT, HDIST, HCLEN from header
+ * 2. Reads code length code lengths (in permuted order)
+ * 3. Builds code length Huffman table (max 7 bits)
+ * 4. Decodes literal/length and distance code lengths
+ * 5. Handles run-length codes (16, 17, 18)
+ * 6. Builds dynamic literal/length table (max 15 bits)
+ * 7. Builds dynamic distance table (max 15 bits)
+ * 8. Decodes compressed data using LZ77 loop
+ *
+ * @param reader      Bit reader positioned after BTYPE bits
+ * @param arena       Arena for table allocations (temporary tables)
+ * @param output      Output buffer for decompressed data
+ * @param output_len  Size of output buffer
+ * @param written     Output: number of bytes written
+ * @return DEFLATE_OK on success, error code on failure
+ */
+extern SocketDeflate_Result
+SocketDeflate_decode_dynamic_block (SocketDeflate_BitReader_T reader,
+                                    Arena_T arena, uint8_t *output,
+                                    size_t output_len, size_t *written);
+
+/*
+ * Internal: Shared LZ77 Decode Loop
+ *
+ * This function is used by both fixed and dynamic block decoders.
+ * Not intended for direct use by applications.
+ */
+
+/**
+ * Core LZ77 decode loop for Huffman blocks.
+ *
+ * @param reader       Bit reader with input data
+ * @param litlen_table Literal/length Huffman table
+ * @param dist_table   Distance Huffman table
+ * @param output       Output buffer
+ * @param output_len   Output buffer size
+ * @param written      Output: bytes written
+ * @return DEFLATE_OK on success (end-of-block reached)
+ */
+extern SocketDeflate_Result
+inflate_lz77 (SocketDeflate_BitReader_T reader,
+              SocketDeflate_HuffmanTable_T litlen_table,
+              SocketDeflate_HuffmanTable_T dist_table, uint8_t *output,
+              size_t output_len, size_t *written);
+
 /** @} */ /* end of deflate group */
 
 #endif /* SOCKETDEFLATE_INCLUDED */
