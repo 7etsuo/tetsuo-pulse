@@ -21,6 +21,13 @@
  * - Injection attacks in credentials
  * - Unicode/encoding issues in usernames/passwords
  *
+ * Security-Critical Functions (SocketHTTPClient-auth.c):
+ * - httpclient_auth_digest_challenge() - Digest auth challenge parsing
+ * - httpclient_auth_is_stale_nonce() - Stale nonce detection
+ * - parse_http_auth_params() - Internal parameter parser with stack buffers:
+ *   - char name[HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN] (32 bytes)
+ *   - char value[HTTPCLIENT_DIGEST_VALUE_MAX_LEN] (256 bytes)
+ *
  * HTTP authentication is critical for security and can be exploited for
  * credential theft, authentication bypass, and injection attacks.
  *
@@ -33,6 +40,7 @@
 #include "core/SocketCrypto.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTPClient-private.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -251,6 +259,170 @@ parse_www_authenticate (const char *auth_header, Arena_T arena)
     }
 }
 
+/* ============================================================================
+ * HTTP Client Private API Fuzzing (SocketHTTPClient-auth.c)
+ * ============================================================================
+ *
+ * These functions directly test the private auth parsing API that uses
+ * stack-allocated buffers for parameter names and values.
+ */
+
+/* Test credentials - safe dummy values for fuzzing */
+#define FUZZ_USERNAME "testuser"
+#define FUZZ_PASSWORD "testpass"
+#define FUZZ_METHOD "GET"
+#define FUZZ_URI "/test/path"
+#define FUZZ_NC "00000001"
+
+/**
+ * Fuzz httpclient_auth_is_stale_nonce - parses WWW-Authenticate for stale=true
+ *
+ * This function uses parse_http_auth_params() internally which has:
+ * - char name[32] stack buffer
+ * - char value[256] stack buffer
+ *
+ * No TLS required - pure parsing function.
+ */
+static void
+fuzz_stale_nonce_detection (const char *input)
+{
+  if (!input)
+    return;
+
+  /* Test with raw input */
+  int is_stale = httpclient_auth_is_stale_nonce (input);
+
+  /* Result must be 0 or 1 */
+  if (is_stale != 0 && is_stale != 1)
+    __builtin_trap ();
+}
+
+#if SOCKET_HAS_TLS
+/**
+ * Fuzz httpclient_auth_digest_challenge - full digest auth parsing
+ *
+ * This requires TLS for random number generation (cnonce).
+ * Tests parse_digest_challenge() -> parse_http_auth_params() path.
+ */
+static void
+fuzz_digest_challenge_parsing (const char *input)
+{
+  char output[2048];
+
+  if (!input)
+    return;
+
+  /* Test parsing with fuzz input */
+  int result = httpclient_auth_digest_challenge (input,
+                                                 FUZZ_USERNAME,
+                                                 FUZZ_PASSWORD,
+                                                 FUZZ_METHOD,
+                                                 FUZZ_URI,
+                                                 FUZZ_NC,
+                                                 output,
+                                                 sizeof (output));
+
+  /* Result should be 0 (success) or -1 (parse failure) */
+  if (result != 0 && result != -1)
+    __builtin_trap ();
+
+  /* On success, output should be null-terminated within bounds */
+  if (result == 0)
+    {
+      size_t len = strnlen (output, sizeof (output));
+      if (len >= sizeof (output))
+        __builtin_trap (); /* Buffer overflow detected */
+    }
+
+  /* Test with minimal output buffer - should fail gracefully */
+  char tiny_output[1];
+  result = httpclient_auth_digest_challenge (input,
+                                             FUZZ_USERNAME,
+                                             FUZZ_PASSWORD,
+                                             FUZZ_METHOD,
+                                             FUZZ_URI,
+                                             FUZZ_NC,
+                                             tiny_output,
+                                             sizeof (tiny_output));
+  (void)result;
+
+  /* Test with medium buffer (boundary condition) */
+  char medium_output[64];
+  result = httpclient_auth_digest_challenge (input,
+                                             FUZZ_USERNAME,
+                                             FUZZ_PASSWORD,
+                                             FUZZ_METHOD,
+                                             FUZZ_URI,
+                                             FUZZ_NC,
+                                             medium_output,
+                                             sizeof (medium_output));
+  (void)result;
+}
+#endif /* SOCKET_HAS_TLS */
+
+/**
+ * Test auth parsing with various prefixes and edge cases
+ */
+static void
+fuzz_auth_edge_cases (const char *input, size_t input_len)
+{
+  char *test_input;
+  size_t test_len;
+
+  /* Test with "Digest " prefix */
+  test_len = 7 + input_len + 1;
+  test_input = malloc (test_len);
+  if (test_input)
+    {
+      memcpy (test_input, "Digest ", 7);
+      memcpy (test_input + 7, input, input_len);
+      test_input[test_len - 1] = '\0';
+
+      fuzz_stale_nonce_detection (test_input);
+#if SOCKET_HAS_TLS
+      fuzz_digest_challenge_parsing (test_input);
+#endif
+      free (test_input);
+    }
+
+  /* Test with embedded quotes (quoted string parsing) */
+  test_len = 18 + input_len + 1;
+  test_input = malloc (test_len);
+  if (test_input)
+    {
+      snprintf (test_input, test_len, "Digest realm=\"%s\"", input);
+      fuzz_stale_nonce_detection (test_input);
+#if SOCKET_HAS_TLS
+      fuzz_digest_challenge_parsing (test_input);
+#endif
+      free (test_input);
+    }
+
+  /* Test with stale parameter (target of is_stale_nonce) */
+  test_len = 15 + input_len + 1;
+  test_input = malloc (test_len);
+  if (test_input)
+    {
+      snprintf (test_input, test_len, "Digest stale=%s", input);
+      fuzz_stale_nonce_detection (test_input);
+      free (test_input);
+    }
+
+  /* Test with many parameters (stress parse loop) */
+  test_len = 50 + input_len + 1;
+  test_input = malloc (test_len);
+  if (test_input)
+    {
+      snprintf (
+          test_input, test_len, "Digest realm=\"r\", nonce=\"n\", %s", input);
+      fuzz_stale_nonce_detection (test_input);
+#if SOCKET_HAS_TLS
+      fuzz_digest_challenge_parsing (test_input);
+#endif
+      free (test_input);
+    }
+}
+
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
@@ -263,6 +435,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Skip empty input */
   if (size == 0)
     return 0;
+
+  /* Limit input size to prevent OOM */
+  if (size > 4096)
+    size = 4096;
 
   arena = Arena_new ();
   if (!arena)
@@ -403,7 +579,29 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         parse_www_authenticate (malformed_auth[i], arena);
       }
 
-    /* Test 5: Edge cases in base64 decoding */
+    /* Test 5: HTTP Client Private API - Direct auth parsing */
+    {
+      char auth_value[4096];
+      size_t auth_len
+          = size > sizeof (auth_value) - 1 ? sizeof (auth_value) - 1 : size;
+      memcpy (auth_value, data, auth_len);
+      auth_value[auth_len] = '\0';
+
+      /* Test stale nonce detection (no TLS required) */
+      fuzz_stale_nonce_detection (auth_value);
+      fuzz_stale_nonce_detection (NULL);
+      fuzz_stale_nonce_detection ("");
+
+#if SOCKET_HAS_TLS
+      /* Test digest challenge parsing (requires TLS for cnonce) */
+      fuzz_digest_challenge_parsing (auth_value);
+#endif
+
+      /* Test with various prefixes and edge cases */
+      fuzz_auth_edge_cases (auth_value, auth_len);
+    }
+
+    /* Test 6: Edge cases in base64 decoding */
     if (size >= 4)
       {
         /* Test various base64 inputs for Basic auth */
