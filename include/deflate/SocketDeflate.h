@@ -1,0 +1,176 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
+/**
+ * @file SocketDeflate.h
+ * @brief RFC 1951 DEFLATE compression/decompression.
+ *
+ * Native DEFLATE implementation for this socket library. Provides
+ * static tables, inflate/deflate APIs, and integration with HTTP
+ * Content-Encoding and WebSocket permessage-deflate.
+ *
+ * @defgroup deflate DEFLATE Compression Module
+ * @{
+ * @see https://tools.ietf.org/html/rfc1951
+ */
+
+#ifndef SOCKETDEFLATE_INCLUDED
+#define SOCKETDEFLATE_INCLUDED
+
+#include <stddef.h>
+#include <stdint.h>
+
+#include "core/Arena.h"
+#include "core/Except.h"
+
+/* RFC 1951 Limits */
+#define DEFLATE_MAX_BITS 15    /* Maximum Huffman code length */
+#define DEFLATE_WINDOW_SIZE 32768 /* 32KB sliding window */
+#define DEFLATE_MIN_MATCH 3    /* Minimum match length */
+#define DEFLATE_MAX_MATCH 258  /* Maximum match length */
+
+/* Alphabet sizes */
+#define DEFLATE_LITLEN_CODES 288   /* 0-287 (286-287 reserved) */
+#define DEFLATE_DIST_CODES 32      /* 0-31 (30-31 reserved) */
+#define DEFLATE_CODELEN_CODES 19   /* 0-18 for code lengths */
+
+/* Length code range */
+#define DEFLATE_LENGTH_CODE_MIN 257 /* First length code */
+#define DEFLATE_LENGTH_CODE_MAX 285 /* Last valid length code */
+#define DEFLATE_LENGTH_CODES 29     /* Number of length codes (257-285) */
+
+/* Distance code range */
+#define DEFLATE_DISTANCE_CODE_MIN 0  /* First distance code */
+#define DEFLATE_DISTANCE_CODE_MAX 29 /* Last valid distance code */
+#define DEFLATE_DISTANCE_CODES 30    /* Number of distance codes (0-29) */
+
+/* Decoding limits (for validation) */
+#define DEFLATE_LITLEN_MAX_DECODE 285 /* Codes 286-287 invalid */
+#define DEFLATE_DIST_MAX_DECODE 29    /* Codes 30-31 invalid */
+
+/* Special symbols */
+#define DEFLATE_END_OF_BLOCK 256 /* End-of-block symbol */
+
+/**
+ * Block types (RFC 1951 Section 3.2.3).
+ * Stored in 2 bits following BFINAL bit.
+ */
+typedef enum
+{
+  DEFLATE_BLOCK_STORED = 0,  /* BTYPE=00: No compression */
+  DEFLATE_BLOCK_FIXED = 1,   /* BTYPE=01: Fixed Huffman codes */
+  DEFLATE_BLOCK_DYNAMIC = 2, /* BTYPE=10: Dynamic Huffman codes */
+  DEFLATE_BLOCK_RESERVED = 3 /* BTYPE=11: Reserved (error) */
+} SocketDeflate_BlockType;
+
+/**
+ * Result codes for DEFLATE operations.
+ */
+typedef enum
+{
+  DEFLATE_OK = 0,
+  DEFLATE_INCOMPLETE,
+  DEFLATE_ERROR,
+  DEFLATE_ERROR_INVALID_BTYPE,
+  DEFLATE_ERROR_INVALID_CODE,
+  DEFLATE_ERROR_INVALID_DISTANCE,
+  DEFLATE_ERROR_DISTANCE_TOO_FAR,
+  DEFLATE_ERROR_HUFFMAN_TREE,
+  DEFLATE_ERROR_BOMB
+} SocketDeflate_Result;
+
+/** Exception raised on DEFLATE errors. */
+extern const Except_T SocketDeflate_Failed;
+
+/**
+ * Static table entry for length/distance codes.
+ * Combines base value and extra bits count for cache-friendly lookup.
+ */
+typedef struct
+{
+  uint16_t base;      /* Base value */
+  uint8_t extra_bits; /* Number of extra bits to read */
+} SocketDeflate_CodeEntry;
+
+/*
+ * Static Tables (defined in SocketDeflate-static.c)
+ *
+ * These tables are derived from RFC 1951 Section 3.2.5 and 3.2.6.
+ */
+
+/** Length code table: maps code 257-285 to length 3-258. */
+extern const SocketDeflate_CodeEntry deflate_length_table[DEFLATE_LENGTH_CODES];
+
+/** Distance code table: maps code 0-29 to distance 1-32768. */
+extern const SocketDeflate_CodeEntry
+    deflate_distance_table[DEFLATE_DISTANCE_CODES];
+
+/** Fixed Huffman code lengths for literal/length alphabet (RFC 1951 3.2.6). */
+extern const uint8_t deflate_fixed_litlen_lengths[DEFLATE_LITLEN_CODES];
+
+/** Fixed Huffman code lengths for distance alphabet (all 5 bits). */
+extern const uint8_t deflate_fixed_dist_lengths[DEFLATE_DIST_CODES];
+
+/** Code length alphabet order for dynamic blocks (RFC 1951 3.2.7). */
+extern const uint8_t deflate_codelen_order[DEFLATE_CODELEN_CODES];
+
+/*
+ * Validation Functions
+ *
+ * These functions check if a code is valid for use in compressed data.
+ * RFC 1951 specifies that certain codes (286-287 for litlen, 30-31 for
+ * distance) participate in code construction but never appear in data.
+ */
+
+/**
+ * Check if a literal/length code is valid for decoding.
+ *
+ * @param code The code to validate (0-287 range expected)
+ * @return 1 if valid (0-285), 0 if invalid (286-287 or out of range)
+ */
+extern int SocketDeflate_is_valid_litlen_code (unsigned int code);
+
+/**
+ * Check if a distance code is valid for decoding.
+ *
+ * @param code The code to validate (0-31 range expected)
+ * @return 1 if valid (0-29), 0 if invalid (30-31 or out of range)
+ */
+extern int SocketDeflate_is_valid_distance_code (unsigned int code);
+
+/*
+ * Decode Functions
+ *
+ * These functions decode length and distance values from codes and extra bits.
+ */
+
+/**
+ * Decode a length value from a length code and extra bits.
+ *
+ * @param code       Length code (257-285)
+ * @param extra      Extra bits value (already extracted from stream)
+ * @param length_out Output: decoded length (3-258)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_CODE if code invalid
+ */
+extern SocketDeflate_Result
+SocketDeflate_decode_length (unsigned int code, unsigned int extra,
+                             unsigned int *length_out);
+
+/**
+ * Decode a distance value from a distance code and extra bits.
+ *
+ * @param code         Distance code (0-29)
+ * @param extra        Extra bits value (already extracted from stream)
+ * @param distance_out Output: decoded distance (1-32768)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_DISTANCE if invalid
+ */
+extern SocketDeflate_Result
+SocketDeflate_decode_distance (unsigned int code, unsigned int extra,
+                               unsigned int *distance_out);
+
+/** @} */ /* end of deflate group */
+
+#endif /* SOCKETDEFLATE_INCLUDED */

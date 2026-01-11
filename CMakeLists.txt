@@ -446,6 +446,9 @@ set(LIB_SOURCES
     src/quic/SocketQUICLoss.c
     src/quic/SocketQUICTLS.c
 
+    # DEFLATE compression module (RFC 1951)
+    src/deflate/SocketDeflate-static.c
+
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -701,6 +704,10 @@ set(SIMPLE_HEADERS
     include/simple/SocketSimple-reconnect.h
 )
 
+set(DEFLATE_HEADERS
+    include/deflate/SocketDeflate.h
+)
+
 install(TARGETS socket_static socket_shared
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
@@ -717,6 +724,7 @@ install(FILES ${QPACK_HEADERS} DESTINATION include/http/qpack)
 install(FILES ${TEST_HEADERS} DESTINATION include/test)
 install(FILES ${QUIC_HEADERS} DESTINATION include/quic)
 install(FILES ${SIMPLE_HEADERS} DESTINATION include/simple)
+install(FILES ${DEFLATE_HEADERS} DESTINATION include/deflate)
 
 # Print build configuration
 message(STATUS "Socket Library Configuration:")
@@ -858,6 +866,8 @@ set(TEST_SOURCES
     test_metrics_percentile
     test_httpserver
     test_httpserver_websocket
+    # DEFLATE tests (RFC 1951)
+    test_deflate_static
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error
@@ -1250,8 +1260,10 @@ if(ENABLE_FUZZING)
         fuzz_qpack_literal
         fuzz_qpack_encoder_stream
         fuzz_qpack_decoder_stream
+        # DEFLATE fuzzers (RFC 1951)
+        fuzz_deflate_static
     )
-    
+
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
     if(SOCKET_HAS_TLS)
         list(APPEND FUZZ_SOURCES
