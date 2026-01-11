@@ -448,6 +448,7 @@ set(LIB_SOURCES
 
     # DEFLATE compression module (RFC 1951)
     src/deflate/SocketDeflate-static.c
+    src/deflate/SocketDeflate-bitstream.c
 
 )
 
@@ -868,6 +869,7 @@ set(TEST_SOURCES
     test_httpserver_websocket
     # DEFLATE tests (RFC 1951)
     test_deflate_static
+    test_deflate_bitstream
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error
@@ -1262,6 +1264,7 @@ if(ENABLE_FUZZING)
         fuzz_qpack_decoder_stream
         # DEFLATE fuzzers (RFC 1951)
         fuzz_deflate_static
+        fuzz_deflate_bitstream
     )
 
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
