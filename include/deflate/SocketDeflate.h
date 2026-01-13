@@ -80,7 +80,13 @@ typedef enum
   DEFLATE_ERROR_INVALID_DISTANCE,
   DEFLATE_ERROR_DISTANCE_TOO_FAR,
   DEFLATE_ERROR_HUFFMAN_TREE,
-  DEFLATE_ERROR_BOMB
+  DEFLATE_ERROR_BOMB,
+  DEFLATE_ERROR_GZIP_MAGIC,  /* Invalid gzip magic bytes */
+  DEFLATE_ERROR_GZIP_METHOD, /* Unsupported compression method */
+  DEFLATE_ERROR_GZIP_CRC,    /* CRC32 mismatch */
+  DEFLATE_ERROR_GZIP_SIZE,   /* ISIZE mismatch */
+  DEFLATE_ERROR_GZIP_HCRC,   /* Header CRC16 mismatch */
+  DEFLATE_ERROR_GZIP_OS      /* Invalid/unknown OS code (warning only) */
 } SocketDeflate_Result;
 
 /** Exception raised on DEFLATE errors. */
@@ -670,6 +676,168 @@ extern size_t SocketDeflate_Inflater_total_in (SocketDeflate_Inflater_T inf);
  * @return Human-readable error string (static, never NULL)
  */
 extern const char *SocketDeflate_result_string (SocketDeflate_Result result);
+
+/*
+ * CRC-32 (ISO 3309 / IEEE 802.3)
+ *
+ * Standard CRC-32 used by gzip, PNG, and many other formats.
+ * Uses polynomial 0xEDB88320 (reflected form of 0x04C11DB7).
+ */
+
+/**
+ * Compute CRC-32 checksum.
+ *
+ * The CRC-32 algorithm uses the ISO 3309 polynomial in reflected form.
+ * For initial computation, pass crc=0. For incremental updates, pass
+ * the previous CRC value.
+ *
+ * @param crc   Initial CRC (0 for first call, previous result for updates)
+ * @param data  Data buffer to checksum
+ * @param len   Length of data in bytes
+ * @return Updated CRC-32 value
+ *
+ * @note IEEE test vector: crc32(0, "123456789", 9) == 0xCBF43926
+ */
+extern uint32_t SocketDeflate_crc32 (uint32_t crc, const uint8_t *data,
+                                     size_t len);
+
+/**
+ * Combine two CRC-32 values.
+ *
+ * Given CRC(A) and CRC(B), computes CRC(A || B) without needing the
+ * original data. Useful for parallel CRC computation where chunks are
+ * processed independently then combined.
+ *
+ * @param crc1  CRC-32 of first data block
+ * @param crc2  CRC-32 of second data block
+ * @param len2  Length of second data block in bytes
+ * @return CRC-32 of concatenated blocks
+ *
+ * @note Uses matrix exponentiation of the CRC polynomial's companion matrix.
+ *       Algorithm derived from zlib's crc32_combine.
+ */
+extern uint32_t SocketDeflate_crc32_combine (uint32_t crc1, uint32_t crc2,
+                                             size_t len2);
+
+/*
+ * gzip Format Support (RFC 1952)
+ *
+ * gzip wraps DEFLATE data with a header and trailer for:
+ * - File metadata (name, timestamp, OS)
+ * - Data integrity (CRC-32 + original size)
+ */
+
+/** gzip magic bytes */
+#define GZIP_MAGIC_0 0x1F
+#define GZIP_MAGIC_1 0x8B
+
+/** gzip compression methods */
+#define GZIP_METHOD_DEFLATE 8
+
+/** gzip header flags (RFC 1952 Section 2.3) */
+#define GZIP_FLAG_FTEXT 0x01    /* Hint: file is ASCII text */
+#define GZIP_FLAG_FHCRC 0x02    /* CRC16 of header present */
+#define GZIP_FLAG_FEXTRA 0x04   /* Extra field present */
+#define GZIP_FLAG_FNAME 0x08    /* Original filename present */
+#define GZIP_FLAG_FCOMMENT 0x10 /* Comment present */
+
+/** gzip OS codes (RFC 1952 Section 2.3) */
+#define GZIP_OS_FAT         0   /* FAT filesystem (MS-DOS, OS/2, NT/Win32) */
+#define GZIP_OS_AMIGA       1   /* Amiga */
+#define GZIP_OS_VMS         2   /* VMS (or OpenVMS) */
+#define GZIP_OS_UNIX        3   /* Unix */
+#define GZIP_OS_VM_CMS      4   /* VM/CMS */
+#define GZIP_OS_ATARI_TOS   5   /* Atari TOS */
+#define GZIP_OS_HPFS        6   /* HPFS filesystem (OS/2, NT) */
+#define GZIP_OS_MACINTOSH   7   /* Macintosh */
+#define GZIP_OS_Z_SYSTEM    8   /* Z-System */
+#define GZIP_OS_CP_M        9   /* CP/M */
+#define GZIP_OS_TOPS_20     10  /* TOPS-20 */
+#define GZIP_OS_NTFS        11  /* NTFS filesystem (NT) */
+#define GZIP_OS_QDOS        12  /* QDOS */
+#define GZIP_OS_ACORN_RISCOS 13 /* Acorn RISCOS */
+#define GZIP_OS_UNKNOWN     255 /* Unknown */
+
+/** Minimum gzip header size (no optional fields) */
+#define GZIP_HEADER_MIN_SIZE 10
+
+/** gzip trailer size (CRC32 + ISIZE) */
+#define GZIP_TRAILER_SIZE 8
+
+/**
+ * Parsed gzip header information.
+ *
+ * @note The filename and comment pointers point directly into the input
+ *       buffer passed to SocketDeflate_gzip_parse_header(). The caller
+ *       must ensure the input buffer remains valid while accessing these
+ *       fields. If you need the strings to outlive the input buffer,
+ *       copy them before freeing/reusing the buffer.
+ */
+typedef struct
+{
+  uint8_t method;          /**< Compression method (8 = deflate) */
+  uint8_t flags;           /**< Header flags */
+  uint32_t mtime;          /**< Modification time (Unix timestamp) */
+  uint8_t xfl;             /**< Extra flags (compression level hint) */
+  uint8_t os;              /**< Operating system code */
+  const uint8_t *filename; /**< Original filename (NULL-terminated, or NULL) */
+  const uint8_t *comment;  /**< Comment (NULL-terminated, or NULL) */
+  size_t header_size;      /**< Total header size in bytes */
+} SocketDeflate_GzipHeader;
+
+/**
+ * Parse gzip header (RFC 1952 Section 2.3).
+ *
+ * Parses the gzip header and extracts metadata. The header_size field
+ * indicates where the DEFLATE data begins. If FHCRC flag is set, the
+ * header CRC16 is validated.
+ *
+ * @param data   Input buffer containing gzip header
+ * @param len    Length of input buffer
+ * @param header Output: parsed header information
+ * @return DEFLATE_OK on success,
+ *         DEFLATE_INCOMPLETE if more data needed,
+ *         DEFLATE_ERROR_GZIP_MAGIC if magic bytes invalid,
+ *         DEFLATE_ERROR_GZIP_METHOD if method not 8 (deflate),
+ *         DEFLATE_ERROR_GZIP_HCRC if header CRC16 mismatch
+ */
+extern SocketDeflate_Result
+SocketDeflate_gzip_parse_header (const uint8_t *data, size_t len,
+                                 SocketDeflate_GzipHeader *header);
+
+/**
+ * Verify gzip trailer (RFC 1952 Section 2.3.1).
+ *
+ * Checks CRC-32 and original size (ISIZE) against computed values.
+ * The trailer is 8 bytes: 4-byte CRC32 + 4-byte ISIZE, both little-endian.
+ *
+ * @param trailer       8-byte gzip trailer
+ * @param computed_crc  CRC-32 computed from decompressed data
+ * @param computed_size Original size mod 2^32 from decompression
+ * @return DEFLATE_OK if trailer matches,
+ *         DEFLATE_ERROR_GZIP_CRC if CRC mismatch,
+ *         DEFLATE_ERROR_GZIP_SIZE if size mismatch
+ */
+extern SocketDeflate_Result
+SocketDeflate_gzip_verify_trailer (const uint8_t *trailer,
+                                   uint32_t computed_crc,
+                                   uint32_t computed_size);
+
+/**
+ * Check if OS code is a known value.
+ *
+ * @param os OS code from gzip header
+ * @return 1 if known (0-13 or 255), 0 if unknown/reserved
+ */
+extern int SocketDeflate_gzip_is_valid_os (uint8_t os);
+
+/**
+ * Get string name for OS code.
+ *
+ * @param os OS code from gzip header
+ * @return Human-readable OS name (static string, never NULL)
+ */
+extern const char *SocketDeflate_gzip_os_string (uint8_t os);
 
 /** @} */ /* end of deflate group */
 
