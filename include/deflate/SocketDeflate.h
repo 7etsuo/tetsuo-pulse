@@ -347,6 +347,129 @@ extern int SocketDeflate_BitReader_at_end (SocketDeflate_BitReader_T reader);
 extern uint32_t SocketDeflate_reverse_bits (uint32_t value, unsigned int nbits);
 
 /*
+ * Bit Stream Writer (RFC 1951 Section 3.1.1)
+ *
+ * DEFLATE uses LSB-first bit ordering for output:
+ * - Within a byte: bits packed starting with LSB (bit 0)
+ * - Non-Huffman data: packed starting with LSB of data element
+ * - Huffman codes: packed starting with MSB of code (bit-reversed)
+ *
+ * The bit writer mirrors the reader's ordering for consistency.
+ */
+
+/** Opaque bit writer type. */
+typedef struct SocketDeflate_BitWriter *SocketDeflate_BitWriter_T;
+
+/**
+ * Create a new bit writer.
+ *
+ * @param arena Arena for allocation (writer lifetime tied to arena)
+ * @return New bit writer instance
+ */
+extern SocketDeflate_BitWriter_T SocketDeflate_BitWriter_new (Arena_T arena);
+
+/**
+ * Initialize bit writer with output buffer.
+ *
+ * @param writer   The bit writer
+ * @param data     Output buffer
+ * @param capacity Size of output buffer in bytes
+ */
+extern void SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer,
+                                          uint8_t *data, size_t capacity);
+
+/**
+ * Write N bits to the stream (LSB-first for non-Huffman data).
+ *
+ * Writes bits in DEFLATE's LSB-first order. The value is masked
+ * to n bits before writing.
+ *
+ * @param writer The bit writer
+ * @param value  Value to write (only low n bits are used)
+ * @param n      Number of bits to write (1-25)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR if buffer full or n invalid
+ */
+extern SocketDeflate_Result SocketDeflate_BitWriter_write (
+    SocketDeflate_BitWriter_T writer, uint32_t value, unsigned int n);
+
+/**
+ * Write a Huffman code to the stream.
+ *
+ * Huffman codes are defined MSB-first in RFC 1951 but stored LSB-first
+ * in the bit stream. This function reverses the code bits before writing.
+ *
+ * @param writer The bit writer
+ * @param code   Huffman code value (MSB-first)
+ * @param len    Code length in bits (1-15)
+ * @return DEFLATE_OK on success, DEFLATE_ERROR if buffer full or len invalid
+ */
+extern SocketDeflate_Result SocketDeflate_BitWriter_write_huffman (
+    SocketDeflate_BitWriter_T writer, uint32_t code, unsigned int len);
+
+/**
+ * Flush pending bits to output (pads with zeros).
+ *
+ * Writes any pending bits to the output buffer, padding with zeros
+ * to complete the byte. After flush, the writer is byte-aligned.
+ *
+ * @param writer The bit writer
+ * @return Total bytes written to output buffer
+ */
+extern size_t SocketDeflate_BitWriter_flush (SocketDeflate_BitWriter_T writer);
+
+/**
+ * Align to next byte boundary.
+ *
+ * Equivalent to flush() - pads remaining bits with zeros and writes
+ * to output. After align, the writer is at a byte boundary.
+ *
+ * @param writer The bit writer
+ */
+extern void SocketDeflate_BitWriter_align (SocketDeflate_BitWriter_T writer);
+
+/**
+ * Write RFC 7692 sync flush marker.
+ *
+ * Per RFC 7692 Section 7.2.1, writes an empty stored block that
+ * produces trailing bytes: 0x00 0x00 0xFF 0xFF.
+ *
+ * Format: BFINAL=0, BTYPE=00, align, LEN=0, NLEN=0xFFFF
+ *
+ * The 4-byte trailer is typically stripped before WebSocket transmission.
+ *
+ * @param writer The bit writer
+ * @return Total bytes written to output buffer
+ */
+extern size_t
+SocketDeflate_BitWriter_sync_flush (SocketDeflate_BitWriter_T writer);
+
+/**
+ * Get number of bytes written so far.
+ *
+ * @param writer The bit writer
+ * @return Number of complete bytes in output buffer
+ */
+extern size_t SocketDeflate_BitWriter_size (SocketDeflate_BitWriter_T writer);
+
+/**
+ * Get remaining capacity in output buffer.
+ *
+ * @param writer The bit writer
+ * @return Bytes remaining (capacity - bytes written)
+ */
+extern size_t
+SocketDeflate_BitWriter_capacity_remaining (SocketDeflate_BitWriter_T writer);
+
+/**
+ * Get number of bits pending in accumulator.
+ *
+ * @param writer The bit writer
+ * @return Number of bits not yet flushed (0-7)
+ */
+extern int
+SocketDeflate_BitWriter_bits_pending (SocketDeflate_BitWriter_T writer);
+
+/*
  * Huffman Decoder (RFC 1951 Section 3.2.2)
  *
  * Builds canonical Huffman decode tables from code lengths.

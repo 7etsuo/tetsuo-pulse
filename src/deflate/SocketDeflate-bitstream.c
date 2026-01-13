@@ -257,3 +257,217 @@ SocketDeflate_reverse_bits (uint32_t value, unsigned int nbits)
 
   return result;
 }
+
+/*
+ * ============================================================================
+ * Bit Stream Writer Implementation (RFC 1951 Section 3.1.1)
+ * ============================================================================
+ *
+ * LSB-first bit output for DEFLATE compression.
+ * Mirrors the reader's bit ordering for consistency.
+ *
+ * Bit Accumulator Model (Writer):
+ * - 32-bit accumulator holds pending bits LSB-aligned
+ * - New bits are added at position bits_pending
+ * - Complete bytes are flushed from the bottom
+ *
+ * Example: Writing 0xA (4 bits) then 0x3 (2 bits)
+ *   After write 0xA: bits = 0xA, bits_pending = 4
+ *   After write 0x3: bits = (0x3 << 4) | 0xA = 0x3A, bits_pending = 6
+ *   Output byte (when flushed): 0x3A (LSB-first packed)
+ */
+
+/**
+ * Bit writer state structure.
+ *
+ * The bit accumulator uses LSB-first ordering:
+ * - Valid bits are in the lowest bits_pending bits
+ * - New bits are shifted in at position bits_pending
+ * - Complete bytes are extracted from LSB when bits_pending >= 8
+ */
+struct SocketDeflate_BitWriter
+{
+  /* Output buffer */
+  uint8_t *data;   /* Output buffer pointer */
+  size_t capacity; /* Buffer capacity */
+  size_t pos;      /* Current write position */
+
+  /* Bit accumulator */
+  uint32_t bits;   /* LSB-aligned bit buffer (pending bits) */
+  int bits_pending; /* Number of valid bits (0-7 after flush) */
+};
+
+/*
+ * Internal: Flush complete bytes from accumulator to output buffer.
+ *
+ * Extracts complete bytes from the accumulator and writes them
+ * to the output buffer. Leaves partial bytes (< 8 bits) in accumulator.
+ *
+ * Returns: DEFLATE_OK on success, DEFLATE_ERROR if buffer full
+ */
+static inline SocketDeflate_Result
+flush_bytes (SocketDeflate_BitWriter_T writer)
+{
+  while (writer->bits_pending >= 8)
+    {
+      if (writer->pos >= writer->capacity)
+        return DEFLATE_ERROR; /* Buffer full */
+
+      /* Write low byte to output */
+      writer->data[writer->pos++] = (uint8_t)(writer->bits & 0xFF);
+
+      /* Shift out the written byte */
+      writer->bits >>= 8;
+      writer->bits_pending -= 8;
+    }
+
+  return DEFLATE_OK;
+}
+
+/*
+ * Public API Implementation
+ */
+
+SocketDeflate_BitWriter_T
+SocketDeflate_BitWriter_new (Arena_T arena)
+{
+  SocketDeflate_BitWriter_T writer;
+
+  writer = ALLOC (arena, sizeof (*writer));
+  writer->data = NULL;
+  writer->capacity = 0;
+  writer->pos = 0;
+  writer->bits = 0;
+  writer->bits_pending = 0;
+
+  return writer;
+}
+
+void
+SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer, uint8_t *data,
+                              size_t capacity)
+{
+  writer->data = data;
+  writer->capacity = capacity;
+  writer->pos = 0;
+  writer->bits = 0;
+  writer->bits_pending = 0;
+}
+
+SocketDeflate_Result
+SocketDeflate_BitWriter_write (SocketDeflate_BitWriter_T writer, uint32_t value,
+                               unsigned int n)
+{
+  /* Validate n is in range 1-25 */
+  if (n == 0 || n > DEFLATE_MAX_BITS_READ)
+    return DEFLATE_ERROR;
+
+  /* Mask value to n bits */
+  value &= BITMASK32 (n);
+
+  /* Add bits to accumulator at position bits_pending */
+  writer->bits |= value << writer->bits_pending;
+  writer->bits_pending += n;
+
+  /* Flush any complete bytes */
+  return flush_bytes (writer);
+}
+
+SocketDeflate_Result
+SocketDeflate_BitWriter_write_huffman (SocketDeflate_BitWriter_T writer,
+                                       uint32_t code, unsigned int len)
+{
+  /*
+   * Huffman codes are defined MSB-first in RFC 1951 but stored LSB-first
+   * in the bit stream. We must reverse the bits before writing.
+   *
+   * Example: Code 0b110 (3 bits, MSB-first) stored as 0b011 (LSB-first)
+   */
+  if (len == 0 || len > DEFLATE_MAX_BITS)
+    return DEFLATE_ERROR;
+
+  uint32_t reversed = SocketDeflate_reverse_bits (code, len);
+  return SocketDeflate_BitWriter_write (writer, reversed, len);
+}
+
+size_t
+SocketDeflate_BitWriter_flush (SocketDeflate_BitWriter_T writer)
+{
+  /* Flush any pending bits with zero padding */
+  if (writer->bits_pending > 0)
+    {
+      if (writer->pos < writer->capacity)
+        {
+          /* Write partial byte (already padded with zeros in high bits) */
+          writer->data[writer->pos++] = (uint8_t)(writer->bits & 0xFF);
+        }
+      writer->bits = 0;
+      writer->bits_pending = 0;
+    }
+
+  return writer->pos;
+}
+
+void
+SocketDeflate_BitWriter_align (SocketDeflate_BitWriter_T writer)
+{
+  /* Align to byte boundary by flushing partial byte with zero padding */
+  if (writer->bits_pending > 0)
+    {
+      if (writer->pos < writer->capacity)
+        {
+          writer->data[writer->pos++] = (uint8_t)(writer->bits & 0xFF);
+        }
+      writer->bits = 0;
+      writer->bits_pending = 0;
+    }
+}
+
+size_t
+SocketDeflate_BitWriter_sync_flush (SocketDeflate_BitWriter_T writer)
+{
+  /*
+   * RFC 7692 Section 7.2.1: Per-Message Deflate sync flush
+   *
+   * Writes an empty stored block that produces trailing bytes:
+   *   0x00 0x00 0xFF 0xFF
+   *
+   * Format: BFINAL=0 (1 bit), BTYPE=00 (2 bits), align to byte,
+   *         LEN=0x0000 (16 bits LE), NLEN=0xFFFF (16 bits LE)
+   *
+   * The 4-byte trailer is typically stripped before WebSocket transmission.
+   */
+
+  /* Write BFINAL=0, BTYPE=00 (3 bits total) */
+  SocketDeflate_BitWriter_write (writer, 0, 3);
+
+  /* Align to byte boundary */
+  SocketDeflate_BitWriter_align (writer);
+
+  /* Write LEN=0x0000 (16 bits little-endian) */
+  SocketDeflate_BitWriter_write (writer, 0x0000, 16);
+
+  /* Write NLEN=0xFFFF (16 bits little-endian) */
+  SocketDeflate_BitWriter_write (writer, 0xFFFF, 16);
+
+  /* Flush any remaining bits */
+  return SocketDeflate_BitWriter_flush (writer);
+}
+
+size_t
+SocketDeflate_BitWriter_size (SocketDeflate_BitWriter_T writer)
+{
+  return writer->pos;
+}
+
+size_t
+SocketDeflate_BitWriter_capacity_remaining (SocketDeflate_BitWriter_T writer)
+{
+  return writer->capacity - writer->pos;
+}
+
+int
+SocketDeflate_BitWriter_bits_pending (SocketDeflate_BitWriter_T writer)
+{
+  return writer->bits_pending;
+}
