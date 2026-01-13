@@ -730,6 +730,603 @@ TEST (bitreader_reinit)
 }
 
 /*
+ * ============================================================================
+ * Bit Writer Tests
+ * ============================================================================
+ */
+
+/*
+ * Helper: Create and initialize a bit writer with output buffer
+ */
+static SocketDeflate_BitWriter_T
+make_writer (uint8_t *buffer, size_t capacity)
+{
+  SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (test_arena);
+  SocketDeflate_BitWriter_init (writer, buffer, capacity);
+  return writer;
+}
+
+/*
+ * Basic Operations Tests
+ */
+
+TEST (bitwriter_create_and_init)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  ASSERT (writer != NULL);
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 0);
+  ASSERT_EQ (SocketDeflate_BitWriter_capacity_remaining (writer), 16);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+}
+
+TEST (bitwriter_single_byte)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 8 bits */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xAB, 8), DEFLATE_OK);
+
+  /* Should have written 1 byte */
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 1);
+  ASSERT_EQ (buffer[0], 0xAB);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+}
+
+TEST (bitwriter_cross_byte_boundary)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 12 bits: 0xDAB
+   * LSB-first packing: low 8 bits = 0xAB, remaining 4 bits = 0xD
+   */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xDAB, 12), DEFLATE_OK);
+
+  /* Should have written 1 byte, 4 bits pending */
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 1);
+  ASSERT_EQ (buffer[0], 0xAB);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 4);
+
+  /* Flush to complete */
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+  ASSERT_EQ (total, 2);
+  ASSERT_EQ (buffer[1], 0x0D); /* 0xD with zero padding */
+}
+
+TEST (bitwriter_multiple_values)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 4 bits: 0xB (low nibble of 0xAB) */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xB, 4), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 4);
+
+  /* Write 4 bits: 0xA (high nibble of 0xAB) */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xA, 4), DEFLATE_OK);
+
+  /* Together should form 0xAB */
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 1);
+  ASSERT_EQ (buffer[0], 0xAB);
+}
+
+/*
+ * LSB-First Ordering Tests
+ */
+
+TEST (bitwriter_lsb_first_order)
+{
+  /* RFC 1951 Section 3.1.1:
+   * "Data elements are packed into bytes in order of
+   * increasing bit number within the byte, i.e., starting
+   * with the least-significant bit of the byte."
+   *
+   * Write 3-bit value 5 (101) and 3-bit value 3 (011)
+   * Expected byte: bits 0-2 = 101, bits 3-5 = 011
+   * byte = (value2 << 3) | value1 = 0b011101 = 0x1D
+   */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 5, 3), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 3, 3), DEFLATE_OK);
+
+  /* Flush partial byte */
+  SocketDeflate_BitWriter_flush (writer);
+
+  /* Verify LSB-first packing */
+  ASSERT_EQ (buffer[0], 0x1D);
+}
+
+TEST (bitwriter_block_header)
+{
+  /* DEFLATE block header: BFINAL (1 bit) + BTYPE (2 bits)
+   * BFINAL=1, BTYPE=01 (fixed Huffman)
+   * Expected: 0b011 = 0x03 (with 5 zeros padding)
+   */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write BFINAL = 1 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1), DEFLATE_OK);
+
+  /* Write BTYPE = 01 (fixed) */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 2), DEFLATE_OK);
+
+  SocketDeflate_BitWriter_flush (writer);
+  ASSERT_EQ (buffer[0], 0x03);
+}
+
+TEST (bitwriter_multivalue_packing)
+{
+  /* Pack: BFINAL=1 (1 bit), BTYPE=01 (2 bits), HLIT=28 (5 bits)
+   *
+   * BFINAL = 1 -> bit 0 = 1
+   * BTYPE = 01 -> bits 2,1 = 0,1
+   * HLIT = 28 = 0b11100 -> bits 7,6,5,4,3 = 1,1,1,0,0
+   *
+   * Byte = 0b11100011 = 0xE3
+   */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1), DEFLATE_OK);   /* BFINAL */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 2), DEFLATE_OK);   /* BTYPE */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 28, 5), DEFLATE_OK);  /* HLIT */
+
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 1);
+  ASSERT_EQ (buffer[0], 0xE3);
+}
+
+/*
+ * Huffman Code Writing Tests
+ */
+
+TEST (bitwriter_huffman_code)
+{
+  /* RFC 1951: Huffman codes defined MSB-first, stored LSB-first
+   *
+   * Code 0b110 (3 bits, MSB-first) stored as 0b011 (LSB-first)
+   */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write Huffman code 0b110 (6) with length 3 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0x6, 3),
+             DEFLATE_OK);
+
+  SocketDeflate_BitWriter_flush (writer);
+
+  /* Stream should contain reversed bits: 0b011 = 0x03 (with padding) */
+  ASSERT_EQ (buffer[0], 0x03);
+}
+
+TEST (bitwriter_huffman_multiple)
+{
+  /* Write multiple Huffman codes */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Code 1: 0b110 (3 bits) -> reversed 0b011 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0x6, 3),
+             DEFLATE_OK);
+
+  /* Code 2: 0b1010 (4 bits) -> reversed 0b0101 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0xA, 4),
+             DEFLATE_OK);
+
+  /* Total 7 bits, flush adds 1 padding bit */
+  SocketDeflate_BitWriter_flush (writer);
+
+  /* Packed: [0b011][0b0101] = 0b01010011 with leading zero pad
+   * Wait, let's recalculate:
+   * bits 0-2: 011 (reversed 110)
+   * bits 3-6: 0101 (reversed 1010)
+   * byte = 0b0101011 with 1 zero = 0b00101011 = 0x2B
+   */
+  ASSERT_EQ (buffer[0], 0x2B);
+}
+
+/*
+ * Flush and Alignment Tests
+ */
+
+TEST (bitwriter_flush_partial)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 3 bits */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x5, 3), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 0); /* Not yet flushed */
+
+  /* Flush pads with zeros */
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+  ASSERT_EQ (total, 1);
+  ASSERT_EQ (buffer[0], 0x05); /* 0b101 padded with 5 zeros = 0b00000101 */
+}
+
+TEST (bitwriter_flush_already_aligned)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 8 bits - already aligned */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xAB, 8), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+
+  /* Flush should be no-op */
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+  ASSERT_EQ (total, 1);
+  ASSERT_EQ (buffer[0], 0xAB);
+}
+
+TEST (bitwriter_align)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 3 bits */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x5, 3), DEFLATE_OK);
+
+  /* Align to byte boundary */
+  SocketDeflate_BitWriter_align (writer);
+
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 1);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+  ASSERT_EQ (buffer[0], 0x05);
+}
+
+/*
+ * RFC 7692 Sync Flush Tests
+ */
+
+TEST (bitwriter_sync_flush_empty)
+{
+  /* Sync flush on empty writer produces exactly 5 bytes:
+   * 1 byte for BFINAL+BTYPE+padding (0x00)
+   * 2 bytes for LEN (0x00 0x00)
+   * 2 bytes for NLEN (0xFF 0xFF)
+   */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  size_t total = SocketDeflate_BitWriter_sync_flush (writer);
+  ASSERT_EQ (total, 5);
+
+  /* Verify sync flush marker bytes */
+  ASSERT_EQ (buffer[0], 0x00); /* BFINAL=0, BTYPE=00, 5 zero padding bits */
+  ASSERT_EQ (buffer[1], 0x00); /* LEN low byte */
+  ASSERT_EQ (buffer[2], 0x00); /* LEN high byte */
+  ASSERT_EQ (buffer[3], 0xFF); /* NLEN low byte */
+  ASSERT_EQ (buffer[4], 0xFF); /* NLEN high byte */
+}
+
+TEST (bitwriter_sync_flush_after_data)
+{
+  uint8_t buffer[32];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write some data first */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x12345, 20), DEFLATE_OK);
+
+  size_t pre_size = SocketDeflate_BitWriter_size (writer);
+
+  /* Sync flush */
+  size_t total = SocketDeflate_BitWriter_sync_flush (writer);
+
+  /* Should have written data + sync flush bytes */
+  ASSERT (total > pre_size);
+
+  /* Last 4 bytes should be the sync flush trailer (after alignment) */
+  /* Note: with 20 bits written, that's 2 full bytes + 4 bits pending
+   * After align: 3 bytes of data
+   * Sync flush writes: 1 byte (header + pad) + 4 bytes (LEN + NLEN)
+   * But alignment is done in sync_flush, so let's check the trailer:
+   */
+  ASSERT_EQ (buffer[total - 4], 0x00); /* LEN low */
+  ASSERT_EQ (buffer[total - 3], 0x00); /* LEN high */
+  ASSERT_EQ (buffer[total - 2], 0xFF); /* NLEN low */
+  ASSERT_EQ (buffer[total - 1], 0xFF); /* NLEN high */
+}
+
+TEST (bitwriter_sync_flush_alignment)
+{
+  /* Write non-aligned data, sync flush should align first */
+  uint8_t buffer[32];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 5 bits */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x15, 5), DEFLATE_OK);
+
+  /* Sync flush */
+  SocketDeflate_BitWriter_sync_flush (writer);
+
+  /* After sync_flush, writer should be aligned */
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+}
+
+/*
+ * Roundtrip Tests (Write then Read)
+ */
+
+TEST (bitwriter_reader_roundtrip_bits)
+{
+  uint8_t buffer[64];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write various bit patterns */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x1, 1), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x3, 2), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x7F, 7), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xFF, 8), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xABCD, 16), DEFLATE_OK);
+
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+
+  /* Read back and verify */
+  SocketDeflate_BitReader_T reader = make_reader (buffer, total);
+  uint32_t value;
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 1, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0x1);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 2, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0x3);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 7, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0x7F);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 8, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xFF);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 16, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xABCD);
+}
+
+TEST (bitwriter_reader_roundtrip_huffman)
+{
+  uint8_t buffer[64];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write Huffman codes (will be reversed) */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0x6, 3),
+             DEFLATE_OK); /* 110 -> 011 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0xA, 4),
+             DEFLATE_OK); /* 1010 -> 0101 */
+
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+
+  /* Read back raw bits and manually reverse to verify */
+  SocketDeflate_BitReader_T reader = make_reader (buffer, total);
+  uint32_t raw_bits;
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 3, &raw_bits), DEFLATE_OK);
+  /* raw_bits should be 011 = 3, reverse gives 110 = 6 */
+  ASSERT_EQ (SocketDeflate_reverse_bits (raw_bits, 3), 0x6);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 4, &raw_bits), DEFLATE_OK);
+  /* raw_bits should be 0101 = 5, reverse gives 1010 = 10 */
+  ASSERT_EQ (SocketDeflate_reverse_bits (raw_bits, 4), 0xA);
+}
+
+TEST (bitwriter_reader_roundtrip_block_header)
+{
+  uint8_t buffer[64];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write DEFLATE block header for dynamic Huffman block */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1), DEFLATE_OK); /* BFINAL=1 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 2, 2), DEFLATE_OK); /* BTYPE=10 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 28, 5), DEFLATE_OK); /* HLIT=28 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 29, 5), DEFLATE_OK); /* HDIST=29 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 14, 4), DEFLATE_OK); /* HCLEN=14 */
+
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+
+  /* Read back and verify */
+  SocketDeflate_BitReader_T reader = make_reader (buffer, total);
+  uint32_t bfinal, btype, hlit, hdist, hclen;
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 1, &bfinal), DEFLATE_OK);
+  ASSERT_EQ (bfinal, 1);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 2, &btype), DEFLATE_OK);
+  ASSERT_EQ (btype, 2);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 5, &hlit), DEFLATE_OK);
+  ASSERT_EQ (hlit, 28);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 5, &hdist), DEFLATE_OK);
+  ASSERT_EQ (hdist, 29);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 4, &hclen), DEFLATE_OK);
+  ASSERT_EQ (hclen, 14);
+}
+
+/*
+ * Edge Case Tests
+ */
+
+TEST (bitwriter_zero_bits_returns_error)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Writing 0 bits should return error */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xAB, 0), DEFLATE_ERROR);
+
+  /* Writer state should be unchanged */
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 0);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+}
+
+TEST (bitwriter_max_bits)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write maximum 25 bits */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x1FFFFFF, 25), DEFLATE_OK);
+
+  size_t total = SocketDeflate_BitWriter_flush (writer);
+  ASSERT_EQ (total, 4); /* 25 bits = 3 full bytes + 1 partial */
+
+  /* Verify by reading back */
+  SocketDeflate_BitReader_T reader = make_reader (buffer, total);
+  uint32_t value;
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 25, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0x1FFFFFF);
+}
+
+TEST (bitwriter_too_many_bits_returns_error)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Writing more than 25 bits should return error */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xFFFFFFFF, 26),
+             DEFLATE_ERROR);
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xFFFFFFFF, 100),
+             DEFLATE_ERROR);
+}
+
+TEST (bitwriter_capacity_exceeded)
+{
+  uint8_t buffer[2];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 16 bits - exactly fills buffer */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xABCD, 16), DEFLATE_OK);
+
+  /* Next write should fail */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xFF, 8), DEFLATE_ERROR);
+}
+
+TEST (bitwriter_huffman_zero_len_returns_error)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Huffman with len=0 should return error */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0x1, 0),
+             DEFLATE_ERROR);
+}
+
+TEST (bitwriter_huffman_too_long_returns_error)
+{
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Huffman with len > 15 should return error */
+  ASSERT_EQ (SocketDeflate_BitWriter_write_huffman (writer, 0x1, 16),
+             DEFLATE_ERROR);
+}
+
+TEST (bitwriter_reinit)
+{
+  uint8_t buffer1[16];
+  uint8_t buffer2[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer1, sizeof (buffer1));
+
+  /* Write to first buffer */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xAB, 8), DEFLATE_OK);
+  ASSERT_EQ (buffer1[0], 0xAB);
+
+  /* Re-init with new buffer */
+  SocketDeflate_BitWriter_init (writer, buffer2, sizeof (buffer2));
+
+  /* Should start fresh */
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 0);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+
+  /* Write to new buffer */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xCD, 8), DEFLATE_OK);
+  ASSERT_EQ (buffer2[0], 0xCD);
+
+  /* Original buffer unchanged (beyond initial write) */
+  ASSERT_EQ (buffer1[0], 0xAB);
+}
+
+TEST (bitwriter_value_masking)
+{
+  /* write() should mask values to n bits before writing */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 4 bits from 0xFFFF - should only write 0xF */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0xFFFF, 4), DEFLATE_OK);
+
+  SocketDeflate_BitWriter_flush (writer);
+  ASSERT_EQ (buffer[0], 0x0F); /* Only low 4 bits, padded with zeros */
+
+  /* Verify by reading back */
+  SocketDeflate_BitReader_T reader = make_reader (buffer, 1);
+  uint32_t value;
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 4, &value), DEFLATE_OK);
+  ASSERT_EQ (value, 0xF);
+}
+
+TEST (bitwriter_reader_roundtrip_all_lengths)
+{
+  /* Verify roundtrip for ALL bit lengths 1-25 */
+  uint8_t buffer[64];
+  unsigned int n;
+
+  for (n = 1; n <= DEFLATE_MAX_BITS_READ; n++)
+    {
+      SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+      /* Create test value with all bits set for this length */
+      uint32_t test_val = (1U << n) - 1; /* All n bits set */
+
+      ASSERT_EQ (SocketDeflate_BitWriter_write (writer, test_val, n),
+                 DEFLATE_OK);
+      size_t total = SocketDeflate_BitWriter_flush (writer);
+
+      /* Read back */
+      SocketDeflate_BitReader_T reader = make_reader (buffer, total);
+      uint32_t read_val;
+      ASSERT_EQ (SocketDeflate_BitReader_read (reader, n, &read_val),
+                 DEFLATE_OK);
+      ASSERT_EQ (read_val, test_val);
+    }
+}
+
+TEST (bitwriter_accumulator_boundary)
+{
+  /* Test writing exactly at 32-bit accumulator boundary:
+   * 7 pending bits + 25 new bits = 32 bits exactly
+   */
+  uint8_t buffer[16];
+  SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
+
+  /* Write 7 bits to leave 7 pending */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x7F, 7), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 7);
+
+  /* Write max 25 bits - accumulator now has exactly 32 bits */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 0x1FFFFFF, 25), DEFLATE_OK);
+
+  /* Should have flushed 4 complete bytes, 0 pending */
+  ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 4);
+  ASSERT_EQ (SocketDeflate_BitWriter_bits_pending (writer), 0);
+
+  /* Verify by reading back: 7 bits + 25 bits = 32 bits total */
+  SocketDeflate_BitReader_T reader = make_reader (buffer, 4);
+  uint32_t v1, v2;
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 7, &v1), DEFLATE_OK);
+  ASSERT_EQ (v1, 0x7F);
+
+  ASSERT_EQ (SocketDeflate_BitReader_read (reader, 25, &v2), DEFLATE_OK);
+  ASSERT_EQ (v2, 0x1FFFFFF);
+}
+
+/*
  * Test Runner
  */
 

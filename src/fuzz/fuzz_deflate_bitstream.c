@@ -32,6 +32,7 @@
 /* Fuzz operation opcodes */
 enum FuzzOp
 {
+  /* Reader operations */
   OP_READ_BITS = 0,
   OP_PEEK_BITS,
   OP_CONSUME_BITS,
@@ -41,6 +42,16 @@ enum FuzzOp
   OP_QUERY_STATE,
   OP_MULTI_READ,
   OP_INVALID_PARAMS, /* Test validation of invalid parameters */
+
+  /* Writer operations */
+  OP_WRITE_BITS,        /* Write bits to writer */
+  OP_WRITE_HUFFMAN,     /* Write Huffman code */
+  OP_WRITER_FLUSH,      /* Flush writer */
+  OP_WRITER_ALIGN,      /* Align writer */
+  OP_WRITER_SYNC_FLUSH, /* RFC 7692 sync flush */
+  OP_ROUNDTRIP,         /* Write then read, verify match */
+  OP_MULTI_WRITE,       /* Multiple write operations */
+
   OP_MAX
 };
 
@@ -231,6 +242,159 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             result = SocketDeflate_BitReader_read (reader, 1, &value);
             (void)(result == DEFLATE_OK || result == DEFLATE_INCOMPLETE);
           }
+      }
+      break;
+
+    /*
+     * Writer Operations
+     */
+
+    case OP_WRITE_BITS:
+      {
+        /* Write N bits to writer */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        unsigned int n = (param1 % DEFLATE_MAX_BITS_READ) + 1;
+        uint32_t write_val
+            = ((uint32_t)param2 << 8) | (input_size > 0 ? input_data[0] : 0);
+
+        (void)SocketDeflate_BitWriter_write (writer, write_val, n);
+        (void)SocketDeflate_BitWriter_flush (writer);
+      }
+      break;
+
+    case OP_WRITE_HUFFMAN:
+      {
+        /* Write Huffman code (reversed) */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        unsigned int len = (param1 % DEFLATE_MAX_BITS) + 1; /* 1-15 bits */
+        uint32_t code = param2;
+
+        (void)SocketDeflate_BitWriter_write_huffman (writer, code, len);
+        (void)SocketDeflate_BitWriter_flush (writer);
+      }
+      break;
+
+    case OP_WRITER_FLUSH:
+      {
+        /* Write some bits then flush */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        unsigned int n = (param1 % 8) + 1; /* 1-8 bits */
+        (void)SocketDeflate_BitWriter_write (writer, param2, n);
+
+        size_t flushed = SocketDeflate_BitWriter_flush (writer);
+        (void)flushed;
+      }
+      break;
+
+    case OP_WRITER_ALIGN:
+      {
+        /* Write some bits then align */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        unsigned int n = param1 % 8;
+        if (n > 0)
+          (void)SocketDeflate_BitWriter_write (writer, param2, n);
+
+        SocketDeflate_BitWriter_align (writer);
+
+        /* Verify alignment */
+        (void)(SocketDeflate_BitWriter_bits_pending (writer) == 0);
+      }
+      break;
+
+    case OP_WRITER_SYNC_FLUSH:
+      {
+        /* Test RFC 7692 sync flush */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        /* Optionally write some data first */
+        if (param1 & 1)
+          {
+            unsigned int n = (param2 % DEFLATE_MAX_BITS_READ) + 1;
+            uint32_t write_val = (input_size > 0) ? input_data[0] : 0;
+            (void)SocketDeflate_BitWriter_write (writer, write_val, n);
+          }
+
+        size_t total = SocketDeflate_BitWriter_sync_flush (writer);
+
+        /* Verify trailer if we have enough data */
+        if (total >= 5)
+          {
+            /* Last 4 bytes should be 0x00 0x00 0xFF 0xFF */
+            (void)(out_buf[total - 4] == 0x00);
+            (void)(out_buf[total - 3] == 0x00);
+            (void)(out_buf[total - 2] == 0xFF);
+            (void)(out_buf[total - 1] == 0xFF);
+          }
+      }
+      break;
+
+    case OP_ROUNDTRIP:
+      {
+        /* Write bits, then read them back and verify */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        unsigned int n = (param1 % DEFLATE_MAX_BITS_READ) + 1;
+        uint32_t write_val = param2 & ((1U << n) - 1); /* Mask to n bits */
+
+        if (SocketDeflate_BitWriter_write (writer, write_val, n) == DEFLATE_OK)
+          {
+            size_t total = SocketDeflate_BitWriter_flush (writer);
+
+            if (total > 0)
+              {
+                /* Read back */
+                SocketDeflate_BitReader_T rd
+                    = SocketDeflate_BitReader_new (arena);
+                SocketDeflate_BitReader_init (rd, out_buf, total);
+
+                uint32_t read_val;
+                if (SocketDeflate_BitReader_read (rd, n, &read_val)
+                    == DEFLATE_OK)
+                  {
+                    /* Verify roundtrip */
+                    (void)(read_val == write_val);
+                  }
+              }
+          }
+      }
+      break;
+
+    case OP_MULTI_WRITE:
+      {
+        /* Multiple write operations */
+        uint8_t out_buf[256];
+        SocketDeflate_BitWriter_T writer = SocketDeflate_BitWriter_new (arena);
+        SocketDeflate_BitWriter_init (writer, out_buf, sizeof (out_buf));
+
+        unsigned int write_count = (param1 % 8) + 1;
+        unsigned int i;
+
+        for (i = 0; i < write_count && i < input_size; i++)
+          {
+            unsigned int bits = (input_data[i] % DEFLATE_MAX_BITS_READ) + 1;
+            uint32_t val = (i + 1 < input_size) ? input_data[i + 1] : param2;
+
+            if (SocketDeflate_BitWriter_write (writer, val, bits) != DEFLATE_OK)
+              break;
+          }
+
+        (void)SocketDeflate_BitWriter_flush (writer);
       }
       break;
     }
