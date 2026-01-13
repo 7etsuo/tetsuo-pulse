@@ -73,6 +73,7 @@ typedef enum
 {
   DEFLATE_OK = 0,
   DEFLATE_INCOMPLETE,
+  DEFLATE_OUTPUT_FULL,
   DEFLATE_ERROR,
   DEFLATE_ERROR_INVALID_BTYPE,
   DEFLATE_ERROR_INVALID_CODE,
@@ -579,6 +580,96 @@ inflate_lz77 (SocketDeflate_BitReader_T reader,
               SocketDeflate_HuffmanTable_T litlen_table,
               SocketDeflate_HuffmanTable_T dist_table, uint8_t *output,
               size_t output_len, size_t *written);
+
+/*
+ * Streaming Inflate API
+ *
+ * High-level API for decompressing DEFLATE streams. Handles multi-block
+ * streams, maintains sliding window for back-references, and provides
+ * security limits against decompression bombs.
+ */
+
+/** Opaque inflater type for streaming decompression. */
+typedef struct SocketDeflate_Inflater *SocketDeflate_Inflater_T;
+
+/**
+ * Create a new inflater.
+ *
+ * @param arena      Arena for allocation (inflater lifetime tied to arena)
+ * @param max_output Maximum output size (0 = unlimited). Used for bomb
+ *                   protection - returns DEFLATE_ERROR_BOMB if exceeded.
+ * @return New inflater instance, or NULL on allocation failure
+ */
+extern SocketDeflate_Inflater_T SocketDeflate_Inflater_new (Arena_T arena,
+                                                            size_t max_output);
+
+/**
+ * Decompress data (streaming).
+ *
+ * Processes input data and produces decompressed output. Can be called
+ * multiple times for streaming decompression. The function handles
+ * multi-block DEFLATE streams automatically.
+ *
+ * @param inf        The inflater
+ * @param input      Input buffer (compressed data)
+ * @param input_len  Size of input buffer
+ * @param consumed   Output: bytes consumed from input
+ * @param output     Output buffer (decompressed data)
+ * @param output_len Size of output buffer
+ * @param written    Output: bytes written to output
+ * @return DEFLATE_OK when final block complete,
+ *         DEFLATE_INCOMPLETE if more input needed,
+ *         DEFLATE_OUTPUT_FULL if output buffer full (call again with more
+ * space), DEFLATE_ERROR_INVALID_BTYPE if BTYPE=11 encountered, other error
+ * codes on failure
+ */
+extern SocketDeflate_Result
+SocketDeflate_Inflater_inflate (SocketDeflate_Inflater_T inf,
+                                const uint8_t *input, size_t input_len,
+                                size_t *consumed, uint8_t *output,
+                                size_t output_len, size_t *written);
+
+/**
+ * Check if decompression is complete.
+ *
+ * @param inf The inflater
+ * @return 1 if final block processed and complete, 0 otherwise
+ */
+extern int SocketDeflate_Inflater_finished (SocketDeflate_Inflater_T inf);
+
+/**
+ * Reset inflater for reuse.
+ *
+ * Clears all state including sliding window. After reset, the inflater
+ * can be used to decompress a new stream.
+ *
+ * @param inf The inflater
+ */
+extern void SocketDeflate_Inflater_reset (SocketDeflate_Inflater_T inf);
+
+/**
+ * Get total bytes output so far.
+ *
+ * @param inf The inflater
+ * @return Total decompressed bytes produced
+ */
+extern size_t SocketDeflate_Inflater_total_out (SocketDeflate_Inflater_T inf);
+
+/**
+ * Get total bytes consumed so far.
+ *
+ * @param inf The inflater
+ * @return Total compressed bytes consumed
+ */
+extern size_t SocketDeflate_Inflater_total_in (SocketDeflate_Inflater_T inf);
+
+/**
+ * Get string representation of result code.
+ *
+ * @param result Result code
+ * @return Human-readable error string (static, never NULL)
+ */
+extern const char *SocketDeflate_result_string (SocketDeflate_Result result);
 
 /** @} */ /* end of deflate group */
 
