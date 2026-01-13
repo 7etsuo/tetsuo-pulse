@@ -920,6 +920,18 @@ SocketDeflate_result_string (SocketDeflate_Result result)
       return "Invalid Huffman tree";
     case DEFLATE_ERROR_BOMB:
       return "Decompression bomb detected";
+    case DEFLATE_ERROR_GZIP_MAGIC:
+      return "Invalid gzip magic bytes";
+    case DEFLATE_ERROR_GZIP_METHOD:
+      return "Unsupported gzip compression method";
+    case DEFLATE_ERROR_GZIP_CRC:
+      return "gzip CRC-32 mismatch";
+    case DEFLATE_ERROR_GZIP_SIZE:
+      return "gzip ISIZE mismatch";
+    case DEFLATE_ERROR_GZIP_HCRC:
+      return "gzip header CRC16 mismatch";
+    case DEFLATE_ERROR_GZIP_OS:
+      return "Invalid/unknown gzip OS code";
     default:
       return "Unknown error";
     }

@@ -454,6 +454,8 @@ set(LIB_SOURCES
     src/deflate/SocketDeflate-fixed.c
     src/deflate/SocketDeflate-dynamic.c
     src/deflate/SocketDeflate-inflate.c
+    src/deflate/SocketDeflate-crc32.c
+    src/deflate/SocketDeflate-gzip.c
 
 )
 
@@ -880,6 +882,9 @@ set(TEST_SOURCES
     test_deflate_fixed
     test_deflate_dynamic
     test_deflate_inflate
+    # gzip tests (RFC 1952)
+    test_deflate_crc32
+    test_deflate_gzip
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error
@@ -1280,6 +1285,9 @@ if(ENABLE_FUZZING)
         fuzz_deflate_fixed
         fuzz_deflate_dynamic
         fuzz_deflate_inflate
+        # gzip fuzzers (RFC 1952)
+        fuzz_deflate_crc32
+        fuzz_deflate_gzip
     )
 
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
