@@ -456,6 +456,8 @@ set(LIB_SOURCES
     src/deflate/SocketDeflate-inflate.c
     src/deflate/SocketDeflate-crc32.c
     src/deflate/SocketDeflate-gzip.c
+    src/deflate/SocketDeflate-lz77.c
+    src/deflate/SocketDeflate-huffgen.c
 
 )
 
@@ -882,6 +884,9 @@ set(TEST_SOURCES
     test_deflate_fixed
     test_deflate_dynamic
     test_deflate_inflate
+    test_deflate_lz77
+    test_deflate_huffgen
+    test_deflate_roundtrip
     # gzip tests (RFC 1952)
     test_deflate_crc32
     test_deflate_gzip
@@ -1285,6 +1290,7 @@ if(ENABLE_FUZZING)
         fuzz_deflate_fixed
         fuzz_deflate_dynamic
         fuzz_deflate_inflate
+        fuzz_deflate_lz77
         # gzip fuzzers (RFC 1952)
         fuzz_deflate_crc32
         fuzz_deflate_gzip
