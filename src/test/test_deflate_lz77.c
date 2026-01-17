@@ -262,7 +262,7 @@ TEST (lazy_match_basic)
   /* Find match at position 4: "ABC" matches position 0 */
   SocketDeflate_Match match4;
   ASSERT_EQ (SocketDeflate_Matcher_find (matcher, 4, &match4), 1);
-  ASSERT_EQ (match4.length, 3); /* "ABC" */
+  ASSERT_EQ (match4.length, 3);   /* "ABC" */
   ASSERT_EQ (match4.distance, 4); /* pos 4 - pos 0 = 4 */
 
   /* Check if should defer (needs position 5 in hash table for lookahead) */
@@ -276,7 +276,7 @@ TEST (lazy_match_basic)
   /* Find match at position 8: "ABCD" matches position 4 */
   SocketDeflate_Match match8;
   ASSERT_EQ (SocketDeflate_Matcher_find (matcher, 8, &match8), 1);
-  ASSERT_EQ (match8.length, 4); /* "ABCD" */
+  ASSERT_EQ (match8.length, 4);   /* "ABCD" */
   ASSERT_EQ (match8.distance, 4); /* pos 8 - pos 4 = 4 */
 }
 
@@ -473,6 +473,152 @@ TEST (position_zero_match)
    * Length should be 6 because "XYZABC" at pos 0 matches "XYZABC" at pos 6 */
   ASSERT_EQ (match.distance, 6);
   ASSERT_EQ (match.length, 6);
+}
+
+TEST (lazy_match_override)
+{
+  /*
+   * Test good_length optimization: should_defer() returns 0 when current
+   * match length >= good_length, skipping the lazy lookahead entirely.
+   *
+   * This is a key optimization in DEFLATE compression - when we already
+   * have a "good enough" match, don't waste time checking if the next
+   * position has something better.
+   */
+  const uint8_t data[] = "ABCDEFGHIJKLMNOPABCDEFGHIJKLMNOP";
+  SocketDeflate_Matcher_T matcher = make_matcher (data, 32);
+
+  /* Set good_length = 8 so matches >= 8 skip lazy lookahead */
+  SocketDeflate_Matcher_set_limits (matcher, 0, 8, 0);
+
+  /* Insert positions 0-15 */
+  for (size_t i = 0; i < 16; i++)
+    SocketDeflate_Matcher_insert (matcher, i);
+
+  /* At position 16, we find "ABCDEFGHIJKLMNOP" (len 16) from position 0 */
+  SocketDeflate_Match match;
+  ASSERT_EQ (SocketDeflate_Matcher_find (matcher, 16, &match), 1);
+  ASSERT_EQ (match.length, 16);
+  ASSERT_EQ (match.distance, 16);
+
+  /* With match length 16 >= good_length 8, should_defer returns 0 */
+  int defer = SocketDeflate_Matcher_should_defer (matcher, 16, match.length);
+  ASSERT_EQ (defer, 0);
+}
+
+TEST (hash_distribution_quality)
+{
+  /*
+   * Test that different 3-byte patterns produce varied hash distribution
+   * by verifying that inserting different patterns at position 0 and
+   * searching for them at position 100 produces distinct matches.
+   *
+   * This indirectly tests hash function quality since good distribution
+   * means different patterns map to different hash buckets and can be
+   * found reliably.
+   */
+  const uint8_t patterns[][3] = {
+    { 0, 0, 0 },       /* All zeros */
+    { 0, 0, 1 },       /* Single bit change */
+    { 0, 1, 0 },       /* Different position */
+    { 1, 0, 0 },       /* Different position */
+    { 'A', 'B', 'C' }, /* ASCII text */
+    { 'X', 'Y', 'Z' }, /* Different ASCII */
+    { '0', '1', '2' }, /* Digits */
+    { 255, 255, 255 }, /* All ones */
+    { 128, 128, 128 }  /* Middle value */
+  };
+  size_t num_patterns = sizeof (patterns) / sizeof (patterns[0]);
+
+  /* Test that each pattern can be found independently */
+  for (size_t p = 0; p < num_patterns; p++)
+    {
+      uint8_t data[128];
+      memset (data, 'X', sizeof (data));
+
+      /* Place the pattern at position 0 and 100 */
+      memcpy (data, patterns[p], 3);
+      memcpy (data + 100, patterns[p], 3);
+
+      SocketDeflate_Matcher_T matcher = make_matcher (data, sizeof (data));
+      SocketDeflate_Matcher_insert (matcher, 0);
+
+      SocketDeflate_Match match;
+      int found = SocketDeflate_Matcher_find (matcher, 100, &match);
+      ASSERT_EQ (found, 1);
+      ASSERT_EQ (match.distance, 100);
+      ASSERT (match.length >= 3);
+    }
+}
+
+TEST (matcher_empty_input)
+{
+  /*
+   * Test edge case with minimal input (less than MIN_MATCH bytes).
+   * Should not find any matches and should not crash.
+   */
+  const uint8_t empty_data[] = "";
+  SocketDeflate_Matcher_T matcher = SocketDeflate_Matcher_new (test_arena);
+  SocketDeflate_Matcher_init (matcher, empty_data, 0);
+
+  SocketDeflate_Match match;
+  /* No positions can be inserted or searched with empty data */
+  ASSERT_EQ (SocketDeflate_Matcher_find (matcher, 0, &match), 0);
+
+  /* Test with 1-2 bytes (less than MIN_MATCH=3) */
+  const uint8_t short_data[] = "AB";
+  matcher = make_matcher (short_data, 2);
+  ASSERT_EQ (SocketDeflate_Matcher_find (matcher, 0, &match), 0);
+}
+
+TEST (nice_length_early_stop)
+{
+  /*
+   * Test that nice_length causes early termination of chain search.
+   * With a very long repeating pattern and a low nice_length setting,
+   * the matcher should stop searching once it finds a "nice enough" match.
+   *
+   * The nice_length optimization prevents searching entire hash chains
+   * when a sufficiently long match is already found.
+   *
+   * Key: Don't insert the search position before searching there!
+   */
+  uint8_t data[512];
+  memset (data, 'X', sizeof (data));
+
+  /* Create long repeating patterns at intervals */
+  const char *pattern = "ABCDEFGHIJ"; /* 10 chars */
+  for (size_t i = 0; i < sizeof (data) - 20; i += 100)
+    {
+      memcpy (data + i, pattern, 10);
+    }
+
+  SocketDeflate_Matcher_T matcher = make_matcher (data, sizeof (data));
+
+  /* Set a low nice_length to trigger early termination */
+  SocketDeflate_Matcher_set_limits (matcher, 0, 0, 10); /* nice_length = 10 */
+
+  /* Insert positions 0 to 399 (NOT including position 400) */
+  for (size_t i = 0; i + DEFLATE_MIN_MATCH <= 400; i++)
+    {
+      SocketDeflate_Matcher_insert (matcher, i);
+    }
+
+  /* Search at position 400 - should find match from position 0, 100, 200, or
+   * 300 */
+  /* Position 400 starts with "ABCDEFGHIJ" which also exists at 0, 100, 200, 300
+   */
+  SocketDeflate_Match match;
+  int found = SocketDeflate_Matcher_find (matcher, 400, &match);
+  ASSERT_EQ (found, 1);
+
+  /* Should find a match with length >= nice_length (10) */
+  ASSERT (match.length >= 10);
+  ASSERT (match.distance > 0);
+
+  /* The match should prefer nearest (position 300, distance 100) due to
+   * early termination when nice_length is reached */
+  ASSERT_EQ (match.distance, 100);
 }
 
 /*

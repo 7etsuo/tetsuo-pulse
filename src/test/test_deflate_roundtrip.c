@@ -127,8 +127,8 @@ TEST (roundtrip_length_boundaries)
       unsigned int code, extra, extra_bits;
       unsigned int decoded;
 
-      SocketDeflate_encode_length (boundaries[i].length, &code, &extra,
-                                   &extra_bits);
+      SocketDeflate_encode_length (
+          boundaries[i].length, &code, &extra, &extra_bits);
 
       ASSERT_EQ (code, boundaries[i].expected_code);
       ASSERT_EQ (extra_bits, boundaries[i].expected_extra_bits);
@@ -255,8 +255,8 @@ TEST (roundtrip_distance_boundaries)
       unsigned int code, extra, extra_bits;
       unsigned int decoded;
 
-      SocketDeflate_encode_distance (boundaries[i].distance, &code, &extra,
-                                     &extra_bits);
+      SocketDeflate_encode_distance (
+          boundaries[i].distance, &code, &extra, &extra_bits);
 
       ASSERT_EQ (code, boundaries[i].expected_code);
       ASSERT_EQ (extra_bits, boundaries[i].expected_extra_bits);
@@ -293,7 +293,8 @@ TEST (roundtrip_huffman_codes_simple)
   /* Build decode table */
   SocketDeflate_HuffmanTable_T table
       = SocketDeflate_HuffmanTable_new (test_arena);
-  result = SocketDeflate_HuffmanTable_build (table, lengths, 4, DEFLATE_MAX_BITS);
+  result
+      = SocketDeflate_HuffmanTable_build (table, lengths, 4, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Verify each symbol decodes correctly by encoding with BitWriter
@@ -309,8 +310,8 @@ TEST (roundtrip_huffman_codes_simple)
           = SocketDeflate_BitWriter_new (test_arena);
       SocketDeflate_BitWriter_init (writer, buffer, sizeof (buffer));
 
-      result = SocketDeflate_BitWriter_write_huffman (writer, codes[sym].code,
-                                                      codes[sym].len);
+      result = SocketDeflate_BitWriter_write_huffman (
+          writer, codes[sym].code, codes[sym].len);
       ASSERT_EQ (result, DEFLATE_OK);
 
       /* Pad to byte boundary */
@@ -338,28 +339,30 @@ TEST (roundtrip_huffman_fixed_litlen)
   SocketDeflate_HuffmanCode codes[DEFLATE_LITLEN_CODES];
 
   /* Generate canonical codes from fixed lengths */
-  SocketDeflate_generate_codes (deflate_fixed_litlen_lengths, codes,
-                                DEFLATE_LITLEN_CODES);
+  SocketDeflate_generate_codes (
+      deflate_fixed_litlen_lengths, codes, DEFLATE_LITLEN_CODES);
 
   /* Build decode table */
   SocketDeflate_HuffmanTable_T table
       = SocketDeflate_HuffmanTable_new (test_arena);
-  SocketDeflate_Result result = SocketDeflate_HuffmanTable_build (
-      table, deflate_fixed_litlen_lengths, DEFLATE_LITLEN_CODES,
-      DEFLATE_MAX_BITS);
+  SocketDeflate_Result result
+      = SocketDeflate_HuffmanTable_build (table,
+                                          deflate_fixed_litlen_lengths,
+                                          DEFLATE_LITLEN_CODES,
+                                          DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Test a sampling of symbols across different code lengths */
   unsigned int test_symbols[] = {
-    0,           /* Literal 0 (8 bits) */
-    143,         /* Last 8-bit literal */
-    144,         /* First 9-bit literal */
-    255,         /* Last 9-bit literal */
-    256,         /* End-of-block (7 bits) */
-    257,         /* First length code (7 bits) */
-    279,         /* Last 7-bit length code */
-    280,         /* First 8-bit length code */
-    285,         /* Last length code (8 bits) */
+    0,   /* Literal 0 (8 bits) */
+    143, /* Last 8-bit literal */
+    144, /* First 9-bit literal */
+    255, /* Last 9-bit literal */
+    256, /* End-of-block (7 bits) */
+    257, /* First length code (7 bits) */
+    279, /* Last 7-bit length code */
+    280, /* First 8-bit length code */
+    285, /* Last length code (8 bits) */
   };
 
   for (size_t i = 0; i < sizeof (test_symbols) / sizeof (test_symbols[0]); i++)
@@ -372,8 +375,8 @@ TEST (roundtrip_huffman_fixed_litlen)
           = SocketDeflate_BitWriter_new (test_arena);
       SocketDeflate_BitWriter_init (writer, buffer, sizeof (buffer));
 
-      result = SocketDeflate_BitWriter_write_huffman (writer, codes[sym].code,
-                                                      codes[sym].len);
+      result = SocketDeflate_BitWriter_write_huffman (
+          writer, codes[sym].code, codes[sym].len);
       ASSERT_EQ (result, DEFLATE_OK);
 
       size_t written = SocketDeflate_BitWriter_flush (writer);
@@ -399,8 +402,8 @@ TEST (roundtrip_huffman_fixed_distance)
   SocketDeflate_HuffmanCode codes[DEFLATE_DIST_CODES];
 
   /* Generate canonical codes from fixed lengths */
-  SocketDeflate_generate_codes (deflate_fixed_dist_lengths, codes,
-                                DEFLATE_DIST_CODES);
+  SocketDeflate_generate_codes (
+      deflate_fixed_dist_lengths, codes, DEFLATE_DIST_CODES);
 
   /* Build decode table */
   SocketDeflate_HuffmanTable_T table
@@ -419,8 +422,8 @@ TEST (roundtrip_huffman_fixed_distance)
           = SocketDeflate_BitWriter_new (test_arena);
       SocketDeflate_BitWriter_init (writer, buffer, sizeof (buffer));
 
-      result = SocketDeflate_BitWriter_write_huffman (writer, codes[sym].code,
-                                                      codes[sym].len);
+      result = SocketDeflate_BitWriter_write_huffman (
+          writer, codes[sym].code, codes[sym].len);
       ASSERT_EQ (result, DEFLATE_OK);
 
       size_t written = SocketDeflate_BitWriter_flush (writer);
@@ -447,7 +450,10 @@ TEST (roundtrip_huffman_dynamic)
   uint32_t freqs[16];
   for (unsigned int i = 0; i < 16; i++)
     {
-      freqs[i] = (i % 4 == 0) ? 100 : (i % 4 == 1) ? 50 : (i % 4 == 2) ? 25 : 10;
+      freqs[i] = (i % 4 == 0)   ? 100
+                 : (i % 4 == 1) ? 50
+                 : (i % 4 == 2) ? 25
+                                : 10;
     }
 
   uint8_t lengths[16];
@@ -464,7 +470,8 @@ TEST (roundtrip_huffman_dynamic)
   /* Build decode table */
   SocketDeflate_HuffmanTable_T table
       = SocketDeflate_HuffmanTable_new (test_arena);
-  result = SocketDeflate_HuffmanTable_build (table, lengths, 16, DEFLATE_MAX_BITS);
+  result
+      = SocketDeflate_HuffmanTable_build (table, lengths, 16, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Test all 16 symbols */
@@ -477,8 +484,8 @@ TEST (roundtrip_huffman_dynamic)
           = SocketDeflate_BitWriter_new (test_arena);
       SocketDeflate_BitWriter_init (writer, buffer, sizeof (buffer));
 
-      result = SocketDeflate_BitWriter_write_huffman (writer, codes[sym].code,
-                                                      codes[sym].len);
+      result = SocketDeflate_BitWriter_write_huffman (
+          writer, codes[sym].code, codes[sym].len);
       ASSERT_EQ (result, DEFLATE_OK);
 
       size_t written = SocketDeflate_BitWriter_flush (writer);
@@ -513,7 +520,8 @@ TEST (roundtrip_codes_sequence)
 
   SocketDeflate_HuffmanTable_T table
       = SocketDeflate_HuffmanTable_new (test_arena);
-  result = SocketDeflate_HuffmanTable_build (table, lengths, 8, DEFLATE_MAX_BITS);
+  result
+      = SocketDeflate_HuffmanTable_build (table, lengths, 8, DEFLATE_MAX_BITS);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Encode a sequence of symbols */
@@ -527,8 +535,8 @@ TEST (roundtrip_codes_sequence)
   for (size_t i = 0; i < seq_len; i++)
     {
       unsigned int sym = sequence[i];
-      result = SocketDeflate_BitWriter_write_huffman (writer, codes[sym].code,
-                                                      codes[sym].len);
+      result = SocketDeflate_BitWriter_write_huffman (
+          writer, codes[sym].code, codes[sym].len);
       ASSERT_EQ (result, DEFLATE_OK);
     }
 
@@ -580,6 +588,200 @@ TEST (roundtrip_kraft_sum)
   /* The sum should be <= 2^max_bits (which is 32768 for 15 bits) */
   unsigned int kraft_denominator = 1U << DEFLATE_MAX_BITS;
   ASSERT (kraft_numerator <= kraft_denominator);
+}
+
+/*
+ * LZ77 → Huffman Integration Test
+ */
+
+TEST (roundtrip_lz77_to_huffman)
+{
+  /*
+   * Integration test: Run LZ77 on sample data, collect symbol frequencies,
+   * build Huffman codes, and verify the complete pipeline works correctly.
+   *
+   * This tests that:
+   * 1. LZ77 matcher produces valid matches
+   * 2. Length/distance encoding produces valid frequencies
+   * 3. Huffman code generator produces valid codes for the frequencies
+   * 4. All used symbols get valid (non-zero length) codes
+   */
+  const uint8_t data[] = "ABCDEFABCDEFABCDEFABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                         "XYZXYZXYZXYZABCDEFGHIJKLMNOP";
+  size_t data_len = sizeof (data) - 1;
+
+  /* Create matcher and initialize */
+  SocketDeflate_Matcher_T matcher = SocketDeflate_Matcher_new (test_arena);
+  SocketDeflate_Matcher_init (matcher, data, data_len);
+
+  /* Frequency arrays for lit/len and distance codes */
+  uint32_t litlen_freqs[DEFLATE_LITLEN_CODES];
+  uint32_t dist_freqs[DEFLATE_DIST_CODES];
+  memset (litlen_freqs, 0, sizeof (litlen_freqs));
+  memset (dist_freqs, 0, sizeof (dist_freqs));
+
+  /*
+   * LZ77 encoding pass - insert positions INCREMENTALLY as we process them.
+   * This matches how real LZ77 compression works: only positions before
+   * the current one are in the hash table.
+   */
+  size_t pos = 0;
+  while (pos < data_len)
+    {
+      SocketDeflate_Match match;
+      int found = 0;
+
+      /* Try to find match at current position (only if we have prior data) */
+      if (pos >= DEFLATE_MIN_MATCH && pos + DEFLATE_MIN_MATCH <= data_len)
+        {
+          found = SocketDeflate_Matcher_find (matcher, pos, &match);
+        }
+
+      if (found && match.length >= DEFLATE_MIN_MATCH)
+        {
+          /* Encode length/distance codes and count frequencies */
+          unsigned int len_code, len_extra, len_extra_bits;
+          unsigned int dist_code, dist_extra, dist_extra_bits;
+
+          SocketDeflate_encode_length (
+              match.length, &len_code, &len_extra, &len_extra_bits);
+          SocketDeflate_encode_distance (
+              match.distance, &dist_code, &dist_extra, &dist_extra_bits);
+
+          /* Verify codes are in valid range */
+          ASSERT (len_code >= DEFLATE_LENGTH_CODE_MIN);
+          ASSERT (len_code <= DEFLATE_LENGTH_CODE_MAX);
+          ASSERT (dist_code <= DEFLATE_DISTANCE_CODE_MAX);
+
+          litlen_freqs[len_code]++;
+          dist_freqs[dist_code]++;
+
+          /* Insert all positions we're skipping over */
+          for (size_t i = pos;
+               i < pos + match.length && i + DEFLATE_MIN_MATCH <= data_len;
+               i++)
+            {
+              SocketDeflate_Matcher_insert (matcher, i);
+            }
+          pos += match.length;
+        }
+      else
+        {
+          /* Emit literal and insert current position */
+          litlen_freqs[data[pos]]++;
+          if (pos + DEFLATE_MIN_MATCH <= data_len)
+            {
+              SocketDeflate_Matcher_insert (matcher, pos);
+            }
+          pos++;
+        }
+    }
+
+  /* Add end-of-block symbol */
+  litlen_freqs[DEFLATE_END_OF_BLOCK]++;
+
+  /* Count how many symbols are used */
+  unsigned int litlen_used = 0;
+  unsigned int dist_used = 0;
+  for (int i = 0; i < DEFLATE_LITLEN_CODES; i++)
+    {
+      if (litlen_freqs[i] > 0)
+        litlen_used++;
+    }
+  for (int i = 0; i < DEFLATE_DIST_CODES; i++)
+    {
+      if (dist_freqs[i] > 0)
+        dist_used++;
+    }
+
+  /* We should have at least some literals and the EOB */
+  ASSERT (litlen_used >= 2);
+
+  /* Verify that LZ77 actually found matches (not just emitting literals) */
+  ASSERT (dist_used > 0);
+
+  /* Build Huffman codes from frequencies */
+  uint8_t litlen_lengths[DEFLATE_LITLEN_CODES];
+  SocketDeflate_Result result
+      = SocketDeflate_build_code_lengths (litlen_freqs,
+                                          litlen_lengths,
+                                          DEFLATE_LITLEN_CODES,
+                                          DEFLATE_MAX_BITS,
+                                          test_arena);
+  ASSERT_EQ (result, DEFLATE_OK);
+
+  /* Verify all used symbols got valid code lengths */
+  for (int i = 0; i < DEFLATE_LITLEN_CODES; i++)
+    {
+      if (litlen_freqs[i] > 0)
+        {
+          ASSERT (litlen_lengths[i] > 0);
+          ASSERT (litlen_lengths[i] <= DEFLATE_MAX_BITS);
+        }
+    }
+
+  /* Build distance codes only if we have matches */
+  if (dist_used > 0)
+    {
+      uint8_t dist_lengths[DEFLATE_DIST_CODES];
+      result = SocketDeflate_build_code_lengths (dist_freqs,
+                                                 dist_lengths,
+                                                 DEFLATE_DIST_CODES,
+                                                 DEFLATE_MAX_BITS,
+                                                 test_arena);
+      ASSERT_EQ (result, DEFLATE_OK);
+
+      /* Verify all used distance codes got valid lengths */
+      for (int i = 0; i < DEFLATE_DIST_CODES; i++)
+        {
+          if (dist_freqs[i] > 0)
+            {
+              ASSERT (dist_lengths[i] > 0);
+              ASSERT (dist_lengths[i] <= DEFLATE_MAX_BITS);
+            }
+        }
+    }
+
+  /* Generate canonical codes and verify they can build a decode table */
+  SocketDeflate_HuffmanCode litlen_codes[DEFLATE_LITLEN_CODES];
+  SocketDeflate_generate_codes (
+      litlen_lengths, litlen_codes, DEFLATE_LITLEN_CODES);
+
+  SocketDeflate_HuffmanTable_T table
+      = SocketDeflate_HuffmanTable_new (test_arena);
+  result = SocketDeflate_HuffmanTable_build (
+      table, litlen_lengths, DEFLATE_LITLEN_CODES, DEFLATE_MAX_BITS);
+  ASSERT_EQ (result, DEFLATE_OK);
+
+  /* Verify we can encode and decode a sample of used symbols */
+  for (int sym = 0; sym < DEFLATE_LITLEN_CODES; sym++)
+    {
+      if (litlen_freqs[sym] == 0)
+        continue;
+
+      /* Write the code to a bit stream */
+      uint8_t buffer[16] = { 0 };
+      SocketDeflate_BitWriter_T writer
+          = SocketDeflate_BitWriter_new (test_arena);
+      SocketDeflate_BitWriter_init (writer, buffer, sizeof (buffer));
+
+      result = SocketDeflate_BitWriter_write_huffman (
+          writer, litlen_codes[sym].code, litlen_codes[sym].len);
+      ASSERT_EQ (result, DEFLATE_OK);
+
+      size_t written = SocketDeflate_BitWriter_flush (writer);
+      ASSERT (written > 0);
+
+      /* Read it back and decode */
+      SocketDeflate_BitReader_T reader
+          = SocketDeflate_BitReader_new (test_arena);
+      SocketDeflate_BitReader_init (reader, buffer, written);
+
+      uint16_t decoded_sym;
+      result = SocketDeflate_HuffmanTable_decode (table, reader, &decoded_sym);
+      ASSERT_EQ (result, DEFLATE_OK);
+      ASSERT_EQ (decoded_sym, (uint16_t)sym);
+    }
 }
 
 /*
