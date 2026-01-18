@@ -23,12 +23,12 @@
 /* URL parsing constants */
 #define HTTP_SCHEME_LEN 4
 #define HTTPS_SCHEME_LEN 5
-#define HTTP_SCHEME_PREFIX_LEN 7    /* "http://" */
-#define HTTPS_SCHEME_PREFIX_LEN 8   /* "https://" */
+#define HTTP_SCHEME_PREFIX_LEN 7  /* "http://" */
+#define HTTPS_SCHEME_PREFIX_LEN 8 /* "https://" */
 #define DEFAULT_PATH "/"
 #define DEFAULT_PATH_LEN 1
-#define QUERY_CHAR_LEN 1            /* '?' */
-#define PATH_SEPARATOR_LEN 1        /* '/' */
+#define QUERY_CHAR_LEN 1     /* '?' */
+#define PATH_SEPARATOR_LEN 1 /* '/' */
 
 /* Exception definitions - format: { &self, "reason" } */
 const Except_T Curl_Failed = { &Curl_Failed, "Curl operation failed" };
@@ -84,15 +84,19 @@ curl_arena_strdup (Arena_T arena, const char *str, size_t len)
 static int
 is_http_scheme (const char *scheme, size_t len)
 {
-  if (len == HTTP_SCHEME_LEN && strncasecmp (scheme, "http", HTTP_SCHEME_LEN) == 0)
+  if (len == HTTP_SCHEME_LEN
+      && strncasecmp (scheme, "http", HTTP_SCHEME_LEN) == 0)
     return 1;
-  if (len == HTTPS_SCHEME_LEN && strncasecmp (scheme, "https", HTTPS_SCHEME_LEN) == 0)
+  if (len == HTTPS_SCHEME_LEN
+      && strncasecmp (scheme, "https", HTTPS_SCHEME_LEN) == 0)
     return 1;
   return 0;
 }
 
 CurlError
-Curl_parse_url (const char *url, size_t len, CurlParsedURL *result,
+Curl_parse_url (const char *url,
+                size_t len,
+                CurlParsedURL *result,
                 Arena_T arena)
 {
   if (!url || !result || !arena)
@@ -144,7 +148,8 @@ Curl_parse_url (const char *url, size_t len, CurlParsedURL *result,
     }
   else
     {
-      result->port = result->is_secure ? CURL_HTTPS_DEFAULT_PORT : CURL_HTTP_DEFAULT_PORT;
+      result->port = result->is_secure ? CURL_HTTPS_DEFAULT_PORT
+                                       : CURL_HTTP_DEFAULT_PORT;
     }
 
   /* Handle path - default to "/" if empty */
@@ -190,8 +195,10 @@ Curl_url_get_port (const CurlParsedURL *url)
 }
 
 ssize_t
-Curl_resolve_url (const CurlParsedURL *base, const char *relative,
-                  char *result, size_t result_size)
+Curl_resolve_url (const CurlParsedURL *base,
+                  const char *relative,
+                  char *result,
+                  size_t result_size)
 {
   if (!base || !relative || !result || result_size == 0)
     return -1;
@@ -218,8 +225,7 @@ Curl_resolve_url (const CurlParsedURL *base, const char *relative,
   int n;
 
   /* Start with scheme and host */
-  n = snprintf (result + written, result_size - written, "%s://",
-                base->scheme);
+  n = snprintf (result + written, result_size - written, "%s://", base->scheme);
   if (n < 0 || (size_t)n >= result_size - written)
     return -1;
   written += (size_t)n;
@@ -231,11 +237,11 @@ Curl_resolve_url (const CurlParsedURL *base, const char *relative,
   written += base->host_len;
 
   /* Add port if non-default */
-  int default_port = base->is_secure ? CURL_HTTPS_DEFAULT_PORT : CURL_HTTP_DEFAULT_PORT;
+  int default_port
+      = base->is_secure ? CURL_HTTPS_DEFAULT_PORT : CURL_HTTP_DEFAULT_PORT;
   if (base->port > 0 && base->port != default_port)
     {
-      n = snprintf (result + written, result_size - written, ":%d",
-                    base->port);
+      n = snprintf (result + written, result_size - written, ":%d", base->port);
       if (n < 0 || (size_t)n >= result_size - written)
         return -1;
       written += (size_t)n;
@@ -332,7 +338,9 @@ Curl_resolve_url (const CurlParsedURL *base, const char *relative,
 
 /* Internal helper used by other modules */
 CurlError
-curl_internal_parse_url (const char *url, size_t len, CurlParsedURL *result,
+curl_internal_parse_url (const char *url,
+                         size_t len,
+                         CurlParsedURL *result,
                          Arena_T arena)
 {
   return Curl_parse_url (url, len, result, arena);
@@ -416,40 +424,52 @@ curl_url_copy (CurlParsedURL *dst, const CurlParsedURL *src, Arena_T arena)
   dst->is_secure = src->is_secure;
 }
 
-void
-Curl_options_defaults (CurlOptions *options)
+static void
+init_protocol_settings (CurlOptions *options)
 {
-  if (!options)
-    return;
-
-  memset (options, 0, sizeof (*options));
-
-  /* Protocol settings */
   options->max_version = HTTP_VERSION_2;
   options->allow_http2_cleartext = 0;
+}
 
-  /* Timeouts */
+static void
+init_timeout_settings (CurlOptions *options)
+{
   options->connect_timeout_ms = CURL_DEFAULT_CONNECT_TIMEOUT_MS;
   options->request_timeout_ms = CURL_DEFAULT_REQUEST_TIMEOUT_MS; /* No limit */
   options->dns_timeout_ms = CURL_DEFAULT_DNS_TIMEOUT_MS;
+}
 
-  /* Redirects */
+static void
+init_redirect_settings (CurlOptions *options)
+{
   options->follow_redirects = 1;
   options->max_redirects = CURL_DEFAULT_MAX_REDIRECTS;
+}
 
-  /* TLS */
+static void
+init_tls_settings (CurlOptions *options)
+{
   options->tls_context = NULL;
   options->verify_ssl = 1;
+}
 
-  /* Proxy */
+static void
+init_proxy_settings (CurlOptions *options)
+{
   options->proxy_url = NULL;
+}
 
-  /* Request settings */
+static void
+init_request_settings (CurlOptions *options)
+{
   options->user_agent = "tetsuo-curl/1.0";
   options->accept_encoding = 1;
   options->auto_decompress = 1;
+}
 
-  /* Callbacks */
+static_void
+init_callback_settings (CurlOptions *options)
+{
   options->write_callback = NULL;
   options->write_userdata = NULL;
   options->read_callback = NULL;
@@ -458,23 +478,56 @@ Curl_options_defaults (CurlOptions *options)
   options->progress_userdata = NULL;
   options->header_callback = NULL;
   options->header_userdata = NULL;
+}
 
-  /* Authentication */
+static void
+init_auth_settings (CurlOptions *options)
+{
   options->auth.type = CURL_AUTH_NONE;
   options->auth.username = NULL;
   options->auth.password = NULL;
   options->auth.token = NULL;
+}
 
-  /* Cookies */
+static void
+init_cookie_settings (CurlOptions *options)
+{
   options->cookie_file = NULL;
+}
 
-  /* Retry */
+static void
+init_retry_settings (CurlOptions *options)
+{
   options->enable_retry = 0;
   options->max_retries = CURL_DEFAULT_MAX_RETRIES;
   options->retry_on_connection_error = 1;
   options->retry_on_timeout = 1;
   options->retry_on_5xx = 0;
+}
 
-  /* Debug */
+static void
+init_debug_settings (CurlOptions *options)
+{
   options->verbose = 0;
+}
+
+void
+Curl_options_defaults (CurlOptions *options)
+{
+  if (!options)
+    return;
+
+  memset (options, 0, sizeof (*options));
+
+  init_protocol_settings (options);
+  init_timeout_settings (options);
+  init_redirect_settings (options);
+  init_tls_settings (options);
+  init_proxy_settings (options);
+  init_request_settings (options);
+  init_callback_settings (options);
+  init_auth_settings (options);
+  init_cookie_settings (options);
+  init_retry_settings (options);
+  init_debug_settings (options);
 }

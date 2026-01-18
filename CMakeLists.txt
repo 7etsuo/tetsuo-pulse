@@ -214,6 +214,9 @@ endif()
 # HTTP Compression support (optional - requires zlib and/or brotli)
 option(ENABLE_HTTP_COMPRESSION "Enable HTTP gzip/deflate/brotli compression" ON)
 
+# Native DEFLATE option (uses built-in RFC 1951 implementation instead of zlib)
+option(ENABLE_NATIVE_DEFLATE "Use native DEFLATE for HTTP gzip/deflate (no zlib dependency)" ON)
+
 set(SOCKETHTTP1_HAS_COMPRESSION OFF)
 set(HTTP_COMPRESSION_LIBS "")
 
@@ -225,21 +228,32 @@ find_package(ZLIB QUIET)
 set(WS_DEFLATE_LIBS "")
 
 if(ENABLE_HTTP_COMPRESSION)
-    # Use zlib for HTTP compression if found
-    if(ZLIB_FOUND)
-        add_definitions(-DSOCKETHTTP1_HAS_ZLIB)
-        list(APPEND HTTP_COMPRESSION_LIBS ZLIB::ZLIB)
-        message(STATUS "zlib found - gzip/deflate compression enabled")
-        # zlib already in HTTP_COMPRESSION_LIBS, no need to duplicate in WS_DEFLATE_LIBS
+    # Native DEFLATE (RFC 1951) - uses built-in implementation
+    if(ENABLE_NATIVE_DEFLATE)
+        add_definitions(-DSOCKETHTTP1_HAS_NATIVE_DEFLATE)
+        message(STATUS "Native DEFLATE - gzip/deflate compression enabled (no zlib dependency)")
+        set(SOCKETHTTP1_HAS_COMPRESSION ON)
+        # WebSocket still needs zlib for permessage-deflate
+        if(ZLIB_FOUND)
+            set(WS_DEFLATE_LIBS ZLIB::ZLIB)
+        endif()
     else()
-        message(STATUS "zlib not found - gzip/deflate compression disabled")
+        # Fall back to zlib for HTTP compression if found
+        if(ZLIB_FOUND)
+            add_definitions(-DSOCKETHTTP1_HAS_ZLIB)
+            list(APPEND HTTP_COMPRESSION_LIBS ZLIB::ZLIB)
+            message(STATUS "zlib found - gzip/deflate compression enabled")
+            # zlib already in HTTP_COMPRESSION_LIBS, no need to duplicate in WS_DEFLATE_LIBS
+        else()
+            message(STATUS "zlib not found - gzip/deflate compression disabled")
+        endif()
     endif()
-    
+
     # Find Brotli (optional)
     find_library(BROTLI_DEC_LIB brotlidec)
     find_library(BROTLI_ENC_LIB brotlienc)
     find_path(BROTLI_INCLUDE_DIR brotli/decode.h)
-    
+
     if(BROTLI_DEC_LIB AND BROTLI_ENC_LIB AND BROTLI_INCLUDE_DIR)
         add_definitions(-DSOCKETHTTP1_HAS_BROTLI)
         list(APPEND HTTP_COMPRESSION_LIBS ${BROTLI_DEC_LIB} ${BROTLI_ENC_LIB})
@@ -248,9 +262,9 @@ if(ENABLE_HTTP_COMPRESSION)
     else()
         message(STATUS "Brotli not found - brotli compression disabled")
     endif()
-    
-    # Enable compression module if any compression library found
-    if(ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB))
+
+    # Enable compression module if any compression method available
+    if(ENABLE_NATIVE_DEFLATE OR ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB))
         set(SOCKETHTTP1_HAS_COMPRESSION ON)
         message(STATUS "HTTP compression support enabled")
     else()
@@ -489,7 +503,7 @@ if(SOCKET_HAS_TLS)
 endif()
 
 # Add HTTP compression source if compression enabled
-if(ENABLE_HTTP_COMPRESSION AND (ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB)))
+if(ENABLE_HTTP_COMPRESSION AND (ENABLE_NATIVE_DEFLATE OR ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB)))
     list(APPEND LIB_SOURCES
         src/http/SocketHTTP1-compress.c
     )
@@ -826,6 +840,7 @@ set(TEST_SOURCES
     test_utf8_integration
     test_http_core
     test_http1_parser
+    test_http1_compress
     test_hpack
     test_http2
     test_http2_priority

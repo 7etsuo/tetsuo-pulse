@@ -320,11 +320,27 @@ SocketDeflate_BitReader_bits_available (SocketDeflate_BitReader_T reader);
 /**
  * Get number of complete bytes remaining in input.
  *
+ * Note: This returns bytes not yet loaded into the bit buffer. Use
+ * SocketDeflate_BitReader_bytes_consumed() for accurate consumption tracking.
+ *
  * @param reader The bit reader
  * @return Number of unread bytes in input buffer
  */
 extern size_t
 SocketDeflate_BitReader_bytes_remaining (SocketDeflate_BitReader_T reader);
+
+/**
+ * Get number of bytes actually consumed from input.
+ *
+ * Accounts for bytes that have been loaded into the bit buffer but not yet
+ * consumed. This is more accurate than (input_len - bytes_remaining()) because
+ * the bit reader eagerly pre-fetches bytes into its 64-bit accumulator.
+ *
+ * @param reader The bit reader
+ * @return Number of bytes logically consumed (bytes loaded - whole bytes in buffer)
+ */
+extern size_t
+SocketDeflate_BitReader_bytes_consumed (SocketDeflate_BitReader_T reader);
 
 /**
  * Check if all input has been consumed.
@@ -1009,6 +1025,23 @@ extern size_t SocketDeflate_Inflater_total_out (SocketDeflate_Inflater_T inf);
  * @return Total compressed bytes consumed
  */
 extern size_t SocketDeflate_Inflater_total_in (SocketDeflate_Inflater_T inf);
+
+/**
+ * Get accurate bytes consumed from last inflate call.
+ *
+ * Unlike the consumed value passed to the callback, this returns the exact
+ * number of bytes whose bits were actually used by the decompressor. This
+ * is useful when the input contains additional data after the DEFLATE stream
+ * (e.g., gzip trailer) and you need to know exactly where the stream ends.
+ *
+ * Must be called immediately after inflate(), before the next inflate call.
+ * The value accounts for bytes pre-fetched into the bit buffer but not used.
+ *
+ * @param inf The inflater
+ * @return Exact bytes consumed from the last inflate call's input
+ */
+extern size_t
+SocketDeflate_Inflater_actual_consumed (SocketDeflate_Inflater_T inf);
 
 /**
  * Get string representation of result code.

@@ -164,6 +164,22 @@ SocketDeflate_Inflater_total_in (SocketDeflate_Inflater_T inf)
 }
 
 /**
+ * Get accurate bytes consumed from last inflate call.
+ *
+ * This accounts for pre-fetched bytes in the bit buffer that weren't
+ * actually used by the decompressor. Useful when input contains data
+ * after the DEFLATE stream (e.g., gzip trailer).
+ */
+size_t
+SocketDeflate_Inflater_actual_consumed (SocketDeflate_Inflater_T inf)
+{
+  if (inf == NULL || inf->reader == NULL)
+    return 0;
+
+  return SocketDeflate_BitReader_bytes_consumed (inf->reader);
+}
+
+/**
  * Copy byte to output and sliding window.
  */
 static void
@@ -717,6 +733,10 @@ inflate_dynamic (SocketDeflate_Inflater_T inf,
 
 /**
  * Calculate bytes consumed from bit reader.
+ *
+ * Returns all bytes that have been loaded into the bit buffer, even if
+ * some bits haven't been consumed yet. This is the appropriate behavior
+ * for the streaming API since the BitReader is reinitialized each call.
  */
 static size_t
 get_bytes_consumed (SocketDeflate_BitReader_T reader, size_t input_len)
