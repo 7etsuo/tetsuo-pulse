@@ -1180,6 +1180,128 @@ extern int SocketDeflate_gzip_is_valid_os (uint8_t os);
  */
 extern const char *SocketDeflate_gzip_os_string (uint8_t os);
 
+/*
+ * Streaming Deflate API
+ *
+ * High-level API for compressing data into DEFLATE format. Supports
+ * compression levels 0-9, automatic block type selection, and streaming
+ * output for arbitrarily large inputs.
+ */
+
+/**
+ * Compression levels for DEFLATE.
+ *
+ * Higher levels produce better compression at the cost of CPU time.
+ * Level 0 produces stored blocks only (no compression).
+ */
+typedef enum
+{
+  DEFLATE_LEVEL_STORE = 0,   /**< No compression (stored blocks only) */
+  DEFLATE_LEVEL_FASTEST = 1, /**< Fastest compression */
+  DEFLATE_LEVEL_FAST = 3,    /**< Fast compression */
+  DEFLATE_LEVEL_DEFAULT = 6, /**< Default compression (balanced) */
+  DEFLATE_LEVEL_BEST = 9     /**< Best compression (slowest) */
+} SocketDeflate_Level;
+
+/** Opaque deflater type for streaming compression. */
+typedef struct SocketDeflate_Deflater *SocketDeflate_Deflater_T;
+
+/**
+ * Create a new deflater.
+ *
+ * @param arena Arena for allocation (deflater lifetime tied to arena)
+ * @param level Compression level (0-9)
+ * @return New deflater instance, or NULL on allocation failure
+ */
+extern SocketDeflate_Deflater_T SocketDeflate_Deflater_new (Arena_T arena,
+                                                             int level);
+
+/**
+ * Compress data (streaming).
+ *
+ * Processes input data and produces compressed output. Can be called
+ * multiple times for streaming compression. Internal buffers may hold
+ * data between calls; use finish() to flush all data.
+ *
+ * @param def        The deflater
+ * @param input      Input buffer (uncompressed data)
+ * @param input_len  Size of input buffer
+ * @param consumed   Output: bytes consumed from input
+ * @param output     Output buffer (compressed data)
+ * @param output_len Size of output buffer
+ * @param written    Output: bytes written to output
+ * @return DEFLATE_OK on success,
+ *         DEFLATE_OUTPUT_FULL if output buffer full (call again with more
+ * space), DEFLATE_ERROR on failure
+ */
+extern SocketDeflate_Result
+SocketDeflate_Deflater_deflate (SocketDeflate_Deflater_T def,
+                                const uint8_t *input, size_t input_len,
+                                size_t *consumed, uint8_t *output,
+                                size_t output_len, size_t *written);
+
+/**
+ * Finish compression and flush remaining data.
+ *
+ * Writes any buffered data as a final block. After calling finish(),
+ * the stream is complete. Call reset() to start a new stream.
+ *
+ * @param def        The deflater
+ * @param output     Output buffer for remaining compressed data
+ * @param output_len Size of output buffer
+ * @param written    Output: bytes written to output
+ * @return DEFLATE_OK when complete,
+ *         DEFLATE_OUTPUT_FULL if output buffer too small (call again)
+ */
+extern SocketDeflate_Result
+SocketDeflate_Deflater_finish (SocketDeflate_Deflater_T def, uint8_t *output,
+                               size_t output_len, size_t *written);
+
+/**
+ * Check if compression is complete.
+ *
+ * @param def The deflater
+ * @return 1 if finish() has been called and all data flushed, 0 otherwise
+ */
+extern int SocketDeflate_Deflater_finished (SocketDeflate_Deflater_T def);
+
+/**
+ * Reset deflater for reuse.
+ *
+ * Clears all state. After reset, the deflater can be used to compress
+ * a new stream.
+ *
+ * @param def The deflater
+ */
+extern void SocketDeflate_Deflater_reset (SocketDeflate_Deflater_T def);
+
+/**
+ * Get total bytes output so far.
+ *
+ * @param def The deflater
+ * @return Total compressed bytes produced
+ */
+extern size_t SocketDeflate_Deflater_total_out (SocketDeflate_Deflater_T def);
+
+/**
+ * Get total bytes consumed so far.
+ *
+ * @param def The deflater
+ * @return Total uncompressed bytes consumed
+ */
+extern size_t SocketDeflate_Deflater_total_in (SocketDeflate_Deflater_T def);
+
+/**
+ * Compute upper bound on compressed size.
+ *
+ * Returns the maximum possible size of the compressed output for
+ * a given input size. Useful for allocating output buffers.
+ *
+ * @param input_len Size of uncompressed input
+ * @return Maximum compressed size (input + overhead)
+ */
+extern size_t SocketDeflate_compress_bound (size_t input_len);
+
 /** @} */ /* end of deflate group */
 
 #endif /* SOCKETDEFLATE_INCLUDED */

@@ -292,8 +292,8 @@ struct SocketDeflate_BitWriter
   size_t capacity; /* Buffer capacity */
   size_t pos;      /* Current write position */
 
-  /* Bit accumulator */
-  uint32_t bits;   /* LSB-aligned bit buffer (pending bits) */
+  /* Bit accumulator (64-bit to avoid overflow on shift) */
+  uint64_t bits;    /* LSB-aligned bit buffer (pending bits) */
   int bits_pending; /* Number of valid bits (0-7 after flush) */
 };
 
@@ -362,11 +362,15 @@ SocketDeflate_BitWriter_write (SocketDeflate_BitWriter_T writer, uint32_t value,
   if (n == 0 || n > DEFLATE_MAX_BITS_READ)
     return DEFLATE_ERROR;
 
+  /* Guard against accumulator overflow (can happen if output buffer is full) */
+  if (writer->bits_pending + (int)n > 64)
+    return DEFLATE_OUTPUT_FULL;
+
   /* Mask value to n bits */
   value &= BITMASK32 (n);
 
-  /* Add bits to accumulator at position bits_pending */
-  writer->bits |= value << writer->bits_pending;
+  /* Add bits to accumulator at position bits_pending (cast to 64-bit first) */
+  writer->bits |= (uint64_t)value << writer->bits_pending;
   writer->bits_pending += n;
 
   /* Flush any complete bytes */
