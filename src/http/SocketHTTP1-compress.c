@@ -252,11 +252,13 @@ check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
 /** Update decode total and check limits (returns SocketHTTP1_Result).
  *
  * Updates the running total and validates it stays within max_size.
+ * Uses overflow-safe addition to prevent wraparound attacks.
  */
 static SocketHTTP1_Result
 update_decode_total (size_t *total, size_t written, size_t max_size)
 {
-  *total += written;
+  if (!SocketSecurity_check_add (*total, written, total))
+    return HTTP1_ERROR_BODY_TOO_LARGE;
   if (max_size != SIZE_MAX && *total > max_size)
     return HTTP1_ERROR_BODY_TOO_LARGE;
   return HTTP1_OK;
@@ -278,11 +280,13 @@ check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
 /** Update encode total and check limits (returns int: 1=ok, 0=error).
  *
  * Updates the running total and validates it stays within max_size.
+ * Uses overflow-safe addition to prevent wraparound attacks.
  */
 static int
 update_encode_total (size_t *total, size_t produced, size_t max_size)
 {
-  *total += produced;
+  if (!SocketSecurity_check_add (*total, produced, total))
+    return 0;
   if (max_size != SIZE_MAX && *total > max_size)
     return 0;
   return 1;
@@ -973,8 +977,9 @@ decode_zlib (SocketHTTP1_Decoder_T decoder,
   int ret;
   z_stream *s = &decoder->state.zlib;
 
-  assert (input_len <= ZLIB_MAX_BUFFER_SIZE);  /* Document precondition */
-  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
+  /* Runtime check - don't rely on assert which compiles out in release */
+  if (input_len > ZLIB_MAX_BUFFER_SIZE || output_len > ZLIB_MAX_BUFFER_SIZE)
+    return HTTP1_ERROR;
 
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
@@ -1007,7 +1012,9 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder,
   int ret;
   z_stream *s = &decoder->state.zlib;
 
-  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
+  /* Runtime check - don't rely on assert which compiles out in release */
+  if (output_len > ZLIB_MAX_BUFFER_SIZE)
+    return HTTP1_ERROR;
 
   s->next_in = NULL;
   s->avail_in = 0;
@@ -1042,8 +1049,9 @@ encode_zlib (SocketHTTP1_Encoder_T encoder,
   int zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
   z_stream *s = &encoder->state.zlib;
 
-  assert (input_len <= ZLIB_MAX_BUFFER_SIZE);  /* Document precondition */
-  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
+  /* Runtime check - don't rely on assert which compiles out in release */
+  if (input_len > ZLIB_MAX_BUFFER_SIZE || output_len > ZLIB_MAX_BUFFER_SIZE)
+    return -1;
 
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
@@ -1067,7 +1075,9 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder,
   size_t produced;
   z_stream *s = &encoder->state.zlib;
 
-  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
+  /* Runtime check - don't rely on assert which compiles out in release */
+  if (output_len > ZLIB_MAX_BUFFER_SIZE)
+    return -1;
 
   s->next_in = NULL;
   s->avail_in = 0;
