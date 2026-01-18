@@ -221,6 +221,23 @@ SocketDeflate_BitReader_bytes_remaining (SocketDeflate_BitReader_T reader)
   return reader->input_len - reader->in_pos;
 }
 
+size_t
+SocketDeflate_BitReader_bytes_consumed (SocketDeflate_BitReader_T reader)
+{
+  /*
+   * The bit buffer may contain bytes that have been loaded from input
+   * but not yet logically consumed. We subtract whole bytes still in
+   * the buffer from in_pos to get the actual consumption.
+   *
+   * Example: 13 bytes input, after reading a 5-byte stored block header:
+   *   - refill_bits loaded 8 bytes (bits_avail = 64, in_pos = 8)
+   *   - After consuming 40 bits: bits_avail = 24 (3 whole bytes)
+   *   - Actual consumed = 8 - 3 = 5 bytes
+   */
+  size_t bytes_in_buffer = (size_t)(reader->bits_avail / 8);
+  return reader->in_pos - bytes_in_buffer;
+}
+
 int
 SocketDeflate_BitReader_at_end (SocketDeflate_BitReader_T reader)
 {

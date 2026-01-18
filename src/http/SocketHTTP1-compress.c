@@ -13,6 +13,8 @@
 /* System headers first */
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
+#include <string.h>
 
 /* Project headers */
 #include "core/SocketSecurity.h"
@@ -20,6 +22,11 @@
 #include "http/SocketHTTP1.h"
 
 #if SOCKETHTTP1_HAS_COMPRESSION
+
+/* Native DEFLATE header (conditional) */
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+#include "deflate/SocketDeflate.h"
+#endif
 
 /* Compression library headers (conditional) */
 #ifdef SOCKETHTTP1_HAS_ZLIB
@@ -92,6 +99,20 @@ struct SocketHTTP1_Decoder
 
   union
   {
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    struct
+    {
+      SocketDeflate_Inflater_T inflater; /**< Native DEFLATE inflater */
+      uint32_t crc;                      /**< Running CRC32 for gzip */
+      size_t total_out;                  /**< For gzip ISIZE verification */
+      int header_parsed;                 /**< gzip header parsed flag */
+      int is_gzip;                       /**< gzip vs raw deflate */
+      int zlib_wrapped;                  /**< Auto-detected zlib wrapper */
+      int trailer_verified;   /**< Trailer verified for this member */
+      uint8_t trailer_buf[8]; /**< Buffer for gzip trailer */
+      size_t trailer_pos;     /**< Position in trailer buffer */
+    } native;
+#endif
 #ifdef SOCKETHTTP1_HAS_ZLIB
     z_stream zlib; /**< zlib inflate stream state */
 #endif
@@ -116,6 +137,16 @@ struct SocketHTTP1_Encoder
 
   union
   {
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    struct
+    {
+      SocketDeflate_Deflater_T deflater; /**< Native DEFLATE deflater */
+      uint32_t crc;                      /**< Running CRC32 for gzip */
+      size_t total_in;                   /**< Original size for gzip trailer */
+      int is_gzip;                       /**< gzip vs raw deflate */
+      int header_written;                /**< gzip header written flag */
+    } native;
+#endif
 #ifdef SOCKETHTTP1_HAS_ZLIB
     z_stream zlib; /**< zlib deflate stream state */
 #endif
@@ -134,7 +165,10 @@ struct SocketHTTP1_Encoder
 static int
 is_supported_coding (SocketHTTP_Coding coding)
 {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+  if (coding == HTTP_CODING_GZIP || coding == HTTP_CODING_DEFLATE)
+    return 1;
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
   if (coding == HTTP_CODING_GZIP || coding == HTTP_CODING_DEFLATE)
     return 1;
 #endif
@@ -261,6 +295,605 @@ get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
     return SOCKET_SECURITY_MAX_DECOMPRESSED_SIZE;
   return cfg->max_decompressed_size;
 }
+
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+
+/**
+ * Map HTTP compression level to DEFLATE level.
+ */
+static int
+map_compress_level_to_native (SocketHTTP1_CompressLevel level)
+{
+  switch (level)
+    {
+    case HTTP1_COMPRESS_FAST:
+      return DEFLATE_LEVEL_FAST;
+    case HTTP1_COMPRESS_BEST:
+      return DEFLATE_LEVEL_BEST;
+    default:
+      return DEFLATE_LEVEL_DEFAULT;
+    }
+}
+
+/**
+ * Detect zlib-wrapped DEFLATE (RFC 1950 wrapper around RFC 1951).
+ *
+ * Many servers incorrectly send zlib-wrapped data for Content-Encoding:
+ * deflate, even though RFC 2616 specifies raw DEFLATE (RFC 1951). This
+ * function detects the zlib header to allow auto-handling.
+ *
+ * Per RFC 1950 Section 2.2:
+ * - CMF byte: low 4 bits = compression method (8 = deflate)
+ *             high 4 bits = window size (0-7 for 32KB max)
+ * - FLG byte: FCHECK bits such that (CMF * 256 + FLG) % 31 == 0
+ *
+ * @param data  Input buffer (at least 2 bytes)
+ * @param len   Length of input buffer
+ * @return 1 if zlib wrapper detected, 0 otherwise
+ */
+static int
+detect_zlib_wrapper (const uint8_t *data, size_t len)
+{
+  uint16_t header;
+
+  if (len < 2)
+    return 0;
+
+  /* Check compression method (low 4 bits of CMF must be 8 for deflate) */
+  if ((data[0] & 0x0F) != 8)
+    return 0;
+
+  /* Check window size (high 4 bits of CMF <= 7 for 32KB window) */
+  if ((data[0] & 0xF0) > 0x70)
+    return 0;
+
+  /* Verify zlib header checksum: (CMF * 256 + FLG) % 31 == 0 */
+  header = ((uint16_t)data[0] << 8) | data[1];
+  return (header % 31 == 0);
+}
+
+static int
+init_native_deflate_decoder (SocketHTTP1_Decoder_T decoder)
+{
+  /* Initialize fixed Huffman tables (required for decoding fixed blocks) */
+  if (SocketDeflate_fixed_tables_init (decoder->arena) != DEFLATE_OK)
+    return 0;
+
+  /* Initialize the inflater with bomb protection limit */
+  decoder->state.native.inflater = SocketDeflate_Inflater_new (
+      decoder->arena, decoder->max_decompressed_size);
+  if (!decoder->state.native.inflater)
+    return 0;
+
+  decoder->state.native.crc = 0;
+  decoder->state.native.total_out = 0;
+  decoder->state.native.header_parsed = 0;
+  decoder->state.native.is_gzip = (decoder->coding == HTTP_CODING_GZIP);
+  decoder->state.native.zlib_wrapped = 0;
+  decoder->state.native.trailer_verified = 0;
+  decoder->state.native.trailer_pos = 0;
+  decoder->initialized = 1;
+
+  return 1;
+}
+
+static int
+init_native_deflate_encoder (SocketHTTP1_Encoder_T encoder)
+{
+  int level = map_compress_level_to_native (encoder->level);
+
+  encoder->state.native.deflater
+      = SocketDeflate_Deflater_new (encoder->arena, level);
+  if (!encoder->state.native.deflater)
+    return 0;
+
+  encoder->state.native.crc = 0;
+  encoder->state.native.total_in = 0;
+  encoder->state.native.is_gzip = (encoder->coding == HTTP_CODING_GZIP);
+  encoder->state.native.header_written = 0;
+  encoder->initialized = 1;
+
+  return 1;
+}
+
+static void
+cleanup_native_decoder (SocketHTTP1_Decoder_T decoder)
+{
+  /* Arena handles memory cleanup - nothing to do */
+  (void)decoder;
+}
+
+static void
+cleanup_native_encoder (SocketHTTP1_Encoder_T encoder)
+{
+  /* Arena handles memory cleanup - nothing to do */
+  (void)encoder;
+}
+
+/**
+ * Write gzip header to output buffer.
+ *
+ * Minimal gzip header per RFC 1952:
+ * - ID1, ID2: 0x1F, 0x8B (magic)
+ * - CM: 8 (deflate)
+ * - FLG: 0 (no optional fields)
+ * - MTIME: 0 (no timestamp)
+ * - XFL: 0
+ * - OS: 255 (unknown)
+ *
+ * @param output     Output buffer (must have at least 10 bytes)
+ * @param output_len Output buffer size
+ * @return Bytes written (10), or 0 if buffer too small
+ */
+static size_t
+write_gzip_header (uint8_t *output, size_t output_len)
+{
+  if (output_len < GZIP_HEADER_MIN_SIZE)
+    return 0;
+
+  output[0] = GZIP_MAGIC_0;
+  output[1] = GZIP_MAGIC_1;
+  output[2] = GZIP_METHOD_DEFLATE;
+  output[3] = 0; /* FLG */
+  output[4] = 0; /* MTIME[0] */
+  output[5] = 0; /* MTIME[1] */
+  output[6] = 0; /* MTIME[2] */
+  output[7] = 0; /* MTIME[3] */
+  output[8] = 0; /* XFL */
+  output[9] = GZIP_OS_UNKNOWN;
+
+  return GZIP_HEADER_MIN_SIZE;
+}
+
+/**
+ * Write gzip trailer to output buffer.
+ *
+ * @param output     Output buffer (must have at least 8 bytes)
+ * @param output_len Output buffer size
+ * @param crc        CRC32 of uncompressed data
+ * @param size       Original size (mod 2^32) of uncompressed data
+ * @return Bytes written (8), or 0 if buffer too small
+ */
+static size_t
+write_gzip_trailer (uint8_t *output,
+                    size_t output_len,
+                    uint32_t crc,
+                    uint32_t size)
+{
+  if (output_len < GZIP_TRAILER_SIZE)
+    return 0;
+
+  /* CRC32 (little-endian) */
+  output[0] = (uint8_t)(crc & 0xFF);
+  output[1] = (uint8_t)((crc >> 8) & 0xFF);
+  output[2] = (uint8_t)((crc >> 16) & 0xFF);
+  output[3] = (uint8_t)((crc >> 24) & 0xFF);
+
+  /* ISIZE (little-endian) */
+  output[4] = (uint8_t)(size & 0xFF);
+  output[5] = (uint8_t)((size >> 8) & 0xFF);
+  output[6] = (uint8_t)((size >> 16) & 0xFF);
+  output[7] = (uint8_t)((size >> 24) & 0xFF);
+
+  return GZIP_TRAILER_SIZE;
+}
+
+/**
+ * Parse gzip header from input data.
+ *
+ * @return Header size on success, 0 if incomplete, -1 on error
+ */
+static int
+parse_gzip_header (const uint8_t *data, size_t len)
+{
+  SocketDeflate_GzipHeader header;
+  SocketDeflate_Result res;
+
+  res = SocketDeflate_gzip_parse_header (data, len, &header);
+  if (res == DEFLATE_INCOMPLETE)
+    return 0;
+  if (res != DEFLATE_OK)
+    return -1;
+
+  return (int)header.header_size;
+}
+
+/**
+ * Collect trailer bytes after DEFLATE stream completes.
+ * For gzip: 8 bytes (CRC32 + ISIZE)
+ * For zlib: 4 bytes (Adler-32)
+ *
+ * @return Bytes consumed from input
+ */
+static size_t
+collect_trailer_bytes (SocketHTTP1_Decoder_T decoder,
+                       const uint8_t *data,
+                       size_t len)
+{
+  size_t trailer_size = decoder->state.native.is_gzip ? GZIP_TRAILER_SIZE : 4;
+  size_t need = trailer_size - decoder->state.native.trailer_pos;
+  size_t take = (len < need) ? len : need;
+
+  memcpy (decoder->state.native.trailer_buf + decoder->state.native.trailer_pos,
+          data,
+          take);
+  decoder->state.native.trailer_pos += take;
+
+  return take;
+}
+
+/**
+ * Check if more gzip members follow after current trailer.
+ * Per RFC 1952 Section 2.2, members are concatenated with no delimiter.
+ *
+ * @param data    Input buffer positioned after current trailer
+ * @param len     Remaining bytes in buffer
+ * @return 1 if next member detected, 0 if end of stream, -1 if incomplete
+ */
+static int
+check_next_gzip_member (const uint8_t *data, size_t len)
+{
+  if (len == 0)
+    return 0; /* No more data - end of stream */
+  if (len < 2)
+    return -1; /* Need at least 2 bytes to check magic */
+  if (data[0] == GZIP_MAGIC_0 && data[1] == GZIP_MAGIC_1)
+    return 1; /* Next member found */
+  return 0;   /* Not gzip magic - end of stream or garbage */
+}
+
+/**
+ * Reset decoder state for next gzip member.
+ * Called after successfully verifying a member's trailer.
+ */
+static void
+reset_for_next_member (SocketHTTP1_Decoder_T decoder)
+{
+  /* Reset per-member state */
+  decoder->state.native.crc = 0;
+  decoder->state.native.total_out = 0;
+  decoder->state.native.header_parsed = 0;
+  decoder->state.native.trailer_verified = 0;
+  decoder->state.native.trailer_pos = 0;
+
+  /* Reset inflater for new DEFLATE stream */
+  SocketDeflate_Inflater_reset (decoder->state.native.inflater);
+}
+
+/**
+ * Verify gzip trailer (CRC32 and ISIZE).
+ *
+ * @return 1 on success, 0 if incomplete, -1 on verification failure
+ */
+static int
+verify_gzip_trailer (SocketHTTP1_Decoder_T decoder)
+{
+  uint32_t stored_crc, stored_size;
+  const uint8_t *trailer = decoder->state.native.trailer_buf;
+
+  if (decoder->state.native.trailer_pos < GZIP_TRAILER_SIZE)
+    return 0; /* Need more trailer bytes */
+
+  /* Extract CRC32 (little-endian) */
+  stored_crc = (uint32_t)trailer[0] | ((uint32_t)trailer[1] << 8)
+               | ((uint32_t)trailer[2] << 16) | ((uint32_t)trailer[3] << 24);
+
+  /* Extract ISIZE (little-endian, original size mod 2^32) */
+  stored_size = (uint32_t)trailer[4] | ((uint32_t)trailer[5] << 8)
+                | ((uint32_t)trailer[6] << 16) | ((uint32_t)trailer[7] << 24);
+
+  /* Verify CRC32 */
+  if (stored_crc != decoder->state.native.crc)
+    return -1;
+
+  /* Verify ISIZE (mod 2^32) */
+  if (stored_size != (uint32_t)decoder->state.native.total_out)
+    return -1;
+
+  return 1;
+}
+
+static SocketHTTP1_Result
+decode_native_deflate (SocketHTTP1_Decoder_T decoder,
+                       const unsigned char *input,
+                       size_t input_len,
+                       size_t *consumed,
+                       unsigned char *output,
+                       size_t output_len,
+                       size_t *written)
+{
+  SocketDeflate_Result res;
+  const uint8_t *data = input;
+  size_t data_len = input_len;
+
+  *consumed = 0;
+  *written = 0;
+
+  /* Parse header on first call */
+  if (!decoder->state.native.header_parsed)
+    {
+      int header_size = 0;
+
+      if (decoder->state.native.is_gzip)
+        {
+          header_size = parse_gzip_header (data, data_len);
+          if (header_size < 0)
+            return HTTP1_ERROR;
+          if (header_size == 0)
+            return HTTP1_INCOMPLETE;
+        }
+      else if (detect_zlib_wrapper (data, data_len))
+        {
+          header_size = 2;
+          decoder->state.native.zlib_wrapped = 1;
+        }
+
+      data += header_size;
+      data_len -= header_size;
+      *consumed = header_size;
+      decoder->state.native.header_parsed = 1;
+    }
+
+  /* Handle completed DEFLATE stream (may be multi-member for gzip) */
+  while (SocketDeflate_Inflater_finished (decoder->state.native.inflater))
+    {
+      if (decoder->state.native.is_gzip)
+        {
+          /* Collect trailer bytes (8 bytes: CRC32 + ISIZE) */
+          size_t collected = collect_trailer_bytes (decoder, data, data_len);
+          *consumed += collected;
+          data += collected;
+          data_len -= collected;
+
+          /* Check if trailer complete */
+          if (decoder->state.native.trailer_pos < GZIP_TRAILER_SIZE)
+            return HTTP1_INCOMPLETE;
+
+          /* Verify this member's trailer (skip if already verified) */
+          if (!decoder->state.native.trailer_verified)
+            {
+              int verify = verify_gzip_trailer (decoder);
+              if (verify < 0)
+                return HTTP1_ERROR; /* CRC or ISIZE mismatch */
+              decoder->state.native.trailer_verified = 1;
+            }
+
+          /* Check for next member (RFC 1952 multi-member) */
+          int next = check_next_gzip_member (data, data_len);
+          if (next < 0)
+            return HTTP1_INCOMPLETE; /* Need more data to determine */
+          if (next == 0)
+            {
+              decoder->finished = 1;
+              return HTTP1_OK; /* No more members */
+            }
+
+          /* More members exist - reset and continue */
+          reset_for_next_member (decoder);
+          /* Loop will parse next member's header since header_parsed=0 now */
+          break; /* Exit while-loop to re-enter main decode flow */
+        }
+      else if (decoder->state.native.zlib_wrapped)
+        {
+          /* zlib: collect 4-byte Adler-32, no multi-member */
+          size_t collected = collect_trailer_bytes (decoder, data, data_len);
+          *consumed += collected;
+          (void)collected; /* Consistency with gzip case; not used further */
+          if (decoder->state.native.trailer_pos < 4)
+            return HTTP1_INCOMPLETE;
+          decoder->finished = 1;
+          return HTTP1_OK;
+        }
+      else
+        {
+          /* Raw deflate: no trailer, single stream only */
+          decoder->finished = 1;
+          return HTTP1_OK;
+        }
+    }
+
+  /* If we reset for next member, re-parse header */
+  if (!decoder->state.native.header_parsed && decoder->state.native.is_gzip)
+    {
+      int header_size = parse_gzip_header (data, data_len);
+      if (header_size < 0)
+        return HTTP1_ERROR;
+      if (header_size == 0)
+        return HTTP1_INCOMPLETE;
+      data += header_size;
+      data_len -= header_size;
+      *consumed += header_size;
+      decoder->state.native.header_parsed = 1;
+    }
+
+  /* Inflate DEFLATE data */
+  if (data_len > 0 && output_len > 0)
+    {
+      size_t inf_consumed = 0;
+      size_t inf_written = 0;
+
+      res = SocketDeflate_Inflater_inflate (decoder->state.native.inflater,
+                                            data,
+                                            data_len,
+                                            &inf_consumed,
+                                            output,
+                                            output_len,
+                                            &inf_written);
+
+      *consumed += inf_consumed;
+      *written = inf_written;
+
+      /* Update CRC for gzip */
+      if (decoder->state.native.is_gzip && inf_written > 0)
+        {
+          decoder->state.native.crc = SocketDeflate_crc32 (
+              decoder->state.native.crc, output, inf_written);
+          decoder->state.native.total_out += inf_written;
+        }
+
+      if (res == DEFLATE_ERROR_BOMB)
+        return HTTP1_ERROR_BODY_TOO_LARGE;
+
+      if (res == DEFLATE_OK)
+        {
+          /* DEFLATE done - collect any remaining trailer bytes.
+           * Use actual_consumed to get accurate boundary, since the inflate
+           * API may report more bytes consumed due to bit buffer pre-fetching.
+           */
+          size_t actual = SocketDeflate_Inflater_actual_consumed (
+              decoder->state.native.inflater);
+          size_t remaining = data_len - actual;
+          if (remaining > 0
+              && (decoder->state.native.is_gzip
+                  || decoder->state.native.zlib_wrapped))
+            {
+              size_t collected
+                  = collect_trailer_bytes (decoder, data + actual, remaining);
+              /* Adjust consumed to include trailer bytes we collected */
+              *consumed = *consumed - inf_consumed + actual + collected;
+            }
+
+          /* Raw deflate (no trailer) is done immediately */
+          if (!decoder->state.native.is_gzip
+              && !decoder->state.native.zlib_wrapped)
+            {
+              decoder->finished = 1;
+              return HTTP1_OK;
+            }
+          return HTTP1_INCOMPLETE;
+        }
+
+      if (res == DEFLATE_INCOMPLETE || res == DEFLATE_OUTPUT_FULL)
+        return HTTP1_INCOMPLETE;
+
+      return HTTP1_ERROR;
+    }
+
+  return HTTP1_INCOMPLETE;
+}
+
+static SocketHTTP1_Result
+finish_native_decode (SocketHTTP1_Decoder_T decoder,
+                      unsigned char *output,
+                      size_t output_len,
+                      size_t *written)
+{
+  (void)output;
+  (void)output_len;
+  *written = 0;
+
+  if (!SocketDeflate_Inflater_finished (decoder->state.native.inflater))
+    return HTTP1_INCOMPLETE;
+
+  /* Verify gzip trailer (skip if already verified in decode loop) */
+  if (decoder->state.native.is_gzip && !decoder->state.native.trailer_verified)
+    {
+      int verify_result = verify_gzip_trailer (decoder);
+      if (verify_result == 0)
+        return HTTP1_INCOMPLETE; /* Need more trailer bytes */
+      if (verify_result < 0)
+        return HTTP1_ERROR; /* CRC or size mismatch */
+    }
+
+  /* For zlib-wrapped, we collected the Adler-32 but don't verify it
+   * (would need to track running Adler-32 which we don't) */
+
+  decoder->finished = 1;
+  return HTTP1_OK;
+}
+
+static ssize_t
+encode_native_deflate (SocketHTTP1_Encoder_T encoder,
+                       const unsigned char *input,
+                       size_t input_len,
+                       unsigned char *output,
+                       size_t output_len,
+                       int flush)
+{
+  SocketDeflate_Result res;
+  size_t header_size = 0;
+  size_t def_consumed = 0;
+  size_t def_written = 0;
+  uint8_t *out_ptr = output;
+  size_t out_remain = output_len;
+
+  /* Write gzip header on first call */
+  if (encoder->state.native.is_gzip && !encoder->state.native.header_written)
+    {
+      header_size = write_gzip_header (out_ptr, out_remain);
+      if (header_size == 0)
+        return -1;
+      out_ptr += header_size;
+      out_remain -= header_size;
+      encoder->state.native.header_written = 1;
+    }
+
+  /* Update CRC for gzip */
+  if (encoder->state.native.is_gzip && input_len > 0)
+    {
+      encoder->state.native.crc
+          = SocketDeflate_crc32 (encoder->state.native.crc, input, input_len);
+      encoder->state.native.total_in += input_len;
+    }
+
+  /* Compress data */
+  res = SocketDeflate_Deflater_deflate (encoder->state.native.deflater,
+                                        input,
+                                        input_len,
+                                        &def_consumed,
+                                        out_ptr,
+                                        out_remain,
+                                        &def_written);
+
+  (void)flush; /* Native DEFLATE handles flushing internally */
+
+  if (res != DEFLATE_OK && res != DEFLATE_OUTPUT_FULL)
+    return -1;
+
+  return (ssize_t)(header_size + def_written);
+}
+
+static ssize_t
+finish_native_encode (SocketHTTP1_Encoder_T encoder,
+                      unsigned char *output,
+                      size_t output_len)
+{
+  SocketDeflate_Result res;
+  size_t def_written = 0;
+  size_t trailer_size = 0;
+  uint8_t *out_ptr = output;
+  size_t out_remain = output_len;
+
+  /* Finish the DEFLATE stream */
+  res = SocketDeflate_Deflater_finish (
+      encoder->state.native.deflater, out_ptr, out_remain, &def_written);
+
+  if (res != DEFLATE_OK && res != DEFLATE_OUTPUT_FULL)
+    return -1;
+
+  out_ptr += def_written;
+  out_remain -= def_written;
+
+  /* Write gzip trailer */
+  if (encoder->state.native.is_gzip
+      && SocketDeflate_Deflater_finished (encoder->state.native.deflater))
+    {
+      trailer_size
+          = write_gzip_trailer (out_ptr,
+                                out_remain,
+                                encoder->state.native.crc,
+                                (uint32_t)encoder->state.native.total_in);
+      if (trailer_size == 0 && out_remain < GZIP_TRAILER_SIZE)
+        return (ssize_t)def_written; /* Need more space for trailer */
+    }
+
+  if (SocketDeflate_Deflater_finished (encoder->state.native.deflater))
+    encoder->finished = 1;
+
+  return (ssize_t)(def_written + trailer_size);
+}
+
+#endif /* SOCKETHTTP1_HAS_NATIVE_DEFLATE */
 
 #ifdef SOCKETHTTP1_HAS_ZLIB
 
@@ -638,7 +1271,11 @@ init_decoder_backend (SocketHTTP1_Decoder_T decoder)
 {
   switch (decoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return init_native_deflate_decoder (decoder);
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       return init_zlib_decoder (decoder);
@@ -662,7 +1299,12 @@ cleanup_decoder_backend (SocketHTTP1_Decoder_T decoder)
 
   switch (decoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      cleanup_native_decoder (decoder);
+      break;
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       cleanup_zlib_decoder (decoder);
@@ -691,7 +1333,12 @@ dispatch_decode (SocketHTTP1_Decoder_T decoder,
 {
   switch (decoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return decode_native_deflate (
+          decoder, input, input_len, consumed, output, output_len, written);
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       return decode_zlib (
@@ -717,7 +1364,11 @@ dispatch_decode_finish (SocketHTTP1_Decoder_T decoder,
 {
   switch (decoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return finish_native_decode (decoder, output, output_len, written);
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       return finish_zlib_decode (decoder, output, output_len, written);
@@ -738,7 +1389,11 @@ init_encoder_backend (SocketHTTP1_Encoder_T encoder)
 {
   switch (encoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return init_native_deflate_encoder (encoder);
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       return init_zlib_encoder (encoder);
@@ -762,7 +1417,12 @@ cleanup_encoder_backend (SocketHTTP1_Encoder_T encoder)
 
   switch (encoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      cleanup_native_encoder (encoder);
+      break;
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       cleanup_zlib_encoder (encoder);
@@ -790,7 +1450,12 @@ dispatch_encode (SocketHTTP1_Encoder_T encoder,
 {
   switch (encoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return encode_native_deflate (
+          encoder, input, input_len, output, output_len, flush);
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       return encode_zlib (encoder, input, input_len, output, output_len, flush);
@@ -814,7 +1479,11 @@ dispatch_encode_finish (SocketHTTP1_Encoder_T encoder,
 {
   switch (encoder->coding)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
+#ifdef SOCKETHTTP1_HAS_NATIVE_DEFLATE
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return finish_native_encode (encoder, output, output_len);
+#elif defined(SOCKETHTTP1_HAS_ZLIB)
     case HTTP_CODING_GZIP:
     case HTTP_CODING_DEFLATE:
       return finish_zlib_encode (encoder, output, output_len);
