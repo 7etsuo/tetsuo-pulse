@@ -44,7 +44,11 @@
 #include <stdint.h>
 
 #ifdef SOCKETWS_HAS_DEFLATE
+#ifdef SOCKETWS_HAS_NATIVE_DEFLATE
+#include "deflate/SocketDeflate.h"
+#else
 #include <zlib.h>
+#endif
 #endif
 
 /**
@@ -510,22 +514,38 @@ typedef struct
  * @ingroup websocket
  * @brief Compression context for permessage-deflate extension (RFC 7692).
  *
- * Manages zlib streams for per-message compression/decompression.
+ * Manages compression/decompression streams for per-message compression.
  * Supports context takeover negotiation (no-takeover flags).
  * Window bits configurable per client/server.
+ *
+ * Two implementations:
+ * - Native DEFLATE (SOCKETWS_HAS_NATIVE_DEFLATE): Uses built-in RFC 1951
+ * - zlib fallback: Uses zlib library
  *
  * Initialization: ws_compression_init() after handshake negotiation.
  * Per-message: Compress before framing (RSV1=1), decompress after unmasking.
  * Cleanup: ws_compression_free() on close.
  *
- * Buffers: deflate_buf/inflate_buf for zlib operations (zlib-managed? No,
- * manual).
- *
- * @note Requires zlib library (SOCKETWS_HAS_DEFLATE).
  * @note Separate streams for send (deflate) and recv (inflate).
  * @see ws_compress_message() / ws_decompress_message() for usage.
  * @see RFC 7692 for extension details, context takeover semantics.
  */
+#ifdef SOCKETWS_HAS_NATIVE_DEFLATE
+typedef struct
+{
+  SocketDeflate_Deflater_T deflater; /**< Native deflater for compression */
+  SocketDeflate_Inflater_T inflater; /**< Native inflater for decompression */
+  int deflate_initialized;           /**< deflater initialized? */
+  int inflate_initialized;           /**< inflater initialized? */
+
+  /* Context takeover settings (negotiated) */
+  int server_no_context_takeover; /**< Server disables context reuse */
+  int client_no_context_takeover; /**< Client disables context reuse */
+  int server_max_window_bits;     /**< Server max LZ77 window (8-15) */
+  int client_max_window_bits;     /**< Client max LZ77 window (8-15) */
+
+} SocketWS_Compression;
+#else  /* zlib-based implementation */
 typedef struct
 {
   z_stream deflate_stream; /**< zlib deflate stream for outgoing messages */
@@ -546,7 +566,8 @@ typedef struct
   size_t inflate_buf_size;    /**< Size of inflate_buf */
 
 } SocketWS_Compression;
-#endif
+#endif /* SOCKETWS_HAS_NATIVE_DEFLATE */
+#endif /* SOCKETWS_HAS_DEFLATE */
 
 /* ============================================================================
  * Main WebSocket Context Structure
