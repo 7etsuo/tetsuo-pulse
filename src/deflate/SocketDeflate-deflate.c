@@ -318,6 +318,45 @@ SocketDeflate_Deflater_finish (SocketDeflate_Deflater_T def,
   return DEFLATE_OK;
 }
 
+SocketDeflate_Result
+SocketDeflate_Deflater_sync_flush (SocketDeflate_Deflater_T def,
+                                   uint8_t *output,
+                                   size_t output_len,
+                                   size_t *written)
+{
+  SocketDeflate_Result res;
+  size_t output_written;
+
+  *written = 0;
+
+  if (def->state == DEFLATE_STATE_FINISHED)
+    return DEFLATE_OK;
+
+  /* Initialize bit writer with output buffer */
+  SocketDeflate_BitWriter_init (def->writer, output, output_len);
+
+  /* Encode buffered data as non-final block (BFINAL=0) */
+  res = deflater_encode_block (def, 0);
+  if (res != DEFLATE_OK)
+    {
+      *written = SocketDeflate_BitWriter_size (def->writer);
+      def->total_out += *written;
+      return res;
+    }
+
+  /* Write sync flush marker: empty stored block producing 0x00 0x00 0xFF 0xFF
+   */
+  output_written = SocketDeflate_BitWriter_sync_flush (def->writer);
+  *written = output_written;
+  def->total_out += output_written;
+
+  /* Keep state for context takeover - don't mark as finished */
+  /* Reset block state but preserve window for future messages */
+  def->block_start = def->window_pos;
+
+  return DEFLATE_OK;
+}
+
 int
 SocketDeflate_Deflater_finished (SocketDeflate_Deflater_T def)
 {
@@ -865,9 +904,8 @@ count_codelen_frequencies (const uint8_t *encoded,
 static void
 write_dynamic_literal (SocketDeflate_Deflater_T def, uint16_t value)
 {
-  SocketDeflate_BitWriter_write_huffman (def->writer,
-                                         def->litlen_codes[value].code,
-                                         def->litlen_codes[value].len);
+  SocketDeflate_BitWriter_write_huffman (
+      def->writer, def->litlen_codes[value].code, def->litlen_codes[value].len);
 }
 
 /*

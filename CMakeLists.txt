@@ -509,13 +509,23 @@ if(ENABLE_HTTP_COMPRESSION AND (ENABLE_NATIVE_DEFLATE OR ZLIB_FOUND OR (BROTLI_D
     )
 endif()
 
-# Add WebSocket compression source if zlib available
-if(ZLIB_FOUND)
+# WebSocket permessage-deflate support (RFC 7692)
+# Can use native DEFLATE (no zlib) or fall back to zlib
+option(ENABLE_WS_NATIVE_DEFLATE "Use native DEFLATE for WebSocket permessage-deflate (no zlib dependency)" ON)
+
+if(ENABLE_WS_NATIVE_DEFLATE)
     list(APPEND LIB_SOURCES
         src/socket/SocketWS-deflate.c
     )
     add_definitions(-DSOCKETWS_HAS_DEFLATE)
-    message(STATUS "WebSocket permessage-deflate compression enabled")
+    add_definitions(-DSOCKETWS_HAS_NATIVE_DEFLATE)
+    message(STATUS "WebSocket permessage-deflate compression enabled (native DEFLATE)")
+elseif(ZLIB_FOUND)
+    list(APPEND LIB_SOURCES
+        src/socket/SocketWS-deflate.c
+    )
+    add_definitions(-DSOCKETWS_HAS_DEFLATE)
+    message(STATUS "WebSocket permessage-deflate compression enabled (zlib)")
 endif()
 
 # Object library for reuse in tests (avoids static library constructor issues)
@@ -907,6 +917,8 @@ set(TEST_SOURCES
     # gzip tests (RFC 1952)
     test_deflate_crc32
     test_deflate_gzip
+    # WebSocket native DEFLATE tests (RFC 7692)
+    test_ws_deflate_native
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error

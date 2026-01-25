@@ -27,15 +27,15 @@
 #include "core/Except.h"
 
 /* RFC 1951 Limits */
-#define DEFLATE_MAX_BITS 15    /* Maximum Huffman code length */
+#define DEFLATE_MAX_BITS 15       /* Maximum Huffman code length */
 #define DEFLATE_WINDOW_SIZE 32768 /* 32KB sliding window */
-#define DEFLATE_MIN_MATCH 3    /* Minimum match length */
-#define DEFLATE_MAX_MATCH 258  /* Maximum match length */
+#define DEFLATE_MIN_MATCH 3       /* Minimum match length */
+#define DEFLATE_MAX_MATCH 258     /* Maximum match length */
 
 /* Alphabet sizes */
-#define DEFLATE_LITLEN_CODES 288   /* 0-287 (286-287 reserved) */
-#define DEFLATE_DIST_CODES 32      /* 0-31 (30-31 reserved) */
-#define DEFLATE_CODELEN_CODES 19   /* 0-18 for code lengths */
+#define DEFLATE_LITLEN_CODES 288 /* 0-287 (286-287 reserved) */
+#define DEFLATE_DIST_CODES 32    /* 0-31 (30-31 reserved) */
+#define DEFLATE_CODELEN_CODES 19 /* 0-18 for code lengths */
 
 /* Length code range */
 #define DEFLATE_LENGTH_CODE_MIN 257 /* First length code */
@@ -194,7 +194,8 @@ SocketDeflate_get_distance_extra_bits (unsigned int code,
  * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_CODE if code invalid
  */
 extern SocketDeflate_Result
-SocketDeflate_decode_length (unsigned int code, unsigned int extra,
+SocketDeflate_decode_length (unsigned int code,
+                             unsigned int extra,
                              unsigned int *length_out);
 
 /**
@@ -206,7 +207,8 @@ SocketDeflate_decode_length (unsigned int code, unsigned int extra,
  * @return DEFLATE_OK on success, DEFLATE_ERROR_INVALID_DISTANCE if invalid
  */
 extern SocketDeflate_Result
-SocketDeflate_decode_distance (unsigned int code, unsigned int extra,
+SocketDeflate_decode_distance (unsigned int code,
+                               unsigned int extra,
                                unsigned int *distance_out);
 
 /*
@@ -243,7 +245,8 @@ extern SocketDeflate_BitReader_T SocketDeflate_BitReader_new (Arena_T arena);
  * @param size   Size of input data in bytes
  */
 extern void SocketDeflate_BitReader_init (SocketDeflate_BitReader_T reader,
-                                          const uint8_t *data, size_t size);
+                                          const uint8_t *data,
+                                          size_t size);
 
 /**
  * Read N bits from the stream (LSB-first for non-Huffman data).
@@ -257,8 +260,10 @@ extern void SocketDeflate_BitReader_init (SocketDeflate_BitReader_T reader,
  * @param value  Output: the read value, LSB-aligned
  * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough data
  */
-extern SocketDeflate_Result SocketDeflate_BitReader_read (
-    SocketDeflate_BitReader_T reader, unsigned int n, uint32_t *value);
+extern SocketDeflate_Result
+SocketDeflate_BitReader_read (SocketDeflate_BitReader_T reader,
+                              unsigned int n,
+                              uint32_t *value);
 
 /**
  * Peek N bits without consuming them.
@@ -270,8 +275,10 @@ extern SocketDeflate_Result SocketDeflate_BitReader_read (
  * @param value  Output: the peeked value, LSB-aligned
  * @return DEFLATE_OK on success, DEFLATE_INCOMPLETE if not enough data
  */
-extern SocketDeflate_Result SocketDeflate_BitReader_peek (
-    SocketDeflate_BitReader_T reader, unsigned int n, uint32_t *value);
+extern SocketDeflate_Result
+SocketDeflate_BitReader_peek (SocketDeflate_BitReader_T reader,
+                              unsigned int n,
+                              uint32_t *value);
 
 /**
  * Consume N bits after a peek operation.
@@ -306,7 +313,8 @@ extern void SocketDeflate_BitReader_align (SocketDeflate_BitReader_T reader);
  */
 extern SocketDeflate_Result
 SocketDeflate_BitReader_read_bytes (SocketDeflate_BitReader_T reader,
-                                    uint8_t *dest, size_t count);
+                                    uint8_t *dest,
+                                    size_t count);
 
 /**
  * Get number of bits available in the stream.
@@ -337,7 +345,8 @@ SocketDeflate_BitReader_bytes_remaining (SocketDeflate_BitReader_T reader);
  * the bit reader eagerly pre-fetches bytes into its 64-bit accumulator.
  *
  * @param reader The bit reader
- * @return Number of bytes logically consumed (bytes loaded - whole bytes in buffer)
+ * @return Number of bytes logically consumed (bytes loaded - whole bytes in
+ * buffer)
  */
 extern size_t
 SocketDeflate_BitReader_bytes_consumed (SocketDeflate_BitReader_T reader);
@@ -392,7 +401,8 @@ extern SocketDeflate_BitWriter_T SocketDeflate_BitWriter_new (Arena_T arena);
  * @param capacity Size of output buffer in bytes
  */
 extern void SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer,
-                                          uint8_t *data, size_t capacity);
+                                          uint8_t *data,
+                                          size_t capacity);
 
 /**
  * Write N bits to the stream (LSB-first for non-Huffman data).
@@ -405,8 +415,10 @@ extern void SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer,
  * @param n      Number of bits to write (1-25)
  * @return DEFLATE_OK on success, DEFLATE_ERROR if buffer full or n invalid
  */
-extern SocketDeflate_Result SocketDeflate_BitWriter_write (
-    SocketDeflate_BitWriter_T writer, uint32_t value, unsigned int n);
+extern SocketDeflate_Result
+SocketDeflate_BitWriter_write (SocketDeflate_BitWriter_T writer,
+                               uint32_t value,
+                               unsigned int n);
 
 /**
  * Write a Huffman code to the stream.
@@ -419,8 +431,10 @@ extern SocketDeflate_Result SocketDeflate_BitWriter_write (
  * @param len    Code length in bits (1-15)
  * @return DEFLATE_OK on success, DEFLATE_ERROR if buffer full or len invalid
  */
-extern SocketDeflate_Result SocketDeflate_BitWriter_write_huffman (
-    SocketDeflate_BitWriter_T writer, uint32_t code, unsigned int len);
+extern SocketDeflate_Result
+SocketDeflate_BitWriter_write_huffman (SocketDeflate_BitWriter_T writer,
+                                       uint32_t code,
+                                       unsigned int len);
 
 /**
  * Flush pending bits to output (pads with zeros).
@@ -500,9 +514,9 @@ SocketDeflate_BitWriter_bits_pending (SocketDeflate_BitWriter_T writer);
 /* LZ77 Matcher Constants */
 #define DEFLATE_HASH_BITS 15
 #define DEFLATE_HASH_SIZE (1U << DEFLATE_HASH_BITS) /* 32,768 entries */
-#define DEFLATE_CHAIN_LIMIT 128  /* Default max chain traversal */
-#define DEFLATE_GOOD_LENGTH 32   /* Skip lazy match if >= this length */
-#define DEFLATE_NICE_LENGTH 258  /* Stop search if match >= this */
+#define DEFLATE_CHAIN_LIMIT 128 /* Default max chain traversal */
+#define DEFLATE_GOOD_LENGTH 32  /* Skip lazy match if >= this length */
+#define DEFLATE_NICE_LENGTH 258 /* Stop search if match >= this */
 
 /** Opaque matcher type. */
 typedef struct SocketDeflate_Matcher *SocketDeflate_Matcher_T;
@@ -533,7 +547,8 @@ extern SocketDeflate_Matcher_T SocketDeflate_Matcher_new (Arena_T arena);
  * @param size    Size of input data in bytes
  */
 extern void SocketDeflate_Matcher_init (SocketDeflate_Matcher_T matcher,
-                                        const uint8_t *data, size_t size);
+                                        const uint8_t *data,
+                                        size_t size);
 
 /**
  * Configure matcher limits.
@@ -544,7 +559,8 @@ extern void SocketDeflate_Matcher_init (SocketDeflate_Matcher_T matcher,
  * @param nice_len    Stop search if match >= this (0 = default)
  */
 extern void SocketDeflate_Matcher_set_limits (SocketDeflate_Matcher_T matcher,
-                                              int chain_limit, int good_len,
+                                              int chain_limit,
+                                              int good_len,
                                               int nice_len);
 
 /**
@@ -556,8 +572,8 @@ extern void SocketDeflate_Matcher_set_limits (SocketDeflate_Matcher_T matcher,
  * @param matcher The matcher
  * @param pos     Position to insert (0-based)
  */
-extern void SocketDeflate_Matcher_insert (SocketDeflate_Matcher_T matcher,
-                                          size_t pos);
+extern void
+SocketDeflate_Matcher_insert (SocketDeflate_Matcher_T matcher, size_t pos);
 
 /**
  * Find the longest match at a position.
@@ -571,7 +587,8 @@ extern void SocketDeflate_Matcher_insert (SocketDeflate_Matcher_T matcher,
  * @return 1 if match found, 0 otherwise
  */
 extern int SocketDeflate_Matcher_find (SocketDeflate_Matcher_T matcher,
-                                       size_t pos, SocketDeflate_Match *match);
+                                       size_t pos,
+                                       SocketDeflate_Match *match);
 
 /**
  * Check if current match should be deferred (lazy matching).
@@ -585,7 +602,8 @@ extern int SocketDeflate_Matcher_find (SocketDeflate_Matcher_T matcher,
  * @return 1 if should defer (emit literal), 0 if should use current match
  */
 extern int SocketDeflate_Matcher_should_defer (SocketDeflate_Matcher_T matcher,
-                                               size_t pos, unsigned int cur_len);
+                                               size_t pos,
+                                               unsigned int cur_len);
 
 /*
  * Huffman Code Generator (RFC 1951 Section 3.2.2)
@@ -627,8 +645,10 @@ typedef struct
  * @return DEFLATE_OK on success
  */
 extern SocketDeflate_Result
-SocketDeflate_build_code_lengths (const uint32_t *freqs, uint8_t *lengths,
-                                  unsigned int count, unsigned int max_bits,
+SocketDeflate_build_code_lengths (const uint32_t *freqs,
+                                  uint8_t *lengths,
+                                  unsigned int count,
+                                  unsigned int max_bits,
                                   Arena_T arena);
 
 /**
@@ -744,7 +764,8 @@ SocketDeflate_HuffmanTable_new (Arena_T arena);
  */
 extern SocketDeflate_Result
 SocketDeflate_HuffmanTable_build (SocketDeflate_HuffmanTable_T table,
-                                  const uint8_t *lengths, unsigned int count,
+                                  const uint8_t *lengths,
+                                  unsigned int count,
                                   unsigned int max_bits);
 
 /**
@@ -773,7 +794,8 @@ SocketDeflate_HuffmanTable_decode (SocketDeflate_HuffmanTable_T table,
  *
  * @param table The table to reset
  */
-extern void SocketDeflate_HuffmanTable_reset (SocketDeflate_HuffmanTable_T table);
+extern void
+SocketDeflate_HuffmanTable_reset (SocketDeflate_HuffmanTable_T table);
 
 /*
  * Fixed Huffman Tables (RFC 1951 Section 3.2.6)
@@ -836,7 +858,8 @@ extern SocketDeflate_HuffmanTable_T SocketDeflate_get_fixed_dist_table (void);
  */
 extern SocketDeflate_Result
 SocketDeflate_decode_stored_block (SocketDeflate_BitReader_T reader,
-                                   uint8_t *output, size_t output_len,
+                                   uint8_t *output,
+                                   size_t output_len,
                                    size_t *written);
 
 /*
@@ -878,7 +901,8 @@ SocketDeflate_decode_stored_block (SocketDeflate_BitReader_T reader,
  */
 extern SocketDeflate_Result
 SocketDeflate_decode_fixed_block (SocketDeflate_BitReader_T reader,
-                                  uint8_t *output, size_t output_len,
+                                  uint8_t *output,
+                                  size_t output_len,
                                   size_t *written);
 
 /*
@@ -917,8 +941,10 @@ SocketDeflate_decode_fixed_block (SocketDeflate_BitReader_T reader,
  */
 extern SocketDeflate_Result
 SocketDeflate_decode_dynamic_block (SocketDeflate_BitReader_T reader,
-                                    Arena_T arena, uint8_t *output,
-                                    size_t output_len, size_t *written);
+                                    Arena_T arena,
+                                    uint8_t *output,
+                                    size_t output_len,
+                                    size_t *written);
 
 /*
  * Internal: Shared LZ77 Decode Loop
@@ -941,8 +967,10 @@ SocketDeflate_decode_dynamic_block (SocketDeflate_BitReader_T reader,
 extern SocketDeflate_Result
 inflate_lz77 (SocketDeflate_BitReader_T reader,
               SocketDeflate_HuffmanTable_T litlen_table,
-              SocketDeflate_HuffmanTable_T dist_table, uint8_t *output,
-              size_t output_len, size_t *written);
+              SocketDeflate_HuffmanTable_T dist_table,
+              uint8_t *output,
+              size_t output_len,
+              size_t *written);
 
 /*
  * Streaming Inflate API
@@ -963,8 +991,8 @@ typedef struct SocketDeflate_Inflater *SocketDeflate_Inflater_T;
  *                   protection - returns DEFLATE_ERROR_BOMB if exceeded.
  * @return New inflater instance, or NULL on allocation failure
  */
-extern SocketDeflate_Inflater_T SocketDeflate_Inflater_new (Arena_T arena,
-                                                            size_t max_output);
+extern SocketDeflate_Inflater_T
+SocketDeflate_Inflater_new (Arena_T arena, size_t max_output);
 
 /**
  * Decompress data (streaming).
@@ -988,9 +1016,12 @@ extern SocketDeflate_Inflater_T SocketDeflate_Inflater_new (Arena_T arena,
  */
 extern SocketDeflate_Result
 SocketDeflate_Inflater_inflate (SocketDeflate_Inflater_T inf,
-                                const uint8_t *input, size_t input_len,
-                                size_t *consumed, uint8_t *output,
-                                size_t output_len, size_t *written);
+                                const uint8_t *input,
+                                size_t input_len,
+                                size_t *consumed,
+                                uint8_t *output,
+                                size_t output_len,
+                                size_t *written);
 
 /**
  * Check if decompression is complete.
@@ -1072,8 +1103,8 @@ extern const char *SocketDeflate_result_string (SocketDeflate_Result result);
  *
  * @note IEEE test vector: crc32(0, "123456789", 9) == 0xCBF43926
  */
-extern uint32_t SocketDeflate_crc32 (uint32_t crc, const uint8_t *data,
-                                     size_t len);
+extern uint32_t
+SocketDeflate_crc32 (uint32_t crc, const uint8_t *data, size_t len);
 
 /**
  * Combine two CRC-32 values.
@@ -1090,8 +1121,8 @@ extern uint32_t SocketDeflate_crc32 (uint32_t crc, const uint8_t *data,
  * @note Uses matrix exponentiation of the CRC polynomial's companion matrix.
  *       Algorithm derived from zlib's crc32_combine.
  */
-extern uint32_t SocketDeflate_crc32_combine (uint32_t crc1, uint32_t crc2,
-                                             size_t len2);
+extern uint32_t
+SocketDeflate_crc32_combine (uint32_t crc1, uint32_t crc2, size_t len2);
 
 /*
  * gzip Format Support (RFC 1952)
@@ -1116,21 +1147,21 @@ extern uint32_t SocketDeflate_crc32_combine (uint32_t crc1, uint32_t crc2,
 #define GZIP_FLAG_FCOMMENT 0x10 /* Comment present */
 
 /** gzip OS codes (RFC 1952 Section 2.3) */
-#define GZIP_OS_FAT         0   /* FAT filesystem (MS-DOS, OS/2, NT/Win32) */
-#define GZIP_OS_AMIGA       1   /* Amiga */
-#define GZIP_OS_VMS         2   /* VMS (or OpenVMS) */
-#define GZIP_OS_UNIX        3   /* Unix */
-#define GZIP_OS_VM_CMS      4   /* VM/CMS */
-#define GZIP_OS_ATARI_TOS   5   /* Atari TOS */
-#define GZIP_OS_HPFS        6   /* HPFS filesystem (OS/2, NT) */
-#define GZIP_OS_MACINTOSH   7   /* Macintosh */
-#define GZIP_OS_Z_SYSTEM    8   /* Z-System */
-#define GZIP_OS_CP_M        9   /* CP/M */
-#define GZIP_OS_TOPS_20     10  /* TOPS-20 */
-#define GZIP_OS_NTFS        11  /* NTFS filesystem (NT) */
-#define GZIP_OS_QDOS        12  /* QDOS */
+#define GZIP_OS_FAT 0           /* FAT filesystem (MS-DOS, OS/2, NT/Win32) */
+#define GZIP_OS_AMIGA 1         /* Amiga */
+#define GZIP_OS_VMS 2           /* VMS (or OpenVMS) */
+#define GZIP_OS_UNIX 3          /* Unix */
+#define GZIP_OS_VM_CMS 4        /* VM/CMS */
+#define GZIP_OS_ATARI_TOS 5     /* Atari TOS */
+#define GZIP_OS_HPFS 6          /* HPFS filesystem (OS/2, NT) */
+#define GZIP_OS_MACINTOSH 7     /* Macintosh */
+#define GZIP_OS_Z_SYSTEM 8      /* Z-System */
+#define GZIP_OS_CP_M 9          /* CP/M */
+#define GZIP_OS_TOPS_20 10      /* TOPS-20 */
+#define GZIP_OS_NTFS 11         /* NTFS filesystem (NT) */
+#define GZIP_OS_QDOS 12         /* QDOS */
 #define GZIP_OS_ACORN_RISCOS 13 /* Acorn RISCOS */
-#define GZIP_OS_UNKNOWN     255 /* Unknown */
+#define GZIP_OS_UNKNOWN 255     /* Unknown */
 
 /** Minimum gzip header size (no optional fields) */
 #define GZIP_HEADER_MIN_SIZE 10
@@ -1176,7 +1207,8 @@ typedef struct
  *         DEFLATE_ERROR_GZIP_HCRC if header CRC16 mismatch
  */
 extern SocketDeflate_Result
-SocketDeflate_gzip_parse_header (const uint8_t *data, size_t len,
+SocketDeflate_gzip_parse_header (const uint8_t *data,
+                                 size_t len,
                                  SocketDeflate_GzipHeader *header);
 
 /**
@@ -1246,8 +1278,8 @@ typedef struct SocketDeflate_Deflater *SocketDeflate_Deflater_T;
  * @param level Compression level (0-9)
  * @return New deflater instance, or NULL on allocation failure
  */
-extern SocketDeflate_Deflater_T SocketDeflate_Deflater_new (Arena_T arena,
-                                                             int level);
+extern SocketDeflate_Deflater_T
+SocketDeflate_Deflater_new (Arena_T arena, int level);
 
 /**
  * Compress data (streaming).
@@ -1269,9 +1301,12 @@ extern SocketDeflate_Deflater_T SocketDeflate_Deflater_new (Arena_T arena,
  */
 extern SocketDeflate_Result
 SocketDeflate_Deflater_deflate (SocketDeflate_Deflater_T def,
-                                const uint8_t *input, size_t input_len,
-                                size_t *consumed, uint8_t *output,
-                                size_t output_len, size_t *written);
+                                const uint8_t *input,
+                                size_t input_len,
+                                size_t *consumed,
+                                uint8_t *output,
+                                size_t output_len,
+                                size_t *written);
 
 /**
  * Finish compression and flush remaining data.
@@ -1287,8 +1322,38 @@ SocketDeflate_Deflater_deflate (SocketDeflate_Deflater_T def,
  *         DEFLATE_OUTPUT_FULL if output buffer too small (call again)
  */
 extern SocketDeflate_Result
-SocketDeflate_Deflater_finish (SocketDeflate_Deflater_T def, uint8_t *output,
-                               size_t output_len, size_t *written);
+SocketDeflate_Deflater_finish (SocketDeflate_Deflater_T def,
+                               uint8_t *output,
+                               size_t output_len,
+                               size_t *written);
+
+/**
+ * Flush compression with sync marker (RFC 7692 context takeover).
+ *
+ * Flushes pending data as a non-final block (BFINAL=0) and appends
+ * the RFC 7692 sync flush marker (0x00 0x00 0xFF 0xFF). This allows
+ * the stream to continue accepting more data while producing
+ * decompressible output.
+ *
+ * Used by WebSocket permessage-deflate when context takeover is enabled:
+ * the compressor state is preserved between messages, and each message
+ * ends with sync flush rather than final block.
+ *
+ * After sync_flush, call reset() to discard state, or continue with
+ * more deflate() calls to add data to the same compression context.
+ *
+ * @param def        The deflater
+ * @param output     Output buffer for compressed data
+ * @param output_len Size of output buffer
+ * @param written    Output: bytes written to output
+ * @return DEFLATE_OK when complete,
+ *         DEFLATE_OUTPUT_FULL if output buffer too small
+ */
+extern SocketDeflate_Result
+SocketDeflate_Deflater_sync_flush (SocketDeflate_Deflater_T def,
+                                   uint8_t *output,
+                                   size_t output_len,
+                                   size_t *written);
 
 /**
  * Check if compression is complete.
