@@ -15,6 +15,7 @@
  * - Roundtrip compression/decompression
  * - Streaming with various buffer sizes
  * - Edge cases and boundary conditions
+ * - zlib interoperability (compress with us, decompress with zlib and vice versa)
  *
  * Fixes #3418
  */
@@ -27,6 +28,12 @@
 #include "core/Arena.h"
 #include "deflate/SocketDeflate.h"
 #include "test/Test.h"
+
+/* zlib interoperability tests - enabled when zlib is available */
+#if __has_include(<zlib.h>)
+#define HAS_ZLIB 1
+#include <zlib.h>
+#endif
 
 static Arena_T test_arena;
 static int tables_initialized = 0;
@@ -608,6 +615,297 @@ TEST (streaming_multiple_chunks)
   /* Verify both can roundtrip */
   ASSERT (roundtrip_test (6, input, input_size));
 }
+
+/*
+ * zlib Interoperability Tests
+ *
+ * These tests verify that our DEFLATE implementation is compatible with zlib:
+ * - test_deflate_zlib_inflate_compat: Compress with us, decompress with zlib
+ * - test_inflate_zlib_deflate_compat: Compress with zlib, decompress with us
+ *
+ * This ensures bidirectional interoperability per RFC 1951.
+ */
+
+#ifdef HAS_ZLIB
+
+/*
+ * Helper: Compress with zlib and return compressed size (raw deflate, no header)
+ */
+static size_t
+zlib_compress_raw (const uint8_t *input,
+                   size_t input_len,
+                   uint8_t *output,
+                   size_t output_len,
+                   int level)
+{
+  z_stream strm;
+  int ret;
+
+  memset (&strm, 0, sizeof (strm));
+  /* Use -15 for raw deflate (no zlib/gzip header) */
+  ret = deflateInit2 (&strm, level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
+  if (ret != Z_OK)
+    return 0;
+
+  strm.avail_in = (uInt)input_len;
+  strm.next_in = (Bytef *)input;
+  strm.avail_out = (uInt)output_len;
+  strm.next_out = output;
+
+  ret = deflate (&strm, Z_FINISH);
+  if (ret != Z_STREAM_END)
+    {
+      deflateEnd (&strm);
+      return 0;
+    }
+
+  size_t compressed_size = output_len - strm.avail_out;
+  deflateEnd (&strm);
+  return compressed_size;
+}
+
+/*
+ * Helper: Decompress with zlib (raw deflate, no header)
+ */
+static size_t
+zlib_decompress_raw (const uint8_t *input,
+                     size_t input_len,
+                     uint8_t *output,
+                     size_t output_len)
+{
+  z_stream strm;
+  int ret;
+
+  memset (&strm, 0, sizeof (strm));
+  /* Use -15 for raw inflate (no zlib/gzip header) */
+  ret = inflateInit2 (&strm, -15);
+  if (ret != Z_OK)
+    return 0;
+
+  strm.avail_in = (uInt)input_len;
+  strm.next_in = (Bytef *)input;
+  strm.avail_out = (uInt)output_len;
+  strm.next_out = output;
+
+  ret = inflate (&strm, Z_FINISH);
+  if (ret != Z_STREAM_END)
+    {
+      inflateEnd (&strm);
+      return 0;
+    }
+
+  size_t decompressed_size = output_len - strm.avail_out;
+  inflateEnd (&strm);
+  return decompressed_size;
+}
+
+/*
+ * Test: Compress with our implementation, decompress with zlib
+ *
+ * This verifies that our DEFLATE output is standards-compliant and
+ * can be decompressed by the reference zlib implementation.
+ */
+TEST (deflate_zlib_inflate_compat)
+{
+  const uint8_t input[]
+      = "The quick brown fox jumps over the lazy dog. "
+        "Pack my box with five dozen liquor jugs. "
+        "How vexingly quick daft zebras jump!";
+  uint8_t compressed[1024];
+  uint8_t decompressed[1024];
+  size_t compressed_len, decompressed_len;
+
+  /* Test all compression levels */
+  for (int level = 0; level <= 9; level++)
+    {
+      /* Compress with our implementation */
+      compressed_len = compress_data (
+          level, input, sizeof (input) - 1, compressed, sizeof (compressed));
+      ASSERT (compressed_len > 0);
+
+      /* Decompress with zlib */
+      decompressed_len = zlib_decompress_raw (
+          compressed, compressed_len, decompressed, sizeof (decompressed));
+      ASSERT_EQ (decompressed_len, sizeof (input) - 1);
+      ASSERT (memcmp (input, decompressed, sizeof (input) - 1) == 0);
+    }
+}
+
+/*
+ * Test: Compress with zlib, decompress with our implementation
+ *
+ * This verifies that our inflate implementation correctly handles
+ * zlib-compressed data, ensuring bidirectional compatibility.
+ */
+TEST (inflate_zlib_deflate_compat)
+{
+  const uint8_t input[]
+      = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+        "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+        "Ut enim ad minim veniam, quis nostrud exercitation ullamco.";
+  uint8_t compressed[1024];
+  uint8_t decompressed[1024];
+  size_t compressed_len, decompressed_len;
+
+  ensure_tables ();
+
+  /* Test multiple zlib compression levels */
+  for (int level = 1; level <= 9; level++)
+    {
+      /* Compress with zlib */
+      compressed_len = zlib_compress_raw (
+          input, sizeof (input) - 1, compressed, sizeof (compressed), level);
+      ASSERT (compressed_len > 0);
+
+      /* Decompress with our implementation */
+      decompressed_len = decompress_data (
+          compressed, compressed_len, decompressed, sizeof (decompressed));
+      ASSERT_EQ (decompressed_len, sizeof (input) - 1);
+      ASSERT (memcmp (input, decompressed, sizeof (input) - 1) == 0);
+    }
+}
+
+/*
+ * Test: Bidirectional interop with various data patterns
+ *
+ * Tests interoperability with different data characteristics:
+ * - Highly compressible (repeated patterns)
+ * - Low entropy (random-ish data)
+ * - Binary data with all byte values
+ */
+TEST (zlib_interop_data_patterns)
+{
+  uint8_t compressed[8192];
+  uint8_t decompressed[4096];
+  size_t compressed_len, decompressed_len;
+
+  ensure_tables ();
+
+  /* Pattern 1: Highly compressible - repeated sequence */
+  {
+    uint8_t input[2048];
+    for (size_t i = 0; i < sizeof (input); i++)
+      input[i] = "ABCD"[i % 4];
+
+    /* Our compress -> zlib decompress */
+    compressed_len
+        = compress_data (6, input, sizeof (input), compressed, sizeof (compressed));
+    ASSERT (compressed_len > 0);
+    decompressed_len = zlib_decompress_raw (
+        compressed, compressed_len, decompressed, sizeof (decompressed));
+    ASSERT_EQ (decompressed_len, sizeof (input));
+    ASSERT (memcmp (input, decompressed, sizeof (input)) == 0);
+
+    /* zlib compress -> our decompress */
+    compressed_len = zlib_compress_raw (
+        input, sizeof (input), compressed, sizeof (compressed), 6);
+    ASSERT (compressed_len > 0);
+    decompressed_len = decompress_data (
+        compressed, compressed_len, decompressed, sizeof (decompressed));
+    ASSERT_EQ (decompressed_len, sizeof (input));
+    ASSERT (memcmp (input, decompressed, sizeof (input)) == 0);
+  }
+
+  /* Pattern 2: All byte values (0x00-0xFF repeated) */
+  {
+    uint8_t input[1024];
+    for (size_t i = 0; i < sizeof (input); i++)
+      input[i] = (uint8_t)(i % 256);
+
+    /* Our compress -> zlib decompress */
+    compressed_len
+        = compress_data (6, input, sizeof (input), compressed, sizeof (compressed));
+    ASSERT (compressed_len > 0);
+    decompressed_len = zlib_decompress_raw (
+        compressed, compressed_len, decompressed, sizeof (decompressed));
+    ASSERT_EQ (decompressed_len, sizeof (input));
+    ASSERT (memcmp (input, decompressed, sizeof (input)) == 0);
+
+    /* zlib compress -> our decompress */
+    compressed_len = zlib_compress_raw (
+        input, sizeof (input), compressed, sizeof (compressed), 6);
+    ASSERT (compressed_len > 0);
+    decompressed_len = decompress_data (
+        compressed, compressed_len, decompressed, sizeof (decompressed));
+    ASSERT_EQ (decompressed_len, sizeof (input));
+    ASSERT (memcmp (input, decompressed, sizeof (input)) == 0);
+  }
+
+  /* Pattern 3: Pseudo-random data (harder to compress) */
+  {
+    uint8_t input[1024];
+    unsigned int seed = 0xDEADBEEF;
+    for (size_t i = 0; i < sizeof (input); i++)
+      {
+        seed = seed * 1103515245 + 12345;
+        input[i] = (uint8_t)(seed >> 16);
+      }
+
+    /* Our compress -> zlib decompress */
+    compressed_len
+        = compress_data (6, input, sizeof (input), compressed, sizeof (compressed));
+    ASSERT (compressed_len > 0);
+    decompressed_len = zlib_decompress_raw (
+        compressed, compressed_len, decompressed, sizeof (decompressed));
+    ASSERT_EQ (decompressed_len, sizeof (input));
+    ASSERT (memcmp (input, decompressed, sizeof (input)) == 0);
+
+    /* zlib compress -> our decompress */
+    compressed_len = zlib_compress_raw (
+        input, sizeof (input), compressed, sizeof (compressed), 6);
+    ASSERT (compressed_len > 0);
+    decompressed_len = decompress_data (
+        compressed, compressed_len, decompressed, sizeof (decompressed));
+    ASSERT_EQ (decompressed_len, sizeof (input));
+    ASSERT (memcmp (input, decompressed, sizeof (input)) == 0);
+  }
+}
+
+/*
+ * Test: zlib interop at all compression levels
+ *
+ * Comprehensive test that verifies interoperability across all
+ * compression levels (0-9) in both directions.
+ */
+TEST (zlib_interop_all_levels)
+{
+  const uint8_t input[]
+      = "This test verifies zlib interoperability at all compression levels. "
+        "Compression levels 0-9 should all produce valid, interoperable output.";
+  uint8_t compressed[1024];
+  uint8_t decompressed[1024];
+  size_t compressed_len, decompressed_len;
+
+  ensure_tables ();
+
+  for (int level = 0; level <= 9; level++)
+    {
+      /* Our level X -> zlib decompress */
+      compressed_len = compress_data (
+          level, input, sizeof (input) - 1, compressed, sizeof (compressed));
+      ASSERT (compressed_len > 0);
+
+      decompressed_len = zlib_decompress_raw (
+          compressed, compressed_len, decompressed, sizeof (decompressed));
+      ASSERT_EQ (decompressed_len, sizeof (input) - 1);
+      ASSERT (memcmp (input, decompressed, sizeof (input) - 1) == 0);
+    }
+
+  /* zlib levels 1-9 -> our decompress (zlib level 0 is store, skip) */
+  for (int level = 1; level <= 9; level++)
+    {
+      compressed_len = zlib_compress_raw (
+          input, sizeof (input) - 1, compressed, sizeof (compressed), level);
+      ASSERT (compressed_len > 0);
+
+      decompressed_len = decompress_data (
+          compressed, compressed_len, decompressed, sizeof (decompressed));
+      ASSERT_EQ (decompressed_len, sizeof (input) - 1);
+      ASSERT (memcmp (input, decompressed, sizeof (input) - 1) == 0);
+    }
+}
+
+#endif /* HAS_ZLIB */
 
 /*
  * Test Runner
