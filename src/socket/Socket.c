@@ -690,16 +690,17 @@ Socket_bind (T socket, const char *host, int port)
   struct addrinfo *res = NULL;
   int socket_family;
   volatile T vsock = socket;
+  const char *volatile vhost;
 
   assert (socket);
 
   SocketCommon_validate_port (port, Socket_Failed);
-  host = SocketCommon_normalize_wildcard_host (host);
+  vhost = SocketCommon_normalize_wildcard_host (host);
   socket_family = SocketCommon_get_socket_family (socket->base);
 
   TRY
   {
-    bind_resolve_address (host, port, socket_family, &res);
+    bind_resolve_address (vhost, port, socket_family, &res);
     if (!res)
       RETURN;
 
