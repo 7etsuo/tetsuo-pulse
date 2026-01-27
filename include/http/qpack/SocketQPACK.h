@@ -499,6 +499,28 @@ SocketQPACK_decode_set_capacity (const unsigned char *input,
                                  size_t *consumed);
 
 /**
+ * @brief Check if capacity reduction can be safely applied.
+ *
+ * RFC 9204 Section 2.1.1: The encoder MUST NOT cause a dynamic table entry
+ * to be evicted unless that entry is evictable. This function pre-checks
+ * whether all entries that would need to be evicted have ref_count == 0.
+ *
+ * Call this function BEFORE sending a Set Dynamic Table Capacity instruction
+ * to ensure the capacity change can be applied without desynchronizing
+ * encoder and decoder tables.
+ *
+ * @param table        Dynamic table to check (may be NULL)
+ * @param new_capacity New capacity in bytes
+ * @return true if capacity reduction is safe (all entries to evict have
+ *         ref_count == 0), false if referenced entries would need eviction
+ *
+ * @since 1.0.0
+ */
+extern bool
+SocketQPACK_can_reduce_capacity (SocketQPACK_Table_T table,
+                                 uint64_t new_capacity);
+
+/**
  * @brief Apply Set Dynamic Table Capacity to a table.
  *
  * RFC 9204 Section 4.3.1: Updates the dynamic table capacity. If the new
@@ -514,6 +536,8 @@ SocketQPACK_decode_set_capacity (const unsigned char *input,
  *
  * @note Setting capacity to 0 evicts all entries and effectively disables
  *       the dynamic table.
+ * @note Call SocketQPACK_can_reduce_capacity() BEFORE sending the capacity
+ *       instruction to avoid encoder/decoder desynchronization.
  *
  * @since 1.0.0
  */

@@ -188,6 +188,52 @@ evict_oldest_entry (SocketQPACK_Table_T table)
   table->dropped_count++;
 }
 
+bool
+SocketQPACK_can_reduce_capacity (SocketQPACK_Table_T table,
+                                 uint64_t new_capacity)
+{
+  size_t bytes_to_evict = 0;
+  size_t idx;
+  size_t checked = 0;
+
+  /*
+   * RFC 9204 Section 2.1.1 & 4.3.1 (fixes #3481):
+   * Check if capacity reduction is safe before sending the instruction.
+   *
+   * The encoder MUST NOT cause a dynamic table entry to be evicted unless
+   * that entry is evictable. This function pre-checks whether all entries
+   * that would need to be evicted have ref_count == 0.
+   */
+  if (table == NULL)
+    return true; /* No table means no eviction needed */
+
+  /* If new capacity >= current size, no eviction needed */
+  if (new_capacity >= table->size)
+    return true;
+
+  /* Walk entries from oldest (head) to check if eviction is possible */
+  idx = table->head;
+  while (checked < table->count && table->size - bytes_to_evict > new_capacity)
+    {
+      QPACK_DynamicEntry *entry = &table->entries[idx];
+      size_t entry_size;
+
+      /* Cannot evict entries with outstanding references */
+      if (entry->meta.ref_count > 0)
+        return false;
+
+      entry_size = qpack_entry_size (entry->name_len, entry->value_len);
+      if (entry_size == SIZE_MAX)
+        entry_size = 0;
+
+      bytes_to_evict += entry_size;
+      idx = RINGBUF_WRAP (idx + 1, table->capacity);
+      checked++;
+    }
+
+  return true;
+}
+
 SocketQPACK_Result
 SocketQPACK_apply_set_capacity (SocketQPACK_Table_T table,
                                 uint64_t capacity,
