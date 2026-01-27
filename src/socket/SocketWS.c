@@ -838,6 +838,17 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
   size_t reason_len;
   int parsed;
 
+  /* RFC 6455 Section 5.5.1: If body exists, MUST be >= 2 bytes.
+   * 0 bytes = no status, 1 byte = INVALID, 2+ bytes = status code + reason */
+  if (len == 1)
+    {
+      ws_set_error (ws, WS_ERROR_PROTOCOL,
+                    "Invalid CLOSE payload length: 1 byte (must be 0 or >= 2)");
+      ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Malformed close frame");
+      ws->state = WS_STATE_CLOSED;
+      return -1;
+    }
+
   parsed = ws_parse_close_payload (payload, len, &code, &reason, &reason_len);
   if (!parsed)
     {
