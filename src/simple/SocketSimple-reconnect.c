@@ -490,6 +490,24 @@ Socket_simple_reconnect_get_socket (SocketSimple_Reconnect_T conn)
         }
     }
 
+  /* Security: Reset TLS state when the underlying socket changes.
+   * This ensures a reconnection gets a fresh TLS context and doesn't
+   * reuse potentially compromised session state from a previous connection.
+   * See issue #3480 for details on the security implications. */
+  if (conn->last_core_socket != core_sock)
+    {
+#ifdef SOCKET_HAS_TLS
+      /* Clear old TLS context if present */
+      if (conn->simple_socket->tls_ctx)
+        {
+          SocketTLSContext_free (&conn->simple_socket->tls_ctx);
+        }
+      /* Reset TLS state flags */
+      conn->simple_socket->is_tls = 0;
+#endif
+      conn->last_core_socket = core_sock;
+    }
+
   conn->simple_socket->socket = core_sock;
   conn->simple_socket->is_connected = 1;
 
