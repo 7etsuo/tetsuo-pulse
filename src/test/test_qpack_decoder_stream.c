@@ -1496,19 +1496,19 @@ test_ack_state_section_ack (void)
                "KRC=0 before acks");
 
   /* Acknowledge stream 8 (RIC=5) */
-  result = SocketQPACK_AckState_process_section_ack (state, 8);
+  result = SocketQPACK_AckState_process_section_ack (state, 8, 1000);
   TEST_ASSERT (result == QPACK_STREAM_OK, "ack stream 8");
   TEST_ASSERT (SocketQPACK_AckState_get_known_received_count (state) == 5,
                "KRC=5 after ack stream 8");
 
   /* Acknowledge stream 4 (RIC=10) - should update KRC */
-  result = SocketQPACK_AckState_process_section_ack (state, 4);
+  result = SocketQPACK_AckState_process_section_ack (state, 4, 1000);
   TEST_ASSERT (result == QPACK_STREAM_OK, "ack stream 4");
   TEST_ASSERT (SocketQPACK_AckState_get_known_received_count (state) == 10,
                "KRC=10 after ack stream 4");
 
   /* Acknowledge stream 12 (RIC=15) - should update KRC */
-  result = SocketQPACK_AckState_process_section_ack (state, 12);
+  result = SocketQPACK_AckState_process_section_ack (state, 12, 1000);
   TEST_ASSERT (result == QPACK_STREAM_OK, "ack stream 12");
   TEST_ASSERT (SocketQPACK_AckState_get_known_received_count (state) == 15,
                "KRC=15 after ack stream 12");
@@ -1533,7 +1533,7 @@ test_ack_state_unknown_stream (void)
   state = SocketQPACK_AckState_new (arena);
 
   /* Try to acknowledge stream that was never registered */
-  result = SocketQPACK_AckState_process_section_ack (state, 99);
+  result = SocketQPACK_AckState_process_section_ack (state, 99, 1000);
   TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX, "unknown stream err");
 
   Arena_dispose (&arena);
@@ -1566,7 +1566,7 @@ test_ack_state_stream_cancel (void)
                "KRC=0 after cancel");
 
   /* Acknowledge stream 8 */
-  result = SocketQPACK_AckState_process_section_ack (state, 8);
+  result = SocketQPACK_AckState_process_section_ack (state, 8, 1000);
   TEST_ASSERT (result == QPACK_STREAM_OK, "ack stream 8");
   TEST_ASSERT (SocketQPACK_AckState_get_known_received_count (state) == 20,
                "KRC=20");
@@ -1671,7 +1671,7 @@ test_ack_state_ric_zero (void)
   TEST_ASSERT (result == QPACK_STREAM_OK, "register RIC=0 ok");
 
   /* Acknowledging it should fail (not tracked) */
-  result = SocketQPACK_AckState_process_section_ack (state, 4);
+  result = SocketQPACK_AckState_process_section_ack (state, 4, 1000);
   TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX, "ack untracked fails");
 
   Arena_dispose (&arena);
@@ -1691,7 +1691,7 @@ test_ack_state_null_params (void)
   result = SocketQPACK_AckState_register_section (NULL, 4, 10);
   TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "register NULL");
 
-  result = SocketQPACK_AckState_process_section_ack (NULL, 4);
+  result = SocketQPACK_AckState_process_section_ack (NULL, 4, 1000);
   TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "section_ack NULL");
 
   result = SocketQPACK_AckState_process_stream_cancel (NULL, 4);

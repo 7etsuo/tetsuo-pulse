@@ -746,8 +746,8 @@ SocketQPACK_Encoder_on_section_ack (SocketQPACK_Encoder_T encoder,
   if (encoder == NULL)
     return QPACK_ERR_NULL_PARAM;
 
-  result
-      = SocketQPACK_AckState_process_section_ack (encoder->ack_state, stream_id);
+  result = SocketQPACK_AckState_process_section_ack (
+      encoder->ack_state, stream_id, encoder->table->insert_count);
 
   if (result == QPACK_STREAM_ERR_INVALID_INDEX)
     return QPACK_ERR_INVALID_INDEX;

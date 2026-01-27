@@ -632,17 +632,22 @@ SocketQPACK_AckState_register_section (SocketQPACK_AckState_T state,
  * RFC 9204 Section 4.4.1: Updates the Known Received Count based on
  * the acknowledged section.
  *
- * @param state     Acknowledgment state
- * @param stream_id Stream ID from Section Acknowledgment
+ * @param state        Acknowledgment state
+ * @param stream_id    Stream ID from Section Acknowledgment
+ * @param insert_count Current Insert Count from dynamic table for validation
  * @return QPACK_STREAM_OK on success,
  *         QPACK_STREAM_ERR_NULL_PARAM if state is NULL,
  *         QPACK_STREAM_ERR_INVALID_INDEX if stream has no pending RIC
+ *
+ * @note If stored RIC exceeds insert_count (indicates state corruption),
+ *       RIC is capped to insert_count to prevent KRC from exceeding valid range.
  *
  * @since 1.0.0
  */
 extern SocketQPACKStream_Result
 SocketQPACK_AckState_process_section_ack (SocketQPACK_AckState_T state,
-                                          uint64_t stream_id);
+                                          uint64_t stream_id,
+                                          uint64_t insert_count);
 
 /**
  * @brief Process Stream Cancellation from decoder.
