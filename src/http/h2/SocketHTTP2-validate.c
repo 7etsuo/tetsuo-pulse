@@ -532,7 +532,46 @@ http2_validate_scheme_header (const SocketHPACK_Header *h,
     return -1;
 
   state->has_scheme = 1;
-  return 0;
+
+  /* RFC 9113 §8.3.1: :scheme MUST NOT be empty */
+  if (h->value_len == 0)
+    return -1;
+
+  /*
+   * RFC 3986 §3.1: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+   * Validate scheme syntax before checking allowed values.
+   */
+  for (size_t i = 0; i < h->value_len; i++)
+    {
+      unsigned char c = (unsigned char)h->value[i];
+      if (i == 0)
+        {
+          /* First character must be ALPHA */
+          if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')))
+            return -1;
+        }
+      else
+        {
+          /* Subsequent: ALPHA / DIGIT / "+" / "-" / "." */
+          if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                || (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.'))
+            return -1;
+        }
+    }
+
+  /*
+   * RFC 9113: For HTTP/2, restrict to http/https to prevent protocol confusion.
+   * Case-insensitive comparison per RFC 3986 §3.1.
+   */
+  if (h->value_len == 4
+      && strncasecmp (h->value, "http", 4) == 0)
+    return 0;
+  if (h->value_len == 5
+      && strncasecmp (h->value, "https", 5) == 0)
+    return 0;
+
+  /* Reject other schemes to prevent SSRF and protocol confusion attacks */
+  return -1;
 }
 
 int
