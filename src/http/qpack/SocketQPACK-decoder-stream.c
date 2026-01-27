@@ -927,7 +927,8 @@ SocketQPACK_AckState_register_section (SocketQPACK_AckState_T state,
 
 SocketQPACKStream_Result
 SocketQPACK_AckState_process_section_ack (SocketQPACK_AckState_T state,
-                                          uint64_t stream_id)
+                                          uint64_t stream_id,
+                                          uint64_t insert_count)
 {
   size_t idx;
   bool found;
@@ -942,6 +943,17 @@ SocketQPACK_AckState_process_section_ack (SocketQPACK_AckState_T state,
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
   ric = state->pending[idx].required_insert_count;
+
+  /*
+   * Validate RIC against current Insert Count (fixes #3483).
+   *
+   * If stored RIC exceeds insert_count, this indicates state corruption
+   * or extreme edge cases (e.g., counter wrap). Cap to insert_count to
+   * prevent KRC from exceeding valid range while still allowing the
+   * acknowledgment to proceed.
+   */
+  if (ric > insert_count)
+    ric = insert_count;
 
   if (ric > state->known_received_count)
     state->known_received_count = ric;
