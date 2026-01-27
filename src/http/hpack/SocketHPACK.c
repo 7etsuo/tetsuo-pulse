@@ -322,6 +322,22 @@ decode_int_continuation (const unsigned char *input,
     }
   while (byte_val & HPACK_INT_CONTINUATION_MASK);
 
+  /*
+   * Reject non-minimal encodings (RFC 7541 §5.1 strictness).
+   *
+   * If the final (terminating) byte has a zero payload and there were
+   * multiple continuation bytes, the encoding is non-minimal — the
+   * value could have been represented with fewer bytes. This wastes
+   * bandwidth and CPU, and is exploitable for micro-DoS by sending
+   * pathologically padded integers.
+   *
+   * Example: value 127 can be encoded as [0xFF, 0x00] (2 bytes) but
+   * a wasteful encoder might send [0xFF, 0x80, 0x00] (3 bytes) where
+   * the middle byte contributes nothing.
+   */
+  if (continuation_count > 1 && (byte_val & HPACK_INT_PAYLOAD_MASK) == 0)
+    return HPACK_ERROR_INTEGER;
+
   return HPACK_OK;
 }
 
