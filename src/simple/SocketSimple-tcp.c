@@ -515,7 +515,8 @@ Socket_simple_close (SocketSimple_Socket_T *sock)
     }
 #endif
 
-  if (s->dgram)
+  /* Only free dgram if we own it (DTLS client sessions don't own the dgram) */
+  if (s->dgram && s->owns_dgram)
     {
       SocketDgram_free (&s->dgram);
     }
