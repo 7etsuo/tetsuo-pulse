@@ -957,10 +957,14 @@ SocketQPACK_AckState_process_insert_count_inc (SocketQPACK_AckState_T state,
   if (increment == 0)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
+  /*
+   * RFC 9204 Section 4.4.3: Overflow in Known Received Count calculation
+   * is a decoder stream error. Do NOT saturate - return error (fixes #3460).
+   */
   if (!SocketSecurity_check_add (
           state->known_received_count, increment, &new_krc))
     {
-      new_krc = UINT64_MAX;
+      return QPACK_STREAM_ERR_INVALID_INDEX;
     }
 
   state->known_received_count = new_krc;
