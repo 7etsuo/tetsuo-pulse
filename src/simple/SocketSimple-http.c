@@ -272,9 +272,15 @@ add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
               char name[SOCKET_SIMPLE_MAX_HEADER_NAME_LEN];
               memcpy (name, *h, name_len);
               name[name_len] = '\0';
+              /* Reject header names containing CRLF to prevent injection */
+              if (strchr (name, '\r') || strchr (name, '\n'))
+                continue;
               const char *value = colon + 1;
               while (*value == ' ')
                 value++;
+              /* Reject header values containing CRLF to prevent injection */
+              if (strchr (value, '\r') || strchr (value, '\n'))
+                continue;
               SocketHTTPClient_Request_header (req, name, value);
             }
         }

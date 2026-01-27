@@ -29,6 +29,158 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
+/* ============================================================================
+ * PUBLIC SUFFIX LIST VALIDATION (RFC 6265 Section 5.3)
+ *
+ * Prevents cookies from being set on public suffixes (e.g., .com, .github.io)
+ * which would allow cross-subdomain attacks on shared hosting platforms.
+ *
+ * NOTE: This is a subset of common public suffixes. For complete protection,
+ * integrate the full Public Suffix List from https://publicsuffix.org/
+ * ============================================================================
+ */
+
+/* Common public suffixes that should never accept cookies.
+ * This list includes top-level domains and notable shared hosting platforms.
+ * Sorted by length for efficient matching. */
+static const char *const PUBLIC_SUFFIXES[] = {
+  /* High-risk shared hosting platforms */
+  "github.io",
+  "githubusercontent.com",
+  "herokuapp.com",
+  "azurewebsites.net",
+  "cloudfront.net",
+  "netlify.app",
+  "vercel.app",
+  "pages.dev",
+  "workers.dev",
+  "web.app",
+  "firebaseapp.com",
+  "appspot.com",
+  "blogspot.com",
+  "compute.amazonaws.com",
+  "elasticbeanstalk.com",
+  "s3.amazonaws.com",
+  "cloudflare.com",
+  "ngrok.io",
+  "repl.co",
+  "glitch.me",
+  "pythonanywhere.com",
+  "azureedge.net",
+  "b-cdn.net",
+
+  /* Common ccTLDs and gTLDs */
+  "com",
+  "org",
+  "net",
+  "edu",
+  "gov",
+  "mil",
+  "co.uk",
+  "org.uk",
+  "gov.uk",
+  "co.jp",
+  "co.kr",
+  "com.au",
+  "co.nz",
+  "co.in",
+  "com.br",
+  "com.cn",
+  "eu",
+  "de",
+  "fr",
+  "it",
+  "es",
+  "nl",
+  "be",
+  "ch",
+  "at",
+  "ru",
+  "cn",
+  "jp",
+  "kr",
+  "in",
+  "au",
+  "nz",
+  "br",
+  "mx",
+  "ca",
+  "uk",
+  "io",
+  "dev",
+  "app",
+
+  NULL /* Sentinel */
+};
+
+/**
+ * @brief Check if a domain exactly matches or is a public suffix.
+ *
+ * SECURITY: Prevents session fixation attacks on shared hosting platforms.
+ * A cookie domain like ".github.io" would affect all github.io subdomains.
+ *
+ * @param domain Cookie domain to check (with or without leading dot)
+ * @return 1 if domain is a public suffix (reject cookie), 0 if safe
+ */
+static int
+is_public_suffix (const char *domain)
+{
+  const char *effective_domain;
+  size_t domain_len;
+
+  if (domain == NULL)
+    return 0;
+
+  /* Skip leading dot for comparison */
+  effective_domain = (domain[0] == '.') ? domain + 1 : domain;
+  domain_len = strlen (effective_domain);
+
+  if (domain_len == 0)
+    return 1; /* Empty domain is effectively a public suffix */
+
+  /* Check exact match against public suffix list */
+  for (const char *const *ps = PUBLIC_SUFFIXES; *ps != NULL; ps++)
+    {
+      size_t ps_len = strlen (*ps);
+
+      /* Exact match: domain == public suffix */
+      if (domain_len == ps_len
+          && strcasecmp (effective_domain, *ps) == 0)
+        return 1;
+
+      /* Domain is subdomain of public suffix but would set cookie on parent
+       * e.g., cookie domain ".github.io" when request is from "user.github.io"
+       * The cookie domain itself is what matters - if it equals a PSL entry,
+       * reject it */
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Validate that cookie domain is not on the Public Suffix List.
+ *
+ * @param cookie_domain The domain attribute from Set-Cookie header
+ * @param request_host The host from the request URI (for logging)
+ * @return 0 if valid, -1 if cookie should be rejected
+ */
+static int
+validate_cookie_domain_psl (const char *cookie_domain, const char *request_host)
+{
+  if (is_public_suffix (cookie_domain))
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN,
+          SOCKET_LOG_COMPONENT,
+          "Set-Cookie rejected: domain '%s' is a public suffix "
+          "(request host: %s). This prevents cross-subdomain attacks.",
+          cookie_domain,
+          request_host ? request_host : "unknown");
+      return -1;
+    }
+  return 0;
+}
+
 #define SECONDS_PER_DAY 86400
 #define MAX_COOKIE_EXPIRY_FUTURE (365LL * SECONDS_PER_DAY)
 static const char COOKIE_SAMESITE_STRICT_STR[] = "Strict";
@@ -1404,6 +1556,15 @@ httpclient_parse_set_cookie (const char *value,
                        "domain-match request host '%s'",
                        cookie->domain,
                        request_uri->host);
+      return -1;
+    }
+
+  /* SECURITY: Validate cookie domain against Public Suffix List (RFC 6265)
+   * Prevents cross-subdomain attacks on shared hosting platforms */
+  if (validate_cookie_domain_psl (
+          cookie->domain, request_uri ? request_uri->host : NULL)
+      != 0)
+    {
       return -1;
     }
 
