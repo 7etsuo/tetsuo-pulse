@@ -97,6 +97,34 @@ ws_generate_handshake_keys (SocketWS_T ws)
   return 0;
 }
 
+/**
+ * @brief Validate string contains no CRLF characters (header injection attack
+ * prevention).
+ * @internal
+ * @param str String to validate (may be NULL)
+ * @param field_name Field name for error logging
+ * @return 0 if valid, -1 if CRLF found
+ */
+static int
+ws_validate_no_crlf (const char *str, const char *field_name)
+{
+  if (!str)
+    return 0;
+
+  for (const char *p = str; *p; p++)
+    {
+      if (*p == '\r' || *p == '\n')
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           SOCKET_LOG_COMPONENT,
+                           "CRLF injection attempt in %s",
+                           field_name);
+          return -1;
+        }
+    }
+  return 0;
+}
+
 static int
 ws_write_request_line (char *buf, size_t size, size_t *offset, const char *path)
 {
@@ -111,6 +139,10 @@ ws_write_host_header (
   int omit_port;
 
   assert (host);
+
+  /* Validate host for CRLF injection (security fix for issue #3489) */
+  if (ws_validate_no_crlf (host, "host") < 0)
+    return -1;
 
   omit_port
       = (port == SOCKETWS_DEFAULT_HTTP_PORT

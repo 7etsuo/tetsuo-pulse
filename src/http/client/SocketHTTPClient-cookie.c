@@ -31,6 +31,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
 /* ============================================================================
  * PUBLIC SUFFIX LIST VALIDATION (RFC 6265 Section 5.3)
+ * Security fix for issue #3462 - prevents session fixation on shared hosting.
  *
  * Prevents cookies from being set on public suffixes (e.g., .com, .github.io)
  * which would allow cross-subdomain attacks on shared hosting platforms.
