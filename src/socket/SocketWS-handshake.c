@@ -224,6 +224,13 @@ ws_write_subprotocol_header (char *buf,
   if (!subprotocols || !subprotocols[0])
     return 0;
 
+  /* Validate all subprotocols for CRLF injection (security fix for issue #3489) */
+  for (proto = subprotocols; *proto; proto++)
+    {
+      if (ws_validate_no_crlf (*proto, "subprotocol") < 0)
+        return -1;
+    }
+
   if (ws_snprintf_checked (buf, size, offset, "Sec-WebSocket-Protocol: ") < 0)
     return -1;
 
