@@ -488,9 +488,9 @@ check_bomb_limits (SocketDeflate_Inflater_T inf, size_t bytes_consumed)
   if (inf->max_output > 0 && inf->total_output > inf->max_output)
     return DEFLATE_ERROR_BOMB;
 
-  /* Check expansion ratio limit */
+  /* Check expansion ratio limit (use division to avoid overflow) */
   size_t total_input = inf->total_input + bytes_consumed;
-  if (total_input > 0 && inf->total_output > total_input * DEFLATE_MAX_RATIO)
+  if (total_input > 0 && inf->total_output / DEFLATE_MAX_RATIO > total_input)
     return DEFLATE_ERROR_BOMB;
 
   return DEFLATE_OK;
