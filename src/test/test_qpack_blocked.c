@@ -24,6 +24,19 @@
 #include "test/Test.h"
 
 /* ============================================================================
+ * HELPER MACROS
+ * ============================================================================
+ */
+
+/**
+ * @brief Compute the blocked byte cost for a section.
+ *
+ * The blocked manager tracks data_len + sizeof(SocketQPACK_BlockedSection)
+ * per section to account for metadata overhead (fixes #3470).
+ */
+#define BLOCKED_COST(data_len) ((data_len) + sizeof (SocketQPACK_BlockedSection))
+
+/* ============================================================================
  * HELPER STRUCTURES
  * ============================================================================
  */
@@ -193,7 +206,8 @@ TEST (qpack_queue_blocked_single_stream)
 
   ASSERT_EQ (result, QPACK_BLOCKED_OK);
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 1);
-  ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager), sizeof (data));
+  ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
+             BLOCKED_COST (sizeof (data)));
   ASSERT (SocketQPACK_is_stream_blocked (manager, 1));
   ASSERT (!SocketQPACK_is_stream_blocked (manager, 2));
 
@@ -219,7 +233,8 @@ TEST (qpack_queue_blocked_multiple_streams)
 
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 3);
   ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
-             sizeof (data1) + sizeof (data2) + sizeof (data3));
+             BLOCKED_COST (sizeof (data1)) + BLOCKED_COST (sizeof (data2))
+                 + BLOCKED_COST (sizeof (data3)));
   ASSERT (SocketQPACK_is_stream_blocked (manager, 1));
   ASSERT (SocketQPACK_is_stream_blocked (manager, 2));
   ASSERT (SocketQPACK_is_stream_blocked (manager, 3));
@@ -248,7 +263,8 @@ TEST (qpack_queue_blocked_same_stream_multiple_sections)
   /* Still only one stream, but multiple sections */
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 1);
   ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
-             sizeof (data1) + sizeof (data2) + sizeof (data3));
+             BLOCKED_COST (sizeof (data1)) + BLOCKED_COST (sizeof (data2))
+                 + BLOCKED_COST (sizeof (data3)));
 
   Arena_dispose (&arena);
 }
@@ -284,8 +300,13 @@ TEST (qpack_queue_blocked_limit_streams)
 TEST (qpack_queue_blocked_limit_bytes)
 {
   Arena_T arena = Arena_new ();
+  /*
+   * Each section costs data_len + sizeof(SocketQPACK_BlockedSection) overhead.
+   * Set limit to exactly 2 * BLOCKED_COST(5) so 2 sections fit but 3rd fails.
+   */
   SocketQPACK_BlockedConfig config
-      = { .max_blocked_streams = 100, .max_blocked_bytes = 10 };
+      = { .max_blocked_streams = 100,
+          .max_blocked_bytes = 2 * BLOCKED_COST (5) };
 
   SocketQPACK_BlockedManager_T manager
       = SocketQPACK_BlockedManager_new (arena, &config);
@@ -337,7 +358,7 @@ TEST (qpack_queue_blocked_limit_sections_per_stream)
   /* Verify stream still has 64 sections and didn't grow */
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 1);
   ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
-             QPACK_MAX_SECTIONS_PER_STREAM * sizeof (data));
+             QPACK_MAX_SECTIONS_PER_STREAM * BLOCKED_COST (sizeof (data)));
 
   Arena_dispose (&arena);
 }
@@ -645,7 +666,8 @@ TEST (qpack_cancel_blocked_stream_single)
              QPACK_BLOCKED_OK);
 
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 1);
-  ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager), sizeof (data));
+  ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
+             BLOCKED_COST (sizeof (data)));
 
   SocketQPACK_BlockedResult result
       = SocketQPACK_cancel_blocked_stream (manager, 1);
@@ -680,7 +702,7 @@ TEST (qpack_cancel_blocked_stream_multiple)
 
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (manager), 2);
   ASSERT_EQ (SocketQPACK_get_blocked_bytes (manager),
-             sizeof (data1) + sizeof (data3));
+             BLOCKED_COST (sizeof (data1)) + BLOCKED_COST (sizeof (data3)));
   ASSERT (SocketQPACK_is_stream_blocked (manager, 1));
   ASSERT (!SocketQPACK_is_stream_blocked (manager, 2));
   ASSERT (SocketQPACK_is_stream_blocked (manager, 3));
