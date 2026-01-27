@@ -425,12 +425,8 @@ Socket_simple_pool_accept_limited (SocketSimple_Pool_T pool,
   if (validate_listener_for_accept (pool, listener) != 0)
     return NULL;
 
-  /* Check pool state */
-  if (SocketPool_is_draining (pool->pool))
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_POOL_DRAINING, "Pool is draining");
-      return NULL;
-    }
+  /* Note: Core API handles draining state check atomically with accept
+   * to avoid TOCTOU race conditions. We map errors appropriately below. */
 
   /* Use rate-limited accept */
   TRY
