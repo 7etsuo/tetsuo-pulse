@@ -630,7 +630,7 @@ TEST (qpack_vector_b4_duplicate)
   ASSERT_EQ (sresult, QPACK_STREAM_OK);
 
   /* Write duplicate instruction for relative index 2 */
-  sresult = SocketQPACK_EncoderStream_write_duplicate (stream, 2);
+  sresult = SocketQPACK_EncoderStream_write_duplicate (stream, 2, 10, 0);
   ASSERT_EQ (sresult, QPACK_STREAM_OK);
 
   /* Verify wire format */

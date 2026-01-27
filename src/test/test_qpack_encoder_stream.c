@@ -678,8 +678,8 @@ test_write_duplicate_basic (void)
   stream = SocketQPACK_EncoderStream_new (arena, 2, 4096);
   SocketQPACK_EncoderStream_init (stream);
 
-  /* Duplicate index 0 (most recent entry) */
-  result = SocketQPACK_EncoderStream_write_duplicate (stream, 0);
+  /* Duplicate index 0 (most recent entry), insert_count=100, dropped=0 */
+  result = SocketQPACK_EncoderStream_write_duplicate (stream, 0, 100, 0);
   TEST_ASSERT (result == QPACK_STREAM_OK, "duplicate idx=0 success");
 
   buf = SocketQPACK_EncoderStream_get_buffer (stream, &len);
@@ -690,7 +690,7 @@ test_write_duplicate_basic (void)
   SocketQPACK_EncoderStream_reset_buffer (stream);
 
   /* Duplicate index 30 (fits in 5 bits) */
-  result = SocketQPACK_EncoderStream_write_duplicate (stream, 30);
+  result = SocketQPACK_EncoderStream_write_duplicate (stream, 30, 100, 0);
   TEST_ASSERT (result == QPACK_STREAM_OK, "duplicate idx=30 success");
   buf = SocketQPACK_EncoderStream_get_buffer (stream, &len);
   TEST_ASSERT (len == 1, "single byte for idx=30");
@@ -699,7 +699,7 @@ test_write_duplicate_basic (void)
   SocketQPACK_EncoderStream_reset_buffer (stream);
 
   /* Duplicate index 31 (needs continuation) */
-  result = SocketQPACK_EncoderStream_write_duplicate (stream, 31);
+  result = SocketQPACK_EncoderStream_write_duplicate (stream, 31, 100, 0);
   TEST_ASSERT (result == QPACK_STREAM_OK, "duplicate idx=31 success");
   buf = SocketQPACK_EncoderStream_get_buffer (stream, &len);
   TEST_ASSERT (len == 2, "two bytes for idx=31");
@@ -726,7 +726,7 @@ test_write_duplicate_not_init (void)
   stream = SocketQPACK_EncoderStream_new (arena, 2, 4096);
   /* Don't init */
 
-  result = SocketQPACK_EncoderStream_write_duplicate (stream, 0);
+  result = SocketQPACK_EncoderStream_write_duplicate (stream, 0, 100, 0);
   TEST_ASSERT (result == QPACK_STREAM_ERR_NOT_INIT, "uninitialized fails");
 
   Arena_dispose (&arena);
@@ -802,7 +802,7 @@ test_buffer_accumulation (void)
   len1 = SocketQPACK_EncoderStream_buffer_size (stream);
   TEST_ASSERT (len1 > 0, "first instruction written");
 
-  SocketQPACK_EncoderStream_write_duplicate (stream, 0);
+  SocketQPACK_EncoderStream_write_duplicate (stream, 0, 100, 0);
   len2 = SocketQPACK_EncoderStream_buffer_size (stream);
   TEST_ASSERT (len2 > len1, "second instruction accumulated");
 
@@ -931,7 +931,7 @@ test_instruction_null_params (void)
       false);
   TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "literal NULL fails");
 
-  result = SocketQPACK_EncoderStream_write_duplicate (NULL, 0);
+  result = SocketQPACK_EncoderStream_write_duplicate (NULL, 0, 100, 0);
   TEST_ASSERT (result == QPACK_STREAM_ERR_NULL_PARAM, "duplicate NULL fails");
 
   printf ("PASS\n");
@@ -960,9 +960,17 @@ test_large_values (void)
 
   SocketQPACK_EncoderStream_reset_buffer (stream);
 
-  /* Large duplicate index */
-  result = SocketQPACK_EncoderStream_write_duplicate (stream, (1ULL << 40));
+  /* Large duplicate index - valid with sufficient insert_count */
+  result = SocketQPACK_EncoderStream_write_duplicate (
+      stream, (1ULL << 40), (1ULL << 40) + 1, 0);
   TEST_ASSERT (result == QPACK_STREAM_OK, "large duplicate idx succeeds");
+
+  SocketQPACK_EncoderStream_reset_buffer (stream);
+
+  /* Large duplicate index - invalid (exceeds insert_count) */
+  result = SocketQPACK_EncoderStream_write_duplicate (stream, 100, 50, 0);
+  TEST_ASSERT (result == QPACK_STREAM_ERR_INVALID_INDEX,
+               "invalid large dup idx rejected");
 
   Arena_dispose (&arena);
   printf ("PASS\n");
