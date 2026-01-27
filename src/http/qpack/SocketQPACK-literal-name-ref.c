@@ -424,6 +424,10 @@ decode_literal_name_ref_internal (const unsigned char *input,
 
   pos += int_consumed;
 
+  /* Validate header value length against maximum (fixes #3474) */
+  if (value_len > SOCKETQPACK_MAX_HEADER_VALUE_SIZE)
+    return QPACK_ERR_HEADER_SIZE;
+
   /* Check if we have enough bytes for the value string */
   if (pos + value_len > input_len)
     return QPACK_INCOMPLETE;

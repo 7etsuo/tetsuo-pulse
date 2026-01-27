@@ -442,6 +442,10 @@ SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
 
   offset += consumed;
 
+  /* Validate header value length against maximum (fixes #3474) */
+  if (value_len > SOCKETQPACK_MAX_HEADER_VALUE_SIZE)
+    return QPACK_ERR_HEADER_SIZE;
+
   /* Validate value length */
   if (offset + value_len > buf_len)
     return QPACK_INCOMPLETE;

@@ -332,6 +332,10 @@ SocketQPACK_decode_literal_field_literal_name (const unsigned char *input,
 
   offset += consumed;
 
+  /* Validate header value length against maximum (fixes #3474) */
+  if (value_wire_len > SOCKETQPACK_MAX_HEADER_VALUE_SIZE)
+    return QPACK_ERR_HEADER_SIZE;
+
   /* Validate value length against remaining input */
   if (offset + value_wire_len > input_len)
     return QPACK_INCOMPLETE;

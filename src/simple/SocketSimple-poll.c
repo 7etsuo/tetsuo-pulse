@@ -19,11 +19,22 @@
  * ============================================================================
  */
 
+/**
+ * @brief Socket mapping entry for tracking Socket_T -> SocketSimple_Socket_T.
+ */
+typedef struct SocketMapEntry
+{
+  Socket_T core_sock;
+  SocketSimple_Socket_T simple_sock;
+  struct SocketMapEntry *next;
+} SocketMapEntry;
+
 struct SocketSimple_Poll
 {
   SocketPoll_T poll;
   int max_events;
   int default_timeout_ms;
+  SocketMapEntry *socket_map; /**< Linked list mapping core to simple sockets */
 };
 
 /* ============================================================================
@@ -101,6 +112,91 @@ core_to_simple_events (unsigned events)
 }
 
 /* ============================================================================
+ * Helper: Socket Map Operations
+ * ============================================================================
+ */
+
+/**
+ * @brief Add or update a socket mapping.
+ */
+static int
+socket_map_put (SocketSimple_Poll_T poll,
+                Socket_T core_sock,
+                SocketSimple_Socket_T simple_sock)
+{
+  /* Check if mapping already exists */
+  for (SocketMapEntry *entry = poll->socket_map; entry; entry = entry->next)
+    {
+      if (entry->core_sock == core_sock)
+        {
+          entry->simple_sock = simple_sock;
+          return 0;
+        }
+    }
+
+  /* Create new entry */
+  SocketMapEntry *new_entry = calloc (1, sizeof (*new_entry));
+  if (!new_entry)
+    return -1;
+
+  new_entry->core_sock = core_sock;
+  new_entry->simple_sock = simple_sock;
+  new_entry->next = poll->socket_map;
+  poll->socket_map = new_entry;
+  return 0;
+}
+
+/**
+ * @brief Lookup simple socket from core socket.
+ */
+static SocketSimple_Socket_T
+socket_map_get (SocketSimple_Poll_T poll, Socket_T core_sock)
+{
+  for (SocketMapEntry *entry = poll->socket_map; entry; entry = entry->next)
+    {
+      if (entry->core_sock == core_sock)
+        return entry->simple_sock;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Remove a socket mapping.
+ */
+static void
+socket_map_remove (SocketSimple_Poll_T poll, Socket_T core_sock)
+{
+  SocketMapEntry **pp = &poll->socket_map;
+  while (*pp)
+    {
+      if ((*pp)->core_sock == core_sock)
+        {
+          SocketMapEntry *to_free = *pp;
+          *pp = to_free->next;
+          free (to_free);
+          return;
+        }
+      pp = &(*pp)->next;
+    }
+}
+
+/**
+ * @brief Free all socket map entries.
+ */
+static void
+socket_map_free_all (SocketSimple_Poll_T poll)
+{
+  SocketMapEntry *entry = poll->socket_map;
+  while (entry)
+    {
+      SocketMapEntry *next = entry->next;
+      free (entry);
+      entry = next;
+    }
+  poll->socket_map = NULL;
+}
+
+/* ============================================================================
  * Poll Lifecycle
  * ============================================================================
  */
@@ -159,6 +255,9 @@ Socket_simple_poll_free (SocketSimple_Poll_T *poll)
 
   struct SocketSimple_Poll *p = *poll;
 
+  /* Free socket map entries */
+  socket_map_free_all (p);
+
   if (p->poll)
     {
       SocketPoll_free (&p->poll);
@@ -202,6 +301,18 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll,
   }
   END_TRY;
 
+  /* Store socket mapping for event retrieval */
+  if (socket_map_put (poll, core_sock, sock) != 0)
+    {
+      /* Rollback: remove from poll on mapping failure */
+      TRY { SocketPoll_del (poll->poll, core_sock); }
+      EXCEPT (SocketPoll_Failed) { /* Ignore cleanup failure */ }
+      END_TRY;
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                        "Failed to store socket mapping");
+      return -1;
+    }
+
   return 0;
 }
 
@@ -235,6 +346,14 @@ Socket_simple_poll_mod (SocketSimple_Poll_T poll,
   }
   END_TRY;
 
+  /* Update socket mapping (in case socket handle changed) */
+  if (socket_map_put (poll, core_sock, sock) != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                        "Failed to update socket mapping");
+      return -1;
+    }
+
   return 0;
 }
 
@@ -262,6 +381,9 @@ Socket_simple_poll_del (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
     return -1;
   }
   END_TRY;
+
+  /* Remove socket mapping */
+  socket_map_remove (poll, core_sock);
 
   return 0;
 }
@@ -353,12 +475,8 @@ Socket_simple_poll_wait (SocketSimple_Poll_T poll,
   int count = (nev < max_events) ? nev : max_events;
   for (int i = 0; i < count; i++)
     {
-      /* Note: We store the Socket_T in the sock field, but the Simple API
-       * expects SocketSimple_Socket_T. This is a limitation - the caller
-       * needs to track the mapping themselves via the data pointer.
-       * We set sock to NULL and rely on data for context. */
-      events[i].sock
-          = NULL; /* Caller must use data for socket identification */
+      /* Look up the SocketSimple_Socket_T from our internal mapping */
+      events[i].sock = socket_map_get (poll, core_events[i].socket);
       events[i].events = core_to_simple_events (core_events[i].events);
       events[i].data = core_events[i].data;
     }
