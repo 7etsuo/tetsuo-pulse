@@ -1021,6 +1021,15 @@ hpack_copy_indexed_name (SocketHPACK_Decoder_T decoder,
   if (result != HPACK_OK)
     return result;
 
+  /*
+   * RFC 7541 §7.1: Check decompression bomb limits BEFORE allocation.
+   * This prevents memory exhaustion from indexed name references that
+   * expand small indices into large string allocations.
+   */
+  result = check_decompression_bomb_incremental (decoder, name_hdr.name_len);
+  if (result != HPACK_OK)
+    return result;
+
   char *name_copy;
   SocketHPACK_Result alloc_result
       = allocate_string_buffer (arena, name_hdr.name_len, &name_copy);
@@ -1157,7 +1166,17 @@ hpack_decode_indexed_field (SocketHPACK_Decode_Ctx *ctx,
     return result;
   *ctx->pos += consumed;
 
-  return hpack_get_indexed (decoder, (size_t)index, ctx->header);
+  result = hpack_get_indexed (decoder, (size_t)index, ctx->header);
+  if (result != HPACK_OK)
+    return result;
+
+  /*
+   * RFC 7541 §7.1: Check decompression bomb limits BEFORE storing.
+   * Indexed headers can reference large entries in the dynamic table,
+   * so we must validate the expansion ratio before accepting them.
+   */
+  return check_decompression_bomb_incremental (
+      decoder, ctx->header->name_len + ctx->header->value_len);
 }
 
 static SocketHPACK_Result
@@ -1256,6 +1275,46 @@ check_decompression_bomb (SocketHPACK_Decoder_T decoder)
       double current_ratio = (double)decoder->decode_output_bytes
                              / (double)decoder->decode_input_bytes;
       if (current_ratio > decoder->max_expansion_ratio)
+        return HPACK_ERROR_BOMB;
+    }
+
+  return HPACK_OK;
+}
+
+/**
+ * Check decompression bomb limits BEFORE allocation (RFC 7541 §7.1).
+ *
+ * This function projects what the expansion would be after adding
+ * pending_output_bytes and rejects if limits would be exceeded.
+ * This prevents memory exhaustion attacks where large allocations
+ * occur before the bomb check triggers.
+ *
+ * @param decoder The HPACK decoder with current state
+ * @param pending_output_bytes Bytes about to be added (not yet allocated)
+ * @return HPACK_OK if safe to proceed, HPACK_ERROR_BOMB if limits exceeded
+ */
+static SocketHPACK_Result
+check_decompression_bomb_incremental (SocketHPACK_Decoder_T decoder,
+                                      size_t pending_output_bytes)
+{
+  size_t projected_output;
+
+  /* Check for overflow in addition */
+  if (pending_output_bytes > SIZE_MAX - decoder->decode_output_bytes)
+    return HPACK_ERROR_BOMB;
+
+  projected_output = decoder->decode_output_bytes + pending_output_bytes;
+
+  /* Check absolute limit BEFORE allocation */
+  if (projected_output > decoder->max_output_bytes)
+    return HPACK_ERROR_BOMB;
+
+  /* Check ratio BEFORE allocation */
+  if (decoder->decode_input_bytes > 0)
+    {
+      double projected_ratio = (double)projected_output
+                               / (double)decoder->decode_input_bytes;
+      if (projected_ratio > decoder->max_expansion_ratio)
         return HPACK_ERROR_BOMB;
     }
 

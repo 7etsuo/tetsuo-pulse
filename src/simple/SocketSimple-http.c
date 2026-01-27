@@ -51,6 +51,13 @@ init_global_http_client (void)
   SocketHTTPClient_config_defaults (&config);
   config.max_version = HTTP_VERSION_1_1;
 
+  /* Use aggressive timeouts for global client to mitigate DoS from slow
+   * servers. The global mutex means slow requests block all threads, so
+   * we limit exposure by using short timeouts. Users needing longer
+   * timeouts should use Socket_simple_http_new() for per-client control. */
+  config.connect_timeout_ms = 5000;  /* 5 seconds max connect */
+  config.request_timeout_ms = 15000; /* 15 seconds max request */
+
   TRY
   {
     g_http_client = SocketHTTPClient_new (&config);

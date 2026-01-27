@@ -1435,6 +1435,34 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
 }
 
 /**
+ * @brief Validate string contains no CRLF characters (header injection attack
+ * prevention).
+ * @internal
+ * @param str String to validate (may be NULL)
+ * @param field_name Field name for error logging
+ * @return 0 if valid, -1 if CRLF found
+ */
+static int
+ws_validate_no_crlf (const char *str, const char *field_name)
+{
+  if (!str)
+    return 0;
+
+  for (const char *p = str; *p; p++)
+    {
+      if (*p == '\r' || *p == '\n')
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           SOCKET_LOG_COMPONENT,
+                           "CRLF injection attempt in %s",
+                           field_name);
+          return -1;
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Parse WebSocket URL scheme (ws:// or wss://).
  * @internal
  * @param url Pointer to URL pointer (advanced past scheme on success)
@@ -1575,6 +1603,20 @@ ws_parse_url (const char *url, char *host, int *port, char *path, int *use_tls)
     return -1;
 
   ws_extract_path (path_start, path);
+
+  /* Validate host and path for CRLF injection (security fix for issue #3489)
+   */
+  if (ws_validate_no_crlf (host, "host") < 0)
+    {
+      SOCKET_ERROR_MSG ("CRLF injection detected in WebSocket host");
+      return -1;
+    }
+
+  if (ws_validate_no_crlf (path, "path") < 0)
+    {
+      SOCKET_ERROR_MSG ("CRLF injection detected in WebSocket path");
+      return -1;
+    }
 
   return 0;
 }
