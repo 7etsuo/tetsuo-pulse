@@ -67,7 +67,11 @@ verify_mode_to_openssl (TLSVerifyMode mode)
     case TLS_VERIFY_CLIENT_ONCE:
       return SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
     default:
-      return SSL_VERIFY_NONE;
+      /* Fail-secure: unknown mode defaults to peer verification enabled */
+      SOCKET_LOG_ERROR_MSG ("Invalid TLSVerifyMode: %d, defaulting to "
+                            "SSL_VERIFY_PEER for security",
+                            (int)mode);
+      return SSL_VERIFY_PEER;
     }
 }
 
