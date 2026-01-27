@@ -264,8 +264,12 @@ SocketTLSContext_enable_early_data (SocketTLSContext_T ctx,
         {
           ctx_raise_openssl_error ("Failed to set max early data");
         }
+
+      /* Secure by default: require replay protection callback for 0-RTT */
+      ctx->early_data_replay_required = 1;
+
       SOCKET_LOG_DEBUG_MSG ("Enabled 0-RTT early data on server context "
-                            "(max=%u bytes)",
+                            "(max=%u bytes, replay protection REQUIRED)",
                             early_data_size);
     }
   else
