@@ -334,6 +334,13 @@ typedef struct
   const char *
       *subprotocols; /**< NULL-terminated array of supported subprotocols. */
 
+  /* Origin validation (server only) */
+  const char *
+      *allowed_origins; /**< NULL-terminated array of allowed Origin values.
+                             If NULL or empty, all origins are allowed.
+                             Example: {"https://example.com", "https://app.example.com", NULL} */
+  int validate_origin;  /**< If non-zero, reject requests with missing or invalid Origin (default: 0). */
+
   /* Keepalive */
   int ping_interval_ms; /**< Auto-ping interval in ms (0=disabled, default: 0).
                          */

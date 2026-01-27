@@ -125,6 +125,45 @@ ws_validate_no_crlf (const char *str, const char *field_name)
   return 0;
 }
 
+/**
+ * @brief Validate Origin header against allowed origins list (RFC 6455 Section 10.2).
+ * @internal
+ * @param ws WebSocket context with config containing allowed_origins
+ * @param headers HTTP request headers
+ * @return 0 if valid, -1 if Origin missing (when required) or not in allowlist
+ */
+static int
+ws_validate_origin (SocketWS_T ws, SocketHTTP_Headers_T headers)
+{
+  const char *origin;
+  const char *const *p;
+
+  /* If validation not enabled, allow all */
+  if (!ws->config.validate_origin)
+    return 0;
+
+  origin = SocketHTTP_Headers_get (headers, "Origin");
+  if (!origin)
+    {
+      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Missing Origin header");
+      return -1;
+    }
+
+  /* If no allowlist specified, accept any origin */
+  if (!ws->config.allowed_origins || !ws->config.allowed_origins[0])
+    return 0;
+
+  /* Check if origin is in allowlist */
+  for (p = ws->config.allowed_origins; *p; p++)
+    {
+      if (strcmp (origin, *p) == 0)
+        return 0; /* Match found */
+    }
+
+  ws_set_error (ws, WS_ERROR_HANDSHAKE, "Origin not allowed: %s", origin);
+  return -1;
+}
+
 static int
 ws_write_request_line (char *buf, size_t size, size_t *offset, const char *path)
 {
@@ -1004,6 +1043,10 @@ ws_validate_client_upgrade_request (SocketWS_T ws,
     return -1;
 
   if (ws_validate_client_version (ws, request->headers) < 0)
+    return -1;
+
+  /* RFC 6455 Section 10.2: Validate Origin header for CSRF protection */
+  if (ws_validate_origin (ws, request->headers) < 0)
     return -1;
 
   return 0;
