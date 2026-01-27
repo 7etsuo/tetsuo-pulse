@@ -592,6 +592,44 @@ handle_401_auth_retry (SocketHTTPClient_T client,
 /* Redirect status helpers moved to client/SocketHTTPClient-retry.c */
 
 /**
+ * is_same_origin - Check if two URIs have the same origin
+ * @scheme1: First URI scheme (e.g., "https")
+ * @host1: First URI host
+ * @port1: First URI port
+ * @scheme2: Second URI scheme
+ * @host2: Second URI host
+ * @port2: Second URI port
+ *
+ * Returns: 1 if same origin, 0 otherwise
+ *
+ * Per the Fetch Standard, same-origin requires matching scheme, host, and port.
+ */
+static int
+is_same_origin (const char *scheme1, const char *host1, int port1,
+                const char *scheme2, const char *host2, int port2)
+{
+  /* Both schemes must match (case-insensitive) */
+  if (scheme1 == NULL || scheme2 == NULL)
+    return 0;
+  if (strcasecmp (scheme1, scheme2) != 0)
+    return 0;
+
+  /* Both hosts must match (case-insensitive per RFC 3986) */
+  if (host1 == NULL || host2 == NULL)
+    return 0;
+  if (strcasecmp (host1, host2) != 0)
+    return 0;
+
+  /* Normalize ports: use default ports if not specified */
+  if (port1 <= 0)
+    port1 = (strcasecmp (scheme1, "https") == 0) ? 443 : 80;
+  if (port2 <= 0)
+    port2 = (strcasecmp (scheme2, "https") == 0) ? 443 : 80;
+
+  return port1 == port2;
+}
+
+/**
  * handle_redirect - Handle redirect response
  * @client: HTTP client
  * @req: Request (modified on redirect)
@@ -647,6 +685,16 @@ handle_redirect (SocketHTTPClient_T client,
       new_uri.scheme = orig_scheme;
       new_uri.host = orig_host;
       new_uri.port = orig_port;
+    }
+
+  /* SECURITY: Strip credentials on cross-origin redirects per Fetch Standard.
+   * This prevents credential leakage when a compromised server redirects
+   * to an attacker-controlled domain. */
+  if (!is_same_origin (orig_scheme, orig_host, orig_port,
+                       new_uri.scheme, new_uri.host, new_uri.port))
+    {
+      SocketHTTP_Headers_remove (req->headers, "Authorization");
+      req->auth = NULL;
     }
 
   /* Update request URI */
