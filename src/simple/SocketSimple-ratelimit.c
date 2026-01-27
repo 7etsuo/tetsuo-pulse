@@ -66,6 +66,30 @@ get_monotonic_ns (void)
   return (uint64_t)ts.tv_sec * NANOSECONDS_PER_SECOND + (uint64_t)ts.tv_nsec;
 }
 
+/**
+ * @brief Get random jitter to add unpredictability to refill timing.
+ *
+ * Uses /dev/urandom for cryptographically secure randomness.
+ * Returns 0 on failure (fail-safe: no jitter is still secure).
+ *
+ * @return Random jitter in nanoseconds (0 to ~1ms range)
+ */
+static uint64_t
+get_random_jitter_ns (void)
+{
+  uint32_t rand_val = 0;
+  FILE *f = fopen ("/dev/urandom", "rb");
+  if (f)
+    {
+      size_t read_count = fread (&rand_val, sizeof (rand_val), 1, f);
+      fclose (f);
+      if (read_count != 1)
+        return 0;
+    }
+  /* Return jitter in 0-1ms range to prevent timing attacks */
+  return (uint64_t)(rand_val % NANOSECONDS_PER_MILLISECOND);
+}
+
 static void
 refill_tokens (SocketSimple_RateLimit_T limit)
 {
@@ -74,14 +98,32 @@ refill_tokens (SocketSimple_RateLimit_T limit)
 
   if (elapsed_ns > 0)
     {
-      double seconds = (double)elapsed_ns / (double)NANOSECONDS_PER_SECOND;
-      double new_tokens = seconds * limit->tokens_per_sec;
-      limit->tokens += new_tokens;
+      /*
+       * Use fixed-point arithmetic to avoid floating-point precision issues.
+       * Calculate: new_tokens = elapsed_ns * tokens_per_sec / NANOSECONDS_PER_SECOND
+       * To prevent overflow with large elapsed times, cap elapsed_ns.
+       */
+      uint64_t max_elapsed = NANOSECONDS_PER_SECOND * 60; /* Cap at 60 seconds */
+      if (elapsed_ns > max_elapsed)
+        elapsed_ns = max_elapsed;
+
+      /* Fixed-point calculation: (elapsed_ns * tokens_per_sec) / 1e9 */
+      uint64_t new_tokens_fixed
+          = (elapsed_ns * (uint64_t)limit->tokens_per_sec)
+            / NANOSECONDS_PER_SECOND;
+
+      limit->tokens += (double)new_tokens_fixed;
       if (limit->tokens > limit->bucket_size)
         {
           limit->tokens = limit->bucket_size;
         }
-      limit->last_refill_ns = now;
+
+      /*
+       * Add random jitter to refill timing to prevent timing attacks.
+       * This makes it harder for attackers to predict exact refill moments.
+       */
+      uint64_t jitter = get_random_jitter_ns ();
+      limit->last_refill_ns = now + jitter;
     }
 }
 
