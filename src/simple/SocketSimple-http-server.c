@@ -667,13 +667,40 @@ Socket_simple_http_server_response_error (SocketSimple_HTTPServerRequest_T req,
                                           const char *message)
 {
   char json[SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE];
-  char escaped[256];
+  char *escaped = NULL;
+  size_t msg_len;
+  size_t escaped_size;
 
   if (!req || !req->core_req)
     return;
 
-  json_escape_string (escaped, sizeof (escaped), message);
+  /*
+   * Dynamically size the escape buffer to prevent truncation that could
+   * produce invalid JSON (e.g., a truncated escape sequence like \u00).
+   * Worst case: every character becomes \uXXXX (6 bytes per input byte),
+   * plus NUL terminator.
+   */
+  msg_len = message ? strlen (message) : 0;
+  escaped_size = msg_len * 6 + 1;
+
+  /* Clamp to a reasonable maximum to prevent excessive allocation from
+   * extremely long error messages. */
+  if (escaped_size > SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE)
+    escaped_size = SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE;
+
+  escaped = malloc (escaped_size);
+  if (!escaped)
+    {
+      /* Fallback: use a safe static error message */
+      Socket_simple_http_server_response_json (
+          req, status, "{\"error\":\"internal error\"}");
+      return;
+    }
+
+  json_escape_string (escaped, escaped_size, message);
   snprintf (json, sizeof (json), "{\"error\":\"%s\"}", escaped);
+
+  free (escaped);
 
   Socket_simple_http_server_response_json (req, status, json);
 }
