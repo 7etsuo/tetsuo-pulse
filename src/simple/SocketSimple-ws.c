@@ -778,7 +778,19 @@ Socket_simple_ws_accept (void *http_req,
                     });
 
   if (exception_occurred)
-    return NULL;
+    {
+      /* The handshake may have sent a partial or complete 101 response.
+       * The connection is now in an inconsistent state - client expects
+       * WebSocket but we're returning to HTTP. Close the socket to prevent
+       * the HTTP server from trying to reuse this corrupted connection.
+       * See issue #3476 for details. */
+      if (conn->socket)
+        {
+          Socket_close (&conn->socket);
+          conn->socket = NULL;
+        }
+      return NULL;
+    }
 
   if (!ws)
     {
@@ -867,7 +879,14 @@ Socket_simple_ws_accept_raw (void *sock,
   END_TRY;
 
   if (exception_occurred)
-    return NULL;
+    {
+      /* The handshake may have sent a partial or complete 101 response.
+       * Close the socket to prevent caller from reusing it in an
+       * inconsistent state. See issue #3476 for details. */
+      if (socket)
+        Socket_close (&socket);
+      return NULL;
+    }
 
   if (!ws)
     {
