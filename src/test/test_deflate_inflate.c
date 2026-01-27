@@ -709,21 +709,22 @@ TEST (inflate_bomb_detection_ratio)
    *
    * The 1000:1 limit is a safety net, not a realistic compression bound.
    * This test verifies the ratio check mechanism EXISTS by:
-   * 1. Using a high-ratio dynamic stream (~68:1)
-   * 2. Verifying it passes (68 < 1000)
+   * 1. Using a high-ratio dynamic stream (~205:1)
+   * 2. Verifying it passes (205 < 1000)
    * 3. Verifying the ratio tracking updates correctly
    *
-   * The test uses the same 1024-zeros-in-15-bytes dynamic block from
+   * The test uses the same 4096-zeros-in-20-bytes dynamic block from
    * inflate_dynamic_block test.
    */
   static const uint8_t input[] = {
-    /* Dynamic DEFLATE: 1024 zero bytes compressed to 15 bytes (~68:1 ratio) */
-    0xED, 0xC1, 0x01, 0x01, 0x00, 0x00, 0x00, 0x80,
-    0x90, 0xFE, 0xAF, 0xEE, 0x08, 0x0A, 0x00
+    /* Dynamic DEFLATE: 4096 zero bytes compressed to 20 bytes (~205:1 ratio) */
+    0xED, 0xC1, 0x01, 0x0D, 0x00, 0x00, 0x00, 0xC2,
+    0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00,
+    0x00, 0x00, 0xF0, 0x6E,
   };
-  const size_t expected_len = 1024;
+  const size_t expected_len = 4096;
 
-  uint8_t output[2048];
+  uint8_t output[5000];
   size_t consumed, written;
   SocketDeflate_Result result;
   SocketDeflate_Inflater_T inf;
@@ -737,7 +738,7 @@ TEST (inflate_bomb_detection_ratio)
   result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input), &consumed,
                                            output, sizeof (output), &written);
 
-  /* Should succeed - ratio ~68:1 is well under the 1000:1 limit */
+  /* Should succeed - ratio ~205:1 is well under the 1000:1 limit */
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, expected_len);
 
@@ -745,14 +746,14 @@ TEST (inflate_bomb_detection_ratio)
   size_t total_in = SocketDeflate_Inflater_total_in (inf);
   size_t total_out = SocketDeflate_Inflater_total_out (inf);
 
-  /* Ratio should be approximately 1024/15 ≈ 68 */
+  /* Ratio should be approximately 4096/20 ≈ 205 */
   ASSERT (total_in > 0);
   ASSERT (total_out >= expected_len);
   ASSERT (total_out < total_in * 1000); /* Would fail if ratio > 1000:1 */
 
-  /* Verify actual ratio is high (> 50:1) proving we're testing a real bomb-like scenario */
+  /* Verify actual ratio is high (> 100:1) proving we're testing a real bomb-like scenario */
   size_t ratio = total_out / total_in;
-  ASSERT (ratio >= 50);
+  ASSERT (ratio >= 100);
 }
 
 /*
@@ -891,27 +892,28 @@ TEST (inflate_dynamic_block)
    * Test BTYPE=10 (dynamic Huffman) block decoding.
    *
    * This test vector is the raw DEFLATE stream (no zlib wrapper) for
-   * compressing 1024 zero bytes. Python zlib at level 9 chooses dynamic
+   * compressing 4096 zero bytes. Python zlib at level 9 chooses dynamic
    * encoding for this input due to the highly skewed byte distribution.
    *
    * Generated with:
    *   import zlib
-   *   data = b'\x00' * 1024
-   *   compressed = zlib.compress(data, 9)
-   *   raw = compressed[2:-4]  # Remove 2-byte zlib header, 4-byte adler32
-   *   print(', '.join(f'0x{b:02X}' for b in raw))
+   *   data = b'\x00' * 4096
+   *   co = zlib.compressobj(9, zlib.DEFLATED, -15)
+   *   compressed = co.compress(data) + co.flush()
+   *   print(', '.join(f'0x{b:02X}' for b in compressed))
    *
    * First byte 0xED = 0b11101101:
    *   - Bit 0: BFINAL = 1
    *   - Bits 1-2: BTYPE = 10 (dynamic)
    */
   static const uint8_t input[] = {
-    0xED, 0xC1, 0x01, 0x01, 0x00, 0x00, 0x00, 0x80,
-    0x90, 0xFE, 0xAF, 0xEE, 0x08, 0x0A, 0x00
+    0xED, 0xC1, 0x01, 0x0D, 0x00, 0x00, 0x00, 0xC2,
+    0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00,
+    0x00, 0x00, 0xF0, 0x6E,
   };
-  const size_t expected_len = 1024;
+  const size_t expected_len = 4096;
 
-  uint8_t output[2048];
+  uint8_t output[5000];
   size_t consumed, written;
   SocketDeflate_Result result;
   SocketDeflate_Inflater_T inf;
@@ -977,34 +979,33 @@ TEST (inflate_mixed_block_types)
 {
   /*
    * Test that multiple block types can be combined in a single stream.
-   * Block 1: Stored (BTYPE=00)
-   * Block 2: Fixed Huffman (BTYPE=01)
-   * Block 3: Stored (BTYPE=00) - BFINAL=1
+   * Block 1: Stored (BTYPE=00), "ABC"
+   * Block 2: Fixed Huffman (BTYPE=01), 'D'
+   * Block 3: Stored (BTYPE=00), "EF" - BFINAL=1
+   *
+   * This test data was constructed at the bit level to handle the
+   * non-byte-aligned transition between the fixed block and the
+   * subsequent stored block. The build_* helpers produce byte-aligned
+   * output which doesn't work for multi-block streams with non-stored blocks.
    */
-  uint8_t input[256];
+  static const uint8_t input[] = {
+    /* Block 1: stored "ABC" (BFINAL=0) */
+    0x00, 0x03, 0x00, 0xFC, 0xFF, 0x41, 0x42, 0x43,
+    /* Block 2: fixed 'D' (BFINAL=0) - 3+8+7=18 bits */
+    0x72, 0x01,
+    /* Block 3: stored "EF" (BFINAL=1) - starts at bit 2 of next byte */
+    0x04, 0x02, 0x00, 0xFD, 0xFF, 0x45, 0x46,
+  };
   uint8_t output[256];
-  size_t pos = 0;
   size_t consumed, written;
   SocketDeflate_Result result;
   SocketDeflate_Inflater_T inf;
 
   ensure_tables ();
 
-  /* Block 1: Stored, "ABC" */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"ABC", 3, 0);
-
-  /* Block 2: Fixed Huffman, single literal 'D' */
-  pos += build_fixed_block_single_literal (input + pos, sizeof (input) - pos,
-                                           'D', 0);
-
-  /* Block 3: Stored, "EF" */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"EF", 2, 1);
-
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input), &consumed,
+                                           output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 6);
@@ -1177,7 +1178,7 @@ TEST (inflate_max_distance_32768)
    *
    * Distance code 29 = base 24577 + 13 extra bits (max 8191) = up to 32768
    */
-  uint8_t input[256];
+  uint8_t input[520]; /* Must hold 5-byte header + 512-byte data */
   uint8_t *large_output;
   size_t pos = 0;
   size_t consumed, written;
@@ -1231,7 +1232,7 @@ TEST (inflate_window_wraparound)
    * Create output > 32KB to force window wraparound, then verify
    * back-references still work after the wrap.
    */
-  uint8_t input[256];
+  uint8_t input[270]; /* Must hold 5-byte header + 256-byte data */
   uint8_t *large_output;
   size_t pos = 0;
   size_t consumed, written;
