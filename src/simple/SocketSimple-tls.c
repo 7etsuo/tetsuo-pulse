@@ -421,12 +421,18 @@ Socket_simple_session_save (SocketSimple_Socket_T sock,
   if (!sock || !len)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      /* Clear buffer on error to prevent partial session data leakage */
+      if (buf && len && *len > 0)
+        SocketCrypto_secure_clear (buf, *len);
       return -1;
     }
 
   if (!sock->socket || !sock->is_tls)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS not enabled");
+      /* Clear buffer on error to prevent partial session data leakage */
+      if (buf && *len > 0)
+        SocketCrypto_secure_clear (buf, *len);
       return -1;
     }
 
@@ -435,6 +441,9 @@ Socket_simple_session_save (SocketSimple_Socket_T sock,
     {
       simple_set_error (SOCKET_SIMPLE_ERR_TLS,
                         "No session available or handshake incomplete");
+      /* Clear buffer on error to prevent partial session data leakage */
+      if (buf && *len > 0)
+        SocketCrypto_secure_clear (buf, *len);
     }
   return ret;
 }
