@@ -883,14 +883,12 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
    * validation */
   if (has_te)
     {
-      /* Early return: no chunked encoding */
+      /* Early return: no chunked encoding - always reject unsupported transfer
+       * codings per RFC 9112 Section 7. Falling back to read-until-close can
+       * cause request smuggling when deployed behind proxies that interpret
+       * Transfer-Encoding differently. */
       if (!has_chunked_encoding (parser->headers))
-        {
-          if (parser->config.strict_mode)
-            return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
-          set_body_mode_until_close (parser);
-          return HTTP1_OK;
-        }
+        return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
 
       /* Early return: unsupported transfer codings in strict mode */
       if (parser->config.strict_mode

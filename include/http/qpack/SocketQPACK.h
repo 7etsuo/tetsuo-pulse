@@ -86,6 +86,17 @@
 #define SOCKETQPACK_MAX_BLOCKED_STREAMS 100
 #endif
 
+/**
+ * @brief Maximum header value size in bytes.
+ *
+ * RFC 9204 Section 2.2.3: Implementations should enforce limits on header
+ * sizes. This constant defines the maximum size for an individual header
+ * value to prevent memory exhaustion attacks.
+ */
+#ifndef SOCKETQPACK_MAX_HEADER_VALUE_SIZE
+#define SOCKETQPACK_MAX_HEADER_VALUE_SIZE (64 * 1024) /* 64KB */
+#endif
+
 /** RFC 9204 Section 3.2: Entry overhead is 32 bytes (same as HPACK) */
 #define SOCKETQPACK_ENTRY_OVERHEAD 32
 
