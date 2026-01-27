@@ -625,10 +625,25 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
   }
   END_TRY;
 
-  /* For DTLS, we return the same socket handle after handshake
-   * (connectionless - unlike TCP accept) */
-  server_sock->is_connected = 1;
-  return server_sock;
+  /* Create a new client session handle that shares the dgram but doesn't own it.
+   * This prevents use-after-free when the caller closes the "client" connection:
+   * closing the client handle will NOT close the underlying server socket. */
+  SocketSimple_Socket_T client_handle = calloc (1, sizeof (*client_handle));
+  if (!client_handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                        "Failed to allocate client handle");
+      return NULL;
+    }
+
+  client_handle->dgram = server_sock->dgram; /* Share the dgram */
+  client_handle->is_tls = 1;
+  client_handle->is_connected = 1;
+  client_handle->is_server = 0;  /* This is a client session, not a server */
+  client_handle->is_udp = 1;
+  client_handle->owns_dgram = 0; /* Does NOT own the dgram - server does */
+
+  return client_handle;
 }
 
 /*============================================================================
