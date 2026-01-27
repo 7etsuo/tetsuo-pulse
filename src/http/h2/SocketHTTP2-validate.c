@@ -582,6 +582,59 @@ http2_validate_authority_header (const SocketHPACK_Header *h,
     return -1;
 
   state->has_authority = 1;
+
+  /* :authority can be empty for certain request types (e.g., asterisk-form) */
+  if (h->value_len == 0)
+    return 0;
+
+  /*
+   * RFC 9113 §8.3.1: userinfo (user:pass@) MUST NOT be present in :authority
+   * RFC 9110 §4.2.4: HTTP semantics forbid userinfo for security reasons
+   */
+  int in_brackets = 0; /* Track IPv6 literal brackets */
+  const char *port_sep = NULL;
+
+  for (size_t i = 0; i < h->value_len; i++)
+    {
+      unsigned char c = (unsigned char)h->value[i];
+
+      /* Reject control characters (0x00-0x1F) and DEL (0x7F) */
+      if (c < 0x20 || c == 0x7F)
+        return -1;
+
+      /* Track IPv6 literal brackets to correctly identify port separator */
+      if (c == '[')
+        in_brackets = 1;
+      else if (c == ']')
+        in_brackets = 0;
+
+      /* '@' indicates userinfo - protocol violation */
+      if (c == '@')
+        return -1;
+
+      /* Track last colon outside brackets as potential port separator */
+      if (c == ':' && !in_brackets)
+        port_sep = &h->value[i];
+    }
+
+  /* If port separator found, validate port is numeric */
+  if (port_sep != NULL)
+    {
+      size_t port_start = (size_t)(port_sep - h->value) + 1;
+      size_t port_len = h->value_len - port_start;
+
+      /* Port cannot be empty if colon is present */
+      if (port_len == 0)
+        return -1;
+
+      /* Validate all port characters are digits */
+      for (size_t i = port_start; i < h->value_len; i++)
+        {
+          if (h->value[i] < '0' || h->value[i] > '9')
+            return -1;
+        }
+    }
+
   return 0;
 }
 

@@ -284,6 +284,11 @@ SocketHPACK_int_encode (uint64_t value,
   return encode_int_continuation (value - max_prefix, output, 1, output_size);
 }
 
+/* Forward declaration for decompression bomb check (used before definition) */
+static SocketHPACK_Result
+check_decompression_bomb_incremental (SocketHPACK_Decoder_T decoder,
+                                      size_t pending_output_bytes);
+
 static SocketHPACK_Result
 decode_int_continuation (const unsigned char *input,
                          size_t input_len,
