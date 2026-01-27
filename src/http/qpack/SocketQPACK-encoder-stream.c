@@ -952,7 +952,10 @@ SocketQPACK_decode_insert_nameref (const unsigned char *input,
     {
       /* Huffman-decode the value */
       /* Allocate decode buffer (worst case 2x expansion) */
-      size_t decode_buf_size = value_len * 2;
+      /* Check for multiplication overflow before allocation (fixes #3457) */
+      size_t decode_buf_size;
+      if (!SocketSecurity_check_multiply (value_len, 2, &decode_buf_size))
+        return QPACK_STREAM_ERR_INTERNAL;
       if (decode_buf_size < 64)
         decode_buf_size = 64;
 
