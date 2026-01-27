@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 
