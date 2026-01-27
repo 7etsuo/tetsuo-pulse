@@ -287,8 +287,12 @@ SocketQPACK_decode_literal_postbase_name (
       /*
        * Huffman-decode the value into arena-allocated buffer.
        * Estimate decoded size as 2x encoded size (typical expansion).
+       * Check for multiplication overflow before allocation (fixes #3457).
        */
-      size_t max_decoded = value_len * 2 + 16;
+      size_t max_decoded;
+      if (!SocketSecurity_check_multiply (value_len, 2, &max_decoded))
+        return QPACK_ERR_HEADER_SIZE;
+      max_decoded += 16;
       unsigned char *decoded_value = ALLOC (arena, max_decoded);
       if (decoded_value == NULL)
         return QPACK_ERR_INTERNAL;

@@ -593,6 +593,33 @@ http2_validate_path_header (const SocketHPACK_Header *h,
     return -1;
 
   state->has_path = 1;
+
+  /* RFC 9113 §8.3.1: :path MUST NOT be empty for non-CONNECT requests */
+  if (h->value_len == 0)
+    return -1;
+
+  /*
+   * RFC 9113 §8.3.1: :path must be in one of these forms:
+   * - origin-form: starts with "/" (e.g., "/index.html", "/api/users?id=1")
+   * - asterisk-form: exactly "*" (for OPTIONS method only, checked elsewhere)
+   */
+  if (h->value[0] != '/' && !(h->value_len == 1 && h->value[0] == '*'))
+    return -1;
+
+  /*
+   * RFC 9113 §8.2.1: Validate path contains no prohibited characters.
+   * Control characters 0x00-0x1F (except HTAB in query strings) and DEL (0x7F)
+   * are prohibited. NUL, CR, LF already checked by http2_field_has_prohibited_chars
+   * in the general header validation, but we add extra safety here.
+   */
+  for (size_t i = 0; i < h->value_len; i++)
+    {
+      unsigned char c = (unsigned char)h->value[i];
+      /* Reject control characters 0x00-0x1F (except HTAB 0x09) and DEL 0x7F */
+      if ((c < 0x20 && c != '\t') || c == 0x7F)
+        return -1;
+    }
+
   return 0;
 }
 
