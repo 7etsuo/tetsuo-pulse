@@ -36,6 +36,26 @@ count_addrinfo (struct addrinfo *res)
 }
 
 /**
+ * @brief Securely clear memory before freeing to prevent data leakage.
+ * @param ptr Pointer to memory to clear.
+ * @param len Length of memory region.
+ */
+static void
+secure_clear_memory (void *ptr, size_t len)
+{
+  if (!ptr || len == 0)
+    return;
+
+#ifdef __linux__
+  explicit_bzero (ptr, len);
+#else
+  volatile unsigned char *vptr = (volatile unsigned char *)ptr;
+  while (len--)
+    *vptr++ = 0;
+#endif
+}
+
+/**
  * @brief Perform synchronous DNS resolution with exception handling.
  * @param dns The DNS resolver instance.
  * @param hostname The hostname to resolve.
@@ -119,9 +139,11 @@ convert_addrinfo_to_result (struct addrinfo *res,
           result->addresses[i] = strdup (host);
           if (!result->addresses[i])
             {
-              /* Free already allocated addresses on strdup failure */
+              /* Clear and free already allocated addresses on strdup failure */
               for (int j = 0; j < i; j++)
                 {
+                  secure_clear_memory (result->addresses[j],
+                                       strlen (result->addresses[j]));
                   free (result->addresses[j]);
                 }
               free (result->addresses);
@@ -394,7 +416,12 @@ Socket_simple_dns_result_free (SocketSimple_DNSResult *result)
     {
       for (int i = 0; i < result->count; i++)
         {
-          free (result->addresses[i]);
+          if (result->addresses[i])
+            {
+              secure_clear_memory (result->addresses[i],
+                                   strlen (result->addresses[i]));
+              free (result->addresses[i]);
+            }
         }
       free (result->addresses);
     }
