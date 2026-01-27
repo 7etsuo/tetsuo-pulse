@@ -249,6 +249,14 @@ SocketTLSContext_enable_session_tickets (T ctx,
                            "Session ticket key pointer cannot be NULL");
     }
 
+  /* Reject all-zeros key - matches DTLS cookie secret validation */
+  static const unsigned char zeros[SOCKET_TLS_TICKET_KEY_LEN] = { 0 };
+  if (SocketCrypto_secure_compare (key, zeros, SOCKET_TLS_TICKET_KEY_LEN) == 0)
+    {
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Session ticket key cannot be all zeros");
+    }
+
   if (!configure_ticket_keys (ctx, key, key_len))
     {
       ctx_raise_openssl_error ("Failed to set session ticket keys");
