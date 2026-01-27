@@ -914,9 +914,12 @@ set(TEST_SOURCES
     test_deflate_huffgen
     test_deflate_roundtrip
     test_deflate_deflater
+    test_deflate_edge_cases
     # gzip tests (RFC 1952)
     test_deflate_crc32
     test_deflate_gzip
+    # zlib interoperability tests (issue #3422) - requires system zlib
+    test_deflate_interop
     # WebSocket native DEFLATE tests (RFC 7692)
     test_ws_deflate_native
     # QUIC tests (RFC 9000)
