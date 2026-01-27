@@ -192,8 +192,9 @@ remove_blocked_section (SocketQPACK_BlockedManager_T manager,
   if (index >= stream->section_count)
     return;
 
-  /* Update byte counts */
-  size_t section_bytes = stream->sections[index].data_len;
+  /* Update byte counts (including section structure overhead, fixes #3470) */
+  size_t section_bytes = stream->sections[index].data_len
+                         + sizeof (SocketQPACK_BlockedSection);
   stream->total_bytes -= section_bytes;
   manager->total_blocked_bytes -= section_bytes;
 
@@ -294,6 +295,7 @@ SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
   SocketQPACK_BlockedSection *section;
   unsigned char *data_copy;
   size_t new_total;
+  size_t section_cost;
   bool is_new_stream;
 
   if (manager == NULL)
@@ -302,9 +304,17 @@ SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
   if (data_len > 0 && data == NULL)
     return QPACK_BLOCKED_ERR_NULL_PARAM;
 
-  /* Check byte limit */
+  /*
+   * Check byte limit - include section structure overhead (fixes #3470).
+   * Each blocked section consumes data + metadata (SocketQPACK_BlockedSection).
+   * This prevents memory exhaustion via many small blocked sections.
+   */
+  if (!SocketSecurity_check_add (data_len, sizeof (SocketQPACK_BlockedSection),
+                                  &section_cost))
+    return QPACK_BLOCKED_LIMIT_BYTES;
+
   if (!SocketSecurity_check_add (
-          manager->total_blocked_bytes, data_len, &new_total))
+          manager->total_blocked_bytes, section_cost, &new_total))
     return QPACK_BLOCKED_LIMIT_BYTES;
 
   if (new_total > manager->max_blocked_bytes)
@@ -371,9 +381,9 @@ SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
   section->data_len = data_len;
   stream->section_count++;
 
-  /* Update byte counts */
-  stream->total_bytes += data_len;
-  manager->total_blocked_bytes += data_len;
+  /* Update byte counts (including section structure overhead) */
+  stream->total_bytes += section_cost;
+  manager->total_blocked_bytes += section_cost;
 
   /* Update minimum RIC */
   if (ric < stream->min_required_insert_count)
