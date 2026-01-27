@@ -355,7 +355,9 @@ extern SocketQPACKStream_Result SocketQPACK_EncoderStream_write_insert_literal (
  */
 extern SocketQPACKStream_Result
 SocketQPACK_EncoderStream_write_duplicate (SocketQPACK_EncoderStream_T stream,
-                                           uint64_t rel_index);
+                                           uint64_t rel_index,
+                                           uint64_t insert_count,
+                                           uint64_t dropped_count);
 
 /* ============================================================================
  * BUFFER MANAGEMENT

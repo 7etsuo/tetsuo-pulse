@@ -270,8 +270,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (res == QPACK_STREAM_OK)
                 {
                   uint64_t rel_index = val1 % 100;
-                  res = SocketQPACK_EncoderStream_write_duplicate (stream,
-                                                                   rel_index);
+                  res = SocketQPACK_EncoderStream_write_duplicate (
+                      stream, rel_index, 100, 0);
                   (void)res;
 
                   /* Reset buffer and write more */

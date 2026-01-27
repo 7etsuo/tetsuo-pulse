@@ -675,8 +675,12 @@ SocketQPACK_EncoderStream_write_insert_literal (
 
 SocketQPACKStream_Result
 SocketQPACK_EncoderStream_write_duplicate (SocketQPACK_EncoderStream_T stream,
-                                           uint64_t rel_index)
+                                           uint64_t rel_index,
+                                           uint64_t insert_count,
+                                           uint64_t dropped_count)
 {
+  SocketQPACK_Result qpack_result;
+
   /*
    * RFC 9204 Section 4.3.4: Duplicate
    *
@@ -694,9 +698,19 @@ SocketQPACK_EncoderStream_write_duplicate (SocketQPACK_EncoderStream_T stream,
   if (!stream->initialized)
     return QPACK_STREAM_ERR_NOT_INIT;
 
-  /* Note: We don't validate rel_index here because we don't track
-   * the dynamic table state. The caller (encoder) is responsible
-   * for ensuring rel_index is valid. */
+  /*
+   * Validate relative index (defense-in-depth).
+   *
+   * Ensure rel_index references a valid, non-evicted entry before
+   * encoding. This prevents state corruption from propagating invalid
+   * indices to the decoder, which would cause a
+   * QPACK_ENCODER_STREAM_ERROR connection termination.
+   */
+  qpack_result
+      = SocketQPACK_is_valid_relative_encoder (insert_count, dropped_count,
+                                               rel_index);
+  if (qpack_result != QPACK_OK)
+    return QPACK_STREAM_ERR_INVALID_INDEX;
 
   return encode_and_append_int (stream,
                                 rel_index,
