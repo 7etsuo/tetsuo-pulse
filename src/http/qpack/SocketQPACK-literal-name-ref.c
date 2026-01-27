@@ -456,7 +456,10 @@ decode_literal_name_ref_internal (const unsigned char *input,
       else
         {
           /* Allocate decode buffer (worst case ~2x expansion) */
-          size_t decode_buf_size = value_len * 2;
+          /* Check for multiplication overflow before allocation (fixes #3457) */
+          size_t decode_buf_size;
+          if (!SocketSecurity_check_multiply (value_len, 2, &decode_buf_size))
+            return QPACK_ERR_HEADER_SIZE;
           if (decode_buf_size < 64)
             decode_buf_size = 64;
 
