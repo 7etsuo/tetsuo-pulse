@@ -277,6 +277,10 @@ SocketQPACK_decode_literal_postbase_name (
 
   offset += int_consumed;
 
+  /* Validate header value length against maximum (fixes #3474) */
+  if (value_len > SOCKETQPACK_MAX_HEADER_VALUE_SIZE)
+    return QPACK_ERR_HEADER_SIZE;
+
   /* Validate value data is present */
   if (offset + value_len > input_len)
     return QPACK_INCOMPLETE;

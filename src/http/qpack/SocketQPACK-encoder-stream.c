@@ -935,6 +935,10 @@ SocketQPACK_decode_insert_nameref (const unsigned char *input,
 
   pos += int_consumed;
 
+  /* Validate header value length against maximum (fixes #3474) */
+  if (value_len > SOCKETQPACK_MAX_HEADER_VALUE_SIZE)
+    return QPACK_STREAM_ERR_INTERNAL;
+
   /* Check if we have enough bytes for the value string */
   if (pos + value_len > input_len)
     return QPACK_STREAM_ERR_BUFFER_FULL;

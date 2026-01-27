@@ -860,8 +860,10 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
 
   /* RFC 6455 Section 7.4.1: Validate received close code.
    * If code is present but invalid (1004-1006, 1015, <1000, >=5000),
-   * we MUST fail the WebSocket connection with a protocol error. */
-  if (code != WS_CLOSE_NO_STATUS && !ws_is_valid_close_code (code))
+   * we MUST fail the WebSocket connection with a protocol error.
+   * Note: Use 'parsed' to check if code was actually sent, not value comparison.
+   * This catches 1005/1006 explicitly sent on wire (which is always invalid). */
+  if (parsed && !ws_is_valid_close_code (code))
     {
       ws_set_error (ws, WS_ERROR_PROTOCOL, "Received invalid close code: %d",
                     (int)code);
