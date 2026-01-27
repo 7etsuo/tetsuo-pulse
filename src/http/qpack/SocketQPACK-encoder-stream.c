@@ -23,6 +23,7 @@
 
 #include <string.h>
 
+#include "http/qpack/SocketQPACK.h"
 #include "http/qpack/SocketQPACKEncoderStream.h"
 
 #include "core/SocketSecurity.h"
