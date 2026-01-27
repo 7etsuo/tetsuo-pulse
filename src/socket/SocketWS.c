@@ -847,6 +847,18 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
       reason_len = 0;
     }
 
+  /* RFC 6455 Section 7.4.1: Validate received close code.
+   * If code is present but invalid (1004-1006, 1015, <1000, >=5000),
+   * we MUST fail the WebSocket connection with a protocol error. */
+  if (code != WS_CLOSE_NO_STATUS && !ws_is_valid_close_code (code))
+    {
+      ws_set_error (ws, WS_ERROR_PROTOCOL, "Received invalid close code: %d",
+                    (int)code);
+      ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Invalid close code received");
+      ws->state = WS_STATE_CLOSED;
+      return -1;
+    }
+
   /* Store peer's close info */
   ws->close_received = 1;
   if (code != WS_CLOSE_NO_STATUS)
