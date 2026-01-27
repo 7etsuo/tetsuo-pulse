@@ -20,10 +20,24 @@
  * ============================================================================
  */
 
+/**
+ * @brief Linked list node for tracking callback contexts.
+ *
+ * Enables cleanup of CallbackContext allocations when async operations
+ * are cancelled (the normal callback path won't fire to free them).
+ */
+typedef struct ContextTracker
+{
+  unsigned request_id;
+  struct CallbackContext *ctx;
+  struct ContextTracker *next;
+} ContextTracker;
+
 struct SocketSimple_Async
 {
   Arena_T arena;
   SocketAsync_T async;
+  ContextTracker *contexts; /**< Tracked contexts for cancel cleanup */
 };
 
 /* ============================================================================
@@ -55,7 +69,93 @@ struct CallbackContext
   SocketSimple_AsyncCallback user_cb;
   void *user_data;
   SocketSimple_Socket_T simple_socket;
+  struct SocketSimple_Async *async; /**< Back-pointer for tracker removal */
+  unsigned request_id;              /**< Request ID for tracker lookup */
 };
+
+/* ============================================================================
+ * Helper: Context Tracker for Cancellation Cleanup
+ * ============================================================================
+ */
+
+/**
+ * @brief Add a context to the tracker.
+ */
+static void
+context_tracker_add (struct SocketSimple_Async *async,
+                     unsigned request_id,
+                     struct CallbackContext *ctx)
+{
+  ContextTracker *entry = calloc (1, sizeof (*entry));
+  if (!entry)
+    return; /* Best effort - leak is better than crash */
+
+  entry->request_id = request_id;
+  entry->ctx = ctx;
+  entry->next = async->contexts;
+  async->contexts = entry;
+}
+
+/**
+ * @brief Remove a context from the tracker (does not free the context).
+ */
+static void
+context_tracker_remove (struct SocketSimple_Async *async, unsigned request_id)
+{
+  ContextTracker **pp = &async->contexts;
+  while (*pp)
+    {
+      if ((*pp)->request_id == request_id)
+        {
+          ContextTracker *to_free = *pp;
+          *pp = to_free->next;
+          free (to_free);
+          return;
+        }
+      pp = &(*pp)->next;
+    }
+}
+
+/**
+ * @brief Find and remove a context from the tracker, returning the context.
+ */
+static struct CallbackContext *
+context_tracker_find_and_remove (struct SocketSimple_Async *async,
+                                 unsigned request_id)
+{
+  ContextTracker **pp = &async->contexts;
+  while (*pp)
+    {
+      if ((*pp)->request_id == request_id)
+        {
+          ContextTracker *entry = *pp;
+          struct CallbackContext *ctx = entry->ctx;
+          *pp = entry->next;
+          free (entry);
+          return ctx;
+        }
+      pp = &(*pp)->next;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Free all tracked contexts (for cleanup on cancel_all or destroy).
+ */
+static void
+context_tracker_free_all (struct SocketSimple_Async *async)
+{
+  ContextTracker *entry = async->contexts;
+  while (entry)
+    {
+      ContextTracker *next = entry->next;
+      if (entry->ctx)
+        free (entry->ctx);
+      free (entry);
+      entry = next;
+    }
+  async->contexts = NULL;
+}
 
 static void
 core_callback_wrapper (Socket_T socket, ssize_t bytes, int err, void *user_data)
@@ -64,11 +164,18 @@ core_callback_wrapper (Socket_T socket, ssize_t bytes, int err, void *user_data)
 
   (void)socket; /* We use the simple_socket from context */
 
-  if (ctx && ctx->user_cb)
-    ctx->user_cb (ctx->simple_socket, bytes, err, ctx->user_data);
+  if (ctx)
+    {
+      /* Remove from tracker before freeing */
+      if (ctx->async)
+        context_tracker_remove (ctx->async, ctx->request_id);
 
-  /* Free the context after callback */
-  free (ctx);
+      if (ctx->user_cb)
+        ctx->user_cb (ctx->simple_socket, bytes, err, ctx->user_data);
+
+      /* Free the context after callback */
+      free (ctx);
+    }
 }
 
 /**
@@ -144,6 +251,9 @@ Socket_simple_async_free (SocketSimple_Async_T *async)
 {
   if (!async || !*async)
     return;
+
+  /* Free any remaining tracked callback contexts */
+  context_tracker_free_all (*async);
 
   SocketAsync_free (&(*async)->async);
   Arena_dispose (&(*async)->arena);
@@ -256,7 +366,8 @@ allocate_callback_context (SocketSimple_AsyncCallback cb,
  * @return Request ID on success, 0 on failure (sets error)
  */
 static unsigned
-submit_async_operation (SocketAsync_T async,
+submit_async_operation (SocketSimple_Async_T simple_async,
+                        SocketAsync_T async,
                         Socket_T core_socket,
                         void *buf,
                         size_t len,
@@ -300,6 +411,14 @@ submit_async_operation (SocketAsync_T async,
     return 0;
   }
   END_TRY;
+
+  /* Track context for cancellation cleanup */
+  if (request_id > 0)
+    {
+      ctx->async = simple_async;
+      ctx->request_id = request_id;
+      context_tracker_add (simple_async, request_id, ctx);
+    }
 
   return request_id;
 }
@@ -352,7 +471,8 @@ async_operation_common (SocketSimple_Async_T async,
 
   /* Step 3: Submit async operation */
   Socket_T core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
-  return submit_async_operation (async->async,
+  return submit_async_operation (async,
+                                 async->async,
                                  core_socket,
                                  buf,
                                  len,
@@ -463,6 +583,9 @@ Socket_simple_async_process (SocketSimple_Async_T async, int timeout_ms)
 int
 Socket_simple_async_cancel (SocketSimple_Async_T async, unsigned request_id)
 {
+  int result;
+  struct CallbackContext *ctx;
+
   Socket_simple_clear_error ();
 
   if (!async || !async->async)
@@ -471,12 +594,22 @@ Socket_simple_async_cancel (SocketSimple_Async_T async, unsigned request_id)
       return -1;
     }
 
-  return SocketAsync_cancel (async->async, request_id);
+  result = SocketAsync_cancel (async->async, request_id);
+
+  /* Free the callback context that would otherwise leak since the
+   * core callback wrapper won't fire for cancelled operations. */
+  ctx = context_tracker_find_and_remove (async, request_id);
+  if (ctx)
+    free (ctx);
+
+  return result;
 }
 
 int
 Socket_simple_async_cancel_all (SocketSimple_Async_T async)
 {
+  int result;
+
   Socket_simple_clear_error ();
 
   if (!async || !async->async)
@@ -485,7 +618,12 @@ Socket_simple_async_cancel_all (SocketSimple_Async_T async)
       return -1;
     }
 
-  return SocketAsync_cancel_all (async->async);
+  result = SocketAsync_cancel_all (async->async);
+
+  /* Free all tracked callback contexts that would otherwise leak. */
+  context_tracker_free_all (async);
+
+  return result;
 }
 
 /* ============================================================================
