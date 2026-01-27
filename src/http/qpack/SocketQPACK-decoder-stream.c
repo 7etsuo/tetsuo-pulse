@@ -795,8 +795,16 @@ hash_stream_id (uint64_t stream_id, size_t capacity)
   return (size_t)(hash & (capacity - 1));
 }
 
+/** Maximum probes to prevent hash collision DoS (fixes #3464) */
+#define QPACK_ACK_STATE_MAX_PROBES 16
+
 /**
  * @brief Find slot for stream ID in hash table.
+ *
+ * Limits probe count to prevent algorithmic complexity attacks via
+ * hash collisions (fixes #3464).
+ *
+ * @return true if found, false if not found or probe limit exceeded
  */
 static bool
 find_pending_slot (SocketQPACK_AckState_T state,
@@ -805,9 +813,17 @@ find_pending_slot (SocketQPACK_AckState_T state,
 {
   size_t start = hash_stream_id (stream_id, state->pending_capacity);
   size_t i = start;
+  size_t probes = 0;
 
   do
     {
+      /* Limit probes to prevent hash collision DoS */
+      if (++probes > QPACK_ACK_STATE_MAX_PROBES)
+        {
+          *idx = start;
+          return false;
+        }
+
       QPACKPendingEntry *entry = &state->pending[i];
 
       if (!entry->occupied)
