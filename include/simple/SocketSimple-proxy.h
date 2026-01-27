@@ -97,6 +97,18 @@ extern "C"
   Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config);
 
   /**
+   * @brief Securely clear proxy configuration.
+   *
+   * Securely wipes username and password fields using SocketCrypto_secure_clear()
+   * to prevent memory disclosure attacks. Should be called when the config is
+   * no longer needed.
+   *
+   * @param config Config struct to clear.
+   */
+  extern void
+  Socket_simple_proxy_config_clear (SocketSimple_ProxyConfig *config);
+
+  /**
    * @brief Parse proxy URL into config.
    *
    * Supported formats:

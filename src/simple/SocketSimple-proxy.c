@@ -14,6 +14,7 @@
 #include "SocketSimple-internal.h"
 #include "simple/SocketSimple-proxy.h"
 
+#include "core/SocketCrypto.h"
 #include "socket/SocketProxy.h"
 
 #include <ctype.h>
@@ -35,6 +36,20 @@ Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config)
   config->port = 0;
   config->connect_timeout_ms = 0;   /* Use default */
   config->handshake_timeout_ms = 0; /* Use default */
+}
+
+void
+Socket_simple_proxy_config_clear (SocketSimple_ProxyConfig *config)
+{
+  if (!config)
+    return;
+
+  /* Securely clear sensitive credential data to prevent memory disclosure */
+  SocketCrypto_secure_clear (config->username, sizeof (config->username));
+  SocketCrypto_secure_clear (config->password, sizeof (config->password));
+
+  /* Clear the rest of the structure */
+  memset (config, 0, sizeof (*config));
 }
 
 /* Helper to convert simple proxy type to core proxy type */
