@@ -760,7 +760,33 @@ ws_recv_control_payload (SocketWS_T ws, size_t available)
 static int
 ws_recv_data_payload (SocketWS_T ws, size_t to_read)
 {
-  unsigned char *payload_buf = ALLOC (ws->arena, to_read);
+  unsigned char *payload_buf;
+
+  /* RFC 6455 Section 5.4: Validate fragmentation state.
+   * CONTINUATION frames must follow a data frame (TEXT/BINARY).
+   * New data frames must not interrupt an ongoing fragmented message. */
+  if (ws->frame.opcode == WS_OPCODE_CONTINUATION)
+    {
+      if (ws->message.fragment_count == 0)
+        {
+          ws_set_error (ws, WS_ERROR_PROTOCOL,
+                        "Orphan CONTINUATION frame (no preceding data frame)");
+          ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Orphan continuation");
+          return -1;
+        }
+    }
+  else if (ws_is_data_opcode (ws->frame.opcode))
+    {
+      if (ws->message.fragment_count > 0)
+        {
+          ws_set_error (ws, WS_ERROR_PROTOCOL,
+                        "New data frame interrupts fragmented message");
+          ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Interleaved message");
+          return -1;
+        }
+    }
+
+  payload_buf = ALLOC (ws->arena, to_read);
   if (!payload_buf)
     {
       ws_set_error (ws, WS_ERROR, "Failed to allocate payload buffer");
