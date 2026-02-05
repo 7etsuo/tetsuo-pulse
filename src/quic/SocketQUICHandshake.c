@@ -429,13 +429,17 @@ SocketQUICHandshake_init (SocketQUICConnection_T conn,
       return QUIC_HANDSHAKE_ERROR_NULL;
     }
 
-  /* TODO: Initialize TLS context */
-  /* This requires:
-   * 1. Create SSL_CTX with TLS 1.3 methods
-   * 2. Configure QUIC transport parameter extension
-   * 3. Set up key derivation callbacks
-   * 4. Configure ALPN (if needed)
-   */
+  SocketQUICHandshake_T hs = conn->handshake;
+  if (hs == NULL)
+    return QUIC_HANDSHAKE_ERROR_NULL;
+
+  SocketQUICTLS_Result res = SocketQUICTLS_init_context (hs, NULL);
+  if (res != QUIC_TLS_OK)
+    return QUIC_HANDSHAKE_ERROR_TLS;
+
+  res = SocketQUICTLS_create_ssl (hs);
+  if (res != QUIC_TLS_OK)
+    return QUIC_HANDSHAKE_ERROR_TLS;
 
   return QUIC_HANDSHAKE_OK;
 }
@@ -585,8 +589,18 @@ SocketQUICHandshake_process_crypto (SocketQUICConnection_T conn,
       return res;
     }
 
-  /* TODO: Feed contiguous data to TLS */
-  /* This requires SSL_provide_quic_data() or equivalent */
+  /* Feed newly contiguous data to TLS */
+  if (stream->recv_offset > stream->tls_read_offset)
+    {
+      SocketQUICTLS_Result tls_res = SocketQUICTLS_provide_data (
+          hs,
+          level,
+          stream->recv_buffer + stream->tls_read_offset,
+          (size_t)(stream->recv_offset - stream->tls_read_offset));
+      if (tls_res != QUIC_TLS_OK)
+        return QUIC_HANDSHAKE_ERROR_TLS;
+      stream->tls_read_offset = stream->recv_offset;
+    }
 
   return QUIC_HANDSHAKE_OK;
 }
@@ -605,17 +619,13 @@ SocketQUICHandshake_derive_keys (SocketQUICConnection_T conn,
       return QUIC_HANDSHAKE_ERROR_CRYPTO;
     }
 
-  /* TODO: Implement key derivation
-   * 1. Get TLS traffic secrets for encryption level
-   * 2. Derive QUIC packet protection keys via HKDF
-   * 3. Store in handshake->keys[level]
-   * 4. Set handshake->keys_available[level] = 1
-   *
-   * Key derivation follows RFC 9001 Section 5:
-   * - quic_key = HKDF-Expand-Label(secret, "quic key", "", key_len)
-   * - quic_iv = HKDF-Expand-Label(secret, "quic iv", "", iv_len)
-   * - quic_hp = HKDF-Expand-Label(secret, "quic hp", "", hp_len)
-   */
+  SocketQUICHandshake_T hs = conn->handshake;
+  if (hs == NULL)
+    return QUIC_HANDSHAKE_ERROR_NULL;
+
+  SocketQUICTLS_Result res = SocketQUICTLS_derive_keys (hs, level);
+  if (res != QUIC_TLS_OK)
+    return QUIC_HANDSHAKE_ERROR_CRYPTO;
 
   return QUIC_HANDSHAKE_OK;
 }
@@ -686,8 +696,10 @@ SocketQUICHandshake_process (SocketQUICHandshake_T handshake)
            */
           if (handshake->zero_rtt.saved_params_valid)
             {
-              SocketQUICTLS_Result param_res = SocketQUICTLS_validate_0rtt_params (
-                  &handshake->zero_rtt.saved_params, &handshake->peer_params);
+              SocketQUICTLS_Result param_res
+                  = SocketQUICTLS_validate_0rtt_params (
+                      &handshake->zero_rtt.saved_params,
+                      &handshake->peer_params);
 
               if (param_res != QUIC_TLS_OK)
                 {
@@ -1001,10 +1013,10 @@ SocketQUICHandshake_0rtt_set_ticket (SocketQUICHandshake_T handshake,
   if (!params)
     return QUIC_HANDSHAKE_ERROR_NULL;
 
-  /*
-   * Validate ticket length to prevent memory exhaustion.
-   * TLS session tickets are typically 1-2KB; 16KB is generous.
-   */
+    /*
+     * Validate ticket length to prevent memory exhaustion.
+     * TLS session tickets are typically 1-2KB; 16KB is generous.
+     */
 #define QUIC_MAX_SESSION_TICKET_SIZE (16 * 1024)
   if (ticket_len > QUIC_MAX_SESSION_TICKET_SIZE)
     return QUIC_HANDSHAKE_ERROR_BUFFER;
@@ -1030,9 +1042,8 @@ SocketQUICHandshake_0rtt_set_ticket (SocketQUICHandshake_T handshake,
   handshake->zero_rtt.ticket_len = ticket_len;
 
   /* Copy transport parameters for validation */
-  SocketQUICTransportParams_Result tp_res
-      = SocketQUICTransportParams_copy (&handshake->zero_rtt.saved_params,
-                                        params);
+  SocketQUICTransportParams_Result tp_res = SocketQUICTransportParams_copy (
+      &handshake->zero_rtt.saved_params, params);
   if (tp_res != QUIC_TP_OK)
     return QUIC_HANDSHAKE_ERROR_TRANSPORT;
 
