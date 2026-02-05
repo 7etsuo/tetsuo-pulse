@@ -68,9 +68,10 @@
 #define QPACK_FIELD_LITERAL_NEVER_INDEX 0x10     /**< N bit (never index) */
 #define QPACK_FIELD_LITERAL_NAME_HUFFMAN 0x08    /**< H bit for name */
 #define QPACK_FIELD_LITERAL_NAME_PREFIX 3        /**< Name length prefix bits */
-#define QPACK_FIELD_LITERAL_NAME_PREFIX_MASK 0x07 /**< Lower 3 bits for prefix */
-#define QPACK_FIELD_LITERAL_VALUE_HUFFMAN 0x80   /**< H bit for value */
-#define QPACK_FIELD_LITERAL_VALUE_PREFIX 7 /**< Value length prefix bits */
+#define QPACK_FIELD_LITERAL_NAME_PREFIX_MASK \
+  0x07                                         /**< Lower 3 bits for prefix */
+#define QPACK_FIELD_LITERAL_VALUE_HUFFMAN 0x80 /**< H bit for value */
+#define QPACK_FIELD_LITERAL_VALUE_PREFIX 7     /**< Value length prefix bits */
 
 /* ============================================================================
  * INDEX METADATA (Internal)
@@ -118,6 +119,29 @@ typedef struct
  */
 
 /**
+ * @brief Per-stream dynamic table reference for accurate cancellation.
+ * @internal
+ *
+ * Records which dynamic table entries a stream has referenced, so that
+ * stream cancellation only releases that stream's references.
+ */
+typedef struct
+{
+  uint64_t stream_id; /**< HTTP/3 stream ID */
+  uint64_t abs_index; /**< Absolute index of referenced entry */
+} QPACK_StreamRef;
+
+/** Default initial capacity for stream ref array */
+#ifndef QPACK_STREAM_REF_INIT_CAP
+#define QPACK_STREAM_REF_INIT_CAP 64
+#endif
+
+/** Maximum stream refs to prevent unbounded growth from malicious peers */
+#ifndef QPACK_MAX_STREAM_REFS
+#define QPACK_MAX_STREAM_REFS 4096
+#endif
+
+/**
  * @brief QPACK dynamic table implementation.
  * @internal
  *
@@ -138,6 +162,11 @@ struct SocketQPACK_Table
   uint64_t insert_count;   /**< Total entries ever inserted (monotonic) */
   uint64_t dropped_count;  /**< Total entries evicted (oldest valid abs idx) */
   uint64_t known_received; /**< Known Received Count from decoder */
+
+  /* Per-stream reference tracking for accurate cancellation */
+  QPACK_StreamRef *stream_refs; /**< Array of (stream_id, abs_index) pairs */
+  size_t stream_ref_count;      /**< Current number of references */
+  size_t stream_ref_capacity;   /**< Array capacity */
 
   Arena_T arena; /**< Memory arena for allocations */
 };

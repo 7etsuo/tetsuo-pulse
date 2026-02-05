@@ -516,9 +516,8 @@ SocketQPACK_decode_set_capacity (const unsigned char *input,
  *
  * @since 1.0.0
  */
-extern bool
-SocketQPACK_can_reduce_capacity (SocketQPACK_Table_T table,
-                                 uint64_t new_capacity);
+extern bool SocketQPACK_can_reduce_capacity (SocketQPACK_Table_T table,
+                                             uint64_t new_capacity);
 
 /**
  * @brief Apply Set Dynamic Table Capacity to a table.
@@ -666,6 +665,39 @@ SocketQPACK_Table_get (SocketQPACK_Table_T table,
                        size_t *name_len,
                        const char **value,
                        size_t *value_len);
+
+/**
+ * @brief Record a dynamic table reference for a stream.
+ *
+ * Tracks that the given stream references the dynamic table entry at
+ * abs_index. Used for accurate stream cancellation (RFC 9204 §4.4.2).
+ *
+ * @param table     Dynamic table
+ * @param stream_id HTTP/3 stream ID
+ * @param abs_index Absolute index of referenced entry
+ *
+ * @return QPACK_OK on success, QPACK_ERR_TABLE_SIZE if ref limit reached
+ *
+ * @since 1.0.0
+ */
+extern SocketQPACK_Result
+SocketQPACK_Table_record_stream_ref (SocketQPACK_Table_T table,
+                                     uint64_t stream_id,
+                                     uint64_t abs_index);
+
+/**
+ * @brief Release all dynamic table references for a stream.
+ *
+ * Decrements ref_count only on entries referenced by the given stream.
+ * Called on stream cancellation or section acknowledgment.
+ *
+ * @param table     Dynamic table
+ * @param stream_id HTTP/3 stream ID
+ *
+ * @since 1.0.0
+ */
+extern void SocketQPACK_Table_release_stream_refs (SocketQPACK_Table_T table,
+                                                   uint64_t stream_id);
 
 /* ============================================================================
  * INSERT WITH LITERAL NAME (RFC 9204 Section 4.3.3)

@@ -553,31 +553,13 @@ SocketQPACK_stream_cancel_release_refs (SocketQPACK_Table_T table,
   /*
    * RFC 9204 Section 4.4.2: Release dynamic table references
    *
-   * When a Stream Cancellation is received, we need to release all
-   * dynamic table references held by that stream.
-   *
-   * Conservative implementation (fixes #3477): Since per-stream reference
-   * tracking is not yet implemented, we decrement ref_count on all entries
-   * that have references. This may under-count but prevents stuck entries
-   * that can never be evicted.
-   *
-   * TODO: Implement proper per-stream reference tracking for accurate
-   * reference management.
+   * Release only the references held by the cancelled stream, using
+   * per-stream reference tracking for accurate ref_count management.
    */
-  (void)stream_id;
-
   if (table == NULL)
     return QPACK_STREAM_OK;
 
-  /* Walk all entries and decrement ref_count for referenced entries */
-  for (size_t i = 0; i < table->count; i++)
-    {
-      size_t idx = RINGBUF_WRAP (table->head + i, table->capacity);
-      if (table->entries[idx].meta.ref_count > 0)
-        {
-          table->entries[idx].meta.ref_count--;
-        }
-    }
+  SocketQPACK_Table_release_stream_refs (table, stream_id);
 
   return QPACK_STREAM_OK;
 }

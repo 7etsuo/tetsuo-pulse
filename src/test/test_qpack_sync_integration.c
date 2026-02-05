@@ -42,8 +42,8 @@ TEST (qpack_sync_insert_count_increment_roundtrip)
   ASSERT (written > 0);
 
   /* Decode */
-  result = SocketQPACK_decode_insert_count_inc (buf, written,
-                                                 &decoded_increment, &consumed);
+  result = SocketQPACK_decode_insert_count_inc (
+      buf, written, &decoded_increment, &consumed);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_increment, 5);
   ASSERT_EQ (consumed, written);
@@ -62,8 +62,8 @@ TEST (qpack_sync_insert_count_increment_large)
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT (written > 1); /* Should need continuation */
 
-  result = SocketQPACK_decode_insert_count_inc (buf, written,
-                                                 &decoded_increment, &consumed);
+  result = SocketQPACK_decode_insert_count_inc (
+      buf, written, &decoded_increment, &consumed);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_increment, 1000);
 }
@@ -220,9 +220,9 @@ TEST (qpack_sync_section_ack_large_stream_id)
    * Continuation bytes: 0x75 | 0x80, 0x02 | 0x00
    * = 0xF5, 0x02
    */
-  buf[0] = 0xFF;        /* 0x80 | 0x7F = signal continuation */
-  buf[1] = 0xF5;        /* 373 & 0x7F | 0x80 = 117 | 0x80 */
-  buf[2] = 0x02;        /* 373 >> 7 = 2 */
+  buf[0] = 0xFF; /* 0x80 | 0x7F = signal continuation */
+  buf[1] = 0xF5; /* 373 & 0x7F | 0x80 = 117 | 0x80 */
+  buf[2] = 0x02; /* 373 >> 7 = 2 */
 
   SocketQPACKStream_Result result
       = SocketQPACK_decode_section_ack (buf, 3, &decoded_stream_id, &consumed);
@@ -275,9 +275,8 @@ TEST (qpack_sync_stream_cancel_roundtrip)
    */
   buf[0] = 0x40 | 10;
 
-  SocketQPACKStream_Result result
-      = SocketQPACK_decode_stream_cancel (buf, 1, &decoded_stream_id,
-                                          &consumed);
+  SocketQPACKStream_Result result = SocketQPACK_decode_stream_cancel (
+      buf, 1, &decoded_stream_id, &consumed);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_stream_id, 10);
   ASSERT_EQ (consumed, 1);
@@ -297,13 +296,12 @@ TEST (qpack_sync_stream_cancel_large_stream_id)
    * - 137 >= 128: (137 & 127) | 128 = 9 | 128 = 0x89
    * - 137 >> 7 = 1: final byte = 0x01
    */
-  buf[0] = 0x7F;        /* 0x40 | 0x3F = signal continuation */
-  buf[1] = 0x89;        /* (137 & 127) | 128 = continuation */
-  buf[2] = 0x01;        /* 137 >> 7 = 1 (final) */
+  buf[0] = 0x7F; /* 0x40 | 0x3F = signal continuation */
+  buf[1] = 0x89; /* (137 & 127) | 128 = continuation */
+  buf[2] = 0x01; /* 137 >> 7 = 1 (final) */
 
-  SocketQPACKStream_Result result
-      = SocketQPACK_decode_stream_cancel (buf, 3, &decoded_stream_id,
-                                          &consumed);
+  SocketQPACKStream_Result result = SocketQPACK_decode_stream_cancel (
+      buf, 3, &decoded_stream_id, &consumed);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_stream_id, 200);
   ASSERT_EQ (consumed, 3);
@@ -337,6 +335,49 @@ TEST (qpack_sync_stream_cancel_release_refs)
   /* NULL table should also succeed */
   result = SocketQPACK_stream_cancel_release_refs (NULL, 42);
   ASSERT_EQ (result, QPACK_STREAM_OK);
+
+  Arena_dispose (&arena);
+}
+
+TEST (qpack_sync_per_stream_ref_tracking)
+{
+  Arena_T arena = Arena_new ();
+  SocketQPACK_Table_T table = SocketQPACK_Table_new (arena, 4096);
+  ASSERT (table != NULL);
+
+  /* Insert two entries into dynamic table */
+  SocketQPACK_Result qr
+      = SocketQPACK_Table_insert_literal (table, "x-a", 3, "val-a", 5);
+  ASSERT_EQ (qr, QPACK_OK);
+
+  qr = SocketQPACK_Table_insert_literal (table, "x-b", 3, "val-b", 5);
+  ASSERT_EQ (qr, QPACK_OK);
+
+  /* Stream 10 references entry 0, stream 20 references entries 0 and 1 */
+  qr = SocketQPACK_Table_record_stream_ref (table, 10, 0);
+  ASSERT_EQ (qr, QPACK_OK);
+
+  qr = SocketQPACK_Table_record_stream_ref (table, 20, 0);
+  ASSERT_EQ (qr, QPACK_OK);
+
+  qr = SocketQPACK_Table_record_stream_ref (table, 20, 1);
+  ASSERT_EQ (qr, QPACK_OK);
+
+  /* Cancel stream 10 — only entry 0's ref_count should decrease by 1 */
+  SocketQPACK_Table_release_stream_refs (table, 10);
+
+  /* Record more refs for stream 30 to entry 1 */
+  qr = SocketQPACK_Table_record_stream_ref (table, 30, 1);
+  ASSERT_EQ (qr, QPACK_OK);
+
+  /* Cancel stream 20 — entry 0 ref_count drops to 0, entry 1 drops by 1 */
+  SocketQPACK_Table_release_stream_refs (table, 20);
+
+  /* Cancel stream 30 */
+  SocketQPACK_Table_release_stream_refs (table, 30);
+
+  /* Verify: cancel on non-existent stream is harmless */
+  SocketQPACK_Table_release_stream_refs (table, 999);
 
   Arena_dispose (&arena);
 }
@@ -531,9 +572,8 @@ TEST (qpack_sync_decoder_stream_write_section_ack)
   /* Decode and verify */
   uint64_t decoded_stream_id = 0;
   size_t consumed = 0;
-  SocketQPACKStream_Result decode_result
-      = SocketQPACK_decode_section_ack (buf, buf_len, &decoded_stream_id,
-                                        &consumed);
+  SocketQPACKStream_Result decode_result = SocketQPACK_decode_section_ack (
+      buf, buf_len, &decoded_stream_id, &consumed);
   ASSERT_EQ (decode_result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_stream_id, 42);
 
@@ -564,9 +604,8 @@ TEST (qpack_sync_decoder_stream_write_stream_cancel)
   /* Decode and verify */
   uint64_t decoded_stream_id = 0;
   size_t consumed = 0;
-  SocketQPACKStream_Result decode_result
-      = SocketQPACK_decode_stream_cancel (buf, buf_len, &decoded_stream_id,
-                                          &consumed);
+  SocketQPACKStream_Result decode_result = SocketQPACK_decode_stream_cancel (
+      buf, buf_len, &decoded_stream_id, &consumed);
   ASSERT_EQ (decode_result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_stream_id, 55);
 
@@ -597,9 +636,8 @@ TEST (qpack_sync_decoder_stream_write_insert_count_inc)
   /* Decode and verify */
   uint64_t decoded_increment = 0;
   size_t consumed = 0;
-  SocketQPACKStream_Result decode_result
-      = SocketQPACK_decode_insert_count_inc (buf, buf_len, &decoded_increment,
-                                              &consumed);
+  SocketQPACKStream_Result decode_result = SocketQPACK_decode_insert_count_inc (
+      buf, buf_len, &decoded_increment, &consumed);
   ASSERT_EQ (decode_result, QPACK_STREAM_OK);
   ASSERT_EQ (decoded_increment, 10);
 
@@ -698,27 +736,24 @@ TEST (qpack_sync_decoder_stream_multiple_instructions)
   size_t consumed = 0;
 
   /* First: Section Ack for stream 10 */
-  ASSERT_EQ (SocketQPACK_decode_decoder_instruction (buf + offset,
-                                                      buf_len - offset, &instr,
-                                                      &consumed),
+  ASSERT_EQ (SocketQPACK_decode_decoder_instruction (
+                 buf + offset, buf_len - offset, &instr, &consumed),
              QPACK_STREAM_OK);
   ASSERT_EQ (instr.type, QPACK_DINSTR_TYPE_SECTION_ACK);
   ASSERT_EQ (instr.value, 10);
   offset += consumed;
 
   /* Second: Insert Count Increment of 5 */
-  ASSERT_EQ (SocketQPACK_decode_decoder_instruction (buf + offset,
-                                                      buf_len - offset, &instr,
-                                                      &consumed),
+  ASSERT_EQ (SocketQPACK_decode_decoder_instruction (
+                 buf + offset, buf_len - offset, &instr, &consumed),
              QPACK_STREAM_OK);
   ASSERT_EQ (instr.type, QPACK_DINSTR_TYPE_INSERT_COUNT_INC);
   ASSERT_EQ (instr.value, 5);
   offset += consumed;
 
   /* Third: Stream Cancel for stream 20 */
-  ASSERT_EQ (SocketQPACK_decode_decoder_instruction (buf + offset,
-                                                      buf_len - offset, &instr,
-                                                      &consumed),
+  ASSERT_EQ (SocketQPACK_decode_decoder_instruction (
+                 buf + offset, buf_len - offset, &instr, &consumed),
              QPACK_STREAM_OK);
   ASSERT_EQ (instr.type, QPACK_DINSTR_TYPE_STREAM_CANCEL);
   ASSERT_EQ (instr.value, 20);
@@ -758,16 +793,15 @@ TEST (qpack_sync_known_received_count_scenario)
    * 2. Decoder receives and acknowledges
    * 3. Encoder updates Known Received Count
    */
-  uint64_t insert_count = 0;        /* Encoder's Insert Count */
-  uint64_t known_received_count = 0;/* Encoder's Known Received Count */
+  uint64_t insert_count = 0;         /* Encoder's Insert Count */
+  uint64_t known_received_count = 0; /* Encoder's Known Received Count */
 
   /* Encoder inserts 10 entries */
   insert_count = 10;
 
   /* Decoder acknowledges 5 entries */
-  SocketQPACKStream_Result result
-      = SocketQPACK_apply_insert_count_inc (&known_received_count, insert_count,
-                                            5);
+  SocketQPACKStream_Result result = SocketQPACK_apply_insert_count_inc (
+      &known_received_count, insert_count, 5);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (known_received_count, 5);
 
@@ -775,20 +809,20 @@ TEST (qpack_sync_known_received_count_scenario)
   insert_count = 15;
 
   /* Decoder acknowledges 8 more entries (total 13) */
-  result = SocketQPACK_apply_insert_count_inc (&known_received_count,
-                                                insert_count, 8);
+  result = SocketQPACK_apply_insert_count_inc (
+      &known_received_count, insert_count, 8);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (known_received_count, 13);
 
   /* Decoder acknowledges 2 more (total 15, matches insert count) */
-  result = SocketQPACK_apply_insert_count_inc (&known_received_count,
-                                                insert_count, 2);
+  result = SocketQPACK_apply_insert_count_inc (
+      &known_received_count, insert_count, 2);
   ASSERT_EQ (result, QPACK_STREAM_OK);
   ASSERT_EQ (known_received_count, 15);
 
   /* Try to acknowledge more than inserted - should fail */
-  result = SocketQPACK_apply_insert_count_inc (&known_received_count,
-                                                insert_count, 1);
+  result = SocketQPACK_apply_insert_count_inc (
+      &known_received_count, insert_count, 1);
   ASSERT_EQ (result, QPACK_STREAM_ERR_INVALID_INDEX);
   ASSERT_EQ (known_received_count, 15); /* Unchanged */
 }

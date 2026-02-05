@@ -521,6 +521,14 @@ SocketQPACK_Table_new (Arena_T arena, size_t max_size)
   table->known_received = 0;
   table->arena = arena;
 
+  /* Initialize per-stream reference tracking */
+  table->stream_refs
+      = CALLOC (arena, QPACK_STREAM_REF_INIT_CAP, sizeof (QPACK_StreamRef));
+  if (table->stream_refs == NULL)
+    return NULL;
+  table->stream_ref_count = 0;
+  table->stream_ref_capacity = QPACK_STREAM_REF_INIT_CAP;
+
   return table;
 }
 
@@ -663,6 +671,90 @@ SocketQPACK_Table_get (SocketQPACK_Table_T table,
   return QPACK_OK;
 }
 
+SocketQPACK_Result
+SocketQPACK_Table_record_stream_ref (SocketQPACK_Table_T table,
+                                     uint64_t stream_id,
+                                     uint64_t abs_index)
+{
+  if (table == NULL)
+    return QPACK_ERR_NULL_PARAM;
+
+  /* Grow array if needed */
+  if (table->stream_ref_count >= table->stream_ref_capacity)
+    {
+      if (table->stream_ref_capacity >= QPACK_MAX_STREAM_REFS)
+        return QPACK_ERR_TABLE_SIZE;
+
+      size_t new_cap = table->stream_ref_capacity * 2;
+      if (new_cap > QPACK_MAX_STREAM_REFS)
+        new_cap = QPACK_MAX_STREAM_REFS;
+
+      QPACK_StreamRef *new_refs = Arena_alloc (
+          table->arena, new_cap * sizeof (QPACK_StreamRef), __FILE__, __LINE__);
+      if (new_refs == NULL)
+        return QPACK_ERR_INTERNAL;
+
+      memcpy (new_refs,
+              table->stream_refs,
+              table->stream_ref_count * sizeof (QPACK_StreamRef));
+      /* Old allocation is abandoned; arena reclaims on dispose */
+      table->stream_refs = new_refs;
+      table->stream_ref_capacity = new_cap;
+    }
+
+  QPACK_StreamRef *ref = &table->stream_refs[table->stream_ref_count++];
+  ref->stream_id = stream_id;
+  ref->abs_index = abs_index;
+
+  /* Increment entry's ref_count */
+  SocketQPACK_Result rc = SocketQPACK_is_valid_absolute (
+      table->insert_count, table->dropped_count, abs_index);
+  if (rc == QPACK_OK)
+    {
+      size_t ring_offset = (size_t)(abs_index - table->dropped_count);
+      size_t slot = RINGBUF_WRAP (table->head + ring_offset, table->capacity);
+      table->entries[slot].meta.ref_count++;
+    }
+
+  return QPACK_OK;
+}
+
+void
+SocketQPACK_Table_release_stream_refs (SocketQPACK_Table_T table,
+                                       uint64_t stream_id)
+{
+  if (table == NULL)
+    return;
+
+  size_t write = 0;
+  for (size_t i = 0; i < table->stream_ref_count; i++)
+    {
+      if (table->stream_refs[i].stream_id == stream_id)
+        {
+          /* Decrement ref_count for this entry */
+          uint64_t abs = table->stream_refs[i].abs_index;
+          SocketQPACK_Result rc = SocketQPACK_is_valid_absolute (
+              table->insert_count, table->dropped_count, abs);
+          if (rc == QPACK_OK)
+            {
+              size_t ring_off = (size_t)(abs - table->dropped_count);
+              size_t slot
+                  = RINGBUF_WRAP (table->head + ring_off, table->capacity);
+              if (table->entries[slot].meta.ref_count > 0)
+                table->entries[slot].meta.ref_count--;
+            }
+          /* Skip (don't copy to write position) — effectively removed */
+        }
+      else
+        {
+          if (write != i)
+            table->stream_refs[write] = table->stream_refs[i];
+          write++;
+        }
+    }
+  table->stream_ref_count = write;
+}
+
 /* ============================================================================
  * QPACK ENCODER (RFC 9204 Section 2.1.4)
  *
@@ -720,7 +812,7 @@ SocketQPACK_Encoder_known_received_count (SocketQPACK_Encoder_T encoder)
 
 bool
 SocketQPACK_Encoder_is_acknowledged (SocketQPACK_Encoder_T encoder,
-                                      uint64_t absolute_index)
+                                     uint64_t absolute_index)
 {
   uint64_t krc;
 
@@ -787,9 +879,8 @@ SocketQPACK_Encoder_on_insert_count_inc (SocketQPACK_Encoder_T encoder,
   if (new_krc > insert_count)
     return QPACK_ERR_INVALID_INDEX; /* Exceeds insert count */
 
-  result
-      = SocketQPACK_AckState_process_insert_count_inc (encoder->ack_state,
-                                                        increment);
+  result = SocketQPACK_AckState_process_insert_count_inc (encoder->ack_state,
+                                                          increment);
   if (result != QPACK_STREAM_OK)
     return QPACK_ERR_INTERNAL;
 
@@ -810,7 +901,7 @@ SocketQPACK_Encoder_on_stream_cancel (SocketQPACK_Encoder_T encoder,
     return QPACK_ERR_NULL_PARAM;
 
   result = SocketQPACK_AckState_process_stream_cancel (encoder->ack_state,
-                                                        stream_id);
+                                                       stream_id);
   if (result != QPACK_STREAM_OK)
     return QPACK_ERR_INTERNAL;
 
@@ -827,9 +918,8 @@ SocketQPACK_Encoder_register_section (SocketQPACK_Encoder_T encoder,
   if (encoder == NULL)
     return QPACK_ERR_NULL_PARAM;
 
-  result = SocketQPACK_AckState_register_section (encoder->ack_state,
-                                                   stream_id,
-                                                   required_insert_count);
+  result = SocketQPACK_AckState_register_section (
+      encoder->ack_state, stream_id, required_insert_count);
   if (result == QPACK_STREAM_ERR_BUFFER_FULL)
     return QPACK_ERR_TABLE_SIZE;
   if (result != QPACK_STREAM_OK)
