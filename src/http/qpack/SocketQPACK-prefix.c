@@ -154,6 +154,80 @@ SocketQPACK_encode_prefix (uint64_t required_insert_count,
 }
 
 /* ============================================================================
+ * DECODE HELPERS
+ * ============================================================================
+ */
+
+/*
+ * Decode Required Insert Count from encoded value (RFC 9204 Section 4.5.1.1).
+ *
+ *   FullRange = 2 * MaxEntries
+ *   MaxValue = TotalInsertCount + MaxEntries
+ *   MaxWrapped = floor(MaxValue / FullRange) * FullRange
+ *   RIC = MaxWrapped + EncodedRIC - 1
+ *   If RIC > MaxValue, subtract FullRange.
+ */
+static SocketQPACK_Result
+decode_required_insert_count (uint64_t encoded_ric,
+                              uint64_t max_entries,
+                              uint64_t total_insert_count,
+                              uint64_t *ric)
+{
+  if (encoded_ric == 0)
+    {
+      *ric = 0;
+      return QPACK_OK;
+    }
+
+  if (max_entries == 0)
+    return QPACK_ERR_TABLE_SIZE;
+
+  uint64_t full_range = 2 * max_entries;
+  uint64_t max_value = total_insert_count + max_entries;
+  uint64_t max_wrapped = (max_value / full_range) * full_range;
+
+  *ric = max_wrapped + encoded_ric - 1;
+
+  if (*ric > max_value)
+    {
+      if (*ric < full_range)
+        return QPACK_ERR_DECOMPRESSION;
+      *ric -= full_range;
+    }
+
+  return QPACK_OK;
+}
+
+/*
+ * Compute Base from Delta Base and Required Insert Count
+ * (RFC 9204 Section 4.5.1.2).
+ *
+ * S=0: Base = RIC + DeltaBase
+ * S=1: Base = RIC - DeltaBase - 1
+ */
+static SocketQPACK_Result
+compute_base_from_delta (uint64_t required_insert_count,
+                         uint64_t delta_base,
+                         int sign_bit,
+                         uint64_t *base)
+{
+  if (sign_bit == 0)
+    {
+      if (delta_base > UINT64_MAX - required_insert_count)
+        return QPACK_ERR_DECOMPRESSION;
+      *base = required_insert_count + delta_base;
+    }
+  else
+    {
+      if (delta_base + 1 > required_insert_count)
+        return QPACK_ERR_DECOMPRESSION;
+      *base = required_insert_count - delta_base - 1;
+    }
+
+  return QPACK_OK;
+}
+
+/* ============================================================================
  * DECODE FIELD SECTION PREFIX (RFC 9204 Section 4.5.1)
  * ============================================================================
  */
@@ -174,8 +248,8 @@ SocketQPACK_decode_prefix (const unsigned char *input,
   uint64_t base;
   int sign_bit;
   SocketHPACK_Result hpack_result;
+  SocketQPACK_Result qpack_result;
 
-  /* Validate parameters */
   if (prefix == NULL || bytes_consumed == NULL)
     return QPACK_ERR_NULL_PARAM;
 
@@ -190,11 +264,7 @@ SocketQPACK_decode_prefix (const unsigned char *input,
   if (input == NULL)
     return QPACK_ERR_NULL_PARAM;
 
-  /*
-   * RFC 9204 Section 4.5.1.1: Decode Required Insert Count
-   *
-   * Decode the 8-bit prefix integer.
-   */
+  /* Decode 8-bit prefix integer for Required Insert Count */
   hpack_result = SocketHPACK_int_decode (input + offset,
                                          input_len - offset,
                                          RIC_PREFIX_BITS,
@@ -208,61 +278,19 @@ SocketQPACK_decode_prefix (const unsigned char *input,
 
   offset += consumed;
 
-  /*
-   * RFC 9204 Section 4.5.1.1: Decode Required Insert Count from encoded value
-   *
-   * If EncodedRIC == 0, then RIC = 0.
-   * Otherwise, recover RIC using:
-   *   FullRange = 2 * MaxEntries
-   *   MaxValue = TotalInsertCount + MaxEntries
-   *   MaxWrapped = floor(MaxValue / FullRange) * FullRange
-   *   RIC = MaxWrapped + EncodedRIC - 1
-   *
-   *   If RIC > MaxValue, subtract FullRange.
-   */
-  if (encoded_ric == 0)
-    {
-      required_insert_count = 0;
-    }
-  else
-    {
-      if (max_entries == 0)
-        return QPACK_ERR_TABLE_SIZE;
+  /* RFC 9204 §4.5.1.1: Recover Required Insert Count from encoded value */
+  qpack_result = decode_required_insert_count (
+      encoded_ric, max_entries, total_insert_count, &required_insert_count);
+  if (qpack_result != QPACK_OK)
+    return qpack_result;
 
-      uint64_t full_range = 2 * max_entries;
-      uint64_t max_value = total_insert_count + max_entries;
-      uint64_t max_wrapped = (max_value / full_range) * full_range;
-
-      required_insert_count = max_wrapped + encoded_ric - 1;
-
-      /* Handle wraparound */
-      if (required_insert_count > max_value)
-        {
-          if (required_insert_count < full_range)
-            return QPACK_ERR_DECOMPRESSION; /* Cannot decode RIC */
-          required_insert_count -= full_range;
-        }
-    }
-
-  /*
-   * RFC 9204 Section 4.5.1: Validate Required Insert Count
-   *
-   * The decoder MUST treat it as a connection error of type
-   * QPACK_DECOMPRESSION_FAILED if Required Insert Count is greater than
-   * the number of entries the decoder has actually inserted.
-   */
   if (required_insert_count > total_insert_count)
     return QPACK_ERR_DECOMPRESSION;
 
-  /* Check for Delta Base byte */
   if (offset >= input_len)
     return QPACK_INCOMPLETE;
 
-  /*
-   * RFC 9204 Section 4.5.1.2: Decode Delta Base
-   *
-   * Extract sign bit (bit 7) and decode 7-bit prefix integer.
-   */
+  /* Extract sign bit and decode 7-bit Delta Base */
   sign_bit = (input[offset] & DELTA_BASE_SIGN_BIT) ? 1 : 0;
 
   hpack_result = SocketHPACK_int_decode (input + offset,
@@ -278,28 +306,12 @@ SocketQPACK_decode_prefix (const unsigned char *input,
 
   offset += consumed;
 
-  /*
-   * RFC 9204 Section 4.5.1.2: Compute Base from Delta Base
-   *
-   * S=0: Base = RIC + Delta Base
-   * S=1: Base = RIC - Delta Base - 1
-   */
-  if (sign_bit == 0)
-    {
-      /* Check for overflow */
-      if (delta_base > UINT64_MAX - required_insert_count)
-        return QPACK_ERR_DECOMPRESSION;
-      base = required_insert_count + delta_base;
-    }
-  else
-    {
-      /* Check for underflow */
-      if (delta_base + 1 > required_insert_count)
-        return QPACK_ERR_DECOMPRESSION;
-      base = required_insert_count - delta_base - 1;
-    }
+  /* RFC 9204 §4.5.1.2: Compute Base from Delta Base */
+  qpack_result = compute_base_from_delta (
+      required_insert_count, delta_base, sign_bit, &base);
+  if (qpack_result != QPACK_OK)
+    return qpack_result;
 
-  /* Store decoded values */
   prefix->required_insert_count = required_insert_count;
   prefix->delta_base
       = sign_bit ? -(int64_t)(delta_base + 1) : (int64_t)delta_base;

@@ -393,6 +393,48 @@ ws_compress_message (SocketWS_T ws,
   return 0;
 }
 
+/*
+ * Grow the inflate output buffer, enforcing max_message_size.
+ * Returns 0 on success (buf and buf_size updated), -1 on error.
+ */
+static int
+ws_inflate_grow_buffer (SocketWS_T ws,
+                        unsigned char **buf,
+                        size_t *buf_size,
+                        size_t total_written)
+{
+  size_t new_size;
+
+  if (!SocketSecurity_check_multiply (
+          *buf_size, WS_DEFLATE_BUF_GROWTH, &new_size))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION, "Buffer growth overflow");
+      return -1;
+    }
+
+  if (new_size > ws->config.max_message_size)
+    new_size = ws->config.max_message_size;
+
+  if (new_size <= *buf_size)
+    {
+      ws_set_error (
+          ws, WS_ERROR_MESSAGE_TOO_LARGE, "Decompressed message too large");
+      return -1;
+    }
+
+  unsigned char *new_buf
+      = grow_arena_buffer (ws->arena, *buf, total_written, new_size);
+  if (!new_buf)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to grow buffer");
+      return -1;
+    }
+
+  *buf = new_buf;
+  *buf_size = new_size;
+  return 0;
+}
+
 int
 ws_decompress_message (SocketWS_T ws,
                        const unsigned char *input,
@@ -435,7 +477,6 @@ ws_decompress_message (SocketWS_T ws,
       return -1;
     }
 
-  /* Cap at max_message_size for bomb protection */
   if (buf_size > ws->config.max_message_size)
     buf_size = ws->config.max_message_size;
 
@@ -466,11 +507,10 @@ ws_decompress_message (SocketWS_T ws,
       input_remaining -= consumed;
 
       if (res == DEFLATE_OK)
-        break; /* Stream complete */
+        break;
 
       if (res == DEFLATE_INCOMPLETE && consumed == 0 && written == 0)
         {
-          /* No progress - need more input or output space */
           ws_set_error (
               ws, WS_ERROR_COMPRESSION, "Inflate incomplete: no progress");
           return -1;
@@ -478,34 +518,8 @@ ws_decompress_message (SocketWS_T ws,
 
       if (res == DEFLATE_OUTPUT_FULL)
         {
-          /* Grow buffer */
-          size_t new_size;
-          if (!SocketSecurity_check_multiply (
-                  buf_size, WS_DEFLATE_BUF_GROWTH, &new_size))
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION, "Buffer growth overflow");
-              return -1;
-            }
-
-          /* Enforce max_message_size limit */
-          if (new_size > ws->config.max_message_size)
-            new_size = ws->config.max_message_size;
-
-          if (new_size <= buf_size)
-            {
-              ws_set_error (ws,
-                            WS_ERROR_MESSAGE_TOO_LARGE,
-                            "Decompressed message too large");
-              return -1;
-            }
-
-          buf = grow_arena_buffer (ws->arena, buf, total_written, new_size);
-          if (!buf)
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to grow buffer");
-              return -1;
-            }
-          buf_size = new_size;
+          if (ws_inflate_grow_buffer (ws, &buf, &buf_size, total_written) != 0)
+            return -1;
           continue;
         }
 
@@ -526,7 +540,6 @@ ws_decompress_message (SocketWS_T ws,
         }
     }
 
-  /* Reset inflater if no context takeover */
   if (should_reset_context (ws, 0 /* inflate */))
     SocketDeflate_Inflater_reset (ws->compression.inflater);
 

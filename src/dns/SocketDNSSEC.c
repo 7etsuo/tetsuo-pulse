@@ -1311,6 +1311,97 @@ convert_ecdsa_signature_to_der (const unsigned char *raw_sig,
 
 #endif /* SOCKET_HAS_TLS */
 
+#ifdef SOCKET_HAS_TLS
+
+/*
+ * Select hash algorithm for DNSSEC signature verification.
+ * Returns NULL for EdDSA algorithms (they don't use a separate hash),
+ * or the appropriate EVP_MD for RSA/ECDSA algorithms.
+ * Returns (const EVP_MD *)-1 on unsupported algorithm.
+ */
+static const EVP_MD *
+select_dnssec_hash (uint8_t algorithm)
+{
+  switch (algorithm)
+    {
+    case DNSSEC_ALGO_RSASHA1:
+    case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
+      return EVP_sha1 ();
+    case DNSSEC_ALGO_RSASHA256:
+    case DNSSEC_ALGO_ECDSAP256SHA256:
+      return EVP_sha256 ();
+    case DNSSEC_ALGO_RSASHA512:
+      return EVP_sha512 ();
+    case DNSSEC_ALGO_ECDSAP384SHA384:
+      return EVP_sha384 ();
+    case DNSSEC_ALGO_ED25519:
+    case DNSSEC_ALGO_ED448:
+      return NULL;
+    default:
+      return (const EVP_MD *)-1;
+    }
+}
+
+/*
+ * Create an EVP_PKEY from a DNSKEY record, dispatching to the
+ * appropriate key-type constructor. Sets *status on failure.
+ */
+static EVP_PKEY *
+create_dnssec_public_key (const SocketDNSSEC_DNSKEY *dnskey, int *status)
+{
+  switch (dnskey->algorithm)
+    {
+    case DNSSEC_ALGO_RSASHA1:
+    case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
+    case DNSSEC_ALGO_RSASHA256:
+    case DNSSEC_ALGO_RSASHA512:
+      return create_rsa_pkey_from_dnskey (dnskey, status);
+
+    case DNSSEC_ALGO_ECDSAP256SHA256:
+    case DNSSEC_ALGO_ECDSAP384SHA384:
+      return create_ecdsa_pkey_from_dnskey (dnskey, status);
+
+    case DNSSEC_ALGO_ED25519:
+    case DNSSEC_ALGO_ED448:
+      return create_eddsa_pkey_from_dnskey (dnskey, status);
+
+    default:
+      *status = DNSSEC_INDETERMINATE;
+      return NULL;
+    }
+}
+
+/*
+ * Convert ECDSA signature from raw (r||s) to DER format if the algorithm
+ * requires it. Updates sig/sig_len to point to the DER-encoded signature.
+ * Returns 0 if no conversion needed, 1 if converted (caller must free
+ * *der_sig with OPENSSL_free), or -1 on error.
+ */
+static int
+convert_ecdsa_sig_to_der (const SocketDNSSEC_RRSIG *rrsig,
+                          const SocketDNSSEC_DNSKEY *dnskey,
+                          const unsigned char **sig,
+                          size_t *sig_len,
+                          unsigned char **der_sig)
+{
+  if (dnskey->algorithm != DNSSEC_ALGO_ECDSAP256SHA256
+      && dnskey->algorithm != DNSSEC_ALGO_ECDSAP384SHA384)
+    {
+      *der_sig = NULL;
+      return 0;
+    }
+
+  *der_sig = convert_ecdsa_signature_to_der (
+      rrsig->signature, rrsig->signature_len, dnskey->algorithm, sig_len);
+  if (*der_sig == NULL)
+    return -1;
+
+  *sig = *der_sig;
+  return 1;
+}
+
+#endif /* SOCKET_HAS_TLS */
+
 /*
  * Verify RRSIG signature
  */
@@ -1325,85 +1416,28 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   if (rrsig == NULL || dnskey == NULL || msg == NULL)
     return -1;
 
-  /* Check key tag matches */
   if (rrsig->key_tag != dnskey->key_tag)
     return DNSSEC_BOGUS;
 
-  /* Check algorithm matches */
   if (rrsig->algorithm != dnskey->algorithm)
     return DNSSEC_BOGUS;
 
-  /* Check validity period */
   if (!SocketDNSSEC_rrsig_valid_time (rrsig, 0))
     return DNSSEC_BOGUS;
 
-  /* Check algorithm is supported */
   if (!SocketDNSSEC_algorithm_supported (rrsig->algorithm))
     return DNSSEC_INDETERMINATE;
 
 #ifdef SOCKET_HAS_TLS
-  /*
-   * Construct signed data (RFC 4035 Section 5.3.2):
-   * signed_data = RRSIG_RDATA | RR(1) | RR(2) | ...
-   */
+  const EVP_MD *md = select_dnssec_hash (rrsig->algorithm);
+  if (md == (const EVP_MD *)-1)
+    return DNSSEC_INDETERMINATE;
 
-  /* Select hash algorithm based on DNSSEC algorithm */
-  const EVP_MD *md = NULL;
-  switch (rrsig->algorithm)
-    {
-    case DNSSEC_ALGO_RSASHA1:
-    case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
-      md = EVP_sha1 ();
-      break;
-    case DNSSEC_ALGO_RSASHA256:
-    case DNSSEC_ALGO_ECDSAP256SHA256:
-      md = EVP_sha256 ();
-      break;
-    case DNSSEC_ALGO_RSASHA512:
-      md = EVP_sha512 ();
-      break;
-    case DNSSEC_ALGO_ECDSAP384SHA384:
-      md = EVP_sha384 ();
-      break;
-    case DNSSEC_ALGO_ED25519:
-    case DNSSEC_ALGO_ED448:
-      md = NULL; /* Ed25519/Ed448 don't use separate hash */
-      break;
-    default:
-      return DNSSEC_INDETERMINATE;
-    }
-
-  /* Create public key from DNSKEY */
-  EVP_PKEY *pkey = NULL;
   int pkey_status = DNSSEC_SECURE;
-
-  switch (dnskey->algorithm)
-    {
-    case DNSSEC_ALGO_RSASHA1:
-    case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
-    case DNSSEC_ALGO_RSASHA256:
-    case DNSSEC_ALGO_RSASHA512:
-      pkey = create_rsa_pkey_from_dnskey (dnskey, &pkey_status);
-      break;
-
-    case DNSSEC_ALGO_ECDSAP256SHA256:
-    case DNSSEC_ALGO_ECDSAP384SHA384:
-      pkey = create_ecdsa_pkey_from_dnskey (dnskey, &pkey_status);
-      break;
-
-    case DNSSEC_ALGO_ED25519:
-    case DNSSEC_ALGO_ED448:
-      pkey = create_eddsa_pkey_from_dnskey (dnskey, &pkey_status);
-      break;
-
-    default:
-      return DNSSEC_INDETERMINATE;
-    }
-
+  EVP_PKEY *pkey = create_dnssec_public_key (dnskey, &pkey_status);
   if (pkey == NULL)
     return pkey_status;
 
-  /* Create verification context */
   EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
   if (ctx == NULL)
     {
@@ -1418,7 +1452,6 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
       return DNSSEC_INDETERMINATE;
     }
 
-  /* Build signature data */
   if (construct_rrsig_signed_data (
           ctx, rrsig, msg, msglen, rrset_offset, rrset_count)
       != 0)
@@ -1428,26 +1461,19 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
       return DNSSEC_INDETERMINATE;
     }
 
-  /* Convert ECDSA signature if needed */
   const unsigned char *sig = rrsig->signature;
   size_t sig_len = rrsig->signature_len;
   unsigned char *der_sig = NULL;
 
-  if (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256
-      || dnskey->algorithm == DNSSEC_ALGO_ECDSAP384SHA384)
+  int ecdsa_rc
+      = convert_ecdsa_sig_to_der (rrsig, dnskey, &sig, &sig_len, &der_sig);
+  if (ecdsa_rc < 0)
     {
-      der_sig = convert_ecdsa_signature_to_der (
-          sig, sig_len, dnskey->algorithm, &sig_len);
-      if (der_sig == NULL)
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_BOGUS;
-        }
-      sig = der_sig;
+      EVP_MD_CTX_free (ctx);
+      EVP_PKEY_free (pkey);
+      return DNSSEC_BOGUS;
     }
 
-  /* Verify signature */
   int verify_result = EVP_DigestVerifyFinal (ctx, sig, sig_len);
 
   if (der_sig)
@@ -1461,7 +1487,7 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
 #else
   (void)rrset_offset;
   (void)rrset_count;
-  return DNSSEC_INDETERMINATE; /* No crypto support */
+  return DNSSEC_INDETERMINATE;
 #endif
 }
 
