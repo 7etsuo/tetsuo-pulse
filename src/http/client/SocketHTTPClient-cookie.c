@@ -145,8 +145,7 @@ is_public_suffix (const char *domain)
       size_t ps_len = strlen (*ps);
 
       /* Exact match: domain == public suffix */
-      if (domain_len == ps_len
-          && strcasecmp (effective_domain, *ps) == 0)
+      if (domain_len == ps_len && strcasecmp (effective_domain, *ps) == 0)
         return 1;
 
       /* Domain is subdomain of public suffix but would set cookie on parent
@@ -624,13 +623,202 @@ SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar)
   *jar = NULL;
 }
 
+/**
+ * validate_cookie_format - Validate cookie field lengths, octets, and flags
+ *
+ * Checks field lengths, character validity, expiry range, boolean flags,
+ * and same_site enum range. Called after validate_cookie_required_fields()
+ * ensures non-NULL fields.
+ *
+ * Returns: 0 on success, -1 on validation failure
+ */
+static int
+validate_cookie_format (const SocketHTTPClient_Cookie *cookie, time_t now_t)
+{
+  size_t name_l = strlen (cookie->name);
+  size_t value_l = strlen (cookie->value);
+  size_t domain_l = strlen (cookie->domain);
+  size_t path_l = cookie->path ? strlen (cookie->path) : 0;
+
+  if (name_l == 0 || name_l > HTTPCLIENT_COOKIE_MAX_NAME_LEN || value_l == 0
+      || value_l > HTTPCLIENT_COOKIE_MAX_VALUE_LEN || domain_l == 0
+      || domain_l > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN
+      || (cookie->path
+          && (path_l == 0 || path_l > HTTPCLIENT_COOKIE_MAX_PATH_LEN
+              || cookie->path[0] != '/')))
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN,
+          SOCKET_LOG_COMPONENT,
+          "Cookie rejected: invalid field lengths or format "
+          "(name_len=%zu value_len=%zu domain_len=%zu path_len=%zu) "
+          "for cookie %s",
+          name_l,
+          value_l,
+          domain_l,
+          path_l,
+          cookie->name);
+      return -1;
+    }
+
+  if (!validate_cookie_octets ((const unsigned char *)cookie->name, name_l)
+      || !validate_cookie_octets ((const unsigned char *)cookie->value,
+                                  value_l))
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "Cookie rejected: invalid characters in name or value "
+                       "for cookie %s",
+                       cookie->name);
+      return -1;
+    }
+
+  if (cookie->expires != 0 && !cookie_expiry_is_valid (cookie->expires, now_t))
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN,
+          SOCKET_LOG_COMPONENT,
+          "Cookie rejected: unreasonable expiry %lld for cookie %s",
+          (long long)cookie->expires,
+          cookie->name);
+      return -1;
+    }
+
+  if (cookie->secure != 0 && cookie->secure != 1)
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN,
+          SOCKET_LOG_COMPONENT,
+          "Cookie rejected: invalid secure flag (%d) for cookie %s",
+          cookie->secure,
+          cookie->name);
+      return -1;
+    }
+
+  if (cookie->http_only != 0 && cookie->http_only != 1)
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN,
+          SOCKET_LOG_COMPONENT,
+          "Cookie rejected: invalid http_only flag (%d) for cookie %s",
+          cookie->http_only,
+          cookie->name);
+      return -1;
+    }
+
+  if (cookie->same_site < COOKIE_SAMESITE_NONE
+      || cookie->same_site > COOKIE_SAMESITE_STRICT)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       SOCKET_LOG_COMPONENT,
+                       "Cookie rejected: invalid same_site (%d) for cookie %s",
+                       cookie->same_site,
+                       cookie->name);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * cookie_jar_update_existing - Update an existing cookie entry's mutable fields
+ *
+ * Updates value (arena strdup), expires, secure, http_only, same_site.
+ * May RAISE on allocation failure — must be called inside TRY.
+ */
+static void
+cookie_jar_update_existing (SocketHTTPClient_CookieJar_T jar,
+                            CookieEntry *entry,
+                            const SocketHTTPClient_Cookie *cookie)
+{
+  entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
+  if (entry->cookie.value == NULL)
+    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+  entry->cookie.expires = cookie->expires;
+  entry->cookie.secure = cookie->secure;
+  entry->cookie.http_only = cookie->http_only;
+  entry->cookie.same_site = cookie->same_site;
+}
+
+/**
+ * cookie_jar_insert_new - Evict if needed and insert a new cookie entry
+ *
+ * Checks capacity, clears expired, evicts oldest if necessary, then
+ * allocates and populates a new CookieEntry and links it into the hash chain.
+ * May RAISE on allocation failure — must be called inside TRY.
+ *
+ * Returns: 0 on success, -1 if jar is at max capacity after eviction
+ */
+static int
+cookie_jar_insert_new (SocketHTTPClient_CookieJar_T jar,
+                       const SocketHTTPClient_Cookie *cookie,
+                       const char *effective_path,
+                       unsigned hash)
+{
+  CookieEntry *entry;
+
+  if (jar->count >= jar->max_cookies)
+    {
+      SocketHTTPClient_CookieJar_clear_expired (jar);
+      if (jar->count >= jar->max_cookies)
+        {
+          evict_oldest_cookie (jar);
+          if (jar->count >= jar->max_cookies)
+            {
+              SocketLog_emitf (
+                  SOCKET_LOG_WARN,
+                  SOCKET_LOG_COMPONENT,
+                  "Cookie jar at max capacity (%zu), rejecting new cookie",
+                  jar->max_cookies);
+              return -1;
+            }
+        }
+    }
+
+  entry = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
+  if (entry == NULL)
+    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+  entry->cookie.name = socket_util_arena_strdup (jar->arena, cookie->name);
+  if (entry->cookie.name == NULL)
+    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+  entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
+  if (entry->cookie.value == NULL)
+    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+  entry->cookie.domain = socket_util_arena_strdup (jar->arena, cookie->domain);
+  if (entry->cookie.domain == NULL)
+    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+  entry->cookie.path = socket_util_arena_strdup (jar->arena, effective_path);
+  if (entry->cookie.path == NULL)
+    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+  entry->cookie.expires = cookie->expires;
+  entry->cookie.secure = cookie->secure;
+  entry->cookie.http_only = cookie->http_only;
+  entry->cookie.same_site = cookie->same_site;
+
+  entry->created = time (NULL);
+  if (entry->created == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      return -1;
+    }
+
+  entry->next = jar->hash_table[hash];
+  jar->hash_table[hash] = entry;
+  jar->count++;
+  return 0;
+}
+
 int
 SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTPClient_Cookie *cookie)
 {
-  const char *effective_path;
-  unsigned hash;
-  CookieEntry *entry;
+  const char *volatile effective_path;
+  volatile unsigned hash;
   volatile int result = 0;
 
   assert (jar != NULL);
@@ -641,197 +829,45 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
   pthread_mutex_lock (&jar->mutex);
 
+  /* Validate before TRY — avoids goto-out-of-TRY for validation failures */
+  if (validate_cookie_required_fields (cookie) != 0)
+    {
+      result = -1;
+      goto unlock;
+    }
+
+  time_t now_t = time (NULL);
+  if (now_t == (time_t)-1)
+    {
+      HTTPCLIENT_ERROR_MSG ("time() failed");
+      result = -1;
+      goto unlock;
+    }
+
+  if (validate_cookie_format (cookie, now_t) != 0)
+    {
+      result = -1;
+      goto unlock;
+    }
+
+  effective_path = cookie->path ? cookie->path : "/";
+  hash = cookie_hash (cookie->domain,
+                      (const char *)effective_path,
+                      cookie->name,
+                      jar->hash_size,
+                      jar->hash_seed);
+
   TRY
   {
-    // Validate cookie before storing
-    if (validate_cookie_required_fields (cookie) != 0)
-      {
-        result = -1;
-        goto unlock;
-      }
-
-    time_t now_t = time (NULL);
-    if (now_t == (time_t)-1)
-      {
-        HTTPCLIENT_ERROR_MSG ("time() failed");
-        result = -1;
-        goto unlock;
-      }
-    size_t name_l = strlen (cookie->name);
-    size_t value_l = strlen (cookie->value);
-    size_t domain_l = strlen (cookie->domain);
-    size_t path_l = cookie->path ? strlen (cookie->path) : 0;
-
-    if (name_l == 0 || name_l > HTTPCLIENT_COOKIE_MAX_NAME_LEN || value_l == 0
-        || value_l > HTTPCLIENT_COOKIE_MAX_VALUE_LEN || domain_l == 0
-        || domain_l > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN
-        || (cookie->path
-            && (path_l == 0 || path_l > HTTPCLIENT_COOKIE_MAX_PATH_LEN
-                || cookie->path[0] != '/')))
-      {
-        SocketLog_emitf (
-            SOCKET_LOG_WARN,
-            SOCKET_LOG_COMPONENT,
-            "Cookie rejected: invalid field lengths or format "
-            "(name_len=%zu value_len=%zu domain_len=%zu path_len=%zu) "
-            "for cookie %s",
-            name_l,
-            value_l,
-            domain_l,
-            path_l,
-            cookie->name);
-        result = -1;
-        goto unlock;
-      }
-
-    if (!validate_cookie_octets ((const unsigned char *)cookie->name, name_l)
-        || !validate_cookie_octets ((const unsigned char *)cookie->value,
-                                    value_l))
-      {
-        SocketLog_emitf (SOCKET_LOG_WARN,
-                         SOCKET_LOG_COMPONENT,
-                         "Cookie rejected: invalid characters in name or value "
-                         "for cookie %s",
-                         cookie->name);
-        result = -1;
-        goto unlock;
-      }
-
-    if (cookie->expires != 0
-        && !cookie_expiry_is_valid (cookie->expires, now_t))
-      {
-        SocketLog_emitf (
-            SOCKET_LOG_WARN,
-            SOCKET_LOG_COMPONENT,
-            "Cookie rejected: unreasonable expiry %lld for cookie %s",
-            (long long)cookie->expires,
-            cookie->name);
-        result = -1;
-        goto unlock;
-      }
-
-    if (cookie->secure != 0 && cookie->secure != 1)
-      {
-        SocketLog_emitf (
-            SOCKET_LOG_WARN,
-            SOCKET_LOG_COMPONENT,
-            "Cookie rejected: invalid secure flag (%d) for cookie %s",
-            cookie->secure,
-            cookie->name);
-        result = -1;
-        goto unlock;
-      }
-
-    if (cookie->http_only != 0 && cookie->http_only != 1)
-      {
-        SocketLog_emitf (
-            SOCKET_LOG_WARN,
-            SOCKET_LOG_COMPONENT,
-            "Cookie rejected: invalid http_only flag (%d) for cookie %s",
-            cookie->http_only,
-            cookie->name);
-        result = -1;
-        goto unlock;
-      }
-
-    if (cookie->same_site < COOKIE_SAMESITE_NONE
-        || cookie->same_site > COOKIE_SAMESITE_STRICT)
-      {
-        SocketLog_emitf (
-            SOCKET_LOG_WARN,
-            SOCKET_LOG_COMPONENT,
-            "Cookie rejected: invalid same_site (%d) for cookie %s",
-            cookie->same_site,
-            cookie->name);
-        result = -1;
-        goto unlock;
-      }
-
-    effective_path = cookie->path ? cookie->path : "/";
-    hash = cookie_hash (cookie->domain,
-                        effective_path,
-                        cookie->name,
-                        jar->hash_size,
-                        jar->hash_seed);
-
-    entry = cookie_jar_find_entry (
-        jar, cookie->domain, effective_path, cookie->name);
+    CookieEntry *entry = cookie_jar_find_entry (
+        jar, cookie->domain, (const char *)effective_path, cookie->name);
 
     if (entry != NULL)
-      {
-        entry->cookie.value
-            = socket_util_arena_strdup (jar->arena, cookie->value);
-        if (entry->cookie.value == NULL)
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-        entry->cookie.expires = cookie->expires;
-        entry->cookie.secure = cookie->secure;
-        entry->cookie.http_only = cookie->http_only;
-        entry->cookie.same_site = cookie->same_site;
-      }
-    else
-      {
-        if (jar->count < jar->max_cookies)
-          goto insert_cookie;
-
-        SocketHTTPClient_CookieJar_clear_expired (jar);
-        if (jar->count < jar->max_cookies)
-          goto insert_cookie;
-
-        evict_oldest_cookie (jar);
-        if (jar->count >= jar->max_cookies)
-          {
-            SocketLog_emitf (
-                SOCKET_LOG_WARN,
-                SOCKET_LOG_COMPONENT,
-                "Cookie jar at max capacity (%zu), rejecting new cookie",
-                jar->max_cookies);
-            result = -1;
-            goto unlock;
-          }
-
-      insert_cookie:
-        entry
-            = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
-        if (entry == NULL)
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-        entry->cookie.name
-            = socket_util_arena_strdup (jar->arena, cookie->name);
-        if (entry->cookie.name == NULL)
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-        entry->cookie.value
-            = socket_util_arena_strdup (jar->arena, cookie->value);
-        if (entry->cookie.value == NULL)
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-        entry->cookie.domain
-            = socket_util_arena_strdup (jar->arena, cookie->domain);
-        if (entry->cookie.domain == NULL)
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-        entry->cookie.path
-            = socket_util_arena_strdup (jar->arena, effective_path);
-        if (entry->cookie.path == NULL)
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-        entry->cookie.expires = cookie->expires;
-        entry->cookie.secure = cookie->secure;
-        entry->cookie.http_only = cookie->http_only;
-        entry->cookie.same_site = cookie->same_site;
-
-        entry->created = time (NULL);
-        if (entry->created == (time_t)-1)
-          {
-            HTTPCLIENT_ERROR_MSG ("time() failed");
-            result = -1;
-            goto unlock;
-          }
-
-        entry->next = jar->hash_table[hash];
-        jar->hash_table[hash] = entry;
-        jar->count++;
-      }
+      cookie_jar_update_existing (jar, entry, cookie);
+    else if (cookie_jar_insert_new (
+                 jar, cookie, (const char *)effective_path, (unsigned)hash)
+             < 0)
+      result = -1;
   }
   EXCEPT (SocketHTTPClient_Failed)
   {
@@ -1562,8 +1598,8 @@ httpclient_parse_set_cookie (const char *value,
 
   /* SECURITY: Validate cookie domain against Public Suffix List (RFC 6265)
    * Prevents cross-subdomain attacks on shared hosting platforms */
-  if (validate_cookie_domain_psl (
-          cookie->domain, request_uri ? request_uri->host : NULL)
+  if (validate_cookie_domain_psl (cookie->domain,
+                                  request_uri ? request_uri->host : NULL)
       != 0)
     {
       return -1;

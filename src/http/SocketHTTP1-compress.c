@@ -597,6 +597,131 @@ verify_gzip_trailer (SocketHTTP1_Decoder_T decoder)
   return 1;
 }
 
+/**
+ * decode_native_parse_header - Parse gzip/zlib header if not yet parsed
+ *
+ * Checks header_parsed flag and returns immediately if already done.
+ * Advances *data_ptr and *data_len_ptr past the header on success.
+ *
+ * Returns: 0 on success, 1 if incomplete (need more data), -1 on error
+ */
+static int
+decode_native_parse_header (SocketHTTP1_Decoder_T decoder,
+                            const uint8_t **data_ptr,
+                            size_t *data_len_ptr,
+                            size_t *consumed)
+{
+  int header_size = 0;
+
+  if (decoder->state.native.header_parsed)
+    return 0;
+
+  if (decoder->state.native.is_gzip)
+    {
+      header_size = parse_gzip_header (*data_ptr, *data_len_ptr);
+      if (header_size < 0)
+        return -1;
+      if (header_size == 0)
+        return 1;
+    }
+  else if (detect_zlib_wrapper (*data_ptr, *data_len_ptr))
+    {
+      header_size = 2;
+      decoder->state.native.zlib_wrapped = 1;
+    }
+
+  *data_ptr += header_size;
+  *data_len_ptr -= header_size;
+  *consumed += header_size;
+  decoder->state.native.header_parsed = 1;
+  return 0;
+}
+
+/**
+ * decode_native_handle_finished - Handle completed DEFLATE stream
+ *
+ * Processes trailers for gzip (with multi-member support) and zlib streams,
+ * or finishes immediately for raw deflate.
+ *
+ * Returns: 1 if result_out was set (caller should return it),
+ *          0 if no result (continue to inflate),
+ *         -1 if multi-member reset happened (re-parse header then inflate)
+ */
+static int
+decode_native_handle_finished (SocketHTTP1_Decoder_T decoder,
+                               const uint8_t **data_ptr,
+                               size_t *data_len_ptr,
+                               size_t *consumed,
+                               SocketHTTP1_Result *result_out)
+{
+  while (SocketDeflate_Inflater_finished (decoder->state.native.inflater))
+    {
+      if (decoder->state.native.is_gzip)
+        {
+          size_t collected
+              = collect_trailer_bytes (decoder, *data_ptr, *data_len_ptr);
+          *consumed += collected;
+          *data_ptr += collected;
+          *data_len_ptr -= collected;
+
+          if (decoder->state.native.trailer_pos < GZIP_TRAILER_SIZE)
+            {
+              *result_out = HTTP1_INCOMPLETE;
+              return 1;
+            }
+
+          if (!decoder->state.native.trailer_verified)
+            {
+              int verify = verify_gzip_trailer (decoder);
+              if (verify < 0)
+                {
+                  *result_out = HTTP1_ERROR;
+                  return 1;
+                }
+              decoder->state.native.trailer_verified = 1;
+            }
+
+          int next = check_next_gzip_member (*data_ptr, *data_len_ptr);
+          if (next < 0)
+            {
+              *result_out = HTTP1_INCOMPLETE;
+              return 1;
+            }
+          if (next == 0)
+            {
+              decoder->finished = 1;
+              *result_out = HTTP1_OK;
+              return 1;
+            }
+
+          reset_for_next_member (decoder);
+          return -1; /* Re-parse header for next member */
+        }
+      else if (decoder->state.native.zlib_wrapped)
+        {
+          size_t collected
+              = collect_trailer_bytes (decoder, *data_ptr, *data_len_ptr);
+          *consumed += collected;
+          (void)collected;
+          if (decoder->state.native.trailer_pos < 4)
+            {
+              *result_out = HTTP1_INCOMPLETE;
+              return 1;
+            }
+          decoder->finished = 1;
+          *result_out = HTTP1_OK;
+          return 1;
+        }
+      else
+        {
+          decoder->finished = 1;
+          *result_out = HTTP1_OK;
+          return 1;
+        }
+    }
+  return 0;
+}
+
 static SocketHTTP1_Result
 decode_native_deflate (SocketHTTP1_Decoder_T decoder,
                        const unsigned char *input,
@@ -609,105 +734,29 @@ decode_native_deflate (SocketHTTP1_Decoder_T decoder,
   SocketDeflate_Result res;
   const uint8_t *data = input;
   size_t data_len = input_len;
+  int rc;
+  SocketHTTP1_Result result;
 
   *consumed = 0;
   *written = 0;
 
-  /* Parse header on first call */
-  if (!decoder->state.native.header_parsed)
+  /* Parse header (first call or after multi-member reset) */
+  rc = decode_native_parse_header (decoder, &data, &data_len, consumed);
+  if (rc != 0)
+    return rc < 0 ? HTTP1_ERROR : HTTP1_INCOMPLETE;
+
+  /* Handle completed DEFLATE stream (trailers, multi-member gzip) */
+  rc = decode_native_handle_finished (
+      decoder, &data, &data_len, consumed, &result);
+  if (rc == 1)
+    return result;
+
+  /* Multi-member reset: re-parse next member's header */
+  if (rc == -1)
     {
-      int header_size = 0;
-
-      if (decoder->state.native.is_gzip)
-        {
-          header_size = parse_gzip_header (data, data_len);
-          if (header_size < 0)
-            return HTTP1_ERROR;
-          if (header_size == 0)
-            return HTTP1_INCOMPLETE;
-        }
-      else if (detect_zlib_wrapper (data, data_len))
-        {
-          header_size = 2;
-          decoder->state.native.zlib_wrapped = 1;
-        }
-
-      data += header_size;
-      data_len -= header_size;
-      *consumed = header_size;
-      decoder->state.native.header_parsed = 1;
-    }
-
-  /* Handle completed DEFLATE stream (may be multi-member for gzip) */
-  while (SocketDeflate_Inflater_finished (decoder->state.native.inflater))
-    {
-      if (decoder->state.native.is_gzip)
-        {
-          /* Collect trailer bytes (8 bytes: CRC32 + ISIZE) */
-          size_t collected = collect_trailer_bytes (decoder, data, data_len);
-          *consumed += collected;
-          data += collected;
-          data_len -= collected;
-
-          /* Check if trailer complete */
-          if (decoder->state.native.trailer_pos < GZIP_TRAILER_SIZE)
-            return HTTP1_INCOMPLETE;
-
-          /* Verify this member's trailer (skip if already verified) */
-          if (!decoder->state.native.trailer_verified)
-            {
-              int verify = verify_gzip_trailer (decoder);
-              if (verify < 0)
-                return HTTP1_ERROR; /* CRC or ISIZE mismatch */
-              decoder->state.native.trailer_verified = 1;
-            }
-
-          /* Check for next member (RFC 1952 multi-member) */
-          int next = check_next_gzip_member (data, data_len);
-          if (next < 0)
-            return HTTP1_INCOMPLETE; /* Need more data to determine */
-          if (next == 0)
-            {
-              decoder->finished = 1;
-              return HTTP1_OK; /* No more members */
-            }
-
-          /* More members exist - reset and continue */
-          reset_for_next_member (decoder);
-          /* Loop will parse next member's header since header_parsed=0 now */
-          break; /* Exit while-loop to re-enter main decode flow */
-        }
-      else if (decoder->state.native.zlib_wrapped)
-        {
-          /* zlib: collect 4-byte Adler-32, no multi-member */
-          size_t collected = collect_trailer_bytes (decoder, data, data_len);
-          *consumed += collected;
-          (void)collected; /* Consistency with gzip case; not used further */
-          if (decoder->state.native.trailer_pos < 4)
-            return HTTP1_INCOMPLETE;
-          decoder->finished = 1;
-          return HTTP1_OK;
-        }
-      else
-        {
-          /* Raw deflate: no trailer, single stream only */
-          decoder->finished = 1;
-          return HTTP1_OK;
-        }
-    }
-
-  /* If we reset for next member, re-parse header */
-  if (!decoder->state.native.header_parsed && decoder->state.native.is_gzip)
-    {
-      int header_size = parse_gzip_header (data, data_len);
-      if (header_size < 0)
-        return HTTP1_ERROR;
-      if (header_size == 0)
-        return HTTP1_INCOMPLETE;
-      data += header_size;
-      data_len -= header_size;
-      *consumed += header_size;
-      decoder->state.native.header_parsed = 1;
+      rc = decode_native_parse_header (decoder, &data, &data_len, consumed);
+      if (rc != 0)
+        return rc < 0 ? HTTP1_ERROR : HTTP1_INCOMPLETE;
     }
 
   /* Inflate DEFLATE data */
@@ -740,10 +789,6 @@ decode_native_deflate (SocketHTTP1_Decoder_T decoder,
 
       if (res == DEFLATE_OK)
         {
-          /* DEFLATE done - collect any remaining trailer bytes.
-           * Use actual_consumed to get accurate boundary, since the inflate
-           * API may report more bytes consumed due to bit buffer pre-fetching.
-           */
           size_t actual = SocketDeflate_Inflater_actual_consumed (
               decoder->state.native.inflater);
           size_t remaining = data_len - actual;
@@ -753,11 +798,9 @@ decode_native_deflate (SocketHTTP1_Decoder_T decoder,
             {
               size_t collected
                   = collect_trailer_bytes (decoder, data + actual, remaining);
-              /* Adjust consumed to include trailer bytes we collected */
               *consumed = *consumed - inf_consumed + actual + collected;
             }
 
-          /* Raw deflate (no trailer) is done immediately */
           if (!decoder->state.native.is_gzip
               && !decoder->state.native.zlib_wrapped)
             {

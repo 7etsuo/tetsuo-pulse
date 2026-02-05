@@ -747,8 +747,7 @@ server_http2_handle_streaming_callback (ServerHTTP2Stream *s,
   req_ctx.arena = s->arena;
   req_ctx.start_time_ms = Socket_get_monotonic_ms ();
 
-  if (s->body_callback (&req_ctx, buf, n, end_stream,
-                        s->body_callback_userdata)
+  if (s->body_callback (&req_ctx, buf, n, end_stream, s->body_callback_userdata)
       != 0)
     {
       SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
@@ -762,9 +761,7 @@ server_http2_handle_streaming_callback (ServerHTTP2Stream *s,
  * Guard: !body_uses_buf && body != NULL
  */
 static int
-server_http2_append_to_body (ServerHTTP2Stream *s,
-                             const char *buf,
-                             size_t n)
+server_http2_append_to_body (ServerHTTP2Stream *s, const char *buf, size_t n)
 {
   size_t space = s->body_capacity - s->body_len;
   size_t to_copy = (n > space) ? space : n;
@@ -858,6 +855,155 @@ server_http2_buffer_request_body (ServerHTTP2Stream *s,
 }
 
 
+/**
+ * handle_h2_headers_event - Process received HTTP/2 headers
+ *
+ * Stack-allocates header array (~5KB), receives headers from the stream,
+ * and builds the request object.
+ *
+ * Returns: 0 on success, -1 on error (caller should return early)
+ */
+static int
+handle_h2_headers_event (SocketHTTPServer_T server,
+                         ServerHTTP2Stream *s,
+                         SocketHTTP2_Stream_T stream)
+{
+  SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
+  size_t hdr_count = 0;
+  int end_stream = 0;
+
+  if (SocketHTTP2_Stream_recv_headers (stream,
+                                       hdrs,
+                                       SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                       &hdr_count,
+                                       &end_stream)
+      == 1)
+    {
+      if (server_http2_build_request (server, s, hdrs, hdr_count, end_stream)
+          < 0)
+        return -1;
+    }
+  return 0;
+}
+
+/**
+ * handle_h2_trailers_event - Process received HTTP/2 trailers
+ *
+ * Receives trailers, filters out pseudo-headers per RFC 9113,
+ * and adds them to the request trailer collection.
+ *
+ * Returns: 0 on success, -1 on error (caller should return early)
+ */
+static int
+handle_h2_trailers_event (ServerHTTP2Stream *s, SocketHTTP2_Stream_T stream)
+{
+  SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
+  size_t trailer_count = 0;
+
+  if (SocketHTTP2_Stream_recv_trailers (
+          stream, trailers, SOCKETHTTP2_MAX_DECODED_HEADERS, &trailer_count)
+      != 1)
+    return 0;
+
+  if (s->request_trailers == NULL)
+    {
+      s->request_trailers = SocketHTTP_Headers_new (s->arena);
+      if (s->request_trailers == NULL)
+        {
+          SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+          return -1;
+        }
+    }
+
+  for (size_t i = 0; i < trailer_count; i++)
+    {
+      const SocketHPACK_Header *hdr = &trailers[i];
+      if (hdr->name == NULL || hdr->value == NULL)
+        continue;
+      /* RFC 9113: trailers must not include pseudo-headers. */
+      if (hdr->name_len > 0 && hdr->name[0] == ':')
+        continue;
+      SocketHTTP_Headers_add_n (s->request_trailers,
+                                hdr->name,
+                                hdr->name_len,
+                                hdr->value,
+                                hdr->value_len);
+    }
+  return 0;
+}
+
+/**
+ * handle_h2_data_event - Process received HTTP/2 data frames
+ *
+ * Reads data from the stream in a loop, dispatching to either the
+ * streaming callback or the buffered body path.
+ *
+ * Returns: 0 on success, -1 on error (caller should return early)
+ */
+static int
+handle_h2_data_event (SocketHTTPServer_T server,
+                      ServerConnection *conn,
+                      ServerHTTP2Stream *s,
+                      SocketHTTP2_Stream_T stream)
+{
+  int end_stream = 0;
+  char buf[HTTPSERVER_RECV_BUFFER_SIZE];
+  size_t max_body = server->config.max_body_size;
+
+  for (;;)
+    {
+      ssize_t n = SocketHTTP2_Stream_recv_data (
+          stream, buf, sizeof (buf), &end_stream);
+      if (n <= 0)
+        break;
+
+      s->body_received += (size_t)n;
+
+      if (s->body_streaming && s->body_callback)
+        {
+          if (server_http2_handle_streaming_callback (
+                  s, server, conn, stream, buf, (size_t)n, end_stream)
+              < 0)
+            return -1;
+        }
+      else
+        {
+          if (server_http2_buffer_request_body (
+                  s, stream, buf, (size_t)n, max_body)
+              < 0)
+            return -1;
+        }
+
+      if (end_stream)
+        break;
+    }
+
+  if (end_stream)
+    s->request_complete = 1;
+  return 0;
+}
+
+/**
+ * handle_h2_stream_reset - Unlink and dispose a reset stream
+ *
+ * Immediately frees stream state without waiting for pending output,
+ * as the peer has reset the stream.
+ */
+static void
+handle_h2_stream_reset (ServerConnection *conn, ServerHTTP2Stream *s)
+{
+  s->request_complete = 1;
+
+  ServerHTTP2Stream **pp = &conn->http2_streams;
+  while (*pp != NULL && *pp != s)
+    pp = &(*pp)->next;
+  if (*pp == s)
+    *pp = s->next;
+  SocketHTTP2_Stream_set_userdata (s->stream, NULL);
+  if (s->arena != NULL)
+    Arena_dispose (&s->arena);
+}
+
 void
 server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
                         SocketHTTP2_Stream_T stream,
@@ -884,105 +1030,18 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
 
   if (event == HTTP2_EVENT_HEADERS_RECEIVED)
     {
-      /*
-       * Stack allocation: ~5KB (128 headers * ~40 bytes per
-       * SocketHPACK_Header). This is acceptable for modern systems (Linux
-       * default: 8MB stack). Chosen over heap allocation for performance (no
-       * malloc overhead). If stack pressure becomes an issue, consider arena
-       * allocation.
-       */
-      SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
-      size_t hdr_count = 0;
-      int end_stream = 0;
-
-      if (SocketHTTP2_Stream_recv_headers (stream,
-                                           hdrs,
-                                           SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                           &hdr_count,
-                                           &end_stream)
-          == 1)
-        {
-          if (server_http2_build_request (
-                  server, s, hdrs, hdr_count, end_stream)
-              < 0)
-            return;
-        }
+      if (handle_h2_headers_event (server, s, stream) < 0)
+        return;
     }
   else if (event == HTTP2_EVENT_TRAILERS_RECEIVED)
     {
-      /* Stack allocation: Same rationale as headers above (~5KB) */
-      SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
-      size_t trailer_count = 0;
-
-      if (SocketHTTP2_Stream_recv_trailers (
-              stream, trailers, SOCKETHTTP2_MAX_DECODED_HEADERS, &trailer_count)
-          == 1)
-        {
-          if (s->request_trailers == NULL)
-            {
-              s->request_trailers = SocketHTTP_Headers_new (s->arena);
-              if (s->request_trailers == NULL)
-                {
-                  SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
-                  return;
-                }
-            }
-
-          for (size_t i = 0; i < trailer_count; i++)
-            {
-              const SocketHPACK_Header *hdr = &trailers[i];
-              if (hdr->name == NULL || hdr->value == NULL)
-                continue;
-              /* RFC 9113: trailers must not include pseudo-headers. */
-              if (hdr->name_len > 0 && hdr->name[0] == ':')
-                continue;
-              SocketHTTP_Headers_add_n (s->request_trailers,
-                                        hdr->name,
-                                        hdr->name_len,
-                                        hdr->value,
-                                        hdr->value_len);
-            }
-        }
+      if (handle_h2_trailers_event (s, stream) < 0)
+        return;
     }
   else if (event == HTTP2_EVENT_DATA_RECEIVED)
     {
-      int end_stream = 0;
-      char buf[HTTPSERVER_RECV_BUFFER_SIZE];
-      size_t max_body = server->config.max_body_size;
-
-      for (;;)
-        {
-          ssize_t n = SocketHTTP2_Stream_recv_data (
-              stream, buf, sizeof (buf), &end_stream);
-          if (n <= 0)
-            break;
-
-          s->body_received += (size_t)n;
-
-          /* Guard: Handle streaming callback if configured */
-          if (s->body_streaming && s->body_callback)
-            {
-              if (server_http2_handle_streaming_callback (s, server, conn, stream,
-                                                          buf, (size_t)n,
-                                                          end_stream)
-                  < 0)
-                return;
-            }
-          /* Normal path: Buffer the request body */
-          else
-            {
-              if (server_http2_buffer_request_body (s, stream, buf, (size_t)n,
-                                                    max_body)
-                  < 0)
-                return;
-            }
-
-          if (end_stream)
-            break;
-        }
-
-      if (end_stream)
-        s->request_complete = 1;
+      if (handle_h2_data_event (server, conn, s, stream) < 0)
+        return;
     }
   else if (event == HTTP2_EVENT_STREAM_END)
     {
@@ -990,28 +1049,14 @@ server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn,
     }
   else if (event == HTTP2_EVENT_STREAM_RESET)
     {
-      s->request_complete = 1;
+      handle_h2_stream_reset (conn, s);
+      return;
     }
 
   if (event == HTTP2_EVENT_WINDOW_UPDATE)
     {
       server_http2_flush_stream_output (conn, s);
       server_http2_try_dispose_stream (conn, s);
-      return;
-    }
-
-  if (event == HTTP2_EVENT_STREAM_RESET)
-    {
-      /* Peer reset: free stream state immediately. */
-      /* Unlink + dispose without waiting for pending output. */
-      ServerHTTP2Stream **pp = &conn->http2_streams;
-      while (*pp != NULL && *pp != s)
-        pp = &(*pp)->next;
-      if (*pp == s)
-        *pp = s->next;
-      SocketHTTP2_Stream_set_userdata (s->stream, NULL);
-      if (s->arena != NULL)
-        Arena_dispose (&s->arena);
       return;
     }
 
@@ -1447,8 +1492,7 @@ server_h2_build_push_headers (Arena_T arena,
   out_idx = HTTP2_REQUEST_PSEUDO_HEADER_COUNT;
   for (size_t i = 0; i < extra; i++)
     {
-      const SocketHTTP_Header *hdr
-          = SocketHTTP_Headers_at (extra_headers, i);
+      const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (extra_headers, i);
 
       /* Skip NULL headers, pseudo-headers, or malformed entries */
       if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)

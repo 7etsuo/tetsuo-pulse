@@ -458,6 +458,115 @@ server_find_static_route (SocketHTTPServer_T server, const char *path)
 }
 
 /**
+ * static_file_resolve_path - Validate and resolve a static file path
+ *
+ * Validates the path for security, builds the full path, resolves via
+ * realpath(), verifies it's within the allowed directory, and stats the file.
+ *
+ * Returns: 0 on success (resolved_path and st populated), -1 if not found
+ */
+static int
+static_file_resolve_path (const StaticRoute *route,
+                          const char *file_path,
+                          char *resolved_path,
+                          size_t resolved_path_size,
+                          struct stat *st)
+{
+  char full_path[HTTPSERVER_STATIC_MAX_PATH];
+
+  (void)resolved_path_size;
+
+  if (!validate_static_path (file_path))
+    {
+      SOCKET_LOG_WARN_MSG ("Rejected suspicious static path: %.100s",
+                           file_path);
+      return -1;
+    }
+
+  int path_len = snprintf (full_path,
+                           sizeof (full_path),
+                           "%s/%s",
+                           route->resolved_directory,
+                           file_path);
+  if (path_len < 0 || (size_t)path_len >= sizeof (full_path))
+    return -1;
+
+  if (realpath (full_path, resolved_path) == NULL)
+    return -1;
+
+  if (strncmp (
+          resolved_path, route->resolved_directory, route->resolved_dir_len)
+      != 0)
+    {
+      SOCKET_LOG_WARN_MSG ("Path traversal attempt blocked: %.100s", file_path);
+      return -1;
+    }
+
+  if (stat (resolved_path, st) < 0)
+    return -1;
+
+  if (!S_ISREG (st->st_mode))
+    return -1;
+
+  return 0;
+}
+
+/**
+ * static_file_set_headers - Set response headers for static file serving
+ *
+ * Sets Content-Type, Content-Length, Last-Modified, Date, Accept-Ranges,
+ * and optionally Content-Range for range responses.
+ */
+static void
+static_file_set_headers (ServerConnection *conn,
+                         const struct stat *st,
+                         const char *mime_type,
+                         int use_range,
+                         off_t range_start,
+                         off_t range_end)
+{
+  char date_buf[SOCKETHTTP_DATE_BUFSIZE];
+  char last_modified_buf[SOCKETHTTP_DATE_BUFSIZE];
+  char content_length_buf[32];
+  char content_range_buf[SOCKETHTTP_CONTENT_RANGE_BUFSIZE];
+
+  if (use_range)
+    {
+      conn->response_status = 206;
+      snprintf (content_range_buf,
+                sizeof (content_range_buf),
+                "bytes %ld-%ld/%ld",
+                (long)range_start,
+                (long)range_end,
+                (long)st->st_size);
+      SocketHTTP_Headers_set (
+          conn->response_headers, "Content-Range", content_range_buf);
+      snprintf (content_length_buf,
+                sizeof (content_length_buf),
+                "%ld",
+                (long)(range_end - range_start + 1));
+    }
+  else
+    {
+      conn->response_status = 200;
+      snprintf (content_length_buf,
+                sizeof (content_length_buf),
+                "%ld",
+                (long)st->st_size);
+    }
+
+  SocketHTTP_Headers_set (conn->response_headers, "Content-Type", mime_type);
+  SocketHTTP_Headers_set (
+      conn->response_headers, "Content-Length", content_length_buf);
+  SocketHTTP_Headers_set (conn->response_headers,
+                          "Last-Modified",
+                          format_http_date (st->st_mtime, last_modified_buf));
+  SocketHTTP_Headers_set (
+      conn->response_headers, "Date", format_http_date (time (NULL), date_buf));
+  SocketHTTP_Headers_set (conn->response_headers, "Accept-Ranges", "bytes");
+}
+
+/**
  * serve_static_file - Serve a static file with full HTTP semantics
  * @server: HTTP server
  * @conn: Connection to serve on
@@ -479,11 +588,9 @@ server_serve_static_file (SocketHTTPServer_T server,
                           StaticRoute *route,
                           const char *file_path)
 {
-  char full_path[HTTPSERVER_STATIC_MAX_PATH];
   char resolved_path[HTTPSERVER_STATIC_MAX_PATH];
   char date_buf[SOCKETHTTP_DATE_BUFSIZE];
   char last_modified_buf[SOCKETHTTP_DATE_BUFSIZE];
-  char content_length_buf[32];
   char content_range_buf[SOCKETHTTP_CONTENT_RANGE_BUFSIZE];
   struct stat st;
   const char *mime_type;
@@ -496,53 +603,11 @@ server_serve_static_file (SocketHTTPServer_T server,
   int result = 0;
   ssize_t sent;
 
-  /* Validate the file path for security */
-  if (!validate_static_path (file_path))
-    {
-      SOCKET_LOG_WARN_MSG ("Rejected suspicious static path: %.100s",
-                           file_path);
-      return 0; /* Treat as not found */
-    }
+  if (static_file_resolve_path (
+          route, file_path, resolved_path, sizeof (resolved_path), &st)
+      < 0)
+    return 0;
 
-  /* Build full path */
-  int path_len = snprintf (full_path,
-                           sizeof (full_path),
-                           "%s/%s",
-                           route->resolved_directory,
-                           file_path);
-  if (path_len < 0 || (size_t)path_len >= sizeof (full_path))
-    {
-      return 0; /* Path too long */
-    }
-
-  /* Resolve the full path and verify it's within the allowed directory */
-  if (realpath (full_path, resolved_path) == NULL)
-    {
-      return 0; /* File doesn't exist or can't be resolved */
-    }
-
-  /* Security: Ensure resolved path is within the allowed directory */
-  if (strncmp (
-          resolved_path, route->resolved_directory, route->resolved_dir_len)
-      != 0)
-    {
-      SOCKET_LOG_WARN_MSG ("Path traversal attempt blocked: %.100s", file_path);
-      return 0;
-    }
-
-  /* Check file exists and is regular file */
-  if (stat (resolved_path, &st) < 0)
-    {
-      return 0;
-    }
-
-  if (!S_ISREG (st.st_mode))
-    {
-      /* Not a regular file (directory, symlink target outside dir, etc.) */
-      return 0;
-    }
-
-  /* Determine MIME type from file extension */
   mime_type = get_mime_type (resolved_path);
 
   /* Check If-Modified-Since header */
@@ -550,19 +615,15 @@ server_serve_static_file (SocketHTTPServer_T server,
       = SocketHTTP_Headers_get (conn->request->headers, "If-Modified-Since");
   if (handle_conditional_get (
           conn, if_modified_since, st.st_mtime, date_buf, last_modified_buf))
-    {
-      return 1; /* 304 Not Modified sent */
-    }
+    return 1;
 
   /* Check Range header for partial content */
   range_header = SocketHTTP_Headers_get (conn->request->headers, "Range");
   if (range_header != NULL && conn->request->method == HTTP_METHOD_GET)
     {
-      /* Try to parse the range */
       if (!parse_range_header (
               range_header, st.st_size, &range_start, &range_end))
         {
-          /* Invalid range - send 416 Range Not Satisfiable */
           conn->response_status = 416;
           snprintf (content_range_buf,
                     sizeof (content_range_buf),
@@ -574,55 +635,20 @@ server_serve_static_file (SocketHTTPServer_T server,
           conn->response_body_len = 0;
           return 1;
         }
-
-      /* Valid range parsed */
       use_range = 1;
     }
 
-  /* Open the file */
   fd = open (resolved_path, O_RDONLY);
   if (fd < 0)
-    {
-      return 0;
-    }
+    return 0;
 
-  /* Set response headers */
-  if (use_range)
+  if (!use_range)
     {
-      conn->response_status = 206;
-      snprintf (content_range_buf,
-                sizeof (content_range_buf),
-                "bytes %ld-%ld/%ld",
-                (long)range_start,
-                (long)range_end,
-                (long)st.st_size);
-      SocketHTTP_Headers_set (
-          conn->response_headers, "Content-Range", content_range_buf);
-      snprintf (content_length_buf,
-                sizeof (content_length_buf),
-                "%ld",
-                (long)(range_end - range_start + 1));
-    }
-  else
-    {
-      conn->response_status = 200;
       range_start = 0;
       range_end = st.st_size - 1;
-      snprintf (content_length_buf,
-                sizeof (content_length_buf),
-                "%ld",
-                (long)st.st_size);
     }
-
-  SocketHTTP_Headers_set (conn->response_headers, "Content-Type", mime_type);
-  SocketHTTP_Headers_set (
-      conn->response_headers, "Content-Length", content_length_buf);
-  SocketHTTP_Headers_set (conn->response_headers,
-                          "Last-Modified",
-                          format_http_date (st.st_mtime, last_modified_buf));
-  SocketHTTP_Headers_set (
-      conn->response_headers, "Date", format_http_date (time (NULL), date_buf));
-  SocketHTTP_Headers_set (conn->response_headers, "Accept-Ranges", "bytes");
+  static_file_set_headers (
+      conn, &st, mime_type, use_range, range_start, range_end);
 
   /* For HEAD requests, don't send body */
   if (conn->request->method == HTTP_METHOD_HEAD)
@@ -664,7 +690,6 @@ server_serve_static_file (SocketHTTPServer_T server,
       {
         sent = sendfile (Socket_fd (conn->socket), fd, &offset, remaining);
 
-        /* Handle errors - retry on transient failures */
         if (sent < 0)
           {
             if (is_sendfile_retry_error (errno))
@@ -682,7 +707,6 @@ server_serve_static_file (SocketHTTPServer_T server,
       }
   }
 
-  /* Mark response as finished */
   conn->response_finished = 1;
   conn->response_body = NULL;
   conn->response_body_len = 0;
