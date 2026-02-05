@@ -122,6 +122,7 @@ typedef struct
 {
   uint64_t send_offset;                /**< Next byte to send */
   uint64_t recv_offset;                /**< Next expected byte */
+  uint64_t tls_read_offset;            /**< Bytes already fed to TLS */
   uint8_t *recv_buffer;                /**< Reassembly buffer */
   size_t recv_buffer_size;             /**< Buffer allocation size */
   SocketQUICCryptoSegment_T *segments; /**< Out-of-order segments */
@@ -158,10 +159,10 @@ typedef struct SocketQUIC0RTT
   SocketQUIC0RTT_State state; /**< Current 0-RTT state */
 
   /* Session ticket (from previous connection) */
-  uint8_t *ticket_data;          /**< Serialized session ticket */
-  size_t ticket_len;             /**< Ticket length in bytes */
-  uint64_t ticket_age_add;       /**< Obfuscation for ticket age */
-  uint64_t ticket_issued_ms;     /**< When ticket was issued (ms) */
+  uint8_t *ticket_data;           /**< Serialized session ticket */
+  size_t ticket_len;              /**< Ticket length in bytes */
+  uint64_t ticket_age_add;        /**< Obfuscation for ticket age */
+  uint64_t ticket_issued_ms;      /**< When ticket was issued (ms) */
   uint32_t ticket_max_early_data; /**< max_early_data_size from ticket */
 
   /* Saved parameters from original connection (for validation) */
@@ -171,9 +172,9 @@ typedef struct SocketQUIC0RTT
   size_t saved_alpn_len;                    /**< ALPN string length */
 
   /* Early data tracking */
-  uint8_t *early_data_buffer;  /**< Buffer for replay on rejection */
-  size_t early_data_len;       /**< Bytes in early_data_buffer */
-  size_t early_data_capacity;  /**< Allocated buffer size */
+  uint8_t *early_data_buffer; /**< Buffer for replay on rejection */
+  size_t early_data_len;      /**< Bytes in early_data_buffer */
+  size_t early_data_capacity; /**< Allocated buffer size */
 
   int keys_derived; /**< 0-RTT keys have been derived */
 } SocketQUIC0RTT_T;
@@ -221,8 +222,8 @@ struct SocketQUICHandshake
   char error_reason[256]; /**< Human-readable error */
 
   /* 0-RTT early data support (RFC 9001 §4.6) */
-  SocketQUIC0RTT_T zero_rtt;   /**< 0-RTT state and data */
-  int hello_retry_received;    /**< HRR received (forces 0-RTT rejection) */
+  SocketQUIC0RTT_T zero_rtt; /**< 0-RTT state and data */
+  int hello_retry_received;  /**< HRR received (forces 0-RTT rejection) */
 };
 
 /* ============================================================================
