@@ -613,7 +613,7 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
   size_t len = 0;
 
   /* Validate target port range */
-  if (conn->target_port < 1 || conn->target_port > 65535)
+  if (conn->target_port < 1 || conn->target_port > SOCKET_MAX_PORT)
     {
       socketproxy_set_error (conn,
                              PROXY_ERROR,

@@ -62,7 +62,7 @@ Socket_simple_happyeyeballs_connect_config (
       return NULL;
     }
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return NULL;

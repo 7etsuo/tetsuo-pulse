@@ -122,7 +122,7 @@ Socket_simple_connect_tls_ex (const char *host,
 
   Socket_simple_clear_error ();
 
-  if (!host || port <= 0 || port > 65535)
+  if (!host || port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid host or port");
       return NULL;
@@ -499,7 +499,7 @@ Socket_simple_listen_tls (const char *host,
 
   Socket_simple_clear_error ();
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return NULL;

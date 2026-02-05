@@ -58,7 +58,7 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
 
   Socket_simple_clear_error ();
 
-  if (!host || port <= 0 || port > 65535)
+  if (!host || port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid host or port");
       return NULL;
@@ -107,7 +107,7 @@ Socket_simple_listen (const char *host, int port, int backlog)
 
   Socket_simple_clear_error ();
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return NULL;
@@ -542,7 +542,7 @@ Socket_simple_udp_bind (const char *host, int port)
 
   Socket_simple_clear_error ();
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return NULL;
@@ -614,7 +614,7 @@ Socket_simple_udp_sendto (SocketSimple_Socket_T sock,
       return -1;
     }
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return -1;
@@ -891,7 +891,7 @@ Socket_simple_udp_connect (SocketSimple_Socket_T sock,
       return -1;
     }
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return -1;

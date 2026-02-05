@@ -372,7 +372,7 @@ socketproxy_parse_ipv6_hostport (const char *start,
       if (*endptr != '\0' && *endptr != '/' && *endptr != '?' && *endptr != '#')
         return -1;
 
-      if (p < 1 || p > 65535)
+      if (p < 1 || p > SOCKET_MAX_PORT)
         return -1;
 
       config->port = (int)p;
@@ -420,14 +420,14 @@ socketproxy_parse_ipv4_hostport (const char *start,
       host_end = colon;
       char *endptr;
       long p = strtol (colon + 1, &endptr, 10);
-      if (endptr <= colon + 1 || p < 1 || p > 65535)
+      if (endptr <= colon + 1 || p < 1 || p > SOCKET_MAX_PORT)
         {
           return -1;
         }
       config->port = (int)p;
       if (endptr > authority_end)
         authority_end = endptr;
-      if (config->port <= 0 || config->port > 65535)
+      if (config->port <= 0 || config->port > SOCKET_MAX_PORT)
         return -1;
     }
 
@@ -736,9 +736,9 @@ proxy_validate_target (const char *target_host, int target_port)
           "Target hostname contains forbidden characters (CR or LF)");
       RAISE_PROXY_ERROR (SocketProxy_Failed);
     }
-  if (target_port < 1 || target_port > 65535)
+  if (target_port < 1 || target_port > SOCKET_MAX_PORT)
     {
-      PROXY_ERROR_MSG ("Invalid target port %d (must be 1-65535)", target_port);
+      PROXY_ERROR_MSG ("Invalid target port %d (must be " SOCKET_PORT_VALID_RANGE ")", target_port);
       RAISE_PROXY_ERROR (SocketProxy_Failed);
     }
   return 0;
@@ -1057,7 +1057,7 @@ SocketProxy_Conn_start (SocketDNSResolver_T resolver,
   assert (poll != NULL);
   assert (proxy != NULL);
   assert (target_host != NULL);
-  assert (target_port > 0 && target_port <= 65535);
+  assert (target_port > 0 && target_port <= SOCKET_MAX_PORT);
 
   /* Validate inputs */
   proxy_validate_config (proxy);
@@ -1095,7 +1095,7 @@ SocketProxy_Conn_new (const SocketProxy_Config *proxy,
 
   assert (proxy != NULL);
   assert (target_host != NULL);
-  assert (target_port > 0 && target_port <= 65535);
+  assert (target_port > 0 && target_port <= SOCKET_MAX_PORT);
 
   /* Validate inputs */
   proxy_validate_config (proxy);
@@ -2023,7 +2023,7 @@ SocketProxy_tunnel (Socket_T socket,
   assert (socket != NULL);
   assert (proxy != NULL);
   assert (target_host != NULL);
-  assert (target_port > 0 && target_port <= 65535);
+  assert (target_port > 0 && target_port <= SOCKET_MAX_PORT);
 
   /* Early validation guards */
   if (proxy->type == SOCKET_PROXY_NONE)
@@ -2034,7 +2034,7 @@ SocketProxy_tunnel (Socket_T socket,
     return PROXY_ERROR_PROTOCOL;
   if (strpbrk (target_host, "\r\n") != NULL)
     return PROXY_ERROR_PROTOCOL;
-  if (target_port < 1 || target_port > 65535)
+  if (target_port < 1 || target_port > SOCKET_MAX_PORT)
     return PROXY_ERROR_PROTOCOL;
 
   proxy_tunnel_init_context (

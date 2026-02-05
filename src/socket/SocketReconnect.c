@@ -952,9 +952,9 @@ SocketReconnect_new (const char *host,
       SOCKET_ERROR_MSG ("Host cannot be NULL");
       RAISE_MODULE_ERROR (SocketReconnect_Failed);
     }
-  if (!(port > 0 && port <= 65535))
+  if (!(port > 0 && port <= SOCKET_MAX_PORT))
     {
-      SOCKET_ERROR_FMT ("Invalid port %d (must be 1-65535)", port);
+      SOCKET_ERROR_FMT ("Invalid port %d (must be " SOCKET_PORT_VALID_RANGE ")", port);
       RAISE_MODULE_ERROR (SocketReconnect_Failed);
     }
 
