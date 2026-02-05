@@ -136,6 +136,48 @@ simple_create_handle (Socket_T sock, int is_server, int is_tls);
 SocketSimple_Socket_T simple_create_udp_handle (SocketDgram_T dgram);
 
 /* ============================================================================
+ * Cleanup Macros
+ * ============================================================================
+ */
+
+#define SIMPLE_CLEANUP_SOCKET(sock_ptr)       \
+  do                                          \
+    {                                         \
+      if ((sock_ptr) && *(sock_ptr))          \
+        Socket_free ((Socket_T *)(sock_ptr)); \
+    }                                         \
+  while (0)
+
+#define SIMPLE_CLEANUP_DGRAM(dgram_ptr)                  \
+  do                                                     \
+    {                                                    \
+      if ((dgram_ptr) && *(dgram_ptr))                   \
+        SocketDgram_free ((SocketDgram_T *)(dgram_ptr)); \
+    }                                                    \
+  while (0)
+
+#ifdef SOCKET_HAS_TLS
+#define SIMPLE_CLEANUP_TLS_CTX(ctx_ptr)                          \
+  do                                                             \
+    {                                                            \
+      if ((ctx_ptr) && *(ctx_ptr))                               \
+        SocketTLSContext_free ((SocketTLSContext_T *)(ctx_ptr)); \
+    }                                                            \
+  while (0)
+
+#define SIMPLE_CLEANUP_TLS_CLIENT(client_ptr)     \
+  do                                              \
+    {                                             \
+      if ((client_ptr) && *(client_ptr))          \
+        {                                         \
+          SocketTLS_disable (*(client_ptr));      \
+          Socket_free ((Socket_T *)(client_ptr)); \
+        }                                         \
+    }                                             \
+  while (0)
+#endif
+
+/* ============================================================================
  * Constants
  * ============================================================================
  */

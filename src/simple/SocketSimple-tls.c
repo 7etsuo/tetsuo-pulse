@@ -31,67 +31,6 @@ Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts)
 #ifdef SOCKET_HAS_TLS
 
 /* ============================================================================
- * TLS Exception Cleanup Helpers
- * ============================================================================
- */
-
-/**
- * @brief Clean up TLS context and socket on exception.
- *
- * Helper function to consolidate cleanup logic used in exception handlers.
- * Takes volatile pointers to maintain exception safety.
- *
- * @param ctx_ptr Pointer to volatile TLS context (may be NULL)
- * @param sock_ptr Pointer to volatile socket (may be NULL)
- */
-static void
-cleanup_tls_exception (volatile SocketTLSContext_T *ctx_ptr,
-                       volatile Socket_T *sock_ptr)
-{
-  if (ctx_ptr && *ctx_ptr)
-    {
-      SocketTLSContext_free ((SocketTLSContext_T *)ctx_ptr);
-    }
-  if (sock_ptr && *sock_ptr)
-    {
-      Socket_free ((Socket_T *)sock_ptr);
-    }
-}
-
-/**
- * @brief Clean up socket on exception (context-only variant).
- *
- * Used when only the TLS context needs cleanup (socket is external).
- *
- * @param ctx_ptr Pointer to volatile TLS context (may be NULL)
- */
-static void
-cleanup_tls_ctx_exception (volatile SocketTLSContext_T *ctx_ptr)
-{
-  if (ctx_ptr && *ctx_ptr)
-    {
-      SocketTLSContext_free ((SocketTLSContext_T *)ctx_ptr);
-    }
-}
-
-/**
- * @brief Clean up client socket on exception (TLS variant).
- *
- * Used in accept path where TLS needs to be disabled before freeing socket.
- *
- * @param client_ptr Pointer to volatile client socket
- */
-static void
-cleanup_tls_client_exception (volatile Socket_T *client_ptr)
-{
-  if (client_ptr && *client_ptr)
-    {
-      SocketTLS_disable (*client_ptr);
-      Socket_free ((Socket_T *)client_ptr);
-    }
-}
-
-/* ============================================================================
  * TLS Client Functions
  * ============================================================================
  */
@@ -194,7 +133,8 @@ Socket_simple_connect_tls_ex (const char *host,
   {
     if (exception_occurred)
       {
-        cleanup_tls_exception (&ctx, &sock);
+        SIMPLE_CLEANUP_TLS_CTX (&ctx);
+        SIMPLE_CLEANUP_SOCKET (&sock);
       }
   }
   END_TRY;
@@ -206,7 +146,8 @@ Socket_simple_connect_tls_ex (const char *host,
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      cleanup_tls_exception (&ctx, &sock);
+      SIMPLE_CLEANUP_TLS_CTX (&ctx);
+      SIMPLE_CLEANUP_SOCKET (&sock);
       return NULL;
     }
 
@@ -286,7 +227,7 @@ Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock,
   {
     if (exception_occurred)
       {
-        cleanup_tls_ctx_exception (&ctx);
+        SIMPLE_CLEANUP_TLS_CTX (&ctx);
       }
   }
   END_TRY;
@@ -547,7 +488,8 @@ Socket_simple_listen_tls (const char *host,
   {
     if (exception_occurred)
       {
-        cleanup_tls_exception (&ctx, &sock);
+        SIMPLE_CLEANUP_TLS_CTX (&ctx);
+        SIMPLE_CLEANUP_SOCKET (&sock);
       }
   }
   END_TRY;
@@ -559,7 +501,8 @@ Socket_simple_listen_tls (const char *host,
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      cleanup_tls_exception (&ctx, &sock);
+      SIMPLE_CLEANUP_TLS_CTX (&ctx);
+      SIMPLE_CLEANUP_SOCKET (&sock);
       return NULL;
     }
 
@@ -631,7 +574,7 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
   {
     if (exception_occurred)
       {
-        cleanup_tls_client_exception (&client);
+        SIMPLE_CLEANUP_TLS_CLIENT (&client);
       }
   }
   END_TRY;
@@ -643,7 +586,7 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      cleanup_tls_client_exception (&client);
+      SIMPLE_CLEANUP_TLS_CLIENT (&client);
       return NULL;
     }
 

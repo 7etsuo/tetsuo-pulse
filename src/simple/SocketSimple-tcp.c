@@ -81,8 +81,7 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
       {
         simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
       }
-    if (sock)
-      Socket_free ((Socket_T *)&sock);
+    SIMPLE_CLEANUP_SOCKET (&sock);
     return NULL;
   }
   END_TRY;
@@ -133,8 +132,7 @@ Socket_simple_listen (const char *host, int port, int backlog)
       {
         simple_set_error_errno (SOCKET_SIMPLE_ERR_LISTEN, "Listen failed");
       }
-    if (sock)
-      Socket_free ((Socket_T *)&sock);
+    SIMPLE_CLEANUP_SOCKET (&sock);
     return NULL;
   }
   END_TRY;
@@ -557,8 +555,7 @@ Socket_simple_udp_bind (const char *host, int port)
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_BIND, "UDP bind failed");
-    if (dgram)
-      SocketDgram_free ((SocketDgram_T *)&dgram);
+    SIMPLE_CLEANUP_DGRAM (&dgram);
     return NULL;
   }
   END_TRY;
@@ -997,8 +994,7 @@ Socket_simple_connect_unix (const char *path)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT,
                             "Unix socket connect failed");
-    if (sock)
-      Socket_free ((Socket_T *)&sock);
+    SIMPLE_CLEANUP_SOCKET (&sock);
     return NULL;
   }
   END_TRY;
@@ -1037,8 +1033,7 @@ Socket_simple_listen_unix (const char *path, int backlog)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_LISTEN,
                             "Unix socket listen failed");
-    if (sock)
-      Socket_free ((Socket_T *)&sock);
+    SIMPLE_CLEANUP_SOCKET (&sock);
     return NULL;
   }
   END_TRY;
