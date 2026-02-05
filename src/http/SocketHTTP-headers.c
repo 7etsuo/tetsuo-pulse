@@ -25,9 +25,8 @@
  */
 
 #define HEADER_ENTRY_NULL_OVERHEAD 2
-#define SOCKETHTTP_MAX_CHAIN_LEN 10
+/* SOCKETHTTP_MAX_CHAIN_LEN and SOCKETHTTP_MAX_DOS_WARNINGS from SocketConfig.h */
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
-#define SOCKETHTTP_MAX_DOS_WARNINGS 3 /* Hard fail after this many warnings */
 
 #define VALIDATE_HEADERS_NAME(headers, name, retval) \
   do                                                 \

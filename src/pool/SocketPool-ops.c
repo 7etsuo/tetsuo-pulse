@@ -36,21 +36,9 @@
 
 /* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
 
-/**
- * Default batch size for SocketPool_foreach iteration.
- * Balances lock contention vs iteration overhead.
- */
-#ifndef SOCKET_POOL_FOREACH_BATCH_SIZE
-#define SOCKET_POOL_FOREACH_BATCH_SIZE 100
-#endif
-
-/**
- * Divisor for converting percentage (0-100) to fraction.
- * Used in SocketPool_prewarm to calculate slot count from percentage.
- */
-#ifndef SOCKET_PERCENTAGE_DIVISOR
-#define SOCKET_PERCENTAGE_DIVISOR 100
-#endif
+/* Uses centralized constants from SocketConfig.h:
+ * SOCKET_POOL_FOREACH_BATCH_SIZE - iteration batch size
+ * SOCKET_PERCENTAGE_DIVISOR      - percentage conversion */
 
 #define T SocketPool_T
 

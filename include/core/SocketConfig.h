@@ -1819,6 +1819,61 @@ typedef struct SocketTimeouts_Extended
 #endif
 
 /* ============================================================================
+ * HTTP Pool Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum hash chain length for HTTP client connection pool.
+ *
+ * SECURITY: Limits hash chain traversal to prevent DoS via hash collision
+ * attacks on the HTTP connection pool.
+ */
+#ifndef SOCKET_HTTP_POOL_MAX_CHAIN_LEN
+#define SOCKET_HTTP_POOL_MAX_CHAIN_LEN 1024
+#endif
+
+/**
+ * @brief Hash table load factor for HTTP client connection pool.
+ *
+ * Hash table size = max_connections / load_factor. A load factor of 8
+ * balances memory usage with lookup performance.
+ */
+#ifndef SOCKET_HTTP_POOL_LOAD_FACTOR
+#define SOCKET_HTTP_POOL_LOAD_FACTOR 8
+#endif
+
+/**
+ * @brief Maximum hash chain length for HTTP header hash table.
+ *
+ * SECURITY: Limits chain traversal during header lookups to prevent
+ * algorithmic complexity attacks.
+ */
+#ifndef SOCKETHTTP_MAX_CHAIN_LEN
+#define SOCKETHTTP_MAX_CHAIN_LEN 10
+#endif
+
+/**
+ * @brief Maximum DoS chain-length warnings before hard failure.
+ *
+ * After this many warnings about excessive chain lengths, the connection
+ * is rejected to prevent resource exhaustion.
+ */
+#ifndef SOCKETHTTP_MAX_DOS_WARNINGS
+#define SOCKETHTTP_MAX_DOS_WARNINGS 3
+#endif
+
+/**
+ * @brief Default batch size for SocketPool_foreach iteration.
+ *
+ * Balances lock contention vs iteration overhead. The pool mutex is
+ * released and reacquired every batch_size iterations.
+ */
+#ifndef SOCKET_POOL_FOREACH_BATCH_SIZE
+#define SOCKET_POOL_FOREACH_BATCH_SIZE 100
+#endif
+
+/* ============================================================================
  * Hash and Algorithm Constants
  * ============================================================================
  */

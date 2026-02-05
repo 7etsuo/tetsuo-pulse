@@ -42,18 +42,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define HTTPS_DEFAULT_PORT 443
 #endif
 
-/* SECURITY: Limit to prevent DoS via hash collision attacks */
-#ifndef POOL_MAX_HASH_CHAIN_LEN
-#define POOL_MAX_HASH_CHAIN_LEN 1024
-#endif
-
-/* Hash table load factor for sizing the hash table based on max connections.
- * A load factor of 8 means we size the hash table to ~1/8 the number of
- * max connections, providing a good balance between memory usage and
- * hash lookup performance. */
-#ifndef POOL_TARGET_LOAD_FACTOR
-#define POOL_TARGET_LOAD_FACTOR 8
-#endif
+/* Use centralized constants from SocketConfig.h:
+ * SOCKET_HTTP_POOL_MAX_CHAIN_LEN - hash chain DoS limit
+ * SOCKET_HTTP_POOL_LOAD_FACTOR   - hash table sizing */
 
 /* Forward declarations */
 static void
@@ -114,7 +105,7 @@ raise_chain_too_long (size_t chain_len,
                       "Hash chain too long (%zu >= %d) %s for %s:%d - "
                       "possible collision attack",
                       chain_len,
-                      POOL_MAX_HASH_CHAIN_LEN,
+                      SOCKET_HTTP_POOL_MAX_CHAIN_LEN,
                       context,
                       host,
                       port);
@@ -124,7 +115,7 @@ raise_chain_too_long (size_t chain_len,
                       "Hash chain too long (%zu >= %d) %s - "
                       "possible collision attack",
                       chain_len,
-                      POOL_MAX_HASH_CHAIN_LEN,
+                      SOCKET_HTTP_POOL_MAX_CHAIN_LEN,
                       context);
 }
 
@@ -136,7 +127,7 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
 
   size_t chain_len = 0;
   HTTPPoolEntry **pp = &pool->hash_table[hash];
-  while (*pp != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
+  while (*pp != NULL && chain_len < SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     {
       ++chain_len;
       if (*pp == entry)
@@ -147,7 +138,7 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
         }
       pp = &(*pp)->hash_next;
     }
-  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+  if (chain_len >= SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     raise_chain_too_long (
         chain_len, "during removal", entry->host, entry->port);
 }
@@ -274,14 +265,14 @@ pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
   unsigned hash = httpclient_host_hash (host, port, pool->hash_size);
 
   HTTPPoolEntry *entry = pool->hash_table[hash];
-  while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
+  while (entry != NULL && chain_len < SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     {
       ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure))
         count++;
       entry = entry->hash_next;
     }
-  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+  if (chain_len >= SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     raise_chain_too_long (chain_len, "in pool count", host, port);
 
   return count;
@@ -311,7 +302,7 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
   /* Calculate hash table size based on expected connections, with security
    * limits */
   size_t suggested_size
-      = config->max_total_connections / POOL_TARGET_LOAD_FACTOR;
+      = config->max_total_connections / SOCKET_HTTP_POOL_LOAD_FACTOR;
   if (suggested_size < HTTPCLIENT_POOL_HASH_SIZE)
     {
       suggested_size = HTTPCLIENT_POOL_HASH_SIZE;
@@ -426,7 +417,7 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
   /* Find an available connection, with chain length limit to prevent DoS */
   size_t chain_len = 0;
   entry = pool->hash_table[hash];
-  while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
+  while (entry != NULL && chain_len < SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     {
       ++chain_len;
 
@@ -459,7 +450,7 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
       pthread_mutex_unlock (&pool->mutex);
       return entry;
     }
-  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+  if (chain_len >= SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     raise_chain_too_long (chain_len, "in pool lookup", host, port);
 
   pthread_mutex_unlock (&pool->mutex);
@@ -486,7 +477,7 @@ httpclient_pool_get_prepared (HTTPPool *pool,
   /* Use pre-computed hash directly - avoids strlen + hash computation */
   size_t chain_len = 0;
   entry = pool->hash_table[precomputed_hash];
-  while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
+  while (entry != NULL && chain_len < SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     {
       ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure)
@@ -507,7 +498,7 @@ httpclient_pool_get_prepared (HTTPPool *pool,
         }
       entry = entry->hash_next;
     }
-  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+  if (chain_len >= SOCKET_HTTP_POOL_MAX_CHAIN_LEN)
     raise_chain_too_long (chain_len, "in pool lookup", host, port);
 
   pthread_mutex_unlock (&pool->mutex);
