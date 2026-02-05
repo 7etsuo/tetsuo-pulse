@@ -1564,7 +1564,7 @@ ws_parse_url_port (const char *port_start, const char *path_start, int *port)
     return 0;
 
   p = strtol (port_start + 1, &endptr, 10);
-  if (endptr == port_start + 1 || p < 1 || p > 65535)
+  if (endptr == port_start + 1 || p < 1 || p > SOCKET_MAX_PORT)
     {
       SOCKET_ERROR_MSG ("Invalid port in WebSocket URL");
       return -1;

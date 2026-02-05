@@ -111,16 +111,14 @@ initialize_mutex (struct SocketDNS_T *dns)
 static void
 initialize_queue_condition (struct SocketDNS_T *dns)
 {
-  /* TODO(Phase 2.x): Removed - no queue condition needed without worker threads
-   */
+  /* No queue condition needed - synchronous resolver uses direct callbacks */
   (void)dns;
 }
 
 static void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
-  /* TODO(Phase 2.x): Removed - no result condition needed without worker
-   * threads */
+  /* No result condition needed - synchronous resolver uses direct callbacks */
   (void)dns;
 }
 

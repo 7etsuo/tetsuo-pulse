@@ -325,7 +325,7 @@ parse_port_number (const char *port_str)
     }
 
   /* Check for overflow or out of range */
-  if (errno == ERANGE || port <= 0 || port > 65535)
+  if (errno == ERANGE || port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Invalid port: out of range");
@@ -511,7 +511,7 @@ Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
         return Socket_simple_connect (target_host, target_port);
     }
 
-  if (!target_host || target_port <= 0 || target_port > 65535)
+  if (!target_host || target_port <= 0 || target_port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Invalid target host or port");
@@ -644,7 +644,7 @@ Socket_simple_proxy_tunnel (SocketSimple_Socket_T sock,
       return 0;
     }
 
-  if (!target_host || target_port <= 0 || target_port > 65535)
+  if (!target_host || target_port <= 0 || target_port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Invalid target host or port");
