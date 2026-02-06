@@ -1756,6 +1756,57 @@ parse_bind_ds (const char *zone,
   return 0;
 }
 
+/*
+ * Tokenize a BIND-format anchor line into fields.
+ * Skips comments, blank lines, and mid-line comments.
+ * Returns the number of fields parsed, or 0 to skip the line.
+ */
+static int
+parse_anchor_fields (char *line, const char *fields[], int max_fields)
+{
+  char *p = line;
+  int count = 0;
+
+  while (isspace ((unsigned char)*p))
+    p++;
+
+  if (*p == ';' || *p == '#' || *p == '\0')
+    return 0;
+
+  char *token = strtok (line, " \t\n");
+  while (token != NULL && count < max_fields)
+    {
+      if (token[0] == ';' || token[0] == '#')
+        break;
+      fields[count++] = token;
+      token = strtok (NULL, " \t\n");
+    }
+
+  return count;
+}
+
+/*
+ * Allocate a copy of data using the validator's arena (or malloc as fallback).
+ * Returns the allocated copy, or NULL on failure.
+ */
+static unsigned char *
+alloc_anchor_data (SocketDNSSEC_Validator_T validator,
+                   const unsigned char *src,
+                   size_t len)
+{
+  unsigned char *dst;
+
+  if (validator->arena)
+    dst = Arena_alloc (validator->arena, len, __FILE__, __LINE__);
+  else
+    dst = malloc (len);
+
+  if (dst != NULL)
+    memcpy (dst, src, len);
+
+  return dst;
+}
+
 int
 SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
                                      const char *filename)
@@ -1772,27 +1823,8 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
 
   while (fgets (line, sizeof (line), fp) != NULL)
     {
-      /* Skip comments and blank lines */
-      char *p = line;
-      while (isspace ((unsigned char)*p))
-        p++;
-
-      if (*p == ';' || *p == '#' || *p == '\0')
-        continue;
-
-      /* Parse line into fields */
       const char *fields[16];
-      int field_count = 0;
-      char *token = strtok (line, " \t\n");
-
-      while (token != NULL && field_count < 16)
-        {
-          /* Skip comments mid-line */
-          if (token[0] == ';' || token[0] == '#')
-            break;
-          fields[field_count++] = token;
-          token = strtok (NULL, " \t\n");
-        }
+      int field_count = parse_anchor_fields (line, fields, 16);
 
       if (field_count < 5)
         continue;
@@ -1800,10 +1832,10 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
       /* Extract zone name (fields[0]) */
       char zone[DNS_MAX_NAME_LEN];
       if (!socket_util_safe_strncpy (zone, fields[0], sizeof (zone)))
-        continue; /* Skip entry if zone name truncated */
+        continue;
 
-      /* Check for IN class (fields[1]) and record type (fields[2] or fields[3])
-       */
+      /* Check for IN class (fields[1]) and record type (fields[2] or
+       * fields[3]) */
       int type_idx = 2;
       if (strcasecmp (fields[1], "IN") == 0)
         type_idx = 2;
@@ -1818,9 +1850,7 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
       memset (&anchor, 0, sizeof (anchor));
 
       unsigned char data_buffer[2048];
-      size_t data_len = 0;
 
-      /* Parse DNSKEY or DS */
       if (strcasecmp (rrtype, "DNSKEY") == 0)
         {
           if (parse_bind_dnskey (zone,
@@ -1831,23 +1861,14 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
                                  sizeof (data_buffer))
               != 0)
             continue;
-          data_len = anchor.data.dnskey.pubkey_len;
 
-          /* Allocate pubkey in validator's arena */
-          unsigned char *pubkey;
-          if (validator->arena)
-            pubkey
-                = Arena_alloc (validator->arena, data_len, __FILE__, __LINE__);
-          else
-            pubkey = malloc (data_len);
-
+          unsigned char *pubkey = alloc_anchor_data (
+              validator, data_buffer, anchor.data.dnskey.pubkey_len);
           if (pubkey == NULL)
             {
               fclose (fp);
               return -1;
             }
-
-          memcpy (pubkey, data_buffer, data_len);
           anchor.data.dnskey.pubkey = pubkey;
         }
       else if (strcasecmp (rrtype, "DS") == 0)
@@ -1860,32 +1881,21 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
                              sizeof (data_buffer))
               != 0)
             continue;
-          data_len = anchor.data.ds.digest_len;
 
-          /* Allocate digest in validator's arena */
-          unsigned char *digest;
-          if (validator->arena)
-            digest
-                = Arena_alloc (validator->arena, data_len, __FILE__, __LINE__);
-          else
-            digest = malloc (data_len);
-
+          unsigned char *digest = alloc_anchor_data (
+              validator, data_buffer, anchor.data.ds.digest_len);
           if (digest == NULL)
             {
               fclose (fp);
               return -1;
             }
-
-          memcpy (digest, data_buffer, data_len);
           anchor.data.ds.digest = digest;
         }
       else
         {
-          /* Unknown record type */
           continue;
         }
 
-      /* Add anchor to validator */
       if (SocketDNSSEC_validator_add_anchor (validator, &anchor) == 0)
         anchor_count++;
     }

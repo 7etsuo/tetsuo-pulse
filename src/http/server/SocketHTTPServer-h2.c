@@ -228,34 +228,17 @@ process_pseudo_header (ServerHTTP2BuildContext *ctx,
   return -1;
 }
 
-int
-server_http2_build_request (SocketHTTPServer_T server,
-                            ServerHTTP2Stream *s,
-                            const SocketHPACK_Header *headers,
-                            size_t header_count,
-                            int end_stream)
+/*
+ * Process HTTP/2 headers: dispatch pseudo-headers, validate and collect
+ * regular headers. Returns 0 on success, -1 on error.
+ */
+static int
+process_h2_headers (ServerHTTP2BuildContext *ctx,
+                    SocketHTTP_Headers_T h,
+                    const SocketHPACK_Header *headers,
+                    size_t header_count)
 {
-  SocketHTTP_Request *req;
-  SocketHTTP_Headers_T h;
-  ServerHTTP2BuildContext ctx;
-  int64_t content_length = -1;
   int pseudo_section_ended = 0;
-
-  assert (server != NULL);
-  assert (s != NULL);
-  assert (headers != NULL);
-
-  if (s->request != NULL)
-    return 0;
-
-  h = SocketHTTP_Headers_new (s->arena);
-  if (h == NULL)
-    return -1;
-
-  /* Initialize validation context */
-  memset (&ctx, 0, sizeof (ctx));
-  ctx.arena = s->arena;
-  ctx.method = HTTP_METHOD_UNKNOWN;
 
   for (size_t i = 0; i < header_count; i++)
     {
@@ -276,8 +259,7 @@ server_http2_build_request (SocketHTTPServer_T server,
               return -1;
             }
 
-          /* Dispatch to appropriate handler */
-          if (process_pseudo_header (&ctx, hdr) != 0)
+          if (process_pseudo_header (ctx, hdr) != 0)
             return -1;
 
           continue;
@@ -286,13 +268,6 @@ server_http2_build_request (SocketHTTPServer_T server,
       /* Regular header - pseudo-header section has ended */
       pseudo_section_ended = 1;
 
-      /* Comprehensive RFC 9113 Section 8.2 header validation:
-       * - Field name must be lowercase (no uppercase ASCII)
-       * - No prohibited characters (NUL/CR/LF) in name or value
-       * - No leading/trailing whitespace in value
-       * - Not a forbidden connection-specific header
-       * - TE header must contain only "trailers" value
-       */
       if (http2_validate_regular_header (hdr) != 0)
         {
           SERVER_LOG_ERROR (
@@ -304,23 +279,68 @@ server_http2_build_request (SocketHTTPServer_T server,
           h, hdr->name, hdr->name_len, hdr->value, hdr->value_len);
     }
 
-  /* Validate required pseudo-headers for requests */
-  if (!ctx.has_method)
+  return 0;
+}
+
+/*
+ * Validate that all required HTTP/2 pseudo-headers are present.
+ * Returns 0 on success, -1 on error.
+ */
+static int
+validate_h2_pseudo_requirements (const ServerHTTP2BuildContext *ctx)
+{
+  if (!ctx->has_method)
     {
       SERVER_LOG_ERROR ("Request missing required :method pseudo-header");
       return -1;
     }
-  if (!ctx.has_scheme && !ctx.has_authority)
+  if (!ctx->has_scheme && !ctx->has_authority)
     {
       SERVER_LOG_ERROR (
           "Request missing required :scheme or :authority pseudo-header");
       return -1;
     }
-  if (!ctx.has_path)
+  if (!ctx->has_path)
     {
       SERVER_LOG_ERROR ("Request missing required :path pseudo-header");
       return -1;
     }
+  return 0;
+}
+
+int
+server_http2_build_request (SocketHTTPServer_T server,
+                            ServerHTTP2Stream *s,
+                            const SocketHPACK_Header *headers,
+                            size_t header_count,
+                            int end_stream)
+{
+  SocketHTTP_Request *req;
+  SocketHTTP_Headers_T h;
+  ServerHTTP2BuildContext ctx;
+  int64_t content_length = -1;
+
+  assert (server != NULL);
+  assert (s != NULL);
+  assert (headers != NULL);
+
+  if (s->request != NULL)
+    return 0;
+
+  h = SocketHTTP_Headers_new (s->arena);
+  if (h == NULL)
+    return -1;
+
+  /* Initialize validation context */
+  memset (&ctx, 0, sizeof (ctx));
+  ctx.arena = s->arena;
+  ctx.method = HTTP_METHOD_UNKNOWN;
+
+  if (process_h2_headers (&ctx, h, headers, header_count) != 0)
+    return -1;
+
+  if (validate_h2_pseudo_requirements (&ctx) != 0)
+    return -1;
 
   if (ctx.path == NULL)
     ctx.path = "/";
