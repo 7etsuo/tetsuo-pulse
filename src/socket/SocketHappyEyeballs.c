@@ -679,14 +679,6 @@ he_get_next_address (T he)
   return entry;
 }
 
-static void
-he_clear_nonblocking (const int fd)
-{
-  int flags = fcntl (fd, F_GETFL);
-
-  if (flags >= 0)
-    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
-}
 
 static Socket_T
 he_create_socket_for_address (const struct addrinfo *addr)
@@ -977,9 +969,7 @@ he_poll_attempt_status (const int fd, short *revents)
   struct pollfd pfd;
   int result;
 
-  pfd.fd = fd;
-  pfd.events = POLLOUT;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
 
   result = poll (&pfd, 1, 0);
   if (result < 0)
@@ -1486,7 +1476,7 @@ SocketHappyEyeballs_result (T he)
             break;
           }
       }
-      he_clear_nonblocking (Socket_fd (result));
+      SocketCommon_clear_nonblock (Socket_fd (result));
     }
 
   return result;

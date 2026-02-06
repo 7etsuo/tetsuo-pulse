@@ -116,7 +116,8 @@ setup_unix_address (struct sockaddr_un *addr, const char *path)
 static void
 wait_for_unix_connect (int fd, const char *path, int timeout_ms)
 {
-  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
   int poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
 
   if (poll_result < 0)
@@ -320,7 +321,8 @@ Socket_accept_timeout (T socket, int timeout_ms)
   TRY
   {
     int do_accept = 1;
-    struct pollfd pfd = { .fd = fd, .events = POLLIN, .revents = 0 };
+    struct pollfd pfd;
+    SOCKET_INIT_POLLFD (pfd, fd, POLLIN);
     int poll_result;
 
     if (timeout_ms > 0)

@@ -227,9 +227,7 @@ health_default_probe (struct SocketPool_T *pool,
   if (!conn || !conn->socket)
     return 0;
 
-  pfd.fd = Socket_fd (conn->socket);
-  pfd.events = POLLIN;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, Socket_fd (conn->socket), POLLIN);
 
   ret = poll (&pfd, 1, timeout_ms);
 

@@ -429,7 +429,8 @@ check_tcp_connect_complete (T transport, struct Connection *conn)
 {
   struct ServerConfig *server = &transport->servers[conn->server_index];
   int fd = Socket_fd (conn->socket);
-  struct pollfd pfd = { .fd = fd, .events = POLLOUT };
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
   int ret = poll (&pfd, 1, 0);
 
   if (ret <= 0)
@@ -1124,9 +1125,7 @@ process_socket_io (T transport, int timeout_ms)
     return 0;
 
   /* Setup poll */
-  pfd.fd = fd;
-  pfd.events = (short)get_poll_events (conn);
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, (short)get_poll_events (conn));
 
   /* Poll socket */
   ret = poll (&pfd, 1, timeout_ms);

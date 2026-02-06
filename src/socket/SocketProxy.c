@@ -62,14 +62,6 @@ static __thread size_t proxy_static_total_used = 0;
 #endif
 
 static int proxy_check_timeout (struct SocketProxy_Conn_T *conn);
-static void
-proxy_clear_nonblocking (int fd)
-{
-  int flags = fcntl (fd, F_GETFL);
-
-  if (flags >= 0)
-    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
-}
 
 void
 SocketProxy_config_defaults (SocketProxy_Config *config)
@@ -738,7 +730,9 @@ proxy_validate_target (const char *target_host, int target_port)
     }
   if (target_port < 1 || target_port > SOCKET_MAX_PORT)
     {
-      PROXY_ERROR_MSG ("Invalid target port %d (must be " SOCKET_PORT_VALID_RANGE ")", target_port);
+      PROXY_ERROR_MSG (
+          "Invalid target port %d (must be " SOCKET_PORT_VALID_RANGE ")",
+          target_port);
       RAISE_PROXY_ERROR (SocketProxy_Failed);
     }
   return 0;
@@ -968,9 +962,8 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
       unsigned events
           = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
       short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
-      struct pollfd pfd = { .fd = Socket_fd (conn->socket),
-                            .events = poll_events,
-                            .revents = 0 };
+      struct pollfd pfd;
+      SOCKET_INIT_POLLFD (pfd, Socket_fd (conn->socket), poll_events);
 
       int64_t now_ms = socketproxy_get_time_ms ();
       int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
@@ -1238,7 +1231,7 @@ SocketProxy_Conn_socket (SocketProxy_Conn_T conn)
   conn->socket = NULL;
   conn->transferred = 1;
 
-  proxy_clear_nonblocking (Socket_fd (sock));
+  SocketCommon_clear_nonblock (Socket_fd (sock));
 
   return sock;
 }
@@ -1907,7 +1900,8 @@ proxy_tunnel_poll_for_io (SocketProxy_Conn_T conn,
                           int64_t deadline_ms,
                           unsigned events)
 {
-  struct pollfd pfd = { fd, (short)events, 0 };
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, fd, (short)events);
   int64_t now_ms = socketproxy_get_time_ms ();
   int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
 
@@ -2047,7 +2041,7 @@ SocketProxy_tunnel (Socket_T socket,
   if (!was_nonblocking)
     Socket_setnonblocking (socket);
 
-  /* TLS handshake if needed */
+    /* TLS handshake if needed */
 #if SOCKET_HAS_TLS
   if (conn->type == SOCKET_PROXY_HTTPS)
     {
@@ -2071,7 +2065,7 @@ SocketProxy_tunnel (Socket_T socket,
 cleanup:
   /* Single cleanup point - restore blocking state */
   if (!was_nonblocking)
-    proxy_clear_nonblocking (fd);
+    SocketCommon_clear_nonblock (fd);
 
   return result;
 }

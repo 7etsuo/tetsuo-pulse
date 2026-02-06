@@ -1328,9 +1328,7 @@ socket_poll_readable (int fd, int timeout_ms)
   int poll_timeout;
 
   poll_timeout = (timeout_ms < 0) ? 0 : timeout_ms;
-  pfd.fd = fd;
-  pfd.events = POLLIN;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLIN);
 
   if (poll (&pfd, 1, poll_timeout) < 0)
     {
@@ -1422,9 +1420,7 @@ Socket_is_readable (const T socket)
   if (fd < 0)
     return -1;
 
-  pfd.fd = fd;
-  pfd.events = POLLIN;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLIN);
 
   if (poll (&pfd, 1, 0) < 0)
     return -1;
@@ -1447,9 +1443,7 @@ Socket_is_writable (const T socket)
   if (fd < 0)
     return -1;
 
-  pfd.fd = fd;
-  pfd.events = POLLOUT;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
 
   if (poll (&pfd, 1, 0) < 0)
     return -1;

@@ -48,7 +48,8 @@ socket_wait_for_connect (T socket, int timeout_ms)
   assert (timeout_ms >= 0);
 
   int fd = SocketBase_fd (socket->base);
-  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
   int result = socket_poll_eintr_retry (&pfd, timeout_ms);
 
   if (result < 0)

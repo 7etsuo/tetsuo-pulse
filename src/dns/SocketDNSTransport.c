@@ -776,16 +776,12 @@ setup_poll_fds (T transport, struct pollfd *fds)
 
   if (transport->fd_v4 >= 0)
     {
-      fds[nfds].fd = transport->fd_v4;
-      fds[nfds].events = POLLIN;
-      fds[nfds].revents = 0;
+      SOCKET_INIT_POLLFD (fds[nfds], transport->fd_v4, POLLIN);
       nfds++;
     }
   if (transport->fd_v6 >= 0)
     {
-      fds[nfds].fd = transport->fd_v6;
-      fds[nfds].events = POLLIN;
-      fds[nfds].revents = 0;
+      SOCKET_INIT_POLLFD (fds[nfds], transport->fd_v6, POLLIN);
       nfds++;
     }
 
@@ -1021,9 +1017,7 @@ tcp_conn_check_connect (T transport, int ns_idx)
     return conn->fd >= 0 ? 1 : -1;
 
   /* Check with poll */
-  pfd.fd = conn->fd;
-  pfd.events = POLLOUT;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, conn->fd, POLLOUT);
   ret = poll (&pfd, 1, 0);
 
   if (ret < 0)
@@ -1310,9 +1304,7 @@ handle_tcp_response (T transport, struct SocketDNSQuery *query)
   if (conn->fd < 0 || conn->connecting)
     return 0; /* Not ready to receive */
 
-  pfd.fd = conn->fd;
-  pfd.events = POLLIN;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, conn->fd, POLLIN);
 
   if (poll (&pfd, 1, 0) <= 0 || !(pfd.revents & POLLIN))
     return 0; /* No data available */

@@ -75,18 +75,6 @@ reconnect_set_socket_error (T conn, const char *operation, int err)
             Socket_safe_strerror (err));
 }
 
-static void
-restore_socket_blocking (Socket_T socket)
-{
-  if (!socket)
-    return;
-  int fd = Socket_fd (socket);
-  if (fd < 0)
-    return;
-  int flags = fcntl (fd, F_GETFL);
-  if (flags >= 0)
-    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
-}
 
 #if SOCKET_HAS_TLS
 static void
@@ -461,7 +449,8 @@ start_connect (T conn)
 static int
 poll_for_write_ready (int fd, short *revents_out)
 {
-  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
 
   int result = poll (&pfd, 1, 0);
   if (result < 0)
@@ -533,7 +522,8 @@ check_connect_completion (T conn)
       return -1;
     }
 
-  restore_socket_blocking (conn->socket);
+  if (conn->socket && Socket_fd (conn->socket) >= 0)
+    SocketCommon_clear_nonblock (Socket_fd (conn->socket));
   conn->connect_in_progress = 0;
   return 1;
 }
@@ -820,9 +810,7 @@ default_health_check (const T conn,
     return 0;
 
   fd = Socket_fd (socket);
-  pfd.fd = fd;
-  pfd.events = POLLIN | POLLERR | POLLHUP;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLIN | POLLERR | POLLHUP);
 
   result = poll (&pfd, 1, poll_timeout);
   if (result < 0)
@@ -954,7 +942,8 @@ SocketReconnect_new (const char *host,
     }
   if (!(port > 0 && port <= SOCKET_MAX_PORT))
     {
-      SOCKET_ERROR_FMT ("Invalid port %d (must be " SOCKET_PORT_VALID_RANGE ")", port);
+      SOCKET_ERROR_FMT ("Invalid port %d (must be " SOCKET_PORT_VALID_RANGE ")",
+                        port);
       RAISE_MODULE_ERROR (SocketReconnect_Failed);
     }
 
@@ -1205,7 +1194,7 @@ SocketReconnect_process (T conn)
     complete_tls_connection (conn);
   else if (hs_result < 0)
     handle_connect_failure (conn);
-  /* hs_result == 0: handshake in progress */
+    /* hs_result == 0: handshake in progress */
 #endif /* SOCKET_HAS_TLS */
 
   /* LCOV_EXCL_STOP */
@@ -1244,9 +1233,9 @@ SocketReconnect_next_timeout_ms (T conn)
       if (conn->policy.health_check_interval_ms <= 0)
         break;
 
-      remaining = (conn->last_health_check_ms
-                   + conn->policy.health_check_interval_ms)
-                  - now;
+      remaining
+          = (conn->last_health_check_ms + conn->policy.health_check_interval_ms)
+            - now;
       if (remaining <= 0)
         return 0;
 

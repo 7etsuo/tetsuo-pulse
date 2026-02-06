@@ -974,6 +974,45 @@ extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
  */
 extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
 
+/**
+ * @brief Clear O_NONBLOCK flag on a raw file descriptor.
+ * @ingroup core_io
+ *
+ * Unconditionally clears the O_NONBLOCK flag, restoring blocking mode.
+ * Operates on a raw int fd without requiring SocketBase_T or saved
+ * original flags. Intended for cleanup contexts where the high-level
+ * socket wrapper is unavailable.
+ *
+ * @param[in] fd File descriptor to modify (must be valid open FD).
+ * @return 0 on success, -1 on failure (errno set by fcntl).
+ * @throws None - uses return code/errno convention.
+ * @threadsafe Yes - fcntl operates on single FD.
+ * @see SocketCommon_set_nonblock() for SocketBase_T variant with exceptions.
+ * @see socket_common_restore_blocking_mode() for variant that restores
+ * original flags.
+ */
+int SocketCommon_clear_nonblock (int fd);
+
+/**
+ * @brief Initialize a struct pollfd in one statement.
+ * @ingroup core_io
+ *
+ * Replaces the common pattern of manually setting .fd, .events, .revents
+ * fields on a struct pollfd. Ensures .revents is zeroed.
+ *
+ * @param pfd   The struct pollfd variable (not a pointer).
+ * @param _fd   File descriptor value.
+ * @param _ev   Events mask (POLLIN, POLLOUT, etc.).
+ */
+#define SOCKET_INIT_POLLFD(pfd, _fd, _ev) \
+  do                                      \
+    {                                     \
+      (pfd).fd = (_fd);                   \
+      (pfd).events = (_ev);               \
+      (pfd).revents = 0;                  \
+    }                                     \
+  while (0)
+
 /* Internal helpers defined in SocketCommon-private.h for module use
  * (getters/setters for base fields) */
 
