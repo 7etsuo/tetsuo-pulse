@@ -734,7 +734,7 @@ static inline uint32_t
 hash_long_code (int bitlen, uint64_t code)
 {
   uint64_t key = HASH_KEY64 (bitlen, code);
-  return (uint32_t)((key * 2654435761ULL) % LONG_CODE_HASH_SIZE);
+  return (uint32_t)((key * (uint64_t)HASH_GOLDEN_RATIO) % LONG_CODE_HASH_SIZE);
 }
 
 /**

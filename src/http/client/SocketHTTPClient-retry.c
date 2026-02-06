@@ -150,8 +150,11 @@ httpclient_clear_response_for_retry (SocketHTTPClient_Response *response)
 int
 httpclient_is_redirect_status (int status_code)
 {
-  return (status_code == 301 || status_code == 302 || status_code == 303
-          || status_code == 307 || status_code == 308);
+  return (status_code == HTTP_STATUS_MOVED_PERMANENTLY
+          || status_code == HTTP_STATUS_FOUND
+          || status_code == HTTP_STATUS_SEE_OTHER
+          || status_code == HTTP_STATUS_TEMPORARY_REDIRECT
+          || status_code == HTTP_STATUS_PERMANENT_REDIRECT);
 }
 
 int

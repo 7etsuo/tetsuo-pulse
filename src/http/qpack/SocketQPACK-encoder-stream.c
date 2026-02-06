@@ -41,6 +41,12 @@
 /** Growth factor for buffer expansion */
 #define QPACK_BUFFER_GROWTH_FACTOR 2
 
+/** Huffman decoding expansion factor (worst case ~2x) */
+#define QPACK_HUFFMAN_EXPANSION_FACTOR 2
+
+/** Minimum Huffman decode buffer size in bytes */
+#define QPACK_MIN_DECODE_BUFFER_SIZE 64
+
 /* ============================================================================
  * INTERNAL STRUCTURE
  * ============================================================================
@@ -706,9 +712,8 @@ SocketQPACK_EncoderStream_write_duplicate (SocketQPACK_EncoderStream_T stream,
    * indices to the decoder, which would cause a
    * QPACK_ENCODER_STREAM_ERROR connection termination.
    */
-  qpack_result
-      = SocketQPACK_is_valid_relative_encoder (insert_count, dropped_count,
-                                               rel_index);
+  qpack_result = SocketQPACK_is_valid_relative_encoder (
+      insert_count, dropped_count, rel_index);
   if (qpack_result != QPACK_OK)
     return QPACK_STREAM_ERR_INVALID_INDEX;
 
@@ -973,10 +978,11 @@ SocketQPACK_decode_insert_nameref (const unsigned char *input,
       /* Allocate decode buffer (worst case 2x expansion) */
       /* Check for multiplication overflow before allocation (fixes #3457) */
       size_t decode_buf_size;
-      if (!SocketSecurity_check_multiply (value_len, 2, &decode_buf_size))
+      if (!SocketSecurity_check_multiply (
+              value_len, QPACK_HUFFMAN_EXPANSION_FACTOR, &decode_buf_size))
         return QPACK_STREAM_ERR_INTERNAL;
-      if (decode_buf_size < 64)
-        decode_buf_size = 64;
+      if (decode_buf_size < QPACK_MIN_DECODE_BUFFER_SIZE)
+        decode_buf_size = QPACK_MIN_DECODE_BUFFER_SIZE;
 
       unsigned char *decode_buf = ALLOC (arena, decode_buf_size);
       if (decode_buf == NULL)

@@ -607,7 +607,7 @@ queue_query (T transport, struct SocketDNSoverTLS_Query *query)
   size_t total_len;
 
   /* Validate query length fits in 16-bit length prefix (CWE-681) */
-  if (query->query_len > 65535)
+  if (query->query_len > DOT_MAX_MESSAGE_SIZE)
     {
       return -1; /* Query too large for wire format */
     }
