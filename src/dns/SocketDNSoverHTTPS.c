@@ -537,7 +537,7 @@ doh_validate_response (const SocketHTTPClient_Response *response,
   (void)expected_id; /* Reserved for future logging */
 
   /* Check HTTP status */
-  if (response->status_code != 200)
+  if (response->status_code != HTTP_STATUS_OK)
     {
       *error_out = DOH_ERROR_HTTP;
       return -1;

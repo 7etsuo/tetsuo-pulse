@@ -524,7 +524,7 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
   req_ctx.arena = conn->arena;
   req_ctx.start_time_ms = conn->request_start_ms;
 
-  conn->response_status = 200;
+  conn->response_status = HTTP_STATUS_OK;
 
   /* Execute middleware chain in order */
   for (mw = server->middleware_chain; mw != NULL; mw = mw->next)

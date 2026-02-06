@@ -643,11 +643,12 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
   response.headers = conn->response_headers;
 
   /* Track error metrics */
-  if (conn->response_status >= 400 && conn->response_status < 500)
+  if (conn->response_status >= HTTP_STATUS_4XX_MIN
+      && conn->response_status < HTTP_STATUS_5XX_MIN)
     {
       SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_RESPONSES_4XX, errors_4xx);
     }
-  else if (conn->response_status >= 500)
+  else if (conn->response_status >= HTTP_STATUS_5XX_MIN)
     {
       SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_RESPONSES_5XX, errors_5xx);
     }

@@ -537,7 +537,7 @@ handle_401_auth_retry (SocketHTTPClient_T client,
   char auth_header[HTTPCLIENT_AUTH_HEADER_LARGE_SIZE];
   int should_retry = 0;
 
-  if (response->status_code != 401)
+  if (response->status_code != HTTP_STATUS_UNAUTHORIZED)
     return 1; /* Not a 401 */
 
   if (auth_retry_count >= HTTPCLIENT_MAX_AUTH_RETRIES)
@@ -605,8 +605,12 @@ handle_401_auth_retry (SocketHTTPClient_T client,
  * Per the Fetch Standard, same-origin requires matching scheme, host, and port.
  */
 static int
-is_same_origin (const char *scheme1, const char *host1, int port1,
-                const char *scheme2, const char *host2, int port2)
+is_same_origin (const char *scheme1,
+                const char *host1,
+                int port1,
+                const char *scheme2,
+                const char *host2,
+                int port2)
 {
   /* Both schemes must match (case-insensitive) */
   if (scheme1 == NULL || scheme2 == NULL)
@@ -690,8 +694,12 @@ handle_redirect (SocketHTTPClient_T client,
   /* SECURITY: Strip credentials on cross-origin redirects per Fetch Standard.
    * This prevents credential leakage when a compromised server redirects
    * to an attacker-controlled domain. */
-  if (!is_same_origin (orig_scheme, orig_host, orig_port,
-                       new_uri.scheme, new_uri.host, new_uri.port))
+  if (!is_same_origin (orig_scheme,
+                       orig_host,
+                       orig_port,
+                       new_uri.scheme,
+                       new_uri.host,
+                       new_uri.port))
     {
       SocketHTTP_Headers_remove (req->headers, "Authorization");
       req->auth = NULL;
@@ -701,7 +709,7 @@ handle_redirect (SocketHTTPClient_T client,
   req->uri = new_uri;
 
   /* 303 changes method to GET */
-  if (status_code == 303)
+  if (status_code == HTTP_STATUS_SEE_OTHER)
     {
       req->method = HTTP_METHOD_GET;
       req->body = NULL;
@@ -1253,8 +1261,8 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
       if (result == 0)
         {
           if (should_retry_5xx (client, response, attempt))
-            continue;  /* Retry on 5xx */
-          return 0;    /* Success, no retry needed */
+            continue; /* Retry on 5xx */
+          return 0;   /* Success, no retry needed */
         }
 
       /* Error handling */

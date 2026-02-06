@@ -17,6 +17,7 @@
 #include "dns/SocketDNSWire.h"
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -1663,7 +1664,7 @@ parse_bind_dnskey (const char *zone,
   unsigned long protocol = strtoul (fields[4], NULL, 10);
   unsigned long algorithm = strtoul (fields[5], NULL, 10);
 
-  if (flags > 65535 || protocol > 255 || algorithm > 255)
+  if (flags > UINT16_MAX || protocol > UINT8_MAX || algorithm > UINT8_MAX)
     return -1;
 
   /* Decode base64 public key */
@@ -1717,7 +1718,7 @@ parse_bind_ds (const char *zone,
   unsigned long algorithm = strtoul (fields[4], NULL, 10);
   unsigned long digesttype = strtoul (fields[5], NULL, 10);
 
-  if (keytag > 65535 || algorithm > 255 || digesttype > 255)
+  if (keytag > UINT16_MAX || algorithm > UINT8_MAX || digesttype > UINT8_MAX)
     return -1;
 
   /* Parse hex digest */

@@ -65,6 +65,12 @@
 /** Huffman flag bit in value length byte (bit 7) */
 #define QPACK_VALUE_HUFFMAN_FLAG 0x80
 
+/** Huffman decoding expansion factor (worst case ~2x) */
+#define QPACK_HUFFMAN_EXPANSION_FACTOR 2
+
+/** Minimum Huffman decode buffer size in bytes */
+#define QPACK_MIN_DECODE_BUFFER_SIZE 64
+
 /** Value length prefix size in bits */
 #define QPACK_VALUE_LENGTH_PREFIX 7
 
@@ -460,12 +466,14 @@ decode_literal_name_ref_internal (const unsigned char *input,
       else
         {
           /* Allocate decode buffer (worst case ~2x expansion) */
-          /* Check for multiplication overflow before allocation (fixes #3457) */
+          /* Check for multiplication overflow before allocation (fixes #3457)
+           */
           size_t decode_buf_size;
-          if (!SocketSecurity_check_multiply (value_len, 2, &decode_buf_size))
+          if (!SocketSecurity_check_multiply (
+                  value_len, QPACK_HUFFMAN_EXPANSION_FACTOR, &decode_buf_size))
             return QPACK_ERR_HEADER_SIZE;
-          if (decode_buf_size < 64)
-            decode_buf_size = 64;
+          if (decode_buf_size < QPACK_MIN_DECODE_BUFFER_SIZE)
+            decode_buf_size = QPACK_MIN_DECODE_BUFFER_SIZE;
 
           char *decode_buf = ALLOC (arena, decode_buf_size);
           if (decode_buf == NULL)

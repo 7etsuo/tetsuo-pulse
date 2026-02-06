@@ -67,7 +67,7 @@ server_http2_stream_get_or_create (SocketHTTPServer_T server,
   memset (s, 0, sizeof (*s));
   s->arena = arena;
   s->stream = stream;
-  s->response_status = 200;
+  s->response_status = HTTP_STATUS_OK;
   s->response_headers = SocketHTTP_Headers_new (arena);
 
   s->next = conn->http2_streams;
@@ -712,7 +712,7 @@ server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
   if (!h2_check_request_preconditions (server, s, &req_ctx))
     return;
 
-  s->response_status = 200;
+  s->response_status = HTTP_STATUS_OK;
 
   h2_run_middleware_and_handler (server, s, &req_ctx);
 
@@ -1307,11 +1307,11 @@ prepare_h2_websocket_response (SocketHTTPServer_Request_T req,
   if (s->response_headers == NULL)
     return -1;
 
-  s->response_status = 200;
+  s->response_status = HTTP_STATUS_OK;
 
   memset (response, 0, sizeof (*response));
   response->version = HTTP_VERSION_2;
-  response->status_code = 200;
+  response->status_code = HTTP_STATUS_OK;
   response->headers = s->response_headers;
 
   return 0;

@@ -1068,7 +1068,8 @@ finalize_response (SocketHTTP1_Parser_T parser)
 
   /* 1xx, 204, 304 responses have no body (RFC 9112 Section 6.3) */
   if ((parser->status_code >= 100 && parser->status_code < 200)
-      || parser->status_code == 204 || parser->status_code == 304)
+      || parser->status_code == HTTP_STATUS_NO_CONTENT
+      || parser->status_code == HTTP_STATUS_NOT_MODIFIED)
     {
       parser->body_mode = HTTP1_BODY_NONE;
       parser->body_complete = 1;
@@ -1526,8 +1527,8 @@ scan_header_name (const char *p, const char *end)
  */
 static inline int
 process_header_value_chunk (SocketHTTP1_Parser_T parser,
-                             const char *chunk,
-                             size_t chunk_len)
+                            const char *chunk,
+                            size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
@@ -1559,8 +1560,8 @@ process_header_value_chunk (SocketHTTP1_Parser_T parser,
  */
 static inline int
 process_header_name_chunk (SocketHTTP1_Parser_T parser,
-                            const char *chunk,
-                            size_t chunk_len)
+                           const char *chunk,
+                           size_t chunk_len)
 {
   /* Guard: check line length limit */
   if (parser->header_line_length + chunk_len > parser->config.max_header_line)
