@@ -394,6 +394,9 @@ set(LIB_SOURCES
     src/http/qpack/SocketQPACK-blocked.c
     src/http/qpack/SocketQPACK-config.c
 
+    # HTTP/3 Constants (RFC 9114)
+    src/http/SocketHTTP3-constants.c
+
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
     src/http/h2/SocketHTTP2-connection.c
@@ -881,6 +884,7 @@ set(TEST_SOURCES
     test_qpack_http3_integration
     test_qpack_error_integration
     test_qpack_vectors
+    test_http3_constants
     test_http_integration
     test_ws_integration
     test_http2_integration

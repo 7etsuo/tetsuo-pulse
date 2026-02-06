@@ -181,25 +181,12 @@ typedef enum
 #define QPACK_RESULT_COUNT (QPACK_ERR_0RTT_MISMATCH + 1)
 
 /* ============================================================================
- * HTTP/3 ERROR CODES (RFC 9204 Section 4.2 & 6)
+ * HTTP/3 & QPACK ERROR CODES
  * ============================================================================
  */
 
-/**
- * @brief HTTP/3 error: Stream creation error (RFC 9114).
- *
- * RFC 9204 Section 4.2: Receipt of a second instance of either
- * encoder or decoder stream type MUST be treated as this error.
- */
-#define H3_STREAM_CREATION_ERROR 0x0103
-
-/**
- * @brief HTTP/3 error: Critical stream was closed (RFC 9114).
- *
- * RFC 9204 Section 4.2: Closure of either encoder or decoder
- * stream MUST be treated as this connection error.
- */
-#define H3_CLOSED_CRITICAL_STREAM 0x0104
+/* HTTP/3 error codes (RFC 9114 §8.1) — full set in SocketHTTP3-constants.h */
+#include "http/SocketHTTP3-constants.h"
 
 /**
  * @brief QPACK decompression failed (RFC 9204 Section 6).
