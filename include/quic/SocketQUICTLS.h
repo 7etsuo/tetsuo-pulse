@@ -261,6 +261,27 @@ extern SocketQUICTLS_Result
 SocketQUICTLS_derive_keys (SocketQUICHandshake_T handshake,
                            SocketQUICCryptoLevel level);
 
+/**
+ * @brief Get traffic secrets for an encryption level.
+ *
+ * Returns the raw TLS traffic secrets needed for packet key derivation
+ * via SocketQUICCrypto_derive_packet_keys().
+ *
+ * @param handshake   Handshake context.
+ * @param level       Encryption level.
+ * @param write_secret Output: write secret buffer (SOCKET_CRYPTO_SHA256_SIZE).
+ * @param read_secret  Output: read secret buffer (SOCKET_CRYPTO_SHA256_SIZE).
+ * @param secret_len   Output: actual secret length.
+ *
+ * @return QUIC_TLS_OK on success, error code otherwise.
+ */
+extern SocketQUICTLS_Result
+SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
+                                   SocketQUICCryptoLevel level,
+                                   uint8_t *write_secret,
+                                   uint8_t *read_secret,
+                                   size_t *secret_len);
+
 /* ============================================================================
  * Alert Handling
  * ============================================================================
