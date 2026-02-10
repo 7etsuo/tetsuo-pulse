@@ -1687,8 +1687,9 @@ typedef struct SocketTimeouts_Extended
  *
  */
 #ifndef SOCKET_DEFAULT_TLS_TIMEOUT_MS
-#define SOCKET_DEFAULT_TLS_TIMEOUT_MS 30000 /**< 30 seconds for TLS handshake \
-                                             */
+#define SOCKET_DEFAULT_TLS_TIMEOUT_MS     \
+  30000 /**< 30 seconds for TLS handshake \
+         */
 #endif
 
 /**
@@ -1816,6 +1817,28 @@ typedef struct SocketTimeouts_Extended
  */
 #ifndef SOCKET_POOL_TOKENS_PER_ACCEPT
 #define SOCKET_POOL_TOKENS_PER_ACCEPT 1
+#endif
+
+/* --- HTTP & Pool hash table tuning --- */
+
+#ifndef SOCKET_POOL_FOREACH_BATCH_SIZE
+#define SOCKET_POOL_FOREACH_BATCH_SIZE 100
+#endif
+
+#ifndef POOL_MAX_HASH_CHAIN_LEN
+#define POOL_MAX_HASH_CHAIN_LEN 1024
+#endif
+
+#ifndef POOL_TARGET_LOAD_FACTOR
+#define POOL_TARGET_LOAD_FACTOR 8
+#endif
+
+#ifndef SOCKETHTTP_MAX_CHAIN_LEN
+#define SOCKETHTTP_MAX_CHAIN_LEN 10
+#endif
+
+#ifndef SOCKETHTTP_MAX_DOS_WARNINGS
+#define SOCKETHTTP_MAX_DOS_WARNINGS 3
 #endif
 
 /* ============================================================================
