@@ -174,4 +174,101 @@ stream_buf_reset (H3_StreamBuf *buf)
   buf->len = 0;
 }
 
+/**
+ * @brief Generic grow-buffer append: doubles capacity until data fits.
+ *
+ * Works for any (uint8_t *buf, size_t len, size_t cap) triple.
+ * The old arena allocation is abandoned (arena reclaims on dispose).
+ */
+static inline int
+h3_growbuf_append (Arena_T arena,
+                   uint8_t **buf,
+                   size_t *buf_len,
+                   size_t *buf_cap,
+                   const uint8_t *data,
+                   size_t len)
+{
+  if (*buf_len + len > *buf_cap)
+    {
+      size_t new_cap = *buf_cap;
+      while (new_cap < *buf_len + len)
+        new_cap *= 2;
+      uint8_t *new_buf = ALLOC (arena, new_cap);
+      memcpy (new_buf, *buf, *buf_len);
+      *buf = new_buf;
+      *buf_cap = new_cap;
+    }
+  memcpy (*buf + *buf_len, data, len);
+  *buf_len += len;
+  return 0;
+}
+
+/**
+ * @brief Consume bytes from the front of a buffer, shifting remainder left.
+ */
+#define H3_BUF_CONSUME(buf, buf_len, consumed)     \
+  do                                               \
+    {                                              \
+      size_t _rem = (buf_len) - (consumed);        \
+      if (_rem > 0)                                \
+        memmove ((buf), (buf) + (consumed), _rem); \
+      (buf_len) = _rem;                            \
+    }                                              \
+  while (0)
+
+/* ============================================================================
+ * QPACK Static Table Lookup Helpers
+ *
+ * Shared between SocketHTTP3-request.c (encoding) and tests (response
+ * building).  Depend on SocketQPACK_static_table_get() from SocketQPACK.h.
+ * ============================================================================
+ */
+
+#include "http/qpack/SocketQPACK.h"
+
+/**
+ * @brief Find an exact (name+value) match in the QPACK static table.
+ * @return Static table index (0-98), or -1 if no match.
+ */
+static inline int
+h3_find_static_exact (const char *name,
+                      size_t name_len,
+                      const char *value,
+                      size_t value_len)
+{
+  for (uint64_t i = 0; i < SOCKETQPACK_STATIC_TABLE_SIZE; i++)
+    {
+      const char *sn;
+      size_t snl;
+      const char *sv;
+      size_t svl;
+      if (SocketQPACK_static_table_get (i, &sn, &snl, &sv, &svl) != QPACK_OK)
+        continue;
+      if (snl == name_len && svl == value_len
+          && memcmp (sn, name, name_len) == 0
+          && memcmp (sv, value, value_len) == 0)
+        return (int)i;
+    }
+  return -1;
+}
+
+/**
+ * @brief Find a name-only match in the QPACK static table.
+ * @return Static table index (0-98), or -1 if no match.
+ */
+static inline int
+h3_find_static_name (const char *name, size_t name_len)
+{
+  for (uint64_t i = 0; i < SOCKETQPACK_STATIC_TABLE_SIZE; i++)
+    {
+      const char *sn;
+      size_t snl;
+      if (SocketQPACK_static_table_get (i, &sn, &snl, NULL, NULL) != QPACK_OK)
+        continue;
+      if (snl == name_len && memcmp (sn, name, name_len) == 0)
+        return (int)i;
+    }
+  return -1;
+}
+
 #endif /* SOCKETHTTP3_PRIVATE_INCLUDED */

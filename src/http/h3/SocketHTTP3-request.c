@@ -29,6 +29,10 @@
 
 #define H3_REQ_RECV_BUF_INIT_CAP 1024
 #define H3_REQ_DATA_BUF_INIT_CAP 4096
+#define H3_QPACK_ENCODE_BUF 8192
+#define H3_MAX_HEADER_NAME 256
+#define H3_MAX_HEADER_VALUE 4096
+#define H3_MAX_COOKIE_HEADERS 32
 
 /* ============================================================================
  * QPACK Encoding Helpers (Static Table Only)
@@ -48,52 +52,9 @@
  * ============================================================================
  */
 
-/**
- * @brief Try to find an exact match in the static table.
- *
- * @return Static table index (0-98), or -1 if no exact match found.
- */
-static int
-find_static_exact (const char *name,
-                   size_t name_len,
-                   const char *value,
-                   size_t value_len)
-{
-  for (uint64_t i = 0; i < SOCKETQPACK_STATIC_TABLE_SIZE; i++)
-    {
-      const char *sn;
-      size_t snl;
-      const char *sv;
-      size_t svl;
-      if (SocketQPACK_static_table_get (i, &sn, &snl, &sv, &svl) != QPACK_OK)
-        continue;
-      if (snl == name_len && svl == value_len
-          && memcmp (sn, name, name_len) == 0
-          && memcmp (sv, value, value_len) == 0)
-        return (int)i;
-    }
-  return -1;
-}
-
-/**
- * @brief Try to find a name-only match in the static table.
- *
- * @return Static table index (0-98), or -1 if no name match found.
- */
-static int
-find_static_name (const char *name, size_t name_len)
-{
-  for (uint64_t i = 0; i < SOCKETQPACK_STATIC_TABLE_SIZE; i++)
-    {
-      const char *sn;
-      size_t snl;
-      if (SocketQPACK_static_table_get (i, &sn, &snl, NULL, NULL) != QPACK_OK)
-        continue;
-      if (snl == name_len && memcmp (sn, name, name_len) == 0)
-        return (int)i;
-    }
-  return -1;
-}
+/* Static table lookup uses h3_find_static_exact/name from private.h */
+#define find_static_exact h3_find_static_exact
+#define find_static_name h3_find_static_name
 
 /**
  * @brief QPACK-encode a set of headers into a HEADERS frame payload.
@@ -112,8 +73,7 @@ h3_qpack_encode_headers (Arena_T arena,
                          uint8_t **out,
                          size_t *out_len)
 {
-  /* Allocate a work buffer — 8KB should handle most header sets */
-  size_t buf_cap = 8192;
+  size_t buf_cap = H3_QPACK_ENCODE_BUF;
   unsigned char *buf = ALLOC (arena, buf_cap);
   size_t pos = 0;
 
@@ -141,7 +101,7 @@ h3_qpack_encode_headers (Arena_T arena,
       if (exact_idx >= 0)
         {
           qres = SocketQPACK_encode_indexed_field (
-              buf + pos, buf_cap - pos, (uint64_t)exact_idx, 1, &written);
+              buf + pos, buf_cap - pos, (uint64_t)exact_idx, true, &written);
           if (qres != QPACK_OK)
             return -(int)H3_INTERNAL_ERROR;
           pos += written;
@@ -247,6 +207,11 @@ h3_qpack_decode_headers (Arena_T arena,
       &consumed);
   if (qres != QPACK_OK)
     return -(int)QPACK_DECOMPRESSION_FAILED;
+
+  /* Static-table-only: Required Insert Count must be 0 */
+  if (prefix.required_insert_count != 0)
+    return -(int)QPACK_DECOMPRESSION_FAILED;
+
   pos += consumed;
 
   /* Decode field lines */
@@ -305,8 +270,8 @@ h3_qpack_decode_headers (Arena_T arena,
       else if ((first_byte & 0xE0) == 0x20)
         {
           /* 001xxxxx: Literal with Literal Name (§4.5.6) */
-          unsigned char name_buf[256];
-          unsigned char value_buf[4096];
+          unsigned char name_buf[H3_MAX_HEADER_NAME];
+          unsigned char value_buf[H3_MAX_HEADER_VALUE];
           size_t name_len, value_len;
           bool never_indexed;
           qres = SocketQPACK_decode_literal_field_literal_name (
@@ -356,8 +321,9 @@ h3_qpack_decode_headers (Arena_T arena,
 static void
 h3_coalesce_cookies (Arena_T arena, SocketHTTP_Headers_T headers)
 {
-  const char *values[32];
-  size_t n = SocketHTTP_Headers_get_all_n (headers, "cookie", 6, values, 32);
+  const char *values[H3_MAX_COOKIE_HEADERS];
+  size_t n = SocketHTTP_Headers_get_all_n (
+      headers, "cookie", 6, values, H3_MAX_COOKIE_HEADERS);
   if (n <= 1)
     return;
 
@@ -637,51 +603,22 @@ SocketHTTP3_Request_send_trailers (SocketHTTP3_Request_T req,
  * ============================================================================
  */
 
-/**
- * @brief Append data to the request's receive buffer, growing if needed.
- */
-static int
-recv_buf_append (struct SocketHTTP3_Request *req,
-                 const uint8_t *data,
-                 size_t len)
-{
-  if (req->recv_buf_len + len > req->recv_buf_cap)
-    {
-      size_t new_cap = req->recv_buf_cap;
-      while (new_cap < req->recv_buf_len + len)
-        new_cap *= 2;
-      uint8_t *new_buf = ALLOC (req->arena, new_cap);
-      memcpy (new_buf, req->recv_buf, req->recv_buf_len);
-      req->recv_buf = new_buf;
-      req->recv_buf_cap = new_cap;
-    }
-  memcpy (req->recv_buf + req->recv_buf_len, data, len);
-  req->recv_buf_len += len;
-  return 0;
-}
+/* Buffer append wrappers using generic h3_growbuf_append() */
+#define recv_buf_append(req, data, len)    \
+  h3_growbuf_append ((req)->arena,         \
+                     &(req)->recv_buf,     \
+                     &(req)->recv_buf_len, \
+                     &(req)->recv_buf_cap, \
+                     (data),               \
+                     (len))
 
-/**
- * @brief Append data to the request's data buffer, growing if needed.
- */
-static int
-data_buf_append (struct SocketHTTP3_Request *req,
-                 const uint8_t *data,
-                 size_t len)
-{
-  if (req->data_buf_len + len > req->data_buf_cap)
-    {
-      size_t new_cap = req->data_buf_cap;
-      while (new_cap < req->data_buf_len + len)
-        new_cap *= 2;
-      uint8_t *new_buf = ALLOC (req->arena, new_cap);
-      memcpy (new_buf, req->data_buf, req->data_buf_len);
-      req->data_buf = new_buf;
-      req->data_buf_cap = new_cap;
-    }
-  memcpy (req->data_buf + req->data_buf_len, data, len);
-  req->data_buf_len += len;
-  return 0;
-}
+#define data_buf_append(req, data, len)    \
+  h3_growbuf_append ((req)->arena,         \
+                     &(req)->data_buf,     \
+                     &(req)->data_buf_len, \
+                     &(req)->data_buf_cap, \
+                     (data),               \
+                     (len))
 
 /**
  * @brief Parse status code from :status header value.
@@ -702,6 +639,90 @@ parse_status_code (const char *value, size_t value_len)
   if (code < 100 || code > 599)
     return -1;
   return code;
+}
+
+/**
+ * @brief Handle a received HEADERS frame on a request stream.
+ *
+ * Decodes QPACK, validates, extracts status code and content-length.
+ * Handles both initial response headers and trailers.
+ */
+static int
+handle_headers_frame (struct SocketHTTP3_Request *req,
+                      const uint8_t *payload,
+                      size_t payload_len)
+{
+  if (req->recv_state == H3_REQ_RECV_BODY_RECEIVING
+      || (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED
+          && req->status_code >= 200))
+    {
+      /* Trailers — skip decode (known limitation, see RFC 9114 §4.1) */
+      req->trailers_received = 1;
+      return 0;
+    }
+
+  /* Decode QPACK headers */
+  SocketHTTP_Headers_T hdrs;
+  int rc = h3_qpack_decode_headers (req->arena, payload, payload_len, &hdrs);
+  if (rc != 0)
+    return rc;
+
+  h3_coalesce_cookies (req->arena, hdrs);
+
+  rc = SocketHTTP3_validate_response_headers (hdrs);
+  if (rc != 0)
+    return rc;
+
+  /* Extract status code */
+  const char *status_val = SocketHTTP_Headers_get_n (hdrs, ":status", 7);
+  if (status_val == NULL)
+    return -(int)H3_MESSAGE_ERROR;
+
+  int code = parse_status_code (status_val, strlen (status_val));
+  if (code < 0)
+    return -(int)H3_MESSAGE_ERROR;
+
+  req->status_code = code;
+  req->recv_headers = hdrs;
+
+  /* Extract content-length if present */
+  const char *cl_val = SocketHTTP_Headers_get_n (hdrs, "content-length", 14);
+  if (cl_val != NULL)
+    {
+      int64_t cl = 0;
+      const char *p = cl_val;
+      while (*p >= '0' && *p <= '9')
+        {
+          cl = cl * 10 + (*p - '0');
+          p++;
+        }
+      if (*p == '\0')
+        req->expected_content_length = cl;
+    }
+
+  req->recv_state = H3_REQ_RECV_HEADERS_RECEIVED;
+  return 0;
+}
+
+/**
+ * @brief Handle a received DATA frame on a request stream.
+ */
+static int
+handle_data_frame (struct SocketHTTP3_Request *req,
+                   const uint8_t *payload,
+                   size_t payload_len)
+{
+  if (req->recv_state == H3_REQ_RECV_IDLE)
+    return -(int)H3_FRAME_UNEXPECTED;
+  if (req->trailers_received)
+    return -(int)H3_FRAME_UNEXPECTED;
+
+  data_buf_append (req, payload, payload_len);
+  req->total_data_received += payload_len;
+
+  if (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED)
+    req->recv_state = H3_REQ_RECV_BODY_RECEIVING;
+  return 0;
 }
 
 int
@@ -750,93 +771,23 @@ SocketHTTP3_Request_feed (SocketHTTP3_Request_T req,
 
       req->first_frame_seen = 1;
 
+      int rc = 0;
       switch (fhdr.type)
         {
         case HTTP3_FRAME_HEADERS:
-          {
-            if (req->recv_state == H3_REQ_RECV_BODY_RECEIVING
-                || (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED
-                    && req->status_code >= 200))
-              {
-                /* Trailers */
-                req->trailers_received = 1;
-                /* For now, just skip trailers — don't decode */
-                break;
-              }
-
-            /* Decode QPACK headers */
-            SocketHTTP_Headers_T hdrs;
-            int rc = h3_qpack_decode_headers (
-                req->arena, payload, payload_len, &hdrs);
-            if (rc != 0)
-              return rc;
-
-            /* Coalesce cookie headers */
-            h3_coalesce_cookies (req->arena, hdrs);
-
-            /* Validate response headers */
-            rc = SocketHTTP3_validate_response_headers (hdrs);
-            if (rc != 0)
-              return rc;
-
-            /* Extract status code */
-            const char *status_val
-                = SocketHTTP_Headers_get_n (hdrs, ":status", 7);
-            if (status_val == NULL)
-              return -(int)H3_MESSAGE_ERROR;
-
-            int code = parse_status_code (status_val, strlen (status_val));
-            if (code < 0)
-              return -(int)H3_MESSAGE_ERROR;
-
-            req->status_code = code;
-            req->recv_headers = hdrs;
-
-            /* Extract content-length if present */
-            const char *cl_val
-                = SocketHTTP_Headers_get_n (hdrs, "content-length", 14);
-            if (cl_val != NULL)
-              {
-                int64_t cl = 0;
-                const char *p = cl_val;
-                while (*p >= '0' && *p <= '9')
-                  {
-                    cl = cl * 10 + (*p - '0');
-                    p++;
-                  }
-                if (*p == '\0')
-                  req->expected_content_length = cl;
-              }
-
-            req->recv_state = H3_REQ_RECV_HEADERS_RECEIVED;
-            break;
-          }
-
+          rc = handle_headers_frame (req, payload, payload_len);
+          break;
         case HTTP3_FRAME_DATA:
-          {
-            if (req->recv_state == H3_REQ_RECV_IDLE)
-              return -(int)H3_FRAME_UNEXPECTED;
-            if (req->trailers_received)
-              return -(int)H3_FRAME_UNEXPECTED;
-
-            data_buf_append (req, payload, payload_len);
-            req->total_data_received += payload_len;
-
-            if (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED)
-              req->recv_state = H3_REQ_RECV_BODY_RECEIVING;
-            break;
-          }
-
+          rc = handle_data_frame (req, payload, payload_len);
+          break;
         default:
-          /* Skip unknown frames on request stream */
           break;
         }
+      if (rc != 0)
+        return rc;
 
       /* Consume parsed bytes */
-      size_t remaining = req->recv_buf_len - total_consumed;
-      if (remaining > 0)
-        memmove (req->recv_buf, req->recv_buf + total_consumed, remaining);
-      req->recv_buf_len = remaining;
+      H3_BUF_CONSUME (req->recv_buf, req->recv_buf_len, total_consumed);
     }
 
   /* Handle FIN */
@@ -896,10 +847,7 @@ SocketHTTP3_Request_recv_data (SocketHTTP3_Request_T req,
   if (to_copy > 0)
     {
       memcpy (buf, req->data_buf, to_copy);
-      size_t remaining = req->data_buf_len - to_copy;
-      if (remaining > 0)
-        memmove (req->data_buf, req->data_buf + to_copy, remaining);
-      req->data_buf_len = remaining;
+      H3_BUF_CONSUME (req->data_buf, req->data_buf_len, to_copy);
     }
 
   if (end_stream != NULL)

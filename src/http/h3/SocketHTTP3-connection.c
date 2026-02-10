@@ -155,11 +155,9 @@ SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
                        settings_payload,
                        (size_t)settings_len);
 
-  /* Build QPACK encoder stream output: type byte 0x02 */
+  /* Write stream type bytes for QPACK encoder and decoder streams */
   type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_ENCODER;
   stream_buf_append (&conn->encoder_out, conn->arena, &type_byte, 1);
-
-  /* Build QPACK decoder stream output: type byte 0x03 */
   type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_DECODER;
   stream_buf_append (&conn->decoder_out, conn->arena, &type_byte, 1);
 
@@ -318,13 +316,8 @@ process_control_stream (SocketHTTP3_Conn_T conn,
           break;
         }
 
-      /* Consume parsed bytes, shift remainder */
-      size_t remaining = conn->ctrl_recv_len - total_consumed;
-      if (remaining > 0)
-        memmove (conn->ctrl_recv_buf,
-                 conn->ctrl_recv_buf + total_consumed,
-                 remaining);
-      conn->ctrl_recv_len = remaining;
+      /* Consume parsed bytes */
+      H3_BUF_CONSUME (conn->ctrl_recv_buf, conn->ctrl_recv_len, total_consumed);
     }
 
   return 0;

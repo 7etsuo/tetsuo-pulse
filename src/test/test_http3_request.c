@@ -97,30 +97,15 @@ build_response_frame (uint8_t *buf,
       const SocketHTTP_Header *h = SocketHTTP_Headers_at (headers, i);
       size_t written;
 
-      /* Try exact match in static table for :status codes */
-      int found_exact = -1;
-      for (uint64_t si = 0; si < SOCKETQPACK_STATIC_TABLE_SIZE; si++)
-        {
-          const char *sn, *sv;
-          size_t snl, svl;
-          if (SocketQPACK_static_table_get (si, &sn, &snl, &sv, &svl)
-              != QPACK_OK)
-            continue;
-          if (snl == h->name_len && svl == h->value_len
-              && memcmp (sn, h->name, snl) == 0
-              && memcmp (sv, h->value, svl) == 0)
-            {
-              found_exact = (int)si;
-              break;
-            }
-        }
-
+      /* Try exact match in static table */
+      int found_exact
+          = h3_find_static_exact (h->name, h->name_len, h->value, h->value_len);
       if (found_exact >= 0)
         {
           if (SocketQPACK_encode_indexed_field (qpack_buf + qpos,
                                                 sizeof (qpack_buf) - qpos,
                                                 (uint64_t)found_exact,
-                                                1,
+                                                true,
                                                 &written)
               != QPACK_OK)
             return 0;
@@ -129,21 +114,7 @@ build_response_frame (uint8_t *buf,
         }
 
       /* Try name match */
-      int found_name = -1;
-      for (uint64_t si = 0; si < SOCKETQPACK_STATIC_TABLE_SIZE; si++)
-        {
-          const char *sn;
-          size_t snl;
-          if (SocketQPACK_static_table_get (si, &sn, &snl, NULL, NULL)
-              != QPACK_OK)
-            continue;
-          if (snl == h->name_len && memcmp (sn, h->name, snl) == 0)
-            {
-              found_name = (int)si;
-              break;
-            }
-        }
-
+      int found_name = h3_find_static_name (h->name, h->name_len);
       if (found_name >= 0)
         {
           if (SocketQPACK_encode_literal_name_ref (
