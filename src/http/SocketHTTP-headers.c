@@ -390,6 +390,62 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
 }
 
 int
+SocketHTTP_Headers_add_pseudo_n (SocketHTTP_Headers_T headers,
+                                 const char *name,
+                                 size_t name_len,
+                                 const char *value,
+                                 size_t value_len)
+{
+  VALIDATE_HEADERS_NAME (headers, name, -1);
+
+  /* Must be a pseudo-header: starts with ':' and has at least 2 chars */
+  if (name_len < 2 || name[0] != ':')
+    return -1;
+
+  /* Validate the rest of the name after ':' as token characters */
+  if (!sockethttp_is_token_valid (name + 1, name_len - 1))
+    return -1;
+
+  if (!SocketHTTP_header_value_valid (value, value_len))
+    return -1;
+
+  size_t temp_size;
+  if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
+    return -1;
+  size_t entry_size;
+  if (!SocketSecurity_check_add (
+          temp_size, HEADER_ENTRY_NULL_OVERHEAD, &entry_size))
+    return -1;
+  if (validate_header_limits (headers, entry_size) < 0)
+    return -1;
+
+  HeaderEntry *entry = ALLOC (headers->arena, sizeof (*entry));
+  if (!entry)
+    return -1;
+
+  if (allocate_entry_name (headers->arena, entry, name, name_len) < 0)
+    return -1;
+
+  entry->hash = socket_util_hash_djb2_seeded_ci_len (
+                    name, name_len, SOCKETHTTP_HEADER_BUCKETS, header_hash_seed)
+                & SOCKETHTTP_HEADER_BUCKET_MASK;
+
+  if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
+    return -1;
+
+  entry->is_ref = 0;
+
+  if (add_to_bucket (headers, entry) < 0)
+    return -1;
+
+  add_to_list (headers, entry);
+  headers->count++;
+  headers->total_size += entry_size;
+
+  return 0;
+}
+
+int
 SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers,
                             const char *name,
                             size_t name_len,

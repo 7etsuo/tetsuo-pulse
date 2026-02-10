@@ -883,6 +883,33 @@ extern uint64_t SocketQPACK_compute_max_entries (uint64_t max_table_capacity);
 extern uint64_t SocketQPACK_max_entries (uint64_t max_table_capacity);
 
 /* ============================================================================
+ * STATIC TABLE ACCESS (RFC 9204 Appendix A)
+ * ============================================================================
+ */
+
+/**
+ * @brief Look up an entry in the QPACK static table.
+ *
+ * RFC 9204 Appendix A: Returns the name and value for a static table
+ * index (0-98). Any output pointer may be NULL if that field is not needed.
+ *
+ * @param index      Static table index (0-98)
+ * @param[out] name      Pointer to name string (may be NULL)
+ * @param[out] name_len  Length of name (may be NULL)
+ * @param[out] value     Pointer to value string (may be NULL)
+ * @param[out] value_len Length of value (may be NULL)
+ * @return QPACK_OK on success, QPACK_ERR_INVALID_INDEX if index >= 99
+ *
+ * @since 1.0.0
+ */
+extern QPACK_WARN_UNUSED SocketQPACK_Result
+SocketQPACK_static_table_get (uint64_t index,
+                              const char **name,
+                              size_t *name_len,
+                              const char **value,
+                              size_t *value_len);
+
+/* ============================================================================
  * REQUIRED INSERT COUNT ENCODING (RFC 9204 Section 4.5.1.1)
  * ============================================================================
  */

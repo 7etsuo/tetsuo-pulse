@@ -213,12 +213,7 @@ static const QPACKStaticEntry qpack_static_table[] = {
 };
 
 /**
- * @brief Get entry from QPACK static table.
- *
- * @param index  Static table index (0-98)
- * @param[out] name     Pointer to name string
- * @param[out] name_len Length of name
- * @return QPACK_OK on success, QPACK_ERR_INVALID_INDEX if out of bounds
+ * @brief Get entry from QPACK static table (internal, name-only).
  */
 static SocketQPACK_Result
 qpack_static_get (uint64_t index, const char **name, size_t *name_len)
@@ -228,6 +223,27 @@ qpack_static_get (uint64_t index, const char **name, size_t *name_len)
 
   *name = qpack_static_table[index].name;
   *name_len = qpack_static_table[index].name_len;
+  return QPACK_OK;
+}
+
+SocketQPACK_Result
+SocketQPACK_static_table_get (uint64_t index,
+                              const char **name,
+                              size_t *name_len,
+                              const char **value,
+                              size_t *value_len)
+{
+  if (index >= SOCKETQPACK_STATIC_TABLE_SIZE)
+    return QPACK_ERR_INVALID_INDEX;
+
+  if (name != NULL)
+    *name = qpack_static_table[index].name;
+  if (name_len != NULL)
+    *name_len = qpack_static_table[index].name_len;
+  if (value != NULL)
+    *value = qpack_static_table[index].value;
+  if (value_len != NULL)
+    *value_len = qpack_static_table[index].value_len;
   return QPACK_OK;
 }
 
