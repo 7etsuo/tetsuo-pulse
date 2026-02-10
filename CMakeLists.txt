@@ -906,6 +906,7 @@ set(TEST_SOURCES
     test_http3_stream
     test_http3_connection
     test_http3_request
+    test_http3_compliance
     test_http_integration
     test_ws_integration
     test_http2_integration
@@ -1024,6 +1025,8 @@ if(SOCKET_HAS_TLS)
         test_http3_client
         # HTTP/3 server (requires TLS for QUIC server transport)
         test_http3_server
+        # HTTP/3 integration (requires TLS for full-stack loopback)
+        test_http3_integration
     )
 endif()
 
