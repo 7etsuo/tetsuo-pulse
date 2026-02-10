@@ -403,6 +403,9 @@ set(LIB_SOURCES
     # HTTP/3 Stream Mapping (RFC 9114 Section 6)
     src/http/h3/SocketHTTP3-stream.c
 
+    # HTTP/3 Connection Lifecycle (RFC 9114)
+    src/http/h3/SocketHTTP3-connection.c
+
     # HTTP/2 Protocol (RFC 9113)
     src/http/h2/SocketHTTP2-frame.c
     src/http/h2/SocketHTTP2-connection.c
@@ -893,6 +896,7 @@ set(TEST_SOURCES
     test_http3_constants
     test_http3_frame
     test_http3_stream
+    test_http3_connection
     test_http_integration
     test_ws_integration
     test_http2_integration
