@@ -441,6 +441,7 @@ set(LIB_SOURCES
     src/http/server/SocketHTTPServer-static.c
     src/http/server/SocketHTTPServer-h2.c
     src/http/server/SocketHTTPServer-metrics.c
+    src/http/server/SocketHTTP3Server.c
 
     # QUIC foundational module (RFC 9000)
     src/quic/SocketQUICVarInt.c
@@ -477,6 +478,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICLoss.c
     src/quic/SocketQUICTLS.c
     src/quic/SocketQUICTransport.c
+    src/quic/SocketQUICServer.c
 
     # DEFLATE compression module (RFC 1951)
     src/deflate/SocketDeflate-static.c
@@ -1020,6 +1022,8 @@ if(SOCKET_HAS_TLS)
         test_dns_over_https
         # HTTP/3 client (requires TLS for QUIC transport)
         test_http3_client
+        # HTTP/3 server (requires TLS for QUIC server transport)
+        test_http3_server
     )
 endif()
 

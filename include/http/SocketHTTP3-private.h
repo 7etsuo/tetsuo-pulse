@@ -111,6 +111,10 @@ struct SocketHTTP3_Conn
   struct SocketHTTP3_Request *requests[H3_MAX_CONCURRENT_REQUESTS];
   size_t request_count;
   uint64_t next_bidi_stream_id;
+
+  /* Request-ready callback (server: notified when headers decoded) */
+  SocketHTTP3_RequestReadyCB request_cb;
+  void *request_cb_userdata;
 };
 
 /* ============================================================================

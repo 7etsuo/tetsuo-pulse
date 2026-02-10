@@ -64,6 +64,20 @@ typedef struct SocketHTTP3_Request *SocketHTTP3_Request_T;
 SocketHTTP3_Request_T SocketHTTP3_Request_new (SocketHTTP3_Conn_T conn);
 
 /**
+ * @brief Create a request for a peer-initiated bidirectional stream.
+ *
+ * Used by the server connection layer when a client opens a new bidi
+ * stream. Does not allocate a new stream ID — uses the provided one.
+ * Validates that stream_id is client-initiated bidirectional.
+ *
+ * @param conn       Connection handle (must be in OPEN state).
+ * @param stream_id  Peer-initiated bidi stream ID (must be divisible by 4).
+ * @return New request, or NULL on error.
+ */
+SocketHTTP3_Request_T
+SocketHTTP3_Request_new_incoming (SocketHTTP3_Conn_T conn, uint64_t stream_id);
+
+/**
  * @brief Send HEADERS frame (initial or informational).
  *
  * QPACK-encodes the headers using static table only, wraps in a HEADERS
