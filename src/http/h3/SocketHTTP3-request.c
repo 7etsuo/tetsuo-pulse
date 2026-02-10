@@ -456,6 +456,64 @@ SocketHTTP3_Request_new (SocketHTTP3_Conn_T conn)
   return req;
 }
 
+SocketHTTP3_Request_T
+SocketHTTP3_Request_new_incoming (SocketHTTP3_Conn_T conn, uint64_t stream_id)
+{
+  if (conn == NULL)
+    return NULL;
+  if (conn->state != H3_CONN_STATE_OPEN)
+    return NULL;
+
+  /* Must be client-initiated bidi (stream_id % 4 == 0) */
+  if (stream_id % 4 != 0)
+    return NULL;
+
+  size_t index = (size_t)(stream_id / 4);
+  if (index >= H3_MAX_CONCURRENT_REQUESTS)
+    return NULL;
+
+  /* Already exists? */
+  if (conn->requests[index] != NULL)
+    return NULL;
+
+  struct SocketHTTP3_Request *req
+      = CALLOC (conn->arena, 1, sizeof (struct SocketHTTP3_Request));
+
+  req->conn = conn;
+  req->arena = conn->arena;
+  req->stream_id = stream_id;
+  req->send_state = H3_REQ_SEND_IDLE;
+  req->recv_state = H3_REQ_RECV_IDLE;
+  req->cancelled = 0;
+  req->first_frame_seen = 0;
+  req->trailers_received = 0;
+  req->recv_headers = NULL;
+  req->status_code = 0;
+  req->expected_content_length = -1;
+  req->total_data_received = 0;
+  req->send_end_stream = 0;
+  req->recv_end_stream = 0;
+
+  /* Initialize receive buffer */
+  req->recv_buf = ALLOC (conn->arena, H3_REQ_RECV_BUF_INIT_CAP);
+  req->recv_buf_len = 0;
+  req->recv_buf_cap = H3_REQ_RECV_BUF_INIT_CAP;
+
+  /* Initialize data buffer */
+  req->data_buf = ALLOC (conn->arena, H3_REQ_DATA_BUF_INIT_CAP);
+  req->data_buf_len = 0;
+  req->data_buf_cap = H3_REQ_DATA_BUF_INIT_CAP;
+
+  /* Initialize send buffer */
+  stream_buf_init (&req->send_buf, conn->arena, stream_id);
+
+  /* Register in connection (don't advance next_bidi_stream_id) */
+  conn->requests[index] = req;
+  conn->request_count++;
+
+  return req;
+}
+
 /* ============================================================================
  * Send Side
  * ============================================================================

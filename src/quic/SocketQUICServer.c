@@ -1,0 +1,1325 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
+/**
+ * @file SocketQUICServer.c
+ * @brief QUIC server transport over UDP (RFC 9000).
+ *
+ * Multiplexes N QUIC connections over a single bound UDP socket.
+ * Incoming packets are demuxed by DCID to route to the correct
+ * per-connection state. Initial packets create new connections.
+ */
+
+#ifdef SOCKET_HAS_TLS
+
+#include "quic/SocketQUICServer.h"
+
+#include <arpa/inet.h>
+#include <poll.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <time.h>
+
+#include "core/Arena.h"
+#include "core/Except.h"
+#include "core/SocketCrypto.h"
+#include "quic/SocketQUICAck.h"
+#include "quic/SocketQUICConnection.h"
+#include "quic/SocketQUICCrypto.h"
+#include "quic/SocketQUICFlow.h"
+#include "quic/SocketQUICFrame.h"
+#include "quic/SocketQUICHandshake.h"
+#include "quic/SocketQUICLoss.h"
+#include "quic/SocketQUICPacket.h"
+#include "quic/SocketQUICTLS.h"
+#include "quic/SocketQUICTransportParams.h"
+#include "quic/SocketQUICVarInt.h"
+#include "quic/SocketQUICVersion.h"
+#include "socket/SocketDgram.h"
+
+/* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+#define SERVER_SEND_BUF_SIZE 1500
+#define SERVER_RECV_BUF_SIZE 65536
+#define SERVER_MAX_STREAMS 256
+#define SERVER_SCID_LEN 8
+#define SERVER_PN_LEN 4
+
+/* ============================================================================
+ * Per-stream send offset tracking
+ * ============================================================================
+ */
+
+typedef struct
+{
+  uint64_t stream_id;
+  uint64_t send_offset;
+  int active;
+} ServerStreamState;
+
+/* ============================================================================
+ * Per-connection state
+ * ============================================================================
+ */
+
+struct QUICServerConn
+{
+  Arena_T arena;
+  struct SocketQUICServer *server;
+
+  /* QUIC protocol state */
+  SocketQUICConnection_T conn;
+  SocketQUICHandshake_T handshake;
+  SocketQUICReceive_T recv_ctx;
+  SocketQUICFlow_T flow;
+
+  /* ACK generation (one per PN space) */
+  SocketQUICAckState_T ack[QUIC_PN_SPACE_COUNT];
+
+  /* Loss detection (one per PN space) */
+  SocketQUICLossState_T loss[QUIC_PN_SPACE_COUNT];
+  SocketQUICLossRTT_T rtt;
+
+  /* Packet protection keys (send-side) */
+  SocketQUICInitialKeys_T initial_keys;
+  SocketQUICPacketKeys_T handshake_send_keys;
+  SocketQUICPacketKeys_T app_send_keys;
+  int handshake_keys_valid;
+  int app_keys_valid;
+
+  /* Key update state for 1-RTT */
+  SocketQUICKeyUpdate_T key_update;
+
+  /* Packet number state */
+  uint64_t next_pn[QUIC_PN_SPACE_COUNT];
+
+  /* Per-stream send offset tracking */
+  ServerStreamState streams[SERVER_MAX_STREAMS];
+  size_t stream_count;
+
+  /* Connection IDs */
+  SocketQUICConnectionID_T scid;
+  SocketQUICConnectionID_T dcid;
+
+  /* Peer address (for sendto) */
+  struct sockaddr_storage peer_addr;
+  socklen_t peer_addr_len;
+
+  /* State */
+  int connected;
+  int closed;
+
+  /* User data (for H3 layer to attach per-connection H3 state) */
+  void *userdata;
+};
+
+/* ============================================================================
+ * Server structure
+ * ============================================================================
+ */
+
+struct SocketQUICServer
+{
+  Arena_T arena;
+  SocketQUICServerConfig config;
+
+  /* Bound UDP socket */
+  SocketDgram_T socket;
+
+  /* Connection list (simple array for V1) */
+  QUICServerConn_T *connections;
+  size_t conn_count;
+  size_t conn_capacity;
+
+  /* Shared buffers */
+  uint8_t *send_buf;
+  uint8_t *recv_buf;
+
+  /* Callbacks */
+  SocketQUICServer_ConnCB conn_cb;
+  SocketQUICServer_StreamCB stream_cb;
+  void *cb_userdata;
+
+  /* State */
+  int listening;
+  int closed;
+};
+
+/* ============================================================================
+ * Time helpers
+ * ============================================================================
+ */
+
+static uint64_t
+now_us (void)
+{
+  struct timespec ts;
+  clock_gettime (CLOCK_MONOTONIC, &ts);
+  return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
+}
+
+/* ============================================================================
+ * UDP I/O wrappers (exception -> return code)
+ * ============================================================================
+ */
+
+static int
+server_sendto (SocketQUICServer_T server,
+               const uint8_t *data,
+               size_t len,
+               const struct sockaddr *addr,
+               socklen_t addr_len)
+{
+  int fd = SocketDgram_fd (server->socket);
+  ssize_t sent = sendto (fd, data, len, 0, addr, addr_len);
+  return sent >= 0 ? 0 : -1;
+}
+
+static ssize_t
+server_recvfrom (SocketQUICServer_T server,
+                 uint8_t *buf,
+                 size_t len,
+                 struct sockaddr_storage *addr,
+                 socklen_t *addr_len)
+{
+  int fd = SocketDgram_fd (server->socket);
+  *addr_len = sizeof (*addr);
+  return recvfrom (fd, buf, len, 0, (struct sockaddr *)addr, addr_len);
+}
+
+/* ============================================================================
+ * Per-connection helpers
+ * ============================================================================
+ */
+
+static int
+conn_send_packet (QUICServerConn_T c, const uint8_t *data, size_t len)
+{
+  return server_sendto (c->server,
+                        data,
+                        len,
+                        (const struct sockaddr *)&c->peer_addr,
+                        c->peer_addr_len);
+}
+
+static ServerStreamState *
+conn_find_or_create_stream (QUICServerConn_T c, uint64_t stream_id)
+{
+  for (size_t i = 0; i < c->stream_count; i++)
+    {
+      if (c->streams[i].active && c->streams[i].stream_id == stream_id)
+        return &c->streams[i];
+    }
+
+  if (c->stream_count >= SERVER_MAX_STREAMS)
+    return NULL;
+
+  ServerStreamState *s = &c->streams[c->stream_count++];
+  s->stream_id = stream_id;
+  s->send_offset = 0;
+  s->active = 1;
+  return s;
+}
+
+/* ============================================================================
+ * Packet building
+ * ============================================================================
+ */
+
+static int
+build_and_send_1rtt (QUICServerConn_T c,
+                     const uint8_t *payload,
+                     size_t payload_len)
+{
+  if (!c->app_keys_valid)
+    return -1;
+
+  uint8_t *send_buf = c->server->send_buf;
+  uint64_t pn = c->next_pn[QUIC_PN_SPACE_APPLICATION];
+  uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, SERVER_PN_LEN);
+
+  SocketQUICPacketHeader_T hdr;
+  SocketQUICPacketHeader_init (&hdr);
+  if (SocketQUICPacketHeader_build_short (&hdr,
+                                          &c->dcid,
+                                          0,
+                                          c->key_update.key_phase,
+                                          SERVER_PN_LEN,
+                                          truncated_pn)
+      != QUIC_PACKET_OK)
+    return -1;
+
+  size_t hdr_len
+      = SocketQUICPacketHeader_serialize (&hdr, send_buf, SERVER_SEND_BUF_SIZE);
+  if (hdr_len == 0)
+    return -1;
+
+  size_t pn_offset = hdr_len - SERVER_PN_LEN;
+
+  if (hdr_len + payload_len + 16 > SERVER_SEND_BUF_SIZE)
+    return -1;
+  memcpy (send_buf + hdr_len, payload, payload_len);
+
+  size_t ciphertext_len = SERVER_SEND_BUF_SIZE - hdr_len;
+  if (SocketQUICCrypto_encrypt_payload (&c->app_send_keys,
+                                        pn,
+                                        send_buf,
+                                        hdr_len,
+                                        send_buf + hdr_len,
+                                        payload_len,
+                                        send_buf + hdr_len,
+                                        &ciphertext_len)
+      != QUIC_CRYPTO_OK)
+    return -1;
+
+  size_t pkt_len = hdr_len + ciphertext_len;
+
+  if (SocketQUICCrypto_protect_header_ex (
+          &c->app_send_keys, send_buf, pkt_len, pn_offset)
+      != QUIC_CRYPTO_OK)
+    return -1;
+
+  if (conn_send_packet (c, send_buf, pkt_len) < 0)
+    return -1;
+
+  c->next_pn[QUIC_PN_SPACE_APPLICATION]++;
+  return 0;
+}
+
+/* ============================================================================
+ * ACK sending
+ * ============================================================================
+ */
+
+static int
+conn_send_ack_if_needed (QUICServerConn_T c,
+                         SocketQUIC_PNSpace space,
+                         uint64_t now)
+{
+  if (!c->ack[space])
+    return 0;
+  if (!SocketQUICAck_should_send (c->ack[space], now))
+    return 0;
+
+  uint8_t ack_buf[256];
+  size_t ack_len = 0;
+  if (SocketQUICAck_encode (
+          c->ack[space], now, ack_buf, sizeof (ack_buf), &ack_len)
+      != QUIC_ACK_OK)
+    return -1;
+
+  if (ack_len == 0)
+    return 0;
+
+  int rc = -1;
+  if (space == QUIC_PN_SPACE_APPLICATION && c->app_keys_valid)
+    rc = build_and_send_1rtt (c, ack_buf, ack_len);
+
+  if (rc == 0)
+    SocketQUICAck_mark_sent (c->ack[space], now);
+
+  return rc;
+}
+
+/* ============================================================================
+ * Frame processing
+ * ============================================================================
+ */
+
+static int
+conn_process_frames (QUICServerConn_T c,
+                     const uint8_t *payload,
+                     size_t payload_len,
+                     SocketQUIC_PNSpace space,
+                     uint64_t now)
+{
+  size_t offset = 0;
+  int events = 0;
+
+  while (offset < payload_len)
+    {
+      SocketQUICFrame_T frame;
+      SocketQUICFrame_init (&frame);
+      size_t consumed = 0;
+      SocketQUICFrame_Result fr = SocketQUICFrame_parse_arena (
+          c->arena, payload + offset, payload_len - offset, &frame, &consumed);
+      if (fr != QUIC_FRAME_OK)
+        break;
+
+      offset += consumed;
+
+      switch (frame.type)
+        {
+        case QUIC_FRAME_PADDING:
+        case QUIC_FRAME_PING:
+          break;
+
+        case QUIC_FRAME_ACK:
+        case QUIC_FRAME_ACK_ECN:
+          if (c->loss[space])
+            {
+              size_t lost_count = 0;
+              SocketQUICLoss_on_ack_received (c->loss[space],
+                                              &c->rtt,
+                                              frame.data.ack.largest_ack,
+                                              frame.data.ack.ack_delay,
+                                              now,
+                                              NULL,
+                                              NULL,
+                                              &lost_count);
+            }
+          break;
+
+        case QUIC_FRAME_CRYPTO:
+          {
+            SocketQUICCryptoLevel level;
+            if (space == QUIC_PN_SPACE_INITIAL)
+              level = QUIC_CRYPTO_LEVEL_INITIAL;
+            else if (space == QUIC_PN_SPACE_HANDSHAKE)
+              level = QUIC_CRYPTO_LEVEL_HANDSHAKE;
+            else
+              level = QUIC_CRYPTO_LEVEL_APPLICATION;
+
+            SocketQUICTLS_provide_data (c->handshake,
+                                        level,
+                                        frame.data.crypto.data,
+                                        (size_t)frame.data.crypto.length);
+          }
+          break;
+
+        case QUIC_FRAME_CONNECTION_CLOSE:
+        case QUIC_FRAME_CONNECTION_CLOSE_APP:
+          c->closed = 1;
+          return -1;
+
+        case QUIC_FRAME_MAX_DATA:
+          if (c->flow)
+            SocketQUICFlow_update_send_max (c->flow,
+                                            frame.data.max_data.max_data);
+          break;
+
+        default:
+          if (SocketQUICFrame_is_stream (frame.type))
+            {
+              if (c->server->stream_cb)
+                {
+                  c->server->stream_cb (c,
+                                        frame.data.stream.stream_id,
+                                        frame.data.stream.data,
+                                        (size_t)frame.data.stream.length,
+                                        frame.data.stream.has_fin,
+                                        c->server->cb_userdata);
+                  events++;
+                }
+            }
+          break;
+        }
+    }
+
+  return events;
+}
+
+/* ============================================================================
+ * Send crypto data at a given level
+ * ============================================================================
+ */
+
+static int
+conn_send_crypto_data (QUICServerConn_T c,
+                       SocketQUICCryptoLevel level,
+                       const uint8_t *data,
+                       size_t len,
+                       uint64_t crypto_offset)
+{
+  uint8_t *send_buf = c->server->send_buf;
+  uint8_t frame_buf[SERVER_SEND_BUF_SIZE];
+  size_t frame_len = SocketQUICFrame_encode_crypto (
+      crypto_offset, data, len, frame_buf, sizeof (frame_buf));
+  if (frame_len == 0)
+    return -1;
+
+  if (level == QUIC_CRYPTO_LEVEL_INITIAL)
+    {
+      uint64_t pn = c->next_pn[QUIC_PN_SPACE_INITIAL];
+      uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, SERVER_PN_LEN);
+
+      SocketQUICPacketHeader_T hdr;
+      SocketQUICPacketHeader_init (&hdr);
+      SocketQUICPacketHeader_build_initial (&hdr,
+                                            QUIC_VERSION_1,
+                                            &c->dcid,
+                                            &c->scid,
+                                            NULL,
+                                            0,
+                                            SERVER_PN_LEN,
+                                            truncated_pn);
+
+      size_t hdr_len = SocketQUICPacketHeader_serialize (
+          &hdr, send_buf, SERVER_SEND_BUF_SIZE);
+      if (hdr_len == 0)
+        return -1;
+
+      memcpy (send_buf + hdr_len, frame_buf, frame_len);
+      size_t pkt_len = hdr_len + frame_len;
+
+      /* Server Initial packets don't need 1200-byte padding */
+
+      if (SocketQUICInitial_protect (
+              send_buf, &pkt_len, hdr_len, &c->initial_keys, 0)
+          != QUIC_INITIAL_OK)
+        return -1;
+
+      if (conn_send_packet (c, send_buf, pkt_len) < 0)
+        return -1;
+
+      c->next_pn[QUIC_PN_SPACE_INITIAL]++;
+    }
+  else if (level == QUIC_CRYPTO_LEVEL_HANDSHAKE)
+    {
+      if (!c->handshake_keys_valid)
+        return -1;
+
+      uint64_t pn = c->next_pn[QUIC_PN_SPACE_HANDSHAKE];
+      uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, SERVER_PN_LEN);
+
+      SocketQUICPacketHeader_T hdr;
+      SocketQUICPacketHeader_init (&hdr);
+      SocketQUICPacketHeader_build_handshake (&hdr,
+                                              QUIC_VERSION_1,
+                                              &c->dcid,
+                                              &c->scid,
+                                              SERVER_PN_LEN,
+                                              truncated_pn);
+
+      size_t hdr_len = SocketQUICPacketHeader_serialize (
+          &hdr, send_buf, SERVER_SEND_BUF_SIZE);
+      if (hdr_len == 0)
+        return -1;
+
+      size_t pn_offset = hdr_len - SERVER_PN_LEN;
+      memcpy (send_buf + hdr_len, frame_buf, frame_len);
+
+      size_t ciphertext_len = SERVER_SEND_BUF_SIZE - hdr_len;
+      if (SocketQUICCrypto_encrypt_payload (&c->handshake_send_keys,
+                                            pn,
+                                            send_buf,
+                                            hdr_len,
+                                            send_buf + hdr_len,
+                                            frame_len,
+                                            send_buf + hdr_len,
+                                            &ciphertext_len)
+          != QUIC_CRYPTO_OK)
+        return -1;
+
+      size_t pkt_len = hdr_len + ciphertext_len;
+
+      if (SocketQUICCrypto_protect_header_ex (
+              &c->handshake_send_keys, send_buf, pkt_len, pn_offset)
+          != QUIC_CRYPTO_OK)
+        return -1;
+
+      if (conn_send_packet (c, send_buf, pkt_len) < 0)
+        return -1;
+
+      SocketQUICHandshake_on_handshake_packet_sent (c->handshake);
+      c->next_pn[QUIC_PN_SPACE_HANDSHAKE]++;
+    }
+  else if (level == QUIC_CRYPTO_LEVEL_APPLICATION)
+    {
+      return build_and_send_1rtt (c, frame_buf, frame_len);
+    }
+
+  return 0;
+}
+
+/* ============================================================================
+ * Flush TLS output for a connection
+ * ============================================================================
+ */
+
+static int
+conn_flush_tls_output (QUICServerConn_T c)
+{
+  SocketQUICCryptoLevel level;
+  const uint8_t *data;
+  size_t len;
+
+  while (SocketQUICTLS_get_data (c->handshake, &level, &data, &len)
+         == QUIC_TLS_OK)
+    {
+      uint64_t offset = c->handshake->crypto_streams[level].send_offset;
+
+      if (conn_send_crypto_data (c, level, data, len, offset) < 0)
+        {
+          SocketQUICTLS_consume_data (c->handshake, level, len);
+          return -1;
+        }
+
+      c->handshake->crypto_streams[level].send_offset += len;
+      SocketQUICTLS_consume_data (c->handshake, level, len);
+    }
+
+  return 0;
+}
+
+/* ============================================================================
+ * Derive keys from TLS
+ * ============================================================================
+ */
+
+static void
+conn_check_and_derive_keys (QUICServerConn_T c)
+{
+  uint8_t write_secret[SOCKET_CRYPTO_SHA256_SIZE];
+  uint8_t read_secret[SOCKET_CRYPTO_SHA256_SIZE];
+  size_t secret_len = 0;
+
+  /* Handshake keys */
+  if (!c->handshake_keys_valid
+      && SocketQUICHandshake_has_keys (c->handshake,
+                                       QUIC_CRYPTO_LEVEL_HANDSHAKE))
+    {
+      if (SocketQUICTLS_get_traffic_secrets (c->handshake,
+                                             QUIC_CRYPTO_LEVEL_HANDSHAKE,
+                                             write_secret,
+                                             read_secret,
+                                             &secret_len)
+          == QUIC_TLS_OK)
+        {
+          SocketQUICPacketKeys_T hs_read_keys;
+          SocketQUICCrypto_derive_packet_keys (write_secret,
+                                               secret_len,
+                                               QUIC_AEAD_AES_128_GCM,
+                                               &c->handshake_send_keys);
+          SocketQUICCrypto_derive_packet_keys (
+              read_secret, secret_len, QUIC_AEAD_AES_128_GCM, &hs_read_keys);
+          SocketQUICReceive_set_handshake_keys (&c->recv_ctx, &hs_read_keys);
+          c->handshake_keys_valid = 1;
+        }
+    }
+
+  /* Application (1-RTT) keys */
+  if (!c->app_keys_valid
+      && SocketQUICHandshake_has_keys (c->handshake,
+                                       QUIC_CRYPTO_LEVEL_APPLICATION))
+    {
+      if (SocketQUICTLS_get_traffic_secrets (c->handshake,
+                                             QUIC_CRYPTO_LEVEL_APPLICATION,
+                                             write_secret,
+                                             read_secret,
+                                             &secret_len)
+          == QUIC_TLS_OK)
+        {
+          SocketQUICCrypto_derive_packet_keys (write_secret,
+                                               secret_len,
+                                               QUIC_AEAD_AES_128_GCM,
+                                               &c->app_send_keys);
+          SocketQUICKeyUpdate_set_initial_keys (&c->key_update,
+                                                write_secret,
+                                                read_secret,
+                                                secret_len,
+                                                QUIC_AEAD_AES_128_GCM);
+          SocketQUICReceive_set_1rtt_keys (&c->recv_ctx, &c->key_update);
+          c->app_keys_valid = 1;
+        }
+    }
+
+  /* Clear secrets from stack */
+  volatile uint8_t *vw = write_secret;
+  volatile uint8_t *vr = read_secret;
+  for (size_t i = 0; i < sizeof (write_secret); i++)
+    vw[i] = 0;
+  for (size_t i = 0; i < sizeof (read_secret); i++)
+    vr[i] = 0;
+}
+
+/* ============================================================================
+ * DCID lookup
+ * ============================================================================
+ */
+
+static QUICServerConn_T
+find_conn_by_dcid (SocketQUICServer_T server,
+                   const uint8_t *dcid_data,
+                   size_t dcid_len)
+{
+  for (size_t i = 0; i < server->conn_count; i++)
+    {
+      QUICServerConn_T c = server->connections[i];
+      if (c && !c->closed && c->scid.len == dcid_len
+          && memcmp (c->scid.data, dcid_data, dcid_len) == 0)
+        return c;
+    }
+  return NULL;
+}
+
+/* ============================================================================
+ * Handle new Initial packet (create connection)
+ * ============================================================================
+ */
+
+static QUICServerConn_T
+handle_initial_packet (SocketQUICServer_T server,
+                       const uint8_t *pkt,
+                       size_t pkt_len,
+                       const struct sockaddr_storage *peer_addr,
+                       socklen_t peer_addr_len)
+{
+  if (server->conn_count >= server->conn_capacity)
+    return NULL;
+
+  /* Parse DCID and SCID from unprotected Initial header */
+  if (pkt_len < 7)
+    return NULL;
+
+  /* Long header format: flags(1) + version(4) + dcid_len(1) + dcid(...) */
+  size_t pos = 5; /* skip flags + version */
+  uint8_t dcid_len = pkt[pos++];
+  if (pos + dcid_len > pkt_len)
+    return NULL;
+  const uint8_t *dcid_data = pkt + pos;
+  pos += dcid_len;
+
+  if (pos >= pkt_len)
+    return NULL;
+  uint8_t scid_len = pkt[pos++];
+  if (pos + scid_len > pkt_len)
+    return NULL;
+  const uint8_t *scid_data = pkt + pos;
+
+  /* Create per-connection arena */
+  Arena_T conn_arena = Arena_new ();
+
+  QUICServerConn_T c
+      = Arena_alloc (conn_arena, sizeof (*c), __FILE__, __LINE__);
+  memset (c, 0, sizeof (*c));
+  c->arena = conn_arena;
+  c->server = server;
+
+  /* Server's SCID = client's initial DCID (so client can route responses) */
+  c->scid.len = dcid_len;
+  if (dcid_len > 0)
+    memcpy (c->scid.data, dcid_data, dcid_len);
+
+  /* Server's DCID = client's SCID */
+  c->dcid.len = scid_len;
+  if (scid_len > 0)
+    memcpy (c->dcid.data, scid_data, scid_len);
+
+  /* Store peer address */
+  memcpy (&c->peer_addr, peer_addr, peer_addr_len);
+  c->peer_addr_len = peer_addr_len;
+
+  /* Create QUIC connection */
+  c->conn = SocketQUICConnection_new (conn_arena, QUIC_CONN_ROLE_SERVER);
+  if (!c->conn)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+
+  SocketQUICConnection_add_local_cid (c->conn, &c->scid);
+  SocketQUICConnection_add_peer_cid (c->conn, &c->dcid);
+
+  /* Store client's initial DCID for key derivation */
+  SocketQUICConnectionID_T client_initial_dcid;
+  client_initial_dcid.len = dcid_len;
+  if (dcid_len > 0)
+    memcpy (client_initial_dcid.data, dcid_data, dcid_len);
+  c->conn->initial_dcid = client_initial_dcid;
+
+  /* Create handshake context (server role) */
+  c->handshake
+      = SocketQUICHandshake_new (conn_arena, c->conn, QUIC_CONN_ROLE_SERVER);
+  if (!c->handshake)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+
+  /* Set transport params */
+  SocketQUICTransportParams_T local_params;
+  memset (&local_params, 0, sizeof (local_params));
+  local_params.max_idle_timeout = server->config.idle_timeout_ms;
+  local_params.initial_max_data = server->config.initial_max_data;
+  local_params.initial_max_stream_data_bidi_local
+      = server->config.max_stream_data;
+  local_params.initial_max_stream_data_bidi_remote
+      = server->config.max_stream_data;
+  local_params.initial_max_streams_bidi
+      = server->config.initial_max_streams_bidi;
+  local_params.initial_max_streams_uni = 3;
+
+  SocketQUICHandshake_set_transport_params (c->handshake, &local_params);
+
+  /* TLS setup (server mode with cert/key) */
+  SocketQUICTLSConfig_T tls_config;
+  memset (&tls_config, 0, sizeof (tls_config));
+  tls_config.alpn = server->config.alpn ? server->config.alpn : "h3";
+  tls_config.cert_file = server->config.cert_file;
+  tls_config.key_file = server->config.key_file;
+
+  if (SocketQUICTLS_init_context (c->handshake, &tls_config) != QUIC_TLS_OK)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+  if (SocketQUICTLS_create_ssl (c->handshake) != QUIC_TLS_OK)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+  if (SocketQUICTLS_set_local_transport_params (c->handshake) != QUIC_TLS_OK)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+
+  /* Derive initial keys from client's initial DCID */
+  if (SocketQUICCrypto_derive_initial_keys (
+          &client_initial_dcid, QUIC_VERSION_1, &c->initial_keys)
+      != QUIC_CRYPTO_OK)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+
+  /* Initialize receive context and set initial keys */
+  SocketQUICReceive_init (&c->recv_ctx);
+  SocketQUICReceive_set_initial_keys (&c->recv_ctx, &c->initial_keys);
+
+  /* Init ACK states */
+  c->ack[QUIC_PN_SPACE_INITIAL] = SocketQUICAck_new (conn_arena, 1, 0);
+  c->ack[QUIC_PN_SPACE_HANDSHAKE] = SocketQUICAck_new (conn_arena, 1, 0);
+  c->ack[QUIC_PN_SPACE_APPLICATION]
+      = SocketQUICAck_new (conn_arena, 0, QUIC_ACK_DEFAULT_MAX_DELAY_US);
+
+  /* Init loss detection */
+  c->loss[QUIC_PN_SPACE_INITIAL] = SocketQUICLoss_new (conn_arena, 1, 0);
+  c->loss[QUIC_PN_SPACE_HANDSHAKE] = SocketQUICLoss_new (conn_arena, 1, 0);
+  c->loss[QUIC_PN_SPACE_APPLICATION]
+      = SocketQUICLoss_new (conn_arena, 0, QUIC_ACK_DEFAULT_MAX_DELAY_US);
+
+  /* Init RTT and key update */
+  SocketQUICLoss_init_rtt (&c->rtt);
+  SocketQUICKeyUpdate_init (&c->key_update);
+
+  /* Decrypt the Initial packet */
+  SocketQUICReceiveResult_T result;
+  memset (&result, 0, sizeof (result));
+  SocketQUICReceive_Result recv_rc = SocketQUICReceive_packet (
+      &c->recv_ctx, (uint8_t *)pkt, pkt_len, c->scid.len, 0, &result);
+
+  if (recv_rc != QUIC_RECEIVE_OK)
+    {
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
+
+  /* Record PN for ACK */
+  uint64_t now = now_us ();
+  if (c->ack[result.pn_space])
+    SocketQUICAck_record_packet (
+        c->ack[result.pn_space], result.packet_number, now, 1);
+
+  /* Process frames (CRYPTO frame → ClientHello) */
+  conn_process_frames (
+      c, result.payload, result.payload_len, result.pn_space, now);
+
+  /* Advance TLS */
+  SocketQUICTLS_do_handshake (c->handshake);
+  conn_check_and_derive_keys (c);
+
+  /* Flush TLS output (ServerHello, etc.) */
+  conn_flush_tls_output (c);
+
+  /* Send ACKs */
+  now = now_us ();
+  for (int space = 0; space < QUIC_PN_SPACE_COUNT; space++)
+    conn_send_ack_if_needed (c, (SocketQUIC_PNSpace)space, now);
+
+  /* Check if handshake completed in one round */
+  if (SocketQUICTLS_is_complete (c->handshake))
+    {
+      conn_check_and_derive_keys (c);
+
+      const SocketQUICTransportParams_T *peer_params
+          = SocketQUICHandshake_get_peer_params (c->handshake);
+      if (peer_params)
+        {
+          c->flow = SocketQUICFlow_new (conn_arena);
+          if (c->flow)
+            SocketQUICFlow_init (c->flow,
+                                 server->config.initial_max_data,
+                                 peer_params->initial_max_data,
+                                 peer_params->initial_max_streams_bidi,
+                                 peer_params->initial_max_streams_uni);
+        }
+
+      /* Send HANDSHAKE_DONE frame (server only, RFC 9000 §19.20) */
+      if (c->app_keys_valid)
+        {
+          uint8_t hd_frame[1] = { QUIC_FRAME_HANDSHAKE_DONE };
+          build_and_send_1rtt (c, hd_frame, 1);
+        }
+
+      c->connected = 1;
+    }
+
+  /* Add to server connection list */
+  server->connections[server->conn_count++] = c;
+
+  return c;
+}
+
+/* ============================================================================
+ * Handle existing connection packet
+ * ============================================================================
+ */
+
+static int
+handle_existing_conn_packet (QUICServerConn_T c,
+                             const uint8_t *pkt,
+                             size_t pkt_len)
+{
+  SocketQUICReceiveResult_T result;
+  memset (&result, 0, sizeof (result));
+  SocketQUICReceive_Result recv_rc = SocketQUICReceive_packet (
+      &c->recv_ctx, (uint8_t *)pkt, pkt_len, c->scid.len, 0, &result);
+
+  if (recv_rc != QUIC_RECEIVE_OK)
+    return 0;
+
+  uint64_t now = now_us ();
+
+  /* Record PN for ACK */
+  if (c->ack[result.pn_space])
+    SocketQUICAck_record_packet (
+        c->ack[result.pn_space], result.packet_number, now, 1);
+
+  /* Process frames */
+  int events = conn_process_frames (
+      c, result.payload, result.payload_len, result.pn_space, now);
+
+  if (c->closed)
+    return events;
+
+  /* Continue handshake if not complete */
+  if (!SocketQUICTLS_is_complete (c->handshake))
+    {
+      SocketQUICTLS_do_handshake (c->handshake);
+      conn_check_and_derive_keys (c);
+      conn_flush_tls_output (c);
+
+      if (SocketQUICTLS_is_complete (c->handshake) && !c->connected)
+        {
+          conn_check_and_derive_keys (c);
+          SocketQUICTLS_get_peer_params (c->handshake);
+
+          const SocketQUICTransportParams_T *peer_params
+              = SocketQUICHandshake_get_peer_params (c->handshake);
+          if (peer_params)
+            {
+              c->flow = SocketQUICFlow_new (c->arena);
+              if (c->flow)
+                SocketQUICFlow_init (c->flow,
+                                     c->server->config.initial_max_data,
+                                     peer_params->initial_max_data,
+                                     peer_params->initial_max_streams_bidi,
+                                     peer_params->initial_max_streams_uni);
+            }
+
+          /* Send HANDSHAKE_DONE */
+          if (c->app_keys_valid)
+            {
+              uint8_t hd_frame[1] = { QUIC_FRAME_HANDSHAKE_DONE };
+              build_and_send_1rtt (c, hd_frame, 1);
+            }
+
+          c->connected = 1;
+
+          /* Notify callback */
+          if (c->server->conn_cb)
+            c->server->conn_cb (c, c->server->cb_userdata);
+        }
+    }
+
+  /* Send ACKs */
+  now = now_us ();
+  for (int space = 0; space < QUIC_PN_SPACE_COUNT; space++)
+    conn_send_ack_if_needed (c, (SocketQUIC_PNSpace)space, now);
+
+  return events;
+}
+
+/* ============================================================================
+ * Config defaults
+ * ============================================================================
+ */
+
+void
+SocketQUICServerConfig_defaults (SocketQUICServerConfig *config)
+{
+  if (!config)
+    return;
+  memset (config, 0, sizeof (*config));
+  config->bind_addr = "0.0.0.0";
+  config->port = 443;
+  config->idle_timeout_ms = 30000;
+  config->max_stream_data = 262144;
+  config->initial_max_data = 1048576;
+  config->initial_max_streams_bidi = 100;
+  config->cert_file = NULL;
+  config->key_file = NULL;
+  config->alpn = "h3";
+  config->max_connections = 256;
+}
+
+/* ============================================================================
+ * New
+ * ============================================================================
+ */
+
+SocketQUICServer_T
+SocketQUICServer_new (Arena_T arena, const SocketQUICServerConfig *config)
+{
+  if (!arena || !config)
+    return NULL;
+
+  SocketQUICServer_T server
+      = Arena_alloc (arena, sizeof (*server), __FILE__, __LINE__);
+  memset (server, 0, sizeof (*server));
+  server->arena = arena;
+  server->config = *config;
+
+  if (server->config.max_connections == 0)
+    server->config.max_connections = 256;
+
+  /* Allocate connection array */
+  server->conn_capacity = server->config.max_connections;
+  server->connections
+      = Arena_alloc (arena,
+                     server->conn_capacity * sizeof (QUICServerConn_T),
+                     __FILE__,
+                     __LINE__);
+  memset (server->connections,
+          0,
+          server->conn_capacity * sizeof (QUICServerConn_T));
+  server->conn_count = 0;
+
+  /* Allocate shared buffers */
+  server->send_buf
+      = Arena_alloc (arena, SERVER_SEND_BUF_SIZE, __FILE__, __LINE__);
+  server->recv_buf
+      = Arena_alloc (arena, SERVER_RECV_BUF_SIZE, __FILE__, __LINE__);
+
+  return server;
+}
+
+/* ============================================================================
+ * Listen
+ * ============================================================================
+ */
+
+int
+SocketQUICServer_listen (SocketQUICServer_T server)
+{
+  if (!server || server->listening || server->closed)
+    return -1;
+
+  if (!server->config.cert_file || !server->config.key_file)
+    return -1;
+
+  volatile int setup_ok = 0;
+  TRY
+  {
+    server->socket = SocketDgram_new (AF_INET, 0);
+    SocketDgram_setreuseaddr (server->socket);
+    SocketDgram_setnonblocking (server->socket);
+    SocketDgram_bind (
+        server->socket, server->config.bind_addr, server->config.port);
+    setup_ok = 1;
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+    setup_ok = 0;
+  }
+  END_TRY;
+
+  if (!setup_ok)
+    return -1;
+
+  server->listening = 1;
+  return 0;
+}
+
+/* ============================================================================
+ * Poll
+ * ============================================================================
+ */
+
+int
+SocketQUICServer_poll (SocketQUICServer_T server, int timeout_ms)
+{
+  if (!server || !server->listening || server->closed)
+    return -1;
+
+  struct pollfd pfd;
+  pfd.fd = SocketDgram_fd (server->socket);
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+
+  int poll_rc = poll (&pfd, 1, timeout_ms);
+  if (poll_rc <= 0)
+    return 0;
+
+  struct sockaddr_storage peer_addr;
+  socklen_t peer_addr_len = sizeof (peer_addr);
+  ssize_t nbytes = server_recvfrom (server,
+                                    server->recv_buf,
+                                    SERVER_RECV_BUF_SIZE,
+                                    &peer_addr,
+                                    &peer_addr_len);
+  if (nbytes <= 0)
+    return 0;
+
+  size_t pkt_len = (size_t)nbytes;
+
+  /* Extract DCID from packet for routing */
+  if (pkt_len < 1)
+    return 0;
+
+  uint8_t first_byte = server->recv_buf[0];
+  int is_long_header = (first_byte & 0x80) != 0;
+
+  const uint8_t *dcid_data = NULL;
+  size_t dcid_len = 0;
+
+  if (is_long_header)
+    {
+      /* Long header: flags(1) + version(4) + dcid_len(1) + dcid(...) */
+      if (pkt_len < 6)
+        return 0;
+      dcid_len = server->recv_buf[5];
+      if (pkt_len < 6 + dcid_len)
+        return 0;
+      dcid_data = server->recv_buf + 6;
+    }
+  else
+    {
+      /* Short header: flags(1) + dcid (fixed length) */
+      /* For server, the DCID in short headers is our SCID, which is
+       * SERVER_SCID_LEN. But we need to search all connections. */
+      dcid_len = SERVER_SCID_LEN;
+      if (pkt_len < 1 + dcid_len)
+        return 0;
+      dcid_data = server->recv_buf + 1;
+    }
+
+  /* Look up connection by DCID */
+  QUICServerConn_T c = find_conn_by_dcid (server, dcid_data, dcid_len);
+
+  if (c)
+    {
+      return handle_existing_conn_packet (c, server->recv_buf, pkt_len);
+    }
+
+  /* No existing connection — must be Initial packet */
+  if (!is_long_header)
+    return 0; /* Short header from unknown → drop */
+
+  /* Check version field for Initial packet type */
+  uint32_t version = ((uint32_t)server->recv_buf[1] << 24)
+                     | ((uint32_t)server->recv_buf[2] << 16)
+                     | ((uint32_t)server->recv_buf[3] << 8)
+                     | (uint32_t)server->recv_buf[4];
+
+  if (version == 0)
+    return 0; /* Version negotiation — ignore */
+
+  /* Check packet type (bits 4-5 of first byte for long header) */
+  uint8_t pkt_type = (first_byte & 0x30) >> 4;
+  if (pkt_type != QUIC_PACKET_TYPE_INITIAL)
+    return 0; /* Not Initial → drop */
+
+  QUICServerConn_T new_conn = handle_initial_packet (
+      server, server->recv_buf, pkt_len, &peer_addr, peer_addr_len);
+
+  if (new_conn && new_conn->connected && server->conn_cb)
+    server->conn_cb (new_conn, server->cb_userdata);
+
+  return new_conn ? 1 : 0;
+}
+
+/* ============================================================================
+ * Close
+ * ============================================================================
+ */
+
+void
+SocketQUICServer_close (SocketQUICServer_T server)
+{
+  if (!server || server->closed)
+    return;
+
+  /* Close all connections */
+  for (size_t i = 0; i < server->conn_count; i++)
+    {
+      QUICServerConn_T c = server->connections[i];
+      if (c && !c->closed)
+        {
+          if (c->app_keys_valid)
+            {
+              uint8_t close_buf[64];
+              size_t close_len = SocketQUICFrame_encode_connection_close_app (
+                  0, NULL, close_buf, sizeof (close_buf));
+              if (close_len > 0)
+                build_and_send_1rtt (c, close_buf, close_len);
+            }
+
+          c->closed = 1;
+
+          /* Clear key material */
+          SocketQUICInitialKeys_clear (&c->initial_keys);
+          SocketQUICPacketKeys_clear (&c->handshake_send_keys);
+          SocketQUICPacketKeys_clear (&c->app_send_keys);
+          SocketQUICKeyUpdate_clear (&c->key_update);
+
+          if (c->handshake)
+            SocketQUICTLS_free (c->handshake);
+
+          Arena_dispose (&c->arena);
+          server->connections[i] = NULL;
+        }
+    }
+
+  server->conn_count = 0;
+
+  /* Close UDP socket */
+  if (server->socket)
+    {
+      SocketDgram_free (&server->socket);
+      server->socket = NULL;
+    }
+
+  server->listening = 0;
+  server->closed = 1;
+}
+
+/* ============================================================================
+ * Set callbacks
+ * ============================================================================
+ */
+
+void
+SocketQUICServer_set_callbacks (SocketQUICServer_T server,
+                                SocketQUICServer_ConnCB conn_cb,
+                                SocketQUICServer_StreamCB stream_cb,
+                                void *userdata)
+{
+  if (!server)
+    return;
+  server->conn_cb = conn_cb;
+  server->stream_cb = stream_cb;
+  server->cb_userdata = userdata;
+}
+
+/* ============================================================================
+ * Send stream data
+ * ============================================================================
+ */
+
+int
+SocketQUICServer_send_stream (QUICServerConn_T conn,
+                              uint64_t stream_id,
+                              const uint8_t *data,
+                              size_t len,
+                              int fin)
+{
+  if (!conn || !conn->connected || conn->closed)
+    return -1;
+  if (!data && len > 0)
+    return -1;
+
+  ServerStreamState *stream = conn_find_or_create_stream (conn, stream_id);
+  if (!stream)
+    return -1;
+
+  uint8_t frame_buf[SERVER_SEND_BUF_SIZE];
+  size_t frame_len = SocketQUICFrame_encode_stream (stream_id,
+                                                    stream->send_offset,
+                                                    data,
+                                                    len,
+                                                    fin,
+                                                    frame_buf,
+                                                    sizeof (frame_buf));
+  if (frame_len == 0)
+    return -1;
+
+  stream->send_offset += len;
+
+  return build_and_send_1rtt (conn, frame_buf, frame_len);
+}
+
+/* ============================================================================
+ * Close single connection
+ * ============================================================================
+ */
+
+int
+SocketQUICServer_close_conn (QUICServerConn_T conn, uint64_t error_code)
+{
+  if (!conn || conn->closed)
+    return -1;
+
+  if (conn->app_keys_valid)
+    {
+      uint8_t close_buf[64];
+      size_t close_len = SocketQUICFrame_encode_connection_close_app (
+          error_code, NULL, close_buf, sizeof (close_buf));
+      if (close_len > 0)
+        build_and_send_1rtt (conn, close_buf, close_len);
+    }
+
+  conn->closed = 1;
+  conn->connected = 0;
+
+  /* Clear key material */
+  SocketQUICInitialKeys_clear (&conn->initial_keys);
+  SocketQUICPacketKeys_clear (&conn->handshake_send_keys);
+  SocketQUICPacketKeys_clear (&conn->app_send_keys);
+  SocketQUICKeyUpdate_clear (&conn->key_update);
+
+  if (conn->handshake)
+    SocketQUICTLS_free (conn->handshake);
+
+  return 0;
+}
+
+/* ============================================================================
+ * Queries
+ * ============================================================================
+ */
+
+size_t
+SocketQUICServer_active_connections (SocketQUICServer_T server)
+{
+  if (!server)
+    return 0;
+
+  size_t count = 0;
+  for (size_t i = 0; i < server->conn_count; i++)
+    {
+      if (server->connections[i] && !server->connections[i]->closed)
+        count++;
+    }
+  return count;
+}
+
+#endif /* SOCKET_HAS_TLS */

@@ -27,6 +27,9 @@
 #include "core/Arena.h"
 #include "http/SocketHTTP3-frame.h"
 
+/* Forward declaration for request handle used in callback */
+struct SocketHTTP3_Request;
+
 /**
  * @brief HTTP/3 connection states.
  */
@@ -184,5 +187,30 @@ void SocketHTTP3_Conn_drain_output (SocketHTTP3_Conn_T conn);
  * @brief Return human-readable name for a connection state.
  */
 const char *SocketHTTP3_Conn_state_name (SocketHTTP3_ConnState state);
+
+/**
+ * @brief Callback invoked when a new request's headers are fully received.
+ *
+ * Used by the server to be notified when a client request is ready
+ * for handling (recv_state transitions to HEADERS_RECEIVED).
+ *
+ * @param conn      Connection handle.
+ * @param req       Request handle with decoded headers available.
+ * @param userdata  User-supplied context pointer.
+ */
+typedef void (*SocketHTTP3_RequestReadyCB) (SocketHTTP3_Conn_T conn,
+                                            struct SocketHTTP3_Request *req,
+                                            void *userdata);
+
+/**
+ * @brief Register a callback for incoming request notification.
+ *
+ * @param conn      Connection handle.
+ * @param cb        Callback function (NULL to clear).
+ * @param userdata  User context passed to callback.
+ */
+void SocketHTTP3_Conn_set_request_callback (SocketHTTP3_Conn_T conn,
+                                            SocketHTTP3_RequestReadyCB cb,
+                                            void *userdata);
 
 #endif /* SOCKETHTTP3_INCLUDED */

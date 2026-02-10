@@ -85,6 +85,9 @@ SocketHTTP3_Conn_new (Arena_T arena,
   conn->request_count = 0;
   conn->next_bidi_stream_id = (config->role == H3_ROLE_CLIENT) ? 0 : 1;
 
+  conn->request_cb = NULL;
+  conn->request_cb_userdata = NULL;
+
   return conn;
 }
 
@@ -362,12 +365,30 @@ SocketHTTP3_Conn_feed_stream (SocketHTTP3_Conn_T conn,
         struct SocketHTTP3_Request *req = conn->requests[index];
         if (req == NULL)
           {
-            /* Auto-create for peer-initiated bidi streams (server receiving) */
-            /* For now, peer-initiated requests need explicit creation */
-            return 0;
+            if (conn->role == H3_ROLE_SERVER)
+              {
+                req = SocketHTTP3_Request_new_incoming (conn, stream_id);
+                if (req == NULL)
+                  return -(int)H3_GENERAL_PROTOCOL_ERROR;
+              }
+            else
+              return 0;
           }
 
-        return SocketHTTP3_Request_feed (req, data, len, fin);
+        SocketHTTP3_ReqRecvState prev_state
+            = SocketHTTP3_Request_recv_state (req);
+
+        int feed_rc = SocketHTTP3_Request_feed (req, data, len, fin);
+        if (feed_rc != 0)
+          return feed_rc;
+
+        /* Notify once when headers transition to received */
+        if (conn->request_cb && prev_state == H3_REQ_RECV_IDLE
+            && SocketHTTP3_Request_recv_state (req)
+                   >= H3_REQ_RECV_HEADERS_RECEIVED)
+          conn->request_cb (conn, req, conn->request_cb_userdata);
+
+        return 0;
       }
 
     case H3_STREAM_ROLE_PUSH:
@@ -556,6 +577,17 @@ SocketHTTP3_Conn_drain_output (SocketHTTP3_Conn_T conn)
 {
   if (conn != NULL)
     conn->output.count = 0;
+}
+
+void
+SocketHTTP3_Conn_set_request_callback (SocketHTTP3_Conn_T conn,
+                                       SocketHTTP3_RequestReadyCB cb,
+                                       void *userdata)
+{
+  if (conn == NULL)
+    return;
+  conn->request_cb = cb;
+  conn->request_cb_userdata = userdata;
 }
 
 const char *
