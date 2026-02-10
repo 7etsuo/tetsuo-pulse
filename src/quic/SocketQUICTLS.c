@@ -891,6 +891,34 @@ SocketQUICTLS_derive_keys (SocketQUICHandshake_T handshake,
   return QUIC_TLS_OK;
 }
 
+SocketQUICTLS_Result
+SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
+                                   SocketQUICCryptoLevel level,
+                                   uint8_t *write_secret,
+                                   uint8_t *read_secret,
+                                   size_t *secret_len)
+{
+  if (handshake == NULL || write_secret == NULL || read_secret == NULL
+      || secret_len == NULL)
+    return QUIC_TLS_ERROR_NULL;
+
+  if (level >= QUIC_CRYPTO_LEVEL_COUNT)
+    return QUIC_TLS_ERROR_LEVEL;
+
+  TLSState_T *state = get_tls_state (handshake);
+  if (state == NULL)
+    return QUIC_TLS_ERROR_INIT;
+
+  if (!state->secrets_available[level])
+    return QUIC_TLS_ERROR_SECRETS;
+
+  memcpy (write_secret, state->write_secret[level], SOCKET_CRYPTO_SHA256_SIZE);
+  memcpy (read_secret, state->read_secret[level], SOCKET_CRYPTO_SHA256_SIZE);
+  *secret_len = SOCKET_CRYPTO_SHA256_SIZE;
+
+  return QUIC_TLS_OK;
+}
+
 /* ============================================================================
  * Alert Handling
  * ============================================================================
@@ -1467,6 +1495,22 @@ SocketQUICTLS_derive_keys (SocketQUICHandshake_T handshake,
   return QUIC_TLS_ERROR_NO_TLS;
 }
 
+SocketQUICTLS_Result
+SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
+                                   SocketQUICCryptoLevel level,
+                                   uint8_t *write_secret,
+                                   uint8_t *read_secret,
+                                   size_t *secret_len)
+{
+  (void)level;
+  (void)write_secret;
+  (void)read_secret;
+  (void)secret_len;
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
 uint64_t
 SocketQUICTLS_alert_to_error (uint8_t alert)
 {
@@ -1701,6 +1745,22 @@ SocketQUICTLS_derive_keys (SocketQUICHandshake_T handshake,
                            SocketQUICCryptoLevel level)
 {
   (void)level;
+  if (handshake == NULL)
+    return QUIC_TLS_ERROR_NULL;
+  return QUIC_TLS_ERROR_NO_TLS;
+}
+
+SocketQUICTLS_Result
+SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
+                                   SocketQUICCryptoLevel level,
+                                   uint8_t *write_secret,
+                                   uint8_t *read_secret,
+                                   size_t *secret_len)
+{
+  (void)level;
+  (void)write_secret;
+  (void)read_secret;
+  (void)secret_len;
   if (handshake == NULL)
     return QUIC_TLS_ERROR_NULL;
   return QUIC_TLS_ERROR_NO_TLS;

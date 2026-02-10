@@ -431,6 +431,7 @@ set(LIB_SOURCES
     src/http/client/SocketHTTPClient-headers.c
     src/http/client/SocketHTTPClient-http1.c
     src/http/client/SocketHTTPClient-http2.c
+    src/http/client/SocketHTTP3Client.c
 
     # HTTP Server API
     src/http/SocketHTTPServer.c
@@ -475,6 +476,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICAck.c
     src/quic/SocketQUICLoss.c
     src/quic/SocketQUICTLS.c
+    src/quic/SocketQUICTransport.c
 
     # DEFLATE compression module (RFC 1951)
     src/deflate/SocketDeflate-static.c
@@ -1016,6 +1018,8 @@ if(SOCKET_HAS_TLS)
         test_dns_over_tls
         # DNS-over-HTTPS (RFC 8484)
         test_dns_over_https
+        # HTTP/3 client (requires TLS for QUIC transport)
+        test_http3_client
     )
 endif()
 
