@@ -14,6 +14,7 @@
 #include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
+#include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
 #include <assert.h>
@@ -679,15 +680,6 @@ he_get_next_address (T he)
   return entry;
 }
 
-static void
-he_clear_nonblocking (const int fd)
-{
-  int flags = fcntl (fd, F_GETFL);
-
-  if (flags >= 0)
-    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
-}
-
 static Socket_T
 he_create_socket_for_address (const struct addrinfo *addr)
 {
@@ -977,9 +969,7 @@ he_poll_attempt_status (const int fd, short *revents)
   struct pollfd pfd;
   int result;
 
-  pfd.fd = fd;
-  pfd.events = POLLOUT;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
 
   result = poll (&pfd, 1, 0);
   if (result < 0)
@@ -987,18 +977,6 @@ he_poll_attempt_status (const int fd, short *revents)
 
   *revents = pfd.revents;
   return result;
-}
-
-static int
-he_check_socket_error (const int fd)
-{
-  int error = 0;
-  socklen_t len = sizeof (error);
-
-  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-    return errno;
-
-  return error;
 }
 
 static int
@@ -1019,7 +997,7 @@ he_check_attempt_timeout (const T he, const SocketHE_Attempt_T *attempt)
 static int
 he_handle_poll_error (T he, SocketHE_Attempt_T *attempt, int fd)
 {
-  int error = he_check_socket_error (fd);
+  int error = socket_check_so_error (fd) < 0 ? errno : 0;
   he_fail_attempt (he, attempt, error ? error : ECONNREFUSED);
   return -1;
 }
@@ -1027,10 +1005,9 @@ he_handle_poll_error (T he, SocketHE_Attempt_T *attempt, int fd)
 static int
 he_handle_poll_success (T he, SocketHE_Attempt_T *attempt, int fd)
 {
-  int error = he_check_socket_error (fd);
-  if (error != 0)
+  if (socket_check_so_error (fd) < 0)
     {
-      he_fail_attempt (he, attempt, error);
+      he_fail_attempt (he, attempt, errno);
       return -1;
     }
 
@@ -1486,7 +1463,7 @@ SocketHappyEyeballs_result (T he)
             break;
           }
       }
-      he_clear_nonblocking (Socket_fd (result));
+      socket_clear_nonblock (Socket_fd (result));
     }
 
   return result;
@@ -1535,9 +1512,7 @@ sync_build_poll_set (const T he,
       if (attempt->state != HE_ATTEMPT_CONNECTING || !attempt->socket)
         continue;
 
-      pfds[nfds].fd = Socket_fd (attempt->socket);
-      pfds[nfds].events = POLLOUT;
-      pfds[nfds].revents = 0;
+      SOCKET_INIT_POLLFD (pfds[nfds], Socket_fd (attempt->socket), POLLOUT);
       attempt_map[nfds] = attempt;
       nfds++;
     }

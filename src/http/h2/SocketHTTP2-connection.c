@@ -13,6 +13,7 @@
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "socket/SocketCommon-private.h"
 #include "core/TimeWindow.h"
 
 #include <assert.h>
@@ -1564,9 +1565,7 @@ SocketHTTP2_Conn_ping_wait (SocketHTTP2_Conn_T conn, int timeout_ms)
 
       /* Poll for readability */
       struct pollfd pfd;
-      pfd.fd = Socket_fd (conn->socket);
-      pfd.events = POLLIN;
-      pfd.revents = 0;
+      SOCKET_INIT_POLLFD (pfd, Socket_fd (conn->socket), POLLIN);
 
       int ret = poll (&pfd, 1, (int)remaining);
       if (ret < 0 && errno != EINTR)
