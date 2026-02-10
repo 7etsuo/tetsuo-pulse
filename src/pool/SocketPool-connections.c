@@ -24,6 +24,7 @@
 
 #include "core/SocketMetrics.h"
 #include "pool/SocketPool-private.h"
+#include "socket/SocketCommon-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
 /* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
@@ -1194,31 +1195,6 @@ Connection_created_at (const Connection_T conn)
  */
 
 /**
- * @brief Check socket for errors via SO_ERROR.
- * @fd File descriptor to check
- *
- * Returns: 0 if no error, non-zero error code otherwise
- * Thread-safe: Yes - pure system call
- */
-static int
-check_socket_error (int fd)
-{
-  int error = 0;
-  socklen_t len = sizeof (error);
-
-  if (fd < 0)
-    return EBADF;
-
-  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-    {
-      int saved_errno = errno;
-      return saved_errno;
-    }
-
-  return error;
-}
-
-/**
  * @brief Check basic socket health (error and connected state).
  * @param conn Connection to check.
  * @return POOL_CONN_HEALTHY if healthy, else specific error code.
@@ -1236,14 +1212,13 @@ check_socket_health (const Connection_T conn)
   if (fd < 0)
     return POOL_CONN_DISCONNECTED;
 
-  const int error = check_socket_error (fd);
-  if (error != 0)
+  if (socket_check_so_error (fd) < 0)
     {
       SocketLog_emitf (SOCKET_LOG_DEBUG,
                        SOCKET_LOG_COMPONENT,
                        "Connection health check: SO_ERROR=%d (%s)",
-                       error,
-                       Socket_safe_strerror (error));
+                       errno,
+                       Socket_safe_strerror (errno));
       return POOL_CONN_ERROR;
     }
 

@@ -43,6 +43,7 @@
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "socket/SocketCommon-private.h"
 #include "socket/SocketWS-private.h"
 
 #define T SocketWS_T
@@ -842,7 +843,8 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
    * 0 bytes = no status, 1 byte = INVALID, 2+ bytes = status code + reason */
   if (len == 1)
     {
-      ws_set_error (ws, WS_ERROR_PROTOCOL,
+      ws_set_error (ws,
+                    WS_ERROR_PROTOCOL,
                     "Invalid CLOSE payload length: 1 byte (must be 0 or >= 2)");
       ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Malformed close frame");
       ws->state = WS_STATE_CLOSED;
@@ -861,13 +863,15 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
   /* RFC 6455 Section 7.4.1: Validate received close code.
    * If code is present but invalid (1004-1006, 1015, <1000, >=5000),
    * we MUST fail the WebSocket connection with a protocol error.
-   * Note: Use 'parsed' to check if code was actually sent, not value comparison.
-   * This catches 1005/1006 explicitly sent on wire (which is always invalid). */
+   * Note: Use 'parsed' to check if code was actually sent, not value
+   * comparison. This catches 1005/1006 explicitly sent on wire (which is always
+   * invalid). */
   if (parsed && !ws_is_valid_close_code (code))
     {
-      ws_set_error (ws, WS_ERROR_PROTOCOL, "Received invalid close code: %d",
-                    (int)code);
-      ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Invalid close code received");
+      ws_set_error (
+          ws, WS_ERROR_PROTOCOL, "Received invalid close code: %d", (int)code);
+      ws_send_close (
+          ws, WS_CLOSE_PROTOCOL_ERROR, "Invalid close code received");
       ws->state = WS_STATE_CLOSED;
       return -1;
     }
@@ -1710,8 +1714,8 @@ ws_complete_handshake (SocketWS_T ws, Socket_T sock)
 
   while ((result = SocketWS_handshake (ws)) > 0)
     {
-      struct pollfd pfd
-          = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
+      struct pollfd pfd;
+      SOCKET_INIT_POLLFD (pfd, Socket_fd (sock), POLLIN | POLLOUT);
       poll (&pfd, 1, SOCKETWS_HANDSHAKE_TIMEOUT_MS);
       SocketWS_process (ws, ws_translate_poll_revents (pfd.revents));
     }
@@ -1959,9 +1963,8 @@ ws_poll_for_message (SocketWS_T ws)
         }
 
       /* Poll for events and process */
-      struct pollfd pfd = { 0 };
-      pfd.fd = Socket_fd (ws->socket);
-      pfd.events = POLLIN;
+      struct pollfd pfd;
+      SOCKET_INIT_POLLFD (pfd, Socket_fd (ws->socket), POLLIN);
       if (SocketBuf_available (ws->send_buf) > 0)
         pfd.events |= POLLOUT;
 

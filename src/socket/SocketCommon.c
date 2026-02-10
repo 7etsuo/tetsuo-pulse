@@ -2421,9 +2421,7 @@ SocketCommon_wait_for_fd (int fd, short events, int timeout_ms)
   if (timeout_ms > SOCKET_POLL_TIMEOUT_MAX)
     timeout_ms = SOCKET_POLL_TIMEOUT_MAX;
 
-  pfd.fd = fd;
-  pfd.events = events;
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, events);
 
   do
     {

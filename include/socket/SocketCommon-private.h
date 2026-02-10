@@ -1016,6 +1016,39 @@ socket_check_so_error (int fd)
 }
 
 /**
+ * @brief Initialize a pollfd structure.
+ * @internal
+ *
+ * Replaces scattered inline pollfd initialization patterns.
+ */
+#define SOCKET_INIT_POLLFD(pfd, fd_val, ev) \
+  do                                        \
+    {                                       \
+      (pfd).fd = (fd_val);                  \
+      (pfd).events = (short)(ev);           \
+      (pfd).revents = 0;                    \
+    }                                       \
+  while (0)
+
+/**
+ * @brief Clear O_NONBLOCK flag from a file descriptor.
+ * @internal
+ * @ingroup core_io
+ *
+ * Removes the non-blocking flag, returning the socket to blocking mode.
+ * Failure is silently ignored (best-effort cleanup).
+ *
+ * @param[in] fd File descriptor to modify
+ */
+static inline void
+socket_clear_nonblock (int fd)
+{
+  int flags = fcntl (fd, F_GETFL);
+  if (flags >= 0)
+    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
+}
+
+/**
  * @brief Restore blocking mode on socket file descriptor with error logging.
  * @internal
  * @ingroup core_io

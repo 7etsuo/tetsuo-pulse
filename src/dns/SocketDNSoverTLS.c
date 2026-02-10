@@ -40,6 +40,7 @@
 #include "core/SocketUtil.h"
 #include "dns/SocketDNSWire.h"
 #include "socket/Socket.h"
+#include "socket/SocketCommon-private.h"
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSContext.h"
 
@@ -429,7 +430,8 @@ check_tcp_connect_complete (T transport, struct Connection *conn)
 {
   struct ServerConfig *server = &transport->servers[conn->server_index];
   int fd = Socket_fd (conn->socket);
-  struct pollfd pfd = { .fd = fd, .events = POLLOUT };
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, fd, POLLOUT);
   int ret = poll (&pfd, 1, 0);
 
   if (ret <= 0)
@@ -443,16 +445,7 @@ check_tcp_connect_complete (T transport, struct Connection *conn)
     }
 
   /* Check socket error */
-  int error = 0;
-  socklen_t errlen = sizeof (error);
-  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &errlen) != 0)
-    {
-      close_connection (transport, conn);
-      transport->stats.handshake_failures++;
-      return -1;
-    }
-
-  if (error != 0)
+  if (socket_check_so_error (fd) < 0)
     {
       close_connection (transport, conn);
       transport->stats.handshake_failures++;
@@ -1124,9 +1117,7 @@ process_socket_io (T transport, int timeout_ms)
     return 0;
 
   /* Setup poll */
-  pfd.fd = fd;
-  pfd.events = (short)get_poll_events (conn);
-  pfd.revents = 0;
+  SOCKET_INIT_POLLFD (pfd, fd, get_poll_events (conn));
 
   /* Poll socket */
   ret = poll (&pfd, 1, timeout_ms);

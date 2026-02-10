@@ -1423,8 +1423,7 @@ wait_for_completion (struct SocketDNS_T *dns,
     compute_deadline (timeout_ms, &deadline);
 
   /* Poll on completion pipe and process resolver until request completes */
-  pfd.fd = dns->pipefd[0];
-  pfd.events = POLLIN;
+  SOCKET_INIT_POLLFD (pfd, dns->pipefd[0], POLLIN);
 
   while (1)
     {
