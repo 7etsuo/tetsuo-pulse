@@ -42,19 +42,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define HTTPS_DEFAULT_PORT 443
 #endif
 
-/* SECURITY: Limit to prevent DoS via hash collision attacks */
-#ifndef POOL_MAX_HASH_CHAIN_LEN
-#define POOL_MAX_HASH_CHAIN_LEN 1024
-#endif
-
-/* Hash table load factor for sizing the hash table based on max connections.
- * A load factor of 8 means we size the hash table to ~1/8 the number of
- * max connections, providing a good balance between memory usage and
- * hash lookup performance. */
-#ifndef POOL_TARGET_LOAD_FACTOR
-#define POOL_TARGET_LOAD_FACTOR 8
-#endif
-
 /* Forward declarations */
 static void
 pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry);

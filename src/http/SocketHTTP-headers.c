@@ -10,6 +10,7 @@
  * O(1) case-insensitive lookup using hash table with separate chaining.
  */
 
+#include "core/SocketConfig.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
@@ -25,9 +26,7 @@
  */
 
 #define HEADER_ENTRY_NULL_OVERHEAD 2
-#define SOCKETHTTP_MAX_CHAIN_LEN 10
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
-#define SOCKETHTTP_MAX_DOS_WARNINGS 3 /* Hard fail after this many warnings */
 
 #define VALIDATE_HEADERS_NAME(headers, name, retval) \
   do                                                 \
