@@ -151,11 +151,11 @@
  *
  * Used for header validation and protocol parsing per RFC 9110/9113.
  */
-#define HTTP_CHAR_NUL   0x00 /**< Null character (prohibited in headers) */
-#define HTTP_CHAR_CR    0x0D /**< Carriage return (prohibited in headers) */
-#define HTTP_CHAR_LF    0x0A /**< Line feed (prohibited in headers) */
+#define HTTP_CHAR_NUL 0x00   /**< Null character (prohibited in headers) */
+#define HTTP_CHAR_CR 0x0D    /**< Carriage return (prohibited in headers) */
+#define HTTP_CHAR_LF 0x0A    /**< Line feed (prohibited in headers) */
 #define HTTP_CHAR_SPACE 0x20 /**< Space character */
-#define HTTP_CHAR_DEL   0x7F /**< Delete character (prohibited in headers) */
+#define HTTP_CHAR_DEL 0x7F   /**< Delete character (prohibited in headers) */
 
 /**
  * @brief Uppercase letter range (ASCII).
@@ -536,6 +536,21 @@ extern int SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
                                      size_t name_len,
                                      const char *value,
                                      size_t value_len);
+
+/**
+ * @brief Add HTTP/2 or HTTP/3 pseudo-header with explicit lengths.
+ * @return 0 on success, -1 on error
+ *
+ * Allows header names starting with ':' (e.g., ":method", ":status").
+ * Standard header name validation rejects ':' since it is not a valid
+ * HTTP/1.1 token character (RFC 7230). This function is for internal
+ * use by HTTP/2 and HTTP/3 decoders and validators.
+ */
+extern int SocketHTTP_Headers_add_pseudo_n (SocketHTTP_Headers_T headers,
+                                            const char *name,
+                                            size_t name_len,
+                                            const char *value,
+                                            size_t value_len);
 
 /**
  * @brief Add header as zero-copy reference (no string allocation).

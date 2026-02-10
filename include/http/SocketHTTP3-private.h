@@ -18,6 +18,8 @@
 #include "http/SocketHTTP3.h"
 #include "http/SocketHTTP3-stream.h"
 
+#include <string.h>
+
 /** Per-stream output buffer: accumulates bytes for one QUIC stream. */
 typedef struct
 {
@@ -28,7 +30,7 @@ typedef struct
 } H3_StreamBuf;
 
 /** Maximum number of output entries queued between drain calls. */
-#define H3_MAX_OUTPUT_ENTRIES 16
+#define H3_MAX_OUTPUT_ENTRIES 64
 
 /** Output queue: collects (stream_id, data, len) entries for caller to send. */
 typedef struct
@@ -49,6 +51,17 @@ typedef struct
 
 /** Control stream receive buffer size. */
 #define H3_CTRL_RECV_BUF_SIZE 256
+
+/** Maximum concurrent requests tracked per connection. */
+#ifndef H3_MAX_CONCURRENT_REQUESTS
+#define H3_MAX_CONCURRENT_REQUESTS 128
+#endif
+
+/** Initial capacity for per-stream output buffers. */
+#define H3_STREAM_BUF_INIT_CAP 128
+
+/* Forward declaration for request struct */
+struct SocketHTTP3_Request;
 
 struct SocketHTTP3_Conn
 {
@@ -93,6 +106,169 @@ struct SocketHTTP3_Conn
   H3_StreamBuf control_out;
   H3_StreamBuf encoder_out;
   H3_StreamBuf decoder_out;
+
+  /* Request tracking */
+  struct SocketHTTP3_Request *requests[H3_MAX_CONCURRENT_REQUESTS];
+  size_t request_count;
+  uint64_t next_bidi_stream_id;
 };
+
+/* ============================================================================
+ * Shared Inline Helpers
+ *
+ * Used by both SocketHTTP3-connection.c and SocketHTTP3-request.c.
+ * ============================================================================
+ */
+
+static inline int
+h3_output_queue_push (H3_OutputQueue *queue,
+                      uint64_t stream_id,
+                      const uint8_t *data,
+                      size_t len)
+{
+  if (queue->count >= H3_MAX_OUTPUT_ENTRIES)
+    return -1;
+
+  queue->entries[queue->count].stream_id = stream_id;
+  queue->entries[queue->count].data = data;
+  queue->entries[queue->count].len = len;
+  queue->count++;
+  return 0;
+}
+
+static inline void
+stream_buf_init (H3_StreamBuf *buf, Arena_T arena, uint64_t stream_id)
+{
+  buf->stream_id = stream_id;
+  buf->data = ALLOC (arena, H3_STREAM_BUF_INIT_CAP);
+  buf->len = 0;
+  buf->capacity = H3_STREAM_BUF_INIT_CAP;
+}
+
+static inline int
+stream_buf_append (H3_StreamBuf *buf,
+                   Arena_T arena,
+                   const uint8_t *data,
+                   size_t len)
+{
+  if (buf->len + len > buf->capacity)
+    {
+      size_t new_cap = buf->capacity;
+      while (new_cap < buf->len + len)
+        new_cap *= 2;
+
+      uint8_t *new_data = ALLOC (arena, new_cap);
+      memcpy (new_data, buf->data, buf->len);
+      buf->data = new_data;
+      buf->capacity = new_cap;
+    }
+
+  memcpy (buf->data + buf->len, data, len);
+  buf->len += len;
+  return 0;
+}
+
+static inline void
+stream_buf_reset (H3_StreamBuf *buf)
+{
+  buf->len = 0;
+}
+
+/**
+ * @brief Generic grow-buffer append: doubles capacity until data fits.
+ *
+ * Works for any (uint8_t *buf, size_t len, size_t cap) triple.
+ * The old arena allocation is abandoned (arena reclaims on dispose).
+ */
+static inline int
+h3_growbuf_append (Arena_T arena,
+                   uint8_t **buf,
+                   size_t *buf_len,
+                   size_t *buf_cap,
+                   const uint8_t *data,
+                   size_t len)
+{
+  if (*buf_len + len > *buf_cap)
+    {
+      size_t new_cap = *buf_cap;
+      while (new_cap < *buf_len + len)
+        new_cap *= 2;
+      uint8_t *new_buf = ALLOC (arena, new_cap);
+      memcpy (new_buf, *buf, *buf_len);
+      *buf = new_buf;
+      *buf_cap = new_cap;
+    }
+  memcpy (*buf + *buf_len, data, len);
+  *buf_len += len;
+  return 0;
+}
+
+/**
+ * @brief Consume bytes from the front of a buffer, shifting remainder left.
+ */
+#define H3_BUF_CONSUME(buf, buf_len, consumed)     \
+  do                                               \
+    {                                              \
+      size_t _rem = (buf_len) - (consumed);        \
+      if (_rem > 0)                                \
+        memmove ((buf), (buf) + (consumed), _rem); \
+      (buf_len) = _rem;                            \
+    }                                              \
+  while (0)
+
+/* ============================================================================
+ * QPACK Static Table Lookup Helpers
+ *
+ * Shared between SocketHTTP3-request.c (encoding) and tests (response
+ * building).  Depend on SocketQPACK_static_table_get() from SocketQPACK.h.
+ * ============================================================================
+ */
+
+#include "http/qpack/SocketQPACK.h"
+
+/**
+ * @brief Find an exact (name+value) match in the QPACK static table.
+ * @return Static table index (0-98), or -1 if no match.
+ */
+static inline int
+h3_find_static_exact (const char *name,
+                      size_t name_len,
+                      const char *value,
+                      size_t value_len)
+{
+  for (uint64_t i = 0; i < SOCKETQPACK_STATIC_TABLE_SIZE; i++)
+    {
+      const char *sn;
+      size_t snl;
+      const char *sv;
+      size_t svl;
+      if (SocketQPACK_static_table_get (i, &sn, &snl, &sv, &svl) != QPACK_OK)
+        continue;
+      if (snl == name_len && svl == value_len
+          && memcmp (sn, name, name_len) == 0
+          && memcmp (sv, value, value_len) == 0)
+        return (int)i;
+    }
+  return -1;
+}
+
+/**
+ * @brief Find a name-only match in the QPACK static table.
+ * @return Static table index (0-98), or -1 if no match.
+ */
+static inline int
+h3_find_static_name (const char *name, size_t name_len)
+{
+  for (uint64_t i = 0; i < SOCKETQPACK_STATIC_TABLE_SIZE; i++)
+    {
+      const char *sn;
+      size_t snl;
+      if (SocketQPACK_static_table_get (i, &sn, &snl, NULL, NULL) != QPACK_OK)
+        continue;
+      if (snl == name_len && memcmp (sn, name, name_len) == 0)
+        return (int)i;
+    }
+  return -1;
+}
 
 #endif /* SOCKETHTTP3_PRIVATE_INCLUDED */

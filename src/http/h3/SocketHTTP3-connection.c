@@ -12,71 +12,11 @@
 #include "http/SocketHTTP3-private.h"
 #include "http/SocketHTTP3-constants.h"
 #include "http/SocketHTTP3-frame.h"
+#include "http/SocketHTTP3-request.h"
 #include "http/SocketHTTP3-stream.h"
 #include "quic/SocketQUICVarInt.h"
 
 #include <string.h>
-
-/* Initial capacity for per-stream output buffers */
-#define H3_STREAM_BUF_INIT_CAP 128
-
-/* ============================================================================
- * Output Queue Helpers
- * ============================================================================
- */
-
-static int
-h3_output_queue_push (H3_OutputQueue *queue,
-                      uint64_t stream_id,
-                      const uint8_t *data,
-                      size_t len)
-{
-  if (queue->count >= H3_MAX_OUTPUT_ENTRIES)
-    return -1;
-
-  queue->entries[queue->count].stream_id = stream_id;
-  queue->entries[queue->count].data = data;
-  queue->entries[queue->count].len = len;
-  queue->count++;
-  return 0;
-}
-
-/* ============================================================================
- * Stream Buffer Helpers
- * ============================================================================
- */
-
-static void
-stream_buf_init (H3_StreamBuf *buf, Arena_T arena, uint64_t stream_id)
-{
-  buf->stream_id = stream_id;
-  buf->data = ALLOC (arena, H3_STREAM_BUF_INIT_CAP);
-  buf->len = 0;
-  buf->capacity = H3_STREAM_BUF_INIT_CAP;
-}
-
-static int
-stream_buf_append (H3_StreamBuf *buf,
-                   Arena_T arena,
-                   const uint8_t *data,
-                   size_t len)
-{
-  if (buf->len + len > buf->capacity)
-    {
-      size_t new_cap = buf->capacity;
-      while (new_cap < buf->len + len)
-        new_cap *= 2;
-
-      uint8_t *new_data = ALLOC (arena, new_cap);
-      memcpy (new_data, buf->data, buf->len);
-      buf->data = new_data;
-      buf->capacity = new_cap;
-    }
-
-  memcpy (buf->data + buf->len, data, len);
-  buf->len += len;
-  return 0;
-}
 
 /* ============================================================================
  * Config Defaults
@@ -139,6 +79,11 @@ SocketHTTP3_Conn_new (Arena_T arena,
 
   conn->pending_unidi.count = 0;
   conn->output.count = 0;
+
+  /* Request tracking */
+  memset (conn->requests, 0, sizeof (conn->requests));
+  conn->request_count = 0;
+  conn->next_bidi_stream_id = (config->role == H3_ROLE_CLIENT) ? 0 : 1;
 
   return conn;
 }
@@ -210,11 +155,9 @@ SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
                        settings_payload,
                        (size_t)settings_len);
 
-  /* Build QPACK encoder stream output: type byte 0x02 */
+  /* Write stream type bytes for QPACK encoder and decoder streams */
   type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_ENCODER;
   stream_buf_append (&conn->encoder_out, conn->arena, &type_byte, 1);
-
-  /* Build QPACK decoder stream output: type byte 0x03 */
   type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_DECODER;
   stream_buf_append (&conn->decoder_out, conn->arena, &type_byte, 1);
 
@@ -373,13 +316,8 @@ process_control_stream (SocketHTTP3_Conn_T conn,
           break;
         }
 
-      /* Consume parsed bytes, shift remainder */
-      size_t remaining = conn->ctrl_recv_len - total_consumed;
-      if (remaining > 0)
-        memmove (conn->ctrl_recv_buf,
-                 conn->ctrl_recv_buf + total_consumed,
-                 remaining);
-      conn->ctrl_recv_len = remaining;
+      /* Consume parsed bytes */
+      H3_BUF_CONSUME (conn->ctrl_recv_buf, conn->ctrl_recv_len, total_consumed);
     }
 
   return 0;
@@ -400,24 +338,37 @@ SocketHTTP3_Conn_feed_stream (SocketHTTP3_Conn_T conn,
   if (conn == NULL)
     return -1;
 
-  (void)fin; /* Not used yet — will matter for request streams */
-
   SocketHTTP3_StreamRole role
       = SocketHTTP3_StreamMap_role (conn->stream_map, stream_id);
 
   switch (role)
     {
     case H3_STREAM_ROLE_CONTROL:
+      (void)fin;
       return process_control_stream (conn, data, len);
 
     case H3_STREAM_ROLE_QPACK_ENCODER:
     case H3_STREAM_ROLE_QPACK_DECODER:
       /* Stub: forward to QPACK layer */
+      (void)fin;
       return 0;
 
     case H3_STREAM_ROLE_REQUEST:
-      /* Stub for request/response layer */
-      return 0;
+      {
+        size_t index = (size_t)(stream_id / 4);
+        if (index >= H3_MAX_CONCURRENT_REQUESTS)
+          return -(int)H3_GENERAL_PROTOCOL_ERROR;
+
+        struct SocketHTTP3_Request *req = conn->requests[index];
+        if (req == NULL)
+          {
+            /* Auto-create for peer-initiated bidi streams (server receiving) */
+            /* For now, peer-initiated requests need explicit creation */
+            return 0;
+          }
+
+        return SocketHTTP3_Request_feed (req, data, len, fin);
+      }
 
     case H3_STREAM_ROLE_PUSH:
       /* Stub for push support */

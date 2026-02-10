@@ -338,21 +338,19 @@ SocketHTTP_Headers_clear (SocketHTTP_Headers_T headers)
  * ============================================================================
  */
 
-int
-SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
-                          const char *name,
-                          size_t name_len,
-                          const char *value,
-                          size_t value_len)
+/**
+ * @brief Common entry creation and insertion after validation is done.
+ *
+ * Allocates, hashes, buckets, and links the new header entry.
+ * Both add_n and add_pseudo_n delegate here after their own validation.
+ */
+static int
+headers_insert_entry (SocketHTTP_Headers_T headers,
+                      const char *name,
+                      size_t name_len,
+                      const char *value,
+                      size_t value_len)
 {
-  VALIDATE_HEADERS_NAME (headers, name, -1);
-
-  if (!SocketHTTP_header_name_valid (name, name_len))
-    return -1;
-
-  if (!SocketHTTP_header_value_valid (value, value_len))
-    return -1;
-
   size_t temp_size;
   if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
     return -1;
@@ -387,6 +385,47 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
   headers->total_size += entry_size;
 
   return 0;
+}
+
+int
+SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
+                          const char *name,
+                          size_t name_len,
+                          const char *value,
+                          size_t value_len)
+{
+  VALIDATE_HEADERS_NAME (headers, name, -1);
+
+  if (!SocketHTTP_header_name_valid (name, name_len))
+    return -1;
+
+  if (!SocketHTTP_header_value_valid (value, value_len))
+    return -1;
+
+  return headers_insert_entry (headers, name, name_len, value, value_len);
+}
+
+int
+SocketHTTP_Headers_add_pseudo_n (SocketHTTP_Headers_T headers,
+                                 const char *name,
+                                 size_t name_len,
+                                 const char *value,
+                                 size_t value_len)
+{
+  VALIDATE_HEADERS_NAME (headers, name, -1);
+
+  /* Must be a pseudo-header: starts with ':' and has at least 2 chars */
+  if (name_len < 2 || name[0] != ':')
+    return -1;
+
+  /* Validate the rest of the name after ':' as token characters */
+  if (!sockethttp_is_token_valid (name + 1, name_len - 1))
+    return -1;
+
+  if (!SocketHTTP_header_value_valid (value, value_len))
+    return -1;
+
+  return headers_insert_entry (headers, name, name_len, value, value_len);
 }
 
 int
