@@ -17,8 +17,45 @@
 
 #include "http/SocketHTTP3.h"
 #include "http/SocketHTTP3-stream.h"
+#include "http/SocketHTTP.h"
+#ifdef SOCKET_HAS_H3_PUSH
+#include "http/SocketHTTP3-push.h"
+#endif
 
 #include <string.h>
+
+/* ============================================================================
+ * Push State (RFC 9114 §4.6)
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_H3_PUSH
+
+/** Maximum number of concurrent push promises tracked per connection. */
+#define H3_MAX_PUSH_STREAMS 64
+
+/** Push stream lifecycle states. */
+typedef enum
+{
+  H3_PUSH_IDLE,
+  H3_PUSH_PROMISED,
+  H3_PUSH_STREAM_OPENED,
+  H3_PUSH_COMPLETE,
+  H3_PUSH_CANCELLED
+} SocketHTTP3_PushState;
+
+/** Per-push tracking entry. */
+typedef struct
+{
+  uint64_t push_id;
+  uint64_t request_stream_id;
+  uint64_t push_stream_id;
+  SocketHTTP3_PushState state;
+  SocketHTTP_Headers_T promised_headers;
+  struct SocketHTTP3_Request *request;
+} H3_PushEntry;
+
+#endif /* SOCKET_HAS_H3_PUSH */
 
 /** Per-stream output buffer: accumulates bytes for one QUIC stream. */
 typedef struct
@@ -115,6 +152,18 @@ struct SocketHTTP3_Conn
   /* Request-ready callback (server: notified when headers decoded) */
   SocketHTTP3_RequestReadyCB request_cb;
   void *request_cb_userdata;
+
+#ifdef SOCKET_HAS_H3_PUSH
+  /* Push state (RFC 9114 §4.6) */
+  uint64_t next_push_id;
+  uint64_t next_server_unidi_id;
+  H3_PushEntry pushes[H3_MAX_PUSH_STREAMS];
+  size_t push_count;
+  SocketHTTP3_PushCallback push_cb;
+  void *push_cb_userdata;
+  uint64_t local_max_push_id;
+  int local_max_push_id_sent;
+#endif
 };
 
 /* ============================================================================
@@ -274,5 +323,35 @@ h3_find_static_name (const char *name, size_t name_len)
     }
   return -1;
 }
+
+/* ============================================================================
+ * QPACK Encode/Decode Helpers (shared between request.c and push.c)
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_H3_PUSH
+int h3_conn_recv_push_promise (SocketHTTP3_Conn_T conn,
+                                uint64_t request_stream_id,
+                                const uint8_t *payload,
+                                size_t payload_len);
+
+int h3_feed_push_stream (SocketHTTP3_Conn_T conn,
+                          uint64_t stream_id,
+                          const uint8_t *data,
+                          size_t len,
+                          int fin);
+
+void h3_handle_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id);
+#endif /* SOCKET_HAS_H3_PUSH */
+
+int h3_qpack_encode_headers (Arena_T arena,
+                              const SocketHTTP_Headers_T headers,
+                              uint8_t **out,
+                              size_t *out_len);
+
+int h3_qpack_decode_headers (Arena_T arena,
+                              const uint8_t *data,
+                              size_t len,
+                              SocketHTTP_Headers_T *headers_out);
 
 #endif /* SOCKETHTTP3_PRIVATE_INCLUDED */

@@ -548,6 +548,14 @@ elseif(ZLIB_FOUND)
     message(STATUS "WebSocket permessage-deflate compression enabled (zlib)")
 endif()
 
+# HTTP/3 Server Push support (RFC 9114 §4.6)
+option(ENABLE_H3_PUSH "Enable HTTP/3 server push support (RFC 9114 §4.6)" OFF)
+if(ENABLE_H3_PUSH)
+    add_compile_definitions(SOCKET_HAS_H3_PUSH)
+    list(APPEND LIB_SOURCES src/http/h3/SocketHTTP3-push.c)
+    message(STATUS "HTTP/3 server push enabled")
+endif()
+
 # Object library for reuse in tests (avoids static library constructor issues)
 add_library(socket_objects OBJECT ${LIB_SOURCES})
 target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -906,6 +914,13 @@ set(TEST_SOURCES
     test_http3_stream
     test_http3_connection
     test_http3_request
+)
+
+if(ENABLE_H3_PUSH)
+    list(APPEND TEST_SOURCES test_http3_push)
+endif()
+
+list(APPEND TEST_SOURCES
     test_http_integration
     test_ws_integration
     test_http2_integration

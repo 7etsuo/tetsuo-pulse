@@ -219,4 +219,22 @@ int SocketHTTP3_Request_feed (SocketHTTP3_Request_T req,
                               size_t len,
                               int fin);
 
+#ifdef SOCKET_HAS_H3_PUSH
+/**
+ * @brief Create a request for a server push stream.
+ *
+ * Used internally by the push module. Does not register in conn->requests[]
+ * since push streams use a separate tracking array.
+ *
+ * @param conn       Connection handle (must be in OPEN state).
+ * @param stream_id  Server-initiated unidirectional stream ID.
+ * @param push_id    Push ID for this push stream.
+ * @return New request, or NULL on error.
+ */
+SocketHTTP3_Request_T
+SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
+                               uint64_t stream_id,
+                               uint64_t push_id);
+#endif /* SOCKET_HAS_H3_PUSH */
+
 #endif /* SOCKETHTTP3_REQUEST_INCLUDED */

@@ -67,7 +67,7 @@
  * @param[out] out_len  Output length.
  * @return 0 on success, negative error code on failure.
  */
-static int
+int
 h3_qpack_encode_headers (Arena_T arena,
                          const SocketHTTP_Headers_T headers,
                          uint8_t **out,
@@ -184,7 +184,7 @@ h3_headers_add (SocketHTTP_Headers_T hdrs,
  * @param[out] headers  Output header collection.
  * @return 0 on success, negative error code on failure.
  */
-static int
+int
 h3_qpack_decode_headers (Arena_T arena,
                          const uint8_t *data,
                          size_t len,
@@ -397,6 +397,11 @@ struct SocketHTTP3_Request
 
   /* Per-stream send buffer */
   H3_StreamBuf send_buf;
+
+#ifdef SOCKET_HAS_H3_PUSH
+  int is_push_stream;
+  uint64_t push_id;
+#endif
 };
 
 /* ============================================================================
@@ -515,6 +520,57 @@ SocketHTTP3_Request_new_incoming (SocketHTTP3_Conn_T conn, uint64_t stream_id)
 }
 
 /* ============================================================================
+ * Push Request Constructor (RFC 9114 §4.6)
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_H3_PUSH
+SocketHTTP3_Request_T
+SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
+                               uint64_t stream_id,
+                               uint64_t push_id)
+{
+  if (conn == NULL)
+    return NULL;
+  if (conn->state != H3_CONN_STATE_OPEN)
+    return NULL;
+
+  struct SocketHTTP3_Request *req
+      = CALLOC (conn->arena, 1, sizeof (struct SocketHTTP3_Request));
+
+  req->conn = conn;
+  req->arena = conn->arena;
+  req->stream_id = stream_id;
+  req->send_state = H3_REQ_SEND_IDLE;
+  req->recv_state = H3_REQ_RECV_IDLE;
+  req->cancelled = 0;
+  req->first_frame_seen = 0;
+  req->trailers_received = 0;
+  req->recv_headers = NULL;
+  req->status_code = 0;
+  req->expected_content_length = -1;
+  req->total_data_received = 0;
+  req->send_end_stream = 0;
+  req->recv_end_stream = 0;
+
+  req->recv_buf = ALLOC (conn->arena, H3_REQ_RECV_BUF_INIT_CAP);
+  req->recv_buf_len = 0;
+  req->recv_buf_cap = H3_REQ_RECV_BUF_INIT_CAP;
+
+  req->data_buf = ALLOC (conn->arena, H3_REQ_DATA_BUF_INIT_CAP);
+  req->data_buf_len = 0;
+  req->data_buf_cap = H3_REQ_DATA_BUF_INIT_CAP;
+
+  stream_buf_init (&req->send_buf, conn->arena, stream_id);
+
+  req->is_push_stream = 1;
+  req->push_id = push_id;
+
+  return req;
+}
+#endif /* SOCKET_HAS_H3_PUSH */
+
+/* ============================================================================
  * Send Side
  * ============================================================================
  */
@@ -531,8 +587,14 @@ SocketHTTP3_Request_send_headers (SocketHTTP3_Request_T req,
   if (req->send_state != H3_REQ_SEND_IDLE)
     return -(int)H3_GENERAL_PROTOCOL_ERROR;
 
-  /* Validate headers */
+  /* Validate headers — push streams send responses, not requests */
+#ifdef SOCKET_HAS_H3_PUSH
+  int rc = req->is_push_stream
+               ? SocketHTTP3_validate_response_headers (headers)
+               : SocketHTTP3_validate_request_headers (headers);
+#else
   int rc = SocketHTTP3_validate_request_headers (headers);
+#endif
   if (rc != 0)
     return rc;
 
@@ -838,6 +900,14 @@ SocketHTTP3_Request_feed (SocketHTTP3_Request_T req,
         case HTTP3_FRAME_DATA:
           rc = handle_data_frame (req, payload, payload_len);
           break;
+#ifdef SOCKET_HAS_H3_PUSH
+        case HTTP3_FRAME_PUSH_PROMISE:
+          if (req->conn->role != H3_ROLE_CLIENT)
+            return -(int)H3_FRAME_UNEXPECTED;
+          rc = h3_conn_recv_push_promise (
+              req->conn, req->stream_id, payload, payload_len);
+          break;
+#endif
         default:
           break;
         }
