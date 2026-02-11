@@ -100,9 +100,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               int in_flight = data[offset + 9] & 2;
               int is_crypto = data[offset + 9] & 4;
 
-              SocketQUICLoss_Result result = SocketQUICLoss_on_packet_sent (
-                  state, pn, sent_time, sent_bytes, ack_eliciting, in_flight,
-                  is_crypto);
+              SocketQUICLoss_Result result
+                  = SocketQUICLoss_on_packet_sent (state,
+                                                   pn,
+                                                   sent_time,
+                                                   sent_bytes,
+                                                   ack_eliciting,
+                                                   in_flight,
+                                                   is_crypto);
               (void)result;
 
               sent_time += 1000; /* 1ms between packets */
@@ -131,8 +136,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_ACK_PROCESSING:
         {
           /* Test ACK processing and loss detection */
-          SocketQUICLossState_T state
-              = SocketQUICLoss_new (arena, 0, 25000);
+          SocketQUICLossState_T state = SocketQUICLoss_new (arena, 0, 25000);
           if (!state)
             break;
 
@@ -143,8 +147,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t base_time = 1000000;
           for (uint64_t pn = 0; pn < 50; pn++)
             {
-              SocketQUICLoss_on_packet_sent (state, pn, base_time + pn * 1000,
-                                             100, 1, 1, 0);
+              SocketQUICLoss_on_packet_sent (
+                  state, pn, base_time + pn * 1000, 100, 1, 1, 0);
             }
 
           /* Process ACKs from fuzz data */
@@ -153,28 +157,54 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           while (offset + 24 <= size)
             {
-              uint64_t largest_acked = read_u64 (data + offset) % 50;
-              uint64_t ack_delay = read_u64 (data + offset + 8) % 100000;
+              SocketQUICFrameAck_T ack_frame;
+              memset (&ack_frame, 0, sizeof (ack_frame));
+              ack_frame.largest_ack = read_u64 (data + offset) % 50;
+              ack_frame.ack_delay = read_u64 (data + offset + 8) % 100000;
+              ack_frame.first_range = 0;
               uint64_t recv_time = base_time + read_u64 (data + offset + 16);
 
-              SocketQUICLoss_Result result = SocketQUICLoss_on_ack_received (
-                  state, &rtt, largest_acked, ack_delay, recv_time,
-                  lost_packet_callback, &lost_count, NULL);
+              SocketQUICLoss_Result result
+                  = SocketQUICLoss_on_ack_received (state,
+                                                    &rtt,
+                                                    &ack_frame,
+                                                    recv_time,
+                                                    NULL,
+                                                    lost_packet_callback,
+                                                    NULL,
+                                                    NULL,
+                                                    &lost_count);
               (void)result;
 
               offset += 24;
             }
 
           /* Test with NULL callback */
-          SocketQUICLoss_on_ack_received (state, &rtt, 40, 10000,
-                                          base_time + 100000, NULL, NULL,
-                                          &lost_count);
+          {
+            SocketQUICFrameAck_T ack_frame;
+            memset (&ack_frame, 0, sizeof (ack_frame));
+            ack_frame.largest_ack = 40;
+            ack_frame.ack_delay = 10000;
+            SocketQUICLoss_on_ack_received (state,
+                                            &rtt,
+                                            &ack_frame,
+                                            base_time + 100000,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            &lost_count);
+          }
 
           /* Test NULL inputs */
-          SocketQUICLoss_on_ack_received (NULL, &rtt, 0, 0, 0, NULL, NULL,
-                                          NULL);
-          SocketQUICLoss_on_ack_received (state, NULL, 0, 0, 0, NULL, NULL,
-                                          NULL);
+          {
+            SocketQUICFrameAck_T ack_frame;
+            memset (&ack_frame, 0, sizeof (ack_frame));
+            SocketQUICLoss_on_ack_received (
+                NULL, &rtt, &ack_frame, 0, NULL, NULL, NULL, NULL, NULL);
+            SocketQUICLoss_on_ack_received (
+                state, NULL, &ack_frame, 0, NULL, NULL, NULL, NULL, NULL);
+          }
           break;
         }
 
@@ -197,8 +227,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               int is_handshake = data[offset + 16] & 1;
 
-              SocketQUICLoss_update_rtt (&rtt, latest_rtt, ack_delay,
-                                         is_handshake);
+              SocketQUICLoss_update_rtt (
+                  &rtt, latest_rtt, ack_delay, is_handshake);
 
               offset += 17;
             }
@@ -214,9 +244,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICLoss_init_rtt (&rtt);
           SocketQUICLoss_update_rtt (&rtt, 1, 0, 1);          /* Minimum RTT */
           SocketQUICLoss_update_rtt (&rtt, UINT64_MAX, 0, 0); /* Maximum RTT */
-          SocketQUICLoss_update_rtt (&rtt, 100000, 99999, 0); /* High ack delay */
-          SocketQUICLoss_update_rtt (&rtt, 100000, 100001,
-                                     0); /* Delay > RTT */
+          SocketQUICLoss_update_rtt (
+              &rtt, 100000, 99999, 0); /* High ack delay */
+          SocketQUICLoss_update_rtt (&rtt, 100000, 100001, 0); /* Delay > RTT */
 
           /* Test NULL */
           SocketQUICLoss_update_rtt (NULL, 1000, 0, 0);
@@ -231,7 +261,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICLoss_init_rtt (&rtt);
 
           /* Add some RTT samples */
-          SocketQUICLoss_update_rtt (&rtt, 50000, 0, 1);  /* 50ms */
+          SocketQUICLoss_update_rtt (&rtt, 50000, 0, 1);    /* 50ms */
           SocketQUICLoss_update_rtt (&rtt, 60000, 5000, 0); /* 60ms */
           SocketQUICLoss_update_rtt (&rtt, 55000, 3000, 0); /* 55ms */
 
@@ -260,8 +290,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               /* Record some packets */
               for (uint64_t i = 0; i < 10; i++)
                 {
-                  SocketQUICLoss_on_packet_sent (state, i, 1000000 + i * 1000,
-                                                 100, 1, 1, 0);
+                  SocketQUICLoss_on_packet_sent (
+                      state, i, 1000000 + i * 1000, 100, 1, 1, 0);
                 }
 
               uint64_t current_time = read_u64 (data + 9);
@@ -273,8 +303,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               /* Test loss timeout handling */
               size_t lost = 0;
-              SocketQUICLoss_on_loss_timeout (state, &rtt, current_time + 100000,
-                                              lost_packet_callback, &lost,
+              SocketQUICLoss_on_loss_timeout (state,
+                                              &rtt,
+                                              current_time + 100000,
+                                              lost_packet_callback,
+                                              &lost,
                                               NULL);
             }
 
@@ -289,8 +322,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_QUERY_FUNCTIONS:
         {
           /* Test query functions extensively */
-          SocketQUICLossState_T state
-              = SocketQUICLoss_new (arena, 0, 25000);
+          SocketQUICLossState_T state = SocketQUICLoss_new (arena, 0, 25000);
           if (!state)
             break;
 
@@ -319,8 +351,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* ACK some packets */
           SocketQUICLossRTT_T rtt;
           SocketQUICLoss_init_rtt (&rtt);
-          SocketQUICLoss_on_ack_received (state, &rtt, 1, 1000, 1100000, NULL,
-                                          NULL, NULL);
+          {
+            SocketQUICFrameAck_T ack_frame;
+            memset (&ack_frame, 0, sizeof (ack_frame));
+            ack_frame.largest_ack = 1;
+            ack_frame.ack_delay = 1000;
+            ack_frame.first_range = 0;
+            SocketQUICLoss_on_ack_received (
+                state, &rtt, &ack_frame, 1100000, NULL, NULL, NULL, NULL, NULL);
+          }
 
           bytes = SocketQUICLoss_bytes_in_flight (state);
           (void)bytes;

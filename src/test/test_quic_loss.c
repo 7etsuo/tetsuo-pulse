@@ -337,6 +337,7 @@ TEST (loss_on_ack_received)
   SocketQUICLossState_T state;
   SocketQUICLossRTT_T rtt;
   SocketQUICLoss_Result res;
+  size_t acked_count;
   size_t lost_count;
 
   arena = Arena_new ();
@@ -347,10 +348,17 @@ TEST (loss_on_ack_received)
   SocketQUICLoss_on_packet_sent (state, 0, 1000000, 100, 1, 1, 0);
 
   /* ACK packet 0 */
+  SocketQUICFrameAck_T ack;
+  memset (&ack, 0, sizeof (ack));
+  ack.largest_ack = 0;
+  ack.ack_delay = 1000;
+  ack.first_range = 0;
+
   res = SocketQUICLoss_on_ack_received (
-      state, &rtt, 0, 1000, 1100000, NULL, NULL, &lost_count);
+      state, &rtt, &ack, 1100000, NULL, NULL, NULL, &acked_count, &lost_count);
   ASSERT_EQ (QUIC_LOSS_OK, res);
   ASSERT_EQ (0, lost_count);
+  ASSERT_EQ (1, acked_count);
   ASSERT_EQ (0, state->bytes_in_flight); /* Packet was acked */
 
   Arena_dispose (&arena);
@@ -363,8 +371,11 @@ TEST (loss_on_ack_received_null)
 
   SocketQUICLoss_init_rtt (&rtt);
 
+  SocketQUICFrameAck_T ack;
+  memset (&ack, 0, sizeof (ack));
+
   res = SocketQUICLoss_on_ack_received (
-      NULL, &rtt, 0, 0, 1000000, NULL, NULL, NULL);
+      NULL, &rtt, &ack, 1000000, NULL, NULL, NULL, NULL, NULL);
   ASSERT_EQ (QUIC_LOSS_ERROR_NULL, res);
 }
 
@@ -387,8 +398,21 @@ TEST (loss_on_ack_packet_threshold)
     SocketQUICLoss_on_packet_sent (state, i, 1000000 + i * 1000, 100, 1, 1, 0);
 
   /* ACK packet 3 only - packets 0 should be declared lost (threshold=3) */
-  SocketQUICLoss_on_ack_received (
-      state, &rtt, 3, 1000, 1100000, test_lost_callback, NULL, &lost_count);
+  SocketQUICFrameAck_T ack;
+  memset (&ack, 0, sizeof (ack));
+  ack.largest_ack = 3;
+  ack.ack_delay = 1000;
+  ack.first_range = 0; /* Only ack packet 3 */
+
+  SocketQUICLoss_on_ack_received (state,
+                                  &rtt,
+                                  &ack,
+                                  1100000,
+                                  NULL,
+                                  test_lost_callback,
+                                  NULL,
+                                  NULL,
+                                  &lost_count);
 
   /* Packet 0 should be declared lost (3 packets ahead) */
   ASSERT (lost_count >= 1);

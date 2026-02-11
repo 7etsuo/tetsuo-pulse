@@ -17,7 +17,6 @@
  * frames, and delivers stream data via callback.
  *
  * V1 Simplifications:
- * - No congestion control (send immediately)
  * - No retransmission (detect losses but don't retransmit)
  * - No 0-RTT (always full handshake)
  * - No connection migration (fixed path)

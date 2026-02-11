@@ -476,6 +476,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICFlow.c
     src/quic/SocketQUICAck.c
     src/quic/SocketQUICLoss.c
+    src/quic/SocketQUICCongestion.c
     src/quic/SocketQUICTLS.c
     src/quic/SocketQUICTransport.c
     src/quic/SocketQUICServer.c
@@ -745,6 +746,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICHandshake.h
     include/quic/SocketQUICAck.h
     include/quic/SocketQUICLoss.h
+    include/quic/SocketQUICCongestion.h
     include/quic/SocketQUICTLS.h
 )
 
@@ -989,6 +991,7 @@ list(APPEND TEST_SOURCES
     test_quic_crypto_frame_encode
     test_quic_ack
     test_quic_loss
+    test_quic_congestion
     test_quic_key_discard
     test_quic_0rtt
 )

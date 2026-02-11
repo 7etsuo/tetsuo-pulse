@@ -106,6 +106,7 @@ typedef struct SocketQUICLossRTT
   uint64_t min_rtt;      /**< Minimum RTT observed */
   uint64_t latest_rtt;   /**< Most recent RTT sample */
   int has_sample;        /**< Non-zero if we have at least one sample */
+  uint64_t first_rtt_sample_time; /**< Time of first RTT sample (0 = none) */
 
 } SocketQUICLossRTT_T;
 
@@ -139,6 +140,15 @@ typedef struct SocketQUICLossState
   int is_handshake_space; /**< Non-zero for Initial/Handshake */
 
 } *SocketQUICLossState_T;
+
+/**
+ * @brief Callback for processing acknowledged packets.
+ *
+ * @param packet    Acknowledged packet information.
+ * @param context   User-provided context.
+ */
+typedef void (*SocketQUICLoss_AckedCallback) (
+    const SocketQUICLossSentPacket_T *packet, void *context);
 
 /**
  * @brief Callback for processing lost packets.
@@ -221,28 +231,31 @@ SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
 /**
  * @brief Process an ACK frame and detect lost packets.
  *
- * Updates RTT estimates, detects lost packets based on packet and time
- * thresholds, and invokes the callback for each lost packet.
+ * Processes all ACK ranges (not just largest_acked), updates RTT estimates,
+ * detects lost packets based on packet and time thresholds, and invokes
+ * callbacks for each acknowledged and lost packet.
  *
- * @param state         Loss state to update.
- * @param rtt           RTT estimation state (shared across spaces).
- * @param largest_acked Largest acknowledged packet number from ACK.
- * @param ack_delay_us  ACK delay from ACK frame in microseconds.
- * @param recv_time_us  Time ACK was received in microseconds.
- * @param lost_callback Callback for each lost packet (optional).
- * @param context       User context for callback.
- * @param lost_count    Output: number of packets declared lost (optional).
+ * @param state          Loss state to update.
+ * @param rtt            RTT estimation state (shared across spaces).
+ * @param ack            Full ACK frame with ranges.
+ * @param recv_time_us   Time ACK was received in microseconds.
+ * @param acked_callback Callback for each acknowledged packet (optional).
+ * @param lost_callback  Callback for each lost packet (optional).
+ * @param context        User context for callbacks.
+ * @param acked_count    Output: number of packets acknowledged (optional).
+ * @param lost_count     Output: number of packets declared lost (optional).
  *
  * @return QUIC_LOSS_OK on success, error code otherwise.
  */
 extern SocketQUICLoss_Result
 SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
                                 SocketQUICLossRTT_T *rtt,
-                                uint64_t largest_acked,
-                                uint64_t ack_delay_us,
+                                const SocketQUICFrameAck_T *ack,
                                 uint64_t recv_time_us,
+                                SocketQUICLoss_AckedCallback acked_callback,
                                 SocketQUICLoss_LostCallback lost_callback,
                                 void *context,
+                                size_t *acked_count,
                                 size_t *lost_count);
 
 /**
