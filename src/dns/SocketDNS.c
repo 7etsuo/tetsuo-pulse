@@ -1061,13 +1061,12 @@ check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
 
   pthread_mutex_lock (&dns->mutex);
   entry = cache_lookup_coherent (dns, req->host);
-  pthread_mutex_unlock (&dns->mutex);
 
   if (entry)
     {
-      /* Cache hit - complete request immediately */
-      pthread_mutex_lock (&dns->mutex);
-
+      /* Cache hit - copy result while still holding the lock to avoid
+       * use-after-free if another thread evicts the entry between
+       * the lookup and the copy. */
       req->result = SocketCommon_copy_addrinfo (entry->result);
       req->error = req->result ? 0 : EAI_MEMORY;
       req->state = REQ_COMPLETE;
@@ -1088,6 +1087,7 @@ check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
       return 1;
     }
 
+  pthread_mutex_unlock (&dns->mutex);
   return 0;
 }
 

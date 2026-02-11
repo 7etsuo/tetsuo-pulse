@@ -713,31 +713,46 @@ http1_contains_token (const char *value, const char *token)
   return 0;
 }
 
-/* Validate chunked is last transfer coding per RFC 9112 */
+/* Validate chunked is last transfer coding per RFC 9112.
+ * Uses proper token-boundary matching to avoid false positives from
+ * substrings like "x-chunked-encoding". */
 static int
 te_chunked_is_last (const char *te_value)
 {
-  /* Find "chunked" token */
-  const char *chunked = strcasestr (te_value, "chunked");
-  if (!chunked)
-    return 1; /* No chunked - valid */
+  const char *p = te_value;
+  const char *last_token = NULL;
 
-  /* Check nothing follows "chunked" except whitespace/comma */
-  const char *after = chunked + STRLEN_LIT ("chunked");
-  while (*after)
+  /* Walk tokens separated by commas, remembering the last non-empty one */
+  while (*p)
     {
-      if (*after == ',')
-        {
-          /* Another coding follows - chunked is not last */
-          const char *next = after + 1;
-          while (*next == ' ' || *next == '\t')
-            next++;
-          if (*next && *next != '\0')
-            return 0; /* Another token follows */
-        }
-      after++;
+      /* Skip OWS */
+      while (*p == ' ' || *p == '\t' || *p == ',')
+        p++;
+      if (*p == '\0')
+        break;
+
+      last_token = p;
+
+      /* Advance to next separator */
+      while (*p && *p != ',')
+        p++;
     }
-  return 1;
+
+  if (!last_token)
+    return 1; /* No tokens at all */
+
+  /* Trim trailing OWS from last token */
+  const char *end = last_token;
+  while (*end && *end != ',' && *end != ' ' && *end != '\t')
+    end++;
+  size_t token_len = (size_t)(end - last_token);
+
+  /* Check if last token is exactly "chunked" (case-insensitive) */
+  if (token_len == STRLEN_LIT ("chunked")
+      && strncasecmp (last_token, "chunked", STRLEN_LIT ("chunked")) == 0)
+    return 1;
+
+  return 0;
 }
 
 static int
@@ -812,13 +827,12 @@ validate_chunked_is_last (SocketHTTP_Headers_T headers)
                                                te_values,
                                                SOCKETHTTP_MAX_HEADERS);
 
-  for (size_t i = 0; i < count; i++)
-    {
-      if (!te_chunked_is_last (te_values[i]))
-        return 0;
-    }
+  if (count == 0)
+    return 1;
 
-  return 1;
+  /* RFC 9112: "chunked" must be the last transfer coding across all
+   * TE headers.  Only the final TE value determines the framing. */
+  return te_chunked_is_last (te_values[count - 1]);
 }
 
 static void
@@ -869,15 +883,16 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
   cl_value = parse_content_length (parser->headers);
   has_cl = (cl_value >= -1); /* -1 = invalid, -2 = not present */
 
-  /* CRITICAL: Detect request smuggling attempts (RFC 9112 Section 6.3) */
-  if (parser->config.strict_mode)
-    {
-      if (has_cl && cl_value >= 0 && has_te)
-        return HTTP1_ERROR_SMUGGLING_DETECTED;
+  /* CRITICAL: Detect request smuggling attempts (RFC 9112 Section 6.3).
+   * These checks MUST be unconditional — a proxy/server mismatch in
+   * Content-Length vs Transfer-Encoding interpretation is the textbook
+   * CL.TE / TE.CL smuggling vector.  Relaxing this to strict-only
+   * leaves non-strict deployments wide open. */
+  if (has_cl && cl_value >= 0 && has_te)
+    return HTTP1_ERROR_SMUGGLING_DETECTED;
 
-      if (has_cl && cl_value == -1)
-        return HTTP1_ERROR_INVALID_CONTENT_LENGTH;
-    }
+  if (has_cl && cl_value == -1)
+    return HTTP1_ERROR_INVALID_CONTENT_LENGTH;
 
   /* Transfer-Encoding takes precedence over Content-Length, with strict
    * validation */

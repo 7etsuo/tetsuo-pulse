@@ -24,6 +24,7 @@
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
 
+#include <pthread.h>
 #include <string.h>
 
 /* Primary lookup table size (9 bits = 512 entries) */
@@ -71,10 +72,12 @@ struct SocketDeflate_HuffmanTable
   Arena_T arena;                /* Memory arena */
 };
 
-/* Global fixed tables (initialized once) */
+/* Global fixed tables (initialized once, thread-safe via pthread_once) */
 static SocketDeflate_HuffmanTable_T fixed_litlen_table = NULL;
 static SocketDeflate_HuffmanTable_T fixed_dist_table = NULL;
 static int fixed_tables_initialized = 0;
+static pthread_once_t fixed_tables_once = PTHREAD_ONCE_INIT;
+static Arena_T fixed_tables_arena = NULL;
 
 /*
  * Internal: Count codes per length.
@@ -318,6 +321,10 @@ SocketDeflate_HuffmanTable_build (SocketDeflate_HuffmanTable_T table,
   /* Count codes per length */
   count_code_lengths (lengths, count, bl_count);
 
+  /* RFC 1951 §3.2.2: bl_count[0] must be zero for code computation.
+   * Symbols with length 0 are unused and don't participate in the tree. */
+  bl_count[0] = 0;
+
   /* Validate tree structure */
   result = validate_huffman_tree (bl_count, max_bits);
   if (result != DEFLATE_OK)
@@ -350,8 +357,10 @@ SocketDeflate_HuffmanTable_build (SocketDeflate_HuffmanTable_T table,
       if (len > max_bits)
         return DEFLATE_ERROR_HUFFMAN_TREE;
 
-      /* Get canonical code */
+      /* Get canonical code and validate it doesn't overflow the bit length */
       code = next_code[len]++;
+      if (code >= (1U << len))
+        return DEFLATE_ERROR_HUFFMAN_TREE;
 
       /* Track maximum bits */
       if (len > table->max_bits)
@@ -466,13 +475,11 @@ SocketDeflate_HuffmanTable_reset (SocketDeflate_HuffmanTable_T table)
  * Fixed Huffman Tables
  */
 
-SocketDeflate_Result
-SocketDeflate_fixed_tables_init (Arena_T arena)
+static void
+fixed_tables_init_once (void)
 {
+  Arena_T arena = fixed_tables_arena;
   SocketDeflate_Result result;
-
-  if (fixed_tables_initialized)
-    return DEFLATE_OK;
 
   /* Create fixed literal/length table */
   fixed_litlen_table = SocketDeflate_HuffmanTable_new (arena);
@@ -480,9 +487,8 @@ SocketDeflate_fixed_tables_init (Arena_T arena)
                                              deflate_fixed_litlen_lengths,
                                              DEFLATE_LITLEN_CODES,
                                              DEFLATE_MAX_BITS);
-
   if (result != DEFLATE_OK)
-    return result;
+    return;
 
   /* Create fixed distance table */
   fixed_dist_table = SocketDeflate_HuffmanTable_new (arena);
@@ -490,13 +496,26 @@ SocketDeflate_fixed_tables_init (Arena_T arena)
                                              deflate_fixed_dist_lengths,
                                              DEFLATE_DIST_CODES,
                                              DEFLATE_MAX_BITS);
-
   if (result != DEFLATE_OK)
-    return result;
+    return;
 
   fixed_tables_initialized = 1;
+}
 
-  return DEFLATE_OK;
+SocketDeflate_Result
+SocketDeflate_fixed_tables_init (Arena_T arena)
+{
+  /* Thread-safe one-shot initialization via pthread_once.
+   * Stash the arena pointer before calling pthread_once so the
+   * callback can use it.  Only the first caller's arena is used;
+   * subsequent callers see the already-initialized tables. */
+  if (!fixed_tables_initialized)
+    {
+      fixed_tables_arena = arena;
+      pthread_once (&fixed_tables_once, fixed_tables_init_once);
+    }
+
+  return fixed_tables_initialized ? DEFLATE_OK : DEFLATE_ERROR;
 }
 
 SocketDeflate_HuffmanTable_T

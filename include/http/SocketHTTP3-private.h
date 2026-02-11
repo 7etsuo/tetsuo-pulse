@@ -18,6 +18,7 @@
 #include "http/SocketHTTP3.h"
 #include "http/SocketHTTP3-stream.h"
 #include "http/SocketHTTP.h"
+#include "core/SocketSecurity.h"
 #ifdef SOCKET_HAS_H3_PUSH
 #include "http/SocketHTTP3-push.h"
 #endif
@@ -204,11 +205,22 @@ stream_buf_append (H3_StreamBuf *buf,
                    const uint8_t *data,
                    size_t len)
 {
-  if (buf->len + len > buf->capacity)
+  /* Guard against addition overflow */
+  size_t required;
+  if (__builtin_add_overflow (buf->len, len, &required))
+    return -1;
+
+  if (required > buf->capacity)
     {
-      size_t new_cap = buf->capacity;
-      while (new_cap < buf->len + len)
-        new_cap *= 2;
+      size_t new_cap = buf->capacity ? buf->capacity : H3_STREAM_BUF_INIT_CAP;
+      while (new_cap < required)
+        {
+          size_t doubled;
+          if (__builtin_mul_overflow (new_cap, (size_t)2, &doubled)
+              || doubled > SOCKET_SECURITY_MAX_ALLOCATION)
+            return -1;
+          new_cap = doubled;
+        }
 
       uint8_t *new_data = ALLOC (arena, new_cap);
       memcpy (new_data, buf->data, buf->len);
@@ -241,11 +253,22 @@ h3_growbuf_append (Arena_T arena,
                    const uint8_t *data,
                    size_t len)
 {
-  if (*buf_len + len > *buf_cap)
+  /* Guard against addition overflow */
+  size_t required;
+  if (__builtin_add_overflow (*buf_len, len, &required))
+    return -1;
+
+  if (required > *buf_cap)
     {
-      size_t new_cap = *buf_cap;
-      while (new_cap < *buf_len + len)
-        new_cap *= 2;
+      size_t new_cap = *buf_cap ? *buf_cap : 64;
+      while (new_cap < required)
+        {
+          size_t doubled;
+          if (__builtin_mul_overflow (new_cap, (size_t)2, &doubled)
+              || doubled > SOCKET_SECURITY_MAX_ALLOCATION)
+            return -1;
+          new_cap = doubled;
+        }
       uint8_t *new_buf = ALLOC (arena, new_cap);
       memcpy (new_buf, *buf, *buf_len);
       *buf = new_buf;
@@ -331,27 +354,27 @@ h3_find_static_name (const char *name, size_t name_len)
 
 #ifdef SOCKET_HAS_H3_PUSH
 int h3_conn_recv_push_promise (SocketHTTP3_Conn_T conn,
-                                uint64_t request_stream_id,
-                                const uint8_t *payload,
-                                size_t payload_len);
+                               uint64_t request_stream_id,
+                               const uint8_t *payload,
+                               size_t payload_len);
 
 int h3_feed_push_stream (SocketHTTP3_Conn_T conn,
-                          uint64_t stream_id,
-                          const uint8_t *data,
-                          size_t len,
-                          int fin);
+                         uint64_t stream_id,
+                         const uint8_t *data,
+                         size_t len,
+                         int fin);
 
 void h3_handle_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id);
 #endif /* SOCKET_HAS_H3_PUSH */
 
 int h3_qpack_encode_headers (Arena_T arena,
-                              const SocketHTTP_Headers_T headers,
-                              uint8_t **out,
-                              size_t *out_len);
+                             const SocketHTTP_Headers_T headers,
+                             uint8_t **out,
+                             size_t *out_len);
 
 int h3_qpack_decode_headers (Arena_T arena,
-                              const uint8_t *data,
-                              size_t len,
-                              SocketHTTP_Headers_T *headers_out);
+                             const uint8_t *data,
+                             size_t len,
+                             SocketHTTP_Headers_T *headers_out);
 
 #endif /* SOCKETHTTP3_PRIVATE_INCLUDED */

@@ -54,12 +54,12 @@ struct SocketDeflate_Inflater
   int block_type;  /* BTYPE (0-3) */
 
   /* Stored block state (for streaming) */
-  size_t stored_len;       /* Remaining bytes in stored block */
-  int stored_header_read;  /* Have we read the LEN/NLEN header? */
+  size_t stored_len;      /* Remaining bytes in stored block */
+  int stored_header_read; /* Have we read the LEN/NLEN header? */
 
   /* Output tracking */
-  uint8_t *window;    /* 32KB sliding window for cross-block back-refs */
-  size_t window_pos;  /* Current position in window (circular) */
+  uint8_t *window;     /* 32KB sliding window for cross-block back-refs */
+  size_t window_pos;   /* Current position in window (circular) */
   size_t total_output; /* Total bytes output across all calls */
 
   /* Security limits */
@@ -347,9 +347,8 @@ lz77_decode_loop (SocketDeflate_Inflater_T inf,
   while (out_pos < out_len)
     {
       uint16_t symbol;
-      result
-          = SocketDeflate_HuffmanTable_decode (litlen_table, inf->reader,
-                                               &symbol);
+      result = SocketDeflate_HuffmanTable_decode (
+          litlen_table, inf->reader, &symbol);
       if (result != DEFLATE_OK)
         {
           *written = out_pos;
@@ -370,8 +369,8 @@ lz77_decode_loop (SocketDeflate_Inflater_T inf,
       else
         {
           /* Back-reference (length/distance pair) */
-          result = decode_backref (inf, dist_table, symbol, output, &out_pos,
-                                   out_len);
+          result = decode_backref (
+              inf, dist_table, symbol, output, &out_pos, out_len);
           if (result != DEFLATE_OK)
             {
               *written = out_pos;
@@ -488,10 +487,19 @@ check_bomb_limits (SocketDeflate_Inflater_T inf, size_t bytes_consumed)
   if (inf->max_output > 0 && inf->total_output > inf->max_output)
     return DEFLATE_ERROR_BOMB;
 
-  /* Check expansion ratio limit (use division to avoid overflow) */
+  /* Check expansion ratio limit.
+   * Use multiplication on the smaller side to avoid the integer division
+   * truncation that lets ratios of 999.x:1 slip past a 1000:1 check.
+   * Guard the multiplication against overflow. */
   size_t total_input = inf->total_input + bytes_consumed;
-  if (total_input > 0 && inf->total_output / DEFLATE_MAX_RATIO > total_input)
-    return DEFLATE_ERROR_BOMB;
+  if (total_input > 0)
+    {
+      size_t safe_limit;
+      if (__builtin_mul_overflow (total_input, DEFLATE_MAX_RATIO, &safe_limit))
+        safe_limit = SIZE_MAX; /* overflow means any output is within ratio */
+      if (inf->total_output > safe_limit)
+        return DEFLATE_ERROR_BOMB;
+    }
 
   return DEFLATE_OK;
 }
@@ -581,8 +589,8 @@ inflate_fixed (SocketDeflate_Inflater_T inf,
   if (litlen_table == NULL || dist_table == NULL)
     return DEFLATE_ERROR;
 
-  return lz77_decode_loop (inf, litlen_table, dist_table, output, out_len,
-                           written);
+  return lz77_decode_loop (
+      inf, litlen_table, dist_table, output, out_len, written);
 }
 
 /**
@@ -661,9 +669,8 @@ build_huffman_table (Arena_T arena,
   if (table == NULL)
     return DEFLATE_ERROR;
 
-  SocketDeflate_Result result
-      = SocketDeflate_HuffmanTable_build (table, code_lengths, num_codes,
-                                          max_bits);
+  SocketDeflate_Result result = SocketDeflate_HuffmanTable_build (
+      table, code_lengths, num_codes, max_bits);
   if (result != DEFLATE_OK)
     return result;
 
@@ -702,33 +709,33 @@ inflate_dynamic (SocketDeflate_Inflater_T inf,
     return result;
 
   /* Step 3: Build code length Huffman table */
-  result = build_huffman_table (inf->arena, &codelen_table, codelen_lengths,
-                                DEFLATE_CODELEN_CODES, 7);
+  result = build_huffman_table (
+      inf->arena, &codelen_table, codelen_lengths, DEFLATE_CODELEN_CODES, 7);
   if (result != DEFLATE_OK)
     return result;
 
   /* Step 4: Decode literal/length and distance code lengths */
   memset (code_lengths, 0, sizeof (code_lengths));
-  result = decode_code_lengths (inf->reader, codelen_table, code_lengths,
-                                hlit + hdist);
+  result = decode_code_lengths (
+      inf->reader, codelen_table, code_lengths, hlit + hdist);
   if (result != DEFLATE_OK)
     return result;
 
   /* Step 5: Build literal/length Huffman table */
-  result = build_huffman_table (inf->arena, &litlen_table, code_lengths, hlit,
-                                DEFLATE_MAX_BITS);
+  result = build_huffman_table (
+      inf->arena, &litlen_table, code_lengths, hlit, DEFLATE_MAX_BITS);
   if (result != DEFLATE_OK)
     return result;
 
   /* Step 6: Build distance Huffman table */
-  result = build_huffman_table (inf->arena, &dist_table, code_lengths + hlit,
-                                hdist, DEFLATE_MAX_BITS);
+  result = build_huffman_table (
+      inf->arena, &dist_table, code_lengths + hlit, hdist, DEFLATE_MAX_BITS);
   if (result != DEFLATE_OK)
     return result;
 
   /* Step 7: Decode compressed data */
-  return lz77_decode_loop (inf, litlen_table, dist_table, output, out_len,
-                           written);
+  return lz77_decode_loop (
+      inf, litlen_table, dist_table, output, out_len, written);
 }
 
 /**
@@ -871,8 +878,8 @@ SocketDeflate_Inflater_inflate (SocketDeflate_Inflater_T inf,
       /* Read block header if needed */
       if (inf->state == INFLATE_STATE_HEADER)
         {
-          result = read_block_header (inf, input_len, consumed, written,
-                                      total_written);
+          result = read_block_header (
+              inf, input_len, consumed, written, total_written);
           if (result != DEFLATE_OK)
             return result;
         }
@@ -882,7 +889,8 @@ SocketDeflate_Inflater_inflate (SocketDeflate_Inflater_T inf,
         {
           size_t block_written = 0;
 
-          result = dispatch_block_decoder (inf, output + total_written,
+          result = dispatch_block_decoder (inf,
+                                           output + total_written,
                                            output_len - total_written,
                                            &block_written);
           total_written += block_written;
@@ -891,7 +899,8 @@ SocketDeflate_Inflater_inflate (SocketDeflate_Inflater_T inf,
           size_t bytes_consumed = get_bytes_consumed (inf->reader, input_len);
           if (check_bomb_limits (inf, bytes_consumed) == DEFLATE_ERROR_BOMB)
             {
-              finalize_output (inf, input_len, consumed, written, total_written);
+              finalize_output (
+                  inf, input_len, consumed, written, total_written);
               return DEFLATE_ERROR_BOMB;
             }
 
@@ -902,7 +911,8 @@ SocketDeflate_Inflater_inflate (SocketDeflate_Inflater_T inf,
             }
           else
             {
-              finalize_output (inf, input_len, consumed, written, total_written);
+              finalize_output (
+                  inf, input_len, consumed, written, total_written);
               return result;
             }
         }
