@@ -14,7 +14,7 @@
  *
  * V1 Simplifications (same as client transport):
  * - No Retry/Version Negotiation
- * - No congestion control, retransmission, 0-RTT, migration
+ * - No retransmission, 0-RTT, migration
  * - Fixed 4-byte packet numbers, immediate ACK
  */
 
