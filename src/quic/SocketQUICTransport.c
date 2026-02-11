@@ -26,6 +26,8 @@
 #include "quic/SocketQUICFlow.h"
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICHandshake.h"
+#include "quic/SocketQUICCongestion.h"
+#include "quic/SocketQUICConstants.h"
 #include "quic/SocketQUICLoss.h"
 #include "quic/SocketQUICPacket.h"
 #include "quic/SocketQUICTLS.h"
@@ -83,6 +85,10 @@ struct SocketQUICTransport
   /* Loss detection (one per PN space) */
   SocketQUICLossState_T loss[QUIC_PN_SPACE_COUNT];
   SocketQUICLossRTT_T rtt;
+
+  /* Congestion control (RFC 9002 Section 7) */
+  SocketQUICCongestion_T congestion;
+  uint64_t prev_ecn_ce_count;
 
   /* Packet protection keys (send-side) */
   SocketQUICInitialKeys_T initial_keys;
@@ -202,9 +208,11 @@ find_or_create_stream (SocketQUICTransport_T t, uint64_t stream_id)
  */
 
 static int
-build_and_send_1rtt_packet (SocketQUICTransport_T t,
-                            const uint8_t *payload,
-                            size_t payload_len)
+build_and_send_1rtt_packet_ex (SocketQUICTransport_T t,
+                               const uint8_t *payload,
+                               size_t payload_len,
+                               int ack_eliciting,
+                               int in_flight)
 {
   if (!t->app_keys_valid)
     return -1;
@@ -251,6 +259,15 @@ build_and_send_1rtt_packet (SocketQUICTransport_T t,
 
   size_t pkt_len = hdr_len + ciphertext_len;
 
+  /* Congestion window check (only for in-flight packets) */
+  if (in_flight && t->congestion)
+    {
+      size_t bif
+          = SocketQUICLoss_bytes_in_flight (t->loss[QUIC_PN_SPACE_APPLICATION]);
+      if (!SocketQUICCongestion_can_send (t->congestion, bif, pkt_len))
+        return -1;
+    }
+
   /* Apply header protection */
   if (SocketQUICCrypto_protect_header_ex (
           &t->app_send_keys, t->send_buf, pkt_len, pn_offset)
@@ -261,8 +278,26 @@ build_and_send_1rtt_packet (SocketQUICTransport_T t,
   if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
     return -1;
 
+  /* Record sent packet for loss detection (RFC 9002) */
+  uint64_t sent_time = now_us ();
+  SocketQUICLoss_on_packet_sent (t->loss[QUIC_PN_SPACE_APPLICATION],
+                                 pn,
+                                 sent_time,
+                                 pkt_len,
+                                 ack_eliciting,
+                                 in_flight,
+                                 0);
+
   t->next_pn[QUIC_PN_SPACE_APPLICATION]++;
   return 0;
+}
+
+static int
+build_and_send_1rtt_packet (SocketQUICTransport_T t,
+                            const uint8_t *payload,
+                            size_t payload_len)
+{
+  return build_and_send_1rtt_packet_ex (t, payload, payload_len, 1, 1);
 }
 
 /* ============================================================================
@@ -292,12 +327,45 @@ send_ack_if_needed (SocketQUICTransport_T t,
 
   int rc = -1;
   if (space == QUIC_PN_SPACE_APPLICATION && t->app_keys_valid)
-    rc = build_and_send_1rtt_packet (t, ack_buf, ack_len);
+    rc = build_and_send_1rtt_packet_ex (t, ack_buf, ack_len, 0, 0);
 
   if (rc == 0)
     SocketQUICAck_mark_sent (t->ack[space], now);
 
   return rc;
+}
+
+/* ============================================================================
+ * Congestion control callbacks for ACK processing
+ * ============================================================================
+ */
+
+typedef struct
+{
+  size_t acked_bytes;
+  uint64_t latest_acked_sent_time;
+  size_t lost_bytes;
+  uint64_t latest_lost_sent_time;
+} TransportAckContext;
+
+static void
+transport_acked_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
+{
+  TransportAckContext *c = ctx;
+  if (pkt->in_flight)
+    c->acked_bytes += pkt->sent_bytes;
+  if (pkt->sent_time_us > c->latest_acked_sent_time)
+    c->latest_acked_sent_time = pkt->sent_time_us;
+}
+
+static void
+transport_lost_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
+{
+  TransportAckContext *c = ctx;
+  if (pkt->in_flight)
+    c->lost_bytes += pkt->sent_bytes;
+  if (pkt->sent_time_us > c->latest_lost_sent_time)
+    c->latest_lost_sent_time = pkt->sent_time_us;
 }
 
 /* ============================================================================
@@ -337,15 +405,55 @@ process_frames (SocketQUICTransport_T t,
         case QUIC_FRAME_ACK_ECN:
           if (t->loss[space])
             {
-              size_t lost_count = 0;
+              TransportAckContext actx = { 0 };
+              size_t acked_count = 0, lost_count = 0;
+
               SocketQUICLoss_on_ack_received (t->loss[space],
                                               &t->rtt,
-                                              frame.data.ack.largest_ack,
-                                              frame.data.ack.ack_delay,
+                                              &frame.data.ack,
                                               now,
-                                              NULL,
-                                              NULL,
+                                              transport_acked_cb,
+                                              transport_lost_cb,
+                                              &actx,
+                                              &acked_count,
                                               &lost_count);
+
+              if (space == QUIC_PN_SPACE_APPLICATION && t->congestion)
+                {
+                  if (actx.acked_bytes > 0)
+                    SocketQUICCongestion_on_packets_acked (
+                        t->congestion,
+                        actx.acked_bytes,
+                        actx.latest_acked_sent_time);
+
+                  if (actx.lost_bytes > 0)
+                    SocketQUICCongestion_on_packets_lost (
+                        t->congestion,
+                        actx.lost_bytes,
+                        actx.latest_lost_sent_time);
+
+                  if (frame.type == QUIC_FRAME_ACK_ECN
+                      && frame.data.ack.ecn_ce_count > t->prev_ecn_ce_count)
+                    {
+                      SocketQUICCongestion_on_ecn_ce (
+                          t->congestion, actx.latest_acked_sent_time);
+                      t->prev_ecn_ce_count = frame.data.ack.ecn_ce_count;
+                    }
+
+                  /* Check persistent congestion */
+                  if (lost_count > 0 && t->rtt.first_rtt_sample_time > 0)
+                    {
+                      uint64_t pc_dur
+                          = SocketQUICCongestion_persistent_duration (
+                              &t->rtt, t->loss[space]->max_ack_delay_us);
+                      if (pc_dur > 0
+                          && actx.latest_lost_sent_time
+                                     - t->rtt.first_rtt_sample_time
+                                 > pc_dur)
+                        SocketQUICCongestion_on_persistent_congestion (
+                            t->congestion);
+                    }
+                }
             }
           break;
 
@@ -686,6 +794,9 @@ SocketQUICTransport_new (Arena_T arena, const SocketQUICTransportConfig *config)
 
   /* Initialize RTT state */
   SocketQUICLoss_init_rtt (&t->rtt);
+
+  /* Initialize congestion control (RFC 9002 Section 7) */
+  t->congestion = SocketQUICCongestion_new (arena, QUIC_MAX_DATAGRAM_SIZE);
 
   return t;
 }

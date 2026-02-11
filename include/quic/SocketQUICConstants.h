@@ -157,6 +157,28 @@
 #define QUIC_MAX_CWND (1024 * 1024)
 
 /**
+ * @brief Minimum congestion window in bytes (RFC 9002 Section 7.2).
+ *
+ * 2 * max_datagram_size = 2400 bytes.
+ */
+#define QUIC_MIN_CWND (2 * QUIC_MAX_DATAGRAM_SIZE)
+
+/**
+ * @brief Loss reduction factor numerator (RFC 9002 Section 7.3.2).
+ *
+ * NewReno halves the window on loss: factor = 1/2.
+ */
+#define QUIC_LOSS_REDUCTION_FACTOR_NUM 1
+#define QUIC_LOSS_REDUCTION_FACTOR_DEN 2
+
+/**
+ * @brief Persistent congestion threshold (RFC 9002 Section 7.6).
+ *
+ * Duration = (smoothed_rtt + max(4*rttvar, granularity) + max_ack_delay) * 3.
+ */
+#define QUIC_PERSISTENT_CONGESTION_THRESHOLD 3
+
+/**
  * @brief Initial RTT estimate in microseconds (RFC 9002 Section 6.2.2).
  *
  * Before any RTT measurement, use 333ms as initial estimate.

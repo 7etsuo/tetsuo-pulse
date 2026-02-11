@@ -15,6 +15,9 @@
 #include "http/SocketHTTP3-request.h"
 #include "http/SocketHTTP3-stream.h"
 #include "quic/SocketQUICVarInt.h"
+#ifdef SOCKET_HAS_H3_PUSH
+#include "http/SocketHTTP3-push.h"
+#endif
 
 #include <string.h>
 
@@ -88,6 +91,17 @@ SocketHTTP3_Conn_new (Arena_T arena,
   conn->request_cb = NULL;
   conn->request_cb_userdata = NULL;
 
+#ifdef SOCKET_HAS_H3_PUSH
+  conn->next_push_id = 0;
+  conn->next_server_unidi_id = 0;
+  memset (conn->pushes, 0, sizeof (conn->pushes));
+  conn->push_count = 0;
+  conn->push_cb = NULL;
+  conn->push_cb_userdata = NULL;
+  conn->local_max_push_id = 0;
+  conn->local_max_push_id_sent = 0;
+#endif
+
   return conn;
 }
 
@@ -114,6 +128,11 @@ SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
   conn->local_control_id = base;     /* +0 */
   conn->local_encoder_id = base + 4; /* +4 */
   conn->local_decoder_id = base + 8; /* +8 */
+
+#ifdef SOCKET_HAS_H3_PUSH
+  /* Push streams start after control(+0), encoder(+4), decoder(+8) → base+12 */
+  conn->next_server_unidi_id = base + 12;
+#endif
 
   /* Register in stream map */
   SocketHTTP3_StreamMap_set_local_control (conn->stream_map,
@@ -309,8 +328,11 @@ process_control_stream (SocketHTTP3_Conn_T conn,
             if (rc != 0)
               return -(int)H3_FRAME_ERROR;
 
-            /* Stub: store/ignore for push support */
+#ifdef SOCKET_HAS_H3_PUSH
+            h3_handle_cancel_push (conn, push_id);
+#else
             (void)push_id;
+#endif
             break;
           }
 
@@ -392,8 +414,11 @@ SocketHTTP3_Conn_feed_stream (SocketHTTP3_Conn_T conn,
       }
 
     case H3_STREAM_ROLE_PUSH:
-      /* Stub for push support */
+#ifdef SOCKET_HAS_H3_PUSH
+      return h3_feed_push_stream (conn, stream_id, data, len, fin);
+#else
       return 0;
+#endif
 
     case H3_STREAM_ROLE_UNKNOWN:
       break;

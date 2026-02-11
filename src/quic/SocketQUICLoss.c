@@ -211,6 +211,7 @@ SocketQUICLoss_init_rtt (SocketQUICLossRTT_T *rtt)
   rtt->min_rtt = 0;
   rtt->latest_rtt = 0;
   rtt->has_sample = 0;
+  rtt->first_rtt_sample_time = 0;
 }
 
 void
@@ -506,35 +507,96 @@ detect_lost_packets (SocketQUICLossState_T state,
  * ============================================================================
  */
 
+/**
+ * Acknowledge a single packet: invoke callback, adjust bytes_in_flight, remove.
+ */
+static void
+handle_acked_packet (SocketQUICLossState_T state,
+                     SocketQUICLossSentPacket_T *packet,
+                     SocketQUICLoss_AckedCallback acked_callback,
+                     void *context)
+{
+  if (acked_callback)
+    acked_callback (packet, context);
+
+  if (packet->in_flight)
+    {
+      if (packet->sent_bytes > state->bytes_in_flight)
+        {
+          SOCKET_LOG_ERROR_MSG (
+              "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
+              packet->sent_bytes,
+              state->bytes_in_flight);
+          state->bytes_in_flight = 0;
+        }
+      else
+        {
+          state->bytes_in_flight -= packet->sent_bytes;
+        }
+    }
+
+  remove_sent_packet (state, packet->packet_number);
+}
+
+/**
+ * Acknowledge all tracked packets in [lo, hi] (inclusive).
+ */
+static size_t
+ack_range (SocketQUICLossState_T state,
+           uint64_t lo,
+           uint64_t hi,
+           SocketQUICLoss_AckedCallback acked_callback,
+           void *context)
+{
+  size_t count = 0;
+
+  for (uint64_t pn = lo; pn <= hi; pn++)
+    {
+      SocketQUICLossSentPacket_T *pkt = find_sent_packet (state, pn);
+      if (pkt)
+        {
+          handle_acked_packet (state, pkt, acked_callback, context);
+          count++;
+        }
+    }
+
+  return count;
+}
+
 SocketQUICLoss_Result
 SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
                                 SocketQUICLossRTT_T *rtt,
-                                uint64_t largest_acked,
-                                uint64_t ack_delay_us,
+                                const SocketQUICFrameAck_T *ack,
                                 uint64_t recv_time_us,
+                                SocketQUICLoss_AckedCallback acked_callback,
                                 SocketQUICLoss_LostCallback lost_callback,
                                 void *context,
+                                size_t *acked_count,
                                 size_t *lost_count)
 {
+  uint64_t largest_acked;
   SocketQUICLossSentPacket_T *largest_pkt;
-  uint64_t latest_rtt;
+  size_t total_acked = 0;
 
-  if (state == NULL || rtt == NULL)
+  if (state == NULL || rtt == NULL || ack == NULL)
     return QUIC_LOSS_ERROR_NULL;
 
-  /* Find the largest acknowledged packet */
-  largest_pkt = find_sent_packet (state, largest_acked);
+  largest_acked = ack->largest_ack;
 
-  /* Update RTT if we have the packet */
+  /* Update RTT from the largest acknowledged packet */
+  largest_pkt = find_sent_packet (state, largest_acked);
   if (largest_pkt != NULL && recv_time_us >= largest_pkt->sent_time_us)
     {
-      latest_rtt = recv_time_us - largest_pkt->sent_time_us;
+      uint64_t latest_rtt = recv_time_us - largest_pkt->sent_time_us;
 
-      /* Only update RTT if this is a new largest_acked */
       if (largest_acked > state->largest_acked)
         {
+          /* Record first RTT sample time for persistent congestion */
+          if (!rtt->has_sample)
+            rtt->first_rtt_sample_time = recv_time_us;
+
           SocketQUICLoss_update_rtt (
-              rtt, latest_rtt, ack_delay_us, state->is_handshake_space);
+              rtt, latest_rtt, ack->ack_delay, state->is_handshake_space);
         }
     }
 
@@ -542,36 +604,46 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
   if (largest_acked > state->largest_acked)
     state->largest_acked = largest_acked;
 
-  /* Mark acknowledged packets */
-  /* For simplicity, we just remove the largest_acked packet.
-   * A full implementation would process ACK ranges.
-   */
-  if (largest_pkt == NULL)
+  /* Process first ACK range: [largest_acked - first_range, largest_acked] */
+  {
+    uint64_t lo = largest_acked >= ack->first_range
+                      ? largest_acked - ack->first_range
+                      : 0;
+    total_acked
+        += ack_range (state, lo, largest_acked, acked_callback, context);
+  }
+
+  /* Process additional ACK ranges */
+  if (ack->range_count > 0 && ack->ranges != NULL)
     {
-      goto detect_lost;
+      /* After first range, cursor starts at (lo_of_first_range - 1) */
+      uint64_t cursor = largest_acked >= ack->first_range
+                            ? largest_acked - ack->first_range
+                            : 0;
+
+      for (uint64_t i = 0; i < ack->range_count; i++)
+        {
+          /* Skip the gap (gap + 1 unacknowledged packets) */
+          if (cursor < ack->ranges[i].gap + 2)
+            break; /* Underflow protection */
+          cursor -= (ack->ranges[i].gap + 2);
+
+          /* ACK range: [cursor - length, cursor] */
+          uint64_t range_hi = cursor;
+          uint64_t range_lo = cursor >= ack->ranges[i].length
+                                  ? cursor - ack->ranges[i].length
+                                  : 0;
+
+          total_acked
+              += ack_range (state, range_lo, range_hi, acked_callback, context);
+
+          cursor = range_lo;
+        }
     }
 
-  /* Handle in-flight bytes adjustment */
-  if (largest_pkt->in_flight)
-    {
-      /* Defensive check: prevent underflow */
-      if (largest_pkt->sent_bytes > state->bytes_in_flight)
-        {
-          SOCKET_LOG_ERROR_MSG (
-              "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
-              largest_pkt->sent_bytes,
-              state->bytes_in_flight);
-          state->bytes_in_flight = 0;
-        }
-      else
-        {
-          state->bytes_in_flight -= largest_pkt->sent_bytes;
-        }
-    }
+  if (acked_count)
+    *acked_count = total_acked;
 
-  remove_sent_packet (state, largest_acked);
-
-detect_lost:
   /* Detect lost packets */
   detect_lost_packets (
       state, rtt, recv_time_us, lost_callback, context, lost_count);
