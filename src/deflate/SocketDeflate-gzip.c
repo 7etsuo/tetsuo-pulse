@@ -75,7 +75,8 @@ parse_fextra (const uint8_t *data, size_t len, size_t *pos)
   uint16_t xlen = read_le16 (data + *pos);
   *pos += 2;
 
-  if (len < *pos + xlen)
+  /* Guard against integer overflow in *pos + xlen */
+  if (xlen > len || *pos > len - xlen)
     return DEFLATE_INCOMPLETE;
 
   *pos += xlen;
@@ -92,9 +93,14 @@ parse_fextra (const uint8_t *data, size_t len, size_t *pos)
  * @return DEFLATE_OK or DEFLATE_INCOMPLETE
  */
 static SocketDeflate_Result
-parse_null_string (const uint8_t *data, size_t len, size_t *pos,
+parse_null_string (const uint8_t *data,
+                   size_t len,
+                   size_t *pos,
                    const uint8_t **out_str)
 {
+  if (*pos >= len)
+    return DEFLATE_INCOMPLETE;
+
   size_t null_pos = find_null (data + *pos, len - *pos);
   if (null_pos == len - *pos)
     return DEFLATE_INCOMPLETE;
@@ -181,7 +187,9 @@ validate_gzip_magic (const uint8_t *data, size_t len)
  * @return DEFLATE_OK or error code
  */
 static SocketDeflate_Result
-parse_optional_fields (const uint8_t *data, size_t len, size_t *pos,
+parse_optional_fields (const uint8_t *data,
+                       size_t len,
+                       size_t *pos,
                        SocketDeflate_GzipHeader *header)
 {
   SocketDeflate_Result result;
@@ -221,7 +229,8 @@ parse_optional_fields (const uint8_t *data, size_t len, size_t *pos,
  * Parse gzip header (RFC 1952 Section 2.3).
  */
 SocketDeflate_Result
-SocketDeflate_gzip_parse_header (const uint8_t *data, size_t len,
+SocketDeflate_gzip_parse_header (const uint8_t *data,
+                                 size_t len,
                                  SocketDeflate_GzipHeader *header)
 {
   SocketDeflate_Result result;
@@ -283,20 +292,20 @@ SocketDeflate_gzip_verify_trailer (const uint8_t *trailer,
  * OS code name table.
  */
 static const char *os_names[] = {
-  "FAT",           /* 0 */
-  "Amiga",         /* 1 */
-  "VMS",           /* 2 */
-  "Unix",          /* 3 */
-  "VM/CMS",        /* 4 */
-  "Atari TOS",     /* 5 */
-  "HPFS",          /* 6 */
-  "Macintosh",     /* 7 */
-  "Z-System",      /* 8 */
-  "CP/M",          /* 9 */
-  "TOPS-20",       /* 10 */
-  "NTFS",          /* 11 */
-  "QDOS",          /* 12 */
-  "Acorn RISCOS",  /* 13 */
+  "FAT",          /* 0 */
+  "Amiga",        /* 1 */
+  "VMS",          /* 2 */
+  "Unix",         /* 3 */
+  "VM/CMS",       /* 4 */
+  "Atari TOS",    /* 5 */
+  "HPFS",         /* 6 */
+  "Macintosh",    /* 7 */
+  "Z-System",     /* 8 */
+  "CP/M",         /* 9 */
+  "TOPS-20",      /* 10 */
+  "NTFS",         /* 11 */
+  "QDOS",         /* 12 */
+  "Acorn RISCOS", /* 13 */
 };
 
 #define OS_NAMES_COUNT (sizeof (os_names) / sizeof (os_names[0]))

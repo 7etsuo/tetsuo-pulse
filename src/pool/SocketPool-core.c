@@ -903,14 +903,11 @@ SocketPool_enable_reconnect (T pool,
   {
     create_reconnect_context (conn, host, port, policy);
   }
-  EXCEPT (SocketReconnect_Failed)
+  FINALLY
   {
     POOL_UNLOCK (pool);
-    RERAISE;
   }
   END_TRY;
-
-  POOL_UNLOCK (pool);
 
   log_reconnect_enabled (host, port);
 }

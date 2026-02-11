@@ -378,7 +378,8 @@ SocketSecurity_has_compression (void)
 static inline int
 SocketSecurity_has_control_chars (const char *data, size_t len)
 {
-  assert (data != NULL);
+  if (data == NULL)
+    return 1; /* NULL is unsafe — treat as containing control chars */
   for (size_t i = 0; i < len; i++)
     {
       unsigned char c = (unsigned char)data[i];

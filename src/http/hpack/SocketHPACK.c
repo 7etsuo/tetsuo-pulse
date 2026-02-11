@@ -95,9 +95,9 @@ typedef struct
 #define HPACK_LITERAL_WITHOUT_INDEX_VAL 0x00
 
 /* HPACK decompression bomb protection limits (RFC 7541 §7.1) */
-#define HPACK_DEFAULT_EXPANSION_RATIO      10.0
+#define HPACK_DEFAULT_EXPANSION_RATIO 10.0
 #define HPACK_DEFAULT_EXPANSION_MULTIPLIER 10
-#define HPACK_DEFAULT_MAX_OUTPUT_BYTES     (1024 * 1024)  /* 1MB */
+#define HPACK_DEFAULT_MAX_OUTPUT_BYTES (1024 * 1024) /* 1MB */
 
 /* Field type enumeration for decode dispatch */
 typedef enum
@@ -931,7 +931,8 @@ SocketHPACK_decoder_config_defaults (SocketHPACK_DecoderConfig *config)
   config->max_output_bytes
       = (SOCKETHPACK_MAX_HEADER_LIST_SIZE * HPACK_DEFAULT_EXPANSION_MULTIPLIER
          < HPACK_DEFAULT_MAX_OUTPUT_BYTES)
-            ? SOCKETHPACK_MAX_HEADER_LIST_SIZE * HPACK_DEFAULT_EXPANSION_MULTIPLIER
+            ? SOCKETHPACK_MAX_HEADER_LIST_SIZE
+                  * HPACK_DEFAULT_EXPANSION_MULTIPLIER
             : HPACK_DEFAULT_MAX_OUTPUT_BYTES;
 }
 
@@ -1333,8 +1334,8 @@ check_decompression_bomb_incremental (SocketHPACK_Decoder_T decoder,
   /* Check ratio BEFORE allocation */
   if (decoder->decode_input_bytes > 0)
     {
-      double projected_ratio = (double)projected_output
-                               / (double)decoder->decode_input_bytes;
+      double projected_ratio
+          = (double)projected_output / (double)decoder->decode_input_bytes;
       if (projected_ratio > decoder->max_expansion_ratio)
         return HPACK_ERROR_BOMB;
     }
@@ -1359,11 +1360,20 @@ validate_and_store_header (SocketHPACK_Decoder_T decoder,
   if (*hdr_count >= max_headers)
     return HPACK_ERROR_LIST_SIZE;
 
+  /* Check decompression bomb BEFORE writing to the output array.
+   * Otherwise an attacker can fill the entire output buffer with
+   * highly-expanded headers before the bomb threshold triggers. */
+  decoder->decode_output_bytes += header->name_len + header->value_len;
+  {
+    SocketHPACK_Result bomb_result = check_decompression_bomb (decoder);
+    if (bomb_result != HPACK_OK)
+      return bomb_result;
+  }
+
   headers[*hdr_count] = *header;
   (*hdr_count)++;
 
-  decoder->decode_output_bytes += header->name_len + header->value_len;
-  return check_decompression_bomb (decoder);
+  return HPACK_OK;
 }
 
 SocketHPACK_Result

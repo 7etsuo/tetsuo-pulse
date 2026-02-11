@@ -358,6 +358,10 @@ encrypt_aead_payload (const uint8_t *packet,
   int outlen;
   SocketQUICInitial_Result result = QUIC_INITIAL_ERROR_CRYPTO;
 
+  /* Validate sizes before casting to int for OpenSSL */
+  if (header_len > INT_MAX || payload_len > INT_MAX)
+    return QUIC_INITIAL_ERROR_BUFFER;
+
   /* Create cipher context for encryption */
   ctx = EVP_CIPHER_CTX_new ();
   if (ctx == NULL)
@@ -426,6 +430,10 @@ decrypt_aead_payload (const uint8_t *packet,
   EVP_CIPHER_CTX *ctx = NULL;
   int outlen;
   SocketQUICInitial_Result result = QUIC_INITIAL_ERROR_CRYPTO;
+
+  /* Validate sizes before casting to int for OpenSSL */
+  if (header_len > INT_MAX || payload_len > INT_MAX)
+    return QUIC_INITIAL_ERROR_BUFFER;
 
   /* Create cipher context for decryption */
   ctx = EVP_CIPHER_CTX_new ();

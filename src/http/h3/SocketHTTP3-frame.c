@@ -140,6 +140,8 @@ SocketHTTP3_Settings_parse (const uint8_t *buf,
         }
       if (seen_count < MAX_SETTINGS_IDS)
         seen_ids[seen_count++] = id;
+      else
+        return -(int)H3_SETTINGS_ERROR; /* too many settings to track */
 
       /* GREASE values: silently ignore (RFC 9114 §7.2.4.1) */
       if (H3_IS_GREASE (id))

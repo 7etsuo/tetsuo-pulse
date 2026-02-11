@@ -751,6 +751,12 @@ quic_form_nonce (const uint8_t iv[QUIC_PACKET_IV_LEN],
                  uint64_t packet_number,
                  uint8_t nonce[QUIC_PACKET_IV_LEN])
 {
+  /* QUIC packet numbers are at most 62 bits (RFC 9000 Section 17.1).
+   * Enforce this to prevent nonce reuse from overflowed packet numbers.
+   * 2^62 - 1 = 4611686018427387903 (SOCKETQUICVARINT_MAX) */
+  if (packet_number > (uint64_t)4611686018427387903ULL)
+    packet_number = 0; /* defensive: clamp to zero rather than form bad nonce */
+
   /* Copy IV to nonce */
   memcpy (nonce, iv, QUIC_PACKET_IV_LEN);
 
@@ -1462,7 +1468,9 @@ save_prev_read_keys (SocketQUICKeyUpdate_T *state)
  * Clears old secret before copying new one.
  */
 static void
-commit_secret (uint8_t *dest, size_t dest_size, const uint8_t *src,
+commit_secret (uint8_t *dest,
+               size_t dest_size,
+               const uint8_t *src,
                size_t src_len)
 {
   SocketCrypto_secure_clear (dest, dest_size);
@@ -1489,20 +1497,21 @@ commit_keys_preserving_hp (SocketQUICPacketKeys_T *dest,
  * Returns error if any derivation fails, leaving outputs undefined.
  */
 static SocketQUICCrypto_Result
-derive_key_generation (const uint8_t *current_secret, size_t secret_len,
-                       SocketQUIC_AEAD aead, uint8_t *next_secret,
+derive_key_generation (const uint8_t *current_secret,
+                       size_t secret_len,
+                       SocketQUIC_AEAD aead,
+                       uint8_t *next_secret,
                        SocketQUICPacketKeys_T *next_keys)
 {
   SocketQUICCrypto_Result result;
 
-  result
-      = SocketQUICCrypto_derive_next_secret (current_secret, secret_len, aead,
-                                             next_secret);
+  result = SocketQUICCrypto_derive_next_secret (
+      current_secret, secret_len, aead, next_secret);
   if (result != QUIC_CRYPTO_OK)
     return result;
 
-  result = SocketQUICCrypto_derive_packet_keys (next_secret, secret_len, aead,
-                                                next_keys);
+  result = SocketQUICCrypto_derive_packet_keys (
+      next_secret, secret_len, aead, next_keys);
   if (result != QUIC_CRYPTO_OK)
     {
       SocketCrypto_secure_clear (next_secret, secret_len);
@@ -1543,7 +1552,8 @@ clear_temp_secrets (uint8_t *s1, uint8_t *s2, uint8_t *s3, size_t size)
  * Clear temporary packet keys used during derivation.
  */
 static void
-clear_temp_keys (SocketQUICPacketKeys_T *k1, SocketQUICPacketKeys_T *k2,
+clear_temp_keys (SocketQUICPacketKeys_T *k1,
+                 SocketQUICPacketKeys_T *k2,
                  SocketQUICPacketKeys_T *k3)
 {
   if (k1)
@@ -1560,7 +1570,8 @@ clear_temp_keys (SocketQUICPacketKeys_T *k1, SocketQUICPacketKeys_T *k2,
  */
 static void
 copy_precomputed_read (const SocketQUICKeyUpdate_T *state,
-                       uint8_t *new_read_secret, SocketQUICPacketKeys_T *new_keys)
+                       uint8_t *new_read_secret,
+                       SocketQUICPacketKeys_T *new_keys)
 {
   memcpy (new_read_secret, state->next_read_secret, state->read_secret_len);
   memcpy (new_keys, &state->next_read_keys, sizeof (*new_keys));
@@ -1658,14 +1669,19 @@ SocketQUICKeyUpdate_initiate (SocketQUICKeyUpdate_T *state)
   /*
    * Phase 1: Derive all into temporaries (state unchanged on error).
    */
-  result = derive_key_generation (state->write_secret, state->write_secret_len,
-                                  state->aead, new_write_secret,
+  result = derive_key_generation (state->write_secret,
+                                  state->write_secret_len,
+                                  state->aead,
+                                  new_write_secret,
                                   &new_write_keys);
   if (result != QUIC_CRYPTO_OK)
     return result;
 
-  result = derive_key_generation (state->read_secret, state->read_secret_len,
-                                  state->aead, new_read_secret, &new_read_keys);
+  result = derive_key_generation (state->read_secret,
+                                  state->read_secret_len,
+                                  state->aead,
+                                  new_read_secret,
+                                  &new_read_keys);
   if (result != QUIC_CRYPTO_OK)
     {
       clear_temp_secrets (new_write_secret, NULL, NULL, QUIC_SECRET_MAX_LEN);
@@ -1673,13 +1689,15 @@ SocketQUICKeyUpdate_initiate (SocketQUICKeyUpdate_T *state)
       return result;
     }
 
-  result = derive_key_generation (new_read_secret, state->read_secret_len,
-                                  state->aead, next_read_secret,
+  result = derive_key_generation (new_read_secret,
+                                  state->read_secret_len,
+                                  state->aead,
+                                  next_read_secret,
                                   &next_read_keys);
   if (result != QUIC_CRYPTO_OK)
     {
-      clear_temp_secrets (new_write_secret, new_read_secret, NULL,
-                          QUIC_SECRET_MAX_LEN);
+      clear_temp_secrets (
+          new_write_secret, new_read_secret, NULL, QUIC_SECRET_MAX_LEN);
       clear_temp_keys (&new_write_keys, &new_read_keys, NULL);
       return result;
     }
@@ -1689,23 +1707,29 @@ SocketQUICKeyUpdate_initiate (SocketQUICKeyUpdate_T *state)
    */
   save_prev_read_keys (state);
 
-  commit_secret (state->write_secret, sizeof (state->write_secret),
-                 new_write_secret, state->write_secret_len);
+  commit_secret (state->write_secret,
+                 sizeof (state->write_secret),
+                 new_write_secret,
+                 state->write_secret_len);
   commit_keys_preserving_hp (&state->write_keys, &new_write_keys);
 
-  commit_secret (state->read_secret, sizeof (state->read_secret),
-                 new_read_secret, state->read_secret_len);
+  commit_secret (state->read_secret,
+                 sizeof (state->read_secret),
+                 new_read_secret,
+                 state->read_secret_len);
   commit_keys_preserving_hp (&state->read_keys, &new_read_keys);
 
-  commit_secret (state->next_read_secret, sizeof (state->next_read_secret),
-                 next_read_secret, state->read_secret_len);
+  commit_secret (state->next_read_secret,
+                 sizeof (state->next_read_secret),
+                 next_read_secret,
+                 state->read_secret_len);
   commit_keys_preserving_hp (&state->next_read_keys, &next_read_keys);
   state->next_read_keys_valid = 1;
 
   reset_key_update_state (state, state->key_phase ? 0 : 1);
 
-  clear_temp_secrets (new_write_secret, new_read_secret, next_read_secret,
-                      QUIC_SECRET_MAX_LEN);
+  clear_temp_secrets (
+      new_write_secret, new_read_secret, next_read_secret, QUIC_SECRET_MAX_LEN);
   return QUIC_CRYPTO_OK;
 }
 
@@ -1739,14 +1763,20 @@ SocketQUICKeyUpdate_process_received (SocketQUICKeyUpdate_T *state,
     }
   else
     {
-      result = derive_key_generation (state->read_secret, state->read_secret_len,
-                                      state->aead, new_read_secret, &new_read_keys);
+      result = derive_key_generation (state->read_secret,
+                                      state->read_secret_len,
+                                      state->aead,
+                                      new_read_secret,
+                                      &new_read_keys);
       if (result != QUIC_CRYPTO_OK)
         return result;
     }
 
-  result = derive_key_generation (state->write_secret, state->write_secret_len,
-                                  state->aead, new_write_secret, &new_write_keys);
+  result = derive_key_generation (state->write_secret,
+                                  state->write_secret_len,
+                                  state->aead,
+                                  new_write_secret,
+                                  &new_write_keys);
   if (result != QUIC_CRYPTO_OK)
     {
       if (!used_precomputed)
@@ -1757,8 +1787,11 @@ SocketQUICKeyUpdate_process_received (SocketQUICKeyUpdate_T *state,
       return result;
     }
 
-  result = derive_key_generation (new_read_secret, state->read_secret_len,
-                                  state->aead, next_read_secret, &next_read_keys);
+  result = derive_key_generation (new_read_secret,
+                                  state->read_secret_len,
+                                  state->aead,
+                                  next_read_secret,
+                                  &next_read_keys);
   if (result != QUIC_CRYPTO_OK)
     {
       if (!used_precomputed)
@@ -1774,23 +1807,29 @@ SocketQUICKeyUpdate_process_received (SocketQUICKeyUpdate_T *state,
   /* Phase 2: Commit all atomically */
   save_prev_read_keys (state);
 
-  commit_secret (state->read_secret, sizeof (state->read_secret),
-                 new_read_secret, state->read_secret_len);
+  commit_secret (state->read_secret,
+                 sizeof (state->read_secret),
+                 new_read_secret,
+                 state->read_secret_len);
   commit_keys_preserving_hp (&state->read_keys, &new_read_keys);
 
-  commit_secret (state->write_secret, sizeof (state->write_secret),
-                 new_write_secret, state->write_secret_len);
+  commit_secret (state->write_secret,
+                 sizeof (state->write_secret),
+                 new_write_secret,
+                 state->write_secret_len);
   commit_keys_preserving_hp (&state->write_keys, &new_write_keys);
 
-  commit_secret (state->next_read_secret, sizeof (state->next_read_secret),
-                 next_read_secret, state->read_secret_len);
+  commit_secret (state->next_read_secret,
+                 sizeof (state->next_read_secret),
+                 next_read_secret,
+                 state->read_secret_len);
   commit_keys_preserving_hp (&state->next_read_keys, &next_read_keys);
   state->next_read_keys_valid = 1;
 
   reset_key_update_state (state, received_phase);
 
-  clear_temp_secrets (new_read_secret, new_write_secret, next_read_secret,
-                      QUIC_SECRET_MAX_LEN);
+  clear_temp_secrets (
+      new_read_secret, new_write_secret, next_read_secret, QUIC_SECRET_MAX_LEN);
   return QUIC_CRYPTO_OK;
 }
 

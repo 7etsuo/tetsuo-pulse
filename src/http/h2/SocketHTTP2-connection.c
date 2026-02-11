@@ -656,7 +656,9 @@ SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
 
   assert (conn);
 
-  payload_len = count * HTTP2_SETTING_ENTRY_SIZE;
+  if (__builtin_mul_overflow (
+          count, (size_t)HTTP2_SETTING_ENTRY_SIZE, &payload_len))
+    return -1;
   payload = Arena_alloc (conn->arena, payload_len, __FILE__, __LINE__);
   if (!payload)
     return -1;
@@ -735,7 +737,9 @@ SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
 
   assert (conn);
 
-  payload_len = HTTP2_GOAWAY_HEADER_SIZE + debug_len;
+  if (__builtin_add_overflow (
+          (size_t)HTTP2_GOAWAY_HEADER_SIZE, debug_len, &payload_len))
+    return -1;
   payload = Arena_alloc (conn->arena, payload_len, __FILE__, __LINE__);
   if (!payload)
     return -1;

@@ -1071,7 +1071,10 @@ base64_decode_char (unsigned char c,
  * Larger base64 inputs must provide explicit length via the input_len parameter
  * rather than relying on NUL-termination scanning.
  */
-#define BASE64_MAX_SCAN_LENGTH 65536
+/* Cap the auto-detect scan to 4 KB.  This covers ~3 KB decoded payload,
+ * sufficient for tokens/keys/certs.  Larger blobs must provide explicit
+ * length.  The previous 64 KB limit was a CPU-exhaustion DoS vector. */
+#define BASE64_MAX_SCAN_LENGTH 4096
 
 static int
 base64_validate_input (const char *input, size_t *input_len)
@@ -1421,14 +1424,16 @@ SocketCrypto_secure_compare (const void *a, const void *b, size_t len)
 #if SOCKET_HAS_TLS
   return CRYPTO_memcmp (a, b, len);
 #else
-  const unsigned char *ua = (const unsigned char *)a;
-  const unsigned char *ub = (const unsigned char *)b;
-  unsigned char result = 0;
+  const volatile unsigned char *ua = (const volatile unsigned char *)a;
+  const volatile unsigned char *ub = (const volatile unsigned char *)b;
+  volatile unsigned char result = 0;
   size_t i;
 
   for (i = 0; i < len; i++)
     result |= ua[i] ^ ub[i];
 
+  /* Use volatile to prevent the compiler from optimizing the
+   * comparison into a branch based on the value of result. */
   return result != 0;
 #endif
 }

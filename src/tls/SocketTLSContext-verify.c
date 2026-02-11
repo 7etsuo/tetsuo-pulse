@@ -42,7 +42,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
  */
 #ifndef SOCKET_TLS_LEGACY_CIPHER_LIST
 #define SOCKET_TLS_LEGACY_CIPHER_LIST \
-  "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA"
+  "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA:!CBC"
 #endif
 
 static int internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx);

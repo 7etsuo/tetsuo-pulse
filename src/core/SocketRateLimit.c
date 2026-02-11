@@ -80,11 +80,17 @@ ratelimit_calculate_elapsed (const T limiter, int64_t now_ms)
 
   elapsed_ms = now_ms - limiter->last_refill_ms;
 
-  /* Clamp to prevent token burst from clock jumps */
+  /* Reject backward clock jumps: treat as zero elapsed (no refill).
+   * Clamping backward jumps to 1 second filled the bucket on every
+   * NTP adjustment, bypassing the rate limit. */
+  if (elapsed_ms < 0)
+    return 0;
+
+  /* Clamp forward jumps to prevent token burst */
   if (elapsed_ms > SOCKET_MS_PER_SECOND)
     elapsed_ms = SOCKET_MS_PER_SECOND;
 
-  return (elapsed_ms > 0) ? elapsed_ms : 0;
+  return elapsed_ms;
 }
 
 /* Add tokens to bucket with overflow protection (caller must hold mutex) */
