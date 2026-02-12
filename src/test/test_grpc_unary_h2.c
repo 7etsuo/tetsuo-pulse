@@ -114,7 +114,8 @@ TEST (grpc_unary_h2_rejects_oversized_outbound_payload_without_network)
 typedef enum
 {
   GRPC_H2_SCENARIO_SUCCESS = 0,
-  GRPC_H2_SCENARIO_HTTP503_BAD_BODY = 1
+  GRPC_H2_SCENARIO_HTTP503_BAD_BODY = 1,
+  GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR = 2
 } GRPC_H2_Scenario;
 
 typedef struct
@@ -421,6 +422,35 @@ send_http503_bad_body_response (Socket_T client)
   return 0;
 }
 
+static int
+send_trailers_only_error_response (Socket_T client)
+{
+  SocketHPACK_Header trailers_only_headers[] = {
+    { ":status", 7, "200", 3, 0 },
+    { "content-type", 12, "application/grpc", 16, 0 },
+    { "grpc-status", 11, "14", 2, 0 },
+    { "grpc-message", 12, "upstream unavailable", 20, 0 },
+  };
+  unsigned char header_block[384];
+  size_t header_block_len = 0;
+
+  if (encode_hpack_block (
+          trailers_only_headers,
+          sizeof (trailers_only_headers) / sizeof (trailers_only_headers[0]),
+          header_block,
+          sizeof (header_block),
+          &header_block_len)
+      != 0)
+    return -1;
+
+  return send_h2_frame (client,
+                        HTTP2_FRAME_HEADERS,
+                        HTTP2_FLAG_END_HEADERS | HTTP2_FLAG_END_STREAM,
+                        1,
+                        header_block,
+                        header_block_len);
+}
+
 static void *
 grpc_h2_server_thread (void *arg)
 {
@@ -486,8 +516,10 @@ grpc_h2_server_thread (void *arg)
 
   if (server->scenario == GRPC_H2_SCENARIO_SUCCESS)
     (void)send_success_response (client);
-  else
+  else if (server->scenario == GRPC_H2_SCENARIO_HTTP503_BAD_BODY)
     (void)send_http503_bad_body_response (client);
+  else
+    (void)send_trailers_only_error_response (client);
 
   usleep (20000);
   Socket_free (&client);
@@ -726,6 +758,89 @@ TEST (grpc_unary_h2_http_status_fallback_on_non_grpc_body)
     ASSERT_EQ (0,
                strcmp (
                    SocketGRPC_Status_message (&status), "Service unavailable"));
+  }
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_handles_trailers_only_error_response)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x03 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, rc);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+
+  {
+    SocketGRPC_Status status = SocketGRPC_Call_status (call);
+    SocketGRPC_Trailers_T trailers = SocketGRPC_Call_trailers (call);
+    ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, status.code);
+    ASSERT_EQ (0,
+               strcmp (SocketGRPC_Status_message (&status),
+                       "upstream unavailable"));
+    ASSERT_NOT_NULL (trailers);
+    ASSERT (SocketGRPC_Trailers_has_status (trailers));
+    ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, SocketGRPC_Trailers_status (trailers));
+    ASSERT_EQ (0,
+               strcmp (SocketGRPC_Trailers_message (trailers),
+                       "upstream unavailable"));
   }
 
   Arena_dispose (&arena);
