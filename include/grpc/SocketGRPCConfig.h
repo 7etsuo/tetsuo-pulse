@@ -42,6 +42,27 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 #define SOCKET_GRPC_DEFAULT_MAX_OUTBOUND_MESSAGE_BYTES (4U * 1024U * 1024U)
 #endif
 
+#ifndef SOCKET_GRPC_DEFAULT_ENABLE_RESPONSE_DECOMPRESSION
+#define SOCKET_GRPC_DEFAULT_ENABLE_RESPONSE_DECOMPRESSION 1
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_ENABLE_REQUEST_COMPRESSION
+#define SOCKET_GRPC_DEFAULT_ENABLE_REQUEST_COMPRESSION 0
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES
+#define SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES \
+    (SOCKET_GRPC_DEFAULT_MAX_INBOUND_MESSAGE_BYTES)
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_MAX_CUMULATIVE_INFLIGHT_BYTES
+#define SOCKET_GRPC_DEFAULT_MAX_CUMULATIVE_INFLIGHT_BYTES (8U * 1024U * 1024U)
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSION_RATIO
+#define SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSION_RATIO 0.0
+#endif
+
 #ifndef SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES
 #define SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES 64U
 #endif
@@ -139,6 +160,11 @@ typedef struct
   SocketTLSContext_T tls_context;
   int verify_peer;
   int allow_http2_cleartext;
+  int enable_response_decompression;
+  int enable_request_compression;
+  size_t max_decompressed_message_bytes;
+  size_t max_cumulative_inflight_bytes;
+  double max_decompression_ratio;
 } SocketGRPC_ChannelConfig;
 
 /**

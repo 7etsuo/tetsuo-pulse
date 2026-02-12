@@ -6,6 +6,7 @@
 
 #include "grpc/SocketGRPC.h"
 #include "grpc/SocketGRPCWire.h"
+#include "deflate/SocketDeflate.h"
 #include "test/Test.h"
 
 #include <stdint.h>
@@ -26,12 +27,14 @@ TEST (grpc_call_metadata_enforces_channel_limit)
 
   client = SocketGRPC_Client_new (NULL);
   ASSERT_NOT_NULL (client);
-  channel = SocketGRPC_Channel_new (client, "dns:///example.test", &channel_cfg);
+  channel
+      = SocketGRPC_Channel_new (client, "dns:///example.test", &channel_cfg);
   ASSERT_NOT_NULL (channel);
   call = SocketGRPC_Call_new (channel, "/test.Service/Ping", NULL);
   ASSERT_NOT_NULL (call);
 
-  ASSERT_EQ (0, SocketGRPC_Call_metadata_add_ascii (call, "x-client-id", "abc"));
+  ASSERT_EQ (0,
+             SocketGRPC_Call_metadata_add_ascii (call, "x-client-id", "abc"));
   ASSERT_EQ (-1,
              SocketGRPC_Call_metadata_add_binary (
                  call, "trace-bin", binv, sizeof (binv)));
@@ -126,7 +129,11 @@ typedef enum
   GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG = 7,
   GRPC_H2_SCENARIO_RETRY_UNAVAILABLE_THEN_SUCCESS = 8,
   GRPC_H2_SCENARIO_RETRY_ALWAYS_UNAVAILABLE = 9,
-  GRPC_H2_SCENARIO_RETRY_NON_RETRYABLE = 10
+  GRPC_H2_SCENARIO_RETRY_NON_RETRYABLE = 10,
+  GRPC_H2_SCENARIO_GZIP_RESPONSE = 11,
+  GRPC_H2_SCENARIO_GZIP_LARGE_RESPONSE = 12,
+  GRPC_H2_SCENARIO_UNSUPPORTED_RESPONSE_ENCODING = 13,
+  GRPC_H2_SCENARIO_STREAM_GZIP_SERVER_STREAM = 14
 } GRPC_H2_Scenario;
 
 typedef struct
@@ -141,6 +148,9 @@ typedef struct
   volatile int handled_connections;
   int observed_previous_attempt_count;
   int observed_previous_attempts[GRPC_H2_MAX_OBSERVED_ATTEMPTS];
+  int observed_request_frame_compressed;
+  int observed_request_grpc_encoding_gzip;
+  int observed_request_accepts_gzip;
 } GRPC_H2_Server;
 
 static char cert_path[160];
@@ -151,8 +161,10 @@ create_temp_cert_files (void)
 {
   char cmd[640];
 
-  snprintf (
-      cert_path, sizeof (cert_path), "/tmp/test_grpc_h2_cert_%d.pem", getpid ());
+  snprintf (cert_path,
+            sizeof (cert_path),
+            "/tmp/test_grpc_h2_cert_%d.pem",
+            getpid ());
   snprintf (
       key_path, sizeof (key_path), "/tmp/test_grpc_h2_key_%d.pem", getpid ());
 
@@ -424,9 +436,46 @@ h2_extract_header_block_fragment (const unsigned char *payload,
 }
 
 static int
+header_value_contains_token_ci (const char *value,
+                                size_t value_len,
+                                const char *token)
+{
+  size_t token_len;
+  size_t i = 0;
+
+  if (value == NULL || token == NULL)
+    return 0;
+  token_len = strlen (token);
+
+  while (i < value_len)
+    {
+      size_t start;
+      size_t end;
+
+      while (i < value_len
+             && (value[i] == ',' || value[i] == ' ' || value[i] == '\t'))
+        i++;
+      start = i;
+      while (i < value_len && value[i] != ',')
+        i++;
+      end = i;
+      while (end > start && (value[end - 1U] == ' ' || value[end - 1U] == '\t'))
+        end--;
+
+      if (end - start == token_len
+          && strncasecmp (value + start, token, token_len) == 0)
+        return 1;
+    }
+
+  return 0;
+}
+
+static int
 h2_decode_previous_attempts_header (const unsigned char *header_block,
                                     size_t header_block_len,
-                                    int *previous_attempts_out)
+                                    int *previous_attempts_out,
+                                    int *grpc_encoding_gzip_out,
+                                    int *grpc_accepts_gzip_out)
 {
   SocketHPACK_DecoderConfig cfg;
   SocketHPACK_Decoder_T decoder = NULL;
@@ -439,6 +488,10 @@ h2_decode_previous_attempts_header (const unsigned char *header_block,
     return -1;
 
   *previous_attempts_out = -1;
+  if (grpc_encoding_gzip_out != NULL)
+    *grpc_encoding_gzip_out = 0;
+  if (grpc_accepts_gzip_out != NULL)
+    *grpc_accepts_gzip_out = 0;
 
   arena = Arena_new ();
   if (arena == NULL)
@@ -471,9 +524,23 @@ h2_decode_previous_attempts_header (const unsigned char *header_block,
       const SocketHPACK_Header *h = &headers[i];
       if (h->name == NULL || h->value == NULL)
         continue;
+      if (grpc_encoding_gzip_out != NULL
+          && h->name_len == strlen ("grpc-encoding")
+          && strncasecmp (h->name, "grpc-encoding", h->name_len) == 0
+          && h->value_len == strlen ("gzip")
+          && strncasecmp (h->value, "gzip", h->value_len) == 0)
+        {
+          *grpc_encoding_gzip_out = 1;
+        }
+      if (grpc_accepts_gzip_out != NULL
+          && h->name_len == strlen ("grpc-accept-encoding")
+          && strncasecmp (h->name, "grpc-accept-encoding", h->name_len) == 0
+          && header_value_contains_token_ci (h->value, h->value_len, "gzip"))
+        {
+          *grpc_accepts_gzip_out = 1;
+        }
       if (h->name_len == strlen ("grpc-previous-rpc-attempts")
-          && memcmp (
-                 h->name, "grpc-previous-rpc-attempts", h->name_len) == 0)
+          && memcmp (h->name, "grpc-previous-rpc-attempts", h->name_len) == 0)
         {
           char value_buf[32];
           char *end = NULL;
@@ -512,7 +579,9 @@ static int
 consume_client_request_payload (Socket_T client,
                                 unsigned char **payload_out,
                                 size_t *payload_len_out,
-                                int *previous_attempts_out)
+                                int *previous_attempts_out,
+                                int *grpc_encoding_gzip_out,
+                                int *grpc_accepts_gzip_out)
 {
   unsigned char *payload_buffer = NULL;
   size_t payload_len = 0;
@@ -528,6 +597,10 @@ consume_client_request_payload (Socket_T client,
   *payload_len_out = 0;
   if (previous_attempts_out != NULL)
     *previous_attempts_out = -1;
+  if (grpc_encoding_gzip_out != NULL)
+    *grpc_encoding_gzip_out = 0;
+  if (grpc_accepts_gzip_out != NULL)
+    *grpc_accepts_gzip_out = 0;
 
   while (loops++ < 256)
     {
@@ -539,12 +612,8 @@ consume_client_request_payload (Socket_T client,
 
       if (fh.type == HTTP2_FRAME_SETTINGS && (fh.flags & HTTP2_FLAG_ACK) == 0)
         {
-          if (send_h2_frame (client,
-                             HTTP2_FRAME_SETTINGS,
-                             HTTP2_FLAG_ACK,
-                             0,
-                             NULL,
-                             0)
+          if (send_h2_frame (
+                  client, HTTP2_FRAME_SETTINGS, HTTP2_FLAG_ACK, 0, NULL, 0)
               != 0)
             {
               free (payload);
@@ -568,8 +637,11 @@ consume_client_request_payload (Socket_T client,
                   free (payload);
                   goto fail;
                 }
-              if (h2_decode_previous_attempts_header (
-                      header_fragment, header_fragment_len, previous_attempts_out)
+              if (h2_decode_previous_attempts_header (header_fragment,
+                                                      header_fragment_len,
+                                                      previous_attempts_out,
+                                                      grpc_encoding_gzip_out,
+                                                      grpc_accepts_gzip_out)
                   != 0)
                 {
                   free (payload);
@@ -582,8 +654,11 @@ consume_client_request_payload (Socket_T client,
         }
       else if (fh.stream_id == 1U && fh.type == HTTP2_FRAME_DATA)
         {
-          if (buffer_append (
-                  &payload_buffer, &payload_len, &payload_cap, payload, fh.length)
+          if (buffer_append (&payload_buffer,
+                             &payload_len,
+                             &payload_cap,
+                             payload,
+                             fh.length)
               != 0)
             {
               free (payload);
@@ -626,8 +701,11 @@ grpc_count_request_messages (const unsigned char *payload,
     {
       SocketGRPC_FrameView frame;
       size_t consumed = 0;
-      SocketGRPC_WireResult rc = SocketGRPC_Frame_parse (
-          payload + offset, payload_len - offset, (1024U * 1024U), &frame, &consumed);
+      SocketGRPC_WireResult rc = SocketGRPC_Frame_parse (payload + offset,
+                                                         payload_len - offset,
+                                                         (1024U * 1024U),
+                                                         &frame,
+                                                         &consumed);
       if (rc != SOCKET_GRPC_WIRE_OK || frame.compressed != 0 || consumed == 0)
         return -1;
       count++;
@@ -670,25 +748,14 @@ encode_hpack_block (const SocketHPACK_Header *headers,
       return -1;
     }
 
-  written = SocketHPACK_Encoder_encode (enc, headers, header_count, out, out_cap);
+  written
+      = SocketHPACK_Encoder_encode (enc, headers, header_count, out, out_cap);
   SocketHPACK_Encoder_free (&enc);
   Arena_dispose (&arena);
   if (written < 0)
     return -1;
   *written_out = (size_t)written;
   return 0;
-}
-
-static int
-consume_client_request (Socket_T client, int *previous_attempts_out)
-{
-  unsigned char *payload = NULL;
-  size_t payload_len = 0;
-  int rc = consume_client_request_payload (
-      client, &payload, &payload_len, previous_attempts_out);
-  free (payload);
-  (void)payload_len;
-  return rc;
 }
 
 static int
@@ -706,7 +773,8 @@ send_success_response (Socket_T client)
   size_t frame_len = 0;
 
   if (encode_hpack_block (response_headers,
-                          sizeof (response_headers) / sizeof (response_headers[0]),
+                          sizeof (response_headers)
+                              / sizeof (response_headers[0]),
                           header_block,
                           sizeof (header_block),
                           &header_block_len)
@@ -715,6 +783,288 @@ send_success_response (Socket_T client)
   if (SocketGRPC_Frame_encode (0,
                                response_payload,
                                sizeof (response_payload),
+                               grpc_frame,
+                               sizeof (grpc_frame),
+                               &frame_len)
+      != SOCKET_GRPC_WIRE_OK)
+    return -1;
+
+  if (send_h2_frame (client,
+                     HTTP2_FRAME_HEADERS,
+                     HTTP2_FLAG_END_HEADERS,
+                     1,
+                     header_block,
+                     header_block_len)
+      != 0)
+    return -1;
+  if (send_h2_frame (client,
+                     HTTP2_FRAME_DATA,
+                     HTTP2_FLAG_END_STREAM,
+                     1,
+                     grpc_frame,
+                     frame_len)
+      != 0)
+    return -1;
+  return 0;
+}
+
+static size_t
+test_write_gzip_header (uint8_t *output, size_t output_len)
+{
+  if (output == NULL || output_len < GZIP_HEADER_MIN_SIZE)
+    return 0;
+
+  output[0] = GZIP_MAGIC_0;
+  output[1] = GZIP_MAGIC_1;
+  output[2] = GZIP_METHOD_DEFLATE;
+  output[3] = 0;
+  output[4] = 0;
+  output[5] = 0;
+  output[6] = 0;
+  output[7] = 0;
+  output[8] = 0;
+  output[9] = GZIP_OS_UNKNOWN;
+  return GZIP_HEADER_MIN_SIZE;
+}
+
+static size_t
+test_write_gzip_trailer (uint8_t *output,
+                         size_t output_len,
+                         uint32_t crc,
+                         uint32_t size)
+{
+  if (output == NULL || output_len < GZIP_TRAILER_SIZE)
+    return 0;
+
+  output[0] = (uint8_t)(crc & 0xFFU);
+  output[1] = (uint8_t)((crc >> 8) & 0xFFU);
+  output[2] = (uint8_t)((crc >> 16) & 0xFFU);
+  output[3] = (uint8_t)((crc >> 24) & 0xFFU);
+  output[4] = (uint8_t)(size & 0xFFU);
+  output[5] = (uint8_t)((size >> 8) & 0xFFU);
+  output[6] = (uint8_t)((size >> 16) & 0xFFU);
+  output[7] = (uint8_t)((size >> 24) & 0xFFU);
+  return GZIP_TRAILER_SIZE;
+}
+
+static int
+test_gzip_compress_payload (const uint8_t *input,
+                            size_t input_len,
+                            unsigned char **output_out,
+                            size_t *output_len_out)
+{
+  Arena_T arena = NULL;
+  SocketDeflate_Deflater_T deflater = NULL;
+  SocketDeflate_Result res;
+  unsigned char *output = NULL;
+  size_t output_cap;
+  size_t output_len = 0;
+  size_t consumed = 0;
+  size_t written = 0;
+  uint32_t crc;
+
+  if ((input == NULL && input_len != 0) || output_out == NULL
+      || output_len_out == NULL)
+    return -1;
+
+  arena = Arena_new ();
+  if (arena == NULL)
+    return -1;
+
+  deflater = SocketDeflate_Deflater_new (arena, DEFLATE_LEVEL_DEFAULT);
+  if (deflater == NULL)
+    {
+      Arena_dispose (&arena);
+      return -1;
+    }
+
+  output_cap = SocketDeflate_compress_bound (input_len);
+  if (output_cap > SIZE_MAX - (GZIP_HEADER_MIN_SIZE + GZIP_TRAILER_SIZE))
+    {
+      Arena_dispose (&arena);
+      return -1;
+    }
+  output_cap += GZIP_HEADER_MIN_SIZE + GZIP_TRAILER_SIZE;
+  output = (unsigned char *)malloc (output_cap);
+  if (output == NULL)
+    {
+      Arena_dispose (&arena);
+      return -1;
+    }
+
+  if (test_write_gzip_header (output, output_cap) == 0)
+    {
+      free (output);
+      Arena_dispose (&arena);
+      return -1;
+    }
+  output_len = GZIP_HEADER_MIN_SIZE;
+
+  res = SocketDeflate_Deflater_deflate (deflater,
+                                        input,
+                                        input_len,
+                                        &consumed,
+                                        output + output_len,
+                                        output_cap - output_len,
+                                        &written);
+  output_len += written;
+  if (res != DEFLATE_OK || consumed != input_len)
+    {
+      free (output);
+      Arena_dispose (&arena);
+      return -1;
+    }
+
+  res = SocketDeflate_Deflater_finish (
+      deflater, output + output_len, output_cap - output_len, &written);
+  output_len += written;
+  if (res != DEFLATE_OK || output_cap - output_len < GZIP_TRAILER_SIZE)
+    {
+      free (output);
+      Arena_dispose (&arena);
+      return -1;
+    }
+
+  crc = SocketDeflate_crc32 (0, input, input_len);
+  if (test_write_gzip_trailer (output + output_len,
+                               output_cap - output_len,
+                               crc,
+                               (uint32_t)input_len)
+      == 0)
+    {
+      free (output);
+      Arena_dispose (&arena);
+      return -1;
+    }
+  output_len += GZIP_TRAILER_SIZE;
+
+  Arena_dispose (&arena);
+  *output_out = output;
+  *output_len_out = output_len;
+  return 0;
+}
+
+static int
+grpc_unary_request_is_compressed (const unsigned char *payload,
+                                  size_t payload_len,
+                                  int *compressed_out)
+{
+  SocketGRPC_FrameView frame;
+  size_t consumed = 0;
+  SocketGRPC_WireResult rc;
+
+  if ((payload == NULL && payload_len != 0) || compressed_out == NULL)
+    return -1;
+
+  rc = SocketGRPC_Frame_parse (
+      payload, payload_len, 1024U * 1024U, &frame, &consumed);
+  if (rc != SOCKET_GRPC_WIRE_OK || consumed != payload_len)
+    return -1;
+  *compressed_out = frame.compressed ? 1 : 0;
+  return 0;
+}
+
+static int
+send_gzip_response (Socket_T client, const uint8_t *payload, size_t payload_len)
+{
+  SocketHPACK_Header response_headers[] = {
+    { ":status", 7, "200", 3, 0 },
+    { "content-type", 12, "application/grpc", 16, 0 },
+    { "grpc-encoding", 13, "gzip", 4, 0 },
+  };
+  unsigned char header_block[512];
+  unsigned char *compressed_payload = NULL;
+  unsigned char *grpc_frame = NULL;
+  size_t header_block_len = 0;
+  size_t compressed_len = 0;
+  size_t frame_len = 0;
+  size_t frame_cap;
+  int rc = -1;
+
+  if (encode_hpack_block (response_headers,
+                          sizeof (response_headers)
+                              / sizeof (response_headers[0]),
+                          header_block,
+                          sizeof (header_block),
+                          &header_block_len)
+      != 0)
+    return -1;
+
+  if (test_gzip_compress_payload (
+          payload, payload_len, &compressed_payload, &compressed_len)
+      != 0)
+    return -1;
+
+  frame_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + compressed_len;
+  grpc_frame = (unsigned char *)malloc (frame_cap);
+  if (grpc_frame == NULL)
+    goto cleanup;
+
+  if (SocketGRPC_Frame_encode (1,
+                               compressed_payload,
+                               (uint32_t)compressed_len,
+                               grpc_frame,
+                               frame_cap,
+                               &frame_len)
+      != SOCKET_GRPC_WIRE_OK)
+    {
+      goto cleanup;
+    }
+
+  if (send_h2_frame (client,
+                     HTTP2_FRAME_HEADERS,
+                     HTTP2_FLAG_END_HEADERS,
+                     1,
+                     header_block,
+                     header_block_len)
+      != 0)
+    {
+      goto cleanup;
+    }
+  if (send_h2_frame (client,
+                     HTTP2_FRAME_DATA,
+                     HTTP2_FLAG_END_STREAM,
+                     1,
+                     grpc_frame,
+                     frame_len)
+      != 0)
+    {
+      goto cleanup;
+    }
+
+  rc = 0;
+
+cleanup:
+  free (compressed_payload);
+  free (grpc_frame);
+  return rc;
+}
+
+static int
+send_unsupported_encoding_response (Socket_T client)
+{
+  static const uint8_t payload[] = { 0x08, 0x2C };
+  SocketHPACK_Header response_headers[] = {
+    { ":status", 7, "200", 3, 0 },
+    { "content-type", 12, "application/grpc", 16, 0 },
+    { "grpc-encoding", 13, "br", 2, 0 },
+  };
+  unsigned char header_block[512];
+  unsigned char grpc_frame[128];
+  size_t header_block_len = 0;
+  size_t frame_len = 0;
+
+  if (encode_hpack_block (response_headers,
+                          sizeof (response_headers)
+                              / sizeof (response_headers[0]),
+                          header_block,
+                          sizeof (header_block),
+                          &header_block_len)
+      != 0)
+    return -1;
+  if (SocketGRPC_Frame_encode (0,
+                               payload,
+                               (uint32_t)sizeof (payload),
                                grpc_frame,
                                sizeof (grpc_frame),
                                &frame_len)
@@ -752,7 +1102,8 @@ send_http503_bad_body_response (Socket_T client)
   size_t header_block_len = 0;
 
   if (encode_hpack_block (response_headers,
-                          sizeof (response_headers) / sizeof (response_headers[0]),
+                          sizeof (response_headers)
+                              / sizeof (response_headers[0]),
                           header_block,
                           sizeof (header_block),
                           &header_block_len)
@@ -838,7 +1189,47 @@ send_stream_initial_headers (Socket_T client)
   size_t header_block_len = 0;
 
   if (encode_hpack_block (response_headers,
-                          sizeof (response_headers) / sizeof (response_headers[0]),
+                          sizeof (response_headers)
+                              / sizeof (response_headers[0]),
+                          header_block,
+                          sizeof (header_block),
+                          &header_block_len)
+      != 0)
+    return -1;
+
+  return send_h2_frame (client,
+                        HTTP2_FRAME_HEADERS,
+                        HTTP2_FLAG_END_HEADERS,
+                        1,
+                        header_block,
+                        header_block_len);
+}
+
+static int
+send_stream_initial_headers_with_encoding (Socket_T client,
+                                           const char *encoding)
+{
+  SocketHPACK_Header response_headers[3];
+  unsigned char header_block[256];
+  size_t header_count = 0;
+  size_t header_block_len = 0;
+
+  if (client == NULL)
+    return -1;
+
+  response_headers[header_count++]
+      = (SocketHPACK_Header){ ":status", 7, "200", 3, 0 };
+  response_headers[header_count++]
+      = (SocketHPACK_Header){ "content-type", 12, "application/grpc", 16, 0 };
+  if (encoding != NULL)
+    {
+      response_headers[header_count++] = (SocketHPACK_Header){
+        "grpc-encoding", 13, encoding, strlen (encoding), 0
+      };
+    }
+
+  if (encode_hpack_block (response_headers,
+                          header_count,
                           header_block,
                           sizeof (header_block),
                           &header_block_len)
@@ -874,23 +1265,70 @@ send_stream_data_message (Socket_T client,
 }
 
 static int
-send_stream_status_trailers (Socket_T client, const char *status, const char *message)
+send_stream_gzip_data_message (Socket_T client,
+                               const uint8_t *payload,
+                               size_t payload_len)
+{
+  unsigned char *compressed_payload = NULL;
+  unsigned char *framed = NULL;
+  size_t compressed_len = 0;
+  size_t framed_len = 0;
+  size_t framed_cap;
+  int rc = -1;
+
+  if (test_gzip_compress_payload (
+          payload, payload_len, &compressed_payload, &compressed_len)
+      != 0)
+    return -1;
+
+  framed_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + compressed_len;
+  framed = (unsigned char *)malloc (framed_cap);
+  if (framed == NULL)
+    goto cleanup;
+  if (SocketGRPC_Frame_encode (1,
+                               compressed_payload,
+                               (uint32_t)compressed_len,
+                               framed,
+                               framed_cap,
+                               &framed_len)
+      != SOCKET_GRPC_WIRE_OK)
+    goto cleanup;
+
+  if (send_h2_frame (client, HTTP2_FRAME_DATA, 0, 1, framed, framed_len) != 0)
+    goto cleanup;
+
+  rc = 0;
+
+cleanup:
+  free (compressed_payload);
+  free (framed);
+  return rc;
+}
+
+static int
+send_stream_status_trailers (Socket_T client,
+                             const char *status,
+                             const char *message)
 {
   SocketHPACK_Header trailers[2];
   unsigned char header_block[256];
   size_t trailer_count = 0;
   size_t header_block_len = 0;
 
-  trailers[trailer_count++] = (SocketHPACK_Header){ "grpc-status", 11,
-                                                    status, strlen (status), 0 };
+  trailers[trailer_count++]
+      = (SocketHPACK_Header){ "grpc-status", 11, status, strlen (status), 0 };
   if (message != NULL)
     {
-      trailers[trailer_count++]
-          = (SocketHPACK_Header){ "grpc-message", 12, message, strlen (message), 0 };
+      trailers[trailer_count++] = (SocketHPACK_Header){
+        "grpc-message", 12, message, strlen (message), 0
+      };
     }
 
-  if (encode_hpack_block (
-          trailers, trailer_count, header_block, sizeof (header_block), &header_block_len)
+  if (encode_hpack_block (trailers,
+                          trailer_count,
+                          header_block,
+                          sizeof (header_block),
+                          &header_block_len)
       != 0)
     return -1;
 
@@ -914,9 +1352,7 @@ send_stream_client_upload_response (Socket_T client,
 
   if (send_stream_initial_headers (client) != 0)
     return -1;
-  if (send_stream_data_message (
-          client, ack_payload, sizeof (ack_payload))
-      != 0)
+  if (send_stream_data_message (client, ack_payload, sizeof (ack_payload)) != 0)
     return -1;
   return send_stream_status_trailers (client, "0", NULL);
 }
@@ -935,6 +1371,21 @@ send_stream_server_stream_response (Socket_T client)
   if (send_stream_data_message (client, msg2, sizeof (msg2)) != 0)
     return -1;
   if (send_stream_data_message (client, msg3, sizeof (msg3)) != 0)
+    return -1;
+  return send_stream_status_trailers (client, "0", NULL);
+}
+
+static int
+send_stream_server_stream_gzip_response (Socket_T client)
+{
+  static const uint8_t msg1[] = { 0x08, 0x01 };
+  static const uint8_t msg2[] = { 0x08, 0x02 };
+
+  if (send_stream_initial_headers_with_encoding (client, "gzip") != 0)
+    return -1;
+  if (send_stream_gzip_data_message (client, msg1, sizeof (msg1)) != 0)
+    return -1;
+  if (send_stream_gzip_data_message (client, msg2, sizeof (msg2)) != 0)
     return -1;
   return send_stream_status_trailers (client, "0", NULL);
 }
@@ -961,7 +1412,10 @@ grpc_h2_scenario_is_unary (GRPC_H2_Scenario scenario)
          || scenario == GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG
          || scenario == GRPC_H2_SCENARIO_RETRY_UNAVAILABLE_THEN_SUCCESS
          || scenario == GRPC_H2_SCENARIO_RETRY_ALWAYS_UNAVAILABLE
-         || scenario == GRPC_H2_SCENARIO_RETRY_NON_RETRYABLE;
+         || scenario == GRPC_H2_SCENARIO_RETRY_NON_RETRYABLE
+         || scenario == GRPC_H2_SCENARIO_GZIP_RESPONSE
+         || scenario == GRPC_H2_SCENARIO_GZIP_LARGE_RESPONSE
+         || scenario == GRPC_H2_SCENARIO_UNSUPPORTED_RESPONSE_ENCODING;
 }
 
 static int
@@ -1008,8 +1462,32 @@ grpc_h2_server_handle_client (GRPC_H2_Server *server,
   if (grpc_h2_scenario_is_unary (server->scenario))
     {
       int previous_attempts = -1;
-      if (consume_client_request (client, &previous_attempts) != 0)
-        return -1;
+      unsigned char *request_payload = NULL;
+      size_t request_payload_len = 0;
+      int request_compressed = -1;
+      int request_encoding_gzip = 0;
+      int request_accepts_gzip = 0;
+
+      if (consume_client_request_payload (client,
+                                          &request_payload,
+                                          &request_payload_len,
+                                          &previous_attempts,
+                                          &request_encoding_gzip,
+                                          &request_accepts_gzip)
+          != 0)
+        {
+          free (request_payload);
+          return -1;
+        }
+
+      if (request_payload_len > 0
+          && grpc_unary_request_is_compressed (
+                 request_payload, request_payload_len, &request_compressed)
+                 != 0)
+        {
+          free (request_payload);
+          return -1;
+        }
 
       if (connection_index >= 0
           && connection_index < GRPC_H2_MAX_OBSERVED_ATTEMPTS)
@@ -1019,6 +1497,10 @@ grpc_h2_server_handle_client (GRPC_H2_Server *server,
           if (server->observed_previous_attempt_count < (connection_index + 1))
             server->observed_previous_attempt_count = connection_index + 1;
         }
+      server->observed_request_frame_compressed = request_compressed;
+      server->observed_request_grpc_encoding_gzip = request_encoding_gzip;
+      server->observed_request_accepts_gzip = request_accepts_gzip;
+      free (request_payload);
 
       if (server->scenario == GRPC_H2_SCENARIO_SUCCESS)
         return send_success_response (client);
@@ -1050,6 +1532,27 @@ grpc_h2_server_handle_client (GRPC_H2_Server *server,
           return send_trailers_only_status_response (
               client, "14", "upstream unavailable");
         }
+      if (server->scenario == GRPC_H2_SCENARIO_GZIP_RESPONSE)
+        {
+          static const uint8_t gzip_payload[] = { 0x08, 0x2B };
+          return send_gzip_response (
+              client, gzip_payload, sizeof (gzip_payload));
+        }
+      if (server->scenario == GRPC_H2_SCENARIO_GZIP_LARGE_RESPONSE)
+        {
+          uint8_t *gzip_payload = (uint8_t *)malloc (32768U);
+          int rc = -1;
+          if (gzip_payload == NULL)
+            return -1;
+          memset (gzip_payload, 0x41, 32768U);
+          rc = send_gzip_response (client, gzip_payload, 32768U);
+          free (gzip_payload);
+          return rc;
+        }
+      if (server->scenario == GRPC_H2_SCENARIO_UNSUPPORTED_RESPONSE_ENCODING)
+        {
+          return send_unsupported_encoding_response (client);
+        }
 
       return send_trailers_only_status_response (
           client, "3", "invalid request");
@@ -1063,7 +1566,7 @@ grpc_h2_server_handle_client (GRPC_H2_Server *server,
       int rc = 0;
 
       if (consume_client_request_payload (
-              client, &request_payload, &request_payload_len, NULL)
+              client, &request_payload, &request_payload_len, NULL, NULL, NULL)
           != 0)
         {
           free (request_payload);
@@ -1085,6 +1588,10 @@ grpc_h2_server_handle_client (GRPC_H2_Server *server,
         {
           rc = send_stream_client_upload_response (
               client, request_messages, last_message_len);
+        }
+      else if (server->scenario == GRPC_H2_SCENARIO_STREAM_GZIP_SERVER_STREAM)
+        {
+          rc = send_stream_server_stream_gzip_response (client);
         }
       else if (server->scenario == GRPC_H2_SCENARIO_STREAM_SERVER_STREAM)
         {
@@ -1128,7 +1635,8 @@ grpc_h2_server_thread (void *arg)
           continue;
         }
 
-      if (grpc_h2_server_handle_client (server, client, server->handled_connections)
+      if (grpc_h2_server_handle_client (
+              server, client, server->handled_connections)
           != 0)
         {
           Socket_free (&client);
@@ -1162,6 +1670,9 @@ grpc_h2_server_start_with_limit (GRPC_H2_Server *server,
     server->max_connections = 1;
   for (i = 0; i < GRPC_H2_MAX_OBSERVED_ATTEMPTS; i++)
     server->observed_previous_attempts[i] = -1;
+  server->observed_request_frame_compressed = -1;
+  server->observed_request_grpc_encoding_gzip = 0;
+  server->observed_request_accepts_gzip = 0;
 
   TRY server->tls_ctx = SocketTLSContext_new_server (cert_path, key_path, NULL);
   EXCEPT (SocketTLS_Failed)
@@ -1179,8 +1690,7 @@ grpc_h2_server_start_with_limit (GRPC_H2_Server *server,
       return -1;
     }
 
-  TRY
-      Socket_setreuseaddr (server->listen_socket);
+  TRY Socket_setreuseaddr (server->listen_socket);
   Socket_bind (server->listen_socket, "127.0.0.1", 0);
   Socket_listen (server->listen_socket, 8);
   EXCEPT (Socket_Failed)
@@ -1194,7 +1704,8 @@ grpc_h2_server_start_with_limit (GRPC_H2_Server *server,
 
   server->port = ntohs (addr.sin_port);
 
-  if (pthread_create (&server->thread, NULL, grpc_h2_server_thread, server) != 0)
+  if (pthread_create (&server->thread, NULL, grpc_h2_server_thread, server)
+      != 0)
     {
       Socket_free (&server->listen_socket);
       SocketTLSContext_free (&server->tls_ctx);
@@ -1234,7 +1745,8 @@ metadata_contains_ascii (SocketGRPC_Metadata_T metadata,
     return 0;
   for (i = 0; i < SocketGRPC_Metadata_count (metadata); i++)
     {
-      const SocketGRPC_MetadataEntry *entry = SocketGRPC_Metadata_at (metadata, i);
+      const SocketGRPC_MetadataEntry *entry
+          = SocketGRPC_Metadata_at (metadata, i);
       if (entry == NULL || entry->key == NULL || entry->is_binary != 0)
         continue;
       if (strcmp (entry->key, key) == 0 && entry->value_len == strlen (value)
@@ -1291,7 +1803,8 @@ TEST (grpc_unary_h2_success_integration_roundtrip)
   ASSERT_NOT_NULL (channel);
   call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
   ASSERT_NOT_NULL (call);
-  ASSERT_EQ (0, SocketGRPC_Call_metadata_add_ascii (call, "x-client-id", "abc"));
+  ASSERT_EQ (0,
+             SocketGRPC_Call_metadata_add_ascii (call, "x-client-id", "abc"));
 
   arena = Arena_new ();
   ASSERT_NOT_NULL (arena);
@@ -1308,6 +1821,9 @@ TEST (grpc_unary_h2_success_integration_roundtrip)
   ASSERT_EQ (0x08, response_payload[0]);
   ASSERT_EQ (0x2A, response_payload[1]);
   ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (0, server.observed_request_frame_compressed);
+  ASSERT_EQ (0, server.observed_request_grpc_encoding_gzip);
+  ASSERT_EQ (1, server.observed_request_accepts_gzip);
 
   {
     SocketGRPC_Trailers_T trailers = SocketGRPC_Call_trailers (call);
@@ -1317,6 +1833,374 @@ TEST (grpc_unary_h2_success_integration_roundtrip)
     ASSERT (metadata_contains_ascii (
         SocketGRPC_Trailers_metadata (trailers), "x-trace-id", "trace-123"));
   }
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_gzip_roundtrip_with_request_compression)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x11 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_GZIP_RESPONSE) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.enable_request_compression = 1;
+  channel_cfg.enable_response_decompression = 1;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, rc);
+  ASSERT_NOT_NULL (response_payload);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x08, response_payload[0]);
+  ASSERT_EQ (0x2B, response_payload[1]);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (1, server.observed_request_frame_compressed);
+  ASSERT_EQ (1, server.observed_request_grpc_encoding_gzip);
+  ASSERT_EQ (1, server.observed_request_accepts_gzip);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_gzip_response_respects_decompressed_limit)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x12 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_GZIP_LARGE_RESPONSE) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.enable_response_decompression = 1;
+  channel_cfg.max_decompressed_message_bytes = 64;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, rc);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED,
+             SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_gzip_response_respects_ratio_guard)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x12 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  const char *status_message = NULL;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_GZIP_LARGE_RESPONSE) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.enable_response_decompression = 1;
+  channel_cfg.max_decompressed_message_bytes = 65536;
+  channel_cfg.max_decompression_ratio = 1.5;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, rc);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED,
+             SocketGRPC_Call_status (call).code);
+  status_message = SocketGRPC_Call_status (call).message;
+  ASSERT_NOT_NULL (status_message);
+  ASSERT (strstr (status_message, "ratio") != NULL);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_fail_closed_on_unsupported_response_encoding)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x13 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server,
+                            GRPC_H2_SCENARIO_UNSUPPORTED_RESPONSE_ENCODING)
+      != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.enable_response_decompression = 1;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_INTERNAL, rc);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_INTERNAL, SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_rejects_gzip_response_when_decompression_disabled)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x13 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_GZIP_RESPONSE) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.enable_response_decompression = 0;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_INTERNAL, rc);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_INTERNAL, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (1, server.observed_request_accepts_gzip);
 
   Arena_dispose (&arena);
   SocketGRPC_Call_free (&call);
@@ -1388,9 +2272,8 @@ TEST (grpc_unary_h2_http_status_fallback_on_non_grpc_body)
   {
     SocketGRPC_Status status = SocketGRPC_Call_status (call);
     ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, status.code);
-    ASSERT_EQ (0,
-               strcmp (
-                   SocketGRPC_Status_message (&status), "Service unavailable"));
+    ASSERT_EQ (
+        0, strcmp (SocketGRPC_Status_message (&status), "Service unavailable"));
   }
 
   Arena_dispose (&arena);
@@ -1465,12 +2348,13 @@ TEST (grpc_unary_h2_handles_trailers_only_error_response)
     SocketGRPC_Status status = SocketGRPC_Call_status (call);
     SocketGRPC_Trailers_T trailers = SocketGRPC_Call_trailers (call);
     ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, status.code);
-    ASSERT_EQ (0,
-               strcmp (SocketGRPC_Status_message (&status),
-                       "upstream unavailable"));
+    ASSERT_EQ (
+        0,
+        strcmp (SocketGRPC_Status_message (&status), "upstream unavailable"));
     ASSERT_NOT_NULL (trailers);
     ASSERT (SocketGRPC_Trailers_has_status (trailers));
-    ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, SocketGRPC_Trailers_status (trailers));
+    ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE,
+               SocketGRPC_Trailers_status (trailers));
     ASSERT_EQ (0,
                strcmp (SocketGRPC_Trailers_message (trailers),
                        "upstream unavailable"));
@@ -1507,7 +2391,8 @@ TEST (grpc_unary_h2_deadline_exceeded_maps_consistently)
       printf ("  [SKIP] Could not generate TLS cert fixtures\n");
       return;
     }
-  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG) != 0)
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG)
+      != 0)
     {
       printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
       cleanup_temp_cert_files ();
@@ -1580,7 +2465,8 @@ TEST (grpc_unary_h2_response_before_deadline_remains_ok)
       printf ("  [SKIP] Could not generate TLS cert fixtures\n");
       return;
     }
-  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_DELAYED_SUCCESS_SHORT) != 0)
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_DELAYED_SUCCESS_SHORT)
+      != 0)
     {
       printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
       cleanup_temp_cert_files ();
@@ -1923,7 +2809,8 @@ TEST (grpc_stream_h2_client_upload_roundtrip)
       printf ("  [SKIP] Could not generate TLS cert fixtures\n");
       return;
     }
-  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_CLIENT_UPLOAD) != 0)
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_CLIENT_UPLOAD)
+      != 0)
     {
       printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
       cleanup_temp_cert_files ();
@@ -2018,7 +2905,8 @@ TEST (grpc_stream_h2_server_streaming_messages)
       printf ("  [SKIP] Could not generate TLS cert fixtures\n");
       return;
     }
-  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM) != 0)
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM)
+      != 0)
     {
       printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
       cleanup_temp_cert_files ();
@@ -2046,8 +2934,9 @@ TEST (grpc_stream_h2_server_streaming_messages)
   arena = Arena_new ();
   ASSERT_NOT_NULL (arena);
 
-  ASSERT_EQ (
-      0, SocketGRPC_Call_send_message (call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0,
+             SocketGRPC_Call_send_message (
+                 call, request_payload, sizeof (request_payload)));
   ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
   ASSERT_EQ (-1, SocketGRPC_Call_send_message (call, request_payload, 1));
 
@@ -2071,6 +2960,94 @@ TEST (grpc_stream_h2_server_streaming_messages)
   ASSERT_EQ (0, done);
   ASSERT_EQ (2U, response_payload_len);
   ASSERT_EQ (0x03, response_payload[1]);
+
+  response_payload = NULL;
+  response_payload_len = 0;
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (1, done);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_stream_h2_gzip_server_streaming_messages)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  uint8_t request_payload[] = { 0x08, 0x01 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_GZIP_SERVER_STREAM)
+      != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.enable_response_decompression = 1;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Streamer/Subscribe", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_send_message (
+                 call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x01, response_payload[1]);
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x02, response_payload[1]);
 
   response_payload = NULL;
   response_payload_len = 0;
@@ -2139,8 +3116,9 @@ TEST (grpc_stream_h2_midstream_error_maps_to_trailers_status)
   arena = Arena_new ();
   ASSERT_NOT_NULL (arena);
 
-  ASSERT_EQ (
-      0, SocketGRPC_Call_send_message (call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0,
+             SocketGRPC_Call_send_message (
+                 call, request_payload, sizeof (request_payload)));
   ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
 
   ASSERT_EQ (0,
@@ -2159,7 +3137,8 @@ TEST (grpc_stream_h2_midstream_error_maps_to_trailers_status)
   {
     SocketGRPC_Status status = SocketGRPC_Call_status (call);
     ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, status.code);
-    ASSERT_EQ (0, strcmp (SocketGRPC_Status_message (&status), "stream aborted"));
+    ASSERT_EQ (0,
+               strcmp (SocketGRPC_Status_message (&status), "stream aborted"));
   }
   ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE,
              SocketGRPC_Trailers_status (SocketGRPC_Call_trailers (call)));
@@ -2194,7 +3173,8 @@ TEST (grpc_stream_h2_client_cancel_sets_terminal_status)
       printf ("  [SKIP] Could not generate TLS cert fixtures\n");
       return;
     }
-  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM) != 0)
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM)
+      != 0)
     {
       printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
       cleanup_temp_cert_files ();
@@ -2222,8 +3202,9 @@ TEST (grpc_stream_h2_client_cancel_sets_terminal_status)
   arena = Arena_new ();
   ASSERT_NOT_NULL (arena);
 
-  ASSERT_EQ (
-      0, SocketGRPC_Call_send_message (call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0,
+             SocketGRPC_Call_send_message (
+                 call, request_payload, sizeof (request_payload)));
   ASSERT_EQ (0, SocketGRPC_Call_cancel (call));
   ASSERT_EQ (SOCKET_GRPC_STATUS_CANCELLED, SocketGRPC_Call_status (call).code);
   ASSERT_EQ (-1,
