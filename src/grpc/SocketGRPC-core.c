@@ -480,6 +480,16 @@ SocketGRPC_ChannelConfig_defaults (SocketGRPC_ChannelConfig *config)
   config->tls_context = NULL;
   config->verify_peer = SOCKET_GRPC_DEFAULT_VERIFY_PEER;
   config->allow_http2_cleartext = SOCKET_GRPC_DEFAULT_ALLOW_HTTP2_CLEARTEXT;
+  config->enable_response_decompression
+      = SOCKET_GRPC_DEFAULT_ENABLE_RESPONSE_DECOMPRESSION;
+  config->enable_request_compression
+      = SOCKET_GRPC_DEFAULT_ENABLE_REQUEST_COMPRESSION;
+  config->max_decompressed_message_bytes
+      = SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES;
+  config->max_cumulative_inflight_bytes
+      = SOCKET_GRPC_DEFAULT_MAX_CUMULATIVE_INFLIGHT_BYTES;
+  config->max_decompression_ratio
+      = SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSION_RATIO;
 }
 
 void
@@ -528,6 +538,21 @@ grpc_sanitize_channel_config (SocketGRPC_ChannelConfig *config)
     config->user_agent = SOCKET_GRPC_DEFAULT_USER_AGENT;
   config->verify_peer = config->verify_peer ? 1 : 0;
   config->allow_http2_cleartext = config->allow_http2_cleartext ? 1 : 0;
+  config->enable_response_decompression
+      = config->enable_response_decompression ? 1 : 0;
+  config->enable_request_compression
+      = config->enable_request_compression ? 1 : 0;
+  if (config->max_decompressed_message_bytes == 0)
+    config->max_decompressed_message_bytes
+        = SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES;
+  if (config->max_cumulative_inflight_bytes == 0)
+    config->max_cumulative_inflight_bytes
+        = SOCKET_GRPC_DEFAULT_MAX_CUMULATIVE_INFLIGHT_BYTES;
+  if (config->max_decompression_ratio < 0.0)
+    config->max_decompression_ratio = 0.0;
+  else if (config->max_decompression_ratio > 0.0
+           && config->max_decompression_ratio < 1.0)
+    config->max_decompression_ratio = 1.0;
 }
 
 static void
