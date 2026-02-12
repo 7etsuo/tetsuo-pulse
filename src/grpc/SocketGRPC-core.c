@@ -528,8 +528,10 @@ SocketGRPC_ChannelConfig_defaults (SocketGRPC_ChannelConfig *config)
   config->max_metadata_entries = SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES;
   config->authority_override = NULL;
   config->user_agent = SOCKET_GRPC_DEFAULT_USER_AGENT;
+  config->ca_file = NULL;
   config->tls_context = NULL;
   config->verify_peer = SOCKET_GRPC_DEFAULT_VERIFY_PEER;
+  config->channel_mode = SOCKET_GRPC_DEFAULT_CHANNEL_MODE;
   config->allow_http2_cleartext = SOCKET_GRPC_DEFAULT_ALLOW_HTTP2_CLEARTEXT;
   config->enable_response_decompression
       = SOCKET_GRPC_DEFAULT_ENABLE_RESPONSE_DECOMPRESSION;
@@ -589,7 +591,11 @@ grpc_sanitize_channel_config (SocketGRPC_ChannelConfig *config)
     config->max_metadata_entries = SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES;
   if (config->user_agent == NULL || config->user_agent[0] == '\0')
     config->user_agent = SOCKET_GRPC_DEFAULT_USER_AGENT;
+  if (config->ca_file != NULL && config->ca_file[0] == '\0')
+    config->ca_file = NULL;
   config->verify_peer = config->verify_peer ? 1 : 0;
+  if (config->channel_mode != SOCKET_GRPC_CHANNEL_MODE_HTTP3)
+    config->channel_mode = SOCKET_GRPC_CHANNEL_MODE_HTTP2;
   config->allow_http2_cleartext = config->allow_http2_cleartext ? 1 : 0;
   config->enable_response_decompression
       = config->enable_response_decompression ? 1 : 0;
@@ -765,6 +771,16 @@ SocketGRPC_Channel_new (SocketGRPC_Client_T client,
       free (channel);
       return NULL;
     }
+  channel->ca_file = grpc_strdup_optional (channel->config.ca_file);
+  if (channel->config.ca_file != NULL && channel->ca_file == NULL)
+    {
+      free (channel->user_agent);
+      free (channel->authority_override);
+      free (channel->target);
+      free (channel);
+      return NULL;
+    }
+  channel->config.ca_file = channel->ca_file;
 
   channel->client = client;
   SocketGRPC_status_set (
@@ -782,6 +798,8 @@ SocketGRPC_Channel_free (SocketGRPC_Channel_T *channel)
   (*channel)->user_agent = NULL;
   free ((*channel)->authority_override);
   (*channel)->authority_override = NULL;
+  free ((*channel)->ca_file);
+  (*channel)->ca_file = NULL;
   free ((*channel)->target);
   (*channel)->target = NULL;
   memset (*channel, 0, sizeof (**channel));
@@ -855,6 +873,8 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
   call->response_trailers = SocketGRPC_Trailers_new (NULL);
   call->h2_stream_ctx = NULL;
   call->h2_stream_state = GRPC_CALL_STREAM_IDLE;
+  call->h3_stream_ctx = NULL;
+  call->h3_stream_state = GRPC_CALL_STREAM_IDLE;
   call->retry_in_progress = 0;
   call->retry_attempt = 0;
   if (call->request_metadata == NULL || call->response_trailers == NULL)
@@ -947,6 +967,9 @@ SocketGRPC_Call_free (SocketGRPC_Call_T *call)
     return;
 
   SocketGRPC_Call_h2_stream_abort (*call);
+#if SOCKET_HAS_TLS
+  SocketGRPC_Call_h3_stream_abort (*call);
+#endif
   grpc_call_interceptors_clear (*call);
   SocketGRPC_Metadata_free (&(*call)->request_metadata);
   SocketGRPC_Trailers_free (&(*call)->response_trailers);

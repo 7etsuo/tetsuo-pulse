@@ -75,6 +75,10 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 #define SOCKET_GRPC_DEFAULT_ALLOW_HTTP2_CLEARTEXT 0
 #endif
 
+#ifndef SOCKET_GRPC_DEFAULT_CHANNEL_MODE
+#define SOCKET_GRPC_DEFAULT_CHANNEL_MODE SOCKET_GRPC_CHANNEL_MODE_HTTP2
+#endif
+
 #ifndef SOCKET_GRPC_DEFAULT_USER_AGENT
 #define SOCKET_GRPC_DEFAULT_USER_AGENT "tetsuo-grpc/0.1"
 #endif
@@ -133,6 +137,15 @@ typedef struct
 } SocketGRPC_RetryPolicy;
 
 /**
+ * @brief Channel transport mode.
+ */
+typedef enum
+{
+  SOCKET_GRPC_CHANNEL_MODE_HTTP2 = 2,
+  SOCKET_GRPC_CHANNEL_MODE_HTTP3 = 3
+} SocketGRPC_ChannelMode;
+
+/**
  * @brief Runtime client configuration for future channel/call management.
  */
 typedef struct
@@ -163,8 +176,10 @@ typedef struct
   uint32_t max_metadata_entries;
   const char *authority_override;
   const char *user_agent;
+  const char *ca_file;
   SocketTLSContext_T tls_context;
   int verify_peer;
+  SocketGRPC_ChannelMode channel_mode;
   int allow_http2_cleartext;
   int enable_response_decompression;
   int enable_request_compression;

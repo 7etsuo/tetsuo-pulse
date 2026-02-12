@@ -2425,6 +2425,13 @@ SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
                               const uint8_t *request_payload,
                               size_t request_payload_len)
 {
+#if SOCKET_HAS_TLS
+  if (call != NULL && call->channel != NULL
+      && call->channel->config.channel_mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3)
+    return SocketGRPC_Call_h3_send_message (
+        call, request_payload, request_payload_len);
+#endif
+
   SocketGRPC_H2CallStream *ctx;
   unsigned char *framed;
   unsigned char *compressed_payload = NULL;
@@ -2534,6 +2541,12 @@ SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
 int
 SocketGRPC_Call_close_send (SocketGRPC_Call_T call)
 {
+#if SOCKET_HAS_TLS
+  if (call != NULL && call->channel != NULL
+      && call->channel->config.channel_mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3)
+    return SocketGRPC_Call_h3_close_send (call);
+#endif
+
   SocketGRPC_H2CallStream *ctx;
 
   if (call == NULL)
@@ -2575,6 +2588,13 @@ SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
                               size_t *response_payload_len,
                               int *done)
 {
+#if SOCKET_HAS_TLS
+  if (call != NULL && call->channel != NULL
+      && call->channel->config.channel_mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3)
+    return SocketGRPC_Call_h3_recv_message (
+        call, arena, response_payload, response_payload_len, done);
+#endif
+
   SocketGRPC_H2CallStream *ctx;
 
   if (call == NULL || arena == NULL || response_payload == NULL
@@ -2839,6 +2859,12 @@ SocketGRPC_Call_status (SocketGRPC_Call_T call)
 int
 SocketGRPC_Call_cancel (SocketGRPC_Call_T call)
 {
+#if SOCKET_HAS_TLS
+  if (call != NULL && call->channel != NULL
+      && call->channel->config.channel_mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3)
+    return SocketGRPC_Call_h3_cancel (call);
+#endif
+
   if (call == NULL)
     return -1;
 
@@ -3355,6 +3381,13 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
                           uint8_t **response_payload,
                           size_t *response_payload_len)
 {
+#if SOCKET_HAS_TLS
+  if (call != NULL && call->channel != NULL
+      && call->channel->config.channel_mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3)
+    return SocketGRPC_Call_unary_h3 (
+        call, request_payload, request_payload_len, arena, response_payload, response_payload_len);
+#endif
+
   SocketGRPC_RetryPolicy policy;
   int max_attempts;
   int attempt;

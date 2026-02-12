@@ -31,6 +31,9 @@
 #include "core/Except.h"
 #include "grpc/SocketGRPCConfig.h"
 #include "http/SocketHTTPServer.h"
+#if SOCKET_HAS_TLS
+#include "http/SocketHTTP3-server.h"
+#endif
 
 /**
  * @brief Module-level exception for fatal gRPC runtime failures.
@@ -395,6 +398,23 @@ extern void SocketGRPC_Server_bind_http2 (SocketGRPC_Server_T server,
 extern void
 SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata);
 
+#if SOCKET_HAS_TLS
+/**
+ * @brief Bind gRPC unary HTTP/3 dispatcher as HTTP/3 server handler.
+ */
+extern void SocketGRPC_Server_bind_http3 (SocketGRPC_Server_T server,
+                                          SocketHTTP3_Server_T http3_server);
+
+/**
+ * @brief HTTP/3 handler entrypoint for unary gRPC.
+ *
+ * `userdata` must be a SocketGRPC_Server_T.
+ */
+extern void SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
+                                            const SocketHTTP_Headers_T headers,
+                                            void *userdata);
+#endif
+
 /**
  * @brief Create a logical channel owned by a client.
  *
@@ -562,7 +582,7 @@ extern SocketGRPC_Status SocketGRPC_Call_status (SocketGRPC_Call_T call);
 extern int SocketGRPC_Call_cancel (SocketGRPC_Call_T call);
 
 /**
- * @brief Execute a unary gRPC call over HTTP/2 transport.
+ * @brief Execute a unary gRPC call using channel transport mode.
  *
  * Request payload is a protobuf message body (without gRPC frame prefix).
  * On success, `response_payload` points to arena-owned response bytes.
@@ -577,8 +597,20 @@ extern int SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
                                      uint8_t **response_payload,
                                      size_t *response_payload_len);
 
+#if SOCKET_HAS_TLS
 /**
- * @brief Send one outbound streaming message on an HTTP/2 gRPC call.
+ * @brief Execute a unary gRPC call over HTTP/3 transport.
+ */
+extern int SocketGRPC_Call_unary_h3 (SocketGRPC_Call_T call,
+                                     const uint8_t *request_payload,
+                                     size_t request_payload_len,
+                                     Arena_T arena,
+                                     uint8_t **response_payload,
+                                     size_t *response_payload_len);
+#endif
+
+/**
+ * @brief Send one outbound streaming message using channel transport mode.
  *
  * Lazily opens the stream on first send and emits initial request headers.
  * Payload is unframed protobuf bytes (gRPC frame prefix is added internally).
@@ -590,7 +622,7 @@ extern int SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
                                          size_t request_payload_len);
 
 /**
- * @brief Half-close outbound stream direction for an HTTP/2 gRPC call.
+ * @brief Half-close outbound stream direction using channel transport mode.
  *
  * May be used after zero or more send_message calls. If no stream is active,
  * this starts the stream and immediately closes outbound direction.
@@ -600,7 +632,7 @@ extern int SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
 extern int SocketGRPC_Call_close_send (SocketGRPC_Call_T call);
 
 /**
- * @brief Receive next inbound streaming message for an HTTP/2 gRPC call.
+ * @brief Receive next inbound streaming message using channel transport mode.
  *
  * On message delivery: `*done = 0` and output payload fields are populated.
  * On terminal stream completion: `*done = 1`, payload outputs are cleared, and
