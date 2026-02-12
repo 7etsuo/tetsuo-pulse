@@ -22,10 +22,347 @@
 #include "http/SocketHTTP2.h"
 #include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTPClient-private.h"
+#include "socket/Socket.h"
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#endif
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
 /* HTTP/2 pseudo-header constants */
 #define PSEUDO_HEADER_STATUS ":status"
 #define PSEUDO_HEADER_STATUS_LEN 7
+
+static int
+httpclient_h2_conn_flush_safe (SocketHTTP2_Conn_T conn)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Conn_flush (conn);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static int
+httpclient_h2_conn_process_safe (SocketHTTP2_Conn_T conn, unsigned events)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Conn_process (conn, events);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static int
+httpclient_h2_stream_send_request_safe (SocketHTTP2_Stream_T stream,
+                                        const SocketHTTP_Request *http_req,
+                                        int end_stream)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Stream_send_request (stream, http_req, end_stream);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static ssize_t
+httpclient_h2_stream_send_data_safe (SocketHTTP2_Stream_T stream,
+                                     const void *buf,
+                                     size_t len,
+                                     int end_stream)
+{
+  volatile ssize_t rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Stream_send_data (stream, buf, len, end_stream);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static int
+httpclient_h2_stream_recv_headers_safe (SocketHTTP2_Stream_T stream,
+                                        SocketHPACK_Header *headers,
+                                        size_t headers_cap,
+                                        size_t *header_count,
+                                        int *end_stream)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Stream_recv_headers (
+        stream, headers, headers_cap, header_count, end_stream);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static ssize_t
+httpclient_h2_stream_recv_data_safe (SocketHTTP2_Stream_T stream,
+                                     void *buf,
+                                     size_t len,
+                                     int *end_stream)
+{
+  volatile ssize_t rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Stream_recv_data (stream, buf, len, end_stream);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static void
+httpclient_h2_stream_close_safe (SocketHTTP2_Stream_T stream, int error_code)
+{
+  if (stream == NULL)
+    return;
+
+  TRY
+  {
+    SocketHTTP2_Stream_close (stream, error_code);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+#endif
+  ELSE
+  {
+  }
+  END_TRY;
+}
+
+static SocketHTTP2_Stream_T
+httpclient_h2_stream_new_safe (SocketHTTP2_Conn_T conn)
+{
+  volatile SocketHTTP2_Stream_T stream = NULL;
+
+  TRY
+  {
+    stream = SocketHTTP2_Stream_new (conn);
+  }
+  ELSE
+  {
+    stream = NULL;
+  }
+  END_TRY;
+
+  return (SocketHTTP2_Stream_T)stream;
+}
 
 void
 httpclient_http2_build_request (const SocketHTTPClient_Request_T req,
@@ -113,17 +450,17 @@ httpclient_http2_send_request (SocketHTTP2_Stream_T stream,
 {
   int has_body = (body != NULL && body_len > 0);
 
-  if (SocketHTTP2_Stream_send_request (stream, http_req, !has_body) != 0)
+  if (httpclient_h2_stream_send_request_safe (stream, http_req, !has_body) != 0)
     return -1;
 
   if (has_body)
     {
-      ssize_t sent = SocketHTTP2_Stream_send_data (stream, body, body_len, 1);
+      ssize_t sent = httpclient_h2_stream_send_data_safe (stream, body, body_len, 1);
       if (sent < 0)
         return -1;
     }
 
-  return SocketHTTP2_Conn_flush (h2conn);
+  return httpclient_h2_conn_flush_safe (h2conn);
 }
 
 int
@@ -146,15 +483,15 @@ httpclient_http2_recv_headers (SocketHTTP2_Stream_T stream,
 
   while (header_count == 0)
     {
-      int r = SocketHTTP2_Stream_recv_headers (stream,
-                                               headers,
-                                               SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                               &header_count,
-                                               end_stream);
+      int r = httpclient_h2_stream_recv_headers_safe (stream,
+                                                      headers,
+                                                      SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                                      &header_count,
+                                                      end_stream);
       if (r < 0)
         return -1;
 
-      if (r == 0 && SocketHTTP2_Conn_process (h2conn, 0) < 0)
+      if (r == 0 && httpclient_h2_conn_process_safe (h2conn, 0) < 0)
         return -1;
     }
 
@@ -195,7 +532,7 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
     {
       size_t recv_offset = discard_body ? 0 : total_body;
       size_t recv_cap = discard_body ? body_cap : (body_cap - total_body);
-      ssize_t recv_len = SocketHTTP2_Stream_recv_data (
+      ssize_t recv_len = httpclient_h2_stream_recv_data_safe (
           stream, body_buf + recv_offset, recv_cap, &end_stream);
 
       if (recv_len < 0)
@@ -203,7 +540,7 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
 
       if (recv_len == 0 && !end_stream)
         {
-          if (SocketHTTP2_Conn_process (h2conn, 0) < 0)
+          if (httpclient_h2_conn_process_safe (h2conn, 0) < 0)
             return -1;
           continue;
         }
@@ -212,7 +549,7 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
 
       if (max_response_size > 0 && total_body > max_response_size)
         {
-          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+          httpclient_h2_stream_close_safe (stream, HTTP2_CANCEL);
           return -2;
         }
 
@@ -228,7 +565,7 @@ httpclient_http2_recv_body (SocketHTTP2_Stream_T stream,
                                            max_response_size)
               != 0)
             {
-              SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+              httpclient_h2_stream_close_safe (stream, HTTP2_CANCEL);
               return -1;
             }
         }
@@ -260,7 +597,7 @@ httpclient_http2_execute (HTTPPoolEntry *conn,
   if (SocketHTTP2_Conn_is_closed (h2conn))
     return -1;
 
-  stream = SocketHTTP2_Stream_new (h2conn);
+  stream = httpclient_h2_stream_new_safe (h2conn);
   if (stream == NULL)
     return -1;
 
@@ -273,7 +610,7 @@ httpclient_http2_execute (HTTPPoolEntry *conn,
       < 0)
     {
       conn->proto.h2.active_streams--;
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      httpclient_h2_stream_close_safe (stream, HTTP2_CANCEL);
       return -1;
     }
 
