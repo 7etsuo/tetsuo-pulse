@@ -105,6 +105,20 @@ endif()
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
+# gRPC code generation integration (optional; requires Python interpreter)
+option(ENABLE_GRPC_CODEGEN_TESTS "Enable gRPC codegen compile/runtime tests" ON)
+set(SOCKETGRPC_CODEGEN_AVAILABLE OFF)
+if(ENABLE_GRPC_CODEGEN_TESTS)
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        include(${CMAKE_SOURCE_DIR}/cmake/SocketGRPCCodegen.cmake)
+        set(SOCKETGRPC_CODEGEN_AVAILABLE ON)
+        message(STATUS "gRPC codegen tests enabled (${Python3_EXECUTABLE})")
+    else()
+        message(WARNING "gRPC codegen tests requested but Python3 was not found; disabling")
+    endif()
+endif()
+
 # Detect platform and select appropriate poll backend
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(POLL_BACKEND "epoll")
@@ -1067,6 +1081,212 @@ if(SOCKET_HAS_TLS)
     )
 endif()
 
+set(EXTRA_TEST_TARGETS)
+
+if(SOCKETGRPC_CODEGEN_AVAILABLE)
+    set(SOCKETGRPC_TEST_PROTO_DIR ${CMAKE_SOURCE_DIR}/src/test/proto)
+    set(SOCKETGRPC_GOLDEN_DIR ${SOCKETGRPC_TEST_PROTO_DIR}/golden)
+    set(SOCKETGRPC_GEN_DIR ${CMAKE_BINARY_DIR}/generated/socketgrpc)
+    set(SOCKETGRPC_GEN_DIR_SECOND ${CMAKE_BINARY_DIR}/generated/socketgrpc-second)
+
+    socketgrpc_generate(
+        PROTO ${SOCKETGRPC_TEST_PROTO_DIR}/unary.proto
+        OUTPUT_DIR ${SOCKETGRPC_GEN_DIR}
+        OUT_SRC SOCKETGRPC_UNARY_SRC
+        OUT_HDR SOCKETGRPC_UNARY_HDR
+    )
+    socketgrpc_generate(
+        PROTO ${SOCKETGRPC_TEST_PROTO_DIR}/streaming.proto
+        OUTPUT_DIR ${SOCKETGRPC_GEN_DIR}
+        OUT_SRC SOCKETGRPC_STREAMING_SRC
+        OUT_HDR SOCKETGRPC_STREAMING_HDR
+    )
+    socketgrpc_generate(
+        PROTO ${SOCKETGRPC_TEST_PROTO_DIR}/complex.proto
+        OUTPUT_DIR ${SOCKETGRPC_GEN_DIR}
+        OUT_SRC SOCKETGRPC_COMPLEX_SRC
+        OUT_HDR SOCKETGRPC_COMPLEX_HDR
+    )
+
+    socketgrpc_generate(
+        PROTO ${SOCKETGRPC_TEST_PROTO_DIR}/unary.proto
+        OUTPUT_DIR ${SOCKETGRPC_GEN_DIR_SECOND}
+        OUT_SRC SOCKETGRPC_UNARY_SRC_2
+        OUT_HDR SOCKETGRPC_UNARY_HDR_2
+    )
+    socketgrpc_generate(
+        PROTO ${SOCKETGRPC_TEST_PROTO_DIR}/streaming.proto
+        OUTPUT_DIR ${SOCKETGRPC_GEN_DIR_SECOND}
+        OUT_SRC SOCKETGRPC_STREAMING_SRC_2
+        OUT_HDR SOCKETGRPC_STREAMING_HDR_2
+    )
+    socketgrpc_generate(
+        PROTO ${SOCKETGRPC_TEST_PROTO_DIR}/complex.proto
+        OUTPUT_DIR ${SOCKETGRPC_GEN_DIR_SECOND}
+        OUT_SRC SOCKETGRPC_COMPLEX_SRC_2
+        OUT_HDR SOCKETGRPC_COMPLEX_HDR_2
+    )
+
+    add_custom_target(grpc_codegen_generated DEPENDS
+        ${SOCKETGRPC_UNARY_SRC}
+        ${SOCKETGRPC_UNARY_HDR}
+        ${SOCKETGRPC_STREAMING_SRC}
+        ${SOCKETGRPC_STREAMING_HDR}
+        ${SOCKETGRPC_COMPLEX_SRC}
+        ${SOCKETGRPC_COMPLEX_HDR}
+        ${SOCKETGRPC_UNARY_SRC_2}
+        ${SOCKETGRPC_UNARY_HDR_2}
+        ${SOCKETGRPC_STREAMING_SRC_2}
+        ${SOCKETGRPC_STREAMING_HDR_2}
+        ${SOCKETGRPC_COMPLEX_SRC_2}
+        ${SOCKETGRPC_COMPLEX_HDR_2}
+    )
+
+    add_custom_target(grpc_codegen_example
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/generated/example
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tools/protoc-gen-socketgrpc"
+            --proto "${SOCKETGRPC_TEST_PROTO_DIR}/unary.proto"
+            --out-dir "${CMAKE_BINARY_DIR}/generated/example"
+        COMMENT "Generating sample SocketGRPC stubs from unary.proto"
+        VERBATIM
+    )
+
+    add_executable(test_grpc_codegen_unary
+        src/test/test_grpc_codegen_unary.c
+        ${SOCKETGRPC_UNARY_SRC}
+        $<TARGET_OBJECTS:socket_objects>
+        $<TARGET_OBJECTS:test_framework>
+    )
+    add_executable(test_grpc_codegen_streaming
+        src/test/test_grpc_codegen_streaming.c
+        ${SOCKETGRPC_STREAMING_SRC}
+        $<TARGET_OBJECTS:socket_objects>
+        $<TARGET_OBJECTS:test_framework>
+    )
+    add_executable(test_grpc_codegen_complex
+        src/test/test_grpc_codegen_complex.c
+        ${SOCKETGRPC_COMPLEX_SRC}
+        $<TARGET_OBJECTS:socket_objects>
+        $<TARGET_OBJECTS:test_framework>
+    )
+
+    foreach(codegen_test
+            test_grpc_codegen_unary
+            test_grpc_codegen_streaming
+            test_grpc_codegen_complex)
+        if(SOCKET_HAS_TLS)
+            target_link_libraries(${codegen_test} pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS} ${WS_DEFLATE_LIBS})
+        else()
+            target_link_libraries(${codegen_test} pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS} ${WS_DEFLATE_LIBS})
+        endif()
+        target_include_directories(${codegen_test} PRIVATE ${CMAKE_SOURCE_DIR}/include ${SOCKETGRPC_GEN_DIR})
+        target_compile_definitions(${codegen_test} PRIVATE TESTING)
+        target_compile_options(${codegen_test} PRIVATE -Wno-nonnull -fno-sanitize=nonnull-attribute)
+        target_link_options(${codegen_test} PRIVATE -fno-sanitize=nonnull-attribute)
+        add_dependencies(${codegen_test} grpc_codegen_generated)
+        add_test(NAME ${codegen_test} COMMAND ${codegen_test})
+        set_tests_properties(${codegen_test} PROPERTIES TIMEOUT 60)
+    endforeach()
+
+    add_test(
+        NAME test_grpc_codegen_unary_golden_header
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_UNARY_HDR}
+            ${SOCKETGRPC_GOLDEN_DIR}/unary.socketgrpc.h
+    )
+    add_test(
+        NAME test_grpc_codegen_unary_golden_source
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_UNARY_SRC}
+            ${SOCKETGRPC_GOLDEN_DIR}/unary.socketgrpc.c
+    )
+    add_test(
+        NAME test_grpc_codegen_unary_deterministic_header
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_UNARY_HDR}
+            ${SOCKETGRPC_UNARY_HDR_2}
+    )
+    add_test(
+        NAME test_grpc_codegen_unary_deterministic_source
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_UNARY_SRC}
+            ${SOCKETGRPC_UNARY_SRC_2}
+    )
+
+    add_test(
+        NAME test_grpc_codegen_streaming_golden_header
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_STREAMING_HDR}
+            ${SOCKETGRPC_GOLDEN_DIR}/streaming.socketgrpc.h
+    )
+    add_test(
+        NAME test_grpc_codegen_streaming_golden_source
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_STREAMING_SRC}
+            ${SOCKETGRPC_GOLDEN_DIR}/streaming.socketgrpc.c
+    )
+    add_test(
+        NAME test_grpc_codegen_streaming_deterministic_header
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_STREAMING_HDR}
+            ${SOCKETGRPC_STREAMING_HDR_2}
+    )
+    add_test(
+        NAME test_grpc_codegen_streaming_deterministic_source
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_STREAMING_SRC}
+            ${SOCKETGRPC_STREAMING_SRC_2}
+    )
+
+    add_test(
+        NAME test_grpc_codegen_complex_golden_header
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_COMPLEX_HDR}
+            ${SOCKETGRPC_GOLDEN_DIR}/complex.socketgrpc.h
+    )
+    add_test(
+        NAME test_grpc_codegen_complex_golden_source
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_COMPLEX_SRC}
+            ${SOCKETGRPC_GOLDEN_DIR}/complex.socketgrpc.c
+    )
+    add_test(
+        NAME test_grpc_codegen_complex_deterministic_header
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_COMPLEX_HDR}
+            ${SOCKETGRPC_COMPLEX_HDR_2}
+    )
+    add_test(
+        NAME test_grpc_codegen_complex_deterministic_source
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${SOCKETGRPC_COMPLEX_SRC}
+            ${SOCKETGRPC_COMPLEX_SRC_2}
+    )
+
+    set(CODEGEN_COMPARE_TESTS
+        test_grpc_codegen_unary_golden_header
+        test_grpc_codegen_unary_golden_source
+        test_grpc_codegen_unary_deterministic_header
+        test_grpc_codegen_unary_deterministic_source
+        test_grpc_codegen_streaming_golden_header
+        test_grpc_codegen_streaming_golden_source
+        test_grpc_codegen_streaming_deterministic_header
+        test_grpc_codegen_streaming_deterministic_source
+        test_grpc_codegen_complex_golden_header
+        test_grpc_codegen_complex_golden_source
+        test_grpc_codegen_complex_deterministic_header
+        test_grpc_codegen_complex_deterministic_source
+    )
+    set_tests_properties(${CODEGEN_COMPARE_TESTS} PROPERTIES TIMEOUT 20)
+
+    list(APPEND EXTRA_TEST_TARGETS
+        grpc_codegen_generated
+        test_grpc_codegen_unary
+        test_grpc_codegen_streaming
+        test_grpc_codegen_complex
+    )
+endif()
+
 # Create test executables (link against object files to preserve constructor attributes)
 foreach(test_name ${TEST_SOURCES})
     add_executable(${test_name} src/test/${test_name}.c $<TARGET_OBJECTS:socket_objects> $<TARGET_OBJECTS:test_framework>)
@@ -1088,7 +1308,7 @@ foreach(test_name ${TEST_SOURCES})
 endforeach()
 
 # Custom target to build all tests
-add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
+add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES} ${EXTRA_TEST_TARGETS})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")

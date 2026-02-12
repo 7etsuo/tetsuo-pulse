@@ -1,0 +1,1219 @@
+#!/usr/bin/env python3
+"""
+Deterministic .proto -> C stub generator for tetsuo-pulse gRPC scaffolding.
+
+This is a first-party codegen path for the repository's gRPC runtime. It is
+intentionally conservative and supports a focused proto subset required by the
+project tests and examples:
+  - message / nested message
+  - scalar fields, string, bytes, message fields
+  - repeated fields
+  - oneof groups
+  - service rpc declarations (unary + streaming signatures)
+"""
+
+from __future__ import annotations
+
+import argparse
+import pathlib
+import re
+import sys
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Sequence, Tuple
+
+
+TOKEN_RE = re.compile(r'"[^"]*"|[A-Za-z_][A-Za-z0-9_\.]*|\d+|[{}();=,\[\]<>]')
+BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
+LINE_COMMENT_RE = re.compile(r"//.*?$", re.M)
+
+
+SCALAR_TYPE_MAP: Dict[str, str] = {
+    "int32": "int32_t",
+    "sint32": "int32_t",
+    "sfixed32": "int32_t",
+    "uint32": "uint32_t",
+    "fixed32": "uint32_t",
+    "int64": "int64_t",
+    "sint64": "int64_t",
+    "sfixed64": "int64_t",
+    "uint64": "uint64_t",
+    "fixed64": "uint64_t",
+    "bool": "int",
+    "float": "float",
+    "double": "double",
+}
+
+
+VARINT_TYPES = {"int32", "uint32", "int64", "uint64", "bool"}
+SINT_TYPES = {"sint32", "sint64"}
+FIXED32_TYPES = {"fixed32", "sfixed32", "float"}
+FIXED64_TYPES = {"fixed64", "sfixed64", "double"}
+
+
+@dataclass
+class Field:
+    name: str
+    type_name: str
+    number: int
+    repeated: bool = False
+    oneof: Optional[str] = None
+
+
+@dataclass
+class OneOf:
+    name: str
+    fields: List[Field] = field(default_factory=list)
+
+
+@dataclass
+class Message:
+    name: str
+    full_name: str
+    fields: List[Field] = field(default_factory=list)
+    oneofs: List[OneOf] = field(default_factory=list)
+    nested: List["Message"] = field(default_factory=list)
+    c_name: str = ""
+
+
+@dataclass
+class Method:
+    name: str
+    request_type: str
+    response_type: str
+    client_streaming: bool = False
+    server_streaming: bool = False
+
+
+@dataclass
+class Service:
+    name: str
+    methods: List[Method] = field(default_factory=list)
+    c_name: str = ""
+
+
+@dataclass
+class ProtoModel:
+    package: str = ""
+    messages: List[Message] = field(default_factory=list)
+    services: List[Service] = field(default_factory=list)
+    by_full_name: Dict[str, Message] = field(default_factory=dict)
+    by_proto_name: Dict[str, Message] = field(default_factory=dict)
+    package_prefix: str = ""
+
+
+def sanitize_ident(name: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_]", "_", name)
+
+
+class TokenStream:
+    def __init__(self, tokens: Sequence[str]) -> None:
+        self.tokens = list(tokens)
+        self.pos = 0
+
+    def eof(self) -> bool:
+        return self.pos >= len(self.tokens)
+
+    def peek(self) -> Optional[str]:
+        if self.eof():
+            return None
+        return self.tokens[self.pos]
+
+    def pop(self) -> str:
+        if self.eof():
+            raise ValueError("Unexpected EOF")
+        tok = self.tokens[self.pos]
+        self.pos += 1
+        return tok
+
+    def expect(self, token: str) -> None:
+        got = self.pop()
+        if got != token:
+            raise ValueError(f"Expected '{token}', got '{got}'")
+
+
+def strip_comments(text: str) -> str:
+    text = BLOCK_COMMENT_RE.sub("", text)
+    text = LINE_COMMENT_RE.sub("", text)
+    return text
+
+
+def tokenize_proto(text: str) -> List[str]:
+    return TOKEN_RE.findall(strip_comments(text))
+
+
+def skip_statement(ts: TokenStream) -> None:
+    depth_brace = 0
+    depth_angle = 0
+    while not ts.eof():
+        tok = ts.pop()
+        if tok == "{":
+            depth_brace += 1
+        elif tok == "}":
+            if depth_brace == 0:
+                ts.pos -= 1
+                return
+            depth_brace -= 1
+            if depth_brace == 0 and depth_angle == 0:
+                return
+        elif tok == "<":
+            depth_angle += 1
+        elif tok == ">" and depth_angle > 0:
+            depth_angle -= 1
+        elif tok == ";" and depth_brace == 0 and depth_angle == 0:
+            return
+
+
+def parse_field(ts: TokenStream, oneof_name: Optional[str] = None) -> Field:
+    repeated = False
+    tok = ts.peek()
+    if tok == "repeated":
+        repeated = True
+        ts.pop()
+
+    field_type = ts.pop()
+    if field_type == "map":
+        raise ValueError("map<...> fields are not supported by this generator")
+
+    name = ts.pop()
+    ts.expect("=")
+    number_tok = ts.pop()
+    if not number_tok.isdigit():
+        raise ValueError(f"Invalid field number: {number_tok}")
+    number = int(number_tok)
+
+    if ts.peek() == "[":
+        ts.pop()
+        while not ts.eof() and ts.peek() != "]":
+            ts.pop()
+        ts.expect("]")
+    ts.expect(";")
+
+    return Field(
+        name=name, type_name=field_type, number=number, repeated=repeated, oneof=oneof_name
+    )
+
+
+def parse_oneof(ts: TokenStream, message: Message) -> None:
+    ts.expect("oneof")
+    oneof_name = ts.pop()
+    oneof = OneOf(name=oneof_name)
+    ts.expect("{")
+    while ts.peek() != "}":
+        field = parse_field(ts, oneof_name=oneof_name)
+        if field.repeated:
+            raise ValueError("repeated fields are not valid inside oneof")
+        oneof.fields.append(field)
+        message.fields.append(field)
+    ts.expect("}")
+
+    if ts.peek() == ";":
+        ts.pop()
+    message.oneofs.append(oneof)
+
+
+def parse_message(ts: TokenStream, parent: Optional[Message], model: ProtoModel) -> Message:
+    ts.expect("message")
+    name = ts.pop()
+    full_name = name if parent is None else f"{parent.full_name}_{name}"
+    message = Message(name=name, full_name=full_name)
+    ts.expect("{")
+
+    while ts.peek() != "}":
+        tok = ts.peek()
+        if tok == "message":
+            child = parse_message(ts, message, model)
+            message.nested.append(child)
+            model.messages.append(child)
+            model.by_full_name[child.full_name] = child
+            model.by_proto_name[child.name] = child
+        elif tok == "oneof":
+            parse_oneof(ts, message)
+        elif tok in {"option", "reserved", "extensions"}:
+            skip_statement(ts)
+        else:
+            field = parse_field(ts)
+            message.fields.append(field)
+
+    ts.expect("}")
+    if ts.peek() == ";":
+        ts.pop()
+    return message
+
+
+def parse_rpc(ts: TokenStream) -> Method:
+    ts.expect("rpc")
+    name = ts.pop()
+
+    ts.expect("(")
+    client_stream = False
+    if ts.peek() == "stream":
+        client_stream = True
+        ts.pop()
+    req_type = ts.pop()
+    ts.expect(")")
+
+    ts.expect("returns")
+    ts.expect("(")
+    server_stream = False
+    if ts.peek() == "stream":
+        server_stream = True
+        ts.pop()
+    resp_type = ts.pop()
+    ts.expect(")")
+
+    if ts.peek() == "{":
+        skip_statement(ts)
+    else:
+        ts.expect(";")
+
+    return Method(
+        name=name,
+        request_type=req_type,
+        response_type=resp_type,
+        client_streaming=client_stream,
+        server_streaming=server_stream,
+    )
+
+
+def parse_service(ts: TokenStream) -> Service:
+    ts.expect("service")
+    service = Service(name=ts.pop())
+    ts.expect("{")
+    while ts.peek() != "}":
+        tok = ts.peek()
+        if tok == "rpc":
+            service.methods.append(parse_rpc(ts))
+        else:
+            skip_statement(ts)
+    ts.expect("}")
+    if ts.peek() == ";":
+        ts.pop()
+    return service
+
+
+def parse_proto_model(text: str) -> ProtoModel:
+    tokens = tokenize_proto(text)
+    ts = TokenStream(tokens)
+    model = ProtoModel()
+
+    while not ts.eof():
+        tok = ts.peek()
+        if tok == "syntax":
+            skip_statement(ts)
+        elif tok == "package":
+            ts.pop()
+            model.package = ts.pop()
+            ts.expect(";")
+        elif tok == "import":
+            skip_statement(ts)
+        elif tok == "option":
+            skip_statement(ts)
+        elif tok == "message":
+            msg = parse_message(ts, None, model)
+            model.messages.append(msg)
+            model.by_full_name[msg.full_name] = msg
+            model.by_proto_name[msg.name] = msg
+        elif tok == "service":
+            model.services.append(parse_service(ts))
+        else:
+            skip_statement(ts)
+
+    model.package_prefix = sanitize_ident(model.package) if model.package else ""
+    for msg in model.messages:
+        prefix = f"{model.package_prefix}_" if model.package_prefix else ""
+        msg.c_name = f"{prefix}{sanitize_ident(msg.full_name)}"
+    for svc in model.services:
+        prefix = f"{model.package_prefix}_" if model.package_prefix else ""
+        svc.c_name = f"{prefix}{sanitize_ident(svc.name)}"
+    return model
+
+
+def resolve_message_c_type(model: ProtoModel, current: Message, proto_type: str) -> Optional[str]:
+    clean = sanitize_ident(proto_type.replace(".", "_"))
+    prefix = f"{model.package_prefix}_" if model.package_prefix else ""
+
+    if clean in model.by_full_name:
+        return model.by_full_name[clean].c_name
+    if proto_type in model.by_proto_name:
+        return model.by_proto_name[proto_type].c_name
+
+    nested_candidate = f"{current.full_name}_{clean}"
+    if nested_candidate in model.by_full_name:
+        return model.by_full_name[nested_candidate].c_name
+
+    if clean in model.by_proto_name:
+        return model.by_proto_name[clean].c_name
+
+    if clean in model.by_full_name:
+        return model.by_full_name[clean].c_name
+
+    prefixed = f"{prefix}{clean}"
+    for msg in model.messages:
+        if msg.c_name == prefixed:
+            return msg.c_name
+    return None
+
+
+def is_string_field(field: Field) -> bool:
+    return field.type_name == "string"
+
+
+def is_bytes_field(field: Field) -> bool:
+    return field.type_name == "bytes"
+
+
+def field_c_type(model: ProtoModel, message: Message, field: Field) -> str:
+    if field.type_name in SCALAR_TYPE_MAP:
+        return SCALAR_TYPE_MAP[field.type_name]
+    c_type = resolve_message_c_type(model, message, field.type_name)
+    if c_type is not None:
+        return c_type
+    return "uint64_t"
+
+
+def upper_guard_name(stem: str) -> str:
+    return f"{sanitize_ident(stem).upper()}_SOCKETGRPC_GENERATED_H"
+
+
+def emit_header(model: ProtoModel, stem: str) -> str:
+    guard = upper_guard_name(stem)
+    lines: List[str] = []
+    lines.append("/* Auto-generated by tools/protoc-gen-socketgrpc. DO NOT EDIT. */")
+    lines.append(f"#ifndef {guard}")
+    lines.append(f"#define {guard}")
+    lines.append("")
+    lines.append("#include <stddef.h>")
+    lines.append("#include <stdint.h>")
+    lines.append("")
+    lines.append('#include "core/Arena.h"')
+    lines.append('#include "grpc/SocketGRPC.h"')
+    lines.append("")
+
+    for msg in model.messages:
+        lines.append(f"typedef struct {msg.c_name} {msg.c_name};")
+    lines.append("")
+
+    for msg in model.messages:
+        for oneof in msg.oneofs:
+            enum_name = f"{msg.c_name}_{sanitize_ident(oneof.name)}Case"
+            lines.append(f"typedef enum {enum_name}")
+            lines.append("{")
+            lines.append(f"  {enum_name.upper()}_NOT_SET = 0,")
+            for f in oneof.fields:
+                enum_value = f"{enum_name.upper()}_{sanitize_ident(f.name).upper()}"
+                lines.append(f"  {enum_value} = {f.number},")
+            lines.append(f"}} {enum_name};")
+            lines.append("")
+
+        lines.append(f"struct {msg.c_name}")
+        lines.append("{")
+        for f in msg.fields:
+            c_type = field_c_type(model, msg, f)
+            if f.oneof is not None:
+                continue
+            if f.repeated:
+                if is_string_field(f):
+                    lines.append(f"  char **{f.name};")
+                    lines.append(f"  size_t {f.name}_count;")
+                elif is_bytes_field(f):
+                    lines.append(f"  uint8_t **{f.name};")
+                    lines.append(f"  size_t *{f.name}_len;")
+                    lines.append(f"  size_t {f.name}_count;")
+                else:
+                    lines.append(f"  {c_type} *{f.name};")
+                    lines.append(f"  size_t {f.name}_count;")
+            else:
+                if is_string_field(f):
+                    lines.append(f"  char *{f.name};")
+                elif is_bytes_field(f):
+                    lines.append(f"  uint8_t *{f.name};")
+                    lines.append(f"  size_t {f.name}_len;")
+                elif f.type_name in SCALAR_TYPE_MAP:
+                    lines.append(f"  {c_type} {f.name};")
+                else:
+                    lines.append(f"  {c_type} {f.name};")
+                    lines.append(f"  int has_{f.name};")
+
+        for oneof in msg.oneofs:
+            enum_name = f"{msg.c_name}_{sanitize_ident(oneof.name)}Case"
+            lines.append(f"  {enum_name} {oneof.name}_case;")
+            lines.append("  union")
+            lines.append("  {")
+            for f in oneof.fields:
+                c_type = field_c_type(model, msg, f)
+                if is_string_field(f):
+                    lines.append(f"    char *{f.name};")
+                elif is_bytes_field(f):
+                    lines.append(f"    struct {{ uint8_t *data; size_t len; }} {f.name};")
+                else:
+                    lines.append(f"    {c_type} {f.name};")
+            lines.append(f"  }} {oneof.name};")
+        lines.append("};")
+        lines.append("")
+
+        lines.append(f"extern void {msg.c_name}_init ({msg.c_name} *message);")
+        lines.append(f"extern void {msg.c_name}_free ({msg.c_name} *message);")
+        lines.append(
+            f"extern int {msg.c_name}_encode (const {msg.c_name} *message, "
+            "uint8_t *out, size_t out_len, size_t *written);"
+        )
+        lines.append(
+            f"extern int {msg.c_name}_decode ({msg.c_name} *message, "
+            "const uint8_t *data, size_t len, Arena_T arena);"
+        )
+        lines.append("")
+
+    for svc in model.services:
+        handlers_name = f"{svc.c_name}_ServerHandlers"
+        client_name = f"{svc.c_name}_Client"
+
+        lines.append(f"typedef struct {handlers_name}")
+        lines.append("{")
+        for method in svc.methods:
+            req = resolve_message_type_for_rpc(model, method.request_type)
+            resp = resolve_message_type_for_rpc(model, method.response_type)
+            if method.client_streaming or method.server_streaming:
+                lines.append(
+                    f"  int (*{method.name}_stream) (void *stream_ctx, "
+                    "void *userdata, Arena_T arena);"
+                )
+            else:
+                lines.append(
+                    f"  int (*{method.name}) (const {req} *request, {resp} *response, "
+                    "void *userdata, Arena_T arena);"
+                )
+        lines.append("  void *userdata;")
+        lines.append(f"}} {handlers_name};")
+        lines.append("")
+
+        lines.append(f"typedef struct {client_name}")
+        lines.append("{")
+        lines.append("  SocketGRPC_Channel_T channel;")
+        lines.append(f"  const {handlers_name} *local_handlers;")
+        lines.append(f"}} {client_name};")
+        lines.append("")
+
+        lines.append(
+            f"extern void {client_name}_init ({client_name} *client, "
+            "SocketGRPC_Channel_T channel);"
+        )
+        lines.append(
+            f"extern void {client_name}_bind_local ({client_name} *client, "
+            f"const {handlers_name} *handlers);"
+        )
+        for method in svc.methods:
+            req = resolve_message_type_for_rpc(model, method.request_type)
+            resp = resolve_message_type_for_rpc(model, method.response_type)
+            if method.client_streaming or method.server_streaming:
+                lines.append(
+                    f"extern int {client_name}_{method.name}_stream "
+                    f"({client_name} *client, void *stream_ctx, Arena_T arena);"
+                )
+            else:
+                lines.append(
+                    f"extern int {client_name}_{method.name} "
+                    f"({client_name} *client, const {req} *request, "
+                    f"{resp} *response, Arena_T arena);"
+                )
+        lines.append("")
+
+    lines.append(f"#endif /* {guard} */")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def resolve_message_type_for_rpc(model: ProtoModel, type_name: str) -> str:
+    clean = sanitize_ident(type_name.replace(".", "_"))
+    if clean in model.by_full_name:
+        return model.by_full_name[clean].c_name
+    if type_name in model.by_proto_name:
+        return model.by_proto_name[type_name].c_name
+    if clean in model.by_proto_name:
+        return model.by_proto_name[clean].c_name
+
+    prefix = f"{model.package_prefix}_" if model.package_prefix else ""
+    target = f"{prefix}{clean}"
+    for msg in model.messages:
+        if msg.c_name == target:
+            return msg.c_name
+    raise ValueError(f"Unknown RPC message type: {type_name}")
+
+
+def enum_case_name(msg: Message, oneof: OneOf, field: Field) -> str:
+    base = f"{msg.c_name}_{sanitize_ident(oneof.name)}Case".upper()
+    return f"{base}_{sanitize_ident(field.name).upper()}"
+
+
+def wire_append_call(field: Field, value_expr: str, len_expr: str = "") -> Tuple[str, bool]:
+    if field.type_name in VARINT_TYPES:
+        return f"SocketProto_Message_append_varint (wire, {field.number}, (uint64_t){value_expr})", False
+    if field.type_name in SINT_TYPES:
+        return f"SocketProto_Message_append_sint64 (wire, {field.number}, (int64_t){value_expr})", False
+    if field.type_name in FIXED32_TYPES:
+        return f"SocketProto_Message_append_fixed32 (wire, {field.number}, (uint32_t){value_expr})", False
+    if field.type_name in FIXED64_TYPES:
+        return f"SocketProto_Message_append_fixed64 (wire, {field.number}, (uint64_t){value_expr})", False
+    if field.type_name == "string":
+        return (
+            f"SocketProto_Message_append_bytes (wire, {field.number}, "
+            f"(const uint8_t *){value_expr}, strlen ({value_expr}))",
+            False,
+        )
+    if field.type_name == "bytes":
+        return (
+            f"SocketProto_Message_append_bytes (wire, {field.number}, "
+            f"(const uint8_t *){value_expr}, {len_expr})",
+            False,
+        )
+    return "", True
+
+
+def emit_source(model: ProtoModel, stem: str, header_name: str) -> str:
+    lines: List[str] = []
+    lines.append("/* Auto-generated by tools/protoc-gen-socketgrpc. DO NOT EDIT. */")
+    lines.append("")
+    lines.append(f'#include "{header_name}"')
+    lines.append("")
+    lines.append('#include "grpc/SocketProto.h"')
+    lines.append("")
+    lines.append("#include <stdlib.h>")
+    lines.append("#include <string.h>")
+    lines.append("")
+    lines.append("#define SOCKETGRPC_GEN_EMBEDDED_LIMIT 65536U")
+    lines.append("")
+    lines.append(
+        "#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) "
+        "((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))"
+    )
+    lines.append(
+        "#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) "
+        "((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))"
+    )
+    lines.append("")
+
+    for msg in model.messages:
+        for f in msg.fields:
+            if not f.repeated or f.oneof is not None:
+                continue
+
+            c_type = field_c_type(model, msg, f)
+            helper_name = f"{msg.c_name}_append_{sanitize_ident(f.name)}"
+            if is_string_field(f):
+                lines.append(f"static int {helper_name} ({msg.c_name} *message, char *value, Arena_T arena)")
+                lines.append("{")
+                lines.append("  size_t new_count = message->%s_count + 1U;" % f.name)
+                lines.append(
+                    "  char **items = (char **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (char *));"
+                )
+                lines.append("  if (items == NULL)")
+                lines.append("    return -1;")
+                lines.append("  if (message->%s != NULL && message->%s_count > 0)" % (f.name, f.name))
+                lines.append(
+                    "    memcpy (items, message->%s, message->%s_count * sizeof (char *));"
+                    % (f.name, f.name)
+                )
+                lines.append("  items[message->%s_count] = value;" % f.name)
+                lines.append("  message->%s = items;" % f.name)
+                lines.append("  message->%s_count = new_count;" % f.name)
+                lines.append("  return 0;")
+                lines.append("}")
+                lines.append("")
+            elif is_bytes_field(f):
+                lines.append(
+                    f"static int {helper_name} ({msg.c_name} *message, uint8_t *value, size_t value_len, Arena_T arena)"
+                )
+                lines.append("{")
+                lines.append("  size_t new_count = message->%s_count + 1U;" % f.name)
+                lines.append(
+                    "  uint8_t **items = (uint8_t **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (uint8_t *));"
+                )
+                lines.append(
+                    "  size_t *lens = (size_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (size_t));"
+                )
+                lines.append("  if (items == NULL || lens == NULL)")
+                lines.append("    return -1;")
+                lines.append("  if (message->%s != NULL && message->%s_count > 0)" % (f.name, f.name))
+                lines.append(
+                    "    memcpy (items, message->%s, message->%s_count * sizeof (uint8_t *));"
+                    % (f.name, f.name)
+                )
+                lines.append("  if (message->%s_len != NULL && message->%s_count > 0)" % (f.name, f.name))
+                lines.append(
+                    "    memcpy (lens, message->%s_len, message->%s_count * sizeof (size_t));"
+                    % (f.name, f.name)
+                )
+                lines.append("  items[message->%s_count] = value;" % f.name)
+                lines.append("  lens[message->%s_count] = value_len;" % f.name)
+                lines.append("  message->%s = items;" % f.name)
+                lines.append("  message->%s_len = lens;" % f.name)
+                lines.append("  message->%s_count = new_count;" % f.name)
+                lines.append("  return 0;")
+                lines.append("}")
+                lines.append("")
+            else:
+                lines.append(
+                    f"static int {helper_name} ({msg.c_name} *message, {c_type} value, Arena_T arena)"
+                )
+                lines.append("{")
+                lines.append("  size_t new_count = message->%s_count + 1U;" % f.name)
+                lines.append(
+                    f"  {c_type} *items = ({c_type} *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof ({c_type}));"
+                )
+                lines.append("  if (items == NULL)")
+                lines.append("    return -1;")
+                lines.append("  if (message->%s != NULL && message->%s_count > 0)" % (f.name, f.name))
+                lines.append(
+                    f"    memcpy (items, message->{f.name}, message->{f.name}_count * sizeof ({c_type}));"
+                )
+                lines.append("  items[message->%s_count] = value;" % f.name)
+                lines.append("  message->%s = items;" % f.name)
+                lines.append("  message->%s_count = new_count;" % f.name)
+                lines.append("  return 0;")
+                lines.append("}")
+                lines.append("")
+
+        lines.append(f"void {msg.c_name}_init ({msg.c_name} *message)")
+        lines.append("{")
+        lines.append("  if (message == NULL)")
+        lines.append("    return;")
+        lines.append("  memset (message, 0, sizeof (*message));")
+        for f in msg.fields:
+            if f.oneof is not None:
+                continue
+            if f.type_name not in SCALAR_TYPE_MAP and not is_string_field(f) and not is_bytes_field(f):
+                nested_type = resolve_message_c_type(model, msg, f.type_name)
+                if nested_type is not None and not f.repeated:
+                    lines.append(f"  {nested_type}_init (&message->{f.name});")
+        for oneof in msg.oneofs:
+            enum_name = f"{msg.c_name}_{sanitize_ident(oneof.name)}Case".upper()
+            lines.append(f"  message->{oneof.name}_case = {enum_name}_NOT_SET;")
+        lines.append("}")
+        lines.append("")
+
+        lines.append(f"void {msg.c_name}_free ({msg.c_name} *message)")
+        lines.append("{")
+        lines.append("  if (message == NULL)")
+        lines.append("    return;")
+        lines.append("  /* Arena-backed decoded pointers are not individually freed. */")
+        lines.append("  memset (message, 0, sizeof (*message));")
+        lines.append("}")
+        lines.append("")
+
+        lines.append(
+            f"int {msg.c_name}_encode (const {msg.c_name} *message, "
+            "uint8_t *out, size_t out_len, size_t *written)"
+        )
+        lines.append("{")
+        lines.append("  SocketProto_Message_T wire;")
+        lines.append("  SocketProto_Result rc;")
+        lines.append("  if (message == NULL || out == NULL || written == NULL)")
+        lines.append("    return -1;")
+        lines.append("  wire = SocketProto_Message_new (NULL, NULL, NULL);")
+        lines.append("  if (wire == NULL)")
+        lines.append("    return -1;")
+
+        for f in msg.fields:
+            if f.oneof is not None:
+                continue
+            c_type = field_c_type(model, msg, f)
+            if f.repeated:
+                lines.append(f"  for (size_t i = 0; i < message->{f.name}_count; i++)")
+                lines.append("    {")
+                if is_string_field(f):
+                    lines.append(f"      if (message->{f.name}[i] == NULL)")
+                    lines.append("        continue;")
+                    call, _ = wire_append_call(f, f"message->{f.name}[i]")
+                elif is_bytes_field(f):
+                    call, _ = wire_append_call(
+                        f, f"message->{f.name}[i]", f"message->{f.name}_len[i]"
+                    )
+                else:
+                    call, _ = wire_append_call(f, f"message->{f.name}[i]")
+                lines.append(f"      rc = {call};")
+                lines.append("      if (rc != SOCKET_PROTO_OK)")
+                lines.append("        {")
+                lines.append("          SocketProto_Message_free (&wire);")
+                lines.append("          return -1;")
+                lines.append("        }")
+                lines.append("    }")
+                continue
+
+            if is_string_field(f):
+                lines.append(f"  if (message->{f.name} != NULL)")
+                lines.append("    {")
+                call, _ = wire_append_call(f, f"message->{f.name}")
+                lines.append(f"      rc = {call};")
+                lines.append("      if (rc != SOCKET_PROTO_OK)")
+                lines.append("        { SocketProto_Message_free (&wire); return -1; }")
+                lines.append("    }")
+                continue
+
+            if is_bytes_field(f):
+                lines.append(f"  if (message->{f.name} != NULL && message->{f.name}_len > 0)")
+                lines.append("    {")
+                call, _ = wire_append_call(
+                    f, f"message->{f.name}", f"message->{f.name}_len"
+                )
+                lines.append(f"      rc = {call};")
+                lines.append("      if (rc != SOCKET_PROTO_OK)")
+                lines.append("        { SocketProto_Message_free (&wire); return -1; }")
+                lines.append("    }")
+                continue
+
+            if f.type_name in SCALAR_TYPE_MAP:
+                lines.append(f"  if (message->{f.name} != ({c_type})0)")
+                lines.append("    {")
+                call, _ = wire_append_call(f, f"message->{f.name}")
+                lines.append(f"      rc = {call};")
+                lines.append("      if (rc != SOCKET_PROTO_OK)")
+                lines.append("        { SocketProto_Message_free (&wire); return -1; }")
+                lines.append("    }")
+                continue
+
+            nested_type = resolve_message_c_type(model, msg, f.type_name)
+            if nested_type is not None:
+                lines.append(f"  if (message->has_{f.name})")
+                lines.append("    {")
+                lines.append(
+                    "      uint8_t *nested_buf = (uint8_t *)malloc (SOCKETGRPC_GEN_EMBEDDED_LIMIT);"
+                )
+                lines.append("      size_t nested_len = 0;")
+                lines.append("      if (nested_buf == NULL)")
+                lines.append("        { SocketProto_Message_free (&wire); return -1; }")
+                lines.append(
+                    f"      if ({nested_type}_encode (&message->{f.name}, nested_buf, "
+                    "SOCKETGRPC_GEN_EMBEDDED_LIMIT, &nested_len) != 0)"
+                )
+                lines.append("        { free (nested_buf); SocketProto_Message_free (&wire); return -1; }")
+                lines.append(
+                    f"      rc = SocketProto_Message_append_embedded (wire, {f.number}, nested_buf, nested_len);"
+                )
+                lines.append("      free (nested_buf);")
+                lines.append("      if (rc != SOCKET_PROTO_OK)")
+                lines.append("        { SocketProto_Message_free (&wire); return -1; }")
+                lines.append("    }")
+
+        for oneof in msg.oneofs:
+            enum_prefix = f"{msg.c_name}_{sanitize_ident(oneof.name)}Case".upper()
+            lines.append(f"  switch (message->{oneof.name}_case)")
+            lines.append("    {")
+            for f in oneof.fields:
+                case_name = enum_case_name(msg, oneof, f)
+                lines.append(f"    case {case_name}:")
+                call = ""
+                if is_string_field(f):
+                    lines.append(f"      if (message->{oneof.name}.{f.name} == NULL)")
+                    lines.append("        break;")
+                    call, _ = wire_append_call(f, f"message->{oneof.name}.{f.name}")
+                elif is_bytes_field(f):
+                    call, _ = wire_append_call(
+                        f,
+                        f"message->{oneof.name}.{f.name}.data",
+                        f"message->{oneof.name}.{f.name}.len",
+                    )
+                else:
+                    call, _ = wire_append_call(f, f"message->{oneof.name}.{f.name}")
+                lines.append(f"      rc = {call};")
+                lines.append("      if (rc != SOCKET_PROTO_OK)")
+                lines.append("        { SocketProto_Message_free (&wire); return -1; }")
+                lines.append("      break;")
+            lines.append("    default:")
+            lines.append("      break;")
+            lines.append("    }")
+
+        lines.append("  rc = SocketProto_Message_encode (wire, out, out_len, written);")
+        lines.append("  SocketProto_Message_free (&wire);")
+        lines.append("  return (rc == SOCKET_PROTO_OK) ? 0 : -1;")
+        lines.append("}")
+        lines.append("")
+
+        lines.append(
+            f"int {msg.c_name}_decode ({msg.c_name} *message, "
+            "const uint8_t *data, size_t len, Arena_T arena)"
+        )
+        lines.append("{")
+        lines.append("  SocketProto_Message_T parsed;")
+        lines.append("  if (message == NULL || (data == NULL && len != 0) || arena == NULL)")
+        lines.append("    return -1;")
+        lines.append(f"  {msg.c_name}_init (message);")
+        lines.append("  parsed = SocketProto_Message_new (arena, NULL, NULL);")
+        lines.append("  if (parsed == NULL)")
+        lines.append("    return -1;")
+        lines.append("  if (SocketProto_Message_parse (parsed, data, len) != SOCKET_PROTO_OK)")
+        lines.append("    {")
+        lines.append("      SocketProto_Message_free (&parsed);")
+        lines.append("      return -1;")
+        lines.append("    }")
+        lines.append("  for (size_t i = 0; i < SocketProto_Message_field_count (parsed); i++)")
+        lines.append("    {")
+        lines.append("      const SocketProto_Field *field = SocketProto_Message_field_at (parsed, i);")
+        lines.append("      if (field == NULL)")
+        lines.append("        continue;")
+        lines.append("      switch (field->field_number)")
+        lines.append("        {")
+
+        by_number: Dict[int, List[Field]] = {}
+        for f in msg.fields:
+            by_number.setdefault(f.number, []).append(f)
+
+        for number in sorted(by_number):
+            fields = by_number[number]
+            f = fields[0]
+            lines.append(f"        case {number}:")
+            if f.oneof is not None:
+                oneof = next(o for o in msg.oneofs if o.name == f.oneof)
+                for oneof_field in oneof.fields:
+                    if oneof_field.number != number:
+                        continue
+                    emit_decode_assignment(
+                        lines, model, msg, oneof_field, oneof=oneof.name
+                    )
+                lines.append("          break;")
+                continue
+            emit_decode_assignment(lines, model, msg, f, oneof=None)
+            lines.append("          break;")
+
+        lines.append("        default:")
+        lines.append("          break;")
+        lines.append("        }")
+        lines.append("    }")
+        lines.append("  SocketProto_Message_free (&parsed);")
+        lines.append("  return 0;")
+        lines.append("}")
+        lines.append("")
+
+    for svc in model.services:
+        handlers_name = f"{svc.c_name}_ServerHandlers"
+        client_name = f"{svc.c_name}_Client"
+
+        lines.append(
+            f"void {client_name}_init ({client_name} *client, SocketGRPC_Channel_T channel)"
+        )
+        lines.append("{")
+        lines.append("  if (client == NULL)")
+        lines.append("    return;")
+        lines.append("  client->channel = channel;")
+        lines.append("  client->local_handlers = NULL;")
+        lines.append("}")
+        lines.append("")
+
+        lines.append(
+            f"void {client_name}_bind_local ({client_name} *client, const {handlers_name} *handlers)"
+        )
+        lines.append("{")
+        lines.append("  if (client == NULL)")
+        lines.append("    return;")
+        lines.append("  client->local_handlers = handlers;")
+        lines.append("}")
+        lines.append("")
+
+        for method in svc.methods:
+            req = resolve_message_type_for_rpc(model, method.request_type)
+            resp = resolve_message_type_for_rpc(model, method.response_type)
+
+            if method.client_streaming or method.server_streaming:
+                lines.append(
+                    f"int {client_name}_{method.name}_stream "
+                    f"({client_name} *client, void *stream_ctx, Arena_T arena)"
+                )
+                lines.append("{")
+                lines.append("  (void)arena;")
+                lines.append("  if (client == NULL)")
+                lines.append("    return -1;")
+                lines.append(
+                    f"  if (client->local_handlers == NULL || client->local_handlers->{method.name}_stream == NULL)"
+                )
+                lines.append("    return SOCKET_GRPC_STATUS_UNIMPLEMENTED;")
+                lines.append(
+                    f"  return client->local_handlers->{method.name}_stream "
+                    "(stream_ctx, client->local_handlers->userdata, arena);"
+                )
+                lines.append("}")
+                lines.append("")
+            else:
+                lines.append(
+                    f"int {client_name}_{method.name} "
+                    f"({client_name} *client, const {req} *request, "
+                    f"{resp} *response, Arena_T arena)"
+                )
+                lines.append("{")
+                lines.append("  if (client == NULL || request == NULL || response == NULL || arena == NULL)")
+                lines.append("    return -1;")
+                lines.append(
+                    f"  if (client->local_handlers == NULL || client->local_handlers->{method.name} == NULL)"
+                )
+                lines.append("    return SOCKET_GRPC_STATUS_UNIMPLEMENTED;")
+                lines.append(
+                    f"  return client->local_handlers->{method.name} "
+                    "(request, response, client->local_handlers->userdata, arena);"
+                )
+                lines.append("}")
+                lines.append("")
+
+    return "\n".join(lines)
+
+
+def emit_decode_assignment(
+    lines: List[str],
+    model: ProtoModel,
+    message: Message,
+    field: Field,
+    oneof: Optional[str],
+) -> None:
+    target_prefix = f"message->{oneof}." if oneof else "message->"
+    c_type = field_c_type(model, message, field)
+    oneof_case = None
+    if oneof is not None:
+        oneof_obj = next(o for o in message.oneofs if o.name == oneof)
+        oneof_case = enum_case_name(message, oneof_obj, field)
+
+    if field.repeated and oneof is None:
+        if field.type_name in VARINT_TYPES:
+            lines.append("          {")
+            lines.append("            uint64_t value = 0;")
+            lines.append(
+                "            if (SocketProto_Field_decode_u64 (field, &value) == SOCKET_PROTO_OK)"
+            )
+            lines.append(
+                f"              (void){message.c_name}_append_{sanitize_ident(field.name)} "
+                f"(message, ({c_type})value, arena);"
+            )
+            lines.append("          }")
+            return
+        if field.type_name in SINT_TYPES:
+            lines.append("          {")
+            lines.append("            int64_t value = 0;")
+            lines.append(
+                "            if (SocketProto_Field_decode_s64 (field, &value) == SOCKET_PROTO_OK)"
+            )
+            lines.append(
+                f"              (void){message.c_name}_append_{sanitize_ident(field.name)} "
+                f"(message, ({c_type})value, arena);"
+            )
+            lines.append("          }")
+            return
+        if field.type_name in FIXED32_TYPES:
+            lines.append("          {")
+            lines.append("            uint32_t value = 0;")
+            lines.append(
+                "            if (SocketProto_Field_decode_fixed32 (field, &value) == SOCKET_PROTO_OK)"
+            )
+            lines.append(
+                f"              (void){message.c_name}_append_{sanitize_ident(field.name)} "
+                f"(message, ({c_type})value, arena);"
+            )
+            lines.append("          }")
+            return
+        if field.type_name in FIXED64_TYPES:
+            lines.append("          {")
+            lines.append("            uint64_t value = 0;")
+            lines.append(
+                "            if (SocketProto_Field_decode_fixed64 (field, &value) == SOCKET_PROTO_OK)"
+            )
+            lines.append(
+                f"              (void){message.c_name}_append_{sanitize_ident(field.name)} "
+                f"(message, ({c_type})value, arena);"
+            )
+            lines.append("          }")
+            return
+        if is_string_field(field):
+            lines.append("          {")
+            lines.append("            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);")
+            lines.append("            if (copy != NULL)")
+            lines.append("              {")
+            lines.append("                memcpy (copy, field->value, field->value_len);")
+            lines.append("                copy[field->value_len] = '\\0';")
+            lines.append(
+                f"                (void){message.c_name}_append_{sanitize_ident(field.name)} (message, copy, arena);"
+            )
+            lines.append("              }")
+            lines.append("          }")
+            return
+        if is_bytes_field(field):
+            lines.append("          {")
+            lines.append("            uint8_t *copy = NULL;")
+            lines.append("            if (field->value_len > 0)")
+            lines.append("              {")
+            lines.append("                copy = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);")
+            lines.append("                if (copy != NULL)")
+            lines.append("                  memcpy (copy, field->value, field->value_len);")
+            lines.append("              }")
+            lines.append(
+                f"            (void){message.c_name}_append_{sanitize_ident(field.name)} "
+                "(message, copy, field->value_len, arena);"
+            )
+            lines.append("          }")
+            return
+
+    if field.type_name in VARINT_TYPES:
+        lines.append("          {")
+        lines.append("            uint64_t value = 0;")
+        lines.append(
+            "            if (SocketProto_Field_decode_u64 (field, &value) == SOCKET_PROTO_OK)"
+        )
+        if oneof_case:
+            lines.append("              {")
+            lines.append(f"                message->{oneof}_case = {oneof_case};")
+            lines.append(f"                {target_prefix}{field.name} = ({c_type})value;")
+            lines.append("              }")
+        else:
+            lines.append(f"              {target_prefix}{field.name} = ({c_type})value;")
+        lines.append("          }")
+        return
+
+    if field.type_name in SINT_TYPES:
+        lines.append("          {")
+        lines.append("            int64_t value = 0;")
+        lines.append(
+            "            if (SocketProto_Field_decode_s64 (field, &value) == SOCKET_PROTO_OK)"
+        )
+        if oneof_case:
+            lines.append("              {")
+            lines.append(f"                message->{oneof}_case = {oneof_case};")
+            lines.append(f"                {target_prefix}{field.name} = ({c_type})value;")
+            lines.append("              }")
+        else:
+            lines.append(f"              {target_prefix}{field.name} = ({c_type})value;")
+        lines.append("          }")
+        return
+
+    if field.type_name in FIXED32_TYPES:
+        lines.append("          {")
+        lines.append("            uint32_t value = 0;")
+        lines.append(
+            "            if (SocketProto_Field_decode_fixed32 (field, &value) == SOCKET_PROTO_OK)"
+        )
+        if oneof_case:
+            lines.append("              {")
+            lines.append(f"                message->{oneof}_case = {oneof_case};")
+            if field.type_name == "float":
+                lines.append(
+                    "                memcpy (&%s%s, &value, sizeof (value));"
+                    % (target_prefix, field.name)
+                )
+            else:
+                lines.append(f"                {target_prefix}{field.name} = ({c_type})value;")
+            lines.append("              }")
+        else:
+            if field.type_name == "float":
+                lines.append(
+                    "              memcpy (&%s%s, &value, sizeof (value));"
+                    % (target_prefix, field.name)
+                )
+            else:
+                lines.append(f"              {target_prefix}{field.name} = ({c_type})value;")
+        lines.append("          }")
+        return
+
+    if field.type_name in FIXED64_TYPES:
+        lines.append("          {")
+        lines.append("            uint64_t value = 0;")
+        lines.append(
+            "            if (SocketProto_Field_decode_fixed64 (field, &value) == SOCKET_PROTO_OK)"
+        )
+        if oneof_case:
+            lines.append("              {")
+            lines.append(f"                message->{oneof}_case = {oneof_case};")
+            if field.type_name == "double":
+                lines.append(
+                    "                memcpy (&%s%s, &value, sizeof (value));"
+                    % (target_prefix, field.name)
+                )
+            else:
+                lines.append(f"                {target_prefix}{field.name} = ({c_type})value;")
+            lines.append("              }")
+        else:
+            if field.type_name == "double":
+                lines.append(
+                    "              memcpy (&%s%s, &value, sizeof (value));"
+                    % (target_prefix, field.name)
+                )
+            else:
+                lines.append(f"              {target_prefix}{field.name} = ({c_type})value;")
+        lines.append("          }")
+        return
+
+    if is_string_field(field):
+        lines.append("          {")
+        lines.append("            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);")
+        lines.append("            if (copy != NULL)")
+        lines.append("              {")
+        lines.append("                memcpy (copy, field->value, field->value_len);")
+        lines.append("                copy[field->value_len] = '\\0';")
+        if oneof_case:
+            lines.append(f"                message->{oneof}_case = {oneof_case};")
+        lines.append(f"                {target_prefix}{field.name} = copy;")
+        lines.append("              }")
+        lines.append("          }")
+        return
+
+    if is_bytes_field(field):
+        lines.append("          {")
+        lines.append("            uint8_t *copy = NULL;")
+        lines.append("            if (field->value_len > 0)")
+        lines.append("              {")
+        lines.append("                copy = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);")
+        lines.append("                if (copy != NULL)")
+        lines.append("                  memcpy (copy, field->value, field->value_len);")
+        lines.append("              }")
+        if oneof_case:
+            lines.append(f"            message->{oneof}_case = {oneof_case};")
+            lines.append(f"            {target_prefix}{field.name}.data = copy;")
+            lines.append(f"            {target_prefix}{field.name}.len = field->value_len;")
+        else:
+            lines.append(f"            {target_prefix}{field.name} = copy;")
+            lines.append(f"            {target_prefix}{field.name}_len = field->value_len;")
+        lines.append("          }")
+        return
+
+    nested = resolve_message_c_type(model, message, field.type_name)
+    if nested is not None and oneof is None:
+        lines.append(
+            f"          if ({nested}_decode (&message->{field.name}, field->value, field->value_len, arena) == 0)"
+        )
+        lines.append(f"            message->has_{field.name} = 1;")
+        return
+
+    lines.append("          /* Unsupported decode type for this field. */")
+
+
+def write_outputs(proto_path: pathlib.Path, out_dir: pathlib.Path, model: ProtoModel) -> Tuple[pathlib.Path, pathlib.Path]:
+    stem = proto_path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    header_path = out_dir / f"{stem}.socketgrpc.h"
+    source_path = out_dir / f"{stem}.socketgrpc.c"
+
+    header_text = emit_header(model, stem)
+    source_text = emit_source(model, stem, header_path.name)
+
+    header_path.write_text(header_text, encoding="utf-8")
+    source_path.write_text(source_text, encoding="utf-8")
+    return header_path, source_path
+
+
+def main(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(description="Generate C gRPC stubs from .proto files")
+    parser.add_argument("--proto", required=True, help="Input .proto file path")
+    parser.add_argument("--out-dir", required=True, help="Output directory")
+    args = parser.parse_args(argv)
+
+    proto_path = pathlib.Path(args.proto)
+    out_dir = pathlib.Path(args.out_dir)
+    if not proto_path.exists():
+        print(f"error: proto file not found: {proto_path}", file=sys.stderr)
+        return 2
+
+    try:
+        text = proto_path.read_text(encoding="utf-8")
+        model = parse_proto_model(text)
+        write_outputs(proto_path, out_dir, model)
+    except Exception as exc:  # pragma: no cover - surfaced in CLI logs
+        print(f"error: generation failed: {exc}", file=sys.stderr)
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

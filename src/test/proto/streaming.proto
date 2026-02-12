@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package test.streaming;
+
+message Chunk {
+  bytes data = 1;
+  uint32 sequence = 2;
+}
+
+message Ack {
+  uint32 received = 1;
+}
+
+service Streamer {
+  rpc Upload (stream Chunk) returns (Ack);
+  rpc Subscribe (Chunk) returns (stream Chunk);
+  rpc Chat (stream Chunk) returns (stream Chunk);
+}
