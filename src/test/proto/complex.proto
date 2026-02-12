@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package test.complex;
+
+message Envelope {
+  message Meta {
+    uint64 timestamp = 1;
+    string source = 2;
+  }
+
+  Meta meta = 1;
+  repeated string tags = 2;
+  repeated uint32 scores = 3;
+  repeated bytes attachments = 4;
+
+  oneof payload {
+    string text = 5;
+    bytes blob = 6;
+    uint64 ref_id = 7;
+  }
+}
+
+message ComplexRequest {
+  Envelope envelope = 1;
+  repeated string notes = 2;
+  repeated uint32 codes = 3;
+}
+
+message ComplexResponse {
+  bool accepted = 1;
+  string reason = 2;
+}
+
+service ComplexService {
+  rpc Process (ComplexRequest) returns (ComplexResponse);
+}
