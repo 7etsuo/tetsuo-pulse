@@ -12,8 +12,13 @@
 #include "grpc/SocketGRPC-private.h"
 #include "grpc/SocketGRPCWire.h"
 #include "http/SocketHTTPClient-private.h"
+#include "http/SocketHTTP2-private.h"
 
 #include "core/SocketCrypto.h"
+#include "socket/Socket.h"
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#endif
 
 #include <ctype.h>
 #include <stdio.h>
@@ -24,6 +29,219 @@
 #define GRPC_CONTENT_TYPE "application/grpc"
 #define GRPC_TIMEOUT_HEADER_MAX 32U
 #define GRPC_RESPONSE_CHUNK 4096U
+
+static int
+grpc_h2_conn_process_safe (SocketHTTP2_Conn_T conn, unsigned events)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Conn_process (conn, events);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static void
+grpc_h2_stream_cancel_safe (SocketHTTP2_Stream_T stream)
+{
+  if (stream == NULL)
+    return;
+
+  TRY
+  {
+    SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+#endif
+  ELSE
+  {
+  }
+  END_TRY;
+}
+
+static ssize_t
+grpc_h2_stream_recv_data_safe (SocketHTTP2_Stream_T stream,
+                               void *buf,
+                               size_t len,
+                               int *end_stream)
+{
+  volatile ssize_t rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Stream_recv_data (stream, buf, len, end_stream);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static int
+grpc_h2_stream_recv_trailers_safe (SocketHTTP2_Stream_T stream,
+                                   SocketHPACK_Header *trailers,
+                                   size_t trailers_cap,
+                                   size_t *trailer_count)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Stream_recv_trailers (
+        stream, trailers, trailers_cap, trailer_count);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  ELSE
+  {
+    rc = -1;
+  }
+  END_TRY;
+
+  return rc;
+}
+
+static void
+grpc_release_connection_safe (SocketHTTPClient_T http_client,
+                              HTTPPoolEntry *conn,
+                              int success)
+{
+  if (http_client == NULL || conn == NULL)
+    return;
+
+  TRY
+  {
+    httpclient_release_connection (http_client, conn, success);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+#endif
+  ELSE
+  {
+  }
+  END_TRY;
+}
 
 static int
 str_has_prefix (const char *str, const char *prefix)
@@ -85,7 +303,7 @@ grpc_has_metadata_slot (SocketGRPC_Call_T call)
 }
 
 static char *
-grpc_build_call_url (SocketGRPC_Call_T call)
+grpc_build_call_url (SocketGRPC_Call_T call, Arena_T arena)
 {
   const char *target = call->channel->target;
   const char *path = call->full_method;
@@ -128,7 +346,7 @@ grpc_build_call_url (SocketGRPC_Call_T call)
   if (scheme != NULL)
     {
       size_t scheme_len = strlen (scheme);
-      url = (char *)malloc (scheme_len + trim_len + add_slash + path_len + 1U);
+      url = (char *)ALLOC (arena, scheme_len + trim_len + add_slash + path_len + 1U);
       if (url == NULL)
         return NULL;
       memcpy (url, scheme, scheme_len);
@@ -140,7 +358,7 @@ grpc_build_call_url (SocketGRPC_Call_T call)
       return url;
     }
 
-  url = (char *)malloc (trim_len + add_slash + path_len + 1U);
+  url = (char *)ALLOC (arena, trim_len + add_slash + path_len + 1U);
   if (url == NULL)
     return NULL;
   memcpy (url, base, trim_len);
@@ -479,7 +697,7 @@ grpc_receive_body_and_trailers (SocketGRPC_Call_T call,
     {
       unsigned char chunk[GRPC_RESPONSE_CHUNK];
       int end_stream = 0;
-      ssize_t n = SocketHTTP2_Stream_recv_data (
+      ssize_t n = grpc_h2_stream_recv_data_safe (
           stream, chunk, sizeof (chunk), &end_stream);
       if (n < 0)
         {
@@ -517,7 +735,7 @@ grpc_receive_body_and_trailers (SocketGRPC_Call_T call,
       {
         SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
         size_t trailer_count = 0;
-        int tr = SocketHTTP2_Stream_recv_trailers (
+        int tr = grpc_h2_stream_recv_trailers_safe (
             stream, trailers, SOCKETHTTP2_MAX_DECODED_HEADERS, &trailer_count);
         if (tr < 0)
           {
@@ -537,7 +755,7 @@ grpc_receive_body_and_trailers (SocketGRPC_Call_T call,
       if (end_stream)
         break;
 
-      if (n == 0 && SocketHTTP2_Conn_process (conn, 0) < 0)
+      if (n == 0 && grpc_h2_conn_process_safe (conn, 0) < 0)
         {
           free (body);
           return -1;
@@ -650,7 +868,7 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
   *response_payload_len = 0;
   SocketGRPC_Trailers_clear (call->response_trailers);
 
-  url = grpc_build_call_url (call);
+  url = grpc_build_call_url (call, arena);
   if (url == NULL)
     {
       grpc_call_status_set (
@@ -692,7 +910,7 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
       goto cleanup;
     }
 
-  framed = (unsigned char *)malloc (framed_cap);
+  framed = (unsigned char *)ALLOC (arena, framed_cap);
   if (framed == NULL)
     {
       grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
@@ -849,13 +1067,11 @@ cleanup:
     {
       conn->proto.h2.active_streams--;
       if (!transport_success)
-        SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+        grpc_h2_stream_cancel_safe (stream);
     }
   if (conn != NULL)
-    httpclient_release_connection (http_client, conn, transport_success);
+    grpc_release_connection_safe (http_client, conn, transport_success);
   free (raw_response);
-  free (framed);
-  free (url);
   SocketHTTPClient_Response_free (&response);
   SocketHTTPClient_Request_free (&req);
   SocketHTTPClient_free (&http_client);

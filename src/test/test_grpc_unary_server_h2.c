@@ -427,21 +427,33 @@ grpc_execute_unary (const GRPCUnaryServerFixture *fixture,
                     SocketGRPC_Status *status_out)
 {
   GRPCClientFixture client;
-  int rc;
+  SocketGRPC_Status status;
+  int rc = -1;
 
   if (grpc_client_fixture_open (&client, fixture, full_method) != 0)
     return -1;
 
-  rc = SocketGRPC_Call_unary_h2 (client.call,
-                                 request_payload,
-                                 request_payload_len,
-                                 arena,
-                                 response_payload,
-                                 response_payload_len);
+  TRY
+  {
+    rc = SocketGRPC_Call_unary_h2 (client.call,
+                                   request_payload,
+                                   request_payload_len,
+                                   arena,
+                                   response_payload,
+                                   response_payload_len);
+  }
+  ELSE
+  {
+    status = SocketGRPC_Call_status (client.call);
+    rc = status.code;
+    if (rc < 0)
+      rc = SOCKET_GRPC_STATUS_UNAVAILABLE;
+  }
+  END_TRY;
 
   if (status_out != NULL)
     {
-      SocketGRPC_Status status = SocketGRPC_Call_status (client.call);
+      status = SocketGRPC_Call_status (client.call);
       status_out->code = status.code;
       status_out->message = status.message;
 

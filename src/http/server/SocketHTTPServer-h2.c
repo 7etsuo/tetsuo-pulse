@@ -31,6 +31,9 @@
 #include "http/SocketHTTPServer.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#endif
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer-H2"
@@ -1181,6 +1184,24 @@ server_process_http2 (SocketHTTPServer_T server,
   {
     return -1;
   }
+  EXCEPT (Socket_Closed)
+  {
+    return -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    return -1;
+  }
+#endif
   END_TRY;
 
   if (!stream_error && r < 0)
@@ -1198,6 +1219,24 @@ server_process_http2 (SocketHTTPServer_T server,
   {
     return -1;
   }
+  EXCEPT (Socket_Closed)
+  {
+    return -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    return -1;
+  }
+#endif
   END_TRY;
 
   if (SocketHTTP2_Conn_is_closed (conn->http2_conn))

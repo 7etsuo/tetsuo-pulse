@@ -21,6 +21,7 @@
 
 /* Module exception - required for RAISE_HTTPCLIENT_ERROR macro */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -30,6 +31,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
 /* HTTP/2 support */
 #include "http/SocketHTTP2.h"
+#include "http/SocketHTTP2-private.h"
 
 /* #include <string.h> - provided by SocketUtil.h or others */
 #include <time.h>
@@ -204,7 +206,13 @@ static void
 close_http2_resources (HTTPPoolEntry *entry)
 {
   if (entry->proto.h2.conn != NULL)
-    SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+    {
+      /* HTTP/2 connection teardown does not own the socket lifecycle. */
+      Socket_T socket = SocketHTTP2_Conn_socket (entry->proto.h2.conn);
+      SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+      if (socket != NULL)
+        Socket_free (&socket);
+    }
 }
 
 static void
@@ -737,6 +745,126 @@ init_http2_entry_fields (HTTPPoolEntry *entry,
 }
 
 static int
+httpclient_h2_conn_handshake_safe (SocketHTTP2_Conn_T conn)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Conn_handshake (conn);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  END_TRY;
+
+  return rc;
+}
+
+static int
+httpclient_h2_conn_flush_safe (SocketHTTP2_Conn_T conn)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Conn_flush (conn);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  END_TRY;
+
+  return rc;
+}
+
+static int
+httpclient_h2_conn_process_safe (SocketHTTP2_Conn_T conn, unsigned events)
+{
+  volatile int rc = -1;
+
+  TRY
+  {
+    rc = SocketHTTP2_Conn_process (conn, events);
+  }
+  EXCEPT (SocketHTTP2)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    rc = -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
+  END_TRY;
+
+  return rc;
+}
+
+static int
 create_http2_entry_resources (HTTPPoolEntry *entry,
                               Socket_T socket,
                               HTTPPool *pool)
@@ -758,7 +886,7 @@ create_http2_entry_resources (HTTPPoolEntry *entry,
   /* Complete HTTP/2 handshake (preface + SETTINGS) */
   do
     {
-      handshake_result = SocketHTTP2_Conn_handshake (conn);
+      handshake_result = httpclient_h2_conn_handshake_safe (conn);
 
       /* Guard: handshake failure */
       if (handshake_result < 0)
@@ -774,14 +902,14 @@ create_http2_entry_resources (HTTPPoolEntry *entry,
       /* Flush outbound handshake bytes first (client preface + SETTINGS).
        * This prevents deadlock against peers that wait for preface before
        * sending their initial SETTINGS frame. */
-      if (SocketHTTP2_Conn_flush (conn) < 0)
+      if (httpclient_h2_conn_flush_safe (conn) < 0)
         {
           SocketHTTP2_Conn_free (&entry->proto.h2.conn);
           return -1;
         }
 
       /* Need more I/O - process inbound frames */
-      if (SocketHTTP2_Conn_process (conn, 0) < 0)
+      if (httpclient_h2_conn_process_safe (conn, 0) < 0)
         {
           SocketHTTP2_Conn_free (&entry->proto.h2.conn);
           return -1;
@@ -953,6 +1081,8 @@ establish_tcp_connection (SocketHTTPClient_T client, const char *host, int port)
 static SocketTLSContext_T
 ensure_tls_context (SocketHTTPClient_T client)
 {
+  volatile SocketTLSContext_T tls_ctx = NULL;
+
   if (client->config.tls_context != NULL)
     return client->config.tls_context;
 
@@ -961,53 +1091,61 @@ ensure_tls_context (SocketHTTPClient_T client)
 
   TRY
   {
-    client->default_tls_ctx = SocketTLSContext_new_client (NULL);
+    tls_ctx = SocketTLSContext_new_client (NULL);
+    client->default_tls_ctx = (SocketTLSContext_T)tls_ctx;
   }
   EXCEPT (SocketTLS_Failed)
   {
-    return 0;
+    tls_ctx = NULL;
   }
   END_TRY;
 
-  return client->default_tls_ctx;
+  return (SocketTLSContext_T)tls_ctx;
 }
 
 static int
 enable_socket_tls (Socket_T socket, SocketTLSContext_T tls_ctx)
 {
+  volatile int rc = 0;
+
   TRY
   {
     SocketTLS_enable (socket, tls_ctx);
+    rc = 0;
   }
   EXCEPT (SocketTLS_Failed)
   {
-    return -1;
+    rc = -1;
   }
   END_TRY;
 
-  return 0;
+  return rc;
 }
 
 static int
 perform_tls_handshake (Socket_T socket, int timeout_ms)
 {
+  volatile int rc = -1;
+
   TRY
   {
     TLSHandshakeState result = SocketTLS_handshake_loop (socket, timeout_ms);
     if (result != TLS_HANDSHAKE_COMPLETE)
-      return -1;
+      rc = -1;
+    else
+      rc = 0;
   }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
-    return -1;
+    rc = -1;
   }
   EXCEPT (SocketTLS_VerifyFailed)
   {
-    return -1;
+    rc = -1;
   }
   END_TRY;
 
-  return 0;
+  return rc;
 }
 
 static void
@@ -1223,6 +1361,8 @@ handle_non_pooled_entry (SocketHTTPClient_T client,
                          int is_secure,
                          SocketHTTP_Version negotiated_version)
 {
+  HTTPPoolEntry *volatile entry = NULL;
+
   /* Non-pooled: only HTTP/1.1 supported (temp entries don't do HTTP/2).
    * If ALPN negotiated h2, we must fail since we can't handle HTTP/2 framing.
    * This can happen when the server only supports h2 (rare) or prefers it. */
@@ -1237,17 +1377,17 @@ handle_non_pooled_entry (SocketHTTPClient_T client,
 
   TRY
   {
-    return create_temp_entry (socket, host, port, is_secure);
+    entry = create_temp_entry (socket, host, port, is_secure);
   }
   EXCEPT (Arena_Failed)
   {
     Socket_free (&socket);
     client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-    return 0;
+    entry = NULL;
   }
   END_TRY;
 
-  return NULL; /* Unreachable, silences compiler */
+  return (HTTPPoolEntry *)entry;
 }
 
 HTTPPoolEntry *
