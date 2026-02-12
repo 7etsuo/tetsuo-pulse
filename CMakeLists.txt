@@ -364,6 +364,9 @@ set(LIB_SOURCES
 
     # gRPC module (public scaffolding)
     src/grpc/SocketGRPC-core.c
+    src/grpc/SocketProto-varint.c
+    src/grpc/SocketProto-wire.c
+    src/grpc/SocketProto-message.c
     
     # HTTP module (RFC 9110/3986)
     src/http/SocketHTTP-core.c
@@ -780,6 +783,8 @@ set(GRPC_HEADERS
     include/grpc/SocketGRPC.h
     include/grpc/SocketGRPC-private.h
     include/grpc/SocketGRPCConfig.h
+    include/grpc/SocketProto.h
+    include/grpc/SocketProto-private.h
 )
 
 install(TARGETS socket_static socket_shared
@@ -928,6 +933,9 @@ set(TEST_SOURCES
     test_http3_request
     test_http3_compliance
     test_grpc_api_surface
+    test_proto_varint
+    test_proto_wire
+    test_proto_message
 )
 
 if(ENABLE_H3_PUSH)
@@ -1368,6 +1376,8 @@ if(ENABLE_FUZZING)
         fuzz_quic_connection
         fuzz_quic_handshake
         fuzz_quic_tls
+        fuzz_proto_wire
+        fuzz_proto_message
         # QPACK fuzzers (RFC 9204 - HTTP/3 header compression)
         fuzz_qpack_index
         fuzz_qpack_prefix
