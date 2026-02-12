@@ -20,6 +20,7 @@
 
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
+#include "tls/SocketTLS.h"
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketSSL-internal.h"
 #include <assert.h>
@@ -408,9 +409,7 @@ static int
 check_ocsp_must_staple (T ctx, Socket_T sock, X509 *cert)
 {
   int must_require_ocsp = 0;
-  SSL *ssl;
-  const unsigned char *ocsp_resp = NULL;
-  long ocsp_len;
+  int ocsp_status;
 
   /* Check if must-staple enforcement is enabled */
   if (ctx->ocsp_must_staple_mode == OCSP_MUST_STAPLE_DISABLED)
@@ -429,33 +428,37 @@ check_ocsp_must_staple (T ctx, Socket_T sock, X509 *cert)
   if (!must_require_ocsp)
     return 1; /* No OCSP requirement - pass */
 
-  /* OCSP stapling is required - check for valid response */
-  ssl = (SSL *)sock->tls_ssl;
-  if (!ssl)
+  if (!sock || !sock->tls_ssl)
     {
       SOCKET_LOG_ERROR_MSG ("OCSP Must-Staple: SSL object not available");
       return 0;
     }
 
-  ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
-
-  if (ocsp_len <= 0 || !ocsp_resp)
+  /* Perform full OCSP validation (signature + freshness + cert status). */
+  ocsp_status = SocketTLS_get_ocsp_response_status (sock);
+  if (ocsp_status == -1)
     {
       SOCKET_LOG_ERROR_MSG (
           "OCSP Must-Staple: Certificate requires OCSP stapling but no "
           "response was provided by the server");
-      return 0; /* No OCSP response - fail */
+      return 0;
+    }
+  if (ocsp_status == 0)
+    {
+      SOCKET_LOG_ERROR_MSG ("OCSP Must-Staple: Stapled OCSP response reports "
+                            "certificate revoked");
+      return 0;
+    }
+  if (ocsp_status != 1)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "OCSP Must-Staple: Stapled OCSP response failed verification "
+          "(status=%d)",
+          ocsp_status);
+      return 0;
     }
 
-  /* Validate the OCSP response */
-  if (!validate_ocsp_response (ocsp_resp,
-                               ocsp_len,
-                               0,
-                               OCSP_VALIDATE_RETURN_CODE,
-                               "OCSP Must-Staple"))
-    return 0;
-
-  SOCKET_LOG_DEBUG_MSG ("OCSP Must-Staple: Valid OCSP response present");
+  SOCKET_LOG_DEBUG_MSG ("OCSP Must-Staple: Valid authenticated OCSP response");
   return 1; /* OCSP requirement satisfied */
 }
 

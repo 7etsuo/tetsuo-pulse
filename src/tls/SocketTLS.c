@@ -173,6 +173,34 @@ validate_tls_enable_preconditions (Socket_T socket)
 }
 
 /**
+ * require_client_hostname_verification - Enforce hostname verification setup
+ * @socket: TLS-enabled socket
+ * @ctx: TLS context associated with socket
+ *
+ * For verified client connections (verify mode != TLS_VERIFY_NONE), require
+ * SocketTLS_set_hostname() before handshake to avoid hostname-bypass MITM.
+ */
+static void
+require_client_hostname_verification (Socket_T socket, SocketTLSContext_T ctx)
+{
+  const char *hostname;
+
+  if (!socket || !ctx)
+    return;
+
+  if (ctx->is_server || ctx->verify_mode == TLS_VERIFY_NONE)
+    return;
+
+  hostname = (const char *)socket->tls_sni_hostname;
+  if (hostname && hostname[0] != '\0')
+    return;
+
+  RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
+                       "Client hostname verification is not configured; call "
+                       "SocketTLS_set_hostname() before SocketTLS_handshake()");
+}
+
+/**
  * create_ssl_object - Create and configure SSL object from context
  * @ctx: TLS context
  *
@@ -362,12 +390,15 @@ SocketTLS_handshake (Socket_T socket)
     return TLS_HANDSHAKE_COMPLETE;
 
   SSL *ssl = tls_socket_get_ssl (socket);
+  SocketTLSContext_T ctx = (SocketTLSContext_T)socket->tls_ctx;
   if (!ssl)
     {
       SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_FAILED);
       RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
                            "SSL object not available");
     }
+
+  require_client_hostname_verification (socket, ctx);
 
   int result = SSL_do_handshake (ssl);
   if (result == 1)

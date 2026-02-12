@@ -134,6 +134,47 @@ collect_excess_connections (T pool,
 }
 
 /**
+ * ensure_cleanup_buffer_capacity - Grow cleanup buffer for new max capacity
+ * @pool: Pool instance
+ * @required_capacity: Required entry count
+ *
+ * Returns: 0 on success, -1 on allocation/overflow failure
+ * Thread-safe: Call with mutex held
+ */
+static int
+ensure_cleanup_buffer_capacity (T pool, size_t required_capacity)
+{
+  Socket_T *new_buffer;
+  size_t alloc_bytes;
+  size_t old_capacity = pool->cleanup_buffer_capacity;
+
+  if (required_capacity <= old_capacity)
+    return 0;
+
+  if (!SocketSecurity_check_multiply (
+          required_capacity, sizeof (Socket_T), &alloc_bytes))
+    {
+      SOCKET_ERROR_MSG ("Overflow in cleanup buffer size calculation");
+      return -1;
+    }
+
+  new_buffer = realloc (pool->cleanup_buffer, alloc_bytes);
+  if (!new_buffer)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot grow cleanup buffer");
+      return -1;
+    }
+
+  memset (new_buffer + old_capacity,
+          0,
+          sizeof (Socket_T) * (required_capacity - old_capacity));
+
+  pool->cleanup_buffer = new_buffer;
+  pool->cleanup_buffer_capacity = required_capacity;
+  return 0;
+}
+
+/**
  * realloc_connections_array - Reallocate connections array
  * @pool: Pool instance
  * @new_maxconns: New size
@@ -396,6 +437,9 @@ perform_resize_operations (T pool, size_t old_maxconns, size_t new_maxconns)
 
   if (new_maxconns < old_maxconns)
     handle_shrink_excess (pool, new_maxconns);
+
+  if (ensure_cleanup_buffer_capacity (pool, new_maxconns) != 0)
+    return -1;
 
   if (realloc_connections_array (pool, new_maxconns) != 0)
     return -1;

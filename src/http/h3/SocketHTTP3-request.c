@@ -20,6 +20,7 @@
 #include "http/qpack/SocketQPACK.h"
 #include "quic/SocketQUICVarInt.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /* ============================================================================
@@ -33,6 +34,7 @@
 #define H3_MAX_HEADER_NAME 256
 #define H3_MAX_HEADER_VALUE 4096
 #define H3_MAX_COOKIE_HEADERS 32
+#define H3_FIELD_SECTION_ENTRY_OVERHEAD 32
 
 /* ============================================================================
  * QPACK Encoding Helpers (Static Table Only)
@@ -527,8 +529,8 @@ SocketHTTP3_Request_new_incoming (SocketHTTP3_Conn_T conn, uint64_t stream_id)
 #ifdef SOCKET_HAS_H3_PUSH
 SocketHTTP3_Request_T
 SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
-                               uint64_t stream_id,
-                               uint64_t push_id)
+                              uint64_t stream_id,
+                              uint64_t push_id)
 {
   if (conn == NULL)
     return NULL;
@@ -587,11 +589,10 @@ SocketHTTP3_Request_send_headers (SocketHTTP3_Request_T req,
   if (req->send_state != H3_REQ_SEND_IDLE)
     return -(int)H3_GENERAL_PROTOCOL_ERROR;
 
-  /* Validate headers — push streams send responses, not requests */
+    /* Validate headers — push streams send responses, not requests */
 #ifdef SOCKET_HAS_H3_PUSH
-  int rc = req->is_push_stream
-               ? SocketHTTP3_validate_response_headers (headers)
-               : SocketHTTP3_validate_request_headers (headers);
+  int rc = req->is_push_stream ? SocketHTTP3_validate_response_headers (headers)
+                               : SocketHTTP3_validate_request_headers (headers);
 #else
   int rc = SocketHTTP3_validate_request_headers (headers);
 #endif
@@ -762,6 +763,48 @@ parse_status_code (const char *value, size_t value_len)
 }
 
 /**
+ * @brief Enforce SETTINGS_MAX_FIELD_SECTION_SIZE for decoded headers.
+ *
+ * RFC 9114 reuses HTTP field section sizing rules: sum(name_len + value_len +
+ * 32) across all header fields.
+ */
+static int
+validate_field_section_size (const struct SocketHTTP3_Request *req,
+                             const SocketHTTP_Headers_T headers)
+{
+  uint64_t max_size;
+  uint64_t total = 0;
+  size_t count;
+
+  if (req == NULL || req->conn == NULL || headers == NULL)
+    return -(int)H3_INTERNAL_ERROR;
+
+  max_size = req->conn->local_settings.max_field_section_size;
+  if (max_size == UINT64_MAX)
+    return 0; /* No explicit limit configured */
+
+  count = SocketHTTP_Headers_count (headers);
+  for (size_t i = 0; i < count; i++)
+    {
+      const SocketHTTP_Header *h = SocketHTTP_Headers_at (headers, i);
+      uint64_t entry_size;
+
+      if (h == NULL)
+        return -(int)H3_MESSAGE_ERROR;
+
+      entry_size = (uint64_t)h->name_len + (uint64_t)h->value_len
+                   + (uint64_t)H3_FIELD_SECTION_ENTRY_OVERHEAD;
+
+      if (entry_size > max_size || total > max_size - entry_size)
+        return -(int)H3_MESSAGE_ERROR;
+
+      total += entry_size;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Handle a received HEADERS frame on a request stream.
  *
  * Decodes QPACK, validates, extracts status code and content-length.
@@ -772,6 +815,11 @@ handle_headers_frame (struct SocketHTTP3_Request *req,
                       const uint8_t *payload,
                       size_t payload_len)
 {
+  if (req->conn != NULL
+      && req->conn->local_settings.max_field_section_size != UINT64_MAX
+      && payload_len > req->conn->local_settings.max_field_section_size)
+    return -(int)H3_MESSAGE_ERROR;
+
   if (req->recv_state == H3_REQ_RECV_BODY_RECEIVING
       || (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED
           && req->status_code >= 200))
@@ -788,6 +836,10 @@ handle_headers_frame (struct SocketHTTP3_Request *req,
     return rc;
 
   h3_coalesce_cookies (req->arena, hdrs);
+
+  rc = validate_field_section_size (req, hdrs);
+  if (rc != 0)
+    return rc;
 
   rc = SocketHTTP3_validate_response_headers (hdrs);
   if (rc != 0)
