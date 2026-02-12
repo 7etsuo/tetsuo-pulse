@@ -11,6 +11,7 @@
 
 #include "grpc/SocketGRPC-private.h"
 #include "grpc/SocketGRPCWire.h"
+#include "core/SocketUtil/Timeout.h"
 #include "http/SocketHTTPClient-private.h"
 #include "http/SocketHTTP2-private.h"
 
@@ -47,6 +48,7 @@ typedef struct
   int status_finalized;
   int active_stream_counted;
   int http_status_code;
+  int64_t deadline_ms;
 } SocketGRPC_H2CallStream;
 
 static int
@@ -658,9 +660,9 @@ grpc_request_add_required_headers (SocketGRPC_Call_T call,
 
   if (call->config.deadline_ms > 0)
     {
-      int len
-          = snprintf (timeout_buf, sizeof (timeout_buf), "%dm", call->config.deadline_ms);
-      if (len <= 0 || (size_t)len >= sizeof (timeout_buf))
+      if (SocketGRPC_Timeout_format (
+              (int64_t)call->config.deadline_ms, timeout_buf, sizeof (timeout_buf))
+          != 0)
         return -1;
       if (SocketHTTPClient_Request_header (req, "grpc-timeout", timeout_buf) != 0)
         return -1;
@@ -1206,6 +1208,7 @@ grpc_stream_open_if_needed (SocketGRPC_Call_T call)
   grpc_call_status_set (call, SOCKET_GRPC_STATUS_OK, NULL);
 
   ctx->http_status_code = HTTP_STATUS_OK;
+  ctx->deadline_ms = SocketTimeout_deadline_ms (call->config.deadline_ms);
   call->h2_stream_ctx = ctx;
   call->h2_stream_state = GRPC_CALL_STREAM_OPEN;
   return ctx;
@@ -1249,6 +1252,12 @@ grpc_stream_send_frame (SocketGRPC_Call_T call,
 
   while (offset < frame_len)
     {
+      if (SocketTimeout_expired (ctx->deadline_ms))
+        {
+          return grpc_stream_fail (
+              call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded", 1);
+        }
+
       if (grpc_h2_conn_flush_safe (ctx->h2conn) != 0)
         {
           return grpc_stream_fail (
@@ -1264,6 +1273,11 @@ grpc_stream_send_frame (SocketGRPC_Call_T call,
         }
       if (n == 0)
         {
+          if (SocketTimeout_expired (ctx->deadline_ms))
+            {
+              return grpc_stream_fail (
+                  call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded", 1);
+            }
           if (grpc_h2_conn_process_safe (ctx->h2conn, 0) < 0 || ++idle_spins > 2048)
             {
               return grpc_stream_fail (call,
@@ -1541,6 +1555,12 @@ SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
 
   for (;;)
     {
+      if (SocketTimeout_expired (ctx->deadline_ms))
+        {
+          return grpc_stream_fail (
+              call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded", 1);
+        }
+
       int has_message = 0;
       if (grpc_stream_try_parse_message (call,
                                          ctx,
@@ -1692,6 +1712,29 @@ SocketGRPC_Call_status (SocketGRPC_Call_T call)
 }
 
 int
+SocketGRPC_Call_cancel (SocketGRPC_Call_T call)
+{
+  if (call == NULL)
+    return -1;
+
+  if (call->response_trailers != NULL
+      && !SocketGRPC_Trailers_has_status (call->response_trailers))
+    {
+      (void)SocketGRPC_Trailers_set_status (
+          call->response_trailers, SOCKET_GRPC_STATUS_CANCELLED);
+      (void)SocketGRPC_Trailers_set_message (
+          call->response_trailers, "Call cancelled");
+    }
+
+  grpc_call_status_set (call, SOCKET_GRPC_STATUS_CANCELLED, "Call cancelled");
+
+  if (call->h2_stream_ctx != NULL)
+    grpc_stream_context_cleanup (call, 0, 1);
+
+  return 0;
+}
+
+int
 SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
                           const uint8_t *request_payload,
                           size_t request_payload_len,
@@ -1715,6 +1758,7 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
   char *url = NULL;
   int status_code = -1;
   int transport_success = 0;
+  int64_t call_deadline_ms = 0;
 
   if (call == NULL || request_payload == NULL || arena == NULL
       || response_payload == NULL || response_payload_len == NULL)
@@ -1733,6 +1777,7 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
       grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
       return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
     }
+  call_deadline_ms = SocketTimeout_deadline_ms (call->config.deadline_ms);
   framed_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + request_payload_len;
 
   *response_payload = NULL;
@@ -1876,6 +1921,23 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
       }
   }
 
+  if (SocketTimeout_expired (call_deadline_ms))
+    {
+      int existing_status = SocketGRPC_Trailers_has_status (call->response_trailers)
+                                ? SocketGRPC_Trailers_status (call->response_trailers)
+                                : SOCKET_GRPC_STATUS_OK;
+      if (existing_status == SOCKET_GRPC_STATUS_OK)
+        {
+          (void)SocketGRPC_Trailers_set_status (
+              call->response_trailers, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED);
+          if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
+            {
+              (void)SocketGRPC_Trailers_set_message (
+                  call->response_trailers, "Deadline exceeded");
+            }
+        }
+    }
+
   if (!SocketGRPC_Trailers_has_status (call->response_trailers))
     {
       SocketGRPC_StatusCode mapped
@@ -1889,7 +1951,8 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
       (SocketGRPC_StatusCode)status_code,
       SocketGRPC_Trailers_message (call->response_trailers));
 
-  if (raw_response != NULL && raw_response_len > 0)
+  if (status_code == SOCKET_GRPC_STATUS_OK && raw_response != NULL
+      && raw_response_len > 0)
     {
       SocketGRPC_FrameView frame;
       size_t consumed = 0;
@@ -1929,6 +1992,11 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
           *response_payload = out;
           *response_payload_len = frame.payload_len;
         }
+    }
+  else
+    {
+      *response_payload = NULL;
+      *response_payload_len = 0;
     }
 
   transport_success = 1;

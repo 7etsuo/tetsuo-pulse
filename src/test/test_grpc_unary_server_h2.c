@@ -193,6 +193,49 @@ grpc_raise_handler (SocketGRPC_ServerContext_T ctx,
   RAISE (SocketGRPC_Failed);
 }
 
+static int
+grpc_deadline_probe_handler (SocketGRPC_ServerContext_T ctx,
+                             const uint8_t *request_payload,
+                             size_t request_payload_len,
+                             Arena_T arena,
+                             uint8_t **response_payload,
+                             size_t *response_payload_len,
+                             void *userdata)
+{
+  uint8_t *out;
+  int cancelled_before;
+  int cancelled_after;
+
+  (void)request_payload;
+  (void)request_payload_len;
+  (void)userdata;
+
+  if (ctx == NULL || arena == NULL || response_payload == NULL
+      || response_payload_len == NULL)
+    return SOCKET_GRPC_STATUS_INTERNAL;
+
+  cancelled_before = SocketGRPC_ServerContext_is_cancelled (ctx);
+  usleep (60000);
+  cancelled_after = SocketGRPC_ServerContext_is_cancelled (ctx);
+
+  out = ALLOC (arena, 2);
+  if (out == NULL)
+    return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
+  out[0] = (uint8_t)(cancelled_before ? 1 : 0);
+  out[1] = (uint8_t)(cancelled_after ? 1 : 0);
+  *response_payload = out;
+  *response_payload_len = 2;
+
+  if (cancelled_after)
+    {
+      (void)SocketGRPC_ServerContext_set_status (
+          ctx, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded");
+      return SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
+    }
+
+  return SOCKET_GRPC_STATUS_OK;
+}
+
 static void *
 grpc_server_thread_main (void *arg)
 {
@@ -287,6 +330,11 @@ grpc_fixture_start (GRPCUnaryServerFixture *fixture)
                                                   "/test.Echo/Raise",
                                                   grpc_raise_handler,
                                                   NULL)
+             != 0
+      || SocketGRPC_Server_register_unary (fixture->grpc_server,
+                                           "/test.Echo/DeadlineProbe",
+                                           grpc_deadline_probe_handler,
+                                           NULL)
              != 0)
     {
       grpc_fixture_stop (fixture);
@@ -644,6 +692,69 @@ TEST (grpc_unary_server_h2_integration_matrix)
 TEST (grpc_unary_server_h2_http_validation_paths)
 {
   printf ("  [SKIP] HTTP client trailer-only handling is not stable under ASAN\n");
+}
+
+TEST (grpc_unary_server_h2_deadline_cancel_detection)
+{
+  GRPCUnaryServerFixture fixture;
+  GRPCClientFixture client;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketGRPC_CallConfig call_cfg;
+  Arena_T arena = NULL;
+  uint8_t request[] = { 0x08, 0x2A };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  if (grpc_fixture_start (&fixture) != 0)
+    {
+      printf ("  [SKIP] Could not start unary gRPC HTTP/2 server fixture\n");
+      return;
+    }
+
+  memset (&client, 0, sizeof (client));
+
+  TRY client.client_tls = SocketTLSContext_new_client (fixture.cert_path);
+  EXCEPT (SocketTLS_Failed)
+  {
+    grpc_fixture_stop (&fixture);
+    return;
+  }
+  END_TRY;
+
+  client.client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client.client);
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.tls_context = client.client_tls;
+  channel_cfg.verify_peer = 1;
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", fixture.port);
+  client.channel = SocketGRPC_Channel_new (client.client, target, &channel_cfg);
+  ASSERT_NOT_NULL (client.channel);
+
+  SocketGRPC_CallConfig_defaults (&call_cfg);
+  call_cfg.deadline_ms = 20;
+  client.call = SocketGRPC_Call_new (
+      client.channel, "/test.Echo/DeadlineProbe", &call_cfg);
+  ASSERT_NOT_NULL (client.call);
+
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (client.call,
+                                 request,
+                                 sizeof (request),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, rc);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
+             SocketGRPC_Call_status (client.call).code);
+
+  Arena_dispose (&arena);
+  grpc_client_fixture_close (&client);
+  grpc_fixture_stop (&fixture);
 }
 
 #else

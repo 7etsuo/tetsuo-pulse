@@ -51,6 +51,32 @@ TEST (grpc_status_accessors_support_custom_and_default_messages)
                         "Requested entity was not found"));
 }
 
+TEST (grpc_timeout_parse_and_format_helpers)
+{
+  char timeout_buf[32];
+  int64_t timeout_ms = 0;
+
+  ASSERT_EQ (0, SocketGRPC_Timeout_format (2500, timeout_buf, sizeof (timeout_buf)));
+  ASSERT_EQ (0, strcmp (timeout_buf, "2500m"));
+
+  ASSERT_EQ (0, SocketGRPC_Timeout_parse ("2500m", &timeout_ms));
+  ASSERT_EQ (2500, timeout_ms);
+  ASSERT_EQ (0, SocketGRPC_Timeout_parse ("2S", &timeout_ms));
+  ASSERT_EQ (2000, timeout_ms);
+  ASSERT_EQ (0, SocketGRPC_Timeout_parse ("1M", &timeout_ms));
+  ASSERT_EQ (60000, timeout_ms);
+  ASSERT_EQ (0, SocketGRPC_Timeout_parse ("1500u", &timeout_ms));
+  ASSERT_EQ (2, timeout_ms);
+  ASSERT_EQ (0, SocketGRPC_Timeout_parse ("2500000n", &timeout_ms));
+  ASSERT_EQ (3, timeout_ms);
+
+  ASSERT_EQ (-1, SocketGRPC_Timeout_format (0, timeout_buf, sizeof (timeout_buf)));
+  ASSERT_EQ (-1, SocketGRPC_Timeout_parse ("", &timeout_ms));
+  ASSERT_EQ (-1, SocketGRPC_Timeout_parse ("10", &timeout_ms));
+  ASSERT_EQ (-1, SocketGRPC_Timeout_parse ("10x", &timeout_ms));
+  ASSERT_EQ (-1, SocketGRPC_Timeout_parse ("-10m", &timeout_ms));
+}
+
 TEST (grpc_handle_lifecycle_smoke)
 {
   SocketGRPC_ClientConfig client_cfg;
@@ -183,6 +209,7 @@ TEST (grpc_invalid_inputs_fail_without_crash)
 
   ASSERT_EQ (-1, SocketGRPC_Call_send_message (NULL, (const uint8_t *)"x", 1));
   ASSERT_EQ (-1, SocketGRPC_Call_close_send (NULL));
+  ASSERT_EQ (-1, SocketGRPC_Call_cancel (NULL));
   ASSERT_EQ (
       -1, SocketGRPC_Call_recv_message (NULL, arena, NULL, NULL, NULL));
 
@@ -205,6 +232,8 @@ TEST (grpc_invalid_inputs_fail_without_crash)
     ASSERT_EQ (
         -1,
         SocketGRPC_Call_send_message (call, NULL, 1));
+    ASSERT_EQ (0, SocketGRPC_Call_cancel (call));
+    ASSERT_EQ (SOCKET_GRPC_STATUS_CANCELLED, SocketGRPC_Call_status (call).code);
     ASSERT_EQ (-1,
                SocketGRPC_Call_recv_message (call,
                                              arena,

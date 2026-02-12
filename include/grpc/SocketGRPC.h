@@ -311,6 +311,17 @@ extern SocketGRPC_Trailers_T SocketGRPC_Call_trailers (SocketGRPC_Call_T call);
 extern SocketGRPC_Status SocketGRPC_Call_status (SocketGRPC_Call_T call);
 
 /**
+ * @brief Cancel an in-flight call.
+ *
+ * For active streaming calls this sends a transport cancellation and moves the
+ * call to terminal CANCELLED state. For non-active calls this sets call status
+ * to CANCELLED and returns success.
+ *
+ * @return 0 on success, -1 on invalid arguments.
+ */
+extern int SocketGRPC_Call_cancel (SocketGRPC_Call_T call);
+
+/**
  * @brief Execute a unary gRPC call over HTTP/2 transport.
  *
  * Request payload is a protobuf message body (without gRPC frame prefix).
@@ -362,6 +373,27 @@ extern int SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
                                          uint8_t **response_payload,
                                          size_t *response_payload_len,
                                          int *done);
+
+/**
+ * @brief Format a canonical grpc-timeout header value from milliseconds.
+ *
+ * Uses gRPC timeout grammar (`[0-9]+[HMSmun]`) and writes a NUL-terminated
+ * string to `out`.
+ *
+ * @return 0 on success, -1 on invalid arguments or insufficient output size.
+ */
+extern int SocketGRPC_Timeout_format (int64_t timeout_ms,
+                                      char *out,
+                                      size_t out_len);
+
+/**
+ * @brief Parse a grpc-timeout header value into milliseconds.
+ *
+ * Supports canonical units H, M, S, m, u, n.
+ *
+ * @return 0 on success, -1 on invalid syntax/range.
+ */
+extern int SocketGRPC_Timeout_parse (const char *value, int64_t *timeout_ms_out);
 
 /**
  * @brief Per-request metadata (custom headers and trailers).
