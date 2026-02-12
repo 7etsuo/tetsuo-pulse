@@ -75,6 +75,7 @@ struct SocketHTTP2_Stream
   int64_t expected_content_length;
   size_t total_data_received;
   int headers_received;
+  int headers_end_stream;
   int end_stream_received;
   int end_stream_sent;
   int pending_end_stream;

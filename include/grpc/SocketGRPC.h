@@ -30,6 +30,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "grpc/SocketGRPCConfig.h"
+#include "http/SocketHTTPServer.h"
 
 /**
  * @brief Module-level exception for fatal gRPC runtime failures.
@@ -95,11 +96,45 @@ typedef struct SocketGRPC_Channel *SocketGRPC_Channel_T;
 /** Opaque gRPC call handle. */
 typedef struct SocketGRPC_Call *SocketGRPC_Call_T;
 
+/** Opaque server-side gRPC request context. */
+typedef struct SocketGRPC_ServerContext *SocketGRPC_ServerContext_T;
+
 /** Opaque gRPC metadata collection (defined in SocketGRPCWire). */
 typedef struct SocketGRPC_Metadata *SocketGRPC_Metadata_T;
 
 /** Opaque gRPC trailers collection (defined in SocketGRPCWire). */
 typedef struct SocketGRPC_Trailers *SocketGRPC_Trailers_T;
+
+/**
+ * @brief Return-code unary server handler.
+ *
+ * Return a canonical gRPC status code (0-16). Return -1 for INTERNAL fallback.
+ * On OK, handler should populate response payload (unframed protobuf bytes).
+ */
+typedef int (*SocketGRPC_ServerUnaryHandler) (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *request_payload,
+    size_t request_payload_len,
+    Arena_T arena,
+    uint8_t **response_payload,
+    size_t *response_payload_len,
+    void *userdata);
+
+/**
+ * @brief Exception-style unary server handler.
+ *
+ * On success, leave status as OK and populate response payload.
+ * Handler may call SocketGRPC_ServerContext_set_status() for explicit errors.
+ * Raised exceptions are mapped to INTERNAL by the transport boundary.
+ */
+typedef void (*SocketGRPC_ServerUnaryHandlerExcept) (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *request_payload,
+    size_t request_payload_len,
+    Arena_T arena,
+    uint8_t **response_payload,
+    size_t *response_payload_len,
+    void *userdata);
 
 /**
  * @brief Create a gRPC client object.
@@ -142,6 +177,54 @@ SocketGRPC_Server_new (const SocketGRPC_ServerConfig *config);
  * @threadsafe No
  */
 extern void SocketGRPC_Server_free (SocketGRPC_Server_T *server);
+
+/**
+ * @brief Register a unary method handler (return-code style).
+ *
+ * full_method must be of form "/package.Service/Method".
+ * Returns 0 on success, -1 on validation/allocation failure.
+ */
+extern int
+SocketGRPC_Server_register_unary (SocketGRPC_Server_T server,
+                                  const char *full_method,
+                                  SocketGRPC_ServerUnaryHandler handler,
+                                  void *userdata);
+
+/**
+ * @brief Register a unary method handler (exception style).
+ *
+ * full_method must be of form "/package.Service/Method".
+ * Returns 0 on success, -1 on validation/allocation failure.
+ */
+extern int SocketGRPC_Server_register_unary_except (
+    SocketGRPC_Server_T server,
+    const char *full_method,
+    SocketGRPC_ServerUnaryHandlerExcept handler,
+    void *userdata);
+
+/**
+ * @brief Transition server to draining mode (reject new unary calls).
+ */
+extern void SocketGRPC_Server_begin_shutdown (SocketGRPC_Server_T server);
+
+/**
+ * @brief Current in-flight unary call count.
+ */
+extern uint32_t SocketGRPC_Server_inflight_calls (SocketGRPC_Server_T server);
+
+/**
+ * @brief Bind gRPC unary HTTP/2 dispatcher as HTTP server handler.
+ */
+extern void SocketGRPC_Server_bind_http2 (SocketGRPC_Server_T server,
+                                          SocketHTTPServer_T http_server);
+
+/**
+ * @brief HTTP handler entrypoint for unary gRPC over HTTP/2.
+ *
+ * `userdata` must be a SocketGRPC_Server_T.
+ */
+extern void SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req,
+                                            void *userdata);
 
 /**
  * @brief Create a logical channel owned by a client.
@@ -242,6 +325,75 @@ extern int SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
                                      Arena_T arena,
                                      uint8_t **response_payload,
                                      size_t *response_payload_len);
+
+/**
+ * @brief Per-request metadata (custom headers and trailers).
+ */
+extern SocketGRPC_Metadata_T
+SocketGRPC_ServerContext_metadata (SocketGRPC_ServerContext_T ctx);
+
+/**
+ * @brief Peer address string for current request.
+ */
+extern const char *
+SocketGRPC_ServerContext_peer (SocketGRPC_ServerContext_T ctx);
+
+/**
+ * @brief Fully-qualified method path for current request.
+ */
+extern const char *
+SocketGRPC_ServerContext_full_method (SocketGRPC_ServerContext_T ctx);
+
+/**
+ * @brief Service portion of current request path.
+ */
+extern const char *
+SocketGRPC_ServerContext_service (SocketGRPC_ServerContext_T ctx);
+
+/**
+ * @brief Method portion of current request path.
+ */
+extern const char *
+SocketGRPC_ServerContext_method (SocketGRPC_ServerContext_T ctx);
+
+/**
+ * @brief Cancellation signal for current request (best-effort).
+ */
+extern int
+SocketGRPC_ServerContext_is_cancelled (SocketGRPC_ServerContext_T ctx);
+
+/**
+ * @brief Override outgoing grpc-status/grpc-message.
+ */
+extern int
+SocketGRPC_ServerContext_set_status (SocketGRPC_ServerContext_T ctx,
+                                     SocketGRPC_StatusCode code,
+                                     const char *message);
+
+/**
+ * @brief Set grpc-status-details-bin trailer bytes.
+ */
+extern int SocketGRPC_ServerContext_set_status_details_bin (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *details,
+    size_t details_len);
+
+/**
+ * @brief Add ASCII trailing metadata.
+ */
+extern int SocketGRPC_ServerContext_add_trailing_metadata_ascii (
+    SocketGRPC_ServerContext_T ctx,
+    const char *key,
+    const char *value);
+
+/**
+ * @brief Add binary trailing metadata.
+ */
+extern int SocketGRPC_ServerContext_add_trailing_metadata_binary (
+    SocketGRPC_ServerContext_T ctx,
+    const char *key,
+    const uint8_t *value,
+    size_t value_len);
 
 /**
  * @brief Extract numeric status code from a status payload.

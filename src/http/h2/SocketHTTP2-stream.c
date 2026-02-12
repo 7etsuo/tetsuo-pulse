@@ -1142,8 +1142,9 @@ http2_validate_headers (SocketHTTP2_Conn_T conn,
         }
     }
 
-  /* Validate required pseudo-headers */
-  if (validate_required_pseudo_headers (&state, is_request) < 0)
+  /* Validate required pseudo-headers only for the initial header block.
+   * Trailers must not include pseudo-headers, and none are required. */
+  if (!is_trailer && validate_required_pseudo_headers (&state, is_request) < 0)
     goto protocol_error;
 
   return 0;
@@ -1277,7 +1278,10 @@ http2_decode_headers (SocketHTTP2_Conn_T conn,
   assert (header_count <= HTTP2_MAX_DECODED_HEADERS);
 
   /* Validate headers according to RFC 9113 */
-  int is_trailer = stream->end_stream_received;
+  /* Trailers are any header block after initial headers on the same stream.
+   * Using end_stream_received is incorrect here because END_STREAM on HEADERS
+   * is applied after this decode path. */
+  int is_trailer = stream->headers_received;
   if (http2_validate_headers (
           conn, stream, decoded_headers, header_count, is_trailer)
       < 0)
@@ -1296,6 +1300,7 @@ http2_decode_headers (SocketHTTP2_Conn_T conn,
    */
   if (!stream->headers_received)
     {
+      stream->headers_end_stream = stream->pending_end_stream ? 1 : 0;
       memcpy (stream->headers,
               decoded_headers,
               header_count * sizeof (SocketHPACK_Header));
@@ -2051,7 +2056,7 @@ SocketHTTP2_Stream_recv_headers (SocketHTTP2_Stream_T stream,
                                     stream->headers,
                                     stream->header_count,
                                     &stream->headers_consumed);
-  *end_stream = stream->end_stream_received;
+  *end_stream = stream->headers_end_stream;
   return 1;
 }
 
@@ -2431,6 +2436,11 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
       http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
+
+  /* END_STREAM on HEADERS (including trailer-only endings) is applied only
+   * after the full header block has been decoded (possibly across CONTINUATION
+   * frames). */
+  stream->pending_end_stream = (header->flags & HTTP2_FLAG_END_STREAM) ? 1 : 0;
 
   max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
   if (header_block_len > max_header_list)

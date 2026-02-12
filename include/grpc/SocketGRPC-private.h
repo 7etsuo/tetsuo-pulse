@@ -16,6 +16,8 @@
 
 #include "grpc/SocketGRPC.h"
 
+typedef struct SocketGRPC_ServerMethod SocketGRPC_ServerMethod;
+
 struct SocketGRPC_Client
 {
   SocketGRPC_ClientConfig config;
@@ -26,6 +28,10 @@ struct SocketGRPC_Server
 {
   SocketGRPC_ServerConfig config;
   SocketGRPC_Status last_status;
+  SocketGRPC_ServerMethod *methods;
+  uint32_t method_count;
+  uint32_t inflight_calls;
+  int shutting_down;
 };
 
 struct SocketGRPC_Channel
@@ -54,5 +60,7 @@ extern void SocketGRPC_status_set (SocketGRPC_Status *status,
 
 extern const char *
 SocketGRPC_status_default_message (SocketGRPC_StatusCode code);
+
+extern void SocketGRPC_server_methods_clear (SocketGRPC_Server_T server);
 
 #endif /* SOCKETGRPC_PRIVATE_INCLUDED */

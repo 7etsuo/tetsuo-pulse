@@ -293,6 +293,7 @@ SocketGRPC_Server_free (SocketGRPC_Server_T *server)
   if (server == NULL || *server == NULL)
     return;
 
+  SocketGRPC_server_methods_clear (*server);
   memset (*server, 0, sizeof (**server));
   free (*server);
   *server = NULL;
