@@ -1,0 +1,38 @@
+{
+  "profile": "extended",
+  "description": "Core conformance plus optional external tooling smoke checks",
+  "extends": "matrix-core.json",
+  "skip_patterns": [
+    "[SKIP]",
+    "[SKIPPED]"
+  ],
+  "cases": [
+    {
+      "id": "external_grpcurl_grpcbin_smoke",
+      "requirement": "external_interop",
+      "description": "Optional grpcurl external-client smoke check against a containerized grpcbin server",
+      "optional": true,
+      "required_tools": [
+        "grpcurl",
+        "docker"
+      ],
+      "timeout_seconds": 180,
+      "command": [
+        "{repo_root}/scripts/grpc-interop/grpcurl_grpcbin_smoke.sh"
+      ]
+    },
+    {
+      "id": "external_go_toolchain_available",
+      "requirement": "external_interop",
+      "description": "Optional Go toolchain availability check for grpc-go interop workflows",
+      "optional": true,
+      "required_tools": [
+        "go"
+      ],
+      "command": [
+        "go",
+        "version"
+      ]
+    }
+  ]
+}

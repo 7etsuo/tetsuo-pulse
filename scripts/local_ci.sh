@@ -133,6 +133,12 @@ run_build_debug() {
     log_info "Running tests..."
     cd "$build_dir"
     ctest --output-on-failure --parallel "$NPROC" || return 1
+
+    log_info "Running gRPC core conformance matrix..."
+    "$PROJECT_ROOT/scripts/grpc-interop/run.sh" \
+        --profile core \
+        --build-dir "$build_dir" \
+        --report "$build_dir/grpc-interop-core-debug.json" || return 1
     
     return 0
 }
@@ -155,6 +161,12 @@ run_build_release() {
     log_info "Running tests..."
     cd "$build_dir"
     ctest --output-on-failure --parallel "$NPROC" || return 1
+
+    log_info "Running gRPC core conformance matrix..."
+    "$PROJECT_ROOT/scripts/grpc-interop/run.sh" \
+        --profile core \
+        --build-dir "$build_dir" \
+        --report "$build_dir/grpc-interop-core-release.json" || return 1
     
     return 0
 }
@@ -664,4 +676,3 @@ main() {
 }
 
 main "$@"
-

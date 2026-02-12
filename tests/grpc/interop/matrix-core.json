@@ -1,0 +1,75 @@
+{
+  "profile": "core",
+  "description": "Deterministic core gRPC conformance checks for CI",
+  "skip_patterns": [
+    "[SKIP]",
+    "[SKIPPED]"
+  ],
+  "cases": [
+    {
+      "id": "unary_h2_core",
+      "requirement": "unary",
+      "description": "Unary gRPC client semantics over HTTP/2, including deadlines/cancel/compression scenarios",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "{build_dir}",
+        "-R",
+        "test_grpc_unary_h2",
+        "--output-on-failure"
+      ]
+    },
+    {
+      "id": "unary_server_h2_core",
+      "requirement": "unary",
+      "description": "Unary server semantics and interceptor pipeline behavior",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "{build_dir}",
+        "-R",
+        "test_grpc_unary_server_h2",
+        "--output-on-failure"
+      ]
+    },
+    {
+      "id": "metadata_trailers_core",
+      "requirement": "metadata_trailers",
+      "description": "Metadata and trailer encode/decode and validation semantics",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "{build_dir}",
+        "-R",
+        "test_grpc_metadata",
+        "--output-on-failure"
+      ]
+    },
+    {
+      "id": "status_mapping_core",
+      "requirement": "status_mapping",
+      "description": "gRPC wire framing and HTTP status to gRPC status mapping semantics",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "{build_dir}",
+        "-R",
+        "test_grpc_wire",
+        "--output-on-failure"
+      ]
+    },
+    {
+      "id": "transport_h3_core",
+      "requirement": "streaming",
+      "description": "HTTP/3 transport path behavior with runtime capability-aware skip",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "{build_dir}",
+        "-R",
+        "test_grpc_h3",
+        "--output-on-failure"
+      ]
+    }
+  ]
+}
