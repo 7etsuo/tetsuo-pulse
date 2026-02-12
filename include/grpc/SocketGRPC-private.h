@@ -18,6 +18,16 @@
 
 typedef struct SocketGRPC_ServerMethod SocketGRPC_ServerMethod;
 
+typedef enum
+{
+  GRPC_CALL_STREAM_IDLE = 0,
+  GRPC_CALL_STREAM_OPEN,
+  GRPC_CALL_STREAM_HALF_CLOSED_LOCAL,
+  GRPC_CALL_STREAM_HALF_CLOSED_REMOTE,
+  GRPC_CALL_STREAM_CLOSED,
+  GRPC_CALL_STREAM_FAILED
+} SocketGRPC_CallStreamState;
+
 struct SocketGRPC_Client
 {
   SocketGRPC_ClientConfig config;
@@ -52,6 +62,8 @@ struct SocketGRPC_Call
   SocketGRPC_Metadata_T request_metadata;
   SocketGRPC_Trailers_T response_trailers;
   SocketGRPC_Status last_status;
+  void *h2_stream_ctx;
+  SocketGRPC_CallStreamState h2_stream_state;
 };
 
 extern void SocketGRPC_status_set (SocketGRPC_Status *status,
@@ -62,5 +74,7 @@ extern const char *
 SocketGRPC_status_default_message (SocketGRPC_StatusCode code);
 
 extern void SocketGRPC_server_methods_clear (SocketGRPC_Server_T server);
+
+extern void SocketGRPC_Call_h2_stream_abort (SocketGRPC_Call_T call);
 
 #endif /* SOCKETGRPC_PRIVATE_INCLUDED */

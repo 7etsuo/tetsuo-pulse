@@ -115,7 +115,10 @@ typedef enum
 {
   GRPC_H2_SCENARIO_SUCCESS = 0,
   GRPC_H2_SCENARIO_HTTP503_BAD_BODY = 1,
-  GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR = 2
+  GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR = 2,
+  GRPC_H2_SCENARIO_STREAM_CLIENT_UPLOAD = 3,
+  GRPC_H2_SCENARIO_STREAM_SERVER_STREAM = 4,
+  GRPC_H2_SCENARIO_STREAM_BIDI_ERROR = 5
 } GRPC_H2_Scenario;
 
 typedef struct
@@ -260,6 +263,149 @@ recv_h2_frame (Socket_T socket,
 }
 
 static int
+buffer_append (unsigned char **buffer,
+               size_t *buffer_len,
+               size_t *buffer_cap,
+               const unsigned char *chunk,
+               size_t chunk_len)
+{
+  size_t needed;
+  unsigned char *tmp;
+
+  if (buffer == NULL || buffer_len == NULL || buffer_cap == NULL
+      || (chunk == NULL && chunk_len != 0))
+    return -1;
+  if (chunk_len == 0)
+    return 0;
+
+  needed = *buffer_len + chunk_len;
+  if (needed > *buffer_cap)
+    {
+      size_t new_cap = (*buffer_cap == 0) ? 1024U : *buffer_cap;
+      while (new_cap < needed)
+        new_cap *= 2U;
+      tmp = (unsigned char *)realloc (*buffer, new_cap);
+      if (tmp == NULL)
+        return -1;
+      *buffer = tmp;
+      *buffer_cap = new_cap;
+    }
+
+  memcpy (*buffer + *buffer_len, chunk, chunk_len);
+  *buffer_len += chunk_len;
+  return 0;
+}
+
+static int
+consume_client_request_payload (Socket_T client,
+                                unsigned char **payload_out,
+                                size_t *payload_len_out)
+{
+  unsigned char *payload_buffer = NULL;
+  size_t payload_len = 0;
+  size_t payload_cap = 0;
+  int got_headers = 0;
+  int end_stream = 0;
+  int loops = 0;
+
+  if (payload_out == NULL || payload_len_out == NULL)
+    return -1;
+
+  *payload_out = NULL;
+  *payload_len_out = 0;
+
+  while (loops++ < 256)
+    {
+      SocketHTTP2_FrameHeader fh;
+      unsigned char *payload = NULL;
+
+      if (recv_h2_frame (client, &fh, &payload) != 0)
+        goto fail;
+
+      if (fh.type == HTTP2_FRAME_SETTINGS && (fh.flags & HTTP2_FLAG_ACK) == 0)
+        {
+          if (send_h2_frame (client,
+                             HTTP2_FRAME_SETTINGS,
+                             HTTP2_FLAG_ACK,
+                             0,
+                             NULL,
+                             0)
+              != 0)
+            {
+              free (payload);
+              goto fail;
+            }
+        }
+      else if (fh.stream_id == 1U && fh.type == HTTP2_FRAME_HEADERS)
+        {
+          got_headers = 1;
+          if ((fh.flags & HTTP2_FLAG_END_STREAM) != 0)
+            end_stream = 1;
+        }
+      else if (fh.stream_id == 1U && fh.type == HTTP2_FRAME_DATA)
+        {
+          if (buffer_append (
+                  &payload_buffer, &payload_len, &payload_cap, payload, fh.length)
+              != 0)
+            {
+              free (payload);
+              goto fail;
+            }
+          if ((fh.flags & HTTP2_FLAG_END_STREAM) != 0)
+            end_stream = 1;
+        }
+
+      free (payload);
+
+      if (got_headers && end_stream)
+        {
+          *payload_out = payload_buffer;
+          *payload_len_out = payload_len;
+          return 0;
+        }
+    }
+
+fail:
+  free (payload_buffer);
+  return -1;
+}
+
+static int
+grpc_count_request_messages (const unsigned char *payload,
+                             size_t payload_len,
+                             size_t *count_out,
+                             size_t *last_payload_len_out)
+{
+  size_t offset = 0;
+  size_t count = 0;
+  size_t last_payload_len = 0;
+
+  if ((payload == NULL && payload_len != 0) || count_out == NULL
+      || last_payload_len_out == NULL)
+    return -1;
+
+  while (offset < payload_len)
+    {
+      SocketGRPC_FrameView frame;
+      size_t consumed = 0;
+      SocketGRPC_WireResult rc = SocketGRPC_Frame_parse (
+          payload + offset, payload_len - offset, (1024U * 1024U), &frame, &consumed);
+      if (rc != SOCKET_GRPC_WIRE_OK || frame.compressed != 0 || consumed == 0)
+        return -1;
+      count++;
+      last_payload_len = frame.payload_len;
+      offset += consumed;
+    }
+
+  if (offset != payload_len)
+    return -1;
+
+  *count_out = count;
+  *last_payload_len_out = last_payload_len;
+  return 0;
+}
+
+static int
 encode_hpack_block (const SocketHPACK_Header *headers,
                     size_t header_count,
                     unsigned char *out,
@@ -298,42 +444,12 @@ encode_hpack_block (const SocketHPACK_Header *headers,
 static int
 consume_client_request (Socket_T client)
 {
-  int got_headers = 0;
-  int loops = 0;
-
-  while (loops++ < 64)
-    {
-      SocketHTTP2_FrameHeader fh;
-      unsigned char *payload = NULL;
-
-      if (recv_h2_frame (client, &fh, &payload) != 0)
-        return -1;
-
-      if (fh.type == HTTP2_FRAME_SETTINGS && (fh.flags & HTTP2_FLAG_ACK) == 0)
-        {
-          if (send_h2_frame (client,
-                             HTTP2_FRAME_SETTINGS,
-                             HTTP2_FLAG_ACK,
-                             0,
-                             NULL,
-                             0)
-              != 0)
-            {
-              free (payload);
-              return -1;
-            }
-        }
-      else if (fh.stream_id == 1U && fh.type == HTTP2_FRAME_HEADERS)
-        {
-          got_headers = 1;
-          free (payload);
-          break;
-        }
-
-      free (payload);
-    }
-
-  return got_headers ? 0 : -1;
+  unsigned char *payload = NULL;
+  size_t payload_len = 0;
+  int rc = consume_client_request_payload (client, &payload, &payload_len);
+  free (payload);
+  (void)payload_len;
+  return rc;
 }
 
 static int
@@ -451,6 +567,130 @@ send_trailers_only_error_response (Socket_T client)
                         header_block_len);
 }
 
+static int
+send_stream_initial_headers (Socket_T client)
+{
+  SocketHPACK_Header response_headers[] = {
+    { ":status", 7, "200", 3, 0 },
+    { "content-type", 12, "application/grpc", 16, 0 },
+  };
+  unsigned char header_block[256];
+  size_t header_block_len = 0;
+
+  if (encode_hpack_block (response_headers,
+                          sizeof (response_headers) / sizeof (response_headers[0]),
+                          header_block,
+                          sizeof (header_block),
+                          &header_block_len)
+      != 0)
+    return -1;
+
+  return send_h2_frame (client,
+                        HTTP2_FRAME_HEADERS,
+                        HTTP2_FLAG_END_HEADERS,
+                        1,
+                        header_block,
+                        header_block_len);
+}
+
+static int
+send_stream_data_message (Socket_T client,
+                          const uint8_t *payload,
+                          size_t payload_len)
+{
+  unsigned char framed[128];
+  size_t framed_len = 0;
+
+  if (SocketGRPC_Frame_encode (0,
+                               payload,
+                               (uint32_t)payload_len,
+                               framed,
+                               sizeof (framed),
+                               &framed_len)
+      != SOCKET_GRPC_WIRE_OK)
+    return -1;
+
+  return send_h2_frame (client, HTTP2_FRAME_DATA, 0, 1, framed, framed_len);
+}
+
+static int
+send_stream_status_trailers (Socket_T client, const char *status, const char *message)
+{
+  SocketHPACK_Header trailers[2];
+  unsigned char header_block[256];
+  size_t trailer_count = 0;
+  size_t header_block_len = 0;
+
+  trailers[trailer_count++] = (SocketHPACK_Header){ "grpc-status", 11,
+                                                    status, strlen (status), 0 };
+  if (message != NULL)
+    {
+      trailers[trailer_count++]
+          = (SocketHPACK_Header){ "grpc-message", 12, message, strlen (message), 0 };
+    }
+
+  if (encode_hpack_block (
+          trailers, trailer_count, header_block, sizeof (header_block), &header_block_len)
+      != 0)
+    return -1;
+
+  return send_h2_frame (client,
+                        HTTP2_FRAME_HEADERS,
+                        HTTP2_FLAG_END_HEADERS | HTTP2_FLAG_END_STREAM,
+                        1,
+                        header_block,
+                        header_block_len);
+}
+
+static int
+send_stream_client_upload_response (Socket_T client,
+                                    size_t request_messages,
+                                    size_t last_payload_len)
+{
+  uint8_t ack_payload[] = { 0x08,
+                            (uint8_t)(request_messages & 0x7F),
+                            0x10,
+                            (uint8_t)(last_payload_len & 0x7F) };
+
+  if (send_stream_initial_headers (client) != 0)
+    return -1;
+  if (send_stream_data_message (
+          client, ack_payload, sizeof (ack_payload))
+      != 0)
+    return -1;
+  return send_stream_status_trailers (client, "0", NULL);
+}
+
+static int
+send_stream_server_stream_response (Socket_T client)
+{
+  static const uint8_t msg1[] = { 0x08, 0x01 };
+  static const uint8_t msg2[] = { 0x08, 0x02 };
+  static const uint8_t msg3[] = { 0x08, 0x03 };
+
+  if (send_stream_initial_headers (client) != 0)
+    return -1;
+  if (send_stream_data_message (client, msg1, sizeof (msg1)) != 0)
+    return -1;
+  if (send_stream_data_message (client, msg2, sizeof (msg2)) != 0)
+    return -1;
+  if (send_stream_data_message (client, msg3, sizeof (msg3)) != 0)
+    return -1;
+  return send_stream_status_trailers (client, "0", NULL);
+}
+
+static int
+send_stream_bidi_error_response (Socket_T client)
+{
+  static const uint8_t msg[] = { 0x08, 0x2A };
+
+  if (send_stream_initial_headers (client) != 0)
+    return -1;
+  if (send_stream_data_message (client, msg, sizeof (msg)) != 0)
+    return -1;
+  return send_stream_status_trailers (client, "14", "stream aborted");
+}
+
 static void *
 grpc_h2_server_thread (void *arg)
 {
@@ -508,18 +748,67 @@ grpc_h2_server_thread (void *arg)
       return NULL;
     }
 
-  if (consume_client_request (client) != 0)
+  if (server->scenario == GRPC_H2_SCENARIO_SUCCESS
+      || server->scenario == GRPC_H2_SCENARIO_HTTP503_BAD_BODY
+      || server->scenario == GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR)
     {
-      Socket_free (&client);
-      return NULL;
-    }
+      if (consume_client_request (client) != 0)
+        {
+          Socket_free (&client);
+          return NULL;
+        }
 
-  if (server->scenario == GRPC_H2_SCENARIO_SUCCESS)
-    (void)send_success_response (client);
-  else if (server->scenario == GRPC_H2_SCENARIO_HTTP503_BAD_BODY)
-    (void)send_http503_bad_body_response (client);
+      if (server->scenario == GRPC_H2_SCENARIO_SUCCESS)
+        (void)send_success_response (client);
+      else if (server->scenario == GRPC_H2_SCENARIO_HTTP503_BAD_BODY)
+        (void)send_http503_bad_body_response (client);
+      else
+        (void)send_trailers_only_error_response (client);
+    }
   else
-    (void)send_trailers_only_error_response (client);
+    {
+      unsigned char *request_payload = NULL;
+      size_t request_payload_len = 0;
+      size_t request_messages = 0;
+      size_t last_message_len = 0;
+
+      if (consume_client_request_payload (
+              client, &request_payload, &request_payload_len)
+          != 0)
+        {
+          free (request_payload);
+          Socket_free (&client);
+          return NULL;
+        }
+
+      if (request_payload_len > 0
+          && grpc_count_request_messages (request_payload,
+                                          request_payload_len,
+                                          &request_messages,
+                                          &last_message_len)
+                 != 0)
+        {
+          free (request_payload);
+          Socket_free (&client);
+          return NULL;
+        }
+
+      if (server->scenario == GRPC_H2_SCENARIO_STREAM_CLIENT_UPLOAD)
+        {
+          (void)send_stream_client_upload_response (
+              client, request_messages, last_message_len);
+        }
+      else if (server->scenario == GRPC_H2_SCENARIO_STREAM_SERVER_STREAM)
+        {
+          (void)send_stream_server_stream_response (client);
+        }
+      else
+        {
+          (void)send_stream_bidi_error_response (client);
+        }
+
+      free (request_payload);
+    }
 
   usleep (20000);
   Socket_free (&client);
@@ -842,6 +1131,281 @@ TEST (grpc_unary_h2_handles_trailers_only_error_response)
                strcmp (SocketGRPC_Trailers_message (trailers),
                        "upstream unavailable"));
   }
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_stream_h2_client_upload_roundtrip)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  uint8_t small1[] = { 0x08, 0x01 };
+  uint8_t small2[] = { 0x08, 0x02 };
+  uint8_t *large_payload = NULL;
+  const size_t large_payload_len = 40000U;
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_CLIENT_UPLOAD) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  channel_cfg.max_outbound_message_bytes = 128U * 1024U;
+  channel_cfg.max_inbound_message_bytes = 128U * 1024U;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Streamer/Upload", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  large_payload = (uint8_t *)malloc (large_payload_len);
+  ASSERT_NOT_NULL (large_payload);
+  memset (large_payload, 0xAB, large_payload_len);
+
+  ASSERT_EQ (0, SocketGRPC_Call_send_message (call, small1, sizeof (small1)));
+  ASSERT_EQ (0, SocketGRPC_Call_send_message (call, small2, sizeof (small2)));
+  ASSERT_EQ (
+      0, SocketGRPC_Call_send_message (call, large_payload, large_payload_len));
+  ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_NOT_NULL (response_payload);
+  ASSERT_EQ (4U, response_payload_len);
+  ASSERT_EQ (0x08, response_payload[0]);
+  ASSERT_EQ (3, response_payload[1]);
+  ASSERT_EQ (0x10, response_payload[2]);
+  ASSERT_EQ ((int)(large_payload_len & 0x7FU), response_payload[3]);
+
+  response_payload = NULL;
+  response_payload_len = 0;
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (1, done);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK,
+             SocketGRPC_Trailers_status (SocketGRPC_Call_trailers (call)));
+
+  free (large_payload);
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_stream_h2_server_streaming_messages)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  uint8_t request_payload[] = { 0x08, 0x01 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Streamer/Subscribe", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  ASSERT_EQ (
+      0, SocketGRPC_Call_send_message (call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
+  ASSERT_EQ (-1, SocketGRPC_Call_send_message (call, request_payload, 1));
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x01, response_payload[1]);
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x02, response_payload[1]);
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x03, response_payload[1]);
+
+  response_payload = NULL;
+  response_payload_len = 0;
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (1, done);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_stream_h2_midstream_error_maps_to_trailers_status)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  uint8_t request_payload[] = { 0x08, 0x05 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_BIDI_ERROR) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Streamer/Chat", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  ASSERT_EQ (
+      0, SocketGRPC_Call_send_message (call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (0, done);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (0x2A, response_payload[1]);
+
+  response_payload = NULL;
+  response_payload_len = 0;
+  ASSERT_EQ (0,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (1, done);
+  {
+    SocketGRPC_Status status = SocketGRPC_Call_status (call);
+    ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE, status.code);
+    ASSERT_EQ (0, strcmp (SocketGRPC_Status_message (&status), "stream aborted"));
+  }
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE,
+             SocketGRPC_Trailers_status (SocketGRPC_Call_trailers (call)));
 
   Arena_dispose (&arena);
   SocketGRPC_Call_free (&call);

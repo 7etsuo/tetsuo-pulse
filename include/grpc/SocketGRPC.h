@@ -327,6 +327,43 @@ extern int SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
                                      size_t *response_payload_len);
 
 /**
+ * @brief Send one outbound streaming message on an HTTP/2 gRPC call.
+ *
+ * Lazily opens the stream on first send and emits initial request headers.
+ * Payload is unframed protobuf bytes (gRPC frame prefix is added internally).
+ *
+ * @return 0 on success, -1 on invalid state/argument or transport failure.
+ */
+extern int SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
+                                         const uint8_t *request_payload,
+                                         size_t request_payload_len);
+
+/**
+ * @brief Half-close outbound stream direction for an HTTP/2 gRPC call.
+ *
+ * May be used after zero or more send_message calls. If no stream is active,
+ * this starts the stream and immediately closes outbound direction.
+ *
+ * @return 0 on success, -1 on invalid state or transport failure.
+ */
+extern int SocketGRPC_Call_close_send (SocketGRPC_Call_T call);
+
+/**
+ * @brief Receive next inbound streaming message for an HTTP/2 gRPC call.
+ *
+ * On message delivery: `*done = 0` and output payload fields are populated.
+ * On terminal stream completion: `*done = 1`, payload outputs are cleared, and
+ * final status/trailers are available via SocketGRPC_Call_status/trailers.
+ *
+ * @return 0 on success, -1 on invalid state/argument or transport failure.
+ */
+extern int SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
+                                         Arena_T arena,
+                                         uint8_t **response_payload,
+                                         size_t *response_payload_len,
+                                         int *done);
+
+/**
  * @brief Per-request metadata (custom headers and trailers).
  */
 extern SocketGRPC_Metadata_T
