@@ -17,6 +17,12 @@
 #include "grpc/SocketGRPC.h"
 
 typedef struct SocketGRPC_ServerMethod SocketGRPC_ServerMethod;
+typedef struct SocketGRPC_ServerUnaryInterceptorEntry
+    SocketGRPC_ServerUnaryInterceptorEntry;
+typedef struct SocketGRPC_ClientUnaryInterceptorEntry
+    SocketGRPC_ClientUnaryInterceptorEntry;
+typedef struct SocketGRPC_ClientStreamInterceptorEntry
+    SocketGRPC_ClientStreamInterceptorEntry;
 
 typedef enum
 {
@@ -39,6 +45,9 @@ struct SocketGRPC_Server
   SocketGRPC_ServerConfig config;
   SocketGRPC_Status last_status;
   SocketGRPC_ServerMethod *methods;
+  SocketGRPC_ServerUnaryInterceptorEntry *unary_interceptors;
+  SocketGRPC_ServerUnaryInterceptorEntry *unary_interceptors_tail;
+  uint32_t unary_interceptor_count;
   uint32_t method_count;
   uint32_t inflight_calls;
   int shutting_down;
@@ -62,6 +71,12 @@ struct SocketGRPC_Call
   SocketGRPC_Metadata_T request_metadata;
   SocketGRPC_Trailers_T response_trailers;
   SocketGRPC_Status last_status;
+  SocketGRPC_ClientUnaryInterceptorEntry *unary_interceptors;
+  SocketGRPC_ClientUnaryInterceptorEntry *unary_interceptors_tail;
+  SocketGRPC_ClientStreamInterceptorEntry *stream_interceptors;
+  SocketGRPC_ClientStreamInterceptorEntry *stream_interceptors_tail;
+  uint32_t unary_interceptor_count;
+  uint32_t stream_interceptor_count;
   void *h2_stream_ctx;
   SocketGRPC_CallStreamState h2_stream_state;
   int retry_in_progress;
@@ -76,6 +91,7 @@ extern const char *
 SocketGRPC_status_default_message (SocketGRPC_StatusCode code);
 
 extern void SocketGRPC_server_methods_clear (SocketGRPC_Server_T server);
+extern void SocketGRPC_server_interceptors_clear (SocketGRPC_Server_T server);
 
 extern void SocketGRPC_Call_h2_stream_abort (SocketGRPC_Call_T call);
 

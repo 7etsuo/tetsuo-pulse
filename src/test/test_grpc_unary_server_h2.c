@@ -152,7 +152,8 @@ grpc_fail_handler (SocketGRPC_ServerContext_T ctx,
                    size_t *response_payload_len,
                    void *userdata)
 {
-  static const uint8_t status_details[] = { 0x0A, 0x07, 'i', 'n', 'v', 'a', 'l', 'i', 'd' };
+  static const uint8_t status_details[]
+      = { 0x0A, 0x07, 'i', 'n', 'v', 'a', 'l', 'i', 'd' };
 
   (void)request_payload;
   (void)request_payload_len;
@@ -234,6 +235,43 @@ grpc_deadline_probe_handler (SocketGRPC_ServerContext_T ctx,
     }
 
   return SOCKET_GRPC_STATUS_OK;
+}
+
+static atomic_int grpc_auth_probe_interceptor_calls = 0;
+static atomic_int grpc_auth_validator_calls = 0;
+
+static int
+grpc_auth_probe_interceptor (SocketGRPC_ServerContext_T ctx,
+                             const uint8_t *request_payload,
+                             size_t request_payload_len,
+                             SocketGRPC_Status *status_io,
+                             void *userdata)
+{
+  (void)ctx;
+  (void)request_payload;
+  (void)request_payload_len;
+  (void)status_io;
+  (void)userdata;
+  atomic_fetch_add (&grpc_auth_probe_interceptor_calls, 1);
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
+}
+
+static int
+grpc_auth_token_validator (SocketGRPC_ServerContext_T ctx,
+                           const uint8_t *token,
+                           size_t token_len,
+                           void *userdata)
+{
+  const char *expected = (const char *)userdata;
+  size_t expected_len = expected != NULL ? strlen (expected) : 0;
+
+  (void)ctx;
+  atomic_fetch_add (&grpc_auth_validator_calls, 1);
+  if (token == NULL || expected == NULL)
+    return 0;
+  if (token_len != expected_len)
+    return 0;
+  return memcmp (token, expected, token_len) == 0;
 }
 
 static void *
@@ -326,10 +364,8 @@ grpc_fixture_start (GRPCUnaryServerFixture *fixture)
       || SocketGRPC_Server_register_unary (
              fixture->grpc_server, "/test.Echo/Fail", grpc_fail_handler, NULL)
              != 0
-      || SocketGRPC_Server_register_unary_except (fixture->grpc_server,
-                                                  "/test.Echo/Raise",
-                                                  grpc_raise_handler,
-                                                  NULL)
+      || SocketGRPC_Server_register_unary_except (
+             fixture->grpc_server, "/test.Echo/Raise", grpc_raise_handler, NULL)
              != 0
       || SocketGRPC_Server_register_unary (fixture->grpc_server,
                                            "/test.Echo/DeadlineProbe",
@@ -356,8 +392,8 @@ grpc_fixture_start (GRPCUnaryServerFixture *fixture)
         fixture->http_server = SocketHTTPServer_new (&cfg);
         if (fixture->http_server != NULL)
           {
-            SocketGRPC_Server_bind_http2 (
-                fixture->grpc_server, fixture->http_server);
+            SocketGRPC_Server_bind_http2 (fixture->grpc_server,
+                                          fixture->http_server);
             if (SocketHTTPServer_start (fixture->http_server) == 0)
               {
                 started = 1;
@@ -447,7 +483,8 @@ grpc_client_fixture_open (GRPCClientFixture *client,
   channel_cfg.verify_peer = 1;
 
   snprintf (target, sizeof (target), "https://127.0.0.1:%d", fixture->port);
-  client->channel = SocketGRPC_Channel_new (client->client, target, &channel_cfg);
+  client->channel
+      = SocketGRPC_Channel_new (client->client, target, &channel_cfg);
   if (client->channel == NULL)
     {
       grpc_client_fixture_close (client);
@@ -641,9 +678,8 @@ TEST (grpc_unary_server_h2_integration_matrix)
                                    &response_payload_len,
                                    &status));
     ASSERT_EQ (SOCKET_GRPC_STATUS_INVALID_ARGUMENT, status.code);
-    ASSERT_EQ (0,
-               strcmp (
-                   SocketGRPC_Status_message (&status), "validation failed"));
+    ASSERT_EQ (
+        0, strcmp (SocketGRPC_Status_message (&status), "validation failed"));
     Arena_dispose ((Arena_T *)&arena);
     arena = NULL;
 
@@ -689,9 +725,102 @@ TEST (grpc_unary_server_h2_integration_matrix)
   END_TRY;
 }
 
+TEST (grpc_unary_server_h2_auth_interceptor_pipeline)
+{
+  GRPCUnaryServerFixture fixture;
+  GRPCClientFixture client;
+  SocketGRPC_AuthTokenValidatorConfig auth_cfg;
+  SocketGRPC_MetadataInjectorConfig inject_cfg;
+  const char *expected_token = "Bearer integration-token";
+  uint8_t request[] = { 0x08, 0x33 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  Arena_T arena = NULL;
+  int rc;
+
+  if (grpc_fixture_start (&fixture) != 0)
+    {
+      printf ("  [SKIP] Could not start unary gRPC HTTP/2 server fixture\n");
+      return;
+    }
+
+  atomic_store (&grpc_auth_probe_interceptor_calls, 0);
+  atomic_store (&grpc_auth_validator_calls, 0);
+
+  auth_cfg.metadata_key = "authorization";
+  auth_cfg.validator = grpc_auth_token_validator;
+  auth_cfg.validator_userdata = (void *)expected_token;
+
+  ASSERT_EQ (0,
+             SocketGRPC_Server_add_unary_interceptor (
+                 fixture.grpc_server, grpc_auth_probe_interceptor, NULL));
+  ASSERT_EQ (0,
+             SocketGRPC_Server_add_unary_interceptor (
+                 fixture.grpc_server,
+                 SocketGRPC_Interceptor_server_auth_token_validator,
+                 &auth_cfg));
+
+  memset (&client, 0, sizeof (client));
+  ASSERT_EQ (0,
+             grpc_client_fixture_open (&client, &fixture, "/test.Echo/Ping"));
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+  rc = SocketGRPC_Call_unary_h2 (client.call,
+                                 request,
+                                 sizeof (request),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAUTHENTICATED, rc);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAUTHENTICATED,
+             SocketGRPC_Call_status (client.call).code);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_NOT_NULL (SocketGRPC_Call_status (client.call).message);
+  ASSERT (strstr (SocketGRPC_Call_status (client.call).message, "Missing")
+          != NULL);
+  Arena_dispose (&arena);
+  grpc_client_fixture_close (&client);
+
+  memset (&client, 0, sizeof (client));
+  ASSERT_EQ (0,
+             grpc_client_fixture_open (&client, &fixture, "/test.Echo/Ping"));
+  inject_cfg.key = "authorization";
+  inject_cfg.ascii_value = expected_token;
+  inject_cfg.binary_value = NULL;
+  inject_cfg.binary_value_len = 0;
+  inject_cfg.is_binary = 0;
+  ASSERT_EQ (
+      0,
+      SocketGRPC_Call_add_unary_interceptor (
+          client.call, SocketGRPC_Interceptor_metadata_injector, &inject_cfg));
+
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+  rc = SocketGRPC_Call_unary_h2 (client.call,
+                                 request,
+                                 sizeof (request),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, rc);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (client.call).code);
+  ASSERT_NOT_NULL (response_payload);
+  ASSERT_EQ (sizeof (request), response_payload_len);
+  ASSERT_EQ (0, memcmp (request, response_payload, response_payload_len));
+  Arena_dispose (&arena);
+  grpc_client_fixture_close (&client);
+
+  ASSERT_EQ (2, atomic_load (&grpc_auth_probe_interceptor_calls));
+  ASSERT_EQ (1, atomic_load (&grpc_auth_validator_calls));
+
+  grpc_fixture_stop (&fixture);
+}
+
 TEST (grpc_unary_server_h2_http_validation_paths)
 {
-  printf ("  [SKIP] HTTP client trailer-only handling is not stable under ASAN\n");
+  printf (
+      "  [SKIP] HTTP client trailer-only handling is not stable under ASAN\n");
 }
 
 TEST (grpc_unary_server_h2_deadline_cancel_detection)
