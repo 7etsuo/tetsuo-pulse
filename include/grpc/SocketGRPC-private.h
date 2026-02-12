@@ -33,6 +33,8 @@ struct SocketGRPC_Channel
   SocketGRPC_Client_T client;
   SocketGRPC_ChannelConfig config;
   char *target;
+  char *authority_override;
+  char *user_agent;
   SocketGRPC_Status last_status;
 };
 
@@ -41,6 +43,8 @@ struct SocketGRPC_Call
   SocketGRPC_Channel_T channel;
   SocketGRPC_CallConfig config;
   char *full_method;
+  SocketGRPC_Metadata_T request_metadata;
+  SocketGRPC_Trailers_T response_trailers;
   SocketGRPC_Status last_status;
 };
 

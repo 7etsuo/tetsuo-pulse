@@ -1091,7 +1091,7 @@ http2_validate_headers (SocketHTTP2_Conn_T conn,
                         size_t count,
                         int is_trailer)
 {
-  int is_request = (conn->role == HTTP2_ROLE_CLIENT ? 1 : 0);
+  int is_request = (conn->role == HTTP2_ROLE_SERVER ? 1 : 0);
   int pseudo_headers_seen = 0;
   HTTP2_PseudoHeaderState state = { 0 };
   int has_te = 0;

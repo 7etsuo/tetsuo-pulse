@@ -27,6 +27,7 @@
 #ifndef SOCKETGRPC_INCLUDED
 #define SOCKETGRPC_INCLUDED
 
+#include "core/Arena.h"
 #include "core/Except.h"
 #include "grpc/SocketGRPCConfig.h"
 
@@ -93,6 +94,12 @@ typedef struct SocketGRPC_Channel *SocketGRPC_Channel_T;
 
 /** Opaque gRPC call handle. */
 typedef struct SocketGRPC_Call *SocketGRPC_Call_T;
+
+/** Opaque gRPC metadata collection (defined in SocketGRPCWire). */
+typedef struct SocketGRPC_Metadata *SocketGRPC_Metadata_T;
+
+/** Opaque gRPC trailers collection (defined in SocketGRPCWire). */
+typedef struct SocketGRPC_Trailers *SocketGRPC_Trailers_T;
 
 /**
  * @brief Create a gRPC client object.
@@ -185,6 +192,56 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
  * @threadsafe No
  */
 extern void SocketGRPC_Call_free (SocketGRPC_Call_T *call);
+
+/**
+ * @brief Add ASCII metadata to a call (request headers).
+ * @return 0 on success, -1 on validation or allocation error.
+ */
+extern int SocketGRPC_Call_metadata_add_ascii (SocketGRPC_Call_T call,
+                                               const char *key,
+                                               const char *value);
+
+/**
+ * @brief Add binary metadata to a call (request headers, key must end in -bin).
+ * @return 0 on success, -1 on validation or allocation error.
+ */
+extern int SocketGRPC_Call_metadata_add_binary (SocketGRPC_Call_T call,
+                                                const char *key,
+                                                const uint8_t *value,
+                                                size_t value_len);
+
+/**
+ * @brief Clear all request metadata currently associated with a call.
+ */
+extern void SocketGRPC_Call_metadata_clear (SocketGRPC_Call_T call);
+
+/**
+ * @brief Get the latest trailers parsed for this call.
+ *
+ * Returned handle is owned by the call.
+ */
+extern SocketGRPC_Trailers_T SocketGRPC_Call_trailers (SocketGRPC_Call_T call);
+
+/**
+ * @brief Get the latest gRPC status for this call.
+ */
+extern SocketGRPC_Status SocketGRPC_Call_status (SocketGRPC_Call_T call);
+
+/**
+ * @brief Execute a unary gRPC call over HTTP/2 transport.
+ *
+ * Request payload is a protobuf message body (without gRPC frame prefix).
+ * On success, `response_payload` points to arena-owned response bytes.
+ *
+ * @return gRPC status code (0-16) on protocol completion, or -1 on local
+ * argument/transport setup failure.
+ */
+extern int SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
+                                     const uint8_t *request_payload,
+                                     size_t request_payload_len,
+                                     Arena_T arena,
+                                     uint8_t **response_payload,
+                                     size_t *response_payload_len);
 
 /**
  * @brief Extract numeric status code from a status payload.

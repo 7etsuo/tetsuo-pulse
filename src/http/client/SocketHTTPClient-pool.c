@@ -771,15 +771,17 @@ create_http2_entry_resources (HTTPPoolEntry *entry,
       if (handshake_result != 1)
         continue;
 
-      /* Need more I/O - process */
-      if (SocketHTTP2_Conn_process (conn, 0) < 0)
+      /* Flush outbound handshake bytes first (client preface + SETTINGS).
+       * This prevents deadlock against peers that wait for preface before
+       * sending their initial SETTINGS frame. */
+      if (SocketHTTP2_Conn_flush (conn) < 0)
         {
           SocketHTTP2_Conn_free (&entry->proto.h2.conn);
           return -1;
         }
 
-      /* Flush output */
-      if (SocketHTTP2_Conn_flush (conn) < 0)
+      /* Need more I/O - process inbound frames */
+      if (SocketHTTP2_Conn_process (conn, 0) < 0)
         {
           SocketHTTP2_Conn_free (&entry->proto.h2.conn);
           return -1;
