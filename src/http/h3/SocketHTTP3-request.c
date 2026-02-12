@@ -393,6 +393,7 @@ struct SocketHTTP3_Request
 
   /* Decoded response headers */
   SocketHTTP_Headers_T recv_headers;
+  SocketHTTP_Headers_T recv_trailers;
   int status_code;
   int64_t expected_content_length;
   size_t total_data_received;
@@ -436,6 +437,7 @@ SocketHTTP3_Request_new (SocketHTTP3_Conn_T conn)
   req->first_frame_seen = 0;
   req->trailers_received = 0;
   req->recv_headers = NULL;
+  req->recv_trailers = NULL;
   req->status_code = 0;
   req->expected_content_length = -1;
   req->total_data_received = 0;
@@ -495,6 +497,7 @@ SocketHTTP3_Request_new_incoming (SocketHTTP3_Conn_T conn, uint64_t stream_id)
   req->first_frame_seen = 0;
   req->trailers_received = 0;
   req->recv_headers = NULL;
+  req->recv_trailers = NULL;
   req->status_code = 0;
   req->expected_content_length = -1;
   req->total_data_received = 0;
@@ -549,6 +552,7 @@ SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
   req->first_frame_seen = 0;
   req->trailers_received = 0;
   req->recv_headers = NULL;
+  req->recv_trailers = NULL;
   req->status_code = 0;
   req->expected_content_length = -1;
   req->total_data_received = 0;
@@ -815,6 +819,9 @@ handle_headers_frame (struct SocketHTTP3_Request *req,
                       const uint8_t *payload,
                       size_t payload_len)
 {
+  SocketHTTP_Headers_T hdrs;
+  int rc;
+
   if (req->conn != NULL
       && req->conn->local_settings.max_field_section_size != UINT64_MAX
       && payload_len > req->conn->local_settings.max_field_section_size)
@@ -824,14 +831,25 @@ handle_headers_frame (struct SocketHTTP3_Request *req,
       || (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED
           && req->status_code >= 200))
     {
-      /* Trailers — skip decode (known limitation, see RFC 9114 §4.1) */
+      /* Trailers: decode and retain for callers. */
+      rc = h3_qpack_decode_headers (req->arena, payload, payload_len, &hdrs);
+      if (rc != 0)
+        return rc;
+
+      for (size_t i = 0; i < SocketHTTP_Headers_count (hdrs); i++)
+        {
+          const SocketHTTP_Header *h = SocketHTTP_Headers_at (hdrs, i);
+          if (h != NULL && h->name_len > 0 && h->name[0] == ':')
+            return -(int)H3_MESSAGE_ERROR;
+        }
+
+      req->recv_trailers = hdrs;
       req->trailers_received = 1;
       return 0;
     }
 
   /* Decode QPACK headers */
-  SocketHTTP_Headers_T hdrs;
-  int rc = h3_qpack_decode_headers (req->arena, payload, payload_len, &hdrs);
+  rc = h3_qpack_decode_headers (req->arena, payload, payload_len, &hdrs);
   if (rc != 0)
     return rc;
 
@@ -841,20 +859,32 @@ handle_headers_frame (struct SocketHTTP3_Request *req,
   if (rc != 0)
     return rc;
 
-  rc = SocketHTTP3_validate_response_headers (hdrs);
-  if (rc != 0)
-    return rc;
+  if (req->conn != NULL && req->conn->role == H3_ROLE_SERVER)
+    {
+      rc = SocketHTTP3_validate_request_headers (hdrs);
+      if (rc != 0)
+        return rc;
+      req->status_code = 0;
+    }
+  else
+    {
+      const char *status_val;
+      int code;
 
-  /* Extract status code */
-  const char *status_val = SocketHTTP_Headers_get_n (hdrs, ":status", 7);
-  if (status_val == NULL)
-    return -(int)H3_MESSAGE_ERROR;
+      rc = SocketHTTP3_validate_response_headers (hdrs);
+      if (rc != 0)
+        return rc;
 
-  int code = parse_status_code (status_val, strlen (status_val));
-  if (code < 0)
-    return -(int)H3_MESSAGE_ERROR;
+      status_val = SocketHTTP_Headers_get_n (hdrs, ":status", 7);
+      if (status_val == NULL)
+        return -(int)H3_MESSAGE_ERROR;
 
-  req->status_code = code;
+      code = parse_status_code (status_val, strlen (status_val));
+      if (code < 0)
+        return -(int)H3_MESSAGE_ERROR;
+      req->status_code = code;
+    }
+
   req->recv_headers = hdrs;
 
   /* Extract content-length if present */
@@ -1008,6 +1038,17 @@ SocketHTTP3_Request_recv_headers (SocketHTTP3_Request_T req,
     *headers = req->recv_headers;
   if (status_code != NULL)
     *status_code = req->status_code;
+  return 0;
+}
+
+int
+SocketHTTP3_Request_recv_trailers (SocketHTTP3_Request_T req,
+                                   SocketHTTP_Headers_T *trailers)
+{
+  if (req == NULL || !req->trailers_received || req->recv_trailers == NULL)
+    return -1;
+  if (trailers != NULL)
+    *trailers = req->recv_trailers;
   return 0;
 }
 

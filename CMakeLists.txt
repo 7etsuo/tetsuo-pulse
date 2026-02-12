@@ -379,6 +379,7 @@ set(LIB_SOURCES
     # gRPC module (public scaffolding)
     src/grpc/SocketGRPC-core.c
     src/grpc/SocketGRPCClient-h2.c
+    src/grpc/SocketGRPCClient-h3.c
     src/grpc/SocketGRPCServer-h2.c
     src/grpc/SocketGRPCWire.c
     src/grpc/SocketProto-varint.c
@@ -955,6 +956,7 @@ set(TEST_SOURCES
     test_grpc_metadata
     test_grpc_unary_h2
     test_grpc_unary_server_h2
+    test_grpc_h3
     test_proto_varint
     test_proto_wire
     test_proto_message

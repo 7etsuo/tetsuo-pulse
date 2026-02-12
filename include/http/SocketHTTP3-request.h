@@ -139,6 +139,16 @@ int SocketHTTP3_Request_recv_headers (SocketHTTP3_Request_T req,
                                       int *status_code);
 
 /**
+ * @brief Get decoded trailing HEADERS, when present.
+ *
+ * @param req            Request handle.
+ * @param[out] trailers  Output trailer headers (may be NULL).
+ * @return 0 on success, -1 if trailers not available.
+ */
+int SocketHTTP3_Request_recv_trailers (SocketHTTP3_Request_T req,
+                                       SocketHTTP_Headers_T *trailers);
+
+/**
  * @brief Read received DATA payload.
  *
  * Copies buffered DATA payload into the caller's buffer.

@@ -122,6 +122,15 @@ TEST (grpc_retry_policy_parse_and_validation)
                  "retryable_codes=NOPE", &policy));
 }
 
+TEST (grpc_channel_config_defaults_include_transport_mode)
+{
+  SocketGRPC_ChannelConfig cfg;
+
+  SocketGRPC_ChannelConfig_defaults (&cfg);
+  ASSERT_EQ (SOCKET_GRPC_CHANNEL_MODE_HTTP2, cfg.channel_mode);
+  ASSERT_NULL (cfg.ca_file);
+}
+
 TEST (grpc_handle_lifecycle_smoke)
 {
   SocketGRPC_ClientConfig client_cfg;

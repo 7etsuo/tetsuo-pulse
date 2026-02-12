@@ -64,6 +64,7 @@ struct SocketGRPC_Channel
   char *target;
   char *authority_override;
   char *user_agent;
+  char *ca_file;
   SocketGRPC_Status last_status;
 };
 
@@ -83,6 +84,8 @@ struct SocketGRPC_Call
   uint32_t stream_interceptor_count;
   void *h2_stream_ctx;
   SocketGRPC_CallStreamState h2_stream_state;
+  void *h3_stream_ctx;
+  SocketGRPC_CallStreamState h3_stream_state;
   int retry_in_progress;
   uint32_t retry_attempt;
 };
@@ -98,5 +101,18 @@ extern void SocketGRPC_server_methods_clear (SocketGRPC_Server_T server);
 extern void SocketGRPC_server_interceptors_clear (SocketGRPC_Server_T server);
 
 extern void SocketGRPC_Call_h2_stream_abort (SocketGRPC_Call_T call);
+#if SOCKET_HAS_TLS
+extern void SocketGRPC_Call_h3_stream_abort (SocketGRPC_Call_T call);
+extern int SocketGRPC_Call_h3_send_message (SocketGRPC_Call_T call,
+                                            const uint8_t *request_payload,
+                                            size_t request_payload_len);
+extern int SocketGRPC_Call_h3_close_send (SocketGRPC_Call_T call);
+extern int SocketGRPC_Call_h3_recv_message (SocketGRPC_Call_T call,
+                                            Arena_T arena,
+                                            uint8_t **response_payload,
+                                            size_t *response_payload_len,
+                                            int *done);
+extern int SocketGRPC_Call_h3_cancel (SocketGRPC_Call_T call);
+#endif
 
 #endif /* SOCKETGRPC_PRIVATE_INCLUDED */
