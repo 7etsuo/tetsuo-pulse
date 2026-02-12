@@ -10,6 +10,7 @@
  */
 
 #include "grpc/SocketGRPC.h"
+#include "core/SocketMetrics.h"
 #include "test/Test.h"
 
 #include <stdint.h>
@@ -198,6 +199,10 @@ typedef struct
   int client_unary_events;
   int stream_send_events;
   int stream_recv_events;
+  int lifecycle_start_events;
+  int lifecycle_finish_events;
+  int lifecycle_retry_events;
+  SocketGRPC_LogEvent last_event;
 } InterceptorProbe;
 
 static int
@@ -288,6 +293,13 @@ test_log_hook (const SocketGRPC_LogEvent *event, void *userdata)
     return;
   if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_UNARY)
     probe->client_unary_events++;
+  if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_START)
+    probe->lifecycle_start_events++;
+  if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_FINISH)
+    probe->lifecycle_finish_events++;
+  if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_RETRY)
+    probe->lifecycle_retry_events++;
+  probe->last_event = *event;
 }
 
 static int
@@ -487,6 +499,9 @@ TEST (grpc_interceptor_api_and_short_circuit_surface)
             call, request_payload, sizeof (request_payload), &st, &log_cfg));
   }
   ASSERT_EQ (1, probe.client_unary_events);
+  ASSERT_NOT_NULL (probe.last_event.peer);
+  ASSERT_NOT_NULL (probe.last_event.authority);
+  ASSERT_EQ (1U, probe.last_event.attempt);
 
   ASSERT_EQ (0,
              SocketGRPC_Call_add_unary_interceptor (
@@ -515,6 +530,126 @@ TEST (grpc_interceptor_api_and_short_circuit_surface)
   SocketGRPC_Call_free (&call);
   SocketGRPC_Channel_free (&channel);
   SocketGRPC_Server_free (&server);
+  SocketGRPC_Client_free (&client);
+}
+
+TEST (grpc_observability_hook_surface_and_disabled_precedence)
+{
+  SocketGRPC_ClientConfig client_cfg;
+  SocketGRPC_ServerConfig server_cfg;
+  SocketGRPC_CallConfig call_cfg;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Server_T server = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  InterceptorProbe probe = { 0 };
+  uint8_t request_payload[] = { 0x08, 0x05 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  uint64_t started_before;
+  uint64_t completed_before;
+
+  SocketMetrics_init ();
+  SocketGRPC_ClientConfig_defaults (&client_cfg);
+  SocketGRPC_ServerConfig_defaults (&server_cfg);
+  SocketGRPC_CallConfig_defaults (&call_cfg);
+  call_cfg.deadline_ms = 25;
+
+  ASSERT_EQ (1, client_cfg.enable_observability);
+  ASSERT_EQ (1, server_cfg.enable_observability);
+  ASSERT_EQ (
+      -1, SocketGRPC_Client_set_observability_hook (NULL, test_log_hook, NULL));
+  ASSERT_EQ (
+      -1, SocketGRPC_Server_set_observability_hook (NULL, test_log_hook, NULL));
+
+  client = SocketGRPC_Client_new (&client_cfg);
+  ASSERT_NOT_NULL (client);
+  server = SocketGRPC_Server_new (&server_cfg);
+  ASSERT_NOT_NULL (server);
+  ASSERT_EQ (
+      0,
+      SocketGRPC_Client_set_observability_hook (client, test_log_hook, &probe));
+  ASSERT_EQ (
+      0,
+      SocketGRPC_Server_set_observability_hook (server, test_log_hook, &probe));
+  channel = SocketGRPC_Channel_new (client, "https://127.0.0.1:1", NULL);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Service/Unary", &call_cfg);
+  ASSERT_NOT_NULL (call);
+  ASSERT_EQ (0,
+             SocketGRPC_Call_add_unary_interceptor (
+                 call, test_unary_stop_interceptor, NULL));
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+  started_before
+      = SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED);
+  completed_before
+      = SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_COMPLETED);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAUTHENTICATED, rc);
+  ASSERT_EQ (1, probe.lifecycle_start_events);
+  ASSERT_EQ (1, probe.lifecycle_finish_events);
+  ASSERT_EQ (0, probe.lifecycle_retry_events);
+  ASSERT_EQ (SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_FINISH, probe.last_event.type);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAUTHENTICATED, probe.last_event.status_code);
+  ASSERT_NOT_NULL (probe.last_event.peer);
+  ASSERT_NOT_NULL (probe.last_event.authority);
+  ASSERT (probe.last_event.duration_ms >= 0);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Server_free (&server);
+  SocketGRPC_Client_free (&client);
+
+  memset (&probe, 0, sizeof (probe));
+  client_cfg.enable_observability = 0;
+  client = SocketGRPC_Client_new (&client_cfg);
+  ASSERT_NOT_NULL (client);
+  ASSERT_EQ (
+      0,
+      SocketGRPC_Client_set_observability_hook (client, test_log_hook, &probe));
+  channel = SocketGRPC_Channel_new (client, "https://127.0.0.1:1", NULL);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Service/Unary", &call_cfg);
+  ASSERT_NOT_NULL (call);
+  ASSERT_EQ (0,
+             SocketGRPC_Call_add_unary_interceptor (
+                 call, test_unary_stop_interceptor, NULL));
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+  started_before
+      = SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED);
+  completed_before
+      = SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_COMPLETED);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNAUTHENTICATED, rc);
+  ASSERT_EQ (0, probe.lifecycle_start_events);
+  ASSERT_EQ (0, probe.lifecycle_finish_events);
+  ASSERT_EQ (0, probe.lifecycle_retry_events);
+  ASSERT_EQ (started_before,
+             SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED));
+  ASSERT_EQ (
+      completed_before,
+      SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_COMPLETED));
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
   SocketGRPC_Client_free (&client);
 }
 

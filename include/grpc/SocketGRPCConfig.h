@@ -52,7 +52,7 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 
 #ifndef SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES
 #define SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES \
-    (SOCKET_GRPC_DEFAULT_MAX_INBOUND_MESSAGE_BYTES)
+  (SOCKET_GRPC_DEFAULT_MAX_INBOUND_MESSAGE_BYTES)
 #endif
 
 #ifndef SOCKET_GRPC_DEFAULT_MAX_CUMULATIVE_INFLIGHT_BYTES
@@ -81,6 +81,10 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 
 #ifndef SOCKET_GRPC_DEFAULT_ENABLE_RETRY
 #define SOCKET_GRPC_DEFAULT_ENABLE_RETRY 0
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_ENABLE_OBSERVABILITY
+#define SOCKET_GRPC_DEFAULT_ENABLE_OBSERVABILITY 1
 #endif
 
 #ifndef SOCKET_GRPC_DEFAULT_DEADLINE_MS
@@ -136,6 +140,7 @@ typedef struct
   uint32_t max_concurrent_channels;
   uint32_t max_outstanding_calls;
   int enable_retry;
+  int enable_observability;
 } SocketGRPC_ClientConfig;
 
 /**
@@ -145,6 +150,7 @@ typedef struct
 {
   uint32_t max_concurrent_connections;
   uint32_t max_outstanding_calls;
+  int enable_observability;
 } SocketGRPC_ServerConfig;
 
 /**
@@ -212,8 +218,8 @@ extern void SocketGRPC_RetryPolicy_defaults (SocketGRPC_RetryPolicy *policy);
  *
  * @return 0 if valid, -1 if any field is out of range.
  */
-extern int SocketGRPC_RetryPolicy_validate (
-    const SocketGRPC_RetryPolicy *policy);
+extern int
+SocketGRPC_RetryPolicy_validate (const SocketGRPC_RetryPolicy *policy);
 
 /**
  * @brief Parse a service-config retry policy subset string.
@@ -227,8 +233,8 @@ extern int SocketGRPC_RetryPolicy_validate (
  *
  * @return 0 on success, -1 on parse/validation error.
  */
-extern int SocketGRPC_RetryPolicy_parse_service_config (
-    const char *spec,
-    SocketGRPC_RetryPolicy *policy);
+extern int
+SocketGRPC_RetryPolicy_parse_service_config (const char *spec,
+                                             SocketGRPC_RetryPolicy *policy);
 
 #endif /* SOCKETGRPCCONFIG_INCLUDED */

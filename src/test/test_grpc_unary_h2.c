@@ -6,6 +6,7 @@
 
 #include "grpc/SocketGRPC.h"
 #include "grpc/SocketGRPCWire.h"
+#include "core/SocketMetrics.h"
 #include "deflate/SocketDeflate.h"
 #include "test/Test.h"
 
@@ -163,6 +164,49 @@ typedef struct
   int stream_recv_calls;
   int stop_on_recv;
 } GRPC_InterceptorProbe;
+
+typedef struct
+{
+  int start_events;
+  int finish_events;
+  int retry_events;
+  SocketGRPC_StatusCode last_status;
+  uint32_t last_attempt;
+  int64_t last_duration_ms;
+  char peer[128];
+  char authority[128];
+} GRPC_ObservabilityProbe;
+
+static void
+grpc_observability_probe_hook (const SocketGRPC_LogEvent *event, void *userdata)
+{
+  GRPC_ObservabilityProbe *probe = (GRPC_ObservabilityProbe *)userdata;
+
+  if (probe == NULL || event == NULL)
+    return;
+
+  if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_START)
+    probe->start_events++;
+  else if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_FINISH)
+    probe->finish_events++;
+  else if (event->type == SOCKET_GRPC_LOG_EVENT_CLIENT_RETRY)
+    probe->retry_events++;
+
+  probe->last_status = event->status_code;
+  probe->last_attempt = event->attempt;
+  probe->last_duration_ms = event->duration_ms;
+  if (event->peer != NULL)
+    {
+      strncpy (probe->peer, event->peer, sizeof (probe->peer) - 1);
+      probe->peer[sizeof (probe->peer) - 1] = '\0';
+    }
+  if (event->authority != NULL)
+    {
+      strncpy (
+          probe->authority, event->authority, sizeof (probe->authority) - 1);
+      probe->authority[sizeof (probe->authority) - 1] = '\0';
+    }
+}
 
 static int
 grpc_unary_probe_interceptor (SocketGRPC_Call_T call,
@@ -2657,6 +2701,125 @@ TEST (grpc_unary_h2_retry_unavailable_then_success)
   ASSERT_EQ (2, server.handled_connections);
   ASSERT_EQ (-1, server.observed_previous_attempts[0]);
   ASSERT_EQ (1, server.observed_previous_attempts[1]);
+}
+
+TEST (grpc_unary_h2_observability_metrics_and_events_on_retry_success)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  SocketGRPC_ClientConfig client_cfg;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketGRPC_CallConfig call_cfg;
+  Arena_T arena = NULL;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  GRPC_ObservabilityProbe obs_probe = { 0 };
+  uint8_t request_payload[] = { 0x08, 0x66 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start_with_limit (
+          &server, GRPC_H2_SCENARIO_RETRY_UNAVAILABLE_THEN_SUCCESS, 3)
+      != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 retry test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ClientConfig_defaults (&client_cfg);
+  client_cfg.enable_retry = 1;
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  SocketGRPC_CallConfig_defaults (&call_cfg);
+  call_cfg.deadline_ms = 1000;
+  call_cfg.retry_policy.max_attempts = 3;
+  call_cfg.retry_policy.initial_backoff_ms = 5;
+  call_cfg.retry_policy.max_backoff_ms = 20;
+  call_cfg.retry_policy.backoff_multiplier = 1.0;
+  call_cfg.retry_policy.jitter_percent = 0;
+  call_cfg.retry_policy.retryable_status_mask
+      = (1U << SOCKET_GRPC_STATUS_UNAVAILABLE);
+
+  client = SocketGRPC_Client_new (&client_cfg);
+  ASSERT_NOT_NULL (client);
+  ASSERT_EQ (0,
+             SocketGRPC_Client_set_observability_hook (
+                 client, grpc_observability_probe_hook, &obs_probe));
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", &call_cfg);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, rc);
+  ASSERT_NOT_NULL (response_payload);
+  ASSERT_EQ (2U, response_payload_len);
+
+  ASSERT_EQ (1, obs_probe.start_events);
+  ASSERT_EQ (1, obs_probe.finish_events);
+  ASSERT_EQ (1, obs_probe.retry_events);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, obs_probe.last_status);
+  ASSERT_EQ (2U, obs_probe.last_attempt);
+  ASSERT (obs_probe.last_duration_ms >= 0);
+  ASSERT_NE (0, strcmp (obs_probe.peer, ""));
+  ASSERT_NE (0, strcmp (obs_probe.authority, ""));
+
+  ASSERT_EQ (
+      1, (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED));
+  ASSERT_EQ (
+      1,
+      (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_CALLS_COMPLETED));
+  ASSERT_EQ (1,
+             (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_RETRIES));
+  ASSERT_EQ (
+      (int)sizeof (request_payload),
+      (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_BYTES_SENT));
+  ASSERT_EQ (
+      (int)response_payload_len,
+      (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_BYTES_RECEIVED));
+  ASSERT_EQ (1,
+             (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_CLIENT_STATUS_OK));
+  ASSERT_EQ (
+      1U,
+      SocketMetrics_histogram_count (SOCKET_HIST_GRPC_CLIENT_CALL_LATENCY_MS));
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
 }
 
 TEST (grpc_unary_h2_interceptor_runs_once_across_retry_attempts)

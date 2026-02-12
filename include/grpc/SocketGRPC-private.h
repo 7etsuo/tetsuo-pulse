@@ -38,12 +38,16 @@ struct SocketGRPC_Client
 {
   SocketGRPC_ClientConfig config;
   SocketGRPC_Status last_status;
+  SocketGRPC_LogHook observability_hook;
+  void *observability_hook_userdata;
 };
 
 struct SocketGRPC_Server
 {
   SocketGRPC_ServerConfig config;
   SocketGRPC_Status last_status;
+  SocketGRPC_LogHook observability_hook;
+  void *observability_hook_userdata;
   SocketGRPC_ServerMethod *methods;
   SocketGRPC_ServerUnaryInterceptorEntry *unary_interceptors;
   SocketGRPC_ServerUnaryInterceptorEntry *unary_interceptors_tail;

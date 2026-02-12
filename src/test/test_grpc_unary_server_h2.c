@@ -6,6 +6,7 @@
 
 #include "grpc/SocketGRPC.h"
 #include "grpc/SocketGRPCWire.h"
+#include "core/SocketMetrics.h"
 #include "http/SocketHTTPClient.h"
 #include "http/SocketHTTPServer.h"
 #include "socket/Socket.h"
@@ -272,6 +273,44 @@ grpc_auth_token_validator (SocketGRPC_ServerContext_T ctx,
   if (token_len != expected_len)
     return 0;
   return memcmp (token, expected, token_len) == 0;
+}
+
+typedef struct
+{
+  int start_events;
+  int finish_events;
+  SocketGRPC_StatusCode last_status;
+  int64_t last_duration_ms;
+  char peer[128];
+  char authority[128];
+} GRPC_ServerObservabilityProbe;
+
+static void
+grpc_server_observability_probe_hook (const SocketGRPC_LogEvent *event,
+                                      void *userdata)
+{
+  GRPC_ServerObservabilityProbe *probe
+      = (GRPC_ServerObservabilityProbe *)userdata;
+
+  if (probe == NULL || event == NULL)
+    return;
+  if (event->type == SOCKET_GRPC_LOG_EVENT_SERVER_CALL_START)
+    probe->start_events++;
+  if (event->type == SOCKET_GRPC_LOG_EVENT_SERVER_CALL_FINISH)
+    probe->finish_events++;
+  probe->last_status = event->status_code;
+  probe->last_duration_ms = event->duration_ms;
+  if (event->peer != NULL)
+    {
+      strncpy (probe->peer, event->peer, sizeof (probe->peer) - 1);
+      probe->peer[sizeof (probe->peer) - 1] = '\0';
+    }
+  if (event->authority != NULL)
+    {
+      strncpy (
+          probe->authority, event->authority, sizeof (probe->authority) - 1);
+      probe->authority[sizeof (probe->authority) - 1] = '\0';
+    }
 }
 
 static void *
@@ -731,6 +770,7 @@ TEST (grpc_unary_server_h2_auth_interceptor_pipeline)
   GRPCClientFixture client;
   SocketGRPC_AuthTokenValidatorConfig auth_cfg;
   SocketGRPC_MetadataInjectorConfig inject_cfg;
+  GRPC_ServerObservabilityProbe obs_probe = { 0 };
   const char *expected_token = "Bearer integration-token";
   uint8_t request[] = { 0x08, 0x33 };
   uint8_t *response_payload = NULL;
@@ -738,11 +778,19 @@ TEST (grpc_unary_server_h2_auth_interceptor_pipeline)
   Arena_T arena = NULL;
   int rc;
 
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+
   if (grpc_fixture_start (&fixture) != 0)
     {
       printf ("  [SKIP] Could not start unary gRPC HTTP/2 server fixture\n");
       return;
     }
+  ASSERT_EQ (0,
+             SocketGRPC_Server_set_observability_hook (
+                 fixture.grpc_server,
+                 grpc_server_observability_probe_hook,
+                 &obs_probe));
 
   atomic_store (&grpc_auth_probe_interceptor_calls, 0);
   atomic_store (&grpc_auth_validator_calls, 0);
@@ -813,6 +861,31 @@ TEST (grpc_unary_server_h2_auth_interceptor_pipeline)
 
   ASSERT_EQ (2, atomic_load (&grpc_auth_probe_interceptor_calls));
   ASSERT_EQ (1, atomic_load (&grpc_auth_validator_calls));
+  ASSERT_EQ (2, obs_probe.start_events);
+  ASSERT_EQ (2, obs_probe.finish_events);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, obs_probe.last_status);
+  ASSERT (obs_probe.last_duration_ms >= 0);
+  ASSERT_NE (0, strcmp (obs_probe.peer, ""));
+  ASSERT_NE (0, strcmp (obs_probe.authority, ""));
+  ASSERT_EQ (
+      2, (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_SERVER_CALLS_STARTED));
+  ASSERT_EQ (
+      2,
+      (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_SERVER_CALLS_COMPLETED));
+  ASSERT_EQ (1,
+             (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_SERVER_STATUS_OK));
+  ASSERT_EQ (1,
+             (int)SocketMetrics_counter_get (
+                 SOCKET_CTR_GRPC_SERVER_STATUS_UNAUTHENTICATED));
+  ASSERT_EQ (
+      (int)(sizeof (request) * 2U),
+      (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_SERVER_BYTES_RECEIVED));
+  ASSERT_EQ (
+      (int)sizeof (request),
+      (int)SocketMetrics_counter_get (SOCKET_CTR_GRPC_SERVER_BYTES_SENT));
+  ASSERT_EQ (
+      2U,
+      SocketMetrics_histogram_count (SOCKET_HIST_GRPC_SERVER_CALL_LATENCY_MS));
 
   grpc_fixture_stop (&fixture);
 }

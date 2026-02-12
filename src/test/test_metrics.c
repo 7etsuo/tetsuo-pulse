@@ -731,8 +731,8 @@ TEST (metrics_update_peak_concurrent_same_value)
   /* All threads update with the same value */
   for (int i = 0; i < THREAD_COUNT; i++)
     {
-      pthread_create (&threads[i], NULL, thread_update_same_value,
-                      &shared_value);
+      pthread_create (
+          &threads[i], NULL, thread_update_same_value, &shared_value);
     }
 
   /* Wait for all threads */
@@ -780,8 +780,8 @@ TEST (metrics_update_peak_concurrent_descending)
     {
       thread_data[i].thread_id = i;
       thread_data[i].max_value = 0;
-      pthread_create (&threads[i], NULL, thread_update_descending,
-                      &thread_data[i]);
+      pthread_create (
+          &threads[i], NULL, thread_update_descending, &thread_data[i]);
     }
 
   /* Wait for all threads */
@@ -861,6 +861,47 @@ TEST (metrics_category_name)
   ASSERT (strlen (tls_name) > 0);
 }
 
+TEST (metrics_grpc_metadata_names_and_help_are_mapped)
+{
+  const char *grpc_category
+      = SocketMetrics_category_name (SOCKET_METRIC_CAT_GRPC);
+  const char *client_started
+      = SocketMetrics_counter_name (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED);
+  const char *client_started_help
+      = SocketMetrics_counter_help (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED);
+  const char *server_status_ok
+      = SocketMetrics_counter_name (SOCKET_CTR_GRPC_SERVER_STATUS_OK);
+  const char *server_status_ok_help
+      = SocketMetrics_counter_help (SOCKET_CTR_GRPC_SERVER_STATUS_OK);
+  const char *stream_gauge
+      = SocketMetrics_gauge_name (SOCKET_GAU_GRPC_CLIENT_ACTIVE_STREAMS);
+  const char *stream_gauge_help
+      = SocketMetrics_gauge_help (SOCKET_GAU_GRPC_CLIENT_ACTIVE_STREAMS);
+  const char *client_latency_hist
+      = SocketMetrics_histogram_name (SOCKET_HIST_GRPC_CLIENT_CALL_LATENCY_MS);
+  const char *client_latency_help
+      = SocketMetrics_histogram_help (SOCKET_HIST_GRPC_CLIENT_CALL_LATENCY_MS);
+
+  ASSERT_NOT_NULL (grpc_category);
+  ASSERT_EQ (0, strcmp (grpc_category, "grpc"));
+  ASSERT_NOT_NULL (client_started);
+  ASSERT_NOT_NULL (client_started_help);
+  ASSERT_NOT_NULL (server_status_ok);
+  ASSERT_NOT_NULL (server_status_ok_help);
+  ASSERT_NOT_NULL (stream_gauge);
+  ASSERT_NOT_NULL (stream_gauge_help);
+  ASSERT_NOT_NULL (client_latency_hist);
+  ASSERT_NOT_NULL (client_latency_help);
+  ASSERT (strstr (client_started, "grpc_client_") != NULL);
+  ASSERT (strstr (server_status_ok, "grpc_server_") != NULL);
+  ASSERT (strstr (stream_gauge, "grpc_") != NULL);
+  ASSERT (strstr (client_latency_hist, "grpc_client_") != NULL);
+  ASSERT (strlen (client_started_help) > 0);
+  ASSERT (strlen (server_status_ok_help) > 0);
+  ASSERT (strlen (stream_gauge_help) > 0);
+  ASSERT (strlen (client_latency_help) > 0);
+}
+
 /* ============================================================================
  * Export Edge Cases - Buffer Overflow Tests
  * ============================================================================
@@ -874,7 +915,8 @@ TEST (metrics_export_prometheus_exact_buffer_size)
 
   /* First get the required size with large buffer */
   char large_buf[65536];
-  size_t needed = SocketMetrics_export_prometheus (large_buf, sizeof (large_buf));
+  size_t needed
+      = SocketMetrics_export_prometheus (large_buf, sizeof (large_buf));
   ASSERT (needed > 0);
   ASSERT (needed < sizeof (large_buf));
 
@@ -896,7 +938,8 @@ TEST (metrics_export_prometheus_off_by_one)
 
   /* Get required size */
   char large_buf[65536];
-  size_t needed = SocketMetrics_export_prometheus (large_buf, sizeof (large_buf));
+  size_t needed
+      = SocketMetrics_export_prometheus (large_buf, sizeof (large_buf));
 
   /* Test with buffer 1 byte too small */
   if (needed > 1)
@@ -1197,8 +1240,8 @@ TEST (metrics_export_statsd_percentile_names)
   /* Add histogram data */
   for (int i = 1; i <= 100; i++)
     {
-      SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
-                                       (double)i);
+      SocketMetrics_histogram_observe (
+          SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, (double)i);
     }
 
   char buffer[8192];
@@ -1246,8 +1289,10 @@ TEST (metrics_export_json_floating_point_precision)
   SocketMetrics_reset_histograms ();
 
   /* Add values to get varied percentiles */
-  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 1.123456789);
-  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 2.987654321);
+  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS,
+                                   1.123456789);
+  SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS,
+                                   2.987654321);
   SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 3.5);
 
   char buffer[131072];
@@ -1284,7 +1329,8 @@ TEST (metrics_export_json_large_counter_values)
   SocketMetrics_reset ();
 
   /* Test with very large counter value */
-  SocketMetrics_counter_add (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT, 9223372036854775807ULL);
+  SocketMetrics_counter_add (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT,
+                             9223372036854775807ULL);
 
   char buffer[131072];
   size_t len = SocketMetrics_export_json (buffer, sizeof (buffer));

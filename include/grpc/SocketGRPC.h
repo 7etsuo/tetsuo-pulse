@@ -205,7 +205,12 @@ typedef enum
   SOCKET_GRPC_LOG_EVENT_CLIENT_UNARY = 1,
   SOCKET_GRPC_LOG_EVENT_SERVER_UNARY = 2,
   SOCKET_GRPC_LOG_EVENT_STREAM_SEND = 3,
-  SOCKET_GRPC_LOG_EVENT_STREAM_RECV = 4
+  SOCKET_GRPC_LOG_EVENT_STREAM_RECV = 4,
+  SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_START = 5,
+  SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_FINISH = 6,
+  SOCKET_GRPC_LOG_EVENT_CLIENT_RETRY = 7,
+  SOCKET_GRPC_LOG_EVENT_SERVER_CALL_START = 8,
+  SOCKET_GRPC_LOG_EVENT_SERVER_CALL_FINISH = 9
 } SocketGRPC_LogEventType;
 
 /**
@@ -219,6 +224,9 @@ typedef struct
   const char *status_message;
   size_t payload_len;
   uint32_t attempt;
+  const char *peer;
+  const char *authority;
+  int64_t duration_ms;
 } SocketGRPC_LogEvent;
 
 /**
@@ -278,6 +286,16 @@ extern SocketGRPC_Client_T
 SocketGRPC_Client_new (const SocketGRPC_ClientConfig *config);
 
 /**
+ * @brief Set canonical observability hook for client call lifecycle events.
+ *
+ * Passing NULL hook clears previously registered hook.
+ * Returns 0 on success, -1 for invalid client handle.
+ */
+extern int SocketGRPC_Client_set_observability_hook (SocketGRPC_Client_T client,
+                                                     SocketGRPC_LogHook hook,
+                                                     void *userdata);
+
+/**
  * @brief Destroy a gRPC client object.
  *
  * Safe to call with NULL or *client == NULL.
@@ -297,6 +315,16 @@ extern void SocketGRPC_Client_free (SocketGRPC_Client_T *client);
  */
 extern SocketGRPC_Server_T
 SocketGRPC_Server_new (const SocketGRPC_ServerConfig *config);
+
+/**
+ * @brief Set canonical observability hook for server call lifecycle events.
+ *
+ * Passing NULL hook clears previously registered hook.
+ * Returns 0 on success, -1 for invalid server handle.
+ */
+extern int SocketGRPC_Server_set_observability_hook (SocketGRPC_Server_T server,
+                                                     SocketGRPC_LogHook hook,
+                                                     void *userdata);
 
 /**
  * @brief Destroy a gRPC server object.
