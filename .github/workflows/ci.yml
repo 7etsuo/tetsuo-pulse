@@ -39,6 +39,13 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --parallel $(nproc)
 
+      - name: Run gRPC core conformance matrix
+        run: |
+          scripts/grpc-interop/run.sh \
+            --profile core \
+            --build-dir build \
+            --report build/grpc-interop-core-${{ matrix.build_type }}.json
+
   # Sanitizer builds (Linux)
   sanitizers:
     name: Sanitizers (${{ matrix.sanitizer }})
