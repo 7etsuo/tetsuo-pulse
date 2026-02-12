@@ -4,7 +4,7 @@ libdir=${prefix}/lib
 includedir=${prefix}/include
 
 Name: libsocket
-Description: High-performance C socket library with TLS, HTTP/2, and WebSocket support
+Description: High-performance C socket library with TLS, HTTP/2, HTTP/3, WebSocket, and gRPC support
 Version: @PROJECT_VERSION@
 Libs: -L${libdir} -lsocket
 Libs.private: @PC_LIBS_PRIVATE@

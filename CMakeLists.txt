@@ -361,6 +361,9 @@ set(LIB_SOURCES
     src/pool/SocketPool-ratelimit.c
     src/pool/SocketPool-drain.c
     src/pool/SocketPool-health.c
+
+    # gRPC module (public scaffolding)
+    src/grpc/SocketGRPC-core.c
     
     # HTTP module (RFC 9110/3986)
     src/http/SocketHTTP-core.c
@@ -773,6 +776,12 @@ set(DEFLATE_HEADERS
     include/deflate/SocketDeflate.h
 )
 
+set(GRPC_HEADERS
+    include/grpc/SocketGRPC.h
+    include/grpc/SocketGRPC-private.h
+    include/grpc/SocketGRPCConfig.h
+)
+
 install(TARGETS socket_static socket_shared
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
@@ -790,6 +799,7 @@ install(FILES ${TEST_HEADERS} DESTINATION include/test)
 install(FILES ${QUIC_HEADERS} DESTINATION include/quic)
 install(FILES ${SIMPLE_HEADERS} DESTINATION include/simple)
 install(FILES ${DEFLATE_HEADERS} DESTINATION include/deflate)
+install(FILES ${GRPC_HEADERS} DESTINATION include/grpc)
 
 # Print build configuration
 message(STATUS "Socket Library Configuration:")
@@ -917,6 +927,7 @@ set(TEST_SOURCES
     test_http3_connection
     test_http3_request
     test_http3_compliance
+    test_grpc_api_surface
 )
 
 if(ENABLE_H3_PUSH)
