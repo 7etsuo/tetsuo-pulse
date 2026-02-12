@@ -64,6 +64,8 @@ struct SocketGRPC_Call
   SocketGRPC_Status last_status;
   void *h2_stream_ctx;
   SocketGRPC_CallStreamState h2_stream_state;
+  int retry_in_progress;
+  uint32_t retry_attempt;
 };
 
 extern void SocketGRPC_status_set (SocketGRPC_Status *status,
