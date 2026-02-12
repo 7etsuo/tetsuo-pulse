@@ -77,6 +77,48 @@ TEST (grpc_timeout_parse_and_format_helpers)
   ASSERT_EQ (-1, SocketGRPC_Timeout_parse ("-10m", &timeout_ms));
 }
 
+TEST (grpc_retry_policy_parse_and_validation)
+{
+  SocketGRPC_RetryPolicy policy;
+
+  SocketGRPC_RetryPolicy_defaults (&policy);
+  ASSERT_EQ (0, SocketGRPC_RetryPolicy_validate (&policy));
+  ASSERT_EQ (1, policy.max_attempts);
+  ASSERT_EQ (100, policy.initial_backoff_ms);
+  ASSERT_EQ (1000, policy.max_backoff_ms);
+
+  ASSERT_EQ (0,
+             SocketGRPC_RetryPolicy_parse_service_config (
+                 "max_attempts=3,initial_backoff_ms=20,max_backoff_ms=200,"
+                 "multiplier=2.5,jitter_percent=15,"
+                 "retryable_codes=UNAVAILABLE|RESOURCE_EXHAUSTED",
+                 &policy));
+  ASSERT_EQ (3, policy.max_attempts);
+  ASSERT_EQ (20, policy.initial_backoff_ms);
+  ASSERT_EQ (200, policy.max_backoff_ms);
+  ASSERT_EQ (15, policy.jitter_percent);
+  ASSERT ((policy.retryable_status_mask & (1U << SOCKET_GRPC_STATUS_UNAVAILABLE)) != 0);
+  ASSERT ((policy.retryable_status_mask
+           & (1U << SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED))
+          != 0);
+
+  ASSERT_EQ (-1,
+             SocketGRPC_RetryPolicy_parse_service_config ("max_attempts=0",
+                                                          &policy));
+  ASSERT_EQ (
+      -1,
+      SocketGRPC_RetryPolicy_parse_service_config ("max_attempts=3x",
+                                                   &policy));
+  ASSERT_EQ (
+      -1,
+      SocketGRPC_RetryPolicy_parse_service_config ("multiplier=nan",
+                                                   &policy));
+  ASSERT_EQ (
+      -1,
+      SocketGRPC_RetryPolicy_parse_service_config ("retryable_codes=NOPE",
+                                                   &policy));
+}
+
 TEST (grpc_handle_lifecycle_smoke)
 {
   SocketGRPC_ClientConfig client_cfg;

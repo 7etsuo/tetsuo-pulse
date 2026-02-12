@@ -13,7 +13,9 @@
 #include "grpc/SocketGRPCWire.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -200,6 +202,238 @@ SocketGRPC_Timeout_parse (const char *value, int64_t *timeout_ms_out)
     }
 }
 
+void
+SocketGRPC_RetryPolicy_defaults (SocketGRPC_RetryPolicy *policy)
+{
+  if (policy == NULL)
+    return;
+
+  policy->max_attempts = SOCKET_GRPC_DEFAULT_RETRY_MAX_ATTEMPTS;
+  policy->initial_backoff_ms = SOCKET_GRPC_DEFAULT_RETRY_INITIAL_BACKOFF_MS;
+  policy->max_backoff_ms = SOCKET_GRPC_DEFAULT_RETRY_MAX_BACKOFF_MS;
+  policy->backoff_multiplier = SOCKET_GRPC_DEFAULT_RETRY_BACKOFF_MULTIPLIER;
+  policy->jitter_percent = SOCKET_GRPC_DEFAULT_RETRY_JITTER_PERCENT;
+  policy->retryable_status_mask = SOCKET_GRPC_DEFAULT_RETRYABLE_STATUS_MASK;
+}
+
+int
+SocketGRPC_RetryPolicy_validate (const SocketGRPC_RetryPolicy *policy)
+{
+  if (policy == NULL)
+    return -1;
+  if (policy->max_attempts < 1 || policy->max_attempts > 10)
+    return -1;
+  if (policy->initial_backoff_ms < 0 || policy->max_backoff_ms < 0)
+    return -1;
+  if (policy->max_backoff_ms > 0
+      && policy->initial_backoff_ms > policy->max_backoff_ms)
+    return -1;
+  if (!isfinite (policy->backoff_multiplier)
+      || policy->backoff_multiplier < 1.0
+      || policy->backoff_multiplier > 10.0)
+    return -1;
+  if (policy->jitter_percent < 0 || policy->jitter_percent > 100)
+    return -1;
+  if (policy->max_attempts > 1 && policy->retryable_status_mask == 0)
+    return -1;
+  return 0;
+}
+
+static int
+grpc_status_name_to_code (const char *name, SocketGRPC_StatusCode *code_out)
+{
+  int i;
+
+  if (name == NULL || code_out == NULL)
+    return -1;
+
+  for (i = SOCKET_GRPC_STATUS_OK; i <= SOCKET_GRPC_STATUS_UNAUTHENTICATED; i++)
+    {
+      if (strcmp (name, grpc_status_code_names[i]) == 0)
+        {
+          *code_out = (SocketGRPC_StatusCode)i;
+          return 0;
+        }
+    }
+
+  return -1;
+}
+
+static char *
+grpc_trim_ascii (char *s)
+{
+  char *end;
+  if (s == NULL)
+    return NULL;
+  while (*s != '\0' && isspace ((unsigned char)*s))
+    s++;
+  end = s + strlen (s);
+  while (end > s && isspace ((unsigned char)end[-1]))
+    end--;
+  *end = '\0';
+  return s;
+}
+
+static int
+grpc_parse_int_strict (const char *value, int *out)
+{
+  char *end = NULL;
+  long parsed;
+
+  if (value == NULL || out == NULL || value[0] == '\0')
+    return -1;
+
+  errno = 0;
+  parsed = strtol (value, &end, 10);
+  if (errno != 0 || end == value || end == NULL || *end != '\0')
+    return -1;
+  if (parsed < INT_MIN || parsed > INT_MAX)
+    return -1;
+
+  *out = (int)parsed;
+  return 0;
+}
+
+static int
+grpc_parse_double_strict (const char *value, double *out)
+{
+  char *end = NULL;
+  double parsed;
+
+  if (value == NULL || out == NULL || value[0] == '\0')
+    return -1;
+
+  errno = 0;
+  parsed = strtod (value, &end);
+  if (errno != 0 || end == value || end == NULL || *end != '\0')
+    return -1;
+
+  *out = parsed;
+  return 0;
+}
+
+int
+SocketGRPC_RetryPolicy_parse_service_config (const char *spec,
+                                             SocketGRPC_RetryPolicy *policy)
+{
+  char *copy;
+  char *token;
+  char *saveptr = NULL;
+
+  if (spec == NULL || policy == NULL)
+    return -1;
+
+  SocketGRPC_RetryPolicy_defaults (policy);
+  copy = strdup (spec);
+  if (copy == NULL)
+    return -1;
+
+  token = strtok_r (copy, ",", &saveptr);
+  while (token != NULL)
+    {
+      char *eq = strchr (token, '=');
+      char *key;
+      char *value;
+
+      if (eq == NULL)
+        {
+          free (copy);
+          return -1;
+        }
+      *eq = '\0';
+      key = grpc_trim_ascii (token);
+      value = grpc_trim_ascii (eq + 1);
+      if (key == NULL || value == NULL || key[0] == '\0' || value[0] == '\0')
+        {
+          free (copy);
+          return -1;
+        }
+
+      if (strcmp (key, "max_attempts") == 0)
+        {
+          if (grpc_parse_int_strict (value, &policy->max_attempts) != 0)
+            {
+              free (copy);
+              return -1;
+            }
+        }
+      else if (strcmp (key, "initial_backoff_ms") == 0)
+        {
+          if (grpc_parse_int_strict (value, &policy->initial_backoff_ms) != 0)
+            {
+              free (copy);
+              return -1;
+            }
+        }
+      else if (strcmp (key, "max_backoff_ms") == 0)
+        {
+          if (grpc_parse_int_strict (value, &policy->max_backoff_ms) != 0)
+            {
+              free (copy);
+              return -1;
+            }
+        }
+      else if (strcmp (key, "multiplier") == 0)
+        {
+          if (grpc_parse_double_strict (value, &policy->backoff_multiplier) != 0)
+            {
+              free (copy);
+              return -1;
+            }
+        }
+      else if (strcmp (key, "jitter_percent") == 0)
+        {
+          if (grpc_parse_int_strict (value, &policy->jitter_percent) != 0)
+            {
+              free (copy);
+              return -1;
+            }
+        }
+      else if (strcmp (key, "retryable_codes") == 0)
+        {
+          char *list_copy = strdup (value);
+          char *code_tok;
+          char *code_save = NULL;
+          uint32_t mask = 0;
+
+          if (list_copy == NULL)
+            {
+              free (copy);
+              return -1;
+            }
+
+          code_tok = strtok_r (list_copy, "|", &code_save);
+          while (code_tok != NULL)
+            {
+              SocketGRPC_StatusCode code;
+              char *trimmed = grpc_trim_ascii (code_tok);
+              if (grpc_status_name_to_code (trimmed, &code) != 0)
+                {
+                  free (list_copy);
+                  free (copy);
+                  return -1;
+                }
+              if ((int)code >= 0 && (int)code < 32)
+                mask |= (1U << (unsigned int)code);
+              code_tok = strtok_r (NULL, "|", &code_save);
+            }
+
+          free (list_copy);
+          policy->retryable_status_mask = mask;
+        }
+      else
+        {
+          free (copy);
+          return -1;
+        }
+
+      token = strtok_r (NULL, ",", &saveptr);
+    }
+
+  free (copy);
+  return SocketGRPC_RetryPolicy_validate (policy);
+}
+
 const char *
 SocketGRPC_Status_code_name (SocketGRPC_StatusCode code)
 {
@@ -256,6 +490,7 @@ SocketGRPC_CallConfig_defaults (SocketGRPC_CallConfig *config)
 
   config->deadline_ms = SOCKET_GRPC_DEFAULT_DEADLINE_MS;
   config->wait_for_ready = SOCKET_GRPC_DEFAULT_WAIT_FOR_READY;
+  SocketGRPC_RetryPolicy_defaults (&config->retry_policy);
 }
 
 static void
@@ -301,6 +536,8 @@ grpc_sanitize_call_config (SocketGRPC_CallConfig *config)
   if (config->deadline_ms < 0)
     config->deadline_ms = SOCKET_GRPC_DEFAULT_DEADLINE_MS;
   config->wait_for_ready = config->wait_for_ready ? 1 : 0;
+  if (SocketGRPC_RetryPolicy_validate (&config->retry_policy) != 0)
+    SocketGRPC_RetryPolicy_defaults (&config->retry_policy);
 }
 
 static char *
@@ -479,6 +716,8 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
   call->response_trailers = SocketGRPC_Trailers_new (NULL);
   call->h2_stream_ctx = NULL;
   call->h2_stream_state = GRPC_CALL_STREAM_IDLE;
+  call->retry_in_progress = 0;
+  call->retry_attempt = 0;
   if (call->request_metadata == NULL || call->response_trailers == NULL)
     {
       SocketGRPC_Metadata_free (&call->request_metadata);

@@ -22,10 +22,14 @@
 #endif
 
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
+#include <unistd.h>
 
 #define GRPC_CONTENT_TYPE "application/grpc"
 #define GRPC_TIMEOUT_HEADER_MAX 32U
@@ -641,6 +645,7 @@ grpc_request_add_required_headers (SocketGRPC_Call_T call,
                                    SocketHTTPClient_Request_T req)
 {
   char timeout_buf[GRPC_TIMEOUT_HEADER_MAX];
+  char attempt_buf[16];
 
   if (SocketHTTPClient_Request_header (req, "content-type", GRPC_CONTENT_TYPE)
       != 0)
@@ -665,6 +670,18 @@ grpc_request_add_required_headers (SocketGRPC_Call_T call,
           != 0)
         return -1;
       if (SocketHTTPClient_Request_header (req, "grpc-timeout", timeout_buf) != 0)
+        return -1;
+    }
+
+  if (call->retry_attempt > 0)
+    {
+      int n = snprintf (
+          attempt_buf, sizeof (attempt_buf), "%u", call->retry_attempt);
+      if (n <= 0 || (size_t)n >= sizeof (attempt_buf))
+        return -1;
+      if (SocketHTTPClient_Request_header (
+              req, "grpc-previous-rpc-attempts", attempt_buf)
+          != 0)
         return -1;
     }
 
@@ -1734,13 +1751,13 @@ SocketGRPC_Call_cancel (SocketGRPC_Call_T call)
   return 0;
 }
 
-int
-SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
-                          const uint8_t *request_payload,
-                          size_t request_payload_len,
-                          Arena_T arena,
-                          uint8_t **response_payload,
-                          size_t *response_payload_len)
+static int
+grpc_call_unary_h2_single_attempt (SocketGRPC_Call_T call,
+                                   const uint8_t *request_payload,
+                                   size_t request_payload_len,
+                                   Arena_T arena,
+                                   uint8_t **response_payload,
+                                   size_t *response_payload_len)
 {
   SocketHTTPClient_Config cfg;
   SocketHTTPClient_T http_client = NULL;
@@ -2016,4 +2033,210 @@ cleanup:
   SocketHTTPClient_free (&http_client);
 
   return status_code;
+}
+
+static int
+grpc_retry_status_is_retryable (const SocketGRPC_RetryPolicy *policy,
+                                int status_code)
+{
+  if (policy == NULL || status_code < 0 || status_code >= 32)
+    return 0;
+  return (policy->retryable_status_mask & (1U << (unsigned int)status_code)) != 0;
+}
+
+static int64_t
+grpc_retry_jittered_backoff_ms (const SocketGRPC_RetryPolicy *policy,
+                                int64_t base_backoff_ms)
+{
+  int64_t wait_ms;
+  int64_t jitter;
+  int64_t delta = 0;
+
+  if (policy == NULL || base_backoff_ms <= 0)
+    return 0;
+
+  wait_ms = base_backoff_ms;
+  jitter = (wait_ms * policy->jitter_percent) / 100;
+  if (jitter > 0)
+    {
+      int span = (int)(jitter * 2 + 1);
+      delta = (int64_t)(rand () % span) - jitter;
+    }
+
+  wait_ms += delta;
+  return wait_ms > 0 ? wait_ms : 0;
+}
+
+static int64_t
+grpc_retry_next_backoff_ms (const SocketGRPC_RetryPolicy *policy,
+                            int64_t current_backoff_ms)
+{
+  int64_t next;
+
+  if (policy == NULL || current_backoff_ms <= 0)
+    return 0;
+
+  next = (int64_t)((double)current_backoff_ms * policy->backoff_multiplier);
+  if (policy->max_backoff_ms > 0 && next > policy->max_backoff_ms)
+    next = policy->max_backoff_ms;
+  return next > 0 ? next : 0;
+}
+
+static void
+grpc_retry_sleep_ms (int64_t delay_ms)
+{
+  struct timespec req;
+  struct timespec rem;
+
+  if (delay_ms <= 0)
+    return;
+  if (delay_ms > INT_MAX)
+    delay_ms = INT_MAX;
+
+  req.tv_sec = (time_t)(delay_ms / 1000);
+  req.tv_nsec = (long)((delay_ms % 1000) * 1000000);
+
+  while (nanosleep (&req, &rem) == -1)
+    {
+      if (errno != EINTR)
+        break;
+      req = rem;
+    }
+}
+
+int
+SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
+                          const uint8_t *request_payload,
+                          size_t request_payload_len,
+                          Arena_T arena,
+                          uint8_t **response_payload,
+                          size_t *response_payload_len)
+{
+  SocketGRPC_RetryPolicy policy;
+  int max_attempts;
+  int attempt;
+  int rc = -1;
+  int64_t call_deadline_ms;
+  int64_t backoff_ms;
+  int original_deadline_ms;
+
+  if (call == NULL || request_payload == NULL || arena == NULL
+      || response_payload == NULL || response_payload_len == NULL)
+    return -1;
+
+  policy = call->config.retry_policy;
+  if (SocketGRPC_RetryPolicy_validate (&policy) != 0)
+    SocketGRPC_RetryPolicy_defaults (&policy);
+
+  max_attempts = 1;
+  if (call->channel != NULL && call->channel->client != NULL
+      && call->channel->client->config.enable_retry && !call->retry_in_progress)
+    {
+      max_attempts = policy.max_attempts;
+    }
+
+  if (max_attempts <= 1)
+    return grpc_call_unary_h2_single_attempt (
+        call,
+        request_payload,
+        request_payload_len,
+        arena,
+        response_payload,
+        response_payload_len);
+
+  original_deadline_ms = call->config.deadline_ms;
+  call_deadline_ms = SocketTimeout_deadline_ms (original_deadline_ms);
+  backoff_ms = policy.initial_backoff_ms;
+  call->retry_in_progress = 1;
+  call->retry_attempt = 0;
+
+  for (attempt = 1; attempt <= max_attempts; attempt++)
+    {
+      int status_code;
+
+      if (SocketTimeout_expired (call_deadline_ms))
+        {
+          rc = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
+          grpc_call_status_set (call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded");
+          (void)SocketGRPC_Trailers_set_status (
+              call->response_trailers, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED);
+          (void)SocketGRPC_Trailers_set_message (
+              call->response_trailers, "Deadline exceeded");
+          break;
+        }
+
+      if (call_deadline_ms > 0)
+        {
+          int64_t remaining = SocketTimeout_remaining_ms (call_deadline_ms);
+          if (remaining <= 0)
+            {
+              rc = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
+              grpc_call_status_set (
+                  call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded");
+              (void)SocketGRPC_Trailers_set_status (
+                  call->response_trailers, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED);
+              (void)SocketGRPC_Trailers_set_message (
+                  call->response_trailers, "Deadline exceeded");
+              break;
+            }
+          call->config.deadline_ms
+              = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+        }
+      else
+        {
+          call->config.deadline_ms = original_deadline_ms;
+        }
+
+      call->retry_attempt = (uint32_t)(attempt - 1);
+      rc = grpc_call_unary_h2_single_attempt (call,
+                                              request_payload,
+                                              request_payload_len,
+                                              arena,
+                                              response_payload,
+                                              response_payload_len);
+      status_code = (rc >= 0) ? rc : (int)SocketGRPC_Call_status (call).code;
+
+      if (attempt >= max_attempts)
+        break;
+      if (status_code == SOCKET_GRPC_STATUS_CANCELLED
+          || status_code == SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED)
+        break;
+      if (!grpc_retry_status_is_retryable (&policy, status_code))
+        break;
+
+      {
+        int64_t wait_ms = grpc_retry_jittered_backoff_ms (&policy, backoff_ms);
+        if (call_deadline_ms > 0)
+          {
+            int64_t remaining = SocketTimeout_remaining_ms (call_deadline_ms);
+            if (remaining <= 0)
+              {
+                rc = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
+                grpc_call_status_set (
+                    call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded");
+                break;
+              }
+            if (wait_ms > remaining)
+              wait_ms = remaining;
+          }
+
+        if (wait_ms > 0)
+          grpc_retry_sleep_ms (wait_ms);
+      }
+
+      backoff_ms = grpc_retry_next_backoff_ms (&policy, backoff_ms);
+    }
+
+  if (rc == SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED)
+    {
+      (void)SocketGRPC_Trailers_set_status (
+          call->response_trailers, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED);
+      (void)SocketGRPC_Trailers_set_message (
+          call->response_trailers, "Deadline exceeded");
+    }
+
+  call->config.deadline_ms = original_deadline_ms;
+  call->retry_attempt = 0;
+  call->retry_in_progress = 0;
+  return rc;
 }
