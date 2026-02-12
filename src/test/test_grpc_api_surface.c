@@ -12,6 +12,7 @@
 #include "grpc/SocketGRPC.h"
 #include "test/Test.h"
 
+#include <stdint.h>
 #include <string.h>
 
 TEST (grpc_status_code_names_cover_canonical_space)
@@ -83,6 +84,91 @@ TEST (grpc_handle_lifecycle_smoke)
   ASSERT_NULL (channel);
   ASSERT_NULL (server);
   ASSERT_NULL (client);
+}
+
+static int
+noop_unary_handler (SocketGRPC_ServerContext_T ctx,
+                    const uint8_t *request_payload,
+                    size_t request_payload_len,
+                    Arena_T arena,
+                    uint8_t **response_payload,
+                    size_t *response_payload_len,
+                    void *userdata)
+{
+  (void)ctx;
+  (void)request_payload;
+  (void)request_payload_len;
+  (void)arena;
+  (void)response_payload;
+  (void)response_payload_len;
+  (void)userdata;
+  return SOCKET_GRPC_STATUS_OK;
+}
+
+static void
+noop_unary_handler_except (SocketGRPC_ServerContext_T ctx,
+                           const uint8_t *request_payload,
+                           size_t request_payload_len,
+                           Arena_T arena,
+                           uint8_t **response_payload,
+                           size_t *response_payload_len,
+                           void *userdata)
+{
+  (void)ctx;
+  (void)request_payload;
+  (void)request_payload_len;
+  (void)arena;
+  (void)response_payload;
+  (void)response_payload_len;
+  (void)userdata;
+}
+
+TEST (grpc_server_registration_and_shutdown_surface)
+{
+  SocketGRPC_Server_T server = SocketGRPC_Server_new (NULL);
+  ASSERT_NOT_NULL (server);
+
+  ASSERT_EQ (0,
+             SocketGRPC_Server_register_unary (
+                 server, "/test.Service/Ping", noop_unary_handler, NULL));
+  ASSERT_EQ (-1,
+             SocketGRPC_Server_register_unary (
+                 server, "/test.Service/Ping", noop_unary_handler, NULL));
+  ASSERT_EQ (-1,
+             SocketGRPC_Server_register_unary (
+                 server, "/bad-path", noop_unary_handler, NULL));
+  ASSERT_EQ (0,
+             SocketGRPC_Server_register_unary_except (
+                 server, "/test.Service/PingEx", noop_unary_handler_except, NULL));
+
+  ASSERT_EQ (0U, SocketGRPC_Server_inflight_calls (server));
+  SocketGRPC_Server_begin_shutdown (server);
+  ASSERT_EQ (0U, SocketGRPC_Server_inflight_calls (server));
+
+  SocketGRPC_Server_free (&server);
+  ASSERT_NULL (server);
+}
+
+TEST (grpc_server_context_accessors_are_null_safe)
+{
+  ASSERT_NULL (SocketGRPC_ServerContext_metadata (NULL));
+  ASSERT_NULL (SocketGRPC_ServerContext_peer (NULL));
+  ASSERT_NULL (SocketGRPC_ServerContext_full_method (NULL));
+  ASSERT_NULL (SocketGRPC_ServerContext_service (NULL));
+  ASSERT_NULL (SocketGRPC_ServerContext_method (NULL));
+  ASSERT_EQ (1, SocketGRPC_ServerContext_is_cancelled (NULL));
+  ASSERT_EQ (-1,
+             SocketGRPC_ServerContext_set_status (
+                 NULL, SOCKET_GRPC_STATUS_OK, "x"));
+  ASSERT_EQ (-1,
+             SocketGRPC_ServerContext_set_status_details_bin (
+                 NULL, (const uint8_t *)"x", 1));
+  ASSERT_EQ (
+      -1,
+      SocketGRPC_ServerContext_add_trailing_metadata_ascii (NULL, "k", "v"));
+  ASSERT_EQ (-1,
+             SocketGRPC_ServerContext_add_trailing_metadata_binary (
+                 NULL, "k-bin", (const uint8_t *)"v", 1));
 }
 
 TEST (grpc_invalid_inputs_fail_without_crash)
