@@ -273,7 +273,9 @@ SocketPool_connections_allocate_hash_table (Arena_T arena)
 Socket_T *
 SocketPool_cleanup_allocate_buffer (Arena_T arena, size_t maxconns)
 {
-  return pool_alloc (arena, maxconns, sizeof (Socket_T), "cleanup buffer");
+  /* Cleanup buffer must be heap-backed so it can be resized with realloc(). */
+  (void)arena;
+  return pool_alloc (NULL, maxconns, sizeof (Socket_T), "cleanup buffer");
 }
 
 /* ============================================================================
@@ -410,6 +412,7 @@ allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
   pool->connections = SocketPool_connections_allocate_array (maxconns);
   pool->hash_table = SocketPool_connections_allocate_hash_table (arena);
   pool->cleanup_buffer = SocketPool_cleanup_allocate_buffer (arena, maxconns);
+  pool->cleanup_buffer_capacity = maxconns;
 }
 
 /* initialize_pool_fields inlined into construct_pool */
@@ -685,6 +688,21 @@ free_connections_array (T pool)
 }
 
 /**
+ * free_cleanup_buffer - Free cleanup buffer allocated on heap
+ * @pool: Pool instance
+ */
+static void
+free_cleanup_buffer (T pool)
+{
+  if (pool->cleanup_buffer)
+    {
+      free (pool->cleanup_buffer);
+      pool->cleanup_buffer = NULL;
+      pool->cleanup_buffer_capacity = 0;
+    }
+}
+
+/**
  * SocketPool_free - Free a connection pool
  * @pool: Pointer to pool (will be set to NULL)
  *
@@ -703,6 +721,7 @@ SocketPool_free (T *pool)
   free_dns_resolver (*pool);
   free_reconnect_contexts (*pool);
   free_tls_sessions (*pool);
+  free_cleanup_buffer (*pool);
   free_connections_array (*pool);
   pthread_mutex_destroy (&(*pool)->mutex);
   *pool = NULL;

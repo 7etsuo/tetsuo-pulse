@@ -1001,7 +1001,11 @@ process_connection_for_cleanup (T pool,
   validate_saved_session (conn, now);
 
   if (is_connection_idle (conn, idle_timeout, now))
-    pool->cleanup_buffer[(*close_count)++] = conn->socket;
+    {
+      if (*close_count >= pool->cleanup_buffer_capacity)
+        return;
+      pool->cleanup_buffer[(*close_count)++] = conn->socket;
+    }
 }
 
 /**
@@ -1021,8 +1025,21 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 
   for (Connection_T conn = pool->active_head; conn != NULL;
        conn = conn->active_next)
-    process_connection_for_cleanup (
-        pool, conn, idle_timeout, now, &close_count);
+    {
+      if (close_count >= pool->cleanup_buffer_capacity)
+        {
+          SocketLog_emitf (
+              SOCKET_LOG_WARN,
+              SOCKET_LOG_COMPONENT,
+              "Cleanup buffer capacity reached (%zu), deferring remaining idle "
+              "connections",
+              pool->cleanup_buffer_capacity);
+          break;
+        }
+
+      process_connection_for_cleanup (
+          pool, conn, idle_timeout, now, &close_count);
+    }
 
   return close_count;
 }
@@ -1056,7 +1073,7 @@ close_collected_sockets (T pool, size_t close_count)
 void
 SocketPool_cleanup (T pool, time_t idle_timeout)
 {
-  if (!pool || !pool->cleanup_buffer)
+  if (!pool || !pool->cleanup_buffer || pool->cleanup_buffer_capacity == 0)
     {
       SOCKET_LOG_ERROR_MSG (
           "Invalid pool or missing cleanup_buffer in SocketPool_cleanup");

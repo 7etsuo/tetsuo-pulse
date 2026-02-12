@@ -539,6 +539,7 @@ struct T
   Connection_T active_head;       /**< Head of active connection list */
   Connection_T active_tail;       /**< Tail of active connection list */
   Socket_T *cleanup_buffer;       /**< Buffer for cleanup operations */
+  size_t cleanup_buffer_capacity; /**< Allocated entries in cleanup_buffer */
   size_t maxconns;                /**< Maximum connections */
   size_t bufsize;                 /**< Buffer size per connection */
   size_t count;                   /**< Active connection count */

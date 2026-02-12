@@ -190,6 +190,102 @@ find_query_by_id (T transport, uint16_t id)
   return NULL;
 }
 
+/* Verify UDP response source matches the nameserver we queried */
+static int
+source_matches_nameserver (const SocketDNS_Nameserver *ns,
+                           const char *sender_addr,
+                           int sender_port)
+{
+  struct in_addr expected_v4;
+  struct in_addr sender_v4;
+  struct in6_addr expected_v6;
+  struct in6_addr sender_v6;
+
+  if (!ns || !sender_addr)
+    return 0;
+
+  if (sender_port != ns->port)
+    return 0;
+
+  if (ns->family == AF_INET)
+    {
+      if (inet_pton (AF_INET, ns->address, &expected_v4) != 1
+          || inet_pton (AF_INET, sender_addr, &sender_v4) != 1)
+        return 0;
+      return memcmp (&expected_v4, &sender_v4, sizeof (expected_v4)) == 0;
+    }
+
+  if (ns->family == AF_INET6)
+    {
+      if (inet_pton (AF_INET6, ns->address, &expected_v6) != 1
+          || inet_pton (AF_INET6, sender_addr, &sender_v6) != 1)
+        return 0;
+      return memcmp (&expected_v6, &sender_v6, sizeof (expected_v6)) == 0;
+    }
+
+  return 0;
+}
+
+/* Decode the first question from a DNS message */
+static int
+decode_first_question (const unsigned char *msg,
+                       size_t msg_len,
+                       SocketDNS_Header *header,
+                       SocketDNS_Question *question)
+{
+  size_t consumed = 0;
+
+  if (!msg || !header || !question || msg_len < DNS_HEADER_SIZE)
+    return 0;
+
+  if (SocketDNS_header_decode (msg, msg_len, header) != 0
+      || header->qdcount == 0)
+    return 0;
+
+  if (SocketDNS_question_decode (
+          msg, msg_len, DNS_HEADER_SIZE, question, &consumed)
+      != 0)
+    return 0;
+
+  (void)consumed;
+  return 1;
+}
+
+/* Verify response question tuple (QNAME/QTYPE/QCLASS) matches query */
+static int
+response_matches_query_tuple (const struct SocketDNSQuery *query,
+                              const unsigned char *response,
+                              size_t response_len)
+{
+  SocketDNS_Header query_header;
+  SocketDNS_Header response_header;
+  SocketDNS_Question query_question;
+  SocketDNS_Question response_question;
+
+  if (!query || !response)
+    return 0;
+
+  if (!decode_first_question (
+          query->query, query->query_len, &query_header, &query_question))
+    return 0;
+
+  if (!decode_first_question (
+          response, response_len, &response_header, &response_question))
+    return 0;
+
+  if (response_header.qdcount != query_header.qdcount)
+    return 0;
+
+  if (!SocketDNS_name_equal (query_question.qname, response_question.qname))
+    return 0;
+
+  if (query_question.qtype != response_question.qtype
+      || query_question.qclass != response_question.qclass)
+    return 0;
+
+  return 1;
+}
+
 /* Map DNS RCODE to error code */
 static int
 rcode_to_error (int rcode)
@@ -277,10 +373,8 @@ process_response (T transport,
 {
   SocketDNS_Header hdr;
   struct SocketDNSQuery *query;
+  SocketDNS_Nameserver *ns;
   int error;
-
-  (void)sender_addr;
-  (void)sender_port;
 
   /* Validate minimum size */
   if (len < DNS_HEADER_SIZE)
@@ -297,6 +391,19 @@ process_response (T transport,
   /* Find matching query */
   query = find_query_by_id (transport, hdr.id);
   if (!query)
+    return 0;
+
+  if (query->current_ns < 0 || query->current_ns >= transport->nameserver_count)
+    return 0;
+
+  ns = &transport->nameservers[query->current_ns];
+
+  /* Security: reject spoofed packets from unexpected source IP/port */
+  if (!source_matches_nameserver (ns, sender_addr, sender_port))
+    return 0;
+
+  /* Security: response question must match in-flight query tuple */
+  if (!response_matches_query_tuple (query, data, len))
     return 0;
 
   /* Check truncation */
