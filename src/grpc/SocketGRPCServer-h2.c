@@ -12,6 +12,7 @@
 #include "grpc/SocketGRPC-private.h"
 #include "grpc/SocketGRPCWire.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil/Timeout.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -54,6 +55,7 @@ struct SocketGRPC_ServerContext
   SocketGRPC_Status status;
   int status_explicit;
   int cancelled;
+  int64_t deadline_ms;
 };
 
 static int
@@ -364,6 +366,8 @@ SocketGRPC_ServerContext_is_cancelled (SocketGRPC_ServerContext_T ctx)
 {
   if (ctx == NULL)
     return 1;
+  if (ctx->deadline_ms > 0 && SocketTimeout_expired (ctx->deadline_ms))
+    ctx->cancelled = 1;
   return ctx->cancelled;
 }
 
@@ -635,6 +639,29 @@ grpc_collect_metadata_headers (SocketGRPC_Metadata_T metadata,
 }
 
 static int
+grpc_context_parse_deadline (SocketGRPC_ServerContext_T ctx,
+                             SocketHTTP_Headers_T headers)
+{
+  const char *timeout_header;
+  int64_t timeout_ms = 0;
+
+  if (ctx == NULL || headers == NULL)
+    return 0;
+
+  timeout_header = SocketHTTP_Headers_get (headers, "grpc-timeout");
+  if (timeout_header == NULL || timeout_header[0] == '\0')
+    return 0;
+
+  if (SocketGRPC_Timeout_parse (timeout_header, &timeout_ms) != 0)
+    return -1;
+  if (timeout_ms <= 0)
+    timeout_ms = 1;
+
+  ctx->deadline_ms = SocketTimeout_now_ms () + timeout_ms;
+  return 0;
+}
+
+static int
 grpc_context_init (SocketGRPC_ServerContext_T ctx,
                    SocketGRPC_Server_T server,
                    SocketHTTPServer_Request_T req,
@@ -655,6 +682,7 @@ grpc_context_init (SocketGRPC_ServerContext_T ctx,
   ctx->peer = SocketHTTPServer_Request_client_addr (req);
   ctx->full_method = full_method;
   ctx->cancelled = 0;
+  ctx->deadline_ms = 0;
 
   if (ctx->arena == NULL)
     return -1;
@@ -681,6 +709,10 @@ grpc_context_init (SocketGRPC_ServerContext_T ctx,
 
   if (grpc_collect_metadata_headers (
           ctx->metadata, SocketHTTPServer_Request_headers (req))
+      != 0)
+    return -1;
+  if (grpc_context_parse_deadline (
+          ctx, SocketHTTPServer_Request_headers (req))
       != 0)
     return -1;
   if (grpc_collect_metadata_headers (
@@ -1126,6 +1158,18 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
       return;
     }
 
+  if (SocketGRPC_ServerContext_is_cancelled (&ctx))
+    {
+      grpc_send_unary_response (req,
+                                HTTP_STATUS_OK,
+                                NULL,
+                                0,
+                                SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
+                                "Deadline exceeded",
+                                ctx.trailers);
+      return;
+    }
+
   response_payload = NULL;
   response_payload_len = 0;
 
@@ -1140,6 +1184,12 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
     server->inflight_calls--;
 
   grpc_status = grpc_resolve_final_status (&ctx, handler_rc, &grpc_message);
+  if (grpc_status == SOCKET_GRPC_STATUS_OK
+      && SocketGRPC_ServerContext_is_cancelled (&ctx))
+    {
+      grpc_status = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
+      grpc_message = "Deadline exceeded";
+    }
 
   if (grpc_status != SOCKET_GRPC_STATUS_OK)
     {

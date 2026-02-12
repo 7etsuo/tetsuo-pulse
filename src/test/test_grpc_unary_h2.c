@@ -118,7 +118,9 @@ typedef enum
   GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR = 2,
   GRPC_H2_SCENARIO_STREAM_CLIENT_UPLOAD = 3,
   GRPC_H2_SCENARIO_STREAM_SERVER_STREAM = 4,
-  GRPC_H2_SCENARIO_STREAM_BIDI_ERROR = 5
+  GRPC_H2_SCENARIO_STREAM_BIDI_ERROR = 5,
+  GRPC_H2_SCENARIO_DELAYED_SUCCESS_SHORT = 6,
+  GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG = 7
 } GRPC_H2_Scenario;
 
 typedef struct
@@ -169,12 +171,88 @@ cleanup_temp_cert_files (void)
 }
 
 static int
+tls_send_once_safe (Socket_T socket, const unsigned char *data, size_t len)
+{
+  volatile ssize_t n = -1;
+
+  TRY
+  {
+    n = SocketTLS_send (socket, data, len);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    n = -1;
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    n = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    n = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    n = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    n = -1;
+  }
+  ELSE
+  {
+    n = -1;
+  }
+  END_TRY;
+
+  return (int)n;
+}
+
+static int
+tls_recv_once_safe (Socket_T socket, unsigned char *buf, size_t len)
+{
+  volatile ssize_t n = -1;
+
+  TRY
+  {
+    n = SocketTLS_recv (socket, buf, len);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    n = -1;
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    n = -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    n = -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    n = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    n = -1;
+  }
+  ELSE
+  {
+    n = -1;
+  }
+  END_TRY;
+
+  return (int)n;
+}
+
+static int
 tls_send_all (Socket_T socket, const unsigned char *data, size_t len)
 {
   size_t off = 0;
   while (off < len)
     {
-      ssize_t n = SocketTLS_send (socket, data + off, len - off);
+      int n = tls_send_once_safe (socket, data + off, len - off);
       if (n <= 0)
         return -1;
       off += (size_t)n;
@@ -188,7 +266,7 @@ tls_recv_exact (Socket_T socket, unsigned char *buf, size_t len)
   size_t off = 0;
   while (off < len)
     {
-      ssize_t n = SocketTLS_recv (socket, buf + off, len - off);
+      int n = tls_recv_once_safe (socket, buf + off, len - off);
       if (n <= 0)
         return -1;
       off += (size_t)n;
@@ -750,7 +828,9 @@ grpc_h2_server_thread (void *arg)
 
   if (server->scenario == GRPC_H2_SCENARIO_SUCCESS
       || server->scenario == GRPC_H2_SCENARIO_HTTP503_BAD_BODY
-      || server->scenario == GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR)
+      || server->scenario == GRPC_H2_SCENARIO_TRAILERS_ONLY_ERROR
+      || server->scenario == GRPC_H2_SCENARIO_DELAYED_SUCCESS_SHORT
+      || server->scenario == GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG)
     {
       if (consume_client_request (client) != 0)
         {
@@ -760,6 +840,16 @@ grpc_h2_server_thread (void *arg)
 
       if (server->scenario == GRPC_H2_SCENARIO_SUCCESS)
         (void)send_success_response (client);
+      else if (server->scenario == GRPC_H2_SCENARIO_DELAYED_SUCCESS_SHORT)
+        {
+          usleep (20000);
+          (void)send_success_response (client);
+        }
+      else if (server->scenario == GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG)
+        {
+          usleep (200000);
+          (void)send_success_response (client);
+        }
       else if (server->scenario == GRPC_H2_SCENARIO_HTTP503_BAD_BODY)
         (void)send_http503_bad_body_response (client);
       else
@@ -1141,6 +1231,151 @@ TEST (grpc_unary_h2_handles_trailers_only_error_response)
   cleanup_temp_cert_files ();
 }
 
+TEST (grpc_unary_h2_deadline_exceeded_maps_consistently)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketGRPC_CallConfig call_cfg;
+  uint8_t request_payload[] = { 0x08, 0x07 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_DELAYED_SUCCESS_LONG) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  SocketGRPC_CallConfig_defaults (&call_cfg);
+  call_cfg.deadline_ms = 30;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", &call_cfg);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, rc);
+  ASSERT_NULL (response_payload);
+  ASSERT_EQ (0U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
+             SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_unary_h2_response_before_deadline_remains_ok)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketGRPC_CallConfig call_cfg;
+  uint8_t request_payload[] = { 0x08, 0x08 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_DELAYED_SUCCESS_SHORT) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  SocketGRPC_CallConfig_defaults (&call_cfg);
+  call_cfg.deadline_ms = 200;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", &call_cfg);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, rc);
+  ASSERT_NOT_NULL (response_payload);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
 TEST (grpc_stream_h2_client_upload_roundtrip)
 {
   GRPC_H2_Server server;
@@ -1406,6 +1641,72 @@ TEST (grpc_stream_h2_midstream_error_maps_to_trailers_status)
   }
   ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE,
              SocketGRPC_Trailers_status (SocketGRPC_Call_trailers (call)));
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_stream_h2_client_cancel_sets_terminal_status)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  uint8_t request_payload[] = { 0x08, 0x03 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM) != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  SocketTLSContext_T tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Streamer/Subscribe", NULL);
+  ASSERT_NOT_NULL (call);
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  ASSERT_EQ (
+      0, SocketGRPC_Call_send_message (call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0, SocketGRPC_Call_cancel (call));
+  ASSERT_EQ (SOCKET_GRPC_STATUS_CANCELLED, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (-1,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
 
   Arena_dispose (&arena);
   SocketGRPC_Call_free (&call);

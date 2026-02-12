@@ -12,6 +12,9 @@
 #include "grpc/SocketGRPC-private.h"
 #include "grpc/SocketGRPCWire.h"
 
+#include <ctype.h>
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -119,6 +122,82 @@ SocketGRPC_Status_message (const SocketGRPC_Status *status)
     return status->message;
 
   return SocketGRPC_status_default_message (status->code);
+}
+
+int
+SocketGRPC_Timeout_format (int64_t timeout_ms, char *out, size_t out_len)
+{
+  int written;
+
+  if (out == NULL || out_len == 0 || timeout_ms <= 0)
+    return -1;
+
+  written = snprintf (out, out_len, "%lldm", (long long)timeout_ms);
+  if (written <= 0 || (size_t)written >= out_len)
+    return -1;
+  return 0;
+}
+
+int
+SocketGRPC_Timeout_parse (const char *value, int64_t *timeout_ms_out)
+{
+  size_t len;
+  size_t i;
+  int64_t num = 0;
+  char unit;
+
+  if (value == NULL || timeout_ms_out == NULL)
+    return -1;
+
+  len = strlen (value);
+  if (len < 2 || len > 9)
+    return -1;
+
+  unit = value[len - 1];
+  for (i = 0; i < len - 1; i++)
+    {
+      if (!isdigit ((unsigned char)value[i]))
+        return -1;
+      if (num > (INT64_MAX - 9) / 10)
+        return -1;
+      num = (num * 10) + (value[i] - '0');
+    }
+  if (num <= 0)
+    return -1;
+
+  switch (unit)
+    {
+    case 'H':
+      if (num > INT64_MAX / (60LL * 60LL * 1000LL))
+        return -1;
+      *timeout_ms_out = num * 60LL * 60LL * 1000LL;
+      return 0;
+    case 'M':
+      if (num > INT64_MAX / (60LL * 1000LL))
+        return -1;
+      *timeout_ms_out = num * 60LL * 1000LL;
+      return 0;
+    case 'S':
+      if (num > INT64_MAX / 1000LL)
+        return -1;
+      *timeout_ms_out = num * 1000LL;
+      return 0;
+    case 'm':
+      *timeout_ms_out = num;
+      return 0;
+    case 'u':
+      *timeout_ms_out = (num + 999LL) / 1000LL;
+      if (*timeout_ms_out <= 0)
+        *timeout_ms_out = 1;
+      return 0;
+    case 'n':
+      *timeout_ms_out = (num + 999999LL) / 1000000LL;
+      if (*timeout_ms_out <= 0)
+        *timeout_ms_out = 1;
+      return 0;
+    default:
+      return -1;
+    }
 }
 
 const char *
