@@ -500,6 +500,7 @@ SocketGRPC_ClientConfig_defaults (SocketGRPC_ClientConfig *config)
   config->max_concurrent_channels = SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CHANNELS;
   config->max_outstanding_calls = SOCKET_GRPC_DEFAULT_MAX_OUTSTANDING_CALLS;
   config->enable_retry = SOCKET_GRPC_DEFAULT_ENABLE_RETRY;
+  config->enable_observability = SOCKET_GRPC_DEFAULT_ENABLE_OBSERVABILITY;
 }
 
 void
@@ -511,6 +512,7 @@ SocketGRPC_ServerConfig_defaults (SocketGRPC_ServerConfig *config)
   config->max_concurrent_connections
       = SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CONNECTIONS;
   config->max_outstanding_calls = SOCKET_GRPC_DEFAULT_MAX_OUTSTANDING_CALLS;
+  config->enable_observability = SOCKET_GRPC_DEFAULT_ENABLE_OBSERVABILITY;
 }
 
 void
@@ -560,6 +562,7 @@ grpc_sanitize_client_config (SocketGRPC_ClientConfig *config)
   if (config->max_outstanding_calls == 0)
     config->max_outstanding_calls = SOCKET_GRPC_DEFAULT_MAX_OUTSTANDING_CALLS;
   config->enable_retry = config->enable_retry ? 1 : 0;
+  config->enable_observability = config->enable_observability ? 1 : 0;
 }
 
 static void
@@ -570,6 +573,7 @@ grpc_sanitize_server_config (SocketGRPC_ServerConfig *config)
         = SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CONNECTIONS;
   if (config->max_outstanding_calls == 0)
     config->max_outstanding_calls = SOCKET_GRPC_DEFAULT_MAX_OUTSTANDING_CALLS;
+  config->enable_observability = config->enable_observability ? 1 : 0;
 }
 
 static void
@@ -648,6 +652,19 @@ SocketGRPC_Client_new (const SocketGRPC_ClientConfig *config)
   return client;
 }
 
+int
+SocketGRPC_Client_set_observability_hook (SocketGRPC_Client_T client,
+                                          SocketGRPC_LogHook hook,
+                                          void *userdata)
+{
+  if (client == NULL)
+    return -1;
+
+  client->observability_hook = hook;
+  client->observability_hook_userdata = userdata;
+  return 0;
+}
+
 void
 SocketGRPC_Client_free (SocketGRPC_Client_T *client)
 {
@@ -675,6 +692,19 @@ SocketGRPC_Server_new (const SocketGRPC_ServerConfig *config)
   SocketGRPC_status_set (
       &server->last_status, SOCKET_GRPC_STATUS_OK, "Server initialized");
   return server;
+}
+
+int
+SocketGRPC_Server_set_observability_hook (SocketGRPC_Server_T server,
+                                          SocketGRPC_LogHook hook,
+                                          void *userdata)
+{
+  if (server == NULL)
+    return -1;
+
+  server->observability_hook = hook;
+  server->observability_hook_userdata = userdata;
+  return 0;
 }
 
 void
@@ -1023,6 +1053,15 @@ SocketGRPC_Interceptor_client_logging (SocketGRPC_Call_T call,
   event.status_message = status_io != NULL ? status_io->message : NULL;
   event.payload_len = request_payload_len;
   event.attempt = call != NULL ? call->retry_attempt + 1U : 0U;
+  event.peer
+      = (call != NULL && call->channel != NULL) ? call->channel->target : NULL;
+  event.authority
+      = (call != NULL && call->channel != NULL
+         && call->channel->authority_override != NULL)
+            ? call->channel->authority_override
+            : ((call != NULL && call->channel != NULL) ? call->channel->target
+                                                       : NULL);
+  event.duration_ms = -1;
   cfg->hook (&event, cfg->hook_userdata);
   return SOCKET_GRPC_INTERCEPT_CONTINUE;
 }
@@ -1053,6 +1092,15 @@ SocketGRPC_Interceptor_client_stream_logging (
   event.status_message = status_io != NULL ? status_io->message : NULL;
   event.payload_len = payload_len;
   event.attempt = call != NULL ? call->retry_attempt + 1U : 0U;
+  event.peer
+      = (call != NULL && call->channel != NULL) ? call->channel->target : NULL;
+  event.authority
+      = (call != NULL && call->channel != NULL
+         && call->channel->authority_override != NULL)
+            ? call->channel->authority_override
+            : ((call != NULL && call->channel != NULL) ? call->channel->target
+                                                       : NULL);
+  event.duration_ms = -1;
   cfg->hook (&event, cfg->hook_userdata);
   return SOCKET_GRPC_INTERCEPT_CONTINUE;
 }

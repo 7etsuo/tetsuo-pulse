@@ -150,7 +150,52 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "synprotect_blocked",
   "synprotect_whitelisted",
   "synprotect_blacklisted",
-  "synprotect_lru_evictions"
+  "synprotect_lru_evictions",
+  /* gRPC Client */
+  "grpc_client_calls_started",
+  "grpc_client_calls_completed",
+  "grpc_client_retries",
+  "grpc_client_bytes_sent",
+  "grpc_client_bytes_received",
+  "grpc_client_status_ok",
+  "grpc_client_status_cancelled",
+  "grpc_client_status_unknown",
+  "grpc_client_status_invalid_argument",
+  "grpc_client_status_deadline_exceeded",
+  "grpc_client_status_not_found",
+  "grpc_client_status_already_exists",
+  "grpc_client_status_permission_denied",
+  "grpc_client_status_resource_exhausted",
+  "grpc_client_status_failed_precondition",
+  "grpc_client_status_aborted",
+  "grpc_client_status_out_of_range",
+  "grpc_client_status_unimplemented",
+  "grpc_client_status_internal",
+  "grpc_client_status_unavailable",
+  "grpc_client_status_data_loss",
+  "grpc_client_status_unauthenticated",
+  /* gRPC Server */
+  "grpc_server_calls_started",
+  "grpc_server_calls_completed",
+  "grpc_server_bytes_sent",
+  "grpc_server_bytes_received",
+  "grpc_server_status_ok",
+  "grpc_server_status_cancelled",
+  "grpc_server_status_unknown",
+  "grpc_server_status_invalid_argument",
+  "grpc_server_status_deadline_exceeded",
+  "grpc_server_status_not_found",
+  "grpc_server_status_already_exists",
+  "grpc_server_status_permission_denied",
+  "grpc_server_status_resource_exhausted",
+  "grpc_server_status_failed_precondition",
+  "grpc_server_status_aborted",
+  "grpc_server_status_out_of_range",
+  "grpc_server_status_unimplemented",
+  "grpc_server_status_internal",
+  "grpc_server_status_unavailable",
+  "grpc_server_status_data_loss",
+  "grpc_server_status_unauthenticated"
 };
 
 static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
@@ -235,7 +280,52 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "SYN connections blocked",
   "IPs added to whitelist",
   "IPs added to blacklist",
-  "IP table entries evicted due to LRU"
+  "IP table entries evicted due to LRU",
+  /* gRPC Client */
+  "Total gRPC client calls started",
+  "Total gRPC client calls completed",
+  "Total gRPC client retry attempts",
+  "Total gRPC client request payload bytes sent",
+  "Total gRPC client response payload bytes received",
+  "gRPC client calls completed with OK status",
+  "gRPC client calls completed with CANCELLED status",
+  "gRPC client calls completed with UNKNOWN status",
+  "gRPC client calls completed with INVALID_ARGUMENT status",
+  "gRPC client calls completed with DEADLINE_EXCEEDED status",
+  "gRPC client calls completed with NOT_FOUND status",
+  "gRPC client calls completed with ALREADY_EXISTS status",
+  "gRPC client calls completed with PERMISSION_DENIED status",
+  "gRPC client calls completed with RESOURCE_EXHAUSTED status",
+  "gRPC client calls completed with FAILED_PRECONDITION status",
+  "gRPC client calls completed with ABORTED status",
+  "gRPC client calls completed with OUT_OF_RANGE status",
+  "gRPC client calls completed with UNIMPLEMENTED status",
+  "gRPC client calls completed with INTERNAL status",
+  "gRPC client calls completed with UNAVAILABLE status",
+  "gRPC client calls completed with DATA_LOSS status",
+  "gRPC client calls completed with UNAUTHENTICATED status",
+  /* gRPC Server */
+  "Total gRPC server calls started",
+  "Total gRPC server calls completed",
+  "Total gRPC server response payload bytes sent",
+  "Total gRPC server request payload bytes received",
+  "gRPC server calls completed with OK status",
+  "gRPC server calls completed with CANCELLED status",
+  "gRPC server calls completed with UNKNOWN status",
+  "gRPC server calls completed with INVALID_ARGUMENT status",
+  "gRPC server calls completed with DEADLINE_EXCEEDED status",
+  "gRPC server calls completed with NOT_FOUND status",
+  "gRPC server calls completed with ALREADY_EXISTS status",
+  "gRPC server calls completed with PERMISSION_DENIED status",
+  "gRPC server calls completed with RESOURCE_EXHAUSTED status",
+  "gRPC server calls completed with FAILED_PRECONDITION status",
+  "gRPC server calls completed with ABORTED status",
+  "gRPC server calls completed with OUT_OF_RANGE status",
+  "gRPC server calls completed with UNIMPLEMENTED status",
+  "gRPC server calls completed with INTERNAL status",
+  "gRPC server calls completed with UNAVAILABLE status",
+  "gRPC server calls completed with DATA_LOSS status",
+  "gRPC server calls completed with UNAUTHENTICATED status"
 };
 
 static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {
@@ -266,7 +356,10 @@ static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {
   "poll_active_timers",
   /* SYN Flood Protection */
   "synprotect_tracked_ips",
-  "synprotect_blocked_ips"
+  "synprotect_blocked_ips",
+  /* gRPC */
+  "grpc_client_active_streams",
+  "grpc_server_active_calls"
 };
 
 static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
@@ -297,7 +390,10 @@ static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
   "Active timers",
   /* SYN Flood Protection */
   "Number of IP addresses currently tracked for SYN protection",
-  "Number of currently blocked IP addresses"
+  "Number of currently blocked IP addresses",
+  /* gRPC */
+  "Current number of active gRPC client streams",
+  "Current number of active gRPC server calls"
 };
 
 static const char *const histogram_names[SOCKET_HISTOGRAM_METRIC_COUNT] = {
@@ -320,7 +416,11 @@ static const char *const histogram_names[SOCKET_HISTOGRAM_METRIC_COUNT] = {
   /* DNS */
   "dns_query_time_ms",
   /* Socket */
-  "socket_connect_time_ms"
+  "socket_connect_time_ms",
+  /* gRPC */
+  "grpc_client_call_latency_ms",
+  "grpc_server_call_latency_ms",
+  "grpc_client_stream_open_duration_ms"
 };
 
 static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
@@ -343,11 +443,16 @@ static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
   /* DNS */
   "DNS query duration (ms)",
   /* Socket */
-  "Socket connect duration (ms)"
+  "Socket connect duration (ms)",
+  /* gRPC */
+  "gRPC client call latency (ms)",
+  "gRPC server call latency (ms)",
+  "gRPC client stream open duration (ms)"
 };
 
 static const char *const category_names[SOCKET_METRIC_CAT_COUNT]
-    = { "pool", "http_client", "http_server", "tls", "dns", "socket", "poll" };
+    = { "pool", "http_client", "http_server", "tls",
+        "dns",  "socket",      "poll",        "grpc" };
 
 static inline int
 histogram_is_valid (SocketHistogramMetric metric)

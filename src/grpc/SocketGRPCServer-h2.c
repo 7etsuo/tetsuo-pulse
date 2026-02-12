@@ -12,6 +12,7 @@
 #include "grpc/SocketGRPC-private.h"
 #include "grpc/SocketGRPCWire.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketUtil/Timeout.h"
 
 #include <ctype.h>
@@ -71,6 +72,168 @@ grpc_status_code_valid (int code)
 {
   return code >= SOCKET_GRPC_STATUS_OK
          && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
+}
+
+static SocketGRPC_StatusCode
+grpc_normalize_status_code (SocketGRPC_StatusCode code)
+{
+  return grpc_status_code_valid ((int)code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
+}
+
+static int
+grpc_server_observability_enabled (SocketGRPC_Server_T server)
+{
+  return server != NULL && server->config.enable_observability;
+}
+
+static const char *
+grpc_server_request_authority (SocketHTTPServer_Request_T req)
+{
+  SocketHTTP_Headers_T headers;
+  const char *authority;
+
+  if (req == NULL)
+    return NULL;
+
+  headers = SocketHTTPServer_Request_headers (req);
+  authority = SocketHTTP_Headers_get (headers, ":authority");
+  if (authority != NULL && authority[0] != '\0')
+    return authority;
+
+  authority = SocketHTTP_Headers_get (headers, "host");
+  if (authority != NULL && authority[0] != '\0')
+    return authority;
+  return NULL;
+}
+
+static SocketCounterMetric
+grpc_server_status_counter_metric (SocketGRPC_StatusCode code)
+{
+  SocketGRPC_StatusCode normalized = grpc_normalize_status_code (code);
+  return (SocketCounterMetric)(SOCKET_CTR_GRPC_SERVER_STATUS_OK
+                               + (int)normalized);
+}
+
+static void
+grpc_server_emit_observability_event (SocketGRPC_Server_T server,
+                                      SocketHTTPServer_Request_T req,
+                                      const char *full_method,
+                                      SocketGRPC_LogEventType type,
+                                      SocketGRPC_StatusCode status_code,
+                                      const char *status_message,
+                                      size_t payload_len,
+                                      int64_t duration_ms)
+{
+  SocketGRPC_LogEvent event;
+  SocketGRPC_StatusCode code;
+  const char *message;
+
+  if (!grpc_server_observability_enabled (server))
+    return;
+  if (server == NULL || server->observability_hook == NULL || req == NULL)
+    return;
+
+  code = grpc_normalize_status_code (status_code);
+  message = (status_message != NULL && status_message[0] != '\0')
+                ? status_message
+                : SocketGRPC_status_default_message (code);
+
+  event.type = type;
+  event.full_method = full_method;
+  event.status_code = code;
+  event.status_message = message;
+  event.payload_len = payload_len;
+  event.attempt = 1U;
+  event.peer = SocketHTTPServer_Request_client_addr (req);
+  event.authority = grpc_server_request_authority (req);
+  event.duration_ms = duration_ms;
+  server->observability_hook (&event, server->observability_hook_userdata);
+}
+
+static int
+grpc_server_observability_call_started (SocketGRPC_Server_T server,
+                                        SocketHTTPServer_Request_T req,
+                                        const char *full_method,
+                                        size_t request_payload_len,
+                                        int64_t *started_ms_out)
+{
+  if (started_ms_out != NULL)
+    *started_ms_out = 0;
+  if (!grpc_server_observability_enabled (server))
+    return 0;
+
+  if (started_ms_out != NULL)
+    *started_ms_out = SocketTimeout_now_ms ();
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_SERVER_CALLS_STARTED);
+  if (request_payload_len > 0)
+    {
+      SocketMetrics_counter_add (SOCKET_CTR_GRPC_SERVER_BYTES_RECEIVED,
+                                 (uint64_t)request_payload_len);
+    }
+  grpc_server_emit_observability_event (server,
+                                        req,
+                                        full_method,
+                                        SOCKET_GRPC_LOG_EVENT_SERVER_CALL_START,
+                                        SOCKET_GRPC_STATUS_OK,
+                                        NULL,
+                                        request_payload_len,
+                                        -1);
+  return 1;
+}
+
+static void
+grpc_server_observability_call_finished (SocketGRPC_Server_T server,
+                                         SocketHTTPServer_Request_T req,
+                                         const char *full_method,
+                                         int started,
+                                         int *finished_io,
+                                         int64_t started_ms,
+                                         SocketGRPC_StatusCode status_code,
+                                         const char *status_message,
+                                         size_t response_payload_len)
+{
+  SocketGRPC_StatusCode code;
+  const char *message;
+  int64_t duration_ms = -1;
+
+  if (!started)
+    return;
+  if (finished_io != NULL && *finished_io)
+    return;
+  if (finished_io != NULL)
+    *finished_io = 1;
+  if (!grpc_server_observability_enabled (server))
+    return;
+
+  code = grpc_normalize_status_code (status_code);
+  message = (status_message != NULL && status_message[0] != '\0')
+                ? status_message
+                : SocketGRPC_status_default_message (code);
+  if (started_ms > 0)
+    {
+      duration_ms = SocketTimeout_elapsed_ms (started_ms);
+      if (duration_ms < 0)
+        duration_ms = 0;
+      SocketMetrics_histogram_observe (SOCKET_HIST_GRPC_SERVER_CALL_LATENCY_MS,
+                                       (double)duration_ms);
+    }
+  if (response_payload_len > 0)
+    {
+      SocketMetrics_counter_add (SOCKET_CTR_GRPC_SERVER_BYTES_SENT,
+                                 (uint64_t)response_payload_len);
+    }
+
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_SERVER_CALLS_COMPLETED);
+  SocketMetrics_counter_inc (grpc_server_status_counter_metric (code));
+  grpc_server_emit_observability_event (
+      server,
+      req,
+      full_method,
+      SOCKET_GRPC_LOG_EVENT_SERVER_CALL_FINISH,
+      code,
+      message,
+      response_payload_len,
+      duration_ms);
 }
 
 static const char *
@@ -629,6 +792,10 @@ SocketGRPC_Interceptor_server_logging (SocketGRPC_ServerContext_T ctx,
   event.status_message = status_io != NULL ? status_io->message : NULL;
   event.payload_len = request_payload_len;
   event.attempt = 0U;
+  event.peer = SocketGRPC_ServerContext_peer (ctx);
+  event.authority
+      = (ctx != NULL) ? grpc_server_request_authority (ctx->req) : NULL;
+  event.duration_ms = -1;
   cfg->hook (&event, cfg->hook_userdata);
   return SOCKET_GRPC_INTERCEPT_CONTINUE;
 }
@@ -1293,6 +1460,9 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
   int handler_rc;
   SocketGRPC_StatusCode grpc_status;
   const char *grpc_message = NULL;
+  int observability_started = 0;
+  int observability_finished = 0;
+  int64_t observability_started_ms = 0;
 
   if (req == NULL)
     return;
@@ -1407,9 +1577,21 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 NULL);
       return;
     }
+  observability_started = grpc_server_observability_call_started (
+      server, req, full_method, request_payload_len, &observability_started_ms);
 
   if (SocketGRPC_ServerContext_is_cancelled (&ctx))
     {
+      grpc_server_observability_call_finished (
+          server,
+          req,
+          full_method,
+          observability_started,
+          &observability_finished,
+          observability_started_ms,
+          SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
+          "Deadline exceeded",
+          0);
       grpc_send_unary_response (req,
                                 HTTP_STATUS_OK,
                                 NULL,
@@ -1431,6 +1613,15 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                           &grpc_message)
       != 0)
     {
+      grpc_server_observability_call_finished (server,
+                                               req,
+                                               full_method,
+                                               observability_started,
+                                               &observability_finished,
+                                               observability_started_ms,
+                                               grpc_status,
+                                               grpc_message,
+                                               0);
       grpc_send_unary_response (req,
                                 HTTP_STATUS_OK,
                                 NULL,
@@ -1442,6 +1633,8 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
     }
 
   server->inflight_calls++;
+  if (grpc_server_observability_enabled (server))
+    SocketMetrics_gauge_inc (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
   handler_rc = grpc_invoke_handler (method,
                                     &ctx,
                                     request_payload,
@@ -1450,6 +1643,8 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                     &response_payload_len);
   if (server->inflight_calls > 0)
     server->inflight_calls--;
+  if (grpc_server_observability_enabled (server))
+    SocketMetrics_gauge_dec (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
 
   grpc_status = grpc_resolve_final_status (&ctx, handler_rc, &grpc_message);
   if (grpc_status == SOCKET_GRPC_STATUS_OK
@@ -1464,6 +1659,16 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
       response_payload = NULL;
       response_payload_len = 0;
     }
+
+  grpc_server_observability_call_finished (server,
+                                           req,
+                                           full_method,
+                                           observability_started,
+                                           &observability_finished,
+                                           observability_started_ms,
+                                           grpc_status,
+                                           grpc_message,
+                                           response_payload_len);
 
   grpc_send_unary_response (req,
                             HTTP_STATUS_OK,

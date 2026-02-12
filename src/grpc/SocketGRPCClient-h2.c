@@ -12,6 +12,7 @@
 #include "grpc/SocketGRPC-private.h"
 #include "grpc/SocketGRPCWire.h"
 #include "deflate/SocketDeflate.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketUtil/Timeout.h"
 #include "http/SocketHTTPClient-private.h"
 #include "http/SocketHTTP2-private.h"
@@ -69,6 +70,9 @@ typedef struct
   SocketDeflate_Inflater_T response_inflater;
   SocketGRPC_Compression request_compression;
   SocketGRPC_Compression response_compression;
+  int64_t opened_at_ms;
+  int metrics_stream_active;
+  int observability_started;
 } SocketGRPC_H2CallStream;
 
 struct SocketGRPC_ClientUnaryInterceptorEntry
@@ -533,6 +537,253 @@ grpc_status_code_valid (SocketGRPC_StatusCode code)
 {
   return code >= SOCKET_GRPC_STATUS_OK
          && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
+}
+
+static SocketGRPC_StatusCode
+grpc_normalize_status_code (SocketGRPC_StatusCode code)
+{
+  return grpc_status_code_valid (code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
+}
+
+static int
+grpc_client_observability_enabled (SocketGRPC_Call_T call)
+{
+  return call != NULL && call->channel != NULL && call->channel->client != NULL
+         && call->channel->client->config.enable_observability;
+}
+
+static const char *
+grpc_client_event_peer (SocketGRPC_Call_T call)
+{
+  if (call == NULL || call->channel == NULL)
+    return NULL;
+  return call->channel->target;
+}
+
+static const char *
+grpc_client_event_authority (SocketGRPC_Call_T call)
+{
+  if (call == NULL || call->channel == NULL)
+    return NULL;
+  if (call->channel->authority_override != NULL)
+    return call->channel->authority_override;
+  return call->channel->target;
+}
+
+static SocketCounterMetric
+grpc_client_status_counter_metric (SocketGRPC_StatusCode code)
+{
+  SocketGRPC_StatusCode normalized = grpc_normalize_status_code (code);
+  return (SocketCounterMetric)(SOCKET_CTR_GRPC_CLIENT_STATUS_OK
+                               + (int)normalized);
+}
+
+static void
+grpc_client_emit_observability_event (SocketGRPC_Call_T call,
+                                      SocketGRPC_LogEventType type,
+                                      SocketGRPC_StatusCode status_code,
+                                      const char *status_message,
+                                      size_t payload_len,
+                                      uint32_t attempt,
+                                      int64_t duration_ms)
+{
+  SocketGRPC_Client_T client;
+  SocketGRPC_LogEvent event;
+
+  if (!grpc_client_observability_enabled (call))
+    return;
+  if (call == NULL || call->channel == NULL || call->channel->client == NULL)
+    return;
+
+  client = call->channel->client;
+  if (client->observability_hook == NULL)
+    return;
+
+  event.type = type;
+  event.full_method = call->full_method;
+  event.status_code = grpc_normalize_status_code (status_code);
+  event.status_message
+      = (status_message != NULL && status_message[0] != '\0')
+            ? status_message
+            : SocketGRPC_status_default_message (event.status_code);
+  event.payload_len = payload_len;
+  event.attempt = attempt;
+  event.peer = grpc_client_event_peer (call);
+  event.authority = grpc_client_event_authority (call);
+  event.duration_ms = duration_ms;
+  client->observability_hook (&event, client->observability_hook_userdata);
+}
+
+static void
+grpc_client_observability_call_started (SocketGRPC_Call_T call,
+                                        size_t payload_len,
+                                        uint32_t attempt)
+{
+  if (!grpc_client_observability_enabled (call))
+    return;
+
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED);
+  grpc_client_emit_observability_event (call,
+                                        SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_START,
+                                        SOCKET_GRPC_STATUS_OK,
+                                        NULL,
+                                        payload_len,
+                                        attempt,
+                                        -1);
+}
+
+static void
+grpc_client_observability_call_retry (SocketGRPC_Call_T call, uint32_t attempt)
+{
+  if (!grpc_client_observability_enabled (call))
+    return;
+
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_CLIENT_RETRIES);
+  grpc_client_emit_observability_event (call,
+                                        SOCKET_GRPC_LOG_EVENT_CLIENT_RETRY,
+                                        SOCKET_GRPC_STATUS_UNAVAILABLE,
+                                        "Retrying call",
+                                        0,
+                                        attempt,
+                                        -1);
+}
+
+static void
+grpc_client_observability_call_finished (SocketGRPC_Call_T call,
+                                         int64_t started_at_ms,
+                                         size_t payload_len,
+                                         uint32_t attempt)
+{
+  SocketGRPC_Status status;
+  SocketGRPC_StatusCode code;
+  int64_t duration_ms = -1;
+  const char *message;
+
+  if (!grpc_client_observability_enabled (call))
+    return;
+  if (call == NULL)
+    return;
+
+  status = SocketGRPC_Call_status (call);
+  code = grpc_normalize_status_code (status.code);
+  message = (status.message != NULL && status.message[0] != '\0')
+                ? status.message
+                : SocketGRPC_status_default_message (code);
+  if (started_at_ms > 0)
+    {
+      duration_ms = SocketTimeout_elapsed_ms (started_at_ms);
+      if (duration_ms < 0)
+        duration_ms = 0;
+      SocketMetrics_histogram_observe (SOCKET_HIST_GRPC_CLIENT_CALL_LATENCY_MS,
+                                       (double)duration_ms);
+    }
+
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_CLIENT_CALLS_COMPLETED);
+  SocketMetrics_counter_inc (grpc_client_status_counter_metric (code));
+  grpc_client_emit_observability_event (
+      call,
+      SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_FINISH,
+      code,
+      message,
+      payload_len,
+      attempt,
+      duration_ms);
+}
+
+static void
+grpc_client_metrics_bytes_sent (SocketGRPC_Call_T call, size_t payload_len)
+{
+  if (!grpc_client_observability_enabled (call) || payload_len == 0)
+    return;
+
+  SocketMetrics_counter_add (SOCKET_CTR_GRPC_CLIENT_BYTES_SENT,
+                             (uint64_t)payload_len);
+}
+
+static void
+grpc_client_metrics_bytes_received (SocketGRPC_Call_T call, size_t payload_len)
+{
+  if (!grpc_client_observability_enabled (call) || payload_len == 0)
+    return;
+
+  SocketMetrics_counter_add (SOCKET_CTR_GRPC_CLIENT_BYTES_RECEIVED,
+                             (uint64_t)payload_len);
+}
+
+static void
+grpc_client_stream_observability_started (SocketGRPC_Call_T call,
+                                          SocketGRPC_H2CallStream *ctx)
+{
+  if (ctx == NULL || ctx->observability_started)
+    return;
+  if (!grpc_client_observability_enabled (call))
+    return;
+
+  ctx->opened_at_ms = SocketTimeout_now_ms ();
+  ctx->observability_started = 1;
+  ctx->metrics_stream_active = 1;
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_CLIENT_CALLS_STARTED);
+  SocketMetrics_gauge_inc (SOCKET_GAU_GRPC_CLIENT_ACTIVE_STREAMS);
+  grpc_client_emit_observability_event (call,
+                                        SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_START,
+                                        SOCKET_GRPC_STATUS_OK,
+                                        NULL,
+                                        0,
+                                        1U,
+                                        -1);
+}
+
+static void
+grpc_client_stream_observability_finished (SocketGRPC_Call_T call,
+                                           SocketGRPC_H2CallStream *ctx)
+{
+  SocketGRPC_Status status;
+  SocketGRPC_StatusCode code;
+  const char *message;
+  int64_t duration_ms = -1;
+
+  if (ctx == NULL)
+    return;
+  if (ctx->metrics_stream_active)
+    {
+      SocketMetrics_gauge_dec (SOCKET_GAU_GRPC_CLIENT_ACTIVE_STREAMS);
+      ctx->metrics_stream_active = 0;
+    }
+  if (!ctx->observability_started)
+    return;
+  if (!grpc_client_observability_enabled (call))
+    {
+      ctx->observability_started = 0;
+      return;
+    }
+
+  status = SocketGRPC_Call_status (call);
+  code = grpc_normalize_status_code (status.code);
+  message = (status.message != NULL && status.message[0] != '\0')
+                ? status.message
+                : SocketGRPC_status_default_message (code);
+  if (ctx->opened_at_ms > 0)
+    {
+      duration_ms = SocketTimeout_elapsed_ms (ctx->opened_at_ms);
+      if (duration_ms < 0)
+        duration_ms = 0;
+      SocketMetrics_histogram_observe (
+          SOCKET_HIST_GRPC_CLIENT_STREAM_OPEN_DURATION_MS, (double)duration_ms);
+      SocketMetrics_histogram_observe (SOCKET_HIST_GRPC_CLIENT_CALL_LATENCY_MS,
+                                       (double)duration_ms);
+    }
+
+  SocketMetrics_counter_inc (SOCKET_CTR_GRPC_CLIENT_CALLS_COMPLETED);
+  SocketMetrics_counter_inc (grpc_client_status_counter_metric (code));
+  grpc_client_emit_observability_event (
+      call,
+      SOCKET_GRPC_LOG_EVENT_CLIENT_CALL_FINISH,
+      code,
+      message,
+      0,
+      1U,
+      duration_ms);
+  ctx->observability_started = 0;
 }
 
 static int
@@ -1728,6 +1979,8 @@ grpc_stream_context_cleanup (SocketGRPC_Call_T call,
   if (ctx == NULL)
     return;
 
+  grpc_client_stream_observability_finished (call, ctx);
+
   if (ctx->conn != NULL && ctx->stream != NULL && ctx->active_stream_counted)
     {
       if (ctx->conn->proto.h2.active_streams > 0)
@@ -1941,6 +2194,7 @@ grpc_stream_open_if_needed (SocketGRPC_Call_T call)
   ctx->deadline_ms = SocketTimeout_deadline_ms (call->config.deadline_ms);
   call->h2_stream_ctx = ctx;
   call->h2_stream_state = GRPC_CALL_STREAM_OPEN;
+  grpc_client_stream_observability_started (call, ctx);
   return ctx;
 
 fail:
@@ -2272,6 +2526,8 @@ SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
   rc = grpc_stream_send_frame (call, ctx, framed, framed_len, 0);
   free (framed);
   free (compressed_payload);
+  if (rc == 0)
+    grpc_client_metrics_bytes_sent (call, request_payload_len);
   return rc;
 }
 
@@ -2428,6 +2684,7 @@ SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
               *response_payload_len = 0;
               return -1;
             }
+          grpc_client_metrics_bytes_received (call, *response_payload_len);
           return 0;
         }
 
@@ -3105,6 +3362,9 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
   int64_t call_deadline_ms;
   int64_t backoff_ms;
   int original_deadline_ms;
+  int64_t call_started_ms;
+  uint32_t finish_attempt = 1U;
+  int observability_started = 0;
 
   if (call == NULL || request_payload == NULL || arena == NULL
       || response_payload == NULL || response_payload_len == NULL)
@@ -3112,12 +3372,18 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
 
   *response_payload = NULL;
   *response_payload_len = 0;
+  call_started_ms = SocketTimeout_now_ms ();
+  observability_started = grpc_client_observability_enabled (call);
+  grpc_client_observability_call_started (call, request_payload_len, 1U);
+
   if (grpc_run_client_unary_interceptors (
           call, request_payload, request_payload_len)
       != 0)
     {
-      return (int)SocketGRPC_Call_status (call).code;
+      rc = (int)SocketGRPC_Call_status (call).code;
+      goto finish;
     }
+  grpc_client_metrics_bytes_sent (call, request_payload_len);
 
   policy = call->config.retry_policy;
   if (SocketGRPC_RetryPolicy_validate (&policy) != 0)
@@ -3131,12 +3397,15 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
     }
 
   if (max_attempts <= 1)
-    return grpc_call_unary_h2_single_attempt (call,
+    {
+      rc = grpc_call_unary_h2_single_attempt (call,
                                               request_payload,
                                               request_payload_len,
                                               arena,
                                               response_payload,
                                               response_payload_len);
+      goto finish;
+    }
 
   original_deadline_ms = call->config.deadline_ms;
   call_deadline_ms = SocketTimeout_deadline_ms (original_deadline_ms);
@@ -3147,6 +3416,7 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
   for (attempt = 1; attempt <= max_attempts; attempt++)
     {
       int status_code;
+      finish_attempt = (uint32_t)attempt;
 
       if (SocketTimeout_expired (call_deadline_ms))
         {
@@ -3218,6 +3488,7 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
               wait_ms = remaining;
           }
 
+        grpc_client_observability_call_retry (call, (uint32_t)(attempt + 1));
         if (wait_ms > 0)
           grpc_retry_sleep_ms (wait_ms);
       }
@@ -3236,5 +3507,14 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
   call->config.deadline_ms = original_deadline_ms;
   call->retry_attempt = 0;
   call->retry_in_progress = 0;
+
+finish:
+  if (rc == SOCKET_GRPC_STATUS_OK && *response_payload_len > 0)
+    grpc_client_metrics_bytes_received (call, *response_payload_len);
+  if (observability_started)
+    {
+      grpc_client_observability_call_finished (
+          call, call_started_ms, *response_payload_len, finish_attempt);
+    }
   return rc;
 }
