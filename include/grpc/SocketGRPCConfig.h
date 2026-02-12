@@ -16,6 +16,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLSContext.h"
+#else
+typedef struct SocketTLSContext_T *SocketTLSContext_T;
+#endif
+
 #ifndef SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CHANNELS
 #define SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CHANNELS 64U
 #endif
@@ -38,6 +44,18 @@
 
 #ifndef SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES
 #define SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES 64U
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_VERIFY_PEER
+#define SOCKET_GRPC_DEFAULT_VERIFY_PEER 1
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_ALLOW_HTTP2_CLEARTEXT
+#define SOCKET_GRPC_DEFAULT_ALLOW_HTTP2_CLEARTEXT 0
+#endif
+
+#ifndef SOCKET_GRPC_DEFAULT_USER_AGENT
+#define SOCKET_GRPC_DEFAULT_USER_AGENT "tetsuo-grpc/0.1"
 #endif
 
 #ifndef SOCKET_GRPC_DEFAULT_ENABLE_RETRY
@@ -79,6 +97,11 @@ typedef struct
   size_t max_inbound_message_bytes;
   size_t max_outbound_message_bytes;
   uint32_t max_metadata_entries;
+  const char *authority_override;
+  const char *user_agent;
+  SocketTLSContext_T tls_context;
+  int verify_peer;
+  int allow_http2_cleartext;
 } SocketGRPC_ChannelConfig;
 
 /**

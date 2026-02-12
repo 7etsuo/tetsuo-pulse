@@ -1051,7 +1051,8 @@ process_settings_ack (SocketHTTP2_Conn_T conn)
   if (conn->settings_ack_pending)
     {
       conn->settings_ack_pending = 0;
-      if (conn->state == HTTP2_CONN_STATE_SETTINGS_SENT)
+      if (conn->state == HTTP2_CONN_STATE_SETTINGS_SENT
+          || conn->state == HTTP2_CONN_STATE_SETTINGS_RECV)
         conn->state = HTTP2_CONN_STATE_READY;
       http2_emit_conn_event (conn, HTTP2_EVENT_SETTINGS_ACK);
     }

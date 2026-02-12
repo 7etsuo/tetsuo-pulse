@@ -10,6 +10,7 @@
  */
 
 #include "grpc/SocketGRPC-private.h"
+#include "grpc/SocketGRPCWire.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -161,6 +162,11 @@ SocketGRPC_ChannelConfig_defaults (SocketGRPC_ChannelConfig *config)
   config->max_outbound_message_bytes
       = SOCKET_GRPC_DEFAULT_MAX_OUTBOUND_MESSAGE_BYTES;
   config->max_metadata_entries = SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES;
+  config->authority_override = NULL;
+  config->user_agent = SOCKET_GRPC_DEFAULT_USER_AGENT;
+  config->tls_context = NULL;
+  config->verify_peer = SOCKET_GRPC_DEFAULT_VERIFY_PEER;
+  config->allow_http2_cleartext = SOCKET_GRPC_DEFAULT_ALLOW_HTTP2_CLEARTEXT;
 }
 
 void
@@ -204,6 +210,10 @@ grpc_sanitize_channel_config (SocketGRPC_ChannelConfig *config)
         = SOCKET_GRPC_DEFAULT_MAX_OUTBOUND_MESSAGE_BYTES;
   if (config->max_metadata_entries == 0)
     config->max_metadata_entries = SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES;
+  if (config->user_agent == NULL || config->user_agent[0] == '\0')
+    config->user_agent = SOCKET_GRPC_DEFAULT_USER_AGENT;
+  config->verify_peer = config->verify_peer ? 1 : 0;
+  config->allow_http2_cleartext = config->allow_http2_cleartext ? 1 : 0;
 }
 
 static void
@@ -216,6 +226,14 @@ grpc_sanitize_call_config (SocketGRPC_CallConfig *config)
 
 static char *
 grpc_strdup_required (const char *src)
+{
+  if (src == NULL || src[0] == '\0')
+    return NULL;
+  return strdup (src);
+}
+
+static char *
+grpc_strdup_optional (const char *src)
 {
   if (src == NULL || src[0] == '\0')
     return NULL;
@@ -307,6 +325,25 @@ SocketGRPC_Channel_new (SocketGRPC_Client_T client,
     SocketGRPC_ChannelConfig_defaults (&channel->config);
 
   grpc_sanitize_channel_config (&channel->config);
+  channel->authority_override
+      = grpc_strdup_optional (channel->config.authority_override);
+  if (channel->config.authority_override != NULL
+      && channel->authority_override == NULL)
+    {
+      free (channel->target);
+      free (channel);
+      return NULL;
+    }
+
+  channel->user_agent = grpc_strdup_required (channel->config.user_agent);
+  if (channel->user_agent == NULL)
+    {
+      free (channel->authority_override);
+      free (channel->target);
+      free (channel);
+      return NULL;
+    }
+
   channel->client = client;
   SocketGRPC_status_set (
       &channel->last_status, SOCKET_GRPC_STATUS_OK, "Channel initialized");
@@ -319,6 +356,10 @@ SocketGRPC_Channel_free (SocketGRPC_Channel_T *channel)
   if (channel == NULL || *channel == NULL)
     return;
 
+  free ((*channel)->user_agent);
+  (*channel)->user_agent = NULL;
+  free ((*channel)->authority_override);
+  (*channel)->authority_override = NULL;
   free ((*channel)->target);
   (*channel)->target = NULL;
   memset (*channel, 0, sizeof (**channel));
@@ -354,6 +395,17 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
 
   grpc_sanitize_call_config (&call->config);
   call->channel = channel;
+  call->request_metadata = SocketGRPC_Metadata_new (NULL);
+  call->response_trailers = SocketGRPC_Trailers_new (NULL);
+  if (call->request_metadata == NULL || call->response_trailers == NULL)
+    {
+      SocketGRPC_Metadata_free (&call->request_metadata);
+      SocketGRPC_Trailers_free (&call->response_trailers);
+      free (call->full_method);
+      free (call);
+      return NULL;
+    }
+
   SocketGRPC_status_set (
       &call->last_status, SOCKET_GRPC_STATUS_OK, "Call initialized");
   return call;
@@ -365,6 +417,8 @@ SocketGRPC_Call_free (SocketGRPC_Call_T *call)
   if (call == NULL || *call == NULL)
     return;
 
+  SocketGRPC_Metadata_free (&(*call)->request_metadata);
+  SocketGRPC_Trailers_free (&(*call)->response_trailers);
   free ((*call)->full_method);
   (*call)->full_method = NULL;
   memset (*call, 0, sizeof (**call));
