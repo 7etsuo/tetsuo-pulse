@@ -378,6 +378,7 @@ set(LIB_SOURCES
 
     # gRPC module (public scaffolding)
     src/grpc/SocketGRPC-core.c
+    src/grpc/SocketGRPCWire.c
     src/grpc/SocketProto-varint.c
     src/grpc/SocketProto-wire.c
     src/grpc/SocketProto-message.c
@@ -797,6 +798,7 @@ set(GRPC_HEADERS
     include/grpc/SocketGRPC.h
     include/grpc/SocketGRPC-private.h
     include/grpc/SocketGRPCConfig.h
+    include/grpc/SocketGRPCWire.h
     include/grpc/SocketProto.h
     include/grpc/SocketProto-private.h
 )
@@ -947,6 +949,8 @@ set(TEST_SOURCES
     test_http3_request
     test_http3_compliance
     test_grpc_api_surface
+    test_grpc_wire
+    test_grpc_metadata
     test_proto_varint
     test_proto_wire
     test_proto_message
