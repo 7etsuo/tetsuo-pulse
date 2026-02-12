@@ -156,6 +156,60 @@ typedef struct
 static char cert_path[160];
 static char key_path[160];
 
+typedef struct
+{
+  int unary_calls;
+  int stream_send_calls;
+  int stream_recv_calls;
+  int stop_on_recv;
+} GRPC_InterceptorProbe;
+
+static int
+grpc_unary_probe_interceptor (SocketGRPC_Call_T call,
+                              const uint8_t *request_payload,
+                              size_t request_payload_len,
+                              SocketGRPC_Status *status_io,
+                              void *userdata)
+{
+  GRPC_InterceptorProbe *probe = (GRPC_InterceptorProbe *)userdata;
+  (void)call;
+  (void)request_payload;
+  (void)request_payload_len;
+  (void)status_io;
+  if (probe != NULL)
+    probe->unary_calls++;
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
+}
+
+static int
+grpc_stream_probe_interceptor (SocketGRPC_Call_T call,
+                               SocketGRPC_StreamInterceptEvent event,
+                               const uint8_t *payload,
+                               size_t payload_len,
+                               SocketGRPC_Status *status_io,
+                               void *userdata)
+{
+  GRPC_InterceptorProbe *probe = (GRPC_InterceptorProbe *)userdata;
+  (void)call;
+  (void)payload;
+  (void)payload_len;
+  if (probe == NULL)
+    return SOCKET_GRPC_INTERCEPT_CONTINUE;
+  if (event == SOCKET_GRPC_STREAM_INTERCEPT_SEND)
+    probe->stream_send_calls++;
+  else if (event == SOCKET_GRPC_STREAM_INTERCEPT_RECV)
+    {
+      probe->stream_recv_calls++;
+      if (probe->stop_on_recv && status_io != NULL)
+        {
+          status_io->code = SOCKET_GRPC_STATUS_ABORTED;
+          status_io->message = "stream recv blocked by interceptor";
+          return SOCKET_GRPC_INTERCEPT_STOP;
+        }
+    }
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
+}
+
 static int
 create_temp_cert_files (void)
 {
@@ -2605,6 +2659,97 @@ TEST (grpc_unary_h2_retry_unavailable_then_success)
   ASSERT_EQ (1, server.observed_previous_attempts[1]);
 }
 
+TEST (grpc_unary_h2_interceptor_runs_once_across_retry_attempts)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  SocketGRPC_ClientConfig client_cfg;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketGRPC_CallConfig call_cfg;
+  Arena_T arena = NULL;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  GRPC_InterceptorProbe probe = { 0 };
+  uint8_t request_payload[] = { 0x08, 0x22 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int rc;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start_with_limit (
+          &server, GRPC_H2_SCENARIO_RETRY_UNAVAILABLE_THEN_SUCCESS, 3)
+      != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 retry test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ClientConfig_defaults (&client_cfg);
+  client_cfg.enable_retry = 1;
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+  SocketGRPC_CallConfig_defaults (&call_cfg);
+  call_cfg.deadline_ms = 1000;
+  call_cfg.retry_policy.max_attempts = 3;
+  call_cfg.retry_policy.initial_backoff_ms = 5;
+  call_cfg.retry_policy.max_backoff_ms = 20;
+  call_cfg.retry_policy.backoff_multiplier = 1.0;
+  call_cfg.retry_policy.jitter_percent = 0;
+  call_cfg.retry_policy.retryable_status_mask
+      = (1U << SOCKET_GRPC_STATUS_UNAVAILABLE);
+
+  client = SocketGRPC_Client_new (&client_cfg);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.EchoService/Ping", &call_cfg);
+  ASSERT_NOT_NULL (call);
+  ASSERT_EQ (0,
+             SocketGRPC_Call_add_unary_interceptor (
+                 call, grpc_unary_probe_interceptor, &probe));
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  rc = SocketGRPC_Call_unary_h2 (call,
+                                 request_payload,
+                                 sizeof (request_payload),
+                                 arena,
+                                 &response_payload,
+                                 &response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, rc);
+  ASSERT_NOT_NULL (response_payload);
+  ASSERT_EQ (2U, response_payload_len);
+  ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (1, probe.unary_calls);
+  ASSERT_EQ (2, server.handled_connections);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
 TEST (grpc_unary_h2_retry_deadline_exceeded_before_all_attempts)
 {
   GRPC_H2_Server server;
@@ -2968,6 +3113,83 @@ TEST (grpc_stream_h2_server_streaming_messages)
                  call, arena, &response_payload, &response_payload_len, &done));
   ASSERT_EQ (1, done);
   ASSERT_EQ (SOCKET_GRPC_STATUS_OK, SocketGRPC_Call_status (call).code);
+
+  Arena_dispose (&arena);
+  SocketGRPC_Call_free (&call);
+  SocketGRPC_Channel_free (&channel);
+  SocketGRPC_Client_free (&client);
+  SocketTLSContext_free (&tls_client_ctx);
+  grpc_h2_server_stop (&server);
+  cleanup_temp_cert_files ();
+}
+
+TEST (grpc_stream_h2_interceptor_can_abort_on_recv_event)
+{
+  GRPC_H2_Server server;
+  SocketGRPC_Client_T client = NULL;
+  SocketGRPC_Channel_T channel = NULL;
+  SocketGRPC_Call_T call = NULL;
+  Arena_T arena = NULL;
+  SocketGRPC_ChannelConfig channel_cfg;
+  SocketTLSContext_T tls_client_ctx = NULL;
+  GRPC_InterceptorProbe probe = { 0 };
+  uint8_t request_payload[] = { 0x08, 0x01 };
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
+  char target[128];
+
+  signal (SIGPIPE, SIG_IGN);
+
+  if (create_temp_cert_files () != 0)
+    {
+      printf ("  [SKIP] Could not generate TLS cert fixtures\n");
+      return;
+    }
+  if (grpc_h2_server_start (&server, GRPC_H2_SCENARIO_STREAM_SERVER_STREAM)
+      != 0)
+    {
+      printf ("  [SKIP] Could not start gRPC/HTTP2 test server\n");
+      cleanup_temp_cert_files ();
+      return;
+    }
+
+  tls_client_ctx = SocketTLSContext_new_client (cert_path);
+  ASSERT_NOT_NULL (tls_client_ctx);
+  {
+    const char *alpn[] = { "h2" };
+    SocketTLSContext_set_alpn_protos (tls_client_ctx, alpn, 1);
+  }
+
+  SocketGRPC_ChannelConfig_defaults (&channel_cfg);
+  channel_cfg.verify_peer = 1;
+  channel_cfg.tls_context = tls_client_ctx;
+
+  client = SocketGRPC_Client_new (NULL);
+  ASSERT_NOT_NULL (client);
+  snprintf (target, sizeof (target), "https://127.0.0.1:%d", server.port);
+  channel = SocketGRPC_Channel_new (client, target, &channel_cfg);
+  ASSERT_NOT_NULL (channel);
+  call = SocketGRPC_Call_new (channel, "/test.Streamer/Subscribe", NULL);
+  ASSERT_NOT_NULL (call);
+  probe.stop_on_recv = 1;
+  ASSERT_EQ (0,
+             SocketGRPC_Call_add_stream_interceptor (
+                 call, grpc_stream_probe_interceptor, &probe));
+  arena = Arena_new ();
+  ASSERT_NOT_NULL (arena);
+
+  ASSERT_EQ (0,
+             SocketGRPC_Call_send_message (
+                 call, request_payload, sizeof (request_payload)));
+  ASSERT_EQ (0, SocketGRPC_Call_close_send (call));
+
+  ASSERT_EQ (-1,
+             SocketGRPC_Call_recv_message (
+                 call, arena, &response_payload, &response_payload_len, &done));
+  ASSERT_EQ (SOCKET_GRPC_STATUS_ABORTED, SocketGRPC_Call_status (call).code);
+  ASSERT_EQ (1, probe.stream_send_calls);
+  ASSERT_EQ (1, probe.stream_recv_calls);
 
   Arena_dispose (&arena);
   SocketGRPC_Call_free (&call);

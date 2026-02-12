@@ -106,19 +106,149 @@ typedef struct SocketGRPC_Metadata *SocketGRPC_Metadata_T;
 typedef struct SocketGRPC_Trailers *SocketGRPC_Trailers_T;
 
 /**
+ * @brief Interceptor return code: continue normal call flow.
+ */
+#define SOCKET_GRPC_INTERCEPT_CONTINUE 0
+
+/**
+ * @brief Interceptor return code: stop call flow and return supplied status.
+ */
+#define SOCKET_GRPC_INTERCEPT_STOP 1
+
+/**
+ * @brief Streaming interceptor event kinds.
+ */
+typedef enum
+{
+  SOCKET_GRPC_STREAM_INTERCEPT_SEND = 1,
+  SOCKET_GRPC_STREAM_INTERCEPT_RECV = 2
+} SocketGRPC_StreamInterceptEvent;
+
+/**
+ * @brief Client unary interceptor callback.
+ *
+ * Return SOCKET_GRPC_INTERCEPT_CONTINUE to continue.
+ * Return SOCKET_GRPC_INTERCEPT_STOP to short-circuit with status_io.
+ */
+typedef int (*SocketGRPC_ClientUnaryInterceptor) (
+    SocketGRPC_Call_T call,
+    const uint8_t *request_payload,
+    size_t request_payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata);
+
+/**
+ * @brief Client streaming interceptor callback.
+ *
+ * Return SOCKET_GRPC_INTERCEPT_CONTINUE to continue.
+ * Return SOCKET_GRPC_INTERCEPT_STOP to short-circuit with status_io.
+ */
+typedef int (*SocketGRPC_ClientStreamInterceptor) (
+    SocketGRPC_Call_T call,
+    SocketGRPC_StreamInterceptEvent event,
+    const uint8_t *payload,
+    size_t payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata);
+
+/**
+ * @brief Server unary interceptor callback.
+ *
+ * Return SOCKET_GRPC_INTERCEPT_CONTINUE to continue.
+ * Return SOCKET_GRPC_INTERCEPT_STOP to short-circuit with status_io.
+ */
+typedef int (*SocketGRPC_ServerUnaryInterceptor) (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *request_payload,
+    size_t request_payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata);
+
+/**
+ * @brief Metadata injector interceptor configuration.
+ */
+typedef struct
+{
+  const char *key;
+  const char *ascii_value;
+  const uint8_t *binary_value;
+  size_t binary_value_len;
+  int is_binary;
+} SocketGRPC_MetadataInjectorConfig;
+
+/**
+ * @brief Server auth token validation hook.
+ *
+ * Return non-zero when token is accepted, 0 otherwise.
+ */
+typedef int (*SocketGRPC_ServerAuthTokenValidator) (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *token,
+    size_t token_len,
+    void *userdata);
+
+/**
+ * @brief Auth token validator interceptor configuration.
+ */
+typedef struct
+{
+  const char *metadata_key;
+  SocketGRPC_ServerAuthTokenValidator validator;
+  void *validator_userdata;
+} SocketGRPC_AuthTokenValidatorConfig;
+
+/**
+ * @brief Structured log hook event type.
+ */
+typedef enum
+{
+  SOCKET_GRPC_LOG_EVENT_CLIENT_UNARY = 1,
+  SOCKET_GRPC_LOG_EVENT_SERVER_UNARY = 2,
+  SOCKET_GRPC_LOG_EVENT_STREAM_SEND = 3,
+  SOCKET_GRPC_LOG_EVENT_STREAM_RECV = 4
+} SocketGRPC_LogEventType;
+
+/**
+ * @brief Structured log hook event payload.
+ */
+typedef struct
+{
+  SocketGRPC_LogEventType type;
+  const char *full_method;
+  SocketGRPC_StatusCode status_code;
+  const char *status_message;
+  size_t payload_len;
+  uint32_t attempt;
+} SocketGRPC_LogEvent;
+
+/**
+ * @brief Structured log hook callback for reference logging interceptors.
+ */
+typedef void (*SocketGRPC_LogHook) (const SocketGRPC_LogEvent *event,
+                                    void *userdata);
+
+/**
+ * @brief Structured log hook interceptor configuration.
+ */
+typedef struct
+{
+  SocketGRPC_LogHook hook;
+  void *hook_userdata;
+} SocketGRPC_LogHookConfig;
+
+/**
  * @brief Return-code unary server handler.
  *
  * Return a canonical gRPC status code (0-16). Return -1 for INTERNAL fallback.
  * On OK, handler should populate response payload (unframed protobuf bytes).
  */
-typedef int (*SocketGRPC_ServerUnaryHandler) (
-    SocketGRPC_ServerContext_T ctx,
-    const uint8_t *request_payload,
-    size_t request_payload_len,
-    Arena_T arena,
-    uint8_t **response_payload,
-    size_t *response_payload_len,
-    void *userdata);
+typedef int (*SocketGRPC_ServerUnaryHandler) (SocketGRPC_ServerContext_T ctx,
+                                              const uint8_t *request_payload,
+                                              size_t request_payload_len,
+                                              Arena_T arena,
+                                              uint8_t **response_payload,
+                                              size_t *response_payload_len,
+                                              void *userdata);
 
 /**
  * @brief Exception-style unary server handler.
@@ -203,6 +333,17 @@ extern int SocketGRPC_Server_register_unary_except (
     void *userdata);
 
 /**
+ * @brief Add a unary interceptor to server pipeline (append order).
+ *
+ * Interceptors execute in registration order and may short-circuit request
+ * handling by returning SOCKET_GRPC_INTERCEPT_STOP.
+ */
+extern int SocketGRPC_Server_add_unary_interceptor (
+    SocketGRPC_Server_T server,
+    SocketGRPC_ServerUnaryInterceptor interceptor,
+    void *userdata);
+
+/**
  * @brief Transition server to draining mode (reject new unary calls).
  */
 extern void SocketGRPC_Server_begin_shutdown (SocketGRPC_Server_T server);
@@ -223,8 +364,8 @@ extern void SocketGRPC_Server_bind_http2 (SocketGRPC_Server_T server,
  *
  * `userdata` must be a SocketGRPC_Server_T.
  */
-extern void SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req,
-                                            void *userdata);
+extern void
+SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata);
 
 /**
  * @brief Create a logical channel owned by a client.
@@ -275,6 +416,77 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
  * @threadsafe No
  */
 extern void SocketGRPC_Call_free (SocketGRPC_Call_T *call);
+
+/**
+ * @brief Add a client unary interceptor to this call (append order).
+ *
+ * Unary interceptors run once per logical unary call before retry attempts.
+ */
+extern int SocketGRPC_Call_add_unary_interceptor (
+    SocketGRPC_Call_T call,
+    SocketGRPC_ClientUnaryInterceptor interceptor,
+    void *userdata);
+
+/**
+ * @brief Add a client stream interceptor to this call (append order).
+ *
+ * Stream interceptors run once per send/recv message event.
+ */
+extern int SocketGRPC_Call_add_stream_interceptor (
+    SocketGRPC_Call_T call,
+    SocketGRPC_ClientStreamInterceptor interceptor,
+    void *userdata);
+
+/**
+ * @brief Reference interceptor: inject configured metadata into client calls.
+ */
+extern int
+SocketGRPC_Interceptor_metadata_injector (SocketGRPC_Call_T call,
+                                          const uint8_t *request_payload,
+                                          size_t request_payload_len,
+                                          SocketGRPC_Status *status_io,
+                                          void *userdata);
+
+/**
+ * @brief Reference interceptor: validate auth token from incoming metadata.
+ */
+extern int SocketGRPC_Interceptor_server_auth_token_validator (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *request_payload,
+    size_t request_payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata);
+
+/**
+ * @brief Reference interceptor: emit client unary structured log hook event.
+ */
+extern int
+SocketGRPC_Interceptor_client_logging (SocketGRPC_Call_T call,
+                                       const uint8_t *request_payload,
+                                       size_t request_payload_len,
+                                       SocketGRPC_Status *status_io,
+                                       void *userdata);
+
+/**
+ * @brief Reference interceptor: emit server unary structured log hook event.
+ */
+extern int
+SocketGRPC_Interceptor_server_logging (SocketGRPC_ServerContext_T ctx,
+                                       const uint8_t *request_payload,
+                                       size_t request_payload_len,
+                                       SocketGRPC_Status *status_io,
+                                       void *userdata);
+
+/**
+ * @brief Reference interceptor: emit client stream structured log hook events.
+ */
+extern int SocketGRPC_Interceptor_client_stream_logging (
+    SocketGRPC_Call_T call,
+    SocketGRPC_StreamInterceptEvent event,
+    const uint8_t *payload,
+    size_t payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata);
 
 /**
  * @brief Add ASCII metadata to a call (request headers).
@@ -382,9 +594,8 @@ extern int SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
  *
  * @return 0 on success, -1 on invalid arguments or insufficient output size.
  */
-extern int SocketGRPC_Timeout_format (int64_t timeout_ms,
-                                      char *out,
-                                      size_t out_len);
+extern int
+SocketGRPC_Timeout_format (int64_t timeout_ms, char *out, size_t out_len);
 
 /**
  * @brief Parse a grpc-timeout header value into milliseconds.
@@ -393,7 +604,8 @@ extern int SocketGRPC_Timeout_format (int64_t timeout_ms,
  *
  * @return 0 on success, -1 on invalid syntax/range.
  */
-extern int SocketGRPC_Timeout_parse (const char *value, int64_t *timeout_ms_out);
+extern int
+SocketGRPC_Timeout_parse (const char *value, int64_t *timeout_ms_out);
 
 /**
  * @brief Per-request metadata (custom headers and trailers).
@@ -434,26 +646,23 @@ SocketGRPC_ServerContext_is_cancelled (SocketGRPC_ServerContext_T ctx);
 /**
  * @brief Override outgoing grpc-status/grpc-message.
  */
-extern int
-SocketGRPC_ServerContext_set_status (SocketGRPC_ServerContext_T ctx,
-                                     SocketGRPC_StatusCode code,
-                                     const char *message);
+extern int SocketGRPC_ServerContext_set_status (SocketGRPC_ServerContext_T ctx,
+                                                SocketGRPC_StatusCode code,
+                                                const char *message);
 
 /**
  * @brief Set grpc-status-details-bin trailer bytes.
  */
-extern int SocketGRPC_ServerContext_set_status_details_bin (
-    SocketGRPC_ServerContext_T ctx,
-    const uint8_t *details,
-    size_t details_len);
+extern int
+SocketGRPC_ServerContext_set_status_details_bin (SocketGRPC_ServerContext_T ctx,
+                                                 const uint8_t *details,
+                                                 size_t details_len);
 
 /**
  * @brief Add ASCII trailing metadata.
  */
 extern int SocketGRPC_ServerContext_add_trailing_metadata_ascii (
-    SocketGRPC_ServerContext_T ctx,
-    const char *key,
-    const char *value);
+    SocketGRPC_ServerContext_T ctx, const char *key, const char *value);
 
 /**
  * @brief Add binary trailing metadata.

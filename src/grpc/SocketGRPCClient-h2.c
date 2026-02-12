@@ -71,6 +71,20 @@ typedef struct
   SocketGRPC_Compression response_compression;
 } SocketGRPC_H2CallStream;
 
+struct SocketGRPC_ClientUnaryInterceptorEntry
+{
+  SocketGRPC_ClientUnaryInterceptor interceptor;
+  void *userdata;
+  SocketGRPC_ClientUnaryInterceptorEntry *next;
+};
+
+struct SocketGRPC_ClientStreamInterceptorEntry
+{
+  SocketGRPC_ClientStreamInterceptor interceptor;
+  void *userdata;
+  SocketGRPC_ClientStreamInterceptorEntry *next;
+};
+
 static int
 grpc_h2_conn_process_safe (SocketHTTP2_Conn_T conn, unsigned events)
 {
@@ -512,6 +526,81 @@ grpc_call_status_set (SocketGRPC_Call_T call,
                       const char *message)
 {
   SocketGRPC_status_set (&call->last_status, code, message);
+}
+
+static int
+grpc_status_code_valid (SocketGRPC_StatusCode code)
+{
+  return code >= SOCKET_GRPC_STATUS_OK
+         && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
+}
+
+static int
+grpc_apply_interceptor_stop (SocketGRPC_Call_T call,
+                             SocketGRPC_Status status,
+                             int mark_stream_failed)
+{
+  const char *message = status.message;
+  SocketGRPC_StatusCode code = status.code;
+
+  if (call == NULL)
+    return -1;
+  if (!grpc_status_code_valid (code) || code == SOCKET_GRPC_STATUS_OK)
+    {
+      code = SOCKET_GRPC_STATUS_INTERNAL;
+      message = "Interceptor returned invalid status";
+    }
+  if (message == NULL || message[0] == '\0')
+    message = SocketGRPC_status_default_message (code);
+
+  if (call->response_trailers != NULL)
+    {
+      SocketGRPC_Trailers_clear (call->response_trailers);
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers, code);
+      if (message[0] != '\0')
+        (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                               message);
+    }
+  grpc_call_status_set (call, code, message);
+
+  if (mark_stream_failed)
+    call->h2_stream_state = GRPC_CALL_STREAM_FAILED;
+  return -1;
+}
+
+static int
+grpc_run_client_unary_interceptors (SocketGRPC_Call_T call,
+                                    const uint8_t *request_payload,
+                                    size_t request_payload_len)
+{
+  SocketGRPC_ClientUnaryInterceptorEntry *entry;
+
+  if (call == NULL)
+    return -1;
+
+  entry = call->unary_interceptors;
+  while (entry != NULL)
+    {
+      SocketGRPC_Status status
+          = { SOCKET_GRPC_STATUS_OK,
+              SocketGRPC_status_default_message (SOCKET_GRPC_STATUS_OK) };
+      int action = entry->interceptor (
+          call, request_payload, request_payload_len, &status, entry->userdata);
+
+      if (action == SOCKET_GRPC_INTERCEPT_CONTINUE)
+        {
+          entry = entry->next;
+          continue;
+        }
+      if (action != SOCKET_GRPC_INTERCEPT_STOP)
+        {
+          status.code = SOCKET_GRPC_STATUS_INTERNAL;
+          status.message = "Interceptor returned invalid action";
+        }
+      return grpc_apply_interceptor_stop (call, status, 0);
+    }
+
+  return 0;
 }
 
 static int
@@ -1704,6 +1793,56 @@ grpc_stream_fail (SocketGRPC_Call_T call,
   return -1;
 }
 
+static int
+grpc_run_client_stream_interceptors (SocketGRPC_Call_T call,
+                                     SocketGRPC_StreamInterceptEvent event,
+                                     const uint8_t *payload,
+                                     size_t payload_len)
+{
+  SocketGRPC_ClientStreamInterceptorEntry *entry;
+
+  if (call == NULL)
+    return -1;
+
+  entry = call->stream_interceptors;
+  while (entry != NULL)
+    {
+      SocketGRPC_Status status
+          = { SOCKET_GRPC_STATUS_OK,
+              SocketGRPC_status_default_message (SOCKET_GRPC_STATUS_OK) };
+      int action = entry->interceptor (
+          call, event, payload, payload_len, &status, entry->userdata);
+
+      if (action == SOCKET_GRPC_INTERCEPT_CONTINUE)
+        {
+          entry = entry->next;
+          continue;
+        }
+
+      if (action != SOCKET_GRPC_INTERCEPT_STOP)
+        {
+          status.code = SOCKET_GRPC_STATUS_INTERNAL;
+          status.message = "Interceptor returned invalid action";
+        }
+
+      if (call->h2_stream_ctx != NULL)
+        {
+          SocketGRPC_StatusCode code = status.code;
+          const char *message = status.message;
+          if (!grpc_status_code_valid (code) || code == SOCKET_GRPC_STATUS_OK)
+            {
+              code = SOCKET_GRPC_STATUS_INTERNAL;
+              message = "Interceptor returned invalid status";
+            }
+          return grpc_stream_fail (call, code, message, 1);
+        }
+
+      return grpc_apply_interceptor_stop (call, status, 1);
+    }
+
+  return 0;
+}
+
 static void
 grpc_stream_finalize_status (SocketGRPC_Call_T call, int http_status_code)
 {
@@ -2059,6 +2198,14 @@ SocketGRPC_Call_send_message (SocketGRPC_Call_T call,
       grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
       return -1;
     }
+  if (grpc_run_client_stream_interceptors (call,
+                                           SOCKET_GRPC_STREAM_INTERCEPT_SEND,
+                                           request_payload,
+                                           request_payload_len)
+      != 0)
+    {
+      return -1;
+    }
 
   ctx = grpc_stream_open_if_needed (call);
   if (ctx == NULL)
@@ -2269,7 +2416,20 @@ SocketGRPC_Call_recv_message (SocketGRPC_Call_T call,
               call, parse_error_status, parse_error_message, 1);
         }
       if (has_message)
-        return 0;
+        {
+          if (grpc_run_client_stream_interceptors (
+                  call,
+                  SOCKET_GRPC_STREAM_INTERCEPT_RECV,
+                  *response_payload,
+                  *response_payload_len)
+              != 0)
+            {
+              *response_payload = NULL;
+              *response_payload_len = 0;
+              return -1;
+            }
+          return 0;
+        }
 
       if (ctx->remote_end_stream)
         {
@@ -2949,6 +3109,15 @@ SocketGRPC_Call_unary_h2 (SocketGRPC_Call_T call,
   if (call == NULL || request_payload == NULL || arena == NULL
       || response_payload == NULL || response_payload_len == NULL)
     return -1;
+
+  *response_payload = NULL;
+  *response_payload_len = 0;
+  if (grpc_run_client_unary_interceptors (
+          call, request_payload, request_payload_len)
+      != 0)
+    {
+      return (int)SocketGRPC_Call_status (call).code;
+    }
 
   policy = call->config.retry_policy;
   if (SocketGRPC_RetryPolicy_validate (&policy) != 0)

@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+
+#define GRPC_MAX_INTERCEPTORS 64U
 
 const Except_T SocketGRPC_Failed
     = { &SocketGRPC_Failed, "gRPC operation failed" };
@@ -27,24 +30,23 @@ const Except_T SocketGRPC_InvalidArgument
 const Except_T SocketGRPC_OutOfMemory
     = { &SocketGRPC_OutOfMemory, "gRPC out of memory" };
 
-static const char *grpc_status_code_names[]
-    = { "OK",
-        "CANCELLED",
-        "UNKNOWN",
-        "INVALID_ARGUMENT",
-        "DEADLINE_EXCEEDED",
-        "NOT_FOUND",
-        "ALREADY_EXISTS",
-        "PERMISSION_DENIED",
-        "RESOURCE_EXHAUSTED",
-        "FAILED_PRECONDITION",
-        "ABORTED",
-        "OUT_OF_RANGE",
-        "UNIMPLEMENTED",
-        "INTERNAL",
-        "UNAVAILABLE",
-        "DATA_LOSS",
-        "UNAUTHENTICATED" };
+static const char *grpc_status_code_names[] = { "OK",
+                                                "CANCELLED",
+                                                "UNKNOWN",
+                                                "INVALID_ARGUMENT",
+                                                "DEADLINE_EXCEEDED",
+                                                "NOT_FOUND",
+                                                "ALREADY_EXISTS",
+                                                "PERMISSION_DENIED",
+                                                "RESOURCE_EXHAUSTED",
+                                                "FAILED_PRECONDITION",
+                                                "ABORTED",
+                                                "OUT_OF_RANGE",
+                                                "UNIMPLEMENTED",
+                                                "INTERNAL",
+                                                "UNAVAILABLE",
+                                                "DATA_LOSS",
+                                                "UNAUTHENTICATED" };
 
 static const char *grpc_status_default_messages[]
     = { "Success",
@@ -76,6 +78,20 @@ _Static_assert (sizeof (grpc_status_default_messages)
                 "grpc_status_default_messages must map all canonical gRPC "
                 "codes");
 
+struct SocketGRPC_ClientUnaryInterceptorEntry
+{
+  SocketGRPC_ClientUnaryInterceptor interceptor;
+  void *userdata;
+  SocketGRPC_ClientUnaryInterceptorEntry *next;
+};
+
+struct SocketGRPC_ClientStreamInterceptorEntry
+{
+  SocketGRPC_ClientStreamInterceptor interceptor;
+  void *userdata;
+  SocketGRPC_ClientStreamInterceptorEntry *next;
+};
+
 static int
 grpc_status_is_valid (SocketGRPC_StatusCode code)
 {
@@ -104,6 +120,39 @@ SocketGRPC_status_set (SocketGRPC_Status *status,
     status->message = message;
   else
     status->message = SocketGRPC_status_default_message (code);
+}
+
+static void
+grpc_interceptor_status_set (SocketGRPC_Status *status,
+                             SocketGRPC_StatusCode code,
+                             const char *message)
+{
+  if (status == NULL)
+    return;
+  SocketGRPC_status_set (status, code, message);
+}
+
+static int
+grpc_metadata_key_reserved (const char *key)
+{
+  if (key == NULL || key[0] == '\0' || key[0] == ':')
+    return 1;
+  if (strncasecmp (key, "grpc-", 5) == 0)
+    return 1;
+  if (strcasecmp (key, "content-type") == 0 || strcasecmp (key, "te") == 0
+      || strcasecmp (key, "user-agent") == 0)
+    return 1;
+  return 0;
+}
+
+static int
+grpc_metadata_key_is_binary (const char *key)
+{
+  size_t len;
+  if (key == NULL)
+    return 0;
+  len = strlen (key);
+  return len >= 4 && strcasecmp (key + len - 4, "-bin") == 0;
 }
 
 SocketGRPC_StatusCode
@@ -228,8 +277,7 @@ SocketGRPC_RetryPolicy_validate (const SocketGRPC_RetryPolicy *policy)
   if (policy->max_backoff_ms > 0
       && policy->initial_backoff_ms > policy->max_backoff_ms)
     return -1;
-  if (!isfinite (policy->backoff_multiplier)
-      || policy->backoff_multiplier < 1.0
+  if (!isfinite (policy->backoff_multiplier) || policy->backoff_multiplier < 1.0
       || policy->backoff_multiplier > 10.0)
     return -1;
   if (policy->jitter_percent < 0 || policy->jitter_percent > 100)
@@ -375,7 +423,8 @@ SocketGRPC_RetryPolicy_parse_service_config (const char *spec,
         }
       else if (strcmp (key, "multiplier") == 0)
         {
-          if (grpc_parse_double_strict (value, &policy->backoff_multiplier) != 0)
+          if (grpc_parse_double_strict (value, &policy->backoff_multiplier)
+              != 0)
             {
               free (copy);
               return -1;
@@ -488,8 +537,7 @@ SocketGRPC_ChannelConfig_defaults (SocketGRPC_ChannelConfig *config)
       = SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSED_MESSAGE_BYTES;
   config->max_cumulative_inflight_bytes
       = SOCKET_GRPC_DEFAULT_MAX_CUMULATIVE_INFLIGHT_BYTES;
-  config->max_decompression_ratio
-      = SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSION_RATIO;
+  config->max_decompression_ratio = SOCKET_GRPC_DEFAULT_MAX_DECOMPRESSION_RATIO;
 }
 
 void
@@ -507,7 +555,8 @@ static void
 grpc_sanitize_client_config (SocketGRPC_ClientConfig *config)
 {
   if (config->max_concurrent_channels == 0)
-    config->max_concurrent_channels = SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CHANNELS;
+    config->max_concurrent_channels
+        = SOCKET_GRPC_DEFAULT_MAX_CONCURRENT_CHANNELS;
   if (config->max_outstanding_calls == 0)
     config->max_outstanding_calls = SOCKET_GRPC_DEFAULT_MAX_OUTSTANDING_CALLS;
   config->enable_retry = config->enable_retry ? 1 : 0;
@@ -634,6 +683,7 @@ SocketGRPC_Server_free (SocketGRPC_Server_T *server)
   if (server == NULL || *server == NULL)
     return;
 
+  SocketGRPC_server_interceptors_clear (*server);
   SocketGRPC_server_methods_clear (*server);
   memset (*server, 0, sizeof (**server));
   free (*server);
@@ -709,6 +759,40 @@ SocketGRPC_Channel_free (SocketGRPC_Channel_T *channel)
   *channel = NULL;
 }
 
+static void
+grpc_call_interceptors_clear (SocketGRPC_Call_T call)
+{
+  SocketGRPC_ClientUnaryInterceptorEntry *uit;
+  SocketGRPC_ClientStreamInterceptorEntry *sit;
+  SocketGRPC_ClientUnaryInterceptorEntry *unext;
+  SocketGRPC_ClientStreamInterceptorEntry *snext;
+
+  if (call == NULL)
+    return;
+
+  uit = call->unary_interceptors;
+  while (uit != NULL)
+    {
+      unext = uit->next;
+      free (uit);
+      uit = unext;
+    }
+  call->unary_interceptors = NULL;
+  call->unary_interceptors_tail = NULL;
+  call->unary_interceptor_count = 0;
+
+  sit = call->stream_interceptors;
+  while (sit != NULL)
+    {
+      snext = sit->next;
+      free (sit);
+      sit = snext;
+    }
+  call->stream_interceptors = NULL;
+  call->stream_interceptors_tail = NULL;
+  call->stream_interceptor_count = 0;
+}
+
 SocketGRPC_Call_T
 SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
                      const char *full_method,
@@ -757,6 +841,75 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
   return call;
 }
 
+int
+SocketGRPC_Call_add_unary_interceptor (
+    SocketGRPC_Call_T call,
+    SocketGRPC_ClientUnaryInterceptor interceptor,
+    void *userdata)
+{
+  SocketGRPC_ClientUnaryInterceptorEntry *entry;
+
+  if (call == NULL || interceptor == NULL)
+    return -1;
+  if (call->unary_interceptor_count >= GRPC_MAX_INTERCEPTORS)
+    return -1;
+
+  entry = (SocketGRPC_ClientUnaryInterceptorEntry *)calloc (1, sizeof (*entry));
+  if (entry == NULL)
+    return -1;
+
+  entry->interceptor = interceptor;
+  entry->userdata = userdata;
+
+  if (call->unary_interceptors_tail == NULL)
+    {
+      call->unary_interceptors = entry;
+      call->unary_interceptors_tail = entry;
+    }
+  else
+    {
+      call->unary_interceptors_tail->next = entry;
+      call->unary_interceptors_tail = entry;
+    }
+  call->unary_interceptor_count++;
+  return 0;
+}
+
+int
+SocketGRPC_Call_add_stream_interceptor (
+    SocketGRPC_Call_T call,
+    SocketGRPC_ClientStreamInterceptor interceptor,
+    void *userdata)
+{
+  SocketGRPC_ClientStreamInterceptorEntry *entry;
+
+  if (call == NULL || interceptor == NULL)
+    return -1;
+  if (call->stream_interceptor_count >= GRPC_MAX_INTERCEPTORS)
+    return -1;
+
+  entry
+      = (SocketGRPC_ClientStreamInterceptorEntry *)calloc (1, sizeof (*entry));
+  if (entry == NULL)
+    return -1;
+
+  entry->interceptor = interceptor;
+  entry->userdata = userdata;
+
+  if (call->stream_interceptors_tail == NULL)
+    {
+      call->stream_interceptors = entry;
+      call->stream_interceptors_tail = entry;
+    }
+  else
+    {
+      call->stream_interceptors_tail->next = entry;
+      call->stream_interceptors_tail = entry;
+    }
+  call->stream_interceptor_count++;
+  return 0;
+}
+
 void
 SocketGRPC_Call_free (SocketGRPC_Call_T *call)
 {
@@ -764,6 +917,7 @@ SocketGRPC_Call_free (SocketGRPC_Call_T *call)
     return;
 
   SocketGRPC_Call_h2_stream_abort (*call);
+  grpc_call_interceptors_clear (*call);
   SocketGRPC_Metadata_free (&(*call)->request_metadata);
   SocketGRPC_Trailers_free (&(*call)->response_trailers);
   free ((*call)->full_method);
@@ -771,4 +925,134 @@ SocketGRPC_Call_free (SocketGRPC_Call_T *call)
   memset (*call, 0, sizeof (**call));
   free (*call);
   *call = NULL;
+}
+
+int
+SocketGRPC_Interceptor_metadata_injector (SocketGRPC_Call_T call,
+                                          const uint8_t *request_payload,
+                                          size_t request_payload_len,
+                                          SocketGRPC_Status *status_io,
+                                          void *userdata)
+{
+  const SocketGRPC_MetadataInjectorConfig *cfg
+      = (const SocketGRPC_MetadataInjectorConfig *)userdata;
+  int rc;
+
+  (void)request_payload;
+  (void)request_payload_len;
+
+  if (call == NULL || cfg == NULL || cfg->key == NULL || cfg->key[0] == '\0')
+    {
+      grpc_interceptor_status_set (status_io,
+                                   SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
+                                   "Invalid metadata injector config");
+      return SOCKET_GRPC_INTERCEPT_STOP;
+    }
+  if (grpc_metadata_key_reserved (cfg->key))
+    {
+      grpc_interceptor_status_set (
+          status_io,
+          SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
+          "Interceptor cannot modify reserved gRPC headers");
+      return SOCKET_GRPC_INTERCEPT_STOP;
+    }
+
+  if (cfg->is_binary)
+    {
+      if (!grpc_metadata_key_is_binary (cfg->key))
+        {
+          grpc_interceptor_status_set (
+              status_io,
+              SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
+              "Binary metadata key must end with -bin");
+          return SOCKET_GRPC_INTERCEPT_STOP;
+        }
+      if (cfg->binary_value == NULL && cfg->binary_value_len != 0)
+        {
+          grpc_interceptor_status_set (status_io,
+                                       SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
+                                       "Invalid binary metadata value");
+          return SOCKET_GRPC_INTERCEPT_STOP;
+        }
+      rc = SocketGRPC_Call_metadata_add_binary (
+          call, cfg->key, cfg->binary_value, cfg->binary_value_len);
+    }
+  else
+    {
+      if (cfg->ascii_value == NULL)
+        {
+          grpc_interceptor_status_set (status_io,
+                                       SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
+                                       "Invalid ASCII metadata value");
+          return SOCKET_GRPC_INTERCEPT_STOP;
+        }
+      rc = SocketGRPC_Call_metadata_add_ascii (
+          call, cfg->key, cfg->ascii_value);
+    }
+
+  if (rc != 0)
+    {
+      grpc_interceptor_status_set (status_io,
+                                   SOCKET_GRPC_STATUS_INTERNAL,
+                                   "Failed to inject interceptor metadata");
+      return SOCKET_GRPC_INTERCEPT_STOP;
+    }
+
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
+}
+
+int
+SocketGRPC_Interceptor_client_logging (SocketGRPC_Call_T call,
+                                       const uint8_t *request_payload,
+                                       size_t request_payload_len,
+                                       SocketGRPC_Status *status_io,
+                                       void *userdata)
+{
+  const SocketGRPC_LogHookConfig *cfg
+      = (const SocketGRPC_LogHookConfig *)userdata;
+  SocketGRPC_LogEvent event;
+
+  (void)request_payload;
+  if (cfg == NULL || cfg->hook == NULL)
+    return SOCKET_GRPC_INTERCEPT_CONTINUE;
+
+  event.type = SOCKET_GRPC_LOG_EVENT_CLIENT_UNARY;
+  event.full_method = call != NULL ? call->full_method : NULL;
+  event.status_code
+      = status_io != NULL ? status_io->code : SOCKET_GRPC_STATUS_OK;
+  event.status_message = status_io != NULL ? status_io->message : NULL;
+  event.payload_len = request_payload_len;
+  event.attempt = call != NULL ? call->retry_attempt + 1U : 0U;
+  cfg->hook (&event, cfg->hook_userdata);
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
+}
+
+int
+SocketGRPC_Interceptor_client_stream_logging (
+    SocketGRPC_Call_T call,
+    SocketGRPC_StreamInterceptEvent event_kind,
+    const uint8_t *payload,
+    size_t payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata)
+{
+  const SocketGRPC_LogHookConfig *cfg
+      = (const SocketGRPC_LogHookConfig *)userdata;
+  SocketGRPC_LogEvent event;
+
+  (void)payload;
+  if (cfg == NULL || cfg->hook == NULL)
+    return SOCKET_GRPC_INTERCEPT_CONTINUE;
+
+  event.type = event_kind == SOCKET_GRPC_STREAM_INTERCEPT_RECV
+                   ? SOCKET_GRPC_LOG_EVENT_STREAM_RECV
+                   : SOCKET_GRPC_LOG_EVENT_STREAM_SEND;
+  event.full_method = call != NULL ? call->full_method : NULL;
+  event.status_code
+      = status_io != NULL ? status_io->code : SOCKET_GRPC_STATUS_OK;
+  event.status_message = status_io != NULL ? status_io->message : NULL;
+  event.payload_len = payload_len;
+  event.attempt = call != NULL ? call->retry_attempt + 1U : 0U;
+  cfg->hook (&event, cfg->hook_userdata);
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
 }

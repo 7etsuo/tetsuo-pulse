@@ -24,6 +24,7 @@
 #define GRPC_TRAILER_STATUS "grpc-status"
 #define GRPC_TRAILER_MESSAGE "grpc-message"
 #define GRPC_TRAILER_STATUS_DETAILS "grpc-status-details-bin"
+#define GRPC_MAX_INTERCEPTORS 64U
 
 typedef enum
 {
@@ -39,6 +40,13 @@ struct SocketGRPC_ServerMethod
   void *userdata;
   SocketGRPC_ServerHandlerKind kind;
   SocketGRPC_ServerMethod *next;
+};
+
+struct SocketGRPC_ServerUnaryInterceptorEntry
+{
+  SocketGRPC_ServerUnaryInterceptor interceptor;
+  void *userdata;
+  SocketGRPC_ServerUnaryInterceptorEntry *next;
 };
 
 struct SocketGRPC_ServerContext
@@ -219,14 +227,36 @@ SocketGRPC_server_methods_clear (SocketGRPC_Server_T server)
   server->inflight_calls = 0;
 }
 
+void
+SocketGRPC_server_interceptors_clear (SocketGRPC_Server_T server)
+{
+  SocketGRPC_ServerUnaryInterceptorEntry *it;
+  SocketGRPC_ServerUnaryInterceptorEntry *next;
+
+  if (server == NULL)
+    return;
+
+  it = server->unary_interceptors;
+  while (it != NULL)
+    {
+      next = it->next;
+      free (it);
+      it = next;
+    }
+
+  server->unary_interceptors = NULL;
+  server->unary_interceptors_tail = NULL;
+  server->unary_interceptor_count = 0;
+}
+
 static int
-grpc_server_register_unary_internal (SocketGRPC_Server_T server,
-                                     const char *full_method,
-                                     SocketGRPC_ServerUnaryHandler handler,
-                                     SocketGRPC_ServerUnaryHandlerExcept
-                                         handler_except,
-                                     SocketGRPC_ServerHandlerKind kind,
-                                     void *userdata)
+grpc_server_register_unary_internal (
+    SocketGRPC_Server_T server,
+    const char *full_method,
+    SocketGRPC_ServerUnaryHandler handler,
+    SocketGRPC_ServerUnaryHandlerExcept handler_except,
+    SocketGRPC_ServerHandlerKind kind,
+    void *userdata)
 {
   SocketGRPC_ServerMethod *method;
 
@@ -290,6 +320,39 @@ SocketGRPC_Server_register_unary_except (
                                               handler,
                                               GRPC_SERVER_HANDLER_EXCEPTION,
                                               userdata);
+}
+
+int
+SocketGRPC_Server_add_unary_interceptor (
+    SocketGRPC_Server_T server,
+    SocketGRPC_ServerUnaryInterceptor interceptor,
+    void *userdata)
+{
+  SocketGRPC_ServerUnaryInterceptorEntry *entry;
+
+  if (server == NULL || interceptor == NULL)
+    return -1;
+  if (server->unary_interceptor_count >= GRPC_MAX_INTERCEPTORS)
+    return -1;
+
+  entry = (SocketGRPC_ServerUnaryInterceptorEntry *)calloc (1, sizeof (*entry));
+  if (entry == NULL)
+    return -1;
+
+  entry->interceptor = interceptor;
+  entry->userdata = userdata;
+  if (server->unary_interceptors_tail == NULL)
+    {
+      server->unary_interceptors = entry;
+      server->unary_interceptors_tail = entry;
+    }
+  else
+    {
+      server->unary_interceptors_tail->next = entry;
+      server->unary_interceptors_tail = entry;
+    }
+  server->unary_interceptor_count++;
+  return 0;
 }
 
 void
@@ -400,21 +463,20 @@ SocketGRPC_ServerContext_set_status_details_bin (SocketGRPC_ServerContext_T ctx,
                                                  const uint8_t *details,
                                                  size_t details_len)
 {
-  if (ctx == NULL || ctx->trailers == NULL || (details == NULL && details_len != 0))
+  if (ctx == NULL || ctx->trailers == NULL
+      || (details == NULL && details_len != 0))
     return -1;
 
   return SocketGRPC_Trailers_set_status_details_bin (
              ctx->trailers, details, details_len)
-         == SOCKET_GRPC_WIRE_OK
+                 == SOCKET_GRPC_WIRE_OK
              ? 0
              : -1;
 }
 
 int
 SocketGRPC_ServerContext_add_trailing_metadata_ascii (
-    SocketGRPC_ServerContext_T ctx,
-    const char *key,
-    const char *value)
+    SocketGRPC_ServerContext_T ctx, const char *key, const char *value)
 {
   SocketGRPC_Metadata_T metadata;
 
@@ -426,7 +488,7 @@ SocketGRPC_ServerContext_add_trailing_metadata_ascii (
     return -1;
 
   return SocketGRPC_Metadata_add_ascii (metadata, key, value)
-         == SOCKET_GRPC_WIRE_OK
+                 == SOCKET_GRPC_WIRE_OK
              ? 0
              : -1;
 }
@@ -449,9 +511,126 @@ SocketGRPC_ServerContext_add_trailing_metadata_binary (
     return -1;
 
   return SocketGRPC_Metadata_add_binary (metadata, key, value, value_len)
-         == SOCKET_GRPC_WIRE_OK
+                 == SOCKET_GRPC_WIRE_OK
              ? 0
              : -1;
+}
+
+static void
+grpc_interceptor_status_set (SocketGRPC_Status *status,
+                             SocketGRPC_StatusCode code,
+                             const char *message)
+{
+  if (status == NULL)
+    return;
+  SocketGRPC_status_set (status, code, message);
+}
+
+static const SocketGRPC_MetadataEntry *
+grpc_context_find_ascii_metadata (SocketGRPC_ServerContext_T ctx,
+                                  const char *key)
+{
+  SocketGRPC_Metadata_T metadata;
+  size_t i;
+  size_t count;
+
+  if (ctx == NULL || key == NULL)
+    return NULL;
+  metadata = SocketGRPC_ServerContext_metadata (ctx);
+  if (metadata == NULL)
+    return NULL;
+
+  count = SocketGRPC_Metadata_count (metadata);
+  for (i = 0; i < count; i++)
+    {
+      const SocketGRPC_MetadataEntry *entry
+          = SocketGRPC_Metadata_at (metadata, i);
+      if (entry == NULL || entry->key == NULL || entry->value == NULL
+          || entry->is_binary)
+        {
+          continue;
+        }
+      if (strcasecmp (entry->key, key) == 0)
+        return entry;
+    }
+
+  return NULL;
+}
+
+int
+SocketGRPC_Interceptor_server_auth_token_validator (
+    SocketGRPC_ServerContext_T ctx,
+    const uint8_t *request_payload,
+    size_t request_payload_len,
+    SocketGRPC_Status *status_io,
+    void *userdata)
+{
+  const SocketGRPC_AuthTokenValidatorConfig *cfg
+      = (const SocketGRPC_AuthTokenValidatorConfig *)userdata;
+  const SocketGRPC_MetadataEntry *token_entry;
+  const char *metadata_key = "authorization";
+  int valid = 0;
+
+  (void)request_payload;
+  (void)request_payload_len;
+
+  if (ctx == NULL || cfg == NULL || cfg->validator == NULL)
+    {
+      grpc_interceptor_status_set (
+          status_io,
+          SOCKET_GRPC_STATUS_INTERNAL,
+          "Invalid auth token validator interceptor config");
+      return SOCKET_GRPC_INTERCEPT_STOP;
+    }
+  if (cfg->metadata_key != NULL && cfg->metadata_key[0] != '\0')
+    metadata_key = cfg->metadata_key;
+
+  token_entry = grpc_context_find_ascii_metadata (ctx, metadata_key);
+  if (token_entry == NULL)
+    {
+      grpc_interceptor_status_set (status_io,
+                                   SOCKET_GRPC_STATUS_UNAUTHENTICATED,
+                                   "Missing authorization token");
+      return SOCKET_GRPC_INTERCEPT_STOP;
+    }
+
+  valid = cfg->validator (
+      ctx, token_entry->value, token_entry->value_len, cfg->validator_userdata);
+  if (!valid)
+    {
+      grpc_interceptor_status_set (status_io,
+                                   SOCKET_GRPC_STATUS_UNAUTHENTICATED,
+                                   "Invalid authorization token");
+      return SOCKET_GRPC_INTERCEPT_STOP;
+    }
+
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
+}
+
+int
+SocketGRPC_Interceptor_server_logging (SocketGRPC_ServerContext_T ctx,
+                                       const uint8_t *request_payload,
+                                       size_t request_payload_len,
+                                       SocketGRPC_Status *status_io,
+                                       void *userdata)
+{
+  const SocketGRPC_LogHookConfig *cfg
+      = (const SocketGRPC_LogHookConfig *)userdata;
+  SocketGRPC_LogEvent event;
+
+  (void)request_payload;
+  if (cfg == NULL || cfg->hook == NULL)
+    return SOCKET_GRPC_INTERCEPT_CONTINUE;
+
+  event.type = SOCKET_GRPC_LOG_EVENT_SERVER_UNARY;
+  event.full_method = SocketGRPC_ServerContext_full_method (ctx);
+  event.status_code
+      = status_io != NULL ? status_io->code : SOCKET_GRPC_STATUS_OK;
+  event.status_message = status_io != NULL ? status_io->message : NULL;
+  event.payload_len = request_payload_len;
+  event.attempt = 0U;
+  cfg->hook (&event, cfg->hook_userdata);
+  return SOCKET_GRPC_INTERCEPT_CONTINUE;
 }
 
 static int
@@ -497,8 +676,7 @@ grpc_encode_base64_value (const uint8_t *value, size_t value_len)
   if (encoded == NULL)
     return NULL;
 
-  encoded_len
-      = SocketCrypto_base64_encode (value, value_len, encoded, cap + 1);
+  encoded_len = SocketCrypto_base64_encode (value, value_len, encoded, cap + 1);
   if (encoded_len < 0)
     {
       free (encoded);
@@ -577,7 +755,8 @@ grpc_metadata_ingest (SocketGRPC_Metadata_T metadata,
   if (grpc_header_reserved (lower_name))
     return 0;
 
-  if (SocketGRPC_Metadata_count (metadata) >= SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES)
+  if (SocketGRPC_Metadata_count (metadata)
+      >= SOCKET_GRPC_DEFAULT_MAX_METADATA_ENTRIES)
     return -1;
 
   if (name_len >= 4 && strcmp (lower_name + name_len - 4, "-bin") == 0)
@@ -692,11 +871,8 @@ grpc_context_init (SocketGRPC_ServerContext_T ctx,
   if (ctx->metadata == NULL || ctx->trailers == NULL)
     return -1;
 
-  if (grpc_split_method_path (full_method,
-                              &service,
-                              &service_len,
-                              &method,
-                              &method_len)
+  if (grpc_split_method_path (
+          full_method, &service, &service_len, &method, &method_len)
       != 0)
     return -1;
 
@@ -707,16 +883,15 @@ grpc_context_init (SocketGRPC_ServerContext_T ctx,
 
   SocketGRPC_status_set (&ctx->status, SOCKET_GRPC_STATUS_OK, NULL);
 
-  if (grpc_collect_metadata_headers (
-          ctx->metadata, SocketHTTPServer_Request_headers (req))
+  if (grpc_collect_metadata_headers (ctx->metadata,
+                                     SocketHTTPServer_Request_headers (req))
       != 0)
     return -1;
-  if (grpc_context_parse_deadline (
-          ctx, SocketHTTPServer_Request_headers (req))
+  if (grpc_context_parse_deadline (ctx, SocketHTTPServer_Request_headers (req))
       != 0)
     return -1;
-  if (grpc_collect_metadata_headers (
-          ctx->metadata, SocketHTTPServer_Request_trailers (req))
+  if (grpc_collect_metadata_headers (ctx->metadata,
+                                     SocketHTTPServer_Request_trailers (req))
       != 0)
     return -1;
 
@@ -766,13 +941,15 @@ grpc_emit_custom_trailing_metadata (SocketHTTPServer_Request_T req,
   count = SocketGRPC_Metadata_count (metadata);
   for (i = 0; i < count; i++)
     {
-      const SocketGRPC_MetadataEntry *entry = SocketGRPC_Metadata_at (metadata, i);
+      const SocketGRPC_MetadataEntry *entry
+          = SocketGRPC_Metadata_at (metadata, i);
       if (entry == NULL || entry->key == NULL || entry->value == NULL)
         continue;
 
       if (entry->is_binary)
         {
-          char *encoded = grpc_encode_base64_value (entry->value, entry->value_len);
+          char *encoded
+              = grpc_encode_base64_value (entry->value, entry->value_len);
           if (encoded == NULL)
             continue;
           (void)SocketHTTPServer_Request_trailer (req, entry->key, encoded);
@@ -800,7 +977,8 @@ grpc_emit_status_trailers (SocketHTTPServer_Request_T req,
 
   n = snprintf (status_buf, sizeof (status_buf), "%d", (int)status);
   if (n > 0 && (size_t)n < sizeof (status_buf))
-    (void)SocketHTTPServer_Request_trailer (req, GRPC_TRAILER_STATUS, status_buf);
+    (void)SocketHTTPServer_Request_trailer (
+        req, GRPC_TRAILER_STATUS, status_buf);
 
   if (message != NULL && message[0] != '\0')
     (void)SocketHTTPServer_Request_trailer (req, GRPC_TRAILER_MESSAGE, message);
@@ -808,8 +986,8 @@ grpc_emit_status_trailers (SocketHTTPServer_Request_T req,
   if (extra_trailers != NULL)
     {
       size_t details_len = 0;
-      const uint8_t *details
-          = SocketGRPC_Trailers_status_details_bin (extra_trailers, &details_len);
+      const uint8_t *details = SocketGRPC_Trailers_status_details_bin (
+          extra_trailers, &details_len);
       if (details != NULL && details_len > 0)
         {
           char *encoded = grpc_encode_base64_value (details, details_len);
@@ -843,7 +1021,8 @@ grpc_send_unary_response (SocketHTTPServer_Request_T req,
     return;
 
   SocketHTTPServer_Request_status (req, http_status);
-  SocketHTTPServer_Request_header (req, "content-type", GRPC_CONTENT_TYPE_PREFIX);
+  SocketHTTPServer_Request_header (
+      req, "content-type", GRPC_CONTENT_TYPE_PREFIX);
   SocketHTTPServer_Request_header (req, "grpc-encoding", "identity");
 
   if (grpc_status == SOCKET_GRPC_STATUS_OK)
@@ -853,7 +1032,8 @@ grpc_send_unary_response (SocketHTTPServer_Request_T req,
           grpc_status = SOCKET_GRPC_STATUS_INTERNAL;
           grpc_message = "Unary handler returned invalid response payload";
         }
-      else if (response_payload_len > SOCKET_GRPC_DEFAULT_MAX_OUTBOUND_MESSAGE_BYTES
+      else if (response_payload_len
+                   > SOCKET_GRPC_DEFAULT_MAX_OUTBOUND_MESSAGE_BYTES
                || response_payload_len > (size_t)UINT32_MAX)
         {
           grpc_status = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
@@ -862,7 +1042,8 @@ grpc_send_unary_response (SocketHTTPServer_Request_T req,
       else
         {
           arena = SocketHTTPServer_Request_arena (req);
-          framed_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + response_payload_len;
+          framed_cap
+              = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + response_payload_len;
           framed = Arena_alloc (arena, framed_cap, __FILE__, __LINE__);
           if (framed == NULL
               || SocketGRPC_Frame_encode (0,
@@ -883,8 +1064,7 @@ grpc_send_unary_response (SocketHTTPServer_Request_T req,
         }
     }
 
-  grpc_emit_status_trailers (
-      req, grpc_status, grpc_message, extra_trailers);
+  grpc_emit_status_trailers (req, grpc_status, grpc_message, extra_trailers);
   SocketHTTPServer_Request_finish (req);
 }
 
@@ -1004,6 +1184,74 @@ grpc_invoke_handler (SocketGRPC_ServerMethod *method,
   return (int)rc;
 }
 
+static int
+grpc_run_server_unary_interceptors (SocketGRPC_Server_T server,
+                                    SocketGRPC_ServerContext_T ctx,
+                                    const uint8_t *request_payload,
+                                    size_t request_payload_len,
+                                    SocketGRPC_StatusCode *status_out,
+                                    const char **message_out)
+{
+  SocketGRPC_ServerUnaryInterceptorEntry *entry;
+
+  if (status_out != NULL)
+    *status_out = SOCKET_GRPC_STATUS_OK;
+  if (message_out != NULL)
+    *message_out = NULL;
+
+  if (server == NULL || ctx == NULL)
+    return -1;
+
+  entry = server->unary_interceptors;
+  while (entry != NULL)
+    {
+      SocketGRPC_Status interceptor_status
+          = { SOCKET_GRPC_STATUS_OK,
+              SocketGRPC_status_default_message (SOCKET_GRPC_STATUS_OK) };
+      int action = entry->interceptor (ctx,
+                                       request_payload,
+                                       request_payload_len,
+                                       &interceptor_status,
+                                       entry->userdata);
+
+      if (action == SOCKET_GRPC_INTERCEPT_CONTINUE)
+        {
+          entry = entry->next;
+          continue;
+        }
+
+      if (action != SOCKET_GRPC_INTERCEPT_STOP)
+        {
+          interceptor_status.code = SOCKET_GRPC_STATUS_INTERNAL;
+          interceptor_status.message = "Interceptor returned invalid action";
+        }
+      else if (!grpc_status_code_valid ((int)interceptor_status.code)
+               || interceptor_status.code == SOCKET_GRPC_STATUS_OK)
+        {
+          interceptor_status.code = SOCKET_GRPC_STATUS_INTERNAL;
+          interceptor_status.message = "Interceptor returned invalid status";
+        }
+
+      if (SocketGRPC_ServerContext_set_status (
+              ctx, interceptor_status.code, interceptor_status.message)
+          != 0)
+        {
+          SocketGRPC_status_set (&ctx->status,
+                                 SOCKET_GRPC_STATUS_INTERNAL,
+                                 "Failed to set interceptor status");
+          ctx->status_explicit = 1;
+        }
+
+      if (status_out != NULL)
+        *status_out = ctx->status.code;
+      if (message_out != NULL)
+        *message_out = ctx->status.message;
+      return 1;
+    }
+
+  return 0;
+}
+
 static SocketGRPC_StatusCode
 grpc_resolve_final_status (SocketGRPC_ServerContext_T ctx,
                            int handler_rc,
@@ -1104,8 +1352,9 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
   content_type = SocketHTTP_Headers_get (headers, "content-type");
   if (!grpc_content_type_is_valid (content_type))
     {
-      grpc_send_plain_http_error (
-          req, HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE, "Invalid content-type for gRPC");
+      grpc_send_plain_http_error (req,
+                                  HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
+                                  "Invalid content-type for gRPC");
       return;
     }
 
@@ -1141,8 +1390,9 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
 
   if (compressed != 0)
     {
-      grpc_send_plain_http_error (
-          req, HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE, "Compressed gRPC requests unsupported");
+      grpc_send_plain_http_error (req,
+                                  HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
+                                  "Compressed gRPC requests unsupported");
       return;
     }
 
@@ -1172,6 +1422,24 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
 
   response_payload = NULL;
   response_payload_len = 0;
+
+  if (grpc_run_server_unary_interceptors (server,
+                                          &ctx,
+                                          request_payload,
+                                          request_payload_len,
+                                          &grpc_status,
+                                          &grpc_message)
+      != 0)
+    {
+      grpc_send_unary_response (req,
+                                HTTP_STATUS_OK,
+                                NULL,
+                                0,
+                                grpc_status,
+                                grpc_message,
+                                ctx.trailers);
+      return;
+    }
 
   server->inflight_calls++;
   handler_rc = grpc_invoke_handler (method,
