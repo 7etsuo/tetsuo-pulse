@@ -398,6 +398,8 @@ SocketGRPC_Call_new (SocketGRPC_Channel_T channel,
   call->channel = channel;
   call->request_metadata = SocketGRPC_Metadata_new (NULL);
   call->response_trailers = SocketGRPC_Trailers_new (NULL);
+  call->h2_stream_ctx = NULL;
+  call->h2_stream_state = GRPC_CALL_STREAM_IDLE;
   if (call->request_metadata == NULL || call->response_trailers == NULL)
     {
       SocketGRPC_Metadata_free (&call->request_metadata);
@@ -418,6 +420,7 @@ SocketGRPC_Call_free (SocketGRPC_Call_T *call)
   if (call == NULL || *call == NULL)
     return;
 
+  SocketGRPC_Call_h2_stream_abort (*call);
   SocketGRPC_Metadata_free (&(*call)->request_metadata);
   SocketGRPC_Trailers_free (&(*call)->response_trailers);
   free ((*call)->full_method);

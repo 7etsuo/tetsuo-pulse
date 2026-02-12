@@ -174,7 +174,17 @@ TEST (grpc_server_context_accessors_are_null_safe)
 TEST (grpc_invalid_inputs_fail_without_crash)
 {
   SocketGRPC_Client_T client = SocketGRPC_Client_new (NULL);
+  Arena_T arena = Arena_new ();
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int done = 0;
   ASSERT_NOT_NULL (client);
+  ASSERT_NOT_NULL (arena);
+
+  ASSERT_EQ (-1, SocketGRPC_Call_send_message (NULL, (const uint8_t *)"x", 1));
+  ASSERT_EQ (-1, SocketGRPC_Call_close_send (NULL));
+  ASSERT_EQ (
+      -1, SocketGRPC_Call_recv_message (NULL, arena, NULL, NULL, NULL));
 
   ASSERT_NULL (SocketGRPC_Channel_new (NULL, "dns:///x", NULL));
   ASSERT_NULL (SocketGRPC_Channel_new (client, NULL, NULL));
@@ -188,8 +198,25 @@ TEST (grpc_invalid_inputs_fail_without_crash)
   ASSERT_NULL (SocketGRPC_Call_new (channel, NULL, NULL));
   ASSERT_NULL (SocketGRPC_Call_new (channel, "", NULL));
 
+  {
+    SocketGRPC_Call_T call
+        = SocketGRPC_Call_new (channel, "/svc.Method/Stream", NULL);
+    ASSERT_NOT_NULL (call);
+    ASSERT_EQ (
+        -1,
+        SocketGRPC_Call_send_message (call, NULL, 1));
+    ASSERT_EQ (-1,
+               SocketGRPC_Call_recv_message (call,
+                                             arena,
+                                             &response_payload,
+                                             &response_payload_len,
+                                             &done));
+    SocketGRPC_Call_free (&call);
+  }
+
   SocketGRPC_Channel_free (&channel);
   SocketGRPC_Client_free (&client);
+  Arena_dispose (&arena);
 }
 
 int
