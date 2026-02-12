@@ -1317,6 +1317,42 @@ foreach(test_name ${TEST_SOURCES})
     set_tests_properties(${test_name} PROPERTIES TIMEOUT 60)
 endforeach()
 
+# gRPC examples (always built; CI runs --smoke tests)
+set(GRPC_EXAMPLE_SOURCES
+    examples/grpc/unary_hello_world.c
+    examples/grpc/bidi_stream_chat.c
+    examples/grpc/deadline_cancellation.c
+    examples/grpc/tls_mtls_h2.c
+)
+
+set(GRPC_EXAMPLE_TARGETS)
+set(GRPC_EXAMPLE_SMOKE_TESTS)
+
+foreach(example_src ${GRPC_EXAMPLE_SOURCES})
+    get_filename_component(example_name ${example_src} NAME_WE)
+    set(example_target "grpc_example_${example_name}")
+    set(example_test "${example_target}_smoke")
+
+    add_executable(${example_target}
+        ${example_src}
+        $<TARGET_OBJECTS:socket_objects>
+    )
+    if(SOCKET_HAS_TLS)
+        target_link_libraries(${example_target} pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS} ${WS_DEFLATE_LIBS})
+    else()
+        target_link_libraries(${example_target} pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS} ${WS_DEFLATE_LIBS})
+    endif()
+    target_include_directories(${example_target} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+    add_test(NAME ${example_test} COMMAND ${example_target} --smoke)
+    set_tests_properties(${example_test} PROPERTIES TIMEOUT 20)
+
+    list(APPEND GRPC_EXAMPLE_TARGETS ${example_target})
+    list(APPEND GRPC_EXAMPLE_SMOKE_TESTS ${example_test})
+endforeach()
+
+list(APPEND EXTRA_TEST_TARGETS ${GRPC_EXAMPLE_TARGETS})
+
 # Custom target to build all tests
 add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES} ${EXTRA_TEST_TARGETS})
 
@@ -1386,6 +1422,14 @@ target_link_libraries(benchmark_synprotect socket_static pthread)
 
 add_executable(benchmark_client src/test/benchmark_client.c)
 target_link_libraries(benchmark_client socket_static pthread)
+
+add_executable(benchmark_grpc_transport src/test/benchmark_grpc_transport.c)
+if(SOCKET_HAS_TLS)
+    target_link_libraries(benchmark_grpc_transport socket_static pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS} ${WS_DEFLATE_LIBS})
+else()
+    target_link_libraries(benchmark_grpc_transport socket_static pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS} ${WS_DEFLATE_LIBS})
+endif()
+target_include_directories(benchmark_grpc_transport PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(benchmark_raw src/test/benchmark_raw.c)

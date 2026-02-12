@@ -148,9 +148,14 @@ INPUT                  = include \
                          docs/mainpage.md \
                          docs/ASYNC_IO.md \
                          docs/HTTP.md \
+                         docs/grpc-overview.md \
+                         docs/grpc-client.md \
+                         docs/grpc-server.md \
+                         docs/grpc-http3.md \
                          docs/WEBSOCKET.md \
                          docs/PROXY.md \
                          docs/SECURITY.md \
+                         docs/GRPC-CODEGEN.md \
                          docs/MIGRATION.md \
                          examples
 INPUT_ENCODING         = UTF-8

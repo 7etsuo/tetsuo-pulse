@@ -1,0 +1,41 @@
+{
+  "profile": "full",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "environment": {
+    "hostname": "host",
+    "sysname": "Linux",
+    "release": "6.x",
+    "machine": "x86_64",
+    "cpu_count": 8,
+    "tls_enabled": 1
+  },
+  "config": {
+    "iterations": 200,
+    "warmup": 20
+  },
+  "summary": {
+    "total": 8,
+    "ok": 6,
+    "skipped": 1,
+    "unsupported": 1,
+    "error": 0
+  },
+  "results": [
+    {
+      "id": "h2_unary",
+      "transport": "http2",
+      "payload_bytes": 4096,
+      "request_compression": false,
+      "status": "ok",
+      "note": "",
+      "iterations": 200,
+      "warmup": 20,
+      "successes": 200,
+      "avg_latency_ms": 1.234,
+      "p50_latency_ms": 1.100,
+      "p95_latency_ms": 1.800,
+      "p99_latency_ms": 2.100,
+      "throughput_rps": 810.4
+    }
+  ]
+}
