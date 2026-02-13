@@ -1,0 +1,23 @@
+{
+  "throughput": {
+    "title": "Throughput (requests/sec)",
+    "data": [
+      { "label": "Blocking I/O", "value": 12000, "color": "#ef4444" },
+      { "label": "epoll async", "value": 85000, "color": "#3b82f6" },
+      { "label": "io_uring", "value": 120000, "color": "#10b981" }
+    ]
+  },
+  "backends": {
+    "title": "Platform Backends",
+    "data": [
+      { "label": "poll(2)", "value": 45000, "color": "#9ca3af" },
+      { "label": "epoll", "value": 85000, "color": "#3b82f6" },
+      { "label": "kqueue", "value": 82000, "color": "#8b5cf6" },
+      { "label": "io_uring", "value": 120000, "color": "#10b981" }
+    ]
+  },
+  "cpuUsage": {
+    "underLoad": 18,
+    "idle": 2
+  }
+}

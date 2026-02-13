@@ -1,0 +1,26 @@
+{
+  "linesOfCode": 518000,
+  "sourceFiles": 605,
+  "tests": 211,
+  "fuzzHarnesses": 165,
+  "rfcs": 26,
+  "modules": {
+    "quic": { "files": 36, "label": "QUIC Transport" },
+    "qpack": { "files": 14, "label": "QPACK Compression" },
+    "http2": { "files": 12, "label": "HTTP/2" },
+    "http3": { "files": 8, "label": "HTTP/3 Framing" },
+    "tls": { "files": 18, "label": "TLS / DTLS" },
+    "dns": { "files": 22, "label": "DNS / DNSSEC" },
+    "deflate": { "files": 10, "label": "Native DEFLATE" },
+    "websocket": { "files": 8, "label": "WebSocket" },
+    "grpc": { "files": 15, "label": "gRPC" },
+    "socket": { "files": 24, "label": "Core Socket" }
+  },
+  "protocols": [
+    "HTTP/1.1", "HTTP/2", "HTTP/3",
+    "QUIC v1", "TLS 1.3", "DTLS 1.2",
+    "WebSocket", "gRPC",
+    "DNS", "DoT", "DoH", "DNSSEC",
+    "SOCKS4", "SOCKS5", "HTTP CONNECT"
+  ]
+}
