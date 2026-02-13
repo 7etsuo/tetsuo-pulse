@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, interpolate, Easing } from "remotion";
+import { useCurrentFrame } from "remotion";
 import { Background } from "../components/Background";
 import { FadeIn } from "../components/FadeIn";
 import { LayerDiagram } from "../components/LayerDiagram";
@@ -37,10 +37,8 @@ const LAYERS = [
 export const ProtocolStack: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Highlight the UDP→QUIC→HTTP/3→gRPC path after layers are built
-  const highlightPath = frame > 200 ? [0, 1, 2, 3] : [];
-
-  const pathLabelOpacity = fadeIn(frame, 220, 30);
+  const highlightPath = frame > 70 ? [0, 1, 2, 3] : [];
+  const pathLabelOpacity = fadeIn(frame, 80, 15);
 
   return (
     <Background>
@@ -54,8 +52,7 @@ export const ProtocolStack: React.FC = () => {
           gap: 24,
         }}
       >
-        {/* Title */}
-        <FadeIn delay={5} duration={20}>
+        <FadeIn delay={3} duration={12}>
           <div
             style={{
               fontFamily: fontFamily.sans,
@@ -69,7 +66,7 @@ export const ProtocolStack: React.FC = () => {
           </div>
         </FadeIn>
 
-        <FadeIn delay={15}>
+        <FadeIn delay={8} duration={12}>
           <div
             style={{
               fontFamily: fontFamily.sans,
@@ -82,17 +79,15 @@ export const ProtocolStack: React.FC = () => {
           </div>
         </FadeIn>
 
-        {/* Layer diagram */}
         <LayerDiagram
           layers={LAYERS}
-          delay={30}
-          staggerDelay={15}
+          delay={15}
+          staggerDelay={10}
           highlightPath={highlightPath}
           width={800}
           height={380}
         />
 
-        {/* Highlight path label */}
         <div
           style={{
             opacity: pathLabelOpacity,

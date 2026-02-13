@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, spring, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, spring, useVideoConfig } from "remotion";
 import { Background } from "../components/Background";
 import { FadeIn } from "../components/FadeIn";
 import { Badge } from "../components/Badge";
@@ -28,12 +28,11 @@ export const Compression: React.FC = () => {
           alignItems: "center",
           justifyContent: "center",
           height: "100%",
-          gap: 48,
+          gap: 40,
           padding: "0 120px",
         }}
       >
-        {/* Title */}
-        <FadeIn delay={5}>
+        <FadeIn delay={3} duration={12}>
           <div
             style={{
               fontFamily: fontFamily.sans,
@@ -47,7 +46,7 @@ export const Compression: React.FC = () => {
           </div>
         </FadeIn>
 
-        <FadeIn delay={15}>
+        <FadeIn delay={10} duration={12}>
           <div
             style={{
               fontFamily: fontFamily.sans,
@@ -60,10 +59,9 @@ export const Compression: React.FC = () => {
           </div>
         </FadeIn>
 
-        {/* Pipeline animation */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0, marginTop: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 0, marginTop: 8 }}>
           {PIPELINE_STAGES.map((stage, i) => {
-            const d = stagger(i, 40, 18);
+            const d = stagger(i, 18, 12);
             const progress =
               frame < d
                 ? 0
@@ -72,8 +70,7 @@ export const Compression: React.FC = () => {
                     fps,
                     config: { damping: 80, stiffness: 180 },
                   });
-
-            const arrowOpacity = fadeIn(frame, d + 10, 15);
+            const arrowOpacity = fadeIn(frame, d + 6, 10);
 
             return (
               <React.Fragment key={i}>
@@ -87,7 +84,6 @@ export const Compression: React.FC = () => {
                     gap: 12,
                   }}
                 >
-                  {/* Stage box */}
                   <div
                     style={{
                       width: 160,
@@ -104,12 +100,7 @@ export const Compression: React.FC = () => {
                   >
                     <svg width={32} height={32} viewBox="0 0 32 32">
                       {stage.icon === "doc" && (
-                        <path
-                          d="M8 4h10l6 6v18H8V4z M18 4v6h6"
-                          stroke={stage.color}
-                          strokeWidth={2}
-                          fill="none"
-                        />
+                        <path d="M8 4h10l6 6v18H8V4z M18 4v6h6" stroke={stage.color} strokeWidth={2} fill="none" />
                       )}
                       {stage.icon === "compress" && (
                         <g stroke={stage.color} strokeWidth={2} fill="none">
@@ -133,33 +124,15 @@ export const Compression: React.FC = () => {
                         </g>
                       )}
                     </svg>
-                    <span
-                      style={{
-                        fontFamily: fontFamily.mono,
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: stage.color,
-                      }}
-                    >
+                    <span style={{ fontFamily: fontFamily.mono, fontSize: 16, fontWeight: 600, color: stage.color }}>
                       {stage.label}
                     </span>
                   </div>
                 </div>
 
-                {/* Arrow between stages */}
                 {i < PIPELINE_STAGES.length - 1 && (
-                  <svg
-                    width={60}
-                    height={24}
-                    style={{ opacity: arrowOpacity, marginTop: -24 }}
-                  >
-                    <path
-                      d="M8 12h36M36 6l8 6-8 6"
-                      stroke={colors.border}
-                      strokeWidth={2}
-                      fill="none"
-                      strokeLinecap="round"
-                    />
+                  <svg width={60} height={24} style={{ opacity: arrowOpacity, marginTop: -24 }}>
+                    <path d="M8 12h36M36 6l8 6-8 6" stroke={colors.border} strokeWidth={2} fill="none" strokeLinecap="round" />
                   </svg>
                 )}
               </React.Fragment>
@@ -167,38 +140,23 @@ export const Compression: React.FC = () => {
           })}
         </div>
 
-        {/* Feature list */}
-        <FadeIn delay={140}>
+        <FadeIn delay={70}>
           <div style={{ display: "flex", gap: 60 }}>
-            <FeatureList
-              delay={150}
-              fontSize={22}
-              items={[
-                { text: "Streaming inflate / deflate", available: true },
-                { text: "Compression levels 0-9", available: true },
-                { text: "gzip header parsing (RFC 1952)", available: true },
-              ]}
-            />
-            <FeatureList
-              delay={170}
-              fontSize={22}
-              items={[
-                { text: "WebSocket permessage-deflate", available: true },
-                { text: "HTTP Content-Encoding", available: true },
-                { text: "Decompression bomb protection", available: true },
-              ]}
-            />
+            <FeatureList delay={75} fontSize={22} items={[
+              { text: "Streaming inflate / deflate", available: true },
+              { text: "Compression levels 0-9", available: true },
+              { text: "gzip header parsing (RFC 1952)", available: true },
+            ]} />
+            <FeatureList delay={85} fontSize={22} items={[
+              { text: "WebSocket permessage-deflate", available: true },
+              { text: "HTTP Content-Encoding", available: true },
+              { text: "Decompression bomb protection", available: true },
+            ]} />
           </div>
         </FadeIn>
 
-        {/* No deps badge */}
-        <FadeIn delay={220} style={{ marginTop: 8 }}>
-          <Badge
-            label="No zlib, no brotli — pure C implementation"
-            color={colors.success}
-            delay={220}
-            fontSize={20}
-          />
+        <FadeIn delay={115} style={{ marginTop: 4 }}>
+          <Badge label="No zlib, no brotli — pure C implementation" color={colors.success} delay={115} fontSize={20} />
         </FadeIn>
       </div>
     </Background>

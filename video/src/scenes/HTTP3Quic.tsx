@@ -41,12 +41,11 @@ export const HTTP3Quic: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           padding: "60px 100px",
-          gap: 40,
+          gap: 32,
           height: "100%",
         }}
       >
-        {/* Title */}
-        <FadeIn delay={5}>
+        <FadeIn delay={3} duration={12}>
           <div
             style={{
               fontFamily: fontFamily.sans,
@@ -60,11 +59,10 @@ export const HTTP3Quic: React.FC = () => {
         </FadeIn>
 
         <div style={{ display: "flex", gap: 60, flex: 1 }}>
-          {/* Left: features + state machine */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 32 }}>
-            <FadeIn delay={20}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24 }}>
+            <FadeIn delay={10}>
               <FeatureList
-                delay={25}
+                delay={12}
                 fontSize={24}
                 items={[
                   { text: "0-RTT connection resumption", available: true },
@@ -76,22 +74,21 @@ export const HTTP3Quic: React.FC = () => {
               />
             </FadeIn>
 
-            {/* Connection state machine */}
-            <FadeIn delay={100}>
+            <FadeIn delay={60}>
               <div
                 style={{
                   fontFamily: fontFamily.sans,
                   fontSize: 18,
                   color: colors.muted,
-                  marginBottom: 12,
+                  marginBottom: 8,
                 }}
               >
                 Connection State Machine
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {STATE_MACHINE.map((state, i) => {
-                  const d = stagger(i, 110, 10);
-                  const opacity = fadeIn(frame, d, 15);
+                  const d = stagger(i, 65, 6);
+                  const opacity = fadeIn(frame, d, 10);
                   return (
                     <React.Fragment key={i}>
                       <div
@@ -126,14 +123,13 @@ export const HTTP3Quic: React.FC = () => {
             </FadeIn>
           </div>
 
-          {/* Right: code sample */}
           <div style={{ flex: 1 }}>
-            <FadeIn delay={60}>
+            <FadeIn delay={25}>
               <CodeBlock
                 code={QUIC_CODE}
                 animationType="typewriter"
-                delay={70}
-                charsPerFrame={2}
+                delay={30}
+                charsPerFrame={4}
                 fontSize={16}
                 width={780}
               />
@@ -141,12 +137,11 @@ export const HTTP3Quic: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom badge */}
-        <FadeIn delay={250} style={{ alignSelf: "center" }}>
+        <FadeIn delay={130} style={{ alignSelf: "center" }}>
           <Badge
             label="First C library with gRPC over HTTP/3"
             color={colors.success}
-            delay={250}
+            delay={130}
             fontSize={22}
           />
         </FadeIn>

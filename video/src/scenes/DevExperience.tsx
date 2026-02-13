@@ -39,8 +39,7 @@ Socket_simple_close(sock);`;
 
 export const DevExperience: React.FC = () => {
   const frame = useCurrentFrame();
-
-  const arenaPhase = frame > 250;
+  const arenaPhase = frame > 150;
 
   return (
     <Background>
@@ -49,133 +48,69 @@ export const DevExperience: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           padding: "60px 80px",
-          gap: 36,
+          gap: 28,
           height: "100%",
         }}
       >
-        {/* Title */}
-        <FadeIn delay={5}>
-          <div
-            style={{
-              fontFamily: fontFamily.sans,
-              fontSize: 44,
-              fontWeight: 700,
-              color: colors.text,
-            }}
-          >
+        <FadeIn delay={3} duration={12}>
+          <div style={{ fontFamily: fontFamily.sans, fontSize: 44, fontWeight: 700, color: colors.text }}>
             Developer Experience
           </div>
         </FadeIn>
 
-        <FadeIn delay={15}>
-          <div
-            style={{
-              fontFamily: fontFamily.sans,
-              fontSize: 22,
-              color: colors.muted,
-            }}
-          >
+        <FadeIn delay={10} duration={12}>
+          <div style={{ fontFamily: fontFamily.sans, fontSize: 22, color: colors.muted }}>
             Two API styles — choose what fits your project
           </div>
         </FadeIn>
 
-        {/* Side-by-side code blocks */}
         <div style={{ display: "flex", gap: 32, flex: 1 }}>
-          {/* Exception API */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-            <FadeIn delay={30}>
-              <Badge label="Exception API" color={colors.primary} delay={30} fontSize={18} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+            <FadeIn delay={15}>
+              <Badge label="Exception API" color={colors.primary} delay={15} fontSize={18} />
             </FadeIn>
-            <FadeIn delay={40}>
-              <CodeBlock
-                code={EXCEPTION_CODE}
-                animationType="typewriter"
-                delay={45}
-                charsPerFrame={2}
-                fontSize={15}
-                width={840}
-              />
+            <FadeIn delay={20}>
+              <CodeBlock code={EXCEPTION_CODE} animationType="typewriter" delay={22}
+                charsPerFrame={4} fontSize={15} width={840} />
             </FadeIn>
           </div>
 
-          {/* Simple API */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-            <FadeIn delay={130}>
-              <Badge label="Simple API" color={colors.success} delay={130} fontSize={18} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+            <FadeIn delay={80}>
+              <Badge label="Simple API" color={colors.success} delay={80} fontSize={18} />
             </FadeIn>
-            <FadeIn delay={140}>
-              <CodeBlock
-                code={SIMPLE_CODE}
-                animationType="typewriter"
-                delay={145}
-                charsPerFrame={2}
-                fontSize={15}
-                width={840}
-              />
+            <FadeIn delay={85}>
+              <CodeBlock code={SIMPLE_CODE} animationType="typewriter" delay={87}
+                charsPerFrame={4} fontSize={15} width={840} />
             </FadeIn>
           </div>
         </div>
 
-        {/* Arena lifecycle */}
         {arenaPhase && (
-          <FadeIn delay={255}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 32,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: fontFamily.sans,
-                  fontSize: 20,
-                  color: colors.muted,
-                }}
-              >
-                Arena Lifecycle:
-              </div>
+          <FadeIn delay={155}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 32 }}>
+              <div style={{ fontFamily: fontFamily.sans, fontSize: 20, color: colors.muted }}>Arena Lifecycle:</div>
               {["Arena_new()", "alloc / use", "Arena_dispose()"].map((step, i) => {
-                const d = 260 + i * 15;
-                const opacity = fadeIn(frame, d, 12);
+                const d = 158 + i * 8;
+                const opacity = fadeIn(frame, d, 10);
                 return (
                   <React.Fragment key={i}>
-                    <div
-                      style={{
-                        opacity,
-                        padding: "8px 20px",
-                        borderRadius: 8,
-                        backgroundColor: `${colors.purple}12`,
-                        border: `1px solid ${colors.purple}30`,
-                        fontFamily: fontFamily.mono,
-                        fontSize: 16,
-                        color: colors.purple,
-                      }}
-                    >
+                    <div style={{
+                      opacity, padding: "8px 20px", borderRadius: 8,
+                      backgroundColor: `${colors.purple}12`, border: `1px solid ${colors.purple}30`,
+                      fontFamily: fontFamily.mono, fontSize: 16, color: colors.purple,
+                    }}>
                       {step}
                     </div>
                     {i < 2 && (
                       <svg width={28} height={20} style={{ opacity }}>
-                        <path
-                          d="M4 10h16M16 5l4 5-4 5"
-                          stroke={colors.border}
-                          strokeWidth={1.5}
-                          fill="none"
-                        />
+                        <path d="M4 10h16M16 5l4 5-4 5" stroke={colors.border} strokeWidth={1.5} fill="none" />
                       </svg>
                     )}
                   </React.Fragment>
                 );
               })}
-              <span
-                style={{
-                  fontFamily: fontFamily.sans,
-                  fontSize: 18,
-                  color: colors.success,
-                  marginLeft: 8,
-                }}
-              >
+              <span style={{ fontFamily: fontFamily.sans, fontSize: 18, color: colors.success, marginLeft: 8 }}>
                 All freed!
               </span>
             </div>

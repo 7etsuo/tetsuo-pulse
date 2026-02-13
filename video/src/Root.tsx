@@ -25,7 +25,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="FeatureShowcase"
         component={Video}
-        durationInFrames={10800}
+        durationInFrames={1770}
         {...SHARED}
       />
 
@@ -33,61 +33,61 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="Opening"
         component={Opening}
-        durationInFrames={300}
+        durationInFrames={120}
         {...SHARED}
       />
       <Composition
         id="Problem"
         component={Problem}
-        durationInFrames={450}
+        durationInFrames={165}
         {...SHARED}
       />
       <Composition
         id="ProtocolStack"
         component={ProtocolStack}
-        durationInFrames={1050}
+        durationInFrames={150}
         {...SHARED}
       />
       <Composition
         id="HTTP3Quic"
         component={HTTP3Quic}
-        durationInFrames={1800}
+        durationInFrames={210}
         {...SHARED}
       />
       <Composition
         id="Compression"
         component={Compression}
-        durationInFrames={900}
+        durationInFrames={180}
         {...SHARED}
       />
       <Composition
         id="Security"
         component={Security}
-        durationInFrames={1500}
+        durationInFrames={165}
         {...SHARED}
       />
       <Composition
         id="Performance"
         component={Performance}
-        durationInFrames={1500}
+        durationInFrames={210}
         {...SHARED}
       />
       <Composition
         id="DevExperience"
         component={DevExperience}
-        durationInFrames={1200}
+        durationInFrames={240}
         {...SHARED}
       />
       <Composition
         id="Quality"
         component={Quality}
-        durationInFrames={1200}
+        durationInFrames={165}
         {...SHARED}
       />
       <Composition
         id="Closing"
         component={Closing}
-        durationInFrames={900}
+        durationInFrames={165}
         {...SHARED}
       />
     </>

@@ -13,51 +13,51 @@ import { Closing } from "./scenes/Closing";
 
 /*
  * Scene timings (30 fps):
- *   Opening:       300 frames  (10s)
- *   Problem:       450 frames  (15s)
- *   ProtocolStack: 1050 frames (35s)
- *   HTTP3Quic:     1800 frames (60s)
- *   Compression:   900 frames  (30s)
- *   Security:      1500 frames (50s)
- *   Performance:   1500 frames (50s)
- *   DevExperience: 1200 frames (40s)
- *   Quality:       1200 frames (40s)
- *   Closing:       900 frames  (30s)
+ *   Opening:       120 frames  (4s)
+ *   Problem:       165 frames  (5.5s)
+ *   ProtocolStack: 150 frames  (5s)
+ *   HTTP3Quic:     210 frames  (7s)
+ *   Compression:   180 frames  (6s)
+ *   Security:      165 frames  (5.5s)
+ *   Performance:   210 frames  (7s)
+ *   DevExperience: 240 frames  (8s)
+ *   Quality:       165 frames  (5.5s)
+ *   Closing:       165 frames  (5.5s)
  *   ────────────────────────────
- *   Total:         10800 frames (360s / 6min)
+ *   Total:         1770 frames (59s)
  */
 
 export const Video: React.FC = () => {
   return (
     <Series>
-      <Series.Sequence durationInFrames={300}>
+      <Series.Sequence durationInFrames={120}>
         <Opening />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={450}>
+      <Series.Sequence durationInFrames={165}>
         <Problem />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={1050}>
+      <Series.Sequence durationInFrames={150}>
         <ProtocolStack />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={1800}>
+      <Series.Sequence durationInFrames={210}>
         <HTTP3Quic />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={900}>
+      <Series.Sequence durationInFrames={180}>
         <Compression />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={1500}>
+      <Series.Sequence durationInFrames={165}>
         <Security />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={1500}>
+      <Series.Sequence durationInFrames={210}>
         <Performance />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={1200}>
+      <Series.Sequence durationInFrames={240}>
         <DevExperience />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={1200}>
+      <Series.Sequence durationInFrames={165}>
         <Quality />
       </Series.Sequence>
-      <Series.Sequence durationInFrames={900}>
+      <Series.Sequence durationInFrames={165}>
         <Closing />
       </Series.Sequence>
     </Series>

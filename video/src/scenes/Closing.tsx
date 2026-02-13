@@ -12,13 +12,13 @@ export const Closing: React.FC = () => {
   const { fps } = useVideoConfig();
 
   const taglineScale = spring({
-    frame: Math.max(0, frame - 10),
+    frame: Math.max(0, frame - 3),
     fps,
-    config: { damping: 100, stiffness: 180 },
+    config: { damping: 80, stiffness: 250 },
   });
 
-  const fadeOutStart = 240;
-  const finalOpacity = interpolate(frame, [fadeOutStart, fadeOutStart + 60], [1, 0], {
+  const fadeOutStart = 110;
+  const finalOpacity = interpolate(frame, [fadeOutStart, fadeOutStart + 40], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -68,7 +68,7 @@ export const Closing: React.FC = () => {
         </div>
 
         {/* GitHub URL */}
-        <FadeIn delay={60}>
+        <FadeIn delay={25}>
           <div
             style={{
               display: "flex",
@@ -97,16 +97,16 @@ export const Closing: React.FC = () => {
         </FadeIn>
 
         {/* Badges */}
-        <FadeIn delay={100}>
+        <FadeIn delay={45}>
           <div style={{ display: "flex", gap: 16 }}>
-            <Badge label="MIT License" color={colors.success} delay={100} fontSize={18} />
-            <Badge label="C11" color={colors.primary} delay={110} fontSize={18} />
-            <Badge label="POSIX" color={colors.purple} delay={120} fontSize={18} />
+            <Badge label="MIT License" color={colors.success} delay={45} fontSize={18} />
+            <Badge label="C11" color={colors.primary} delay={50} fontSize={18} />
+            <Badge label="POSIX" color={colors.purple} delay={55} fontSize={18} />
           </div>
         </FadeIn>
 
         {/* Sub tagline */}
-        <FadeIn delay={140}>
+        <FadeIn delay={65}>
           <div
             style={{
               fontFamily: fontFamily.sans,

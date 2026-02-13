@@ -10,8 +10,8 @@ import { fadeIn } from "../lib/animate";
 export const Problem: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const transitionOpacity = fadeIn(frame, 300, 30);
-  const transitionSlide = interpolate(frame, [300, 330], [40, 0], {
+  const transitionOpacity = fadeIn(frame, 85, 20);
+  const transitionSlide = interpolate(frame, [85, 105], [30, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
@@ -29,8 +29,7 @@ export const Problem: React.FC = () => {
           gap: 48,
         }}
       >
-        {/* Headline */}
-        <FadeIn delay={10} duration={25}>
+        <FadeIn delay={3} duration={15}>
           <div
             style={{
               fontFamily: fontFamily.sans,
@@ -47,10 +46,9 @@ export const Problem: React.FC = () => {
           </div>
         </FadeIn>
 
-        {/* Pain points */}
-        <FadeIn delay={50}>
+        <FadeIn delay={20}>
           <FeatureList
-            delay={60}
+            delay={25}
             fontSize={28}
             items={[
               { text: "Need 5+ libraries for a modern network stack", available: false },
@@ -62,7 +60,6 @@ export const Problem: React.FC = () => {
           />
         </FadeIn>
 
-        {/* Transition text */}
         <div
           style={{
             opacity: transitionOpacity,

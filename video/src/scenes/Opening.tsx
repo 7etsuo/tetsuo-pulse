@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, spring, interpolate, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, spring, interpolate, Img, staticFile } from "remotion";
 import { Background } from "../components/Background";
 import { AnimatedCounter } from "../components/AnimatedCounter";
 import { FadeIn } from "../components/FadeIn";
@@ -11,18 +11,21 @@ export const Opening: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // Logo springs in FAST — visible by frame 3-4
   const logoScale = spring({
     frame,
     fps,
-    config: { damping: 100, stiffness: 200 },
+    config: { damping: 80, stiffness: 300 },
   });
 
-  const titleOpacity = interpolate(frame, [20, 40], [0, 1], {
+  // Title appears almost immediately
+  const titleOpacity = interpolate(frame, [3, 12], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const statsOpacity = interpolate(frame, [60, 80], [0, 1], {
+  // Stats visible quickly
+  const statsOpacity = interpolate(frame, [12, 22], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -39,29 +42,20 @@ export const Opening: React.FC = () => {
           gap: 32,
         }}
       >
-        {/* Logo / Icon */}
+        {/* Logo */}
         <div
           style={{
             transform: `scale(${logoScale})`,
             width: 120,
             height: 120,
             borderRadius: 28,
-            background: `linear-gradient(135deg, ${colors.primary}, ${colors.purple})`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            overflow: "hidden",
           }}
         >
-          <svg width={64} height={64} viewBox="0 0 64 64">
-            <path
-              d="M16 48 L32 8 L48 48 M22 36 L42 36"
-              stroke="white"
-              strokeWidth={5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
+          <Img
+            src={staticFile("tetsuo.jpg")}
+            style={{ width: 120, height: 120, objectFit: "cover" }}
+          />
         </div>
 
         {/* Title */}
@@ -100,16 +94,16 @@ export const Opening: React.FC = () => {
           }}
         >
           {[
-            { to: 518, suffix: "K lines", delay: 70 },
-            { to: 211, suffix: " tests", delay: 78 },
-            { to: 165, suffix: " fuzz harnesses", delay: 86 },
-            { to: 26, suffix: " RFCs", delay: 94 },
+            { to: 518, suffix: "K lines", delay: 15 },
+            { to: 211, suffix: " tests", delay: 20 },
+            { to: 165, suffix: " fuzz harnesses", delay: 25 },
+            { to: 26, suffix: " RFCs", delay: 30 },
           ].map((stat, i) => (
             <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
               <AnimatedCounter
                 to={stat.to}
                 delay={stat.delay}
-                duration={50}
+                duration={35}
                 fontSize={40}
                 color={colors.primary}
               />
@@ -127,11 +121,11 @@ export const Opening: React.FC = () => {
         </div>
 
         {/* Tagline */}
-        <FadeIn delay={140} duration={25}>
+        <FadeIn delay={50} duration={15}>
           <Badge
             label="The ONLY C library with native gRPC over HTTP/3"
             color={colors.success}
-            delay={140}
+            delay={50}
             fontSize={20}
           />
         </FadeIn>
