@@ -592,6 +592,9 @@ validate_query_request (T transport, SocketDNSoverHTTPS_Callback callback)
   assert (transport);
   assert (callback);
 
+  if (callback == NULL)
+    return DOH_ERROR_INVALID;
+
   if (transport->server_count == 0)
     return DOH_ERROR_NO_SERVER;
 

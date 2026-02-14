@@ -1449,11 +1449,11 @@ SocketPool_connect_async (T pool,
                           int port,
                           SocketPool_ConnectCallback callback,
                           void *data)
-{
-  SocketDNS_T dns;
-  volatile Socket_T socket = NULL;
-  AsyncConnectContext_T ctx = NULL;
-  volatile Request_T req = NULL;
+  {
+    SocketDNS_T dns;
+    volatile Socket_T socket = NULL;
+    volatile AsyncConnectContext_T ctx = NULL;
+    volatile Request_T req = NULL;
 
   validate_connect_async_params (pool, host, port, callback);
 
@@ -1469,7 +1469,8 @@ SocketPool_connect_async (T pool,
   ELSE
   {
     /* Cleanup on any exception (Socket_Failed or SocketPool_Failed) */
-    cleanup_failed_async_context (pool, ctx, (Socket_T *)&socket);
+    cleanup_failed_async_context (pool, (AsyncConnectContext_T)ctx,
+                                  (Socket_T *)&socket);
     POOL_UNLOCK (pool);
     RERAISE;
   }
@@ -1483,13 +1484,14 @@ SocketPool_connect_async (T pool,
 
   TRY
   {
-    req = initiate_dns_resolution (dns, host, port, ctx);
+    req = initiate_dns_resolution (dns, host, port,
+                                   (AsyncConnectContext_T)ctx);
   }
   EXCEPT (SocketPool_Failed)
   {
     /* DNS resolve failed - clean up context (need lock for list removal) */
     POOL_LOCK (pool);
-    remove_async_context (pool, ctx);
+    remove_async_context (pool, (AsyncConnectContext_T)ctx);
     POOL_UNLOCK (pool);
     Socket_free ((Socket_T *)&socket);
     RERAISE;
@@ -1497,7 +1499,7 @@ SocketPool_connect_async (T pool,
   END_TRY;
 
   /* Store request handle after successful DNS resolve */
-  ctx->req = req;
+  ((AsyncConnectContext_T)ctx)->req = req;
   return req;
 }
 

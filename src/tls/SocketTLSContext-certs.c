@@ -326,7 +326,8 @@ open_pem_file (const char *path, const char *obj_type)
   return fp;
 }
 
-static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
+__attribute__ ((noinline)) static STACK_OF (X509) *
+load_chain_from_file (const char *cert_file)
 {
   FILE *fp = open_pem_file (cert_file, "certificate");
 
