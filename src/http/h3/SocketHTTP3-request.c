@@ -22,6 +22,10 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
+
+/* Compile-time string literal length (avoids strlen at runtime) */
+#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* ============================================================================
  * Request Receive Buffer
@@ -766,6 +770,84 @@ parse_status_code (const char *value, size_t value_len)
   return code;
 }
 
+static int
+h3_parse_content_length_value (const char *value,
+                               size_t value_len,
+                               int64_t *out)
+{
+  if (value == NULL || out == NULL)
+    return -1;
+
+  int64_t v = 0;
+  if (value_len == 0)
+    return -1;
+
+  for (size_t i = 0; i < value_len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
+      int digit = (int)(c - '0');
+      if (v > (INT64_MAX - digit) / 10)
+        return -1;
+      v = v * 10 + digit;
+    }
+
+  /* Keep comparisons safe on 32-bit. */
+  if ((uint64_t)v > (uint64_t)SIZE_MAX)
+    return -1;
+
+  *out = v;
+  return 0;
+}
+
+typedef struct
+{
+  int found;
+  int error;
+  int64_t value;
+} H3_ContentLengthScan;
+
+static int
+h3_content_length_scan_cb (const char *name,
+                           size_t name_len,
+                           const char *value,
+                           size_t value_len,
+                           void *userdata)
+{
+  H3_ContentLengthScan *scan = (H3_ContentLengthScan *)userdata;
+
+  if (scan == NULL)
+    return 1;
+
+  if (name_len != STRLEN_LIT ("content-length")
+      || strncasecmp (name, "content-length", STRLEN_LIT ("content-length"))
+             != 0)
+    return 0;
+
+  int64_t parsed;
+  if (h3_parse_content_length_value (value, value_len, &parsed) < 0)
+    {
+      scan->error = 1;
+      return 1;
+    }
+
+  if (!scan->found)
+    {
+      scan->found = 1;
+      scan->value = parsed;
+      return 0;
+    }
+
+  if (parsed != scan->value)
+    {
+      scan->error = 1;
+      return 1;
+    }
+
+  return 0;
+}
+
 /**
  * @brief Enforce SETTINGS_MAX_FIELD_SECTION_SIZE for decoded headers.
  *
@@ -887,20 +969,14 @@ handle_headers_frame (struct SocketHTTP3_Request *req,
 
   req->recv_headers = hdrs;
 
-  /* Extract content-length if present */
-  const char *cl_val = SocketHTTP_Headers_get_n (hdrs, "content-length", 14);
-  if (cl_val != NULL)
-    {
-      int64_t cl = 0;
-      const char *p = cl_val;
-      while (*p >= '0' && *p <= '9')
-        {
-          cl = cl * 10 + (*p - '0');
-          p++;
-        }
-      if (*p == '\0')
-        req->expected_content_length = cl;
-    }
+  /* Content-Length: validate all values match (RFC 9114 / RFC 9110 rules). */
+  req->expected_content_length = -1;
+  H3_ContentLengthScan scan = { 0 };
+  (void)SocketHTTP_Headers_iterate (hdrs, h3_content_length_scan_cb, &scan);
+  if (scan.error)
+    return -(int)H3_MESSAGE_ERROR;
+  if (scan.found)
+    req->expected_content_length = scan.value;
 
   req->recv_state = H3_REQ_RECV_HEADERS_RECEIVED;
   return 0;
@@ -919,8 +995,14 @@ handle_data_frame (struct SocketHTTP3_Request *req,
   if (req->trailers_received)
     return -(int)H3_FRAME_UNEXPECTED;
 
-  data_buf_append (req, payload, payload_len);
-  req->total_data_received += payload_len;
+  if (data_buf_append (req, payload, payload_len) < 0)
+    return -(int)H3_INTERNAL_ERROR;
+
+  size_t new_total;
+  if (!SocketSecurity_check_add (
+          req->total_data_received, payload_len, &new_total))
+    return -(int)H3_MESSAGE_ERROR;
+  req->total_data_received = new_total;
 
   if (req->recv_state == H3_REQ_RECV_HEADERS_RECEIVED)
     req->recv_state = H3_REQ_RECV_BODY_RECEIVING;
@@ -942,7 +1024,10 @@ SocketHTTP3_Request_feed (SocketHTTP3_Request_T req,
 
   /* Append to receive buffer */
   if (len > 0)
-    recv_buf_append (req, data, len);
+    {
+      if (recv_buf_append (req, data, len) < 0)
+        return -(int)H3_INTERNAL_ERROR;
+    }
 
   /* Process frames from receive buffer */
   while (req->recv_buf_len > 0)

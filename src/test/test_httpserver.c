@@ -21,7 +21,16 @@
 /* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
 
 #include <signal.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -54,6 +63,16 @@ simple_handler (SocketHTTPServer_Request_T req, void *userdata)
   SocketHTTPServer_Request_status (req, 200);
   SocketHTTPServer_Request_header (req, "Content-Type", "text/plain");
   SocketHTTPServer_Request_body_data (req, "OK", 2);
+  SocketHTTPServer_Request_finish (req);
+}
+
+static void
+always_404_handler (SocketHTTPServer_Request_T req, void *userdata)
+{
+  (void)userdata;
+  SocketHTTPServer_Request_status (req, 404);
+  SocketHTTPServer_Request_header (req, "Content-Type", "text/plain");
+  SocketHTTPServer_Request_body_string (req, "Not Found");
   SocketHTTPServer_Request_finish (req);
 }
 
@@ -829,6 +848,157 @@ TEST (httpserver_body_streaming_abort_context)
   ASSERT_EQ (1, result2); /* Should abort on second chunk */
   ASSERT_EQ (2, stream_ctx.chunk_count);
   ASSERT_EQ (12, stream_ctx.total_bytes);
+}
+
+TEST (httpserver_static_symlink_escape_blocked)
+{
+  setup_signals ();
+
+#ifdef _WIN32
+  /* POSIX-only: symlink + AF_INET sockets. */
+  return;
+#else
+  SocketHTTPServer_Config config;
+  SocketHTTPServer_T server = NULL;
+  int client_fd = -1;
+  int secret_fd = -1;
+
+  char dir_template[] = "/tmp/tetsuo-pulse-staticXXXXXX";
+  char *base_dir = NULL;
+  char base2_dir[4096] = { 0 };
+  char link_path[4096] = { 0 };
+  char secret_path[4096] = { 0 };
+
+  TRY
+  {
+    base_dir = mkdtemp (dir_template);
+    ASSERT_NOT_NULL (base_dir);
+
+    /* Create sibling directory with an overlapping prefix: "<base>2" */
+    snprintf (base2_dir, sizeof (base2_dir), "%s2", base_dir);
+    ASSERT_EQ (0, mkdir (base2_dir, 0700));
+
+    /* Create "secret" file in sibling directory */
+    snprintf (secret_path, sizeof (secret_path), "%s/secret.txt", base2_dir);
+    secret_fd = open (secret_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    ASSERT (secret_fd >= 0);
+    ASSERT_EQ (6, (int)write (secret_fd, "SECRET", 6));
+    close (secret_fd);
+    secret_fd = -1;
+
+    /* Create symlink inside base dir pointing at sibling dir */
+    snprintf (link_path, sizeof (link_path), "%s/link", base_dir);
+    ASSERT_EQ (0, symlink (base2_dir, link_path));
+
+    SocketHTTPServer_config_defaults (&config);
+    config.port = 0;
+    config.bind_address = "127.0.0.1";
+
+    server = SocketHTTPServer_new (&config);
+    ASSERT_NOT_NULL (server);
+
+    SocketHTTPServer_set_handler (server, always_404_handler, NULL);
+    ASSERT_EQ (0, SocketHTTPServer_add_static_dir (server, "/static", base_dir));
+    ASSERT_EQ (0, SocketHTTPServer_start (server));
+
+    int listen_fd = SocketHTTPServer_fd (server);
+    ASSERT (listen_fd >= 0);
+
+    struct sockaddr_in sin;
+    socklen_t slen = sizeof (sin);
+    ASSERT_EQ (0, getsockname (listen_fd, (struct sockaddr *)&sin, &slen));
+    int port = (int)ntohs (sin.sin_port);
+    ASSERT (port > 0);
+
+    /* Connect client and request the symlinked file. */
+    client_fd = socket (AF_INET, SOCK_STREAM, 0);
+    ASSERT (client_fd >= 0);
+
+    struct sockaddr_in addr;
+    memset (&addr, 0, sizeof (addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons ((uint16_t)port);
+    ASSERT_EQ (1, inet_pton (AF_INET, "127.0.0.1", &addr.sin_addr));
+
+    ASSERT_EQ (0,
+               connect (client_fd, (struct sockaddr *)&addr, sizeof (addr)));
+
+    const char *req =
+        "GET /static/link/secret.txt HTTP/1.1\r\n"
+        "Host: 127.0.0.1\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+
+    size_t req_len = strlen (req);
+    size_t sent = 0;
+    while (sent < req_len)
+      {
+        ssize_t n = send (client_fd, req + sent, req_len - sent, 0);
+        if (n > 0)
+          sent += (size_t)n;
+        else if (n < 0 && errno == EINTR)
+          continue;
+        else
+          ASSERT (0);
+      }
+
+    /* Read response while pumping the server event loop. */
+    int flags = fcntl (client_fd, F_GETFL, 0);
+    ASSERT (flags >= 0);
+    ASSERT_EQ (0, fcntl (client_fd, F_SETFL, flags | O_NONBLOCK));
+
+    char resp[8192];
+    size_t resp_len = 0;
+
+    for (int i = 0; i < 200; i++)
+      {
+        (void)SocketHTTPServer_process (server, 10);
+
+        ssize_t n
+            = recv (client_fd, resp + resp_len, sizeof (resp) - 1 - resp_len, 0);
+        if (n > 0)
+          {
+            resp_len += (size_t)n;
+            if (resp_len >= sizeof (resp) - 1)
+              break;
+            continue;
+          }
+
+        if (n == 0)
+          break; /* peer closed */
+
+        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+          continue;
+
+        break;
+      }
+
+    resp[resp_len] = '\0';
+
+    /* With the traversal fix, this must not serve the sibling file. */
+    ASSERT_NOT_NULL (strstr (resp, " 404 "));
+    ASSERT (strstr (resp, "SECRET") == NULL);
+  }
+  FINALLY
+  {
+    if (secret_fd >= 0)
+      close (secret_fd);
+    if (client_fd >= 0)
+      close (client_fd);
+    if (server)
+      SocketHTTPServer_free (&server);
+
+    if (secret_path[0])
+      (void)unlink (secret_path);
+    if (link_path[0])
+      (void)unlink (link_path);
+    if (base2_dir[0])
+      (void)rmdir (base2_dir);
+    if (base_dir != NULL)
+      (void)rmdir (base_dir);
+  }
+  END_TRY;
+#endif
 }
 
 TEST (httpserver_body_streaming_final_flag)

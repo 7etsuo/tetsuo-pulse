@@ -1143,7 +1143,16 @@ add_current_header (SocketHTTP1_Parser_T parser)
   if (parser->header_count >= parser->config.max_headers)
     return HTTP1_ERROR_TOO_MANY_HEADERS;
 
-  parser->total_header_size += name_len + value_len + HTTP1_HEADER_OVERHEAD;
+  size_t delta_temp;
+  size_t delta;
+  size_t new_total;
+  if (!SocketSecurity_check_add (name_len, value_len, &delta_temp)
+      || !SocketSecurity_check_add (
+          delta_temp, (size_t)HTTP1_HEADER_OVERHEAD, &delta)
+      || !SocketSecurity_check_add (parser->total_header_size, delta, &new_total))
+    return HTTP1_ERROR_HEADER_TOO_LARGE;
+
+  parser->total_header_size = new_total;
   if (parser->total_header_size > parser->config.max_header_size)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 

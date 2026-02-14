@@ -11,6 +11,7 @@
 #include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTP2.h"
 
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
@@ -1177,8 +1178,13 @@ http2_recombine_cookie_headers (Arena_T arena,
   if (*count == 0)
     return 0;
 
+  size_t cookie_indices_bytes;
+  if (!SocketSecurity_check_multiply (*count, sizeof (size_t),
+                                      &cookie_indices_bytes))
+    return -1;
+
   cookie_indices
-      = Arena_alloc (arena, *count * sizeof (size_t), __FILE__, __LINE__);
+      = Arena_alloc (arena, cookie_indices_bytes, __FILE__, __LINE__);
   if (cookie_indices == NULL)
     return -1;
 
@@ -1192,7 +1198,9 @@ http2_recombine_cookie_headers (Arena_T arena,
           cookie_indices[num_cookies] = i;
           if (first_cookie_idx == (size_t)-1)
             first_cookie_idx = i;
-          total_value_len += h->value_len;
+          if (!SocketSecurity_check_add (total_value_len, h->value_len,
+                                         &total_value_len))
+            return -1;
           num_cookies++;
         }
     }
@@ -1202,10 +1210,18 @@ http2_recombine_cookie_headers (Arena_T arena,
   if (cookie_count <= 1)
     return 0;
 
-  total_value_len += 2 * (cookie_count - 1); /* delimiters "; " */
+  size_t delimiter_bytes;
+  if (!SocketSecurity_check_multiply (cookie_count - 1, 2, &delimiter_bytes))
+    return -1;
+  if (!SocketSecurity_check_add (total_value_len, delimiter_bytes,
+                                 &total_value_len))
+    return -1;
 
-  char *combined_value
-      = Arena_alloc (arena, total_value_len + 1, __FILE__, __LINE__);
+  size_t alloc_len;
+  if (!SocketSecurity_check_add (total_value_len, 1, &alloc_len))
+    return -1;
+
+  char *combined_value = Arena_alloc (arena, alloc_len, __FILE__, __LINE__);
   if (combined_value == NULL)
     return -1;
 
@@ -1331,8 +1347,13 @@ grow_header_block (SocketHTTP2_Conn_T conn,
                    SocketHTTP2_Stream_T stream,
                    size_t needed)
 {
-  size_t new_capacity = stream->header_block_capacity + needed
-                        + HTTP2_INITIAL_HEADER_BLOCK_SIZE;
+  size_t temp;
+  size_t new_capacity;
+  if (!SocketSecurity_check_add (stream->header_block_capacity, needed, &temp)
+      || !SocketSecurity_check_add (
+          temp, HTTP2_INITIAL_HEADER_BLOCK_SIZE, &new_capacity))
+    return -1;
+
   unsigned char *new_block
       = Arena_alloc (conn->arena, new_capacity, __FILE__, __LINE__);
   if (!new_block)
@@ -1350,7 +1371,9 @@ init_pending_header_block (SocketHTTP2_Conn_T conn,
                            const unsigned char *data,
                            size_t len)
 {
-  size_t capacity = len + HTTP2_INITIAL_HEADER_BLOCK_SIZE;
+  size_t capacity;
+  if (!SocketSecurity_check_add (len, HTTP2_INITIAL_HEADER_BLOCK_SIZE, &capacity))
+    return -1;
   stream->header_block = alloc_header_block (conn, capacity);
   if (!stream->header_block)
     return -1;
@@ -2240,7 +2263,13 @@ http2_process_data (SocketHTTP2_Conn_T conn,
   assert (written == data_len); /* Should be full after space check */
 
   /* Track total DATA bytes received for Content-Length validation */
-  stream->total_data_received += data_len;
+  size_t new_total;
+  if (!SocketSecurity_check_add (stream->total_data_received, data_len, &new_total))
+    {
+      http2_send_stream_error (conn, stream->id, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+  stream->total_data_received = new_total;
 
   if (header->flags & HTTP2_FLAG_END_STREAM)
     {
@@ -2504,14 +2533,18 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
     }
 
   max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
-  if (stream->header_block_len + header->length > max_header_list)
+  size_t new_len;
+  if (!SocketSecurity_check_add (stream->header_block_len,
+                                 (size_t)header->length,
+                                 &new_len)
+      || new_len > max_header_list)
     {
       http2_send_stream_error (
           conn, header->stream_id, HTTP2_ENHANCE_YOUR_CALM);
       return -1;
     }
 
-  if (stream->header_block_len + header->length > stream->header_block_capacity)
+  if (new_len > stream->header_block_capacity)
     {
       if (grow_header_block (conn, stream, header->length) < 0)
         {
@@ -2522,7 +2555,7 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
 
   memcpy (
       stream->header_block + stream->header_block_len, payload, header->length);
-  stream->header_block_len += header->length;
+  stream->header_block_len = new_len;
 
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {

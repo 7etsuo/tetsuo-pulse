@@ -418,24 +418,24 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
 
   /* Copy regular headers (skip pseudo-headers) */
   if (response->headers == NULL)
-    response->headers = SocketHTTP_Headers_new (arena);
+    {
+      response->headers = SocketHTTP_Headers_new (arena);
+      if (response->headers == NULL)
+        return -1;
+    }
 
   for (i = 0; i < header_count; i++)
     {
       if (headers[i].name[0] == ':')
         continue; /* Skip pseudo-headers */
 
-      /* Copy header name and value */
-      char *name
-          = Arena_alloc (arena, headers[i].name_len + 1, __FILE__, __LINE__);
-      char *value
-          = Arena_alloc (arena, headers[i].value_len + 1, __FILE__, __LINE__);
-      memcpy (name, headers[i].name, headers[i].name_len);
-      name[headers[i].name_len] = '\0';
-      memcpy (value, headers[i].value, headers[i].value_len);
-      value[headers[i].value_len] = '\0';
-
-      SocketHTTP_Headers_add (response->headers, name, value);
+      if (SocketHTTP_Headers_add_n (response->headers,
+                                   headers[i].name,
+                                   headers[i].name_len,
+                                   headers[i].value,
+                                   headers[i].value_len)
+          != 0)
+        return -1;
     }
 
   return 0;

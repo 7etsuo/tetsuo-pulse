@@ -1512,6 +1512,7 @@ SocketHTTPClient_upload (SocketHTTPClient_T client,
   int fd = -1;
   char *buffer = NULL;
   int result;
+  size_t file_size = 0;
 
   assert (client != NULL);
   assert (url != NULL);
@@ -1527,18 +1528,34 @@ SocketHTTPClient_upload (SocketHTTPClient_T client,
       return -2;
     }
 
-  buffer = malloc ((size_t)st.st_size);
-  if (buffer == NULL)
+  if (!S_ISREG (st.st_mode) || st.st_size < 0)
     {
       close (fd);
       return -2;
     }
 
-  if (socket_util_read_all_eintr (fd, buffer, (size_t)st.st_size) != 0)
+  file_size = (size_t)st.st_size;
+  if ((off_t)file_size != st.st_size)
     {
-      free (buffer);
       close (fd);
       return -2;
+    }
+
+  if (file_size > 0)
+    {
+      buffer = malloc (file_size);
+      if (buffer == NULL)
+        {
+          close (fd);
+          return -2;
+        }
+
+      if (socket_util_read_all_eintr (fd, buffer, file_size) != 0)
+        {
+          free (buffer);
+          close (fd);
+          return -2;
+        }
     }
   close (fd);
 
@@ -1546,7 +1563,7 @@ SocketHTTPClient_upload (SocketHTTPClient_T client,
                             url,
                             "application/octet-stream",
                             buffer,
-                            (size_t)st.st_size,
+                            file_size,
                             &response)
       != 0)
     {
@@ -1573,6 +1590,9 @@ copy_response_body (const SocketHTTPClient_Response *response,
                     char **out,
                     size_t *out_len)
 {
+  if (out == NULL || out_len == NULL)
+    return -1;
+
   if (response->body == NULL || response->body_len == 0)
     {
       *out = NULL;
@@ -1580,7 +1600,11 @@ copy_response_body (const SocketHTTPClient_Response *response,
       return 0;
     }
 
-  *out = malloc (response->body_len + 1);
+  size_t alloc_len;
+  if (!SocketSecurity_check_add (response->body_len, 1, &alloc_len))
+    return -1;
+
+  *out = malloc (alloc_len);
   if (*out == NULL)
     return -1;
 

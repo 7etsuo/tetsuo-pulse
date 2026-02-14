@@ -10,6 +10,8 @@
 #include "http/SocketHTTP1-private.h"
 #include "http/SocketHTTP1.h"
 
+#include "core/SocketSecurity.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -97,13 +99,21 @@ complete_trailer_header (SocketHTTP1_Parser_T parser)
    * The overhead accounts for HeaderEntry struct, null terminators, and
    * wire format delimiters (see SOCKETHTTP1_TRAILER_ENTRY_OVERHEAD docs).
    */
-  size_t entry_size
-      = trailer_name_len + value_len + parser->config.trailer_entry_overhead;
+  size_t entry_temp;
+  size_t entry_size;
+  if (!SocketSecurity_check_add (trailer_name_len, value_len, &entry_temp)
+      || !SocketSecurity_check_add (
+          entry_temp, parser->config.trailer_entry_overhead, &entry_size))
+    return HTTP1_ERROR_HEADER_TOO_LARGE;
 
   /* Check trailer limits */
+  size_t new_total;
+  if (!SocketSecurity_check_add (
+          parser->total_trailer_size, entry_size, &new_total))
+    return HTTP1_ERROR_HEADER_TOO_LARGE;
+
   if (parser->trailer_count >= parser->config.max_headers
-      || parser->total_trailer_size + entry_size
-             > parser->config.max_trailer_size)
+      || new_total > parser->config.max_trailer_size)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
   /* Add to trailers collection */
@@ -112,7 +122,7 @@ complete_trailer_header (SocketHTTP1_Parser_T parser)
 
   /* Update counters */
   parser->trailer_count++;
-  parser->total_trailer_size += entry_size;
+  parser->total_trailer_size = new_total;
 
   /* Reset for next header */
   http1_tokenbuf_reset (&parser->name_buf);
