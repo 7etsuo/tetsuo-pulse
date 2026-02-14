@@ -100,6 +100,19 @@ decode_varint (const uint8_t *data, size_t len, size_t *pos, uint64_t *value)
 }
 
 /* ============================================================================
+ * Helper: Check remaining bytes without overflow
+ * ============================================================================
+ */
+
+static inline int
+have_bytes (size_t pos, size_t len, uint64_t need)
+{
+  if (pos > len)
+    return 0;
+  return need <= (uint64_t)(len - pos);
+}
+
+/* ============================================================================
  * Parse PADDING frames
  * ============================================================================
  */
@@ -386,12 +399,8 @@ parse_crypto (const uint8_t *data,
     return res;
 
   /* Validate data length */
-  if (*pos + crypto->length > len)
+  if (!have_bytes (*pos, len, crypto->length))
     return QUIC_FRAME_ERROR_TRUNCATED;
-
-  /* Prevent overflow on 32-bit systems */
-  if (crypto->length > SIZE_MAX)
-    return QUIC_FRAME_ERROR_OVERFLOW;
 
   crypto->data = data + *pos;
   *pos += (size_t)crypto->length;
@@ -421,12 +430,8 @@ parse_new_token (const uint8_t *data,
   if (nt->token_length == 0)
     return QUIC_FRAME_ERROR_INVALID;
 
-  if (*pos + nt->token_length > len)
+  if (!have_bytes (*pos, len, nt->token_length))
     return QUIC_FRAME_ERROR_TRUNCATED;
-
-  /* Prevent overflow on 32-bit systems */
-  if (nt->token_length > SIZE_MAX)
-    return QUIC_FRAME_ERROR_OVERFLOW;
 
   nt->token = data + *pos;
   *pos += (size_t)nt->token_length;
@@ -469,6 +474,8 @@ parse_stream (const uint8_t *data,
   /* Handle length with early initialization */
   if (!stream->has_length)
     {
+      if (*pos > len)
+        return QUIC_FRAME_ERROR_TRUNCATED;
       stream->length = len - *pos;
     }
   else
@@ -477,12 +484,8 @@ parse_stream (const uint8_t *data,
       if (res != QUIC_FRAME_OK)
         return res;
 
-      if (*pos + stream->length > len)
+      if (!have_bytes (*pos, len, stream->length))
         return QUIC_FRAME_ERROR_TRUNCATED;
-
-      /* Prevent overflow on 32-bit systems (CWE-190, CWE-681) */
-      if (stream->length > SIZE_MAX)
-        return QUIC_FRAME_ERROR_OVERFLOW;
     }
 
   stream->data = data + *pos;
@@ -633,13 +636,13 @@ parse_new_connection_id (const uint8_t *data,
   ncid->cid_length = (uint8_t)cid_len;
 
   /* Connection ID */
-  if (*pos + cid_len > len)
+  if (!have_bytes (*pos, len, cid_len))
     return QUIC_FRAME_ERROR_TRUNCATED;
   memcpy (ncid->cid, data + *pos, (size_t)cid_len);
   *pos += (size_t)cid_len;
 
   /* Stateless Reset Token */
-  if (*pos + QUIC_STATELESS_RESET_TOKEN_SIZE > len)
+  if (!have_bytes (*pos, len, QUIC_STATELESS_RESET_TOKEN_SIZE))
     return QUIC_FRAME_ERROR_TRUNCATED;
   memcpy (ncid->stateless_reset_token,
           data + *pos,
@@ -675,7 +678,7 @@ parse_path_challenge (const uint8_t *data,
                       size_t *pos,
                       SocketQUICFrame_T *frame)
 {
-  if (*pos + QUIC_PATH_DATA_SIZE > len)
+  if (!have_bytes (*pos, len, QUIC_PATH_DATA_SIZE))
     return QUIC_FRAME_ERROR_TRUNCATED;
 
   memcpy (frame->data.path_challenge.data, data + *pos, QUIC_PATH_DATA_SIZE);
@@ -695,7 +698,7 @@ parse_path_response (const uint8_t *data,
                      size_t *pos,
                      SocketQUICFrame_T *frame)
 {
-  if (*pos + QUIC_PATH_DATA_SIZE > len)
+  if (!have_bytes (*pos, len, QUIC_PATH_DATA_SIZE))
     return QUIC_FRAME_ERROR_TRUNCATED;
 
   memcpy (frame->data.path_response.data, data + *pos, QUIC_PATH_DATA_SIZE);
@@ -738,12 +741,8 @@ parse_connection_close (const uint8_t *data,
   if (res != QUIC_FRAME_OK)
     return res;
 
-  if (*pos + cc->reason_length > len)
+  if (!have_bytes (*pos, len, cc->reason_length))
     return QUIC_FRAME_ERROR_TRUNCATED;
-
-  /* Prevent overflow on 32-bit systems */
-  if (cc->reason_length > SIZE_MAX)
-    return QUIC_FRAME_ERROR_OVERFLOW;
 
   cc->reason = (cc->reason_length > 0) ? (data + *pos) : NULL;
   *pos += (size_t)cc->reason_length;
@@ -787,6 +786,8 @@ parse_datagram (const uint8_t *data,
   dg->has_length = (frame->type == QUIC_FRAME_DATAGRAM_LEN);
 
   /* Set default length with early initialization */
+  if (*pos > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
   dg->length = len - *pos;
 
   if (dg->has_length)
@@ -795,13 +796,9 @@ parse_datagram (const uint8_t *data,
       if (res != QUIC_FRAME_OK)
         return res;
 
-      if (*pos + dg->length > len)
+      if (!have_bytes (*pos, len, dg->length))
         return QUIC_FRAME_ERROR_TRUNCATED;
     }
-
-  /* Prevent overflow on 32-bit systems */
-  if (dg->length > SIZE_MAX)
-    return QUIC_FRAME_ERROR_OVERFLOW;
 
   dg->data = data + *pos;
   *pos += (size_t)dg->length;

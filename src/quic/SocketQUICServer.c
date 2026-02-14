@@ -26,6 +26,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil/Arithmetic.h"
 #include "quic/SocketQUICAck.h"
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICCrypto.h"
@@ -34,6 +35,7 @@
 #include "quic/SocketQUICHandshake.h"
 #include "quic/SocketQUICCongestion.h"
 #include "quic/SocketQUICConstants.h"
+#include "quic/SocketQUICError.h"
 #include "quic/SocketQUICLoss.h"
 #include "quic/SocketQUICPacket.h"
 #include "quic/SocketQUICTLS.h"
@@ -50,6 +52,7 @@
 #define SERVER_SEND_BUF_SIZE 1500
 #define SERVER_RECV_BUF_SIZE 65536
 #define SERVER_MAX_STREAMS 256
+#define SERVER_MAX_STREAM_SEGMENTS 256
 #define SERVER_SCID_LEN 8
 #define SERVER_PN_LEN 4
 
@@ -58,10 +61,26 @@
  * ============================================================================
  */
 
+typedef struct ServerStreamSegment
+{
+  uint64_t offset;
+  uint64_t length;
+  uint8_t *data;
+  struct ServerStreamSegment *next;
+} ServerStreamSegment_T;
+
 typedef struct
 {
   uint64_t stream_id;
   uint64_t send_offset;
+  uint64_t recv_offset;
+  uint64_t recv_highest;
+  uint64_t final_size;
+  ServerStreamSegment_T *segments;
+  int segment_count;
+  SocketQUICFlowStream_T flow_stream;
+  int fin_received;
+  int fin_delivered;
   int active;
 } ServerStreamState;
 
@@ -170,6 +189,14 @@ now_us (void)
   return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
 }
 
+static void conn_close_with_error (QUICServerConn_T c,
+                                   uint64_t error_code,
+                                   uint64_t frame_type,
+                                   const char *reason);
+
+static uint64_t peer_initial_stream_send_max (
+    const SocketQUICTransportParams_T *peer_params, uint64_t stream_id);
+
 /* ============================================================================
  * UDP I/O wrappers (exception -> return code)
  * ============================================================================
@@ -227,10 +254,343 @@ conn_find_or_create_stream (QUICServerConn_T c, uint64_t stream_id)
     return NULL;
 
   ServerStreamState *s = &c->streams[c->stream_count++];
+  memset (s, 0, sizeof (*s));
   s->stream_id = stream_id;
   s->send_offset = 0;
+  s->recv_offset = 0;
+  s->recv_highest = 0;
+  s->final_size = UINT64_MAX;
+  s->segments = NULL;
+  s->segment_count = 0;
+  s->fin_received = 0;
+  s->fin_delivered = 0;
   s->active = 1;
+
+  if (c->server->config.max_stream_data <= SIZE_MAX)
+    {
+      s->flow_stream = SocketQUICFlowStream_new (c->arena, stream_id);
+      if (s->flow_stream)
+        {
+          SocketQUICFlowStream_init (s->flow_stream,
+                                     stream_id,
+                                     c->server->config.max_stream_data,
+                                     0);
+
+          const SocketQUICTransportParams_T *peer_params = NULL;
+          if (c->handshake)
+            peer_params = SocketQUICHandshake_get_peer_params (c->handshake);
+          if (peer_params)
+            SocketQUICFlowStream_update_send_max (
+                s->flow_stream,
+                peer_initial_stream_send_max (peer_params, stream_id));
+        }
+    }
+
   return s;
+}
+
+/* ============================================================================
+ * Stream receive reassembly (minimal ordered delivery)
+ * ============================================================================
+ */
+
+static int
+server_stream_deliver_chunk (QUICServerConn_T c,
+                             ServerStreamState *s,
+                             const uint8_t *data,
+                             uint64_t length,
+                             int *events)
+{
+  uint64_t new_offset;
+  if (!socket_util_safe_add_u64 (s->recv_offset, length, &new_offset))
+    return -1;
+
+  int fin = 0;
+  if (s->fin_received && !s->fin_delivered && s->final_size != UINT64_MAX
+      && new_offset == s->final_size)
+    {
+      fin = 1;
+      s->fin_delivered = 1;
+    }
+
+  if (c->server->stream_cb)
+    {
+      c->server->stream_cb (c,
+                            s->stream_id,
+                            data,
+                            (size_t)length,
+                            fin,
+                            c->server->cb_userdata);
+      if (events)
+        (*events)++;
+    }
+
+  s->recv_offset = new_offset;
+  return 0;
+}
+
+static int
+server_stream_buffer_segment (QUICServerConn_T c,
+                              ServerStreamState *s,
+                              uint64_t offset,
+                              const uint8_t *data,
+                              uint64_t length)
+{
+  if (length == 0)
+    return 0;
+  if (!data)
+    return -1;
+  if (s->segment_count >= SERVER_MAX_STREAM_SEGMENTS)
+    return -1;
+  if (length > SIZE_MAX)
+    return -1;
+
+  ServerStreamSegment_T *seg
+      = Arena_alloc (c->arena, sizeof (*seg), __FILE__, __LINE__);
+  memset (seg, 0, sizeof (*seg));
+  seg->offset = offset;
+  seg->length = length;
+  seg->data = Arena_alloc (c->arena, (size_t)length, __FILE__, __LINE__);
+  memcpy (seg->data, data, (size_t)length);
+
+  seg->next = s->segments;
+  s->segments = seg;
+  s->segment_count++;
+  return 0;
+}
+
+static int
+server_stream_process_buffered (QUICServerConn_T c,
+                                ServerStreamState *s,
+                                int *events)
+{
+  int progress;
+  do
+    {
+      progress = 0;
+      ServerStreamSegment_T **prev = &s->segments;
+      ServerStreamSegment_T *seg = s->segments;
+
+      while (seg)
+        {
+          uint64_t seg_end;
+          if (!socket_util_safe_add_u64 (seg->offset, seg->length, &seg_end))
+            return -1;
+
+          if (seg_end <= s->recv_offset)
+            {
+              *prev = seg->next;
+              s->segment_count--;
+              progress = 1;
+              seg = *prev;
+              continue;
+            }
+
+          if (seg->offset <= s->recv_offset && seg_end > s->recv_offset)
+            {
+              uint64_t skip = s->recv_offset - seg->offset;
+              uint64_t deliver_len = seg_end - s->recv_offset;
+
+              if (skip > SIZE_MAX || deliver_len > SIZE_MAX)
+                return -1;
+
+              const uint8_t *deliver_data = seg->data + (size_t)skip;
+              if (server_stream_deliver_chunk (
+                      c, s, deliver_data, deliver_len, events)
+                  < 0)
+                return -1;
+
+              *prev = seg->next;
+              s->segment_count--;
+              progress = 1;
+              seg = *prev;
+              continue;
+            }
+
+          prev = &seg->next;
+          seg = seg->next;
+        }
+    }
+  while (progress);
+
+  if (s->fin_received && !s->fin_delivered && s->final_size != UINT64_MAX
+      && s->recv_offset == s->final_size)
+    {
+      if (c->server->stream_cb)
+        {
+          c->server->stream_cb (c,
+                                s->stream_id,
+                                NULL,
+                                0,
+                                1,
+                                c->server->cb_userdata);
+          if (events)
+            (*events)++;
+        }
+      s->fin_delivered = 1;
+    }
+
+  return 0;
+}
+
+static int
+handle_server_stream_frame (QUICServerConn_T c,
+                            const SocketQUICFrameStream_T *sf,
+                            uint64_t frame_type,
+                            int *events)
+{
+  if (!c || !sf)
+    return -1;
+
+  uint64_t stream_id = sf->stream_id;
+  int initiator = (int)(stream_id & 0x01); /* 0=client, 1=server */
+  int is_uni = (stream_id & 0x02) != 0;
+  uint64_t seq = stream_id >> 2;
+
+  /* Enforce stream limits for peer-initiated streams (client initiated). */
+  if (initiator == 0)
+    {
+      uint64_t max_streams
+          = is_uni ? 3 : c->server->config.initial_max_streams_bidi;
+      if (seq >= max_streams)
+        {
+          conn_close_with_error (
+              c, QUIC_STREAM_LIMIT_ERROR, frame_type, "Peer exceeded stream limit");
+          return -1;
+        }
+    }
+
+  /* Receiving on locally-initiated unidirectional streams is a state error. */
+  if (is_uni && initiator == 1)
+    {
+      conn_close_with_error (c,
+                             QUIC_STREAM_STATE_ERROR,
+                             frame_type,
+                             "STREAM on local unidirectional stream");
+      return -1;
+    }
+
+  ServerStreamState *s = conn_find_or_create_stream (c, stream_id);
+  if (!s)
+    {
+      conn_close_with_error (
+          c, QUIC_STREAM_LIMIT_ERROR, frame_type, "Too many active streams");
+      return -1;
+    }
+
+  uint64_t end;
+  if (!socket_util_safe_add_u64 (sf->offset, sf->length, &end))
+    {
+      conn_close_with_error (
+          c, QUIC_FRAME_ENCODING_ERROR, frame_type, "STREAM offset overflow");
+      return -1;
+    }
+
+  if (sf->has_fin)
+    {
+      if (s->fin_received && s->final_size != end)
+        {
+          conn_close_with_error (
+              c, QUIC_FINAL_SIZE_ERROR, frame_type, "Conflicting final size");
+          return -1;
+        }
+      s->fin_received = 1;
+      s->final_size = end;
+    }
+  else if (s->fin_received && end > s->final_size)
+    {
+      conn_close_with_error (
+          c, QUIC_FINAL_SIZE_ERROR, frame_type, "Data exceeds final size");
+      return -1;
+    }
+
+  if (end > s->recv_highest)
+    {
+      uint64_t delta = end - s->recv_highest;
+      s->recv_highest = end;
+
+      if (delta > SIZE_MAX)
+        {
+          conn_close_with_error (
+              c, QUIC_FLOW_CONTROL_ERROR, frame_type, "Flow delta overflow");
+          return -1;
+        }
+
+      if (s->flow_stream
+          && SocketQUICFlowStream_consume_recv (s->flow_stream, (size_t)delta)
+                 != QUIC_FLOW_OK)
+        {
+          conn_close_with_error (c,
+                                 QUIC_FLOW_CONTROL_ERROR,
+                                 frame_type,
+                                 "Stream flow control exceeded");
+          return -1;
+        }
+
+      if (c->flow
+          && SocketQUICFlow_consume_recv (c->flow, (size_t)delta) != QUIC_FLOW_OK)
+        {
+          conn_close_with_error (c,
+                                 QUIC_FLOW_CONTROL_ERROR,
+                                 frame_type,
+                                 "Connection flow control exceeded");
+          return -1;
+        }
+    }
+
+  uint64_t offset = sf->offset;
+  uint64_t length = sf->length;
+  const uint8_t *data = sf->data;
+
+  if (offset < s->recv_offset)
+    {
+      uint64_t overlap = s->recv_offset - offset;
+      if (overlap >= length)
+        return server_stream_process_buffered (c, s, events);
+
+      if (overlap > SIZE_MAX)
+        return -1;
+      data += (size_t)overlap;
+      offset = s->recv_offset;
+      length -= overlap;
+    }
+
+  if (offset == s->recv_offset && length > 0)
+    {
+      if (server_stream_deliver_chunk (c, s, data, length, events) < 0)
+        return -1;
+    }
+  else if (length > 0)
+    {
+      if (server_stream_buffer_segment (c, s, offset, data, length) < 0)
+        {
+          conn_close_with_error (c,
+                                 QUIC_PROTOCOL_VIOLATION,
+                                 frame_type,
+                                 "Too many buffered stream segments");
+          return -1;
+        }
+    }
+
+  return server_stream_process_buffered (c, s, events);
+}
+
+static uint64_t
+peer_initial_stream_send_max (const SocketQUICTransportParams_T *peer_params,
+                              uint64_t stream_id)
+{
+  if (!peer_params)
+    return 0;
+
+  /* Server transport: local-initiated streams have initiator bit 1. */
+  int initiator = (int)(stream_id & 0x01);
+  int is_uni = (stream_id & 0x02) != 0;
+
+  if (is_uni)
+    return initiator == 1 ? peer_params->initial_max_stream_data_uni : 0;
+
+  return initiator == 1 ? peer_params->initial_max_stream_data_bidi_remote
+                        : peer_params->initial_max_stream_data_bidi_local;
 }
 
 /* ============================================================================
@@ -302,18 +662,26 @@ build_and_send_1rtt_ex (QUICServerConn_T c,
       != QUIC_CRYPTO_OK)
     return -1;
 
+  /* Bound unacked tracking to avoid unbounded memory growth. */
+  if (c->loss[QUIC_PN_SPACE_APPLICATION]
+      && c->loss[QUIC_PN_SPACE_APPLICATION]->sent_count
+             >= QUIC_LOSS_MAX_SENT_PACKETS)
+    return -1;
+
   if (conn_send_packet (c, send_buf, pkt_len) < 0)
     return -1;
 
   /* Record sent packet for loss detection (RFC 9002) */
   uint64_t sent_time = now_us ();
-  SocketQUICLoss_on_packet_sent (c->loss[QUIC_PN_SPACE_APPLICATION],
-                                 pn,
-                                 sent_time,
-                                 pkt_len,
-                                 ack_eliciting,
-                                 in_flight,
-                                 0);
+  if (SocketQUICLoss_on_packet_sent (c->loss[QUIC_PN_SPACE_APPLICATION],
+                                     pn,
+                                     sent_time,
+                                     pkt_len,
+                                     ack_eliciting,
+                                     in_flight,
+                                     0)
+      != QUIC_LOSS_OK)
+    return -1;
 
   c->next_pn[QUIC_PN_SPACE_APPLICATION]++;
   return 0;
@@ -325,6 +693,28 @@ build_and_send_1rtt (QUICServerConn_T c,
                      size_t payload_len)
 {
   return build_and_send_1rtt_ex (c, payload, payload_len, 1, 1);
+}
+
+static void
+conn_close_with_error (QUICServerConn_T c,
+                       uint64_t error_code,
+                       uint64_t frame_type,
+                       const char *reason)
+{
+  if (!c || c->closed)
+    return;
+
+  if (c->app_keys_valid)
+    {
+      uint8_t close_buf[128];
+      size_t close_len = SocketQUICFrame_encode_connection_close_transport (
+          error_code, frame_type, reason, close_buf, sizeof (close_buf));
+      if (close_len > 0)
+        build_and_send_1rtt_ex (c, close_buf, close_len, 0, 0);
+    }
+
+  c->closed = 1;
+  c->connected = 0;
 }
 
 /* ============================================================================
@@ -404,11 +794,13 @@ static int
 conn_process_frames (QUICServerConn_T c,
                      const uint8_t *payload,
                      size_t payload_len,
+                     SocketQUICPacket_Type pkt_type,
                      SocketQUIC_PNSpace space,
                      uint64_t now)
 {
   size_t offset = 0;
   int events = 0;
+  int pkt_flags = SocketQUICFrame_packet_type_to_flags (pkt_type);
 
   while (offset < payload_len)
     {
@@ -416,11 +808,24 @@ conn_process_frames (QUICServerConn_T c,
       SocketQUICFrame_init (&frame);
       size_t consumed = 0;
       SocketQUICFrame_Result fr = SocketQUICFrame_parse_arena (
-          c->arena, payload + offset, payload_len - offset, &frame, &consumed);
+          NULL, payload + offset, payload_len - offset, &frame, &consumed);
       if (fr != QUIC_FRAME_OK)
-        break;
+        {
+          SocketQUICFrame_free (&frame);
+          break;
+        }
 
       offset += consumed;
+
+      if (SocketQUICFrame_validate (&frame, pkt_flags) != QUIC_FRAME_OK)
+        {
+          conn_close_with_error (c,
+                                 QUIC_PROTOCOL_VIOLATION,
+                                 frame.type,
+                                 "Frame not allowed in packet type");
+          SocketQUICFrame_free (&frame);
+          return -1;
+        }
 
       switch (frame.type)
         {
@@ -503,6 +908,8 @@ conn_process_frames (QUICServerConn_T c,
         case QUIC_FRAME_CONNECTION_CLOSE:
         case QUIC_FRAME_CONNECTION_CLOSE_APP:
           c->closed = 1;
+          c->connected = 0;
+          SocketQUICFrame_free (&frame);
           return -1;
 
         case QUIC_FRAME_MAX_DATA:
@@ -511,22 +918,44 @@ conn_process_frames (QUICServerConn_T c,
                                             frame.data.max_data.max_data);
           break;
 
+        case QUIC_FRAME_MAX_STREAM_DATA:
+          {
+            ServerStreamState *s = conn_find_or_create_stream (
+                c, frame.data.max_stream_data.stream_id);
+            if (s && s->flow_stream)
+              SocketQUICFlowStream_update_send_max (
+                  s->flow_stream, frame.data.max_stream_data.max_data);
+          }
+          break;
+
+        case QUIC_FRAME_MAX_STREAMS_BIDI:
+          if (c->flow)
+            SocketQUICFlow_update_max_streams_bidi (
+                c->flow, frame.data.max_streams.max_streams);
+          break;
+
+        case QUIC_FRAME_MAX_STREAMS_UNI:
+          if (c->flow)
+            SocketQUICFlow_update_max_streams_uni (
+                c->flow, frame.data.max_streams.max_streams);
+          break;
+
         default:
           if (SocketQUICFrame_is_stream (frame.type))
             {
-              if (c->server->stream_cb)
+              if (handle_server_stream_frame (
+                      c, &frame.data.stream, frame.type, &events)
+                  < 0)
                 {
-                  c->server->stream_cb (c,
-                                        frame.data.stream.stream_id,
-                                        frame.data.stream.data,
-                                        (size_t)frame.data.stream.length,
-                                        frame.data.stream.has_fin,
-                                        c->server->cb_userdata);
-                  events++;
+                  SocketQUICFrame_free (&frame);
+                  return -1;
                 }
             }
           break;
         }
+
+      /* Free any heap-backed substructures (e.g., ACK ranges). */
+      SocketQUICFrame_free (&frame);
     }
 
   return events;
@@ -859,6 +1288,7 @@ handle_initial_packet (SocketQUICServer_T server,
       = server->config.max_stream_data;
   local_params.initial_max_stream_data_bidi_remote
       = server->config.max_stream_data;
+  local_params.initial_max_stream_data_uni = server->config.max_stream_data;
   local_params.initial_max_streams_bidi
       = server->config.initial_max_streams_bidi;
   local_params.initial_max_streams_uni = 3;
@@ -918,6 +1348,17 @@ handle_initial_packet (SocketQUICServer_T server,
   SocketQUICKeyUpdate_init (&c->key_update);
   c->congestion = SocketQUICCongestion_new (conn_arena, QUIC_MAX_DATAGRAM_SIZE);
 
+  /* Initialize flow control early so receive-side enforcement is active.
+   * send_max_data / stream limits are updated once peer transport params are
+   * available. */
+  c->flow = SocketQUICFlow_new (conn_arena);
+  if (c->flow)
+    SocketQUICFlow_init (c->flow,
+                         server->config.initial_max_data,
+                         0,
+                         0,
+                         0);
+
   /* Decrypt the Initial packet */
   SocketQUICReceiveResult_T result;
   memset (&result, 0, sizeof (result));
@@ -937,8 +1378,15 @@ handle_initial_packet (SocketQUICServer_T server,
         c->ack[result.pn_space], result.packet_number, now, 1);
 
   /* Process frames (CRYPTO frame → ClientHello) */
-  conn_process_frames (
-      c, result.payload, result.payload_len, result.pn_space, now);
+  int init_events = conn_process_frames (
+      c, result.payload, result.payload_len, result.type, result.pn_space, now);
+  if (init_events < 0)
+    {
+      /* Connection already marked closed by conn_process_frames() or will be
+       * dropped as invalid. */
+      Arena_dispose (&conn_arena);
+      return NULL;
+    }
 
   /* Advance TLS */
   SocketQUICTLS_do_handshake (c->handshake);
@@ -961,13 +1409,25 @@ handle_initial_packet (SocketQUICServer_T server,
           = SocketQUICHandshake_get_peer_params (c->handshake);
       if (peer_params)
         {
-          c->flow = SocketQUICFlow_new (conn_arena);
           if (c->flow)
-            SocketQUICFlow_init (c->flow,
-                                 server->config.initial_max_data,
-                                 peer_params->initial_max_data,
-                                 peer_params->initial_max_streams_bidi,
-                                 peer_params->initial_max_streams_uni);
+            {
+              SocketQUICFlow_update_send_max (c->flow,
+                                              peer_params->initial_max_data);
+              SocketQUICFlow_update_max_streams_bidi (
+                  c->flow, peer_params->initial_max_streams_bidi);
+              SocketQUICFlow_update_max_streams_uni (
+                  c->flow, peer_params->initial_max_streams_uni);
+            }
+
+          for (size_t i = 0; i < c->stream_count; i++)
+            {
+              if (!c->streams[i].active || !c->streams[i].flow_stream)
+                continue;
+              uint64_t max_data = peer_initial_stream_send_max (
+                  peer_params, c->streams[i].stream_id);
+              SocketQUICFlowStream_update_send_max (c->streams[i].flow_stream,
+                                                    max_data);
+            }
         }
 
       /* Send HANDSHAKE_DONE frame (server only, RFC 9000 §19.20) */
@@ -1013,7 +1473,14 @@ handle_existing_conn_packet (QUICServerConn_T c,
 
   /* Process frames */
   int events = conn_process_frames (
-      c, result.payload, result.payload_len, result.pn_space, now);
+      c, result.payload, result.payload_len, result.type, result.pn_space, now);
+
+  if (events < 0 && !c->closed)
+    {
+      conn_close_with_error (
+          c, QUIC_PROTOCOL_VIOLATION, 0, "Frame processing error");
+      return -1;
+    }
 
   if (c->closed)
     return events;
@@ -1034,13 +1501,25 @@ handle_existing_conn_packet (QUICServerConn_T c,
               = SocketQUICHandshake_get_peer_params (c->handshake);
           if (peer_params)
             {
-              c->flow = SocketQUICFlow_new (c->arena);
               if (c->flow)
-                SocketQUICFlow_init (c->flow,
-                                     c->server->config.initial_max_data,
-                                     peer_params->initial_max_data,
-                                     peer_params->initial_max_streams_bidi,
-                                     peer_params->initial_max_streams_uni);
+                {
+                  SocketQUICFlow_update_send_max (c->flow,
+                                                  peer_params->initial_max_data);
+                  SocketQUICFlow_update_max_streams_bidi (
+                      c->flow, peer_params->initial_max_streams_bidi);
+                  SocketQUICFlow_update_max_streams_uni (
+                      c->flow, peer_params->initial_max_streams_uni);
+                }
+
+              for (size_t i = 0; i < c->stream_count; i++)
+                {
+                  if (!c->streams[i].active || !c->streams[i].flow_stream)
+                    continue;
+                  uint64_t max_data = peer_initial_stream_send_max (
+                      peer_params, c->streams[i].stream_id);
+                  SocketQUICFlowStream_update_send_max (c->streams[i].flow_stream,
+                                                        max_data);
+                }
             }
 
           /* Send HANDSHAKE_DONE */
@@ -1359,6 +1838,13 @@ SocketQUICServer_send_stream (QUICServerConn_T conn,
   if (!stream)
     return -1;
 
+  /* Enforce peer-advertised flow control before sending. */
+  if (conn->flow && !SocketQUICFlow_can_send (conn->flow, len))
+    return -1;
+  if (stream->flow_stream
+      && !SocketQUICFlowStream_can_send (stream->flow_stream, len))
+    return -1;
+
   uint8_t frame_buf[SERVER_SEND_BUF_SIZE];
   size_t frame_len = SocketQUICFrame_encode_stream (stream_id,
                                                     stream->send_offset,
@@ -1370,9 +1856,17 @@ SocketQUICServer_send_stream (QUICServerConn_T conn,
   if (frame_len == 0)
     return -1;
 
-  stream->send_offset += len;
+  if (build_and_send_1rtt (conn, frame_buf, frame_len) < 0)
+    return -1;
 
-  return build_and_send_1rtt (conn, frame_buf, frame_len);
+  /* Update offsets and consume flow control only after successful send. */
+  stream->send_offset += len;
+  if (conn->flow)
+    SocketQUICFlow_consume_send (conn->flow, len);
+  if (stream->flow_stream)
+    SocketQUICFlowStream_consume_send (stream->flow_stream, len);
+
+  return 0;
 }
 
 /* ============================================================================

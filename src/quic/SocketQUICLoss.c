@@ -541,26 +541,46 @@ handle_acked_packet (SocketQUICLossState_T state,
 /**
  * Acknowledge all tracked packets in [lo, hi] (inclusive).
  */
-static size_t
-ack_range (SocketQUICLossState_T state,
-           uint64_t lo,
-           uint64_t hi,
-           SocketQUICLoss_AckedCallback acked_callback,
-           void *context)
+static int
+ack_frame_contains (const SocketQUICFrameAck_T *ack, uint64_t pn)
 {
-  size_t count = 0;
+  if (ack == NULL)
+    return 0;
 
-  for (uint64_t pn = lo; pn <= hi; pn++)
+  if (pn > ack->largest_ack)
+    return 0;
+
+  /* First ACK range: [largest_ack - first_range, largest_ack] */
+  uint64_t hi = ack->largest_ack;
+  uint64_t lo = (hi >= ack->first_range) ? (hi - ack->first_range) : 0;
+
+  if (pn >= lo && pn <= hi)
+    return 1;
+
+  if (ack->range_count == 0 || ack->ranges == NULL)
+    return 0;
+
+  /* Additional ranges walk backwards from the first range per RFC 9000. */
+  uint64_t cursor = lo;
+  for (uint64_t i = 0; i < ack->range_count; i++)
     {
-      SocketQUICLossSentPacket_T *pkt = find_sent_packet (state, pn);
-      if (pkt)
-        {
-          handle_acked_packet (state, pkt, acked_callback, context);
-          count++;
-        }
+      /* Skip the gap (gap + 1 unacknowledged packets) */
+      if (cursor < ack->ranges[i].gap + 2)
+        break; /* Underflow protection */
+      cursor -= (ack->ranges[i].gap + 2);
+
+      uint64_t range_hi = cursor;
+      uint64_t range_lo
+          = (cursor >= ack->ranges[i].length) ? cursor - ack->ranges[i].length
+                                              : 0;
+
+      if (pn >= range_lo && pn <= range_hi)
+        return 1;
+
+      cursor = range_lo;
     }
 
-  return count;
+  return 0;
 }
 
 SocketQUICLoss_Result
@@ -583,6 +603,19 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
 
   largest_acked = ack->largest_ack;
 
+  /*
+   * Ignore ACKs for packet numbers we never tracked as sent.
+   * This avoids CPU and state manipulation via malicious ACK ranges.
+   */
+  if (largest_acked > state->largest_sent)
+    {
+      if (acked_count)
+        *acked_count = 0;
+      if (lost_count)
+        *lost_count = 0;
+      return QUIC_LOSS_OK;
+    }
+
   /* Update RTT from the largest acknowledged packet */
   largest_pkt = find_sent_packet (state, largest_acked);
   if (largest_pkt != NULL && recv_time_us >= largest_pkt->sent_time_us)
@@ -604,40 +637,51 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
   if (largest_acked > state->largest_acked)
     state->largest_acked = largest_acked;
 
-  /* Process first ACK range: [largest_acked - first_range, largest_acked] */
-  {
-    uint64_t lo = largest_acked >= ack->first_range
-                      ? largest_acked - ack->first_range
-                      : 0;
-    total_acked
-        += ack_range (state, lo, largest_acked, acked_callback, context);
-  }
-
-  /* Process additional ACK ranges */
-  if (ack->range_count > 0 && ack->ranges != NULL)
+  /*
+   * Acknowledge tracked packets without iterating attacker-controlled PN spans.
+   * Worst case: O(sent_count * range_count) with sent_count <= 1024.
+   */
+  for (size_t i = 0; i < state->sent_packets_size; i++)
     {
-      /* After first range, cursor starts at (lo_of_first_range - 1) */
-      uint64_t cursor = largest_acked >= ack->first_range
-                            ? largest_acked - ack->first_range
-                            : 0;
-
-      for (uint64_t i = 0; i < ack->range_count; i++)
+      SocketQUICLossSentPacket_T **prev = &state->sent_packets[i];
+      while (*prev)
         {
-          /* Skip the gap (gap + 1 unacknowledged packets) */
-          if (cursor < ack->ranges[i].gap + 2)
-            break; /* Underflow protection */
-          cursor -= (ack->ranges[i].gap + 2);
+          SocketQUICLossSentPacket_T *p = *prev;
+          if (ack_frame_contains (ack, p->packet_number))
+            {
+              /* Inline handle_acked_packet() but unlink in-place to avoid
+               * re-traversal and iterator invalidation. */
+              *prev = p->next;
+              state->sent_count--;
 
-          /* ACK range: [cursor - length, cursor] */
-          uint64_t range_hi = cursor;
-          uint64_t range_lo = cursor >= ack->ranges[i].length
-                                  ? cursor - ack->ranges[i].length
-                                  : 0;
+              if (acked_callback)
+                acked_callback (p, context);
 
-          total_acked
-              += ack_range (state, range_lo, range_hi, acked_callback, context);
+              if (p->in_flight)
+                {
+                  if (p->sent_bytes > state->bytes_in_flight)
+                    {
+                      SOCKET_LOG_ERROR_MSG (
+                          "bytes_in_flight underflow: sent_bytes=%zu, "
+                          "in_flight=%zu",
+                          p->sent_bytes,
+                          state->bytes_in_flight);
+                      state->bytes_in_flight = 0;
+                    }
+                  else
+                    {
+                      state->bytes_in_flight -= p->sent_bytes;
+                    }
+                }
 
-          cursor = range_lo;
+              /* Return to free list */
+              p->next = state->free_list;
+              state->free_list = p;
+              total_acked++;
+              continue;
+            }
+
+          prev = &p->next;
         }
     }
 
