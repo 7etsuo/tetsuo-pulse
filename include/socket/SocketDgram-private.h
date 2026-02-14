@@ -142,6 +142,9 @@ struct SocketDgram_T
    * @see dtls_ssl for the SSL context providing this state.
    */
   int dtls_last_handshake_state; /**< @copydoc dtls_last_handshake_state */
+  int dtls_retransmit_count;     /**< DTLS handshake retransmit counter for
+                                  * DoS/timeout protection. Reset on enable and
+                                  * successful handshake completion. */
   /**
    * @var dtls_mtu
    * @brief Configured Maximum Transmission Unit (MTU) for DTLS packets.

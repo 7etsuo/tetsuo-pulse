@@ -143,6 +143,19 @@ SocketTLSContext_set_crl_auto_refresh (T ctx,
   validate_crl_path_security (crl_path);
   validate_crl_interval (interval_seconds);
 
+  /* Fail-closed on initial CRL load when auto-refresh is enabled. */
+  if (interval_seconds > 0)
+    {
+      TRY SocketTLSContext_load_crl (ctx, crl_path);
+      EXCEPT (SocketTLS_Failed)
+      {
+        if (callback)
+          callback (ctx, crl_path, 0, user_data);
+        RERAISE;
+      }
+      END_TRY;
+    }
+
   TRY
   {
     CRL_LOCK (ctx);
@@ -154,13 +167,6 @@ SocketTLSContext_set_crl_auto_refresh (T ctx,
     ctx->crl_user_data = user_data;
 
     schedule_crl_refresh (ctx, interval_seconds);
-
-    if (interval_seconds > 0)
-      {
-        int success = try_load_crl (ctx, crl_path);
-        if (!success)
-          notify_crl_callback (ctx, crl_path, 0);
-      }
   }
   FINALLY
   {
@@ -218,7 +224,7 @@ SocketTLSContext_crl_check_refresh (T ctx)
             int success = try_load_crl (ctx, ctx->crl_refresh_path);
             set_crl_next_refresh (ctx, now_ms, ctx->crl_refresh_interval);
             notify_crl_callback (ctx, ctx->crl_refresh_path, success);
-            result = 1;
+            result = success ? 1 : 0;
           }
       }
   }

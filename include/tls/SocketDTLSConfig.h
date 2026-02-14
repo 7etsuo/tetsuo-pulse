@@ -223,8 +223,8 @@
 /**
  * @brief Length of DTLS hello cookie in bytes.
  * @ingroup dtls_config
- * @details Fixed to 32 bytes (truncated HMAC-SHA256 output) for security and
- * compatibility.
+ * @details Fixed to 32 bytes (4-byte timestamp + truncated HMAC-SHA256 tag) for
+ * security and compatibility.
  * @see RFC 6347 Section 4.2.1 for cookie exchange mechanism.
  */
 #ifndef SOCKET_DTLS_COOKIE_LEN

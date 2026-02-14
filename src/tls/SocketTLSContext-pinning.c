@@ -201,13 +201,12 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
   if (!ctx || !chain)
     return 0;
 
+  /* Fast path: no pins configured. */
   pthread_mutex_lock (&ctx->pinning.lock);
-  if (ctx->pinning.count == 0)
-    {
-      pthread_mutex_unlock (&ctx->pinning.lock);
-      return 0;
-    }
+  size_t initial_count = ctx->pinning.count;
   pthread_mutex_unlock (&ctx->pinning.lock);
+  if (initial_count == 0)
+    return 0;
 
   int chain_len = sk_X509_num (chain);
   const int max_check = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
@@ -232,21 +231,24 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
         num_hashes++;
     }
 
-  const TLSCertPin *local_pins = NULL;
-  size_t local_count = 0;
+  int match = 0;
   pthread_mutex_lock (&ctx->pinning.lock);
-  local_count = ctx->pinning.count;
-  if (local_count > 0)
-    local_pins = ctx->pinning.pins;
+  const TLSCertPin *pins = ctx->pinning.pins;
+  size_t count = ctx->pinning.count;
+  if (pins && count > 0)
+    {
+      for (int j = 0; j < num_hashes; j++)
+        {
+          if (tls_pinning_find (pins, count, hashes[j]))
+            {
+              match = 1;
+              break;
+            }
+        }
+    }
   pthread_mutex_unlock (&ctx->pinning.lock);
 
-  for (int j = 0; j < num_hashes; j++)
-    {
-      if (tls_pinning_find (local_pins, local_count, hashes[j]))
-        return 1;
-    }
-
-  return 0;
+  return match;
 }
 
 void

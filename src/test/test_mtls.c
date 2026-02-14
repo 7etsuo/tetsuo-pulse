@@ -231,6 +231,7 @@ TEST (mtls_successful_handshake)
     SocketTLSContext_load_certificate (client_ctx, client_cert, client_key);
 
     SocketTLS_enable (client, client_ctx);
+    SocketTLS_set_hostname (client, "localhost");
     SocketTLS_enable (server, server_ctx);
     int result = complete_handshake (client, server);
 
@@ -364,6 +365,7 @@ TEST (mtls_get_peer_cert_info)
     SocketTLSContext_load_certificate (client_ctx, client_cert, client_key);
 
     SocketTLS_enable (client, client_ctx);
+    SocketTLS_set_hostname (client, "localhost");
     SocketTLS_enable (server, server_ctx);
     ASSERT_EQ (complete_handshake (client, server), 0);
 
@@ -447,6 +449,7 @@ TEST (mtls_custom_verify_callback)
     SocketTLSContext_load_certificate (client_ctx, client_cert, client_key);
 
     SocketTLS_enable (client, client_ctx);
+    SocketTLS_set_hostname (client, "localhost");
     SocketTLS_enable (server, server_ctx);
     complete_handshake (client, server);
 

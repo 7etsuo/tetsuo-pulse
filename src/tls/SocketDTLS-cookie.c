@@ -13,7 +13,12 @@
  * Server sends HelloVerifyRequest with cookie before allocating state.
  * Client must echo cookie to prove address ownership.
  *
- * Cookie = HMAC-SHA256(server_secret, client_addr || client_port || timestamp)
+ * Cookie format (SOCKET_DTLS_COOKIE_LEN bytes):
+ *   [ timestamp_u32_be ][ hmac_tag... ]
+ *
+ * Where:
+ * - timestamp is monotonic seconds at generation time (32-bit, big-endian)
+ * - hmac_tag is a truncated HMAC-SHA256 over (peer_addr || timestamp)
  *
  * Thread safety: Cookie verification is thread-safe. Secret rotation
  * requires locking and should be done atomically.
@@ -30,43 +35,23 @@
 #include <string.h>
 #include <time.h>
 
-/** Number of timestamp buckets to check (current + previous for edge cases) */
-#define COOKIE_TIMESTAMP_WINDOW 2
+/** Timestamp prefix in cookie (monotonic seconds, big-endian) */
+#define COOKIE_TIMESTAMP_LEN 4
 
 /** Number of secrets to try (current + previous for rotation) */
 #define COOKIE_SECRET_COUNT 2
 
-/* Security: Random offset for bucket boundaries, initialized once per process.
- * This makes bucket boundaries unpredictable to attackers, preventing them
- * from timing replay attacks around known bucket transitions. */
-static uint32_t bucket_offset = 0;
-static pthread_once_t bucket_offset_once = PTHREAD_ONCE_INIT;
-
-static void
-init_bucket_offset (void)
-{
-  unsigned char rand_bytes[4];
-  /* SECURITY: Fail on RNG failure instead of using predictable offset */
-  if (SocketCrypto_random_bytes (rand_bytes, sizeof (rand_bytes)) != 0)
-    {
-      /* RNG failure - this is a critical security issue */
-      RAISE (SocketCrypto_Failed);
-    }
-  uint32_t rand_val
-      = ((uint32_t)rand_bytes[0] << 24) | ((uint32_t)rand_bytes[1] << 16)
-        | ((uint32_t)rand_bytes[2] << 8) | (uint32_t)rand_bytes[3];
-  bucket_offset = rand_val % (SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000);
-}
+_Static_assert (
+    SOCKET_DTLS_COOKIE_LEN > COOKIE_TIMESTAMP_LEN,
+    "DTLS cookie must be large enough to store timestamp + tag");
 
 static uint32_t
-get_time_bucket (void)
+dtls_cookie_time_seconds (void)
 {
-  pthread_once (&bucket_offset_once, init_bucket_offset);
-
   int64_t now_ms = Socket_get_monotonic_ms ();
-  int64_t lifetime_ms = (int64_t)SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000LL;
-  int64_t offset_now_ms = now_ms + bucket_offset;
-  return (uint32_t)(offset_now_ms / lifetime_ms);
+  if (now_ms < 0)
+    now_ms = 0;
+  return (uint32_t)(now_ms / 1000);
 }
 
 
@@ -197,7 +182,10 @@ try_verify_cookie (const unsigned char *cookie,
       != 0)
     return 0;
 
-  return SocketCrypto_secure_compare (cookie, expected, SOCKET_DTLS_COOKIE_LEN)
+  size_t tag_len = SOCKET_DTLS_COOKIE_LEN - COOKIE_TIMESTAMP_LEN;
+  return SocketCrypto_secure_compare (cookie + COOKIE_TIMESTAMP_LEN,
+                                      expected,
+                                      tag_len)
          == 0;
 }
 
@@ -219,8 +207,22 @@ dtls_generate_cookie_hmac (const unsigned char *secret,
   if (!secret || !peer_addr || !out_cookie)
     return -1;
 
-  return compute_cookie_hmac (
-      secret, peer_addr, peer_len, get_time_bucket (), out_cookie);
+  uint32_t ts = dtls_cookie_time_seconds ();
+  uint32_t ts_net = htonl (ts);
+  memcpy (out_cookie, &ts_net, sizeof (ts_net));
+
+  unsigned char tag[SOCKET_DTLS_COOKIE_LEN];
+  if (compute_cookie_hmac (secret, peer_addr, peer_len, ts, tag) != 0)
+    {
+      SocketCrypto_secure_clear (tag, sizeof (tag));
+      return -1;
+    }
+
+  size_t tag_len = SOCKET_DTLS_COOKIE_LEN - COOKIE_TIMESTAMP_LEN;
+  memcpy (out_cookie + COOKIE_TIMESTAMP_LEN, tag, tag_len);
+  SocketCrypto_secure_clear (tag, sizeof (tag));
+
+  return 0;
 }
 
 int
@@ -231,7 +233,7 @@ dtls_cookie_generate_cb (SSL *ssl,
   SocketDTLSContext_T ctx;
   struct sockaddr_storage peer_addr;
   socklen_t peer_len;
-  int result;
+  unsigned char local_secret[SOCKET_DTLS_COOKIE_SECRET_LEN];
 
   ctx = dtls_context_get_from_ssl (ssl);
   if (!ctx || !ctx->cookie.cookie_enabled)
@@ -243,9 +245,12 @@ dtls_cookie_generate_cb (SSL *ssl,
   if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
     return 0;
 
-  result = dtls_generate_cookie_hmac (
-      ctx->cookie.secret, (struct sockaddr *)&peer_addr, peer_len, cookie);
+  memcpy (local_secret, ctx->cookie.secret, sizeof (local_secret));
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
+
+  int result = dtls_generate_cookie_hmac (
+      local_secret, (struct sockaddr *)&peer_addr, peer_len, cookie);
+  SocketCrypto_secure_clear (local_secret, sizeof (local_secret));
 
   if (result != 0)
     return 0;
@@ -263,9 +268,7 @@ dtls_cookie_verify_cb (SSL *ssl,
   SocketDTLSContext_T ctx;
   struct sockaddr_storage peer_addr;
   socklen_t peer_len;
-  unsigned char expected[SOCKET_DTLS_COOKIE_LEN];
   const struct sockaddr *addr;
-  uint32_t timestamp;
   int verified = 0;
 
   ctx = dtls_context_get_from_ssl (ssl);
@@ -279,39 +282,52 @@ dtls_cookie_verify_cb (SSL *ssl,
     return 0;
 
   addr = (const struct sockaddr *)&peer_addr;
-  timestamp = get_time_bucket ();
+
+  uint32_t ts_net = 0;
+  memcpy (&ts_net, cookie, sizeof (ts_net));
+  uint32_t timestamp = ntohl (ts_net);
+
+  uint32_t now = dtls_cookie_time_seconds ();
+  if (timestamp > now || (now - timestamp) > SOCKET_DTLS_COOKIE_LIFETIME_SEC)
+    return 0;
+
+  unsigned char secret[SOCKET_DTLS_COOKIE_SECRET_LEN];
+  unsigned char prev_secret[SOCKET_DTLS_COOKIE_SECRET_LEN];
+  int has_prev = 0;
 
   if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
     return 0;
 
-
-  const unsigned char *secrets[COOKIE_SECRET_COUNT]
-      = { ctx->cookie.secret, ctx->cookie.prev_secret };
-  int num_secrets = 1;
-  if (is_secret_set (secrets[1]))
-    {
-      num_secrets = COOKIE_SECRET_COUNT;
-    }
-
-  for (int s = 0; s < num_secrets; s++)
-    {
-      for (int t = 0; t < COOKIE_TIMESTAMP_WINDOW; t++)
-        {
-          /* Prevent underflow: only subtract if t <= timestamp */
-          if ((uint32_t)t > timestamp)
-            continue;
-          uint32_t ts = timestamp - (uint32_t)t;
-          if (try_verify_cookie (
-                  cookie, secrets[s], addr, peer_len, ts, expected))
-            {
-              verified = 1;
-              goto cleanup;
-            }
-        }
-    }
-
-cleanup:
+  memcpy (secret, ctx->cookie.secret, sizeof (secret));
+  memcpy (prev_secret, ctx->cookie.prev_secret, sizeof (prev_secret));
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
+
+  has_prev = is_secret_set (prev_secret);
+
+  unsigned char expected[SOCKET_DTLS_COOKIE_LEN];
+
+  if (try_verify_cookie (cookie,
+                         secret,
+                         addr,
+                         peer_len,
+                         timestamp,
+                         expected))
+    {
+      verified = 1;
+    }
+  else if (has_prev
+           && try_verify_cookie (cookie,
+                                 prev_secret,
+                                 addr,
+                                 peer_len,
+                                 timestamp,
+                                 expected))
+    {
+      verified = 1;
+    }
+
+  SocketCrypto_secure_clear (secret, sizeof (secret));
+  SocketCrypto_secure_clear (prev_secret, sizeof (prev_secret));
   SocketCrypto_secure_clear (expected, sizeof (expected));
 
   if (!verified)

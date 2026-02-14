@@ -248,6 +248,7 @@ TEST (tls_verify_callback_params)
 
     SocketTLS_enable (server_sock, server_ctx);
     SocketTLS_enable (client_sock, client_ctx);
+    SocketTLS_set_hostname (client_sock, "localhost");
 
     Socket_setnonblocking (server_sock);
     Socket_setnonblocking (client_sock);
@@ -367,6 +368,7 @@ TEST (tls_verify_callback_reject)
 
     SocketTLS_enable (server_sock, server_ctx);
     SocketTLS_enable (client_sock, client_ctx);
+    SocketTLS_set_hostname (client_sock, "localhost");
 
     Socket_setnonblocking (server_sock);
     Socket_setnonblocking (client_sock);
@@ -491,6 +493,7 @@ TEST (verify_integration_basic)
     /* Enable TLS */
     SocketTLS_enable (server_sock, server_ctx);
     SocketTLS_enable (client_sock, client_ctx);
+    SocketTLS_set_hostname (client_sock, "localhost");
 
     /* Non-blocking handshake loop */
     Socket_setnonblocking (server_sock);
@@ -2248,6 +2251,7 @@ TEST (tls_verify_callback_exception)
 
     SocketTLS_enable (server_sock, server_ctx);
     SocketTLS_enable (client_sock, client_ctx);
+    SocketTLS_set_hostname (client_sock, "localhost");
 
     Socket_setnonblocking (server_sock);
     Socket_setnonblocking (client_sock);
@@ -2936,6 +2940,7 @@ TEST (tls_verify_callback_generic_exception)
 
     SocketTLS_enable (server_sock, server_ctx);
     SocketTLS_enable (client_sock, client_ctx);
+    SocketTLS_set_hostname (client_sock, "localhost");
 
     Socket_setnonblocking (server_sock);
     Socket_setnonblocking (client_sock);

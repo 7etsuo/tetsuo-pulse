@@ -156,6 +156,7 @@ SocketDgram_free (T *socket)
   s->dtls_shutdown_done = 0;
   s->dtls_mtu = 0;
   s->dtls_last_handshake_state = DTLS_HANDSHAKE_NOT_STARTED;
+  s->dtls_retransmit_count = 0;
 #endif
 
   /* Common base cleanup: closes fd, disposes arena (frees s too) */
