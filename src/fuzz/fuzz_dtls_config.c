@@ -164,7 +164,7 @@ verify_mtu_settings (void)
 /**
  * Section 6.4: Verify Cookie Protection Parameters
  *
- * - SOCKET_DTLS_COOKIE_LEN: 32 bytes (HMAC-SHA256 truncated)
+ * - SOCKET_DTLS_COOKIE_LEN: 32 bytes (timestamp + truncated HMAC tag)
  * - SOCKET_DTLS_COOKIE_SECRET_LEN: 32 bytes for HMAC key
  * - SOCKET_DTLS_COOKIE_LIFETIME_SEC: 60 seconds validity
  * - SOCKET_DTLS_MAX_PENDING_COOKIES: 1000 concurrent exchanges
@@ -172,7 +172,7 @@ verify_mtu_settings (void)
 static void
 verify_cookie_params (void)
 {
-  /* Cookie length: 32 bytes (HMAC-SHA256 truncated output) */
+  /* Cookie length: 32 bytes (timestamp + truncated HMAC tag) */
   assert (SOCKET_DTLS_COOKIE_LEN == 32);
 
   /* Cookie secret length: 32 bytes for HMAC-SHA256 key */

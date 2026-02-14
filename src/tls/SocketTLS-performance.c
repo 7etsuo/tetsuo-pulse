@@ -53,6 +53,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 static int tls_ctx_ex_data_index = -1;
 static pthread_once_t tls_ctx_ex_data_once = PTHREAD_ONCE_INIT;
 
+/* Ex-data index for storing a per-SSL early-data replay decision.
+ * We store pointers to static markers (no allocation), so no cleanup hook. */
+static int tls_early_data_ex_data_index = -1;
+static pthread_once_t tls_early_data_ex_data_once = PTHREAD_ONCE_INIT;
+static const char tls_early_data_accept_marker = 1;
+static const char tls_early_data_reject_marker = 0;
+
 /**
  * init_ex_data_index - One-time initialization of ex-data index
  *
@@ -66,6 +73,13 @@ init_ex_data_index (void)
   tls_ctx_ex_data_index = SSL_CTX_get_ex_new_index (0, NULL, NULL, NULL, NULL);
 }
 
+static void
+init_early_data_ex_data_index (void)
+{
+  tls_early_data_ex_data_index = SSL_get_ex_new_index (
+      0, "tls early data replay decision", NULL, NULL, NULL);
+}
+
 /**
  * ensure_ex_data_index - Thread-safe ex-data index initialization
  *
@@ -75,6 +89,103 @@ static void
 ensure_ex_data_index (void)
 {
   pthread_once (&tls_ctx_ex_data_once, init_ex_data_index);
+}
+
+static int
+tls_get_early_data_ex_data_index (void)
+{
+  pthread_once (&tls_early_data_ex_data_once, init_early_data_ex_data_index);
+  return tls_early_data_ex_data_index;
+}
+
+static int
+tls_get_early_data_replay_decision (SSL *ssl, int *is_set)
+{
+  *is_set = 0;
+
+  int idx = tls_get_early_data_ex_data_index ();
+  if (idx < 0)
+    {
+      /* If ex_data unavailable, default to allow (caller may still enforce). */
+      return 1;
+    }
+
+  void *ptr = SSL_get_ex_data (ssl, idx);
+  if (ptr == (void *)&tls_early_data_accept_marker)
+    {
+      *is_set = 1;
+      return 1;
+    }
+  if (ptr == (void *)&tls_early_data_reject_marker)
+    {
+      *is_set = 1;
+      return 0;
+    }
+
+  return 1;
+}
+
+static void
+tls_set_early_data_replay_decision (SSL *ssl, int allow)
+{
+  int idx = tls_get_early_data_ex_data_index ();
+  if (idx < 0)
+    return;
+
+  void *ptr = allow ? (void *)&tls_early_data_accept_marker
+                    : (void *)&tls_early_data_reject_marker;
+  if (SSL_set_ex_data (ssl, idx, ptr) != 1)
+    SOCKET_LOG_WARN_MSG ("Failed to set SSL ex_data for early data decision");
+}
+
+static int
+tls_compute_early_data_replay_allowed (SocketTLSContext_T ctx, SSL *ssl)
+{
+  if (!ctx || !ssl || !ctx->is_server)
+    return 1;
+
+  SSL_SESSION *sess = SSL_get0_session (ssl);
+  if (!sess)
+    sess = SSL_get_session (ssl);
+
+  if (!sess)
+    {
+      if (ctx->early_data_replay_required)
+        SocketMetrics_counter_inc (SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED);
+      return ctx->early_data_replay_required ? 0 : 1;
+    }
+
+  unsigned int id_len = 0;
+  const unsigned char *id = SSL_SESSION_get_id (sess, &id_len);
+  if (!id || id_len == 0)
+    {
+      if (ctx->early_data_replay_required)
+        SocketMetrics_counter_inc (SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED);
+      return ctx->early_data_replay_required ? 0 : 1;
+    }
+
+  return SocketTLSContext_check_early_data_replay (ctx, id, (size_t)id_len);
+}
+
+static int
+tls_allow_early_data_cb (SSL *ssl, void *arg)
+{
+  SocketTLSContext_T ctx = (SocketTLSContext_T)arg;
+  if (!ctx || !ssl)
+    return 0;
+
+  int is_set = 0;
+  int decision = tls_get_early_data_replay_decision (ssl, &is_set);
+  if (!is_set)
+    {
+      decision = tls_compute_early_data_replay_allowed (ctx, ssl);
+      tls_set_early_data_replay_decision (ssl, decision);
+    }
+
+  if (!decision)
+    (void)SSL_set_max_early_data (ssl, 0);
+
+  return decision ? 1 : 0;
 }
 
 
@@ -268,6 +379,9 @@ SocketTLSContext_enable_early_data (SocketTLSContext_T ctx,
       /* Secure by default: require replay protection callback for 0-RTT */
       ctx->early_data_replay_required = 1;
 
+      /* Enforce replay decision at the TLS layer (called when early data arrives). */
+      SSL_CTX_set_allow_early_data_cb (ctx->ssl_ctx, tls_allow_early_data_cb, ctx);
+
       SOCKET_LOG_DEBUG_MSG ("Enabled 0-RTT early data on server context "
                             "(max=%u bytes, replay protection REQUIRED)",
                             early_data_size);
@@ -298,6 +412,7 @@ SocketTLSContext_disable_early_data (SocketTLSContext_T ctx)
   if (ctx->is_server)
     {
       SSL_CTX_set_max_early_data (ctx->ssl_ctx, 0);
+      SSL_CTX_set_allow_early_data_cb (ctx->ssl_ctx, NULL, NULL);
     }
 
   SOCKET_LOG_DEBUG_MSG ("Disabled 0-RTT early data on context");
@@ -445,6 +560,26 @@ SocketTLS_read_early_data (Socket_T socket,
       return -1;
     }
 
+  SocketTLSContext_T ctx = (SocketTLSContext_T)socket->tls_ctx;
+  if (!ctx || !ctx->is_server)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* Defense in depth: ensure replay decision is made before delivering data. */
+  int is_set = 0;
+  int allow = tls_get_early_data_replay_decision (ssl, &is_set);
+  if (!is_set)
+    {
+      allow = tls_compute_early_data_replay_allowed (ctx, ssl);
+      tls_set_early_data_replay_decision (ssl, allow);
+      if (!allow)
+        (void)SSL_set_max_early_data (ssl, 0);
+    }
+  if (!allow)
+    return 0; /* Treat as no early data; handshake continues. */
+
   size_t bytes_read = 0;
   int result = SSL_read_early_data (ssl, buf, len, &bytes_read);
 
@@ -466,7 +601,7 @@ SocketTLS_read_early_data (Socket_T socket,
 
     case SSL_READ_EARLY_DATA_ERROR:
       {
-        int ssl_error = SSL_get_error (ssl, (int)bytes_read);
+        int ssl_error = SSL_get_error (ssl, result);
         if (ssl_error == SSL_ERROR_WANT_READ
             || ssl_error == SSL_ERROR_WANT_WRITE)
           {

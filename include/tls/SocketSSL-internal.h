@@ -503,8 +503,11 @@ ssl_format_openssl_error_to_buf (const char *context,
 static inline int
 ssl_apply_sni_hostname (SSL *ssl, const char *hostname)
 {
-  /* Enable peer certificate verification - required for hostname check */
-  SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
+  /* Enable peer certificate verification - required for hostname check.
+   * Preserve any existing verify callback (pinning/OCSP/user hooks). */
+  int mode = SSL_get_verify_mode (ssl);
+  SSL_verify_cb cb = SSL_get_verify_callback (ssl);
+  SSL_set_verify (ssl, mode | SSL_VERIFY_PEER, cb);
 
   /* Set SNI extension */
   if (SSL_set_tlsext_host_name (ssl, hostname) != 1)

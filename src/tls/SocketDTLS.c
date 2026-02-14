@@ -259,6 +259,8 @@ finalize_dtls_state (SocketDgram_T socket, SSL *ssl, SocketDTLSContext_T ctx)
     socket->dtls_handshake_done = 0;
     socket->dtls_shutdown_done = 0;
     socket->dtls_mtu = SocketDTLSContext_get_mtu (ctx);
+    socket->dtls_last_handshake_state = DTLS_HANDSHAKE_NOT_STARTED;
+    socket->dtls_retransmit_count = 0;
 
     ref_added = 0; /* Success - keep the reference */
   }
@@ -675,11 +677,24 @@ SocketDTLS_handshake (SocketDgram_T socket)
       socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
       return DTLS_HANDSHAKE_ERROR;
     }
+  if (timeout_result > 0)
+    {
+      socket->dtls_retransmit_count++;
+      if (socket->dtls_retransmit_count > SOCKET_DTLS_MAX_RETRANSMITS)
+        {
+          DTLS_ERROR_FMT ("DTLS retransmit limit exceeded (%d max)",
+                          SOCKET_DTLS_MAX_RETRANSMITS);
+          socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
+          SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
+          RAISE_DTLS_ERROR (SocketDTLS_HandshakeFailed);
+        }
+    }
 
   int result = SSL_do_handshake (ssl);
   if (result == 1)
     {
       socket->dtls_handshake_done = 1;
+      socket->dtls_retransmit_count = 0;
       socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COMPLETE;
       SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE);
       return DTLS_HANDSHAKE_COMPLETE;

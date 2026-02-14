@@ -449,7 +449,11 @@ alpn_select_cb (SSL *ssl,
   size_t client_count;
   const char **client_protos = parse_client_protos (in, inlen, &client_count);
   if (!client_protos)
-    return SSL_TLSEXT_ERR_NOACK;
+    {
+      /* Malformed ALPN input should not silently downgrade to "no ALPN". */
+      SOCKET_LOG_WARN_MSG ("Rejecting malformed ALPN protocol list");
+      return SSL_TLSEXT_ERR_ALERT_FATAL;
+    }
 
   /* Select protocol via callback or default matching */
   const char *selected

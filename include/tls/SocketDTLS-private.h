@@ -902,8 +902,13 @@ struct T
  * mitigating resource exhaustion DoS attacks. Cookies force clients to
  * demonstrate reachability before server allocates full handshake state.
  *
- * Cookie computation: HMAC-SHA256(server_secret, peer_addr || peer_port ||
- * timestamp) truncated to SOCKET_DTLS_COOKIE_LEN (typically 32-64 bytes).
+   * Cookie computation (SOCKET_DTLS_COOKIE_LEN bytes):
+   *   cookie = timestamp_u32_be || HMAC-SHA256(server_secret,
+   *                                          peer_addr || peer_port || timestamp)
+   *   cookie_tag = first (SOCKET_DTLS_COOKIE_LEN - 4) bytes of HMAC output
+   *
+   * The timestamp is monotonic seconds at generation time (big-endian). The
+   * HMAC binds the cookie to the peer address and timestamp.
  * Secret rotated periodically via context for forward secrecy and replay
  * resistance. Timestamp ensures expiration.
  *
@@ -951,8 +956,8 @@ struct T
  * - **Stateless**: No per-client memory; scales to millions of SYNs
  * - **Unforgeable**: HMAC binds to secret unknown to attacker
  * - **Address-bound**: Proves client IP/port ownership via round-trip
- * - **Time-limited**: Timestamp expiration (configurable window)
- * - **Replay-resistant**: Secret rotation + timestamp
+   * - **Time-limited**: Timestamp expiration (configurable window)
+   * - **Replay-resistant**: Short lifetime + secret rotation
  *
  * | Attack | Mitigated? | Mechanism |
  * |--------|------------|-----------|
@@ -1065,12 +1070,14 @@ struct T
  * @param out_cookie Output buffer for cookie (SOCKET_DTLS_COOKIE_LEN bytes)
  * @return 0 on success, -1 on failure
  *
- * Creates a cryptographically secure cookie using HMAC-SHA256:
- * HMAC-SHA256(secret, client_addr || client_port || timestamp)
- *
- * The cookie proves client address ownership and prevents spoofing attacks.
- * Truncated to SOCKET_DTLS_COOKIE_LEN bytes for efficiency while maintaining
- * security. Cookies have limited lifetime to prevent replay attacks.
+   * Creates a cryptographically secure cookie:
+   *   cookie = timestamp_u32_be || truncated_hmac_tag
+   *
+   * Where truncated_hmac_tag is the first (SOCKET_DTLS_COOKIE_LEN - 4) bytes of
+   * HMAC-SHA256(secret, peer_addr || peer_port || timestamp).
+   *
+   * The timestamp is monotonic seconds at generation time (big-endian).
+   * The cookie proves client address ownership and limits replay via lifetime.
  *
  * Used internally by dtls_cookie_generate_cb() and exposed for testing.
  * @see RFC 6347 Section 4.2.1 for cookie exchange specification

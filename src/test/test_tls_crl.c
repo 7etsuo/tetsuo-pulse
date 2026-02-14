@@ -36,6 +36,7 @@
 #if SOCKET_HAS_TLS
 
 #include "tls/SocketTLSConfig.h"
+#include "tls/SocketTLS-private.h" /* For forcing refresh due in tests */
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 
@@ -66,6 +67,24 @@ test_crl_callback (SocketTLSContext_T ctx,
   data->last_path[sizeof (data->last_path) - 1] = '\0';
 
   (void)ctx; /* Unused */
+}
+
+/* Callback that reloads CRL to ensure crl_check_refresh() does not hold CRL
+ * lock while calling user callbacks (prevents deadlocks). */
+static void
+test_crl_callback_reload (SocketTLSContext_T ctx,
+                          const char *path,
+                          int success,
+                          void *user_data)
+{
+  test_callback_data_t *data = (test_callback_data_t *)user_data;
+  data->call_count++;
+  data->last_success = success;
+  strncpy (data->last_path, path, sizeof (data->last_path) - 1);
+  data->last_path[sizeof (data->last_path) - 1] = '\0';
+
+  if (success)
+    SocketTLSContext_load_crl (ctx, path);
 }
 
 /**
@@ -570,6 +589,52 @@ TEST (crl_auto_refresh_with_callback)
        (auto-refresh does initial load) */
     /* Note: Whether initial load triggers callback depends on implementation.
        Just verify the API works without crashing */
+  }
+  FINALLY
+  {
+    cleanup_test_crl (crl_file, ca_key, ca_cert);
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
+/* Test CRL auto-refresh check path does not deadlock (regression for nested
+ * CRL_LOCK in crl_check_refresh). */
+TEST (crl_check_refresh_no_deadlock)
+{
+  SocketTLSContext_T ctx = NULL;
+  const char *crl_file = "/tmp/test_crl_check_refresh.crl";
+  const char *ca_key = "/tmp/test_crl_check_refresh_ca.key";
+  const char *ca_cert = "/tmp/test_crl_check_refresh_ca.crt";
+  test_callback_data_t callback_data = { 0 };
+
+  if (!generate_test_crl (crl_file, ca_key, ca_cert))
+    return; /* Skip if openssl not available */
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    SocketTLSContext_set_crl_auto_refresh (ctx,
+                                           crl_file,
+                                           SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL,
+                                           test_crl_callback_reload,
+                                           &callback_data);
+
+    /* Force refresh due immediately without waiting >= 60 seconds. */
+    ctx->crl_next_refresh_ms = 0;
+
+    /* Fail fast if a deadlock is reintroduced. */
+    alarm (5);
+    int refreshed = SocketTLSContext_crl_check_refresh (ctx);
+    alarm (0);
+
+    ASSERT_EQ (refreshed, 1);
+    ASSERT_EQ (callback_data.call_count, 1);
+    ASSERT_EQ (callback_data.last_success, 1);
+    ASSERT (strlen (callback_data.last_path) > 0);
   }
   FINALLY
   {

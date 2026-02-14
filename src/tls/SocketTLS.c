@@ -2232,64 +2232,89 @@ ocsp_verify_signature (OCSP_BASICRESP *basic, SSL *ssl)
 }
 
 /**
+ * ocsp_find_issuer_in_chain - Locate issuer certificate for leaf in peer chain
+ * @peer_cert: Leaf certificate
+ * @chain: Peer-provided certificate chain (may be NULL)
+ *
+ * Returns: Issuer cert pointer from chain (borrowed), or NULL if not found.
+ */
+static X509 *
+ocsp_find_issuer_in_chain (X509 *peer_cert, STACK_OF (X509) *chain)
+{
+  if (!peer_cert || !chain)
+    return NULL;
+
+  int n = sk_X509_num (chain);
+  for (int i = 0; i < n; i++)
+    {
+      X509 *issuer = sk_X509_value (chain, i);
+      if (!issuer || issuer == peer_cert)
+        continue;
+
+      /* X509_check_issued(issuer, subject) returns X509_V_OK on match. */
+      if (X509_check_issued (issuer, peer_cert) == X509_V_OK)
+        return issuer;
+    }
+
+  return NULL;
+}
+
+/**
  * ocsp_check_cert_status - Check certificate status in OCSP response
  * @basic: Basic OCSP response containing status information
+ * @ssl: SSL connection (for peer chain)
+ * @peer_cert: Peer leaf certificate to validate
  *
- * Iterates through OCSP single responses to find valid certificate status.
- * Validates response freshness (thisUpdate/nextUpdate timestamps) and maps
- * OCSP status codes to return values.
+ * Finds and validates the OCSP single response that matches the peer
+ * certificate (OCSP_CERTID binding), validates freshness, and maps status.
  *
  * Returns: 1 (GOOD), 0 (REVOKED), or -1 (UNKNOWN/not found)
  * Thread-safe: Yes (read-only operation on OCSP response)
  */
 static int
-ocsp_check_cert_status (OCSP_BASICRESP *basic)
+ocsp_check_cert_status (OCSP_BASICRESP *basic, SSL *ssl, X509 *peer_cert)
 {
-  int cert_status = -1;
-  int resp_count = OCSP_resp_count (basic);
+  if (!basic || !ssl || !peer_cert)
+    return -1;
 
-  for (int i = 0; i < resp_count; i++)
+  STACK_OF (X509) *chain = SSL_get_peer_cert_chain (ssl);
+  X509 *issuer = ocsp_find_issuer_in_chain (peer_cert, chain);
+  if (!issuer)
+    return -1;
+
+  OCSP_CERTID *id = OCSP_cert_to_id (NULL, peer_cert, issuer);
+  if (!id)
+    return -1;
+
+  int reason = 0;
+  ASN1_GENERALIZEDTIME *thisupd = NULL;
+  ASN1_GENERALIZEDTIME *nextupd = NULL;
+  ASN1_GENERALIZEDTIME *revtime = NULL;
+  int status = V_OCSP_CERTSTATUS_UNKNOWN;
+
+  int found = OCSP_resp_find_status (
+      basic, id, &status, &reason, &revtime, &thisupd, &nextupd);
+  OCSP_CERTID_free (id);
+
+  if (found != 1)
+    return -1; /* No matching single response for leaf cert */
+
+  if (!OCSP_check_validity (thisupd,
+                            nextupd,
+                            SOCKET_TLS_OCSP_MAX_AGE_SECONDS,
+                            -1))
+    return -1; /* Stale or not-yet-valid */
+
+  switch (status)
     {
-      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
-      if (!single)
-        continue;
-
-      int reason = 0;
-      ASN1_GENERALIZEDTIME *thisupd = NULL;
-      ASN1_GENERALIZEDTIME *nextupd = NULL;
-      ASN1_GENERALIZEDTIME *revtime = NULL;
-
-      int status = OCSP_single_get0_status (
-          single, &reason, &revtime, &thisupd, &nextupd);
-
-      /* Validate response freshness */
-      if (!OCSP_check_validity (
-              thisupd, nextupd, SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1))
-        continue; /* Response is stale or not yet valid */
-
-      /* Map OCSP status to return value */
-      switch (status)
-        {
-        case V_OCSP_CERTSTATUS_GOOD:
-          cert_status = 1;
-          break;
-        case V_OCSP_CERTSTATUS_REVOKED:
-          cert_status = 0;
-          break;
-        case V_OCSP_CERTSTATUS_UNKNOWN:
-        default:
-          /* Unknown status - continue checking other responses */
-          if (cert_status < 0)
-            cert_status = -1;
-          break;
-        }
-
-      /* Stop at first definitive result (GOOD or REVOKED) */
-      if (cert_status == 1 || cert_status == 0)
-        break;
+    case V_OCSP_CERTSTATUS_GOOD:
+      return 1;
+    case V_OCSP_CERTSTATUS_REVOKED:
+      return 0;
+    case V_OCSP_CERTSTATUS_UNKNOWN:
+    default:
+      return -1;
     }
-
-  return cert_status;
 }
 #endif /* !defined(OPENSSL_NO_OCSP) */
 
@@ -2331,7 +2356,7 @@ SocketTLS_get_ocsp_response_status (Socket_T socket)
     }
 
   /* Check certificate status in OCSP response */
-  int cert_status = ocsp_check_cert_status (basic);
+  int cert_status = ocsp_check_cert_status (basic, ssl, peer_cert);
 
   X509_free (peer_cert);
   OCSP_BASICRESP_free (basic);
