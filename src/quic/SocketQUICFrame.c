@@ -990,7 +990,7 @@ SocketQUICFrame_parse_arena (Arena_T arena,
       size_t temp_consumed;
       res = SocketQUICFrame_parse (data, len, frame, &temp_consumed);
       if (res == QUIC_FRAME_OK)
-        pos = temp_consumed;
+        *consumed = temp_consumed;
       return res;
     }
 
