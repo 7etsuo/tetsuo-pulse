@@ -89,12 +89,15 @@ try_load_crl (T ctx, const char *path)
 }
 
 static void
-notify_crl_callback (T ctx, const char *path, int success)
+notify_crl_callback (T ctx,
+                     const char *path,
+                     int success,
+                     SocketTLSCrlCallback callback,
+                     void *user_data)
 {
-  if (!ctx->crl_callback)
+  if (!callback)
     return;
-  SocketTLSCrlCallback cb = (SocketTLSCrlCallback)ctx->crl_callback;
-  cb (ctx, path, success, ctx->crl_user_data);
+  callback (ctx, path, success, user_data);
 }
 
 static void
@@ -201,7 +204,11 @@ SocketTLSContext_crl_check_refresh (T ctx)
 {
   assert (ctx);
 
-  volatile int result = 0;
+  volatile int should_refresh = 0;
+  const char *volatile path = NULL;
+  SocketTLSCrlCallback volatile callback = NULL;
+  void *volatile user_data = NULL;
+  long interval_seconds = 0;
 
   TRY
   {
@@ -209,7 +216,7 @@ SocketTLSContext_crl_check_refresh (T ctx)
 
     if (ctx->crl_refresh_interval <= 0 || !ctx->crl_refresh_path)
       {
-        result = 0;
+        should_refresh = 0;
       }
     else
       {
@@ -217,20 +224,25 @@ SocketTLSContext_crl_check_refresh (T ctx)
 
         if (now_ms < ctx->crl_next_refresh_ms)
           {
-            result = 0;
+            should_refresh = 0;
           }
         else
           {
-            int success = try_load_crl (ctx, ctx->crl_refresh_path);
-            set_crl_next_refresh (ctx, now_ms, ctx->crl_refresh_interval);
-            notify_crl_callback (ctx, ctx->crl_refresh_path, success);
-            result = success ? 1 : 0;
+            path = ctx->crl_refresh_path;
+            callback = (SocketTLSCrlCallback)ctx->crl_callback;
+            user_data = ctx->crl_user_data;
+            interval_seconds = ctx->crl_refresh_interval;
+
+            /* Schedule next refresh under lock, but perform load/callback
+             * outside the lock to avoid recursive locking. */
+            set_crl_next_refresh (ctx, now_ms, interval_seconds);
+            should_refresh = 1;
           }
       }
   }
   EXCEPT (SocketTLS_Failed)
   {
-    result = 0;
+    should_refresh = 0;
   }
   FINALLY
   {
@@ -238,7 +250,20 @@ SocketTLSContext_crl_check_refresh (T ctx)
   }
   END_TRY;
 
-  return result;
+  if (!should_refresh || !path)
+    return 0;
+
+  int success = try_load_crl (ctx, path);
+  volatile int callback_ok = 1;
+  TRY notify_crl_callback (ctx, path, success, callback, user_data);
+  EXCEPT (SocketTLS_Failed)
+  callback_ok = 0;
+  END_TRY;
+
+  if (!callback_ok)
+    return 0;
+
+  return success ? 1 : 0;
 }
 
 long
