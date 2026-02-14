@@ -867,7 +867,7 @@ TEST (httpserver_static_symlink_escape_blocked)
   char *base_dir = NULL;
   char base2_dir[4096] = { 0 };
   char link_path[4096] = { 0 };
-  char secret_path[4096] = { 0 };
+  char secret_path[4112] = { 0 };
 
   TRY
   {

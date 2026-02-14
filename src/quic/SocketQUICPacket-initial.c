@@ -229,8 +229,12 @@ apply_header_protection (uint8_t *packet,
   if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, QUIC_HP_SAMPLE_LEN) <= 0)
     goto cleanup;
 
+  /* Read PN length from unprotected first byte BEFORE masking (RFC 9001 §5.4.1)
+   */
+  pn_length = (packet[0] & QUIC_PN_LENGTH_MASK) + 1;
+
   /* Apply mask to first byte */
-  if (packet[0] & 0x80)
+  if (packet[0] & QUIC_HEADER_FORM_BIT)
     {
       /* Long header: mask bottom 4 bits */
       packet[0] ^= (mask[0] & QUIC_HP_LONG_HEADER_MASK);
@@ -240,9 +244,6 @@ apply_header_protection (uint8_t *packet,
       /* Short header: mask bottom 5 bits */
       packet[0] ^= (mask[0] & QUIC_HP_SHORT_HEADER_MASK);
     }
-
-  /* Get packet number length from first byte */
-  pn_length = (packet[0] & 0x03) + 1;
 
   /* Apply mask to packet number bytes */
   for (uint8_t i = 0; i < pn_length; i++)
@@ -315,13 +316,13 @@ remove_header_protection (uint8_t *packet,
     goto cleanup;
 
   /* Remove header protection from first byte */
-  if (packet[0] & 0x80)
-    packet[0] ^= (mask[0] & 0x0F);
+  if (packet[0] & QUIC_HEADER_FORM_BIT)
+    packet[0] ^= (mask[0] & QUIC_HP_LONG_HEADER_MASK);
   else
-    packet[0] ^= (mask[0] & 0x1F);
+    packet[0] ^= (mask[0] & QUIC_HP_SHORT_HEADER_MASK);
 
   /* Get packet number length */
-  *pn_length = (packet[0] & 0x03) + 1;
+  *pn_length = (packet[0] & QUIC_PN_LENGTH_MASK) + 1;
 
   /* Remove header protection from packet number */
   for (uint8_t i = 0; i < *pn_length; i++)
@@ -556,7 +557,7 @@ SocketQUICInitial_protect (uint8_t *packet,
   select_protection_keys (keys, is_client, 1, &key, &iv, &hp_key);
 
   /* Get packet number from header */
-  pn_length = (packet[0] & 0x03) + 1;
+  pn_length = (packet[0] & QUIC_PN_LENGTH_MASK) + 1;
   pn = 0;
   for (uint8_t i = 0; i < pn_length; i++)
     pn = (pn << 8) | packet[header_len - pn_length + i];

@@ -307,6 +307,26 @@
 #define QUIC_RETRY_INTEGRITY_TAG_LEN 16
 
 /* ============================================================================
+ * Header Byte Constants (RFC 9000 §17)
+ * ============================================================================
+ */
+
+/**
+ * @brief Header Form bit (RFC 9000 §17.2).
+ *
+ * Bit 7 of the first byte: 1 = Long Header, 0 = Short Header.
+ */
+#define QUIC_HEADER_FORM_BIT 0x80
+
+/**
+ * @brief Packet Number Length mask (RFC 9000 §17.2, §17.3).
+ *
+ * Bottom 2 bits of the first byte encode (pn_length - 1).
+ * Actual PN length = (first_byte & QUIC_PN_LENGTH_MASK) + 1.
+ */
+#define QUIC_PN_LENGTH_MASK 0x03
+
+/* ============================================================================
  * Header Protection Constants
  * ============================================================================
  */

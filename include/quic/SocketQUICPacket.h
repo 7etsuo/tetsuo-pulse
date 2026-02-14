@@ -927,13 +927,13 @@ typedef struct SocketQUICReceive
  */
 typedef struct SocketQUICReceiveResult
 {
-  SocketQUICPacket_Type type; /**< Packet type */
-  uint64_t packet_number;     /**< Full reconstructed packet number */
+  SocketQUICPacket_Type type;  /**< Packet type */
+  uint64_t packet_number;      /**< Full reconstructed packet number */
   SocketQUIC_PNSpace pn_space; /**< Packet number space */
 
   /* Decrypted payload (points into modified input buffer) */
-  uint8_t *payload;     /**< Pointer to decrypted payload */
-  size_t payload_len;   /**< Length of decrypted payload */
+  uint8_t *payload;   /**< Pointer to decrypted payload */
+  size_t payload_len; /**< Length of decrypted payload */
 
   /* Header info */
   SocketQUICConnectionID_T dcid; /**< Destination Connection ID */
@@ -942,6 +942,9 @@ typedef struct SocketQUICReceiveResult
   /* Short header specific */
   int key_phase; /**< Key Phase bit (1-RTT only) */
   int spin_bit;  /**< Spin bit (1-RTT only) */
+
+  /* Coalesced packet support (RFC 9000 §12.2) */
+  size_t consumed; /**< Total bytes consumed from datagram */
 } SocketQUICReceiveResult_T;
 
 /**
@@ -949,16 +952,16 @@ typedef struct SocketQUICReceiveResult
  */
 typedef enum
 {
-  QUIC_RECEIVE_OK = 0,            /**< Success */
-  QUIC_RECEIVE_ERROR_NULL,        /**< NULL pointer argument */
-  QUIC_RECEIVE_ERROR_TRUNCATED,   /**< Packet too short */
-  QUIC_RECEIVE_ERROR_HEADER,      /**< Header parse error */
-  QUIC_RECEIVE_ERROR_NO_KEYS,     /**< Keys not available for packet type */
-  QUIC_RECEIVE_ERROR_UNPROTECT,   /**< Header protection removal failed */
-  QUIC_RECEIVE_ERROR_DECRYPT,     /**< AEAD decryption/auth failed */
-  QUIC_RECEIVE_ERROR_PN_DECODE,   /**< Packet number decode failed */
-  QUIC_RECEIVE_ERROR_VERSION,     /**< Unsupported version */
-  QUIC_RECEIVE_ERROR_KEY_PHASE    /**< Key phase mismatch */
+  QUIC_RECEIVE_OK = 0,          /**< Success */
+  QUIC_RECEIVE_ERROR_NULL,      /**< NULL pointer argument */
+  QUIC_RECEIVE_ERROR_TRUNCATED, /**< Packet too short */
+  QUIC_RECEIVE_ERROR_HEADER,    /**< Header parse error */
+  QUIC_RECEIVE_ERROR_NO_KEYS,   /**< Keys not available for packet type */
+  QUIC_RECEIVE_ERROR_UNPROTECT, /**< Header protection removal failed */
+  QUIC_RECEIVE_ERROR_DECRYPT,   /**< AEAD decryption/auth failed */
+  QUIC_RECEIVE_ERROR_PN_DECODE, /**< Packet number decode failed */
+  QUIC_RECEIVE_ERROR_VERSION,   /**< Unsupported version */
+  QUIC_RECEIVE_ERROR_KEY_PHASE  /**< Key phase mismatch */
 } SocketQUICReceive_Result;
 
 /**

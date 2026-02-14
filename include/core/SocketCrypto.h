@@ -34,6 +34,9 @@
 /** @brief SHA-256 digest size in bytes. */
 #define SOCKET_CRYPTO_SHA256_SIZE 32
 
+/** @brief SHA-384 digest size in bytes. */
+#define SOCKET_CRYPTO_SHA384_SIZE 48
+
 /** @brief MD5 digest size in bytes. */
 #define SOCKET_CRYPTO_MD5_SIZE 16
 

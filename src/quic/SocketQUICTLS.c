@@ -25,11 +25,11 @@
 
 /*
  * Check for OpenSSL QUIC support.
- * SSL_QUIC_METHOD was added in OpenSSL 3.2.0.
- * We check for the presence of the SSL_set_quic_method macro.
+ * - OpenSSL 3.2+ has native QUIC (SSL_set_quic_method as a macro/function)
+ * - quictls fork defines OPENSSL_INFO_QUIC in <openssl/quic.h>
  */
-#if defined(SSL_set_quic_method)        \
-    || (defined(OPENSSL_VERSION_NUMBER) \
+#if defined(SSL_set_quic_method) || defined(OPENSSL_INFO_QUIC) \
+    || (defined(OPENSSL_VERSION_NUMBER)                        \
         && OPENSSL_VERSION_NUMBER >= 0x30200000L)
 #define HAVE_OPENSSL_QUIC 1
 #else
@@ -37,6 +37,19 @@
 #endif
 
 #if HAVE_OPENSSL_QUIC
+
+/*
+ * quictls compatibility: SSL_CTX_set_early_data_enabled() exists only in
+ * OpenSSL 3.2+.  quictls provides the per-SSL variant instead.  When the
+ * context-level API is missing we defer early-data enablement to create_ssl().
+ *
+ * Inside HAVE_OPENSSL_QUIC, version < 3.2 implies quictls.
+ */
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30200000L
+#define QUICTLS_COMPAT 0
+#else
+#define QUICTLS_COMPAT 1
+#endif
 
 /* ============================================================================
  * Constants
@@ -68,14 +81,18 @@ typedef struct
   size_t consumed;
 } CryptoBuffer_T;
 
+/* Max TLS secret size: SHA-384 suites (e.g. TLS_AES_256_GCM_SHA384) */
+#define QUIC_TLS_MAX_SECRET_SIZE SOCKET_CRYPTO_SHA384_SIZE
+
 /**
  * @brief TLS state stored in handshake context.
  */
 typedef struct
 {
   CryptoBuffer_T crypto_out[QUIC_CRYPTO_LEVEL_COUNT];
-  uint8_t read_secret[QUIC_CRYPTO_LEVEL_COUNT][SOCKET_CRYPTO_SHA256_SIZE];
-  uint8_t write_secret[QUIC_CRYPTO_LEVEL_COUNT][SOCKET_CRYPTO_SHA256_SIZE];
+  uint8_t read_secret[QUIC_CRYPTO_LEVEL_COUNT][QUIC_TLS_MAX_SECRET_SIZE];
+  uint8_t write_secret[QUIC_CRYPTO_LEVEL_COUNT][QUIC_TLS_MAX_SECRET_SIZE];
+  size_t secret_len[QUIC_CRYPTO_LEVEL_COUNT];
   int secrets_available[QUIC_CRYPTO_LEVEL_COUNT];
   int flush_pending;
   uint8_t alert;
@@ -295,7 +312,7 @@ quic_set_encryption_secrets (SSL *ssl,
   if (qlevel >= QUIC_CRYPTO_LEVEL_COUNT)
     return 0;
 
-  if (secret_len > SOCKET_CRYPTO_SHA256_SIZE)
+  if (secret_len > QUIC_TLS_MAX_SECRET_SIZE)
     return 0;
 
   if (read_secret != NULL)
@@ -304,6 +321,7 @@ quic_set_encryption_secrets (SSL *ssl,
   if (write_secret != NULL)
     memcpy (state->write_secret[qlevel], write_secret, secret_len);
 
+  state->secret_len[qlevel] = secret_len;
   state->secrets_available[qlevel] = 1;
   hs->keys_available[qlevel] = 1;
 
@@ -562,12 +580,20 @@ tls_configure_alpn (SSL_CTX *ctx,
 
 /**
  * @brief Configure 0-RTT early data support.
+ *
+ * quictls lacks SSL_CTX_set_early_data_enabled(); the per-SSL variant
+ * is used instead in create_ssl().
  */
 static void
 tls_configure_early_data (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
 {
+#if QUICTLS_COMPAT
+  (void)ctx;
+  (void)config;
+#else
   if (config != NULL && config->enable_0rtt)
     SSL_CTX_set_early_data_enabled (ctx, 1);
+#endif
 }
 
 /* ============================================================================
@@ -648,6 +674,11 @@ SocketQUICTLS_create_ssl (SocketQUICHandshake_T handshake)
     {
       SSL_set_accept_state (ssl);
     }
+
+#if QUICTLS_COMPAT
+  /* quictls: enable early data per-SSL since context-level API is missing */
+  SSL_set_quic_early_data_enabled (ssl, 1);
+#endif
 
   handshake->tls_ssl = ssl;
   return QUIC_TLS_OK;
@@ -730,7 +761,7 @@ SocketQUICTLS_do_handshake (SocketQUICHandshake_T handshake)
     case SSL_ERROR_SYSCALL:
       {
         unsigned long ossl_err = ERR_peek_error ();
-        char buf[256];
+        char buf[240];
         ERR_error_string_n (ossl_err, buf, sizeof (buf));
         snprintf (handshake->error_reason,
                   sizeof (handshake->error_reason),
@@ -912,9 +943,12 @@ SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
   if (!state->secrets_available[level])
     return QUIC_TLS_ERROR_SECRETS;
 
-  memcpy (write_secret, state->write_secret[level], SOCKET_CRYPTO_SHA256_SIZE);
-  memcpy (read_secret, state->read_secret[level], SOCKET_CRYPTO_SHA256_SIZE);
-  *secret_len = SOCKET_CRYPTO_SHA256_SIZE;
+  size_t len = state->secret_len[level];
+  if (len == 0)
+    len = SOCKET_CRYPTO_SHA256_SIZE;
+  memcpy (write_secret, state->write_secret[level], len);
+  memcpy (read_secret, state->read_secret[level], len);
+  *secret_len = len;
 
   return QUIC_TLS_OK;
 }
@@ -1132,6 +1166,16 @@ SocketQUICTLS_check_alpn_negotiated (SocketQUICHandshake_T handshake)
 
   if (alpn == NULL || alpn_len == 0)
     {
+      /*
+       * quictls QUIC API does not populate SSL_get0_alpn_selected for
+       * clients. If the handshake completed without alert, the server
+       * accepted our ALPN (RFC 9001 §8.1: server sends
+       * no_application_protocol alert on mismatch).
+       */
+      if (handshake->role == QUIC_CONN_ROLE_CLIENT
+          && SSL_is_init_finished (ssl))
+        return QUIC_TLS_OK;
+
       handshake->error_code = QUIC_ERROR_NO_APPLICATION_PROTOCOL;
       snprintf (handshake->error_reason,
                 sizeof (handshake->error_reason),
