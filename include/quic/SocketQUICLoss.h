@@ -71,6 +71,15 @@
 #define QUIC_LOSS_MAX_SENT_PACKETS 1024
 
 /**
+ * @brief Maximum number of ACK ranges to process per received ACK frame.
+ *
+ * QUIC peers can encode very large ACK ranges. We bound parsing (frame module)
+ * and processing (loss module) to avoid CPU exhaustion when ranges include
+ * packet numbers we never tracked.
+ */
+#define QUIC_LOSS_MAX_ACK_RANGES 256
+
+/**
  * @brief Maximum PTO backoff exponent.
  */
 #define QUIC_LOSS_MAX_PTO_COUNT 16

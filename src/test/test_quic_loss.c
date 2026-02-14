@@ -379,6 +379,48 @@ TEST (loss_on_ack_received_null)
   ASSERT_EQ (QUIC_LOSS_ERROR_NULL, res);
 }
 
+TEST (loss_on_ack_received_invalid_largest_ack)
+{
+  Arena_T arena;
+  SocketQUICLossState_T state;
+  SocketQUICLossRTT_T rtt;
+  SocketQUICLoss_Result res;
+  size_t acked_count = 123;
+  size_t lost_count = 123;
+
+  arena = Arena_new ();
+  state = SocketQUICLoss_new (arena, 0, 0);
+  SocketQUICLoss_init_rtt (&rtt);
+
+  /* Track one sent packet: pn=0 */
+  SocketQUICLoss_on_packet_sent (state, 0, 1000000, 100, 1, 1, 0);
+  ASSERT_EQ (1, state->sent_count);
+
+  /* Peer ACKs pn=1 which we never tracked as sent -> ignore */
+  SocketQUICFrameAck_T ack;
+  memset (&ack, 0, sizeof (ack));
+  ack.largest_ack = 1;
+  ack.ack_delay = 0;
+  ack.first_range = 0;
+
+  res = SocketQUICLoss_on_ack_received (state,
+                                       &rtt,
+                                       &ack,
+                                       1100000,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       &acked_count,
+                                       &lost_count);
+  ASSERT_EQ (QUIC_LOSS_OK, res);
+  ASSERT_EQ (0, acked_count);
+  ASSERT_EQ (0, lost_count);
+  ASSERT_EQ (1, state->sent_count);
+  ASSERT_EQ (100, state->bytes_in_flight);
+
+  Arena_dispose (&arena);
+}
+
 TEST (loss_on_ack_packet_threshold)
 {
   Arena_T arena;

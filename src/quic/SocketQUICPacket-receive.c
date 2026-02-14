@@ -435,8 +435,12 @@ receive_initial_packet (SocketQUICReceive_T *ctx,
       = SocketQUICPacket_decode_pn (truncated_pn, pn_length, largest_pn);
 
   /* Calculate payload bounds with underflow protection */
+  if (pn_offset > SIZE_MAX - pn_length)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
   size_t header_len = pn_offset + pn_length;
-  if (packet_len < header_len + QUIC_AEAD_TAG_LEN)
+  if (packet_len < QUIC_AEAD_TAG_LEN)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
+  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
     return QUIC_RECEIVE_ERROR_TRUNCATED;
 
   result->packet_number = full_pn;
@@ -497,8 +501,12 @@ receive_protected_packet (const SocketQUICPacketKeys_T *keys,
       = SocketQUICPacket_decode_pn (truncated_pn, pn_length, largest_pn);
 
   /* Calculate header and payload bounds */
+  if (pn_offset > SIZE_MAX - pn_length)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
   size_t header_len = pn_offset + pn_length;
-  if (packet_len < header_len + QUIC_AEAD_TAG_LEN)
+  if (packet_len < QUIC_AEAD_TAG_LEN)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
+  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
     return QUIC_RECEIVE_ERROR_TRUNCATED;
 
   size_t ciphertext_len = packet_len - header_len;
@@ -596,8 +604,12 @@ receive_1rtt_packet (SocketQUICReceive_T *ctx,
     }
 
   /* Calculate header and payload bounds */
+  if (pn_offset > SIZE_MAX - pn_length)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
   size_t header_len = pn_offset + pn_length;
-  if (packet_len < header_len + QUIC_AEAD_TAG_LEN)
+  if (packet_len < QUIC_AEAD_TAG_LEN)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
+  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
     return QUIC_RECEIVE_ERROR_TRUNCATED;
 
   size_t ciphertext_len = packet_len - header_len;

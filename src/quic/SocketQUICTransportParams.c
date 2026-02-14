@@ -1202,7 +1202,9 @@ decode_single_param (const uint8_t *data,
   DECODE_VARINT_AT_POS (data, len, pos, param_len);
 
   /* Check we have enough data for the parameter value */
-  if (*pos + param_len > len)
+  if (*pos > len)
+    return QUIC_TP_ERROR_INCOMPLETE;
+  if (param_len > (uint64_t)(len - *pos))
     return QUIC_TP_ERROR_INCOMPLETE;
 
   /* Check for duplicates (limited to param IDs 0-63 by bitmap size).

@@ -1047,6 +1047,7 @@ if(SOCKET_HAS_TLS)
         test_quic_crypto
         test_quic_initial
         test_quic_tls
+        test_quic_transport_0rtt_api
         test_quic_key_update
         test_quic_retry
         test_quic_rfc9001_vectors
