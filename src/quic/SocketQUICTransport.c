@@ -1734,27 +1734,16 @@ SocketQUICTransport_connect (SocketQUICTransport_T t,
  * ============================================================================
  */
 
-int
-SocketQUICTransport_close (SocketQUICTransport_T t)
+/**
+ * @brief Release all owned resources (socket, keys, TLS, tickets).
+ *
+ * Safe to call multiple times — each resource is NULL-checked and
+ * zeroed after release.  Called from both local-close and peer-close
+ * paths so that SocketQUICTransport_close() never leaks.
+ */
+static void
+transport_free_resources (SocketQUICTransport_T t)
 {
-  if (!t || t->closed)
-    return -1;
-
-  if (t->app_keys_valid)
-    {
-      /* Send CONNECTION_CLOSE */
-      uint8_t close_buf[64];
-      size_t close_len = SocketQUICFrame_encode_connection_close_app (
-          0, NULL, close_buf, sizeof (close_buf));
-      if (close_len > 0)
-        build_and_send_1rtt_packet (t, close_buf, close_len);
-    }
-
-  t->closed = 1;
-  t->connected = 0;
-  t->connecting = 0;
-
-  /* Clean up UDP socket */
   if (t->socket)
     {
       SocketDgram_free (&t->socket);
@@ -1773,7 +1762,6 @@ SocketQUICTransport_close (SocketQUICTransport_T t)
   t->resumption_peer_params_valid = 0;
   t->resumption_alpn_len = 0;
 
-  /* Clear key material */
   SocketQUICInitialKeys_clear (&t->initial_keys);
   SocketQUICPacketKeys_clear (&t->handshake_send_keys);
   SocketQUICPacketKeys_clear (&t->handshake_read_keys);
@@ -1781,10 +1769,34 @@ SocketQUICTransport_close (SocketQUICTransport_T t)
   SocketQUICPacketKeys_clear (&t->app_send_keys);
   SocketQUICKeyUpdate_clear (&t->key_update);
 
-  /* Free handshake TLS resources */
   if (t->handshake)
-    SocketQUICTLS_free (t->handshake);
+    {
+      SocketQUICTLS_free (t->handshake);
+      t->handshake = NULL;
+    }
+}
 
+int
+SocketQUICTransport_close (SocketQUICTransport_T t)
+{
+  if (!t)
+    return -1;
+
+  /* Only send CONNECTION_CLOSE if we haven't already closed */
+  if (!t->closed && t->app_keys_valid)
+    {
+      uint8_t close_buf[64];
+      size_t close_len = SocketQUICFrame_encode_connection_close_app (
+          0, NULL, close_buf, sizeof (close_buf));
+      if (close_len > 0)
+        build_and_send_1rtt_packet (t, close_buf, close_len);
+    }
+
+  t->closed = 1;
+  t->connected = 0;
+  t->connecting = 0;
+
+  transport_free_resources (t);
   return 0;
 }
 
