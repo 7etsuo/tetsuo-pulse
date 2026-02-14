@@ -171,7 +171,8 @@ static int
 calculate_pn_offset_long (const uint8_t *packet,
                           size_t packet_len,
                           SocketQUICPacket_Type type,
-                          size_t *pn_offset)
+                          size_t *pn_offset,
+                          size_t *out_packet_len)
 {
   /* Minimum long header: 1 + 4 + 1 + DCID + 1 + SCID = 7 + DCID + SCID */
   if (packet_len < 7)
@@ -202,9 +203,8 @@ calculate_pn_offset_long (const uint8_t *packet,
       /* Decode variable-length token length */
       uint64_t token_len;
       size_t token_len_bytes;
-      SocketQUICVarInt_Result vr
-          = SocketQUICVarInt_decode (packet + offset, packet_len - offset,
-                                     &token_len, &token_len_bytes);
+      SocketQUICVarInt_Result vr = SocketQUICVarInt_decode (
+          packet + offset, packet_len - offset, &token_len, &token_len_bytes);
       if (vr != QUIC_VARINT_OK)
         return -1;
 
@@ -214,20 +214,32 @@ calculate_pn_offset_long (const uint8_t *packet,
       offset += (size_t)token_len;
     }
 
-  /* Skip Length field (variable-length integer) */
+  /* Decode Length field (variable-length integer) */
   if (offset >= packet_len)
     return -1;
 
-  uint64_t payload_len;
+  uint64_t length_field;
   size_t len_bytes;
   SocketQUICVarInt_Result vr = SocketQUICVarInt_decode (
-      packet + offset, packet_len - offset, &payload_len, &len_bytes);
+      packet + offset, packet_len - offset, &length_field, &len_bytes);
   if (vr != QUIC_VARINT_OK)
     return -1;
 
   offset += len_bytes;
 
   *pn_offset = offset;
+
+  /* Compute actual packet boundary from Length field (RFC 9000 §17.2):
+   * Length = PN bytes + payload + AEAD tag.
+   * Actual packet ends at pn_offset + Length. */
+  if (out_packet_len != NULL)
+    {
+      size_t actual_len = offset + (size_t)length_field;
+      if (actual_len > packet_len)
+        return -1;
+      *out_packet_len = actual_len;
+    }
+
   return 0;
 }
 
@@ -285,7 +297,8 @@ parse_long_header (const uint8_t *packet,
                    size_t packet_len,
                    SocketQUICPacket_Type *out_type,
                    SocketQUICReceiveResult_T *result,
-                   size_t *pn_offset)
+                   size_t *pn_offset,
+                   size_t *actual_packet_len)
 {
   if (packet_len < 7)
     return QUIC_RECEIVE_ERROR_TRUNCATED;
@@ -332,7 +345,9 @@ parse_long_header (const uint8_t *packet,
   memcpy (result->scid.data, packet + offset, result->scid.len);
 
   /* Calculate pn_offset */
-  if (calculate_pn_offset_long (packet, packet_len, type, pn_offset) < 0)
+  if (calculate_pn_offset_long (
+          packet, packet_len, type, pn_offset, actual_packet_len)
+      < 0)
     return QUIC_RECEIVE_ERROR_HEADER;
 
   *out_type = type;
@@ -412,7 +427,10 @@ receive_initial_packet (SocketQUICReceive_T *ctx,
 
   /* Remove header protection and decrypt */
   SocketQUICInitial_Result unprotect_result = SocketQUICInitial_unprotect (
-      packet, packet_len, pn_offset, ctx->initial_keys,
+      packet,
+      packet_len,
+      pn_offset,
+      ctx->initial_keys,
       is_server ? 0 : 1, /* is_client for key selection */
       &pn_length);
 
@@ -425,8 +443,8 @@ receive_initial_packet (SocketQUICReceive_T *ctx,
     }
 
   /* Extract truncated PN with bounds checking */
-  if (extract_truncated_pn (packet, packet_len, pn_offset, pn_length,
-                            &truncated_pn)
+  if (extract_truncated_pn (
+          packet, packet_len, pn_offset, pn_length, &truncated_pn)
       < 0)
     return QUIC_RECEIVE_ERROR_PN_DECODE;
 
@@ -479,8 +497,8 @@ receive_protected_packet (const SocketQUICPacketKeys_T *keys,
   SocketQUICCrypto_Result cr;
 
   /* Remove header protection */
-  cr = SocketQUICCrypto_unprotect_header_ex (keys, packet, packet_len,
-                                             pn_offset);
+  cr = SocketQUICCrypto_unprotect_header_ex (
+      keys, packet, packet_len, pn_offset);
   if (cr != QUIC_CRYPTO_OK)
     {
       (*failures)++;
@@ -488,11 +506,11 @@ receive_protected_packet (const SocketQUICPacketKeys_T *keys,
     }
 
   /* Extract PN length from unprotected first byte (bits 0-1) */
-  pn_length = (packet[0] & 0x03) + 1;
+  pn_length = (packet[0] & QUIC_PN_LENGTH_MASK) + 1;
 
   /* Extract truncated PN with bounds checking */
-  if (extract_truncated_pn (packet, packet_len, pn_offset, pn_length,
-                            &truncated_pn)
+  if (extract_truncated_pn (
+          packet, packet_len, pn_offset, pn_length, &truncated_pn)
       < 0)
     return QUIC_RECEIVE_ERROR_PN_DECODE;
 
@@ -513,9 +531,14 @@ receive_protected_packet (const SocketQUICPacketKeys_T *keys,
 
   /* Decrypt payload in place */
   size_t plaintext_len = ciphertext_len;
-  cr = SocketQUICCrypto_decrypt_payload (keys, full_pn, packet, header_len,
-                                         packet + header_len, ciphertext_len,
-                                         packet + header_len, &plaintext_len);
+  cr = SocketQUICCrypto_decrypt_payload (keys,
+                                         full_pn,
+                                         packet,
+                                         header_len,
+                                         packet + header_len,
+                                         ciphertext_len,
+                                         packet + header_len,
+                                         &plaintext_len);
   if (cr != QUIC_CRYPTO_OK)
     {
       (*failures)++;
@@ -568,8 +591,8 @@ receive_1rtt_packet (SocketQUICReceive_T *ctx,
    */
 
   /* Use current read keys for header unprotection (HP key doesn't change) */
-  cr = SocketQUICCrypto_unprotect_header_ex (&ku->read_keys, packet, packet_len,
-                                             pn_offset);
+  cr = SocketQUICCrypto_unprotect_header_ex (
+      &ku->read_keys, packet, packet_len, pn_offset);
   if (cr != QUIC_CRYPTO_OK)
     {
       SocketQUICKeyUpdate_on_decrypt_failure (ku);
@@ -578,11 +601,11 @@ receive_1rtt_packet (SocketQUICReceive_T *ctx,
     }
 
   /* Extract PN length from unprotected first byte */
-  pn_length = (packet[0] & 0x03) + 1;
+  pn_length = (packet[0] & QUIC_PN_LENGTH_MASK) + 1;
 
   /* Extract truncated PN with bounds checking */
-  if (extract_truncated_pn (packet, packet_len, pn_offset, pn_length,
-                            &truncated_pn)
+  if (extract_truncated_pn (
+          packet, packet_len, pn_offset, pn_length, &truncated_pn)
       < 0)
     return QUIC_RECEIVE_ERROR_PN_DECODE;
 
@@ -616,9 +639,14 @@ receive_1rtt_packet (SocketQUICReceive_T *ctx,
 
   /* Decrypt payload */
   size_t plaintext_len = ciphertext_len;
-  cr = SocketQUICCrypto_decrypt_payload (keys, full_pn, packet, header_len,
-                                         packet + header_len, ciphertext_len,
-                                         packet + header_len, &plaintext_len);
+  cr = SocketQUICCrypto_decrypt_payload (keys,
+                                         full_pn,
+                                         packet,
+                                         header_len,
+                                         packet + header_len,
+                                         ciphertext_len,
+                                         packet + header_len,
+                                         &plaintext_len);
   if (cr != QUIC_CRYPTO_OK)
     {
       SocketQUICKeyUpdate_on_decrypt_failure (ku);
@@ -659,7 +687,8 @@ receive_1rtt_packet (SocketQUICReceive_T *ctx,
  * @param pn    Successfully decrypted packet number.
  */
 static void
-update_largest_pn (SocketQUICReceive_T *ctx, SocketQUIC_PNSpace space,
+update_largest_pn (SocketQUICReceive_T *ctx,
+                   SocketQUIC_PNSpace space,
                    uint64_t pn)
 {
   if (!ctx->spaces[space].has_received || pn > ctx->spaces[space].largest_pn)
@@ -700,11 +729,17 @@ SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
   memset (result, 0, sizeof (*result));
 
   /* Parse header based on header form bit */
-  if (packet[0] & 0x80)
+  if (packet[0] & QUIC_HEADER_FORM_BIT)
     {
-      r = parse_long_header (packet, packet_len, &type, result, &pn_offset);
+      size_t actual_len = 0;
+      r = parse_long_header (
+          packet, packet_len, &type, result, &pn_offset, &actual_len);
       if (r != QUIC_RECEIVE_OK)
         return r;
+      /* Use the Length-field-derived packet boundary for long headers
+       * so coalesced packets don't corrupt AEAD decryption. */
+      if (actual_len > 0 && actual_len <= packet_len)
+        packet_len = actual_len;
     }
   else
     {
@@ -732,8 +767,8 @@ SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
   switch (type)
     {
     case QUIC_PACKET_TYPE_INITIAL:
-      r = receive_initial_packet (ctx, packet, packet_len, pn_offset, is_server,
-                                  largest_pn, result);
+      r = receive_initial_packet (
+          ctx, packet, packet_len, pn_offset, is_server, largest_pn, result);
       if (r != QUIC_RECEIVE_OK)
         return r;
       break;
@@ -741,8 +776,12 @@ SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
     case QUIC_PACKET_TYPE_HANDSHAKE:
       if (ctx->handshake_keys == NULL)
         return QUIC_RECEIVE_ERROR_NO_KEYS;
-      r = receive_protected_packet (ctx->handshake_keys, packet, packet_len,
-                                    pn_offset, largest_pn, result,
+      r = receive_protected_packet (ctx->handshake_keys,
+                                    packet,
+                                    packet_len,
+                                    pn_offset,
+                                    largest_pn,
+                                    result,
                                     &ctx->decryption_failures);
       if (r != QUIC_RECEIVE_OK)
         return r;
@@ -751,8 +790,12 @@ SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
     case QUIC_PACKET_TYPE_0RTT:
       if (ctx->zero_rtt_keys == NULL)
         return QUIC_RECEIVE_ERROR_NO_KEYS;
-      r = receive_protected_packet (ctx->zero_rtt_keys, packet, packet_len,
-                                    pn_offset, largest_pn, result,
+      r = receive_protected_packet (ctx->zero_rtt_keys,
+                                    packet,
+                                    packet_len,
+                                    pn_offset,
+                                    largest_pn,
+                                    result,
                                     &ctx->decryption_failures);
       if (r != QUIC_RECEIVE_OK)
         return r;
@@ -761,8 +804,8 @@ SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
     case QUIC_PACKET_TYPE_1RTT:
       if (ctx->key_update == NULL || !ctx->key_update->initialized)
         return QUIC_RECEIVE_ERROR_NO_KEYS;
-      r = receive_1rtt_packet (ctx, packet, packet_len, pn_offset, largest_pn,
-                               result);
+      r = receive_1rtt_packet (
+          ctx, packet, packet_len, pn_offset, largest_pn, result);
       if (r != QUIC_RECEIVE_OK)
         return r;
       break;
@@ -770,6 +813,9 @@ SocketQUICReceive_packet (SocketQUICReceive_T *ctx,
     default:
       return QUIC_RECEIVE_ERROR_HEADER;
     }
+
+  /* Record bytes consumed for coalesced packet support (RFC 9000 §12.2) */
+  result->consumed = packet_len;
 
   /* Update largest PN on successful decryption (RFC 9001 §5.5) */
   update_largest_pn (ctx, space, result->packet_number);

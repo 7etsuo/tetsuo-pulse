@@ -88,11 +88,11 @@ TEST (quic_transport_set_resumption_ticket_accepts_valid)
   SocketQUICTransportParams_T saved;
   init_saved_peer_params (&saved);
 
-  ASSERT_EQ (
-      SocketQUICTransport_set_resumption_ticket (
-          t, ticket, sizeof (ticket), &saved, "h3", 2),
-      0);
+  ASSERT_EQ (SocketQUICTransport_set_resumption_ticket (
+                 t, ticket, sizeof (ticket), &saved, "h3", 2),
+             0);
 
+  SocketQUICTransport_close (t);
   Arena_dispose (&arena);
 }
 

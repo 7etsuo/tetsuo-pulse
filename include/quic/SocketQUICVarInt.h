@@ -45,6 +45,14 @@
 #define SOCKETQUICVARINT_MAX_SIZE 8
 
 /**
+ * @brief Minimum value that forces a 2-byte varint encoding.
+ *
+ * Useful as a placeholder when pre-computing header sizes: any value
+ * with the 0x40 prefix encodes as exactly 2 bytes (RFC 9000 §16).
+ */
+#define SOCKETQUICVARINT_MIN_2BYTE 0x40
+
+/**
  * @brief Exception raised on encoding/decoding errors.
  *
  * Raised when:
