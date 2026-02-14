@@ -114,9 +114,10 @@ int SocketQUICTransport_connect (SocketQUICTransport_T t,
  * SocketQUICTransport_poll() until SocketQUICTransport_is_connected() returns
  * 1 (or an error occurs).
  *
- * If a resumption ticket is configured via SocketQUICTransport_set_resumption_ticket(),
- * this will attempt QUIC 0-RTT (early data). Early stream data can be sent
- * during the handshake using SocketQUICTransport_send_stream_0rtt().
+ * If a resumption ticket is configured via
+ * SocketQUICTransport_set_resumption_ticket(), this will attempt QUIC 0-RTT
+ * (early data). Early stream data can be sent during the handshake using
+ * SocketQUICTransport_send_stream_0rtt().
  *
  * @param t     Transport handle.
  * @param host  Remote hostname or IP.
@@ -250,12 +251,13 @@ int SocketQUICTransport_set_resumption_ticket (
  * @param alpn_len   In/out: buffer size / bytes written.
  * @return 0 on success, -1 on error.
  */
-int SocketQUICTransport_export_resumption (SocketQUICTransport_T t,
-                                           uint8_t *ticket,
-                                           size_t *ticket_len,
-                                           SocketQUICTransportParams_T *peer_params,
-                                           char *alpn,
-                                           size_t *alpn_len);
+int
+SocketQUICTransport_export_resumption (SocketQUICTransport_T t,
+                                       uint8_t *ticket,
+                                       size_t *ticket_len,
+                                       SocketQUICTransportParams_T *peer_params,
+                                       char *alpn,
+                                       size_t *alpn_len);
 
 /**
  * @brief Allocate the next client bidirectional stream ID.
@@ -266,6 +268,32 @@ int SocketQUICTransport_export_resumption (SocketQUICTransport_T t,
  * @return Stream ID, or UINT64_MAX on error.
  */
 uint64_t SocketQUICTransport_open_bidi_stream (SocketQUICTransport_T t);
+
+/**
+ * @brief Check whether the peer sent a CONNECTION_CLOSE frame.
+ *
+ * @param t  Transport handle.
+ * @return 1 if a peer CONNECTION_CLOSE was received, 0 otherwise.
+ */
+int SocketQUICTransport_peer_close_received (SocketQUICTransport_T t);
+
+/**
+ * @brief Get the error code from the peer's CONNECTION_CLOSE frame.
+ *
+ * Only meaningful when SocketQUICTransport_peer_close_received() returns 1.
+ *
+ * @param t  Transport handle.
+ * @return Error code (transport or application), or 0 if no close received.
+ */
+uint64_t SocketQUICTransport_peer_close_error (SocketQUICTransport_T t);
+
+/**
+ * @brief Check whether the peer's CONNECTION_CLOSE was application-level.
+ *
+ * @param t  Transport handle.
+ * @return 1 if application-level (frame type 0x1d), 0 if transport-level.
+ */
+int SocketQUICTransport_peer_close_is_app (SocketQUICTransport_T t);
 
 #endif /* SOCKET_HAS_TLS */
 

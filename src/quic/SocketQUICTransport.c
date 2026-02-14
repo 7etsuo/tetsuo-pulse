@@ -166,6 +166,11 @@ struct SocketQUICTransport
   int connected;
   int closed;
 
+  /* Peer CONNECTION_CLOSE info (RFC 9000 §19.19) */
+  uint64_t peer_close_error;
+  int peer_close_is_app;
+  int peer_close_received;
+
   /* 0-RTT resumption input (must be set before connect_start/connect) */
   uint8_t *resumption_ticket;
   size_t resumption_ticket_len;
@@ -1112,6 +1117,9 @@ process_frames (SocketQUICTransport_T t,
 
         case QUIC_FRAME_CONNECTION_CLOSE:
         case QUIC_FRAME_CONNECTION_CLOSE_APP:
+          t->peer_close_error = frame.data.connection_close.error_code;
+          t->peer_close_is_app = frame.data.connection_close.is_app_error;
+          t->peer_close_received = 1;
           t->closed = 1;
           t->connected = 0;
           SocketQUICFrame_free (&frame);
@@ -2285,6 +2293,35 @@ SocketQUICTransport_open_bidi_stream (SocketQUICTransport_T t)
   uint64_t id = t->next_bidi_id;
   t->next_bidi_id += 4;
   return id;
+}
+
+/* ============================================================================
+ * Peer CONNECTION_CLOSE accessors (RFC 9000 §19.19)
+ * ============================================================================
+ */
+
+int
+SocketQUICTransport_peer_close_received (SocketQUICTransport_T t)
+{
+  if (!t)
+    return 0;
+  return t->peer_close_received;
+}
+
+uint64_t
+SocketQUICTransport_peer_close_error (SocketQUICTransport_T t)
+{
+  if (!t)
+    return 0;
+  return t->peer_close_error;
+}
+
+int
+SocketQUICTransport_peer_close_is_app (SocketQUICTransport_T t)
+{
+  if (!t)
+    return 0;
+  return t->peer_close_is_app;
 }
 
 #endif /* SOCKET_HAS_TLS */
