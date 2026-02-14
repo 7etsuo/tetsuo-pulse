@@ -318,8 +318,9 @@ extern ssize_t SocketCrypto_base64_encode (const void *input,
 /**
  * @brief Decode Base64 string to binary data (RFC 4648).
  *
- * @param[in] input Base64 string (null-terminated if input_len == 0).
- * @param[in] input_len Length (0 for auto-detection).
+ * @param[in] input Base64 string.
+ * @param[in] input_len Explicit input length in bytes.
+ *            Use 0 only for empty string input.
  * @param[out] output Output buffer.
  * @param[in] output_size Buffer size.
  *

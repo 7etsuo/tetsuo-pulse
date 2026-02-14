@@ -39,34 +39,57 @@ const Except_T SocketRateLimit_Failed
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRateLimit);
 
 static size_t
-ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
+ratelimit_calculate_tokens_to_add (T limiter, int64_t elapsed_ms)
 {
+  size_t elapsed;
+  size_t scaled_tokens;
+  size_t accumulated;
+
   if (elapsed_ms <= 0)
     return 0;
 
-  size_t tokens_per_ms = tokens_per_sec / SOCKET_MS_PER_SECOND;
-  size_t safe_tokens
-      = SocketSecurity_safe_multiply ((size_t)elapsed_ms, tokens_per_ms);
-  if (safe_tokens == 0) /* Overflow or zero */
+  elapsed = (size_t)elapsed_ms;
+
+  if (!SocketSecurity_check_multiply (
+          elapsed, limiter->tokens_per_sec, &scaled_tokens))
     return 0;
-  return safe_tokens;
+
+  if (!SocketSecurity_check_add (
+          scaled_tokens, limiter->refill_remainder, &accumulated))
+    return 0;
+
+  limiter->refill_remainder = accumulated % SOCKET_MS_PER_SECOND;
+  return accumulated / SOCKET_MS_PER_SECOND;
 }
 
 static int64_t
 ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
 {
-  assert (tokens_per_sec > 0);
+  size_t numerator;
+  size_t wait_ms;
 
-  size_t ms_per_token = SOCKET_MS_PER_SECOND / tokens_per_sec;
-  if (ms_per_token == 0) /* tokens_per_sec too large */
+  if (tokens_per_sec == 0)
     return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
 
-  size_t safe_wait_ms;
-  if (!SocketSecurity_check_multiply (needed, ms_per_token, &safe_wait_ms))
+  if (!SocketSecurity_check_multiply (
+          needed, SOCKET_MS_PER_SECOND, &numerator))
     return INT64_MAX; /* Overflow: treat as very long wait */
 
-  int64_t wait_ms = (int64_t)safe_wait_ms;
-  return wait_ms; /* Guaranteed > 0 and no overflow */
+  wait_ms = numerator / tokens_per_sec;
+  if ((numerator % tokens_per_sec) != 0)
+    {
+      if (wait_ms == SIZE_MAX)
+        return INT64_MAX;
+      wait_ms++;
+    }
+
+  if (wait_ms == 0)
+    wait_ms = 1;
+
+  if (wait_ms > (size_t)INT64_MAX)
+    return INT64_MAX;
+
+  return (int64_t)wait_ms;
 }
 
 /* Calculate elapsed time since last refill, clamped to prevent clock jump
@@ -129,11 +152,12 @@ ratelimit_refill_bucket (T limiter)
   if (elapsed_ms == 0)
     return;
 
-  tokens_to_add
-      = ratelimit_calculate_tokens_to_add (elapsed_ms, limiter->tokens_per_sec);
+  tokens_to_add = ratelimit_calculate_tokens_to_add (limiter, elapsed_ms);
 
   if (tokens_to_add > 0)
     ratelimit_add_tokens (limiter, tokens_to_add, now_ms);
+  else
+    limiter->last_refill_ms = now_ms;
 }
 
 static int
@@ -286,6 +310,7 @@ ratelimit_init_fields (T limiter,
   limiter->tokens_per_sec = tokens_per_sec;
   limiter->bucket_size = bucket_size;
   limiter->tokens = bucket_size;
+  limiter->refill_remainder = 0;
   limiter->last_refill_ms = Socket_get_monotonic_ms ();
   limiter->arena = arena;
   limiter->initialized = SOCKET_MUTEX_UNINITIALIZED;
@@ -430,6 +455,7 @@ ratelimit_update_rate_locked (T limiter, size_t new_rate)
                           SocketRateLimit_Failed,
                           "Invalid tokens_per_sec - exceeds security limits");
       limiter->tokens_per_sec = new_rate;
+      limiter->refill_remainder = 0;
     }
 }
 
@@ -452,6 +478,7 @@ static void
 ratelimit_reset_locked (T limiter)
 {
   limiter->tokens = limiter->bucket_size;
+  limiter->refill_remainder = 0;
   limiter->last_refill_ms = Socket_get_monotonic_ms ();
 }
 

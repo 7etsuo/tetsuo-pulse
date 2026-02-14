@@ -50,6 +50,7 @@ struct T
   size_t tokens_per_sec;
   size_t bucket_size;
   size_t tokens;
+  size_t refill_remainder;
   int64_t last_refill_ms;
   pthread_mutex_t mutex;
   Arena_T arena;

@@ -35,6 +35,7 @@ static const char *const QUANTILE_STR_P999 = "0.999";
 static const char *const STATSD_PCT_P50 = "p50";
 static const char *const STATSD_PCT_P95 = "p95";
 static const char *const STATSD_PCT_P99 = "p99";
+#define STATSD_PREFIX_MAX_LEN 128
 
 #define METRICS_LOG_DEBUG_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_DEBUG, "metrics", fmt, ##__VA_ARGS__)
@@ -1262,20 +1263,57 @@ export_statsd_histograms (char *buffer,
     }
 }
 
+static int
+statsd_prefix_char_allowed (char c)
+{
+  if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+      || (c >= '0' && c <= '9'))
+    return 1;
+
+  return (c == '.' || c == '_' || c == '-');
+}
+
+static void
+sanitize_statsd_prefix (const char *prefix, char *out, size_t out_size)
+{
+  const char *src = (prefix != NULL && *prefix != '\0') ? prefix : "socket";
+  size_t j = 0;
+
+  if (out_size == 0)
+    return;
+
+  for (size_t i = 0; src[i] != '\0' && j < out_size - 1; i++)
+    {
+      if (statsd_prefix_char_allowed (src[i]))
+        out[j++] = src[i];
+      else if (src[i] == ' ')
+        out[j++] = '_';
+    }
+
+  if (j == 0)
+    {
+      strncpy (out, "socket", out_size - 1);
+      out[out_size - 1] = '\0';
+      return;
+    }
+
+  out[j] = '\0';
+}
+
 size_t
 SocketMetrics_export_statsd (char *buffer,
                              size_t buffer_size,
                              const char *prefix)
 {
   size_t pos = 0;
-  const char *pfx;
+  char pfx[STATSD_PREFIX_MAX_LEN];
   SocketMetrics_Snapshot snapshot;
 
   if (!buffer || buffer_size == 0)
     return 0;
 
   buffer[0] = '\0';
-  pfx = prefix ? prefix : "socket";
+  sanitize_statsd_prefix (prefix, pfx, sizeof (pfx));
   SocketMetrics_get (&snapshot);
 
   export_statsd_counters (buffer, buffer_size, &pos, pfx, &snapshot);

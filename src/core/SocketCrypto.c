@@ -260,7 +260,8 @@ SocketCrypto_hmac_sha256 (const void *key,
 #define HKDF_LABEL_PREFIX_LEN 6
 #define HKDF_MAX_LABEL_LEN 255
 #define HKDF_MAX_OUTPUT_LEN 255
-#define HKDF_MAX_INFO_LEN 512
+#define HKDF_MAX_INFO_LEN \
+  (2 + 1 + HKDF_MAX_LABEL_LEN + 1 + HKDF_MAX_LABEL_LEN)
 
 /*
  * build_expand_input - Build HMAC input for one HKDF-Expand iteration
@@ -331,6 +332,13 @@ hkdf_expand (const unsigned char *prk,
   unsigned char counter = 1;
   size_t t_len = 0;
   size_t offset = 0;
+
+  if (info_len > HKDF_MAX_INFO_LEN)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "HKDF-Expand: info too long (%zu > %u)",
+                      info_len,
+                      (unsigned)HKDF_MAX_INFO_LEN);
 
   while (offset < output_len)
     {
@@ -452,6 +460,12 @@ SocketCrypto_hkdf_expand_label (const unsigned char *prk,
   unsigned char hkdf_label[2 + 1 + HKDF_LABEL_PREFIX_LEN + 255 + 1 + 255];
   size_t hkdf_label_len = build_hkdf_label (
       hkdf_label, output_len, label, label_len, context, context_len);
+  if (hkdf_label_len > HKDF_MAX_INFO_LEN)
+    SOCKET_RAISE_MSG (SocketCrypto,
+                      SocketCrypto_Failed,
+                      "HKDF-Expand-Label: encoded info too long (%zu > %u)",
+                      hkdf_label_len,
+                      (unsigned)HKDF_MAX_INFO_LEN);
 
   /* Expand and clear */
   hkdf_expand (prk, prk_len, hkdf_label, hkdf_label_len, output, output_len);
@@ -1056,26 +1070,6 @@ base64_decode_char (unsigned char c,
   return 0;
 }
 
-/*
- * Maximum Base64 scan length to prevent unbounded strlen on untrusted input.
- *
- * 64KB (65536 bytes) chosen to balance security and practical use:
- * - Security: Prevents unbounded strnlen() scans on potentially malicious or
- *   non-NUL-terminated input, limiting CPU/memory exposure during validation
- * - Practical: Supports ~48KB of decoded data (base64 expands by ~4/3), which
- *   covers common use cases like API keys, tokens, certificates, and small
- *   embedded resources
- * - Conservative: Much smaller than SOCKET_SECURITY_MAX_ALLOCATION (256MB) as
- *   this is a preliminary scan limit, not the final allocation limit
- *
- * Larger base64 inputs must provide explicit length via the input_len parameter
- * rather than relying on NUL-termination scanning.
- */
-/* Cap the auto-detect scan to 4 KB.  This covers ~3 KB decoded payload,
- * sufficient for tokens/keys/certs.  Larger blobs must provide explicit
- * length.  The previous 64 KB limit was a CPU-exhaustion DoS vector. */
-#define BASE64_MAX_SCAN_LENGTH 4096
-
 static int
 base64_validate_input (const char *input, size_t *input_len)
 {
@@ -1083,14 +1077,7 @@ base64_validate_input (const char *input, size_t *input_len)
     return 0;
 
   if (*input_len == 0)
-    {
-      /* Use strnlen to prevent unbounded strlen scan on potentially
-       * untrusted or non-NUL-terminated input */
-      *input_len = strnlen (input, BASE64_MAX_SCAN_LENGTH);
-
-      if (*input_len >= BASE64_MAX_SCAN_LENGTH)
-        return -1; /* Likely not NUL-terminated or excessively long */
-    }
+    return (input[0] == '\0') ? 0 : -1;
 
   if (*input_len == 0)
     return 0;

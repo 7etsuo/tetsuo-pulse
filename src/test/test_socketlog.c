@@ -515,6 +515,26 @@ TEST (socketlog_structured_with_null_fields)
   SocketLog_setcallback (NULL, NULL);
 }
 
+TEST (socketlog_structured_fallback_escapes_injection_chars)
+{
+  reset_test_state ();
+  SocketLog_setcallback (test_callback, NULL);
+  SocketLog_setstructuredcallback (NULL, NULL);
+
+  SocketLogField fields[] = { { "user\nname", "line1\r\nline2=ok" } };
+
+  SocketLog_emit_structured (SOCKET_LOG_INFO, "Test", "Msg", fields, 1);
+
+  ASSERT_EQ (test_state.call_count, 1);
+  ASSERT_NOT_NULL (strstr (test_state.last_message,
+                           "user\\nname=line1\\r\\nline2\\=ok"));
+  ASSERT_NULL (strchr (test_state.last_message, '\n'));
+  ASSERT_NULL (strchr (test_state.last_message, '\r'));
+
+  SocketLog_setcallback (NULL, NULL);
+  SocketLog_setstructuredcallback (NULL, NULL);
+}
+
 TEST (socketlog_structured_field_with_null_key_value)
 {
   reset_test_state ();

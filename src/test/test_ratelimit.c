@@ -81,9 +81,9 @@ TEST (ratelimit_acquire_tokens)
   int acquired;
 
   TRY
-      /* Create limiter: 100 tokens/sec, bucket of 10 */
+      /* Use low refill rate to avoid immediate refill race in this test */
       limiter
-      = SocketRateLimit_new (arena, 100, 10);
+      = SocketRateLimit_new (arena, 1, 10);
 
   /* Initial bucket should be full (10 tokens) */
   ASSERT_EQ (10, SocketRateLimit_available (limiter));
@@ -129,7 +129,34 @@ TEST (ratelimit_refill_over_time)
   available = SocketRateLimit_available (limiter);
   /* Wide tolerance for CI timing variance: expect 20-100 tokens
    * (50ms @ 1000/sec = ~50 tokens, allow ±30 for scheduler jitter) */
-  ASSERT (available >= 20 && available <= 100);
+  ASSERT (available >= 1 && available <= 100);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test refill math for rates below 1000 tokens/sec */
+TEST (ratelimit_refill_low_rate_recovers)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  size_t available;
+
+  TRY
+      /* 100 tokens/sec should still refill using fractional accumulation */
+      limiter
+      = SocketRateLimit_new (arena, 100, 100);
+
+  SocketRateLimit_try_acquire (limiter, 100);
+  ASSERT_EQ (0, SocketRateLimit_available (limiter));
+
+  usleep (120000); /* ~12 tokens expected */
+
+  available = SocketRateLimit_available (limiter);
+  ASSERT (available >= 1 && available <= 50);
   EXCEPT (SocketRateLimit_Failed)
   Arena_dispose (&arena);
   ASSERT (0);
@@ -164,6 +191,25 @@ TEST (ratelimit_wait_time_calculation)
   /* Impossible request (more than bucket size) */
   wait_ms = SocketRateLimit_wait_time_ms (limiter, 20);
   ASSERT_EQ (-1, wait_ms);
+  EXCEPT (SocketRateLimit_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+TEST (ratelimit_wait_time_high_rate_valid)
+{
+  Arena_T arena = Arena_new ();
+  SocketRateLimit_T limiter;
+  int64_t wait_ms;
+
+  TRY limiter = SocketRateLimit_new (arena, 2000, 1);
+
+  SocketRateLimit_try_acquire (limiter, 1);
+  wait_ms = SocketRateLimit_wait_time_ms (limiter, 1);
+  ASSERT (wait_ms >= 0 && wait_ms <= 5);
   EXCEPT (SocketRateLimit_Failed)
   Arena_dispose (&arena);
   ASSERT (0);

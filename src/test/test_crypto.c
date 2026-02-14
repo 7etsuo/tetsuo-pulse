@@ -498,8 +498,9 @@ TEST (base64_whitespace)
 {
   /* Base64 should ignore whitespace per RFC 4648 Section 3.3 */
   unsigned char output[16];
+  const char *input = "Zm 9v\nYm\tFy";
   ssize_t len = SocketCrypto_base64_decode (
-      "Zm 9v\nYm\tFy", 0, output, sizeof (output));
+      input, strlen (input), output, sizeof (output));
   ASSERT (len == 6);
   ASSERT (memcmp (output, "foobar", 6) == 0);
 }
@@ -527,48 +528,19 @@ TEST (base64_buffer_size)
   ASSERT (SocketCrypto_base64_decoded_size (8) == 6);
 }
 
-TEST (base64_decode_zero_length_valid)
+TEST (base64_decode_zero_length_rejected_for_non_empty_input)
 {
-  /* Test with input_len=0 and valid NUL-terminated string */
+  /* Non-empty input now requires explicit length to avoid unsafe scans. */
   unsigned char output[16];
   ssize_t len = SocketCrypto_base64_decode ("Zm9v", 0, output, sizeof (output));
-  ASSERT (len == 3);
-  ASSERT (memcmp (output, "foo", 3) == 0);
-}
-
-TEST (base64_decode_overlength_input)
-{
-  /* Test with very long input (exceeds 64KB scan limit)
-   * Simulate untrusted input that may not be NUL-terminated */
-  char long_input[70000];
-  unsigned char output[64];
-
-  /* Fill with valid base64 characters but no NUL terminator */
-  memset (long_input, 'A', sizeof (long_input) - 1);
-  long_input[sizeof (long_input) - 1] = '\0';
-
-  /* This should fail with -1 because strlen scan hits 64KB limit */
-  ssize_t len
-      = SocketCrypto_base64_decode (long_input, 0, output, sizeof (output));
   ASSERT (len == -1);
 }
 
-TEST (base64_decode_bounded_strlen)
+TEST (base64_decode_zero_length_allowed_for_empty_input)
 {
-  /* Test that input_len=0 triggers bounded strlen with strnlen
-   * This verifies the fix for unbounded strlen security issue */
   unsigned char output[16];
-
-  /* Valid input under 64KB limit should work */
-  char valid_input[1000];
-  memset (valid_input, 'A', sizeof (valid_input) - 1);
-  valid_input[sizeof (valid_input) - 1] = '\0';
-
-  ssize_t len
-      = SocketCrypto_base64_decode (valid_input, 0, output, sizeof (output));
-  /* Should succeed (or fail due to buffer size, but not -1 from strlen scan)
-   */
-  ASSERT (len >= 0 || len == -1);
+  ssize_t len = SocketCrypto_base64_decode ("", 0, output, sizeof (output));
+  ASSERT (len == 0);
 }
 
 /* ============================================================================
@@ -854,6 +826,32 @@ TEST (hkdf_extract_null_salt)
   SocketCrypto_hkdf_extract (zero_salt, 32, ikm, 16, prk2);
 
   ASSERT (memcmp (prk1, prk2, 32) == 0);
+}
+
+TEST (hkdf_expand_label_max_info_bounds_safe)
+{
+  unsigned char prk[32] = { 0 };
+  unsigned char output[32] = { 0 };
+  unsigned char context[255];
+  char label[250];
+  volatile int raised = 0;
+
+  memset (context, 0xAB, sizeof (context));
+  memset (label, 'L', sizeof (label) - 1);
+  label[sizeof (label) - 1] = '\0'; /* label_len=249 */
+
+  TRY
+  {
+    SocketCrypto_hkdf_expand_label (
+        prk, sizeof (prk), label, context, sizeof (context), output, 32);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT (raised == 0);
 }
 
 /* ============================================================================

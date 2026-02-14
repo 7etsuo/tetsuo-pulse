@@ -68,7 +68,13 @@ allocate_buckets (Arena_T arena, size_t count)
 static unsigned
 compute_bucket (T table, const void *key)
 {
-  return table->hash (key, table->hash_seed, (unsigned)table->bucket_count);
+  unsigned bucket
+      = table->hash (key, table->hash_seed, (unsigned)table->bucket_count);
+
+  if (bucket >= table->bucket_count)
+    bucket %= (unsigned)table->bucket_count;
+
+  return bucket;
 }
 
 static void *
@@ -218,19 +224,33 @@ void
 HashTable_remove (T table, void *entry, void *prev, const void *key)
 {
   unsigned bucket;
+  void *current;
+  void *actual_prev = NULL;
 
   assert (table != NULL);
   assert (entry != NULL);
   assert (key != NULL);
 
+  (void)prev; /* Caller-provided prev can be stale/forged; recompute safely. */
+
   bucket = compute_bucket (table, key);
 
-  if (prev != NULL)
-    set_next (table, prev, get_next (table, entry));
-  else
-    table->buckets[bucket] = get_next (table, entry);
+  current = table->buckets[bucket];
+  while (current != NULL && current != entry)
+    {
+      actual_prev = current;
+      current = get_next (table, current);
+    }
 
-  set_next (table, entry, NULL);
+  if (current == NULL)
+    return;
+
+  if (actual_prev != NULL)
+    set_next (table, actual_prev, get_next (table, current));
+  else
+    table->buckets[bucket] = get_next (table, current);
+
+  set_next (table, current, NULL);
 }
 
 void

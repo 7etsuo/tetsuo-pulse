@@ -53,6 +53,23 @@ test_hash (const void *key, unsigned seed, unsigned table_size)
   return table_size > 0 ? hash % table_size : hash;
 }
 
+static unsigned
+out_of_range_hash (const void *key, unsigned seed, unsigned table_size)
+{
+  (void)key;
+  (void)seed;
+  return table_size + 17;
+}
+
+static unsigned
+constant_hash (const void *key, unsigned seed, unsigned table_size)
+{
+  (void)key;
+  (void)seed;
+  (void)table_size;
+  return 0;
+}
+
 static int
 test_compare (const void *entry, const void *key)
 {
@@ -230,6 +247,23 @@ TEST (hashtable_collision_handling)
     free (entries[i]);
 }
 
+TEST (hashtable_out_of_range_hash_is_clamped)
+{
+  HashTable_Config config = make_config (8);
+  config.hash = out_of_range_hash;
+  HashTable_T table = HashTable_new (NULL, &config);
+
+  TestEntry *entry = make_entry ("oob_hash", 7);
+  HashTable_insert (table, entry, entry->key);
+
+  TestEntry *found = HashTable_find (table, "oob_hash", NULL);
+  ASSERT_NOT_NULL (found);
+  ASSERT_EQ (found->value, 7);
+
+  HashTable_free (&table);
+  free (entry);
+}
+
 /* ============================================================================
  * Remove Tests
  * ============================================================================
@@ -256,6 +290,29 @@ TEST (hashtable_remove_head)
 
   HashTable_free (&table);
   free (entry);
+}
+
+TEST (hashtable_remove_ignores_stale_prev)
+{
+  HashTable_Config config = make_config (1); /* Force same bucket */
+  config.hash = constant_hash;
+  HashTable_T table = HashTable_new (NULL, &config);
+
+  TestEntry *entry1 = make_entry ("a", 1);
+  TestEntry *entry2 = make_entry ("b", 2);
+  TestEntry fake_prev = { 0 };
+
+  HashTable_insert (table, entry1, entry1->key);
+  HashTable_insert (table, entry2, entry2->key);
+
+  HashTable_remove (table, entry2, &fake_prev, entry2->key);
+
+  ASSERT_NULL (HashTable_find (table, "b", NULL));
+  ASSERT_NOT_NULL (HashTable_find (table, "a", NULL));
+
+  HashTable_free (&table);
+  free (entry1);
+  free (entry2);
 }
 
 TEST (hashtable_remove_middle)
