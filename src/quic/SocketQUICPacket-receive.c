@@ -276,6 +276,38 @@ extract_truncated_pn (const uint8_t *packet,
   return 0;
 }
 
+/**
+ * @brief Compute header length and ciphertext length with overflow protection.
+ *
+ * @param pn_offset       Offset to packet number field.
+ * @param pn_length       Length of PN (1-4 bytes).
+ * @param packet_len      Total packet length.
+ * @param out_header_len  Output: header length (pn_offset + pn_length).
+ * @param out_ciphertext_len  Output: ciphertext length (packet_len -
+ * header_len).
+ *
+ * @return QUIC_RECEIVE_OK on success, QUIC_RECEIVE_ERROR_TRUNCATED on error.
+ */
+static SocketQUICReceive_Result
+compute_payload_bounds (size_t pn_offset,
+                        uint8_t pn_length,
+                        size_t packet_len,
+                        size_t *out_header_len,
+                        size_t *out_ciphertext_len)
+{
+  if (pn_offset > SIZE_MAX - pn_length)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
+  size_t header_len = pn_offset + pn_length;
+  if (packet_len < QUIC_AEAD_TAG_LEN)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
+  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
+    return QUIC_RECEIVE_ERROR_TRUNCATED;
+
+  *out_header_len = header_len;
+  *out_ciphertext_len = packet_len - header_len;
+  return QUIC_RECEIVE_OK;
+}
+
 /* ============================================================================
  * Header Parsing Functions
  * ============================================================================
@@ -452,18 +484,15 @@ receive_initial_packet (SocketQUICReceive_T *ctx,
   uint64_t full_pn
       = SocketQUICPacket_decode_pn (truncated_pn, pn_length, largest_pn);
 
-  /* Calculate payload bounds with underflow protection */
-  if (pn_offset > SIZE_MAX - pn_length)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-  size_t header_len = pn_offset + pn_length;
-  if (packet_len < QUIC_AEAD_TAG_LEN)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
+  size_t header_len, ciphertext_len;
+  SocketQUICReceive_Result bounds_rc = compute_payload_bounds (
+      pn_offset, pn_length, packet_len, &header_len, &ciphertext_len);
+  if (bounds_rc != QUIC_RECEIVE_OK)
+    return bounds_rc;
 
   result->packet_number = full_pn;
   result->payload = packet + header_len;
-  result->payload_len = packet_len - header_len - QUIC_AEAD_TAG_LEN;
+  result->payload_len = ciphertext_len - QUIC_AEAD_TAG_LEN;
 
   return QUIC_RECEIVE_OK;
 }
@@ -518,16 +547,11 @@ receive_protected_packet (const SocketQUICPacketKeys_T *keys,
   uint64_t full_pn
       = SocketQUICPacket_decode_pn (truncated_pn, pn_length, largest_pn);
 
-  /* Calculate header and payload bounds */
-  if (pn_offset > SIZE_MAX - pn_length)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-  size_t header_len = pn_offset + pn_length;
-  if (packet_len < QUIC_AEAD_TAG_LEN)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-
-  size_t ciphertext_len = packet_len - header_len;
+  size_t header_len, ciphertext_len;
+  SocketQUICReceive_Result bounds_rc = compute_payload_bounds (
+      pn_offset, pn_length, packet_len, &header_len, &ciphertext_len);
+  if (bounds_rc != QUIC_RECEIVE_OK)
+    return bounds_rc;
 
   /* Decrypt payload in place */
   size_t plaintext_len = ciphertext_len;
@@ -626,16 +650,11 @@ receive_1rtt_packet (SocketQUICReceive_T *ctx,
       return QUIC_RECEIVE_ERROR_KEY_PHASE;
     }
 
-  /* Calculate header and payload bounds */
-  if (pn_offset > SIZE_MAX - pn_length)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-  size_t header_len = pn_offset + pn_length;
-  if (packet_len < QUIC_AEAD_TAG_LEN)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-  if (header_len > packet_len - QUIC_AEAD_TAG_LEN)
-    return QUIC_RECEIVE_ERROR_TRUNCATED;
-
-  size_t ciphertext_len = packet_len - header_len;
+  size_t header_len, ciphertext_len;
+  SocketQUICReceive_Result bounds_rc = compute_payload_bounds (
+      pn_offset, pn_length, packet_len, &header_len, &ciphertext_len);
+  if (bounds_rc != QUIC_RECEIVE_OK)
+    return bounds_rc;
 
   /* Decrypt payload */
   size_t plaintext_len = ciphertext_len;

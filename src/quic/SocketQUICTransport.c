@@ -703,30 +703,65 @@ zero_rtt_rollback_send_state (SocketQUICTransport_T t)
  * ============================================================================
  */
 
-static int
-build_and_send_1rtt_packet_ex (SocketQUICTransport_T t,
-                               const uint8_t *payload,
-                               size_t payload_len,
-                               int ack_eliciting,
-                               int in_flight)
+typedef enum
 {
-  if (!t->app_keys_valid)
-    return -1;
+  QUIC_APP_PKT_1RTT,
+  QUIC_APP_PKT_0RTT
+} QuicAppPacketType;
+
+static int
+build_and_send_app_packet (SocketQUICTransport_T t,
+                           QuicAppPacketType pkt_type,
+                           const uint8_t *payload,
+                           size_t payload_len,
+                           int ack_eliciting,
+                           int in_flight)
+{
+  SocketQUICPacketKeys_T *keys;
+
+  if (pkt_type == QUIC_APP_PKT_1RTT)
+    {
+      if (!t->app_keys_valid)
+        return -1;
+      keys = &t->app_send_keys;
+    }
+  else
+    {
+      if (!t->zero_rtt_keys_valid)
+        return -1;
+      if (!t->handshake || !SocketQUICHandshake_can_send_0rtt (t->handshake))
+        return -1;
+      keys = &t->zero_rtt_send_keys;
+    }
 
   uint64_t pn = t->next_pn[QUIC_PN_SPACE_APPLICATION];
   uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
 
-  /* Build short header */
   SocketQUICPacketHeader_T hdr;
   SocketQUICPacketHeader_init (&hdr);
-  if (SocketQUICPacketHeader_build_short (&hdr,
-                                          &t->dcid,
-                                          0,
-                                          t->key_update.key_phase,
-                                          TRANSPORT_PN_LEN,
-                                          truncated_pn)
-      != QUIC_PACKET_OK)
-    return -1;
+
+  if (pkt_type == QUIC_APP_PKT_1RTT)
+    {
+      if (SocketQUICPacketHeader_build_short (&hdr,
+                                              &t->dcid,
+                                              0,
+                                              t->key_update.key_phase,
+                                              TRANSPORT_PN_LEN,
+                                              truncated_pn)
+          != QUIC_PACKET_OK)
+        return -1;
+    }
+  else
+    {
+      if (SocketQUICPacketHeader_build_0rtt (&hdr,
+                                             QUIC_VERSION_1,
+                                             &t->dcid,
+                                             &t->scid,
+                                             TRANSPORT_PN_LEN,
+                                             truncated_pn)
+          != QUIC_PACKET_OK)
+        return -1;
+    }
 
   size_t hdr_len = SocketQUICPacketHeader_serialize (
       &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
@@ -735,14 +770,12 @@ build_and_send_1rtt_packet_ex (SocketQUICTransport_T t,
 
   size_t pn_offset = hdr_len - TRANSPORT_PN_LEN;
 
-  /* Copy payload after header */
   if (hdr_len + payload_len + 16 > TRANSPORT_SEND_BUF_SIZE)
     return -1;
   memcpy (t->send_buf + hdr_len, payload, payload_len);
 
-  /* Encrypt payload */
   size_t ciphertext_len = TRANSPORT_SEND_BUF_SIZE - hdr_len;
-  if (SocketQUICCrypto_encrypt_payload (&t->app_send_keys,
+  if (SocketQUICCrypto_encrypt_payload (keys,
                                         pn,
                                         t->send_buf,
                                         hdr_len,
@@ -755,7 +788,6 @@ build_and_send_1rtt_packet_ex (SocketQUICTransport_T t,
 
   size_t pkt_len = hdr_len + ciphertext_len;
 
-  /* Congestion window check (only for in-flight packets) */
   if (in_flight && t->congestion)
     {
       size_t bif
@@ -764,23 +796,18 @@ build_and_send_1rtt_packet_ex (SocketQUICTransport_T t,
         return -1;
     }
 
-  /* Apply header protection */
-  if (SocketQUICCrypto_protect_header_ex (
-          &t->app_send_keys, t->send_buf, pkt_len, pn_offset)
+  if (SocketQUICCrypto_protect_header_ex (keys, t->send_buf, pkt_len, pn_offset)
       != QUIC_CRYPTO_OK)
     return -1;
 
-  /* Bound unacked tracking to avoid unbounded memory growth. */
   if (t->loss[QUIC_PN_SPACE_APPLICATION]
       && t->loss[QUIC_PN_SPACE_APPLICATION]->sent_count
              >= QUIC_LOSS_MAX_SENT_PACKETS)
     return -1;
 
-  /* Send */
   if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
     return -1;
 
-  /* Record sent packet for loss detection (RFC 9002) */
   uint64_t sent_time = now_us ();
   if (SocketQUICLoss_on_packet_sent (t->loss[QUIC_PN_SPACE_APPLICATION],
                                      pn,
@@ -801,94 +828,8 @@ build_and_send_1rtt_packet (SocketQUICTransport_T t,
                             const uint8_t *payload,
                             size_t payload_len)
 {
-  return build_and_send_1rtt_packet_ex (t, payload, payload_len, 1, 1);
-}
-
-static int
-build_and_send_0rtt_packet_ex (SocketQUICTransport_T t,
-                               const uint8_t *payload,
-                               size_t payload_len,
-                               int ack_eliciting,
-                               int in_flight)
-{
-  if (!t->zero_rtt_keys_valid)
-    return -1;
-  if (!t->handshake || !SocketQUICHandshake_can_send_0rtt (t->handshake))
-    return -1;
-
-  uint64_t pn = t->next_pn[QUIC_PN_SPACE_APPLICATION];
-  uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
-
-  SocketQUICPacketHeader_T hdr;
-  SocketQUICPacketHeader_init (&hdr);
-  if (SocketQUICPacketHeader_build_0rtt (&hdr,
-                                         QUIC_VERSION_1,
-                                         &t->dcid,
-                                         &t->scid,
-                                         TRANSPORT_PN_LEN,
-                                         truncated_pn)
-      != QUIC_PACKET_OK)
-    return -1;
-
-  size_t hdr_len = SocketQUICPacketHeader_serialize (
-      &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
-  if (hdr_len == 0)
-    return -1;
-
-  size_t pn_offset = hdr_len - TRANSPORT_PN_LEN;
-
-  if (hdr_len + payload_len + 16 > TRANSPORT_SEND_BUF_SIZE)
-    return -1;
-  memcpy (t->send_buf + hdr_len, payload, payload_len);
-
-  size_t ciphertext_len = TRANSPORT_SEND_BUF_SIZE - hdr_len;
-  if (SocketQUICCrypto_encrypt_payload (&t->zero_rtt_send_keys,
-                                        pn,
-                                        t->send_buf,
-                                        hdr_len,
-                                        t->send_buf + hdr_len,
-                                        payload_len,
-                                        t->send_buf + hdr_len,
-                                        &ciphertext_len)
-      != QUIC_CRYPTO_OK)
-    return -1;
-
-  size_t pkt_len = hdr_len + ciphertext_len;
-
-  if (in_flight && t->congestion)
-    {
-      size_t bif
-          = SocketQUICLoss_bytes_in_flight (t->loss[QUIC_PN_SPACE_APPLICATION]);
-      if (!SocketQUICCongestion_can_send (t->congestion, bif, pkt_len))
-        return -1;
-    }
-
-  if (SocketQUICCrypto_protect_header_ex (
-          &t->zero_rtt_send_keys, t->send_buf, pkt_len, pn_offset)
-      != QUIC_CRYPTO_OK)
-    return -1;
-
-  if (t->loss[QUIC_PN_SPACE_APPLICATION]
-      && t->loss[QUIC_PN_SPACE_APPLICATION]->sent_count
-             >= QUIC_LOSS_MAX_SENT_PACKETS)
-    return -1;
-
-  if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
-    return -1;
-
-  uint64_t sent_time = now_us ();
-  if (SocketQUICLoss_on_packet_sent (t->loss[QUIC_PN_SPACE_APPLICATION],
-                                     pn,
-                                     sent_time,
-                                     pkt_len,
-                                     ack_eliciting,
-                                     in_flight,
-                                     0)
-      != QUIC_LOSS_OK)
-    return -1;
-
-  t->next_pn[QUIC_PN_SPACE_APPLICATION]++;
-  return 0;
+  return build_and_send_app_packet (
+      t, QUIC_APP_PKT_1RTT, payload, payload_len, 1, 1);
 }
 
 static int
@@ -896,7 +837,8 @@ build_and_send_0rtt_packet (SocketQUICTransport_T t,
                             const uint8_t *payload,
                             size_t payload_len)
 {
-  return build_and_send_0rtt_packet_ex (t, payload, payload_len, 1, 1);
+  return build_and_send_app_packet (
+      t, QUIC_APP_PKT_0RTT, payload, payload_len, 1, 1);
 }
 
 static void
@@ -914,7 +856,8 @@ transport_close_with_error (SocketQUICTransport_T t,
       size_t close_len = SocketQUICFrame_encode_connection_close_transport (
           error_code, frame_type, reason, close_buf, sizeof (close_buf));
       if (close_len > 0)
-        build_and_send_1rtt_packet_ex (t, close_buf, close_len, 0, 0);
+        build_and_send_app_packet (
+            t, QUIC_APP_PKT_1RTT, close_buf, close_len, 0, 0);
     }
 
   t->closed = 1;
@@ -948,7 +891,8 @@ send_ack_if_needed (SocketQUICTransport_T t,
 
   int rc = -1;
   if (space == QUIC_PN_SPACE_APPLICATION && t->app_keys_valid)
-    rc = build_and_send_1rtt_packet_ex (t, ack_buf, ack_len, 0, 0);
+    rc = build_and_send_app_packet (
+        t, QUIC_APP_PKT_1RTT, ack_buf, ack_len, 0, 0);
 
   if (rc == 0)
     SocketQUICAck_mark_sent (t->ack[space], now);
@@ -1180,144 +1124,152 @@ process_frames (SocketQUICTransport_T t,
  */
 
 static int
+send_crypto_initial (SocketQUICTransport_T t,
+                     const uint8_t *frame_buf,
+                     size_t frame_len)
+{
+  uint64_t pn = t->next_pn[QUIC_PN_SPACE_INITIAL];
+  uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
+
+  SocketQUICPacketHeader_T hdr;
+  SocketQUICPacketHeader_init (&hdr);
+  SocketQUICPacketHeader_build_initial (&hdr,
+                                        QUIC_VERSION_1,
+                                        &t->dcid,
+                                        &t->scid,
+                                        NULL,
+                                        0,
+                                        TRANSPORT_PN_LEN,
+                                        truncated_pn);
+
+  /* Pre-compute Length field (RFC 9000 §17.2):
+   * Length = PN_bytes + plaintext_payload + AEAD_tag.
+   * Use a 2-byte varint placeholder to get stable header size. */
+  hdr.length = SOCKETQUICVARINT_MIN_2BYTE;
+  size_t hdr_len = SocketQUICPacketHeader_serialize (
+      &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
+  if (hdr_len == 0)
+    return -1;
+
+  /* Compute padding so total packet >= 1200 bytes */
+  size_t pad_needed = 0;
+  if (hdr_len + frame_len + QUIC_INITIAL_TAG_LEN < QUIC_INITIAL_MIN_SIZE)
+    pad_needed
+        = QUIC_INITIAL_MIN_SIZE - hdr_len - frame_len - QUIC_INITIAL_TAG_LEN;
+
+  /* Set the real Length and re-serialize */
+  hdr.length = TRANSPORT_PN_LEN + frame_len + pad_needed + QUIC_INITIAL_TAG_LEN;
+  hdr_len = SocketQUICPacketHeader_serialize (
+      &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
+  if (hdr_len == 0)
+    return -1;
+
+  /* Copy CRYPTO frame into payload area */
+  memcpy (t->send_buf + hdr_len, frame_buf, frame_len);
+  size_t pkt_len = hdr_len + frame_len;
+
+  /* Add PADDING frames (zero bytes) */
+  if (pad_needed > 0)
+    {
+      memset (t->send_buf + pkt_len, 0, pad_needed);
+      pkt_len += pad_needed;
+    }
+
+  /* Protect (encrypt + header protection) */
+  if (SocketQUICInitial_protect (
+          t->send_buf, &pkt_len, hdr_len, &t->initial_keys, 1)
+      != QUIC_INITIAL_OK)
+    return -1;
+
+  if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
+    return -1;
+
+  t->next_pn[QUIC_PN_SPACE_INITIAL]++;
+  return 0;
+}
+
+static int
+send_crypto_handshake (SocketQUICTransport_T t,
+                       const uint8_t *frame_buf,
+                       size_t frame_len)
+{
+  if (!t->handshake_keys_valid)
+    return -1;
+
+  uint64_t pn = t->next_pn[QUIC_PN_SPACE_HANDSHAKE];
+  uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
+
+  SocketQUICPacketHeader_T hdr;
+  SocketQUICPacketHeader_init (&hdr);
+  SocketQUICPacketHeader_build_handshake (
+      &hdr, QUIC_VERSION_1, &t->dcid, &t->scid, TRANSPORT_PN_LEN, truncated_pn);
+
+  /* Set Length field: PN_bytes + plaintext + AEAD_tag */
+  hdr.length = TRANSPORT_PN_LEN + frame_len + QUIC_INITIAL_TAG_LEN;
+  size_t hdr_len = SocketQUICPacketHeader_serialize (
+      &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
+  if (hdr_len == 0)
+    return -1;
+
+  size_t pn_offset = hdr_len - TRANSPORT_PN_LEN;
+
+  memcpy (t->send_buf + hdr_len, frame_buf, frame_len);
+
+  /* Encrypt */
+  size_t ciphertext_len = TRANSPORT_SEND_BUF_SIZE - hdr_len;
+  if (SocketQUICCrypto_encrypt_payload (&t->handshake_send_keys,
+                                        pn,
+                                        t->send_buf,
+                                        hdr_len,
+                                        t->send_buf + hdr_len,
+                                        frame_len,
+                                        t->send_buf + hdr_len,
+                                        &ciphertext_len)
+      != QUIC_CRYPTO_OK)
+    return -1;
+
+  size_t pkt_len = hdr_len + ciphertext_len;
+
+  /* Header protection */
+  if (SocketQUICCrypto_protect_header_ex (
+          &t->handshake_send_keys, t->send_buf, pkt_len, pn_offset)
+      != QUIC_CRYPTO_OK)
+    return -1;
+
+  if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
+    return -1;
+
+  /* First Handshake packet sent triggers Initial key discard */
+  SocketQUICHandshake_on_handshake_packet_sent (t->handshake);
+
+  t->next_pn[QUIC_PN_SPACE_HANDSHAKE]++;
+  return 0;
+}
+
+static int
 send_crypto_data (SocketQUICTransport_T t,
                   SocketQUICCryptoLevel level,
                   const uint8_t *data,
                   size_t len,
                   uint64_t crypto_offset)
 {
-  /* Build CRYPTO frame */
   uint8_t frame_buf[TRANSPORT_SEND_BUF_SIZE];
   size_t frame_len = SocketQUICFrame_encode_crypto (
       crypto_offset, data, len, frame_buf, sizeof (frame_buf));
   if (frame_len == 0)
     return -1;
 
-  if (level == QUIC_CRYPTO_LEVEL_INITIAL)
+  switch (level)
     {
-      /* Build Initial packet */
-      uint64_t pn = t->next_pn[QUIC_PN_SPACE_INITIAL];
-      uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
-
-      SocketQUICPacketHeader_T hdr;
-      SocketQUICPacketHeader_init (&hdr);
-      SocketQUICPacketHeader_build_initial (&hdr,
-                                            QUIC_VERSION_1,
-                                            &t->dcid,
-                                            &t->scid,
-                                            NULL,
-                                            0,
-                                            TRANSPORT_PN_LEN,
-                                            truncated_pn);
-
-      /* Pre-compute Length field (RFC 9000 §17.2):
-       * Length = PN_bytes + plaintext_payload + AEAD_tag.
-       * Use a 2-byte varint placeholder to get stable header size. */
-      hdr.length = SOCKETQUICVARINT_MIN_2BYTE;
-      size_t hdr_len = SocketQUICPacketHeader_serialize (
-          &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
-      if (hdr_len == 0)
-        return -1;
-
-      /* Compute padding so total packet >= 1200 bytes */
-      size_t pad_needed = 0;
-      if (hdr_len + frame_len + QUIC_INITIAL_TAG_LEN < QUIC_INITIAL_MIN_SIZE)
-        pad_needed = QUIC_INITIAL_MIN_SIZE - hdr_len - frame_len
-                     - QUIC_INITIAL_TAG_LEN;
-
-      /* Set the real Length and re-serialize */
-      hdr.length
-          = TRANSPORT_PN_LEN + frame_len + pad_needed + QUIC_INITIAL_TAG_LEN;
-      hdr_len = SocketQUICPacketHeader_serialize (
-          &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
-      if (hdr_len == 0)
-        return -1;
-
-      /* Copy CRYPTO frame into payload area */
-      memcpy (t->send_buf + hdr_len, frame_buf, frame_len);
-      size_t pkt_len = hdr_len + frame_len;
-
-      /* Add PADDING frames (zero bytes) */
-      if (pad_needed > 0)
-        {
-          memset (t->send_buf + pkt_len, 0, pad_needed);
-          pkt_len += pad_needed;
-        }
-
-      /* Protect (encrypt + header protection) */
-      if (SocketQUICInitial_protect (
-              t->send_buf, &pkt_len, hdr_len, &t->initial_keys, 1)
-          != QUIC_INITIAL_OK)
-        return -1;
-
-      if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
-        return -1;
-
-      t->next_pn[QUIC_PN_SPACE_INITIAL]++;
-    }
-  else if (level == QUIC_CRYPTO_LEVEL_HANDSHAKE)
-    {
-      if (!t->handshake_keys_valid)
-        return -1;
-
-      uint64_t pn = t->next_pn[QUIC_PN_SPACE_HANDSHAKE];
-      uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
-
-      SocketQUICPacketHeader_T hdr;
-      SocketQUICPacketHeader_init (&hdr);
-      SocketQUICPacketHeader_build_handshake (&hdr,
-                                              QUIC_VERSION_1,
-                                              &t->dcid,
-                                              &t->scid,
-                                              TRANSPORT_PN_LEN,
-                                              truncated_pn);
-
-      /* Set Length field: PN_bytes + plaintext + AEAD_tag */
-      hdr.length = TRANSPORT_PN_LEN + frame_len + QUIC_INITIAL_TAG_LEN;
-      size_t hdr_len = SocketQUICPacketHeader_serialize (
-          &hdr, t->send_buf, TRANSPORT_SEND_BUF_SIZE);
-      if (hdr_len == 0)
-        return -1;
-
-      size_t pn_offset = hdr_len - TRANSPORT_PN_LEN;
-
-      memcpy (t->send_buf + hdr_len, frame_buf, frame_len);
-
-      /* Encrypt */
-      size_t ciphertext_len = TRANSPORT_SEND_BUF_SIZE - hdr_len;
-      if (SocketQUICCrypto_encrypt_payload (&t->handshake_send_keys,
-                                            pn,
-                                            t->send_buf,
-                                            hdr_len,
-                                            t->send_buf + hdr_len,
-                                            frame_len,
-                                            t->send_buf + hdr_len,
-                                            &ciphertext_len)
-          != QUIC_CRYPTO_OK)
-        return -1;
-
-      size_t pkt_len = hdr_len + ciphertext_len;
-
-      /* Header protection */
-      if (SocketQUICCrypto_protect_header_ex (
-              &t->handshake_send_keys, t->send_buf, pkt_len, pn_offset)
-          != QUIC_CRYPTO_OK)
-        return -1;
-
-      if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
-        return -1;
-
-      /* First Handshake packet sent triggers Initial key discard */
-      SocketQUICHandshake_on_handshake_packet_sent (t->handshake);
-
-      t->next_pn[QUIC_PN_SPACE_HANDSHAKE]++;
-    }
-  else if (level == QUIC_CRYPTO_LEVEL_APPLICATION)
-    {
+    case QUIC_CRYPTO_LEVEL_INITIAL:
+      return send_crypto_initial (t, frame_buf, frame_len);
+    case QUIC_CRYPTO_LEVEL_HANDSHAKE:
+      return send_crypto_handshake (t, frame_buf, frame_len);
+    case QUIC_CRYPTO_LEVEL_APPLICATION:
       return build_and_send_1rtt_packet (t, frame_buf, frame_len);
+    default:
+      return -1;
     }
-
-  return 0;
 }
 
 /* ============================================================================
@@ -1537,54 +1489,15 @@ SocketQUICTransport_new (Arena_T arena, const SocketQUICTransportConfig *config)
  * ============================================================================
  */
 
-int
-SocketQUICTransport_connect_start (SocketQUICTransport_T t,
-                                   const char *host,
-                                   int port)
+/**
+ * @brief Complete TLS/0-RTT handshake setup after CID generation.
+ *
+ * Configures transport params, TLS context, and optionally 0-RTT state.
+ * @return 0 on success, -1 on failure.
+ */
+static int
+complete_handshake_setup (SocketQUICTransport_T t)
 {
-  if (!t || !host || t->connected || t->connecting || t->closed)
-    return -1;
-
-  /* Phase A: UDP socket setup */
-  volatile int setup_ok = 0;
-  TRY
-  {
-    t->socket = SocketDgram_new (AF_INET, 0);
-    SocketDgram_setnonblocking (t->socket);
-    SocketDgram_connect (t->socket, host, port);
-    setup_ok = 1;
-  }
-  EXCEPT (SocketDgram_Failed)
-  {
-    setup_ok = 0;
-  }
-  END_TRY;
-
-  if (!setup_ok)
-    return -1;
-
-  /* Generate random CIDs */
-  SocketCrypto_random_bytes (t->scid.data, TRANSPORT_SCID_LEN);
-  t->scid.len = TRANSPORT_SCID_LEN;
-  SocketCrypto_random_bytes (t->dcid.data, TRANSPORT_DCID_LEN);
-  t->dcid.len = TRANSPORT_DCID_LEN;
-
-  /* Create QUIC connection */
-  t->conn = SocketQUICConnection_new (t->arena, QUIC_CONN_ROLE_CLIENT);
-  if (!t->conn)
-    return -1;
-
-  SocketQUICConnection_add_local_cid (t->conn, &t->scid);
-  SocketQUICConnection_add_peer_cid (t->conn, &t->dcid);
-  t->conn->initial_dcid = t->dcid;
-
-  /* Create handshake context */
-  t->handshake
-      = SocketQUICHandshake_new (t->arena, t->conn, QUIC_CONN_ROLE_CLIENT);
-  if (!t->handshake)
-    return -1;
-
-  /* Phase B: TLS setup */
   SocketQUICTransportParams_T local_params;
   SocketQUICTransportParams_init (&local_params);
   local_params.max_idle_timeout = t->config.idle_timeout_ms;
@@ -1612,7 +1525,6 @@ SocketQUICTransport_connect_start (SocketQUICTransport_T t,
   if (t->resumption_ticket && t->resumption_ticket_len > 0
       && t->resumption_peer_params_valid)
     {
-      /* Enforce ALPN consistency for early data. */
       if (t->resumption_alpn_len == 0)
         want_0rtt = 1;
       else
@@ -1650,8 +1562,6 @@ SocketQUICTransport_connect_start (SocketQUICTransport_T t,
           if (hr != QUIC_HANDSHAKE_OK)
             return -1;
 
-          /* Initialize send-side flow control from saved peer params so 0-RTT
-           * sends are bounded even before peer params are received. */
           if (t->flow)
             {
               SocketQUICFlow_update_send_max (
@@ -1664,11 +1574,65 @@ SocketQUICTransport_connect_start (SocketQUICTransport_T t,
         }
     }
 
+  return 0;
+}
+
+int
+SocketQUICTransport_connect_start (SocketQUICTransport_T t,
+                                   const char *host,
+                                   int port)
+{
+  if (!t || !host || t->connected || t->connecting || t->closed)
+    return -1;
+
+  /* Phase A: UDP socket setup */
+  volatile int setup_ok = 0;
+  TRY
+  {
+    t->socket = SocketDgram_new (AF_INET, 0);
+    SocketDgram_setnonblocking (t->socket);
+    SocketDgram_connect (t->socket, host, port);
+    setup_ok = 1;
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+    setup_ok = 0;
+  }
+  END_TRY;
+
+  if (!setup_ok)
+    return -1;
+
+  /* Generate random CIDs */
+  SocketCrypto_random_bytes (t->scid.data, TRANSPORT_SCID_LEN);
+  t->scid.len = TRANSPORT_SCID_LEN;
+  SocketCrypto_random_bytes (t->dcid.data, TRANSPORT_DCID_LEN);
+  t->dcid.len = TRANSPORT_DCID_LEN;
+
+  /* Create QUIC connection */
+  t->conn = SocketQUICConnection_new (t->arena, QUIC_CONN_ROLE_CLIENT);
+  if (!t->conn)
+    goto fail;
+
+  SocketQUICConnection_add_local_cid (t->conn, &t->scid);
+  SocketQUICConnection_add_peer_cid (t->conn, &t->dcid);
+  t->conn->initial_dcid = t->dcid;
+
+  /* Create handshake context */
+  t->handshake
+      = SocketQUICHandshake_new (t->arena, t->conn, QUIC_CONN_ROLE_CLIENT);
+  if (!t->handshake)
+    goto fail;
+
+  /* Phase B: TLS and 0-RTT setup */
+  if (complete_handshake_setup (t) < 0)
+    goto fail;
+
   /* Phase C: Initial packet */
   if (SocketQUICCrypto_derive_initial_keys (
           &t->dcid, QUIC_VERSION_1, &t->initial_keys)
       != QUIC_CRYPTO_OK)
-    return -1;
+    goto fail;
 
   SocketQUICReceive_set_initial_keys (&t->recv_ctx, &t->initial_keys);
 
@@ -1687,15 +1651,21 @@ SocketQUICTransport_connect_start (SocketQUICTransport_T t,
   /* Drive TLS to produce ClientHello */
   SocketQUICTLS_Result tls_rc = SocketQUICTLS_do_handshake (t->handshake);
   if (tls_rc == QUIC_TLS_ERROR_HANDSHAKE || tls_rc == QUIC_TLS_ERROR_ALERT)
-    return -1;
+    goto fail;
   check_and_derive_keys (t);
 
   /* Flush TLS output (sends ClientHello in Initial packet) */
   if (flush_tls_output (t) < 0)
-    return -1;
+    goto fail;
 
   t->connecting = 1;
   return 0;
+
+fail:
+  if (t->socket)
+    SocketDgram_free (&t->socket);
+  t->socket = NULL;
+  return -1;
 }
 
 int
@@ -1976,6 +1946,89 @@ zero_rtt_replay_buffer_as_1rtt (SocketQUICTransport_T t)
 }
 
 /* ============================================================================
+ * Handshake completion after TLS finishes
+ * ============================================================================
+ */
+
+/**
+ * @brief Finalize handshake if TLS is complete.
+ *
+ * Validates ALPN, installs peer params, handles 0-RTT rejection/replay,
+ * and transitions to connected state.
+ * @return 0 on success, -1 on failure.
+ */
+static int
+complete_handshake_if_ready (SocketQUICTransport_T t)
+{
+  if (!t->connecting || t->connected
+      || !SocketQUICTLS_is_complete (t->handshake))
+    return 0;
+
+  if (SocketQUICTLS_check_alpn_negotiated (t->handshake) != QUIC_TLS_OK)
+    return -1;
+
+  if (SocketQUICTLS_get_peer_params (t->handshake) != QUIC_TLS_OK)
+    return -1;
+
+  check_and_derive_keys (t);
+  if (!t->app_keys_valid)
+    return -1;
+
+  /* Process 0-RTT acceptance/rejection after handshake completion. */
+  SocketQUICHandshake_Result hs_res
+      = SocketQUICHandshake_process (t->handshake);
+  if (hs_res != QUIC_HANDSHAKE_OK)
+    return -1;
+
+  /* Initialize flow control from peer params. */
+  const SocketQUICTransportParams_T *peer_params
+      = SocketQUICHandshake_get_peer_params (t->handshake);
+  if (peer_params)
+    {
+      if (t->flow)
+        {
+          SocketQUICFlow_update_send_max (t->flow,
+                                          peer_params->initial_max_data);
+          SocketQUICFlow_update_max_streams_bidi (
+              t->flow, peer_params->initial_max_streams_bidi);
+          SocketQUICFlow_update_max_streams_uni (
+              t->flow, peer_params->initial_max_streams_uni);
+        }
+
+      for (size_t i = 0; i < t->stream_count; i++)
+        {
+          if (!t->streams[i].active || !t->streams[i].flow_stream)
+            continue;
+          uint64_t max_data = peer_initial_stream_send_max (
+              peer_params, t->streams[i].stream_id);
+          SocketQUICFlowStream_update_send_max (t->streams[i].flow_stream,
+                                                max_data);
+        }
+    }
+
+  /* If 0-RTT was rejected, resend buffered early stream data as 1-RTT. */
+  if (t->handshake->zero_rtt.state == QUIC_0RTT_STATE_REJECTED
+      && t->zero_rtt_head)
+    {
+      if (t->loss[QUIC_PN_SPACE_APPLICATION])
+        SocketQUICLoss_reset (t->loss[QUIC_PN_SPACE_APPLICATION]);
+
+      zero_rtt_rollback_send_state (t);
+      if (zero_rtt_replay_buffer_as_1rtt (t) < 0)
+        return -1;
+    }
+
+  zero_rtt_buffer_clear (t);
+
+  if (t->handshake->conn->peer_cid_count > 0)
+    t->dcid = t->handshake->conn->peer_cids[0];
+
+  t->connected = 1;
+  t->connecting = 0;
+  return 0;
+}
+
+/* ============================================================================
  * Poll
  * ============================================================================
  */
@@ -2050,8 +2103,7 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
             return -1;
 
           check_and_derive_keys (t);
-          int flush_rc = flush_tls_output (t);
-          if (flush_rc < 0)
+          if (flush_tls_output (t) < 0)
             return -1;
         }
 
@@ -2062,71 +2114,8 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
     }
 
   /* Check for handshake completion after processing all coalesced packets */
-  if (t->connecting && !t->connected
-      && SocketQUICTLS_is_complete (t->handshake))
-    {
-      if (SocketQUICTLS_check_alpn_negotiated (t->handshake) != QUIC_TLS_OK)
-        return -1;
-
-      if (SocketQUICTLS_get_peer_params (t->handshake) != QUIC_TLS_OK)
-        return -1;
-
-      check_and_derive_keys (t);
-      if (!t->app_keys_valid)
-        return -1;
-
-      /* Process 0-RTT acceptance/rejection after handshake completion. */
-      SocketQUICHandshake_Result hs_res
-          = SocketQUICHandshake_process (t->handshake);
-      if (hs_res != QUIC_HANDSHAKE_OK)
-        return -1;
-
-      /* Initialize flow control from peer params. */
-      const SocketQUICTransportParams_T *peer_params
-          = SocketQUICHandshake_get_peer_params (t->handshake);
-      if (peer_params)
-        {
-          if (t->flow)
-            {
-              SocketQUICFlow_update_send_max (t->flow,
-                                              peer_params->initial_max_data);
-              SocketQUICFlow_update_max_streams_bidi (
-                  t->flow, peer_params->initial_max_streams_bidi);
-              SocketQUICFlow_update_max_streams_uni (
-                  t->flow, peer_params->initial_max_streams_uni);
-            }
-
-          for (size_t i = 0; i < t->stream_count; i++)
-            {
-              if (!t->streams[i].active || !t->streams[i].flow_stream)
-                continue;
-              uint64_t max_data = peer_initial_stream_send_max (
-                  peer_params, t->streams[i].stream_id);
-              SocketQUICFlowStream_update_send_max (t->streams[i].flow_stream,
-                                                    max_data);
-            }
-        }
-
-      /* If 0-RTT was rejected, resend buffered early stream data as 1-RTT. */
-      if (t->handshake->zero_rtt.state == QUIC_0RTT_STATE_REJECTED
-          && t->zero_rtt_head)
-        {
-          if (t->loss[QUIC_PN_SPACE_APPLICATION])
-            SocketQUICLoss_reset (t->loss[QUIC_PN_SPACE_APPLICATION]);
-
-          zero_rtt_rollback_send_state (t);
-          if (zero_rtt_replay_buffer_as_1rtt (t) < 0)
-            return -1;
-        }
-
-      zero_rtt_buffer_clear (t);
-
-      if (t->handshake->conn->peer_cid_count > 0)
-        t->dcid = t->handshake->conn->peer_cids[0];
-
-      t->connected = 1;
-      t->connecting = 0;
-    }
+  if (complete_handshake_if_ready (t) < 0)
+    return -1;
 
   /* Send ACK if needed */
   uint64_t current = now_us ();

@@ -266,7 +266,7 @@ construct_nonce (const uint8_t *iv, uint64_t pn, uint8_t *nonce)
 {
   memcpy (nonce, iv, QUIC_INITIAL_IV_LEN);
 
-  /* XOR packet number into last bytes of IV (big-endian) */
+  /* XOR packet number into last bytes of IV (RFC 9001 §5.3) */
   for (int i = 0; i < (int)sizeof (uint64_t); i++)
     nonce[QUIC_INITIAL_IV_LEN - 1 - i] ^= (uint8_t)((pn >> (8 * i)) & 0xFF);
 }

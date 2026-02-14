@@ -162,7 +162,8 @@ parse_args (int argc, char **argv, BenchConfig *cfg)
         {
           cfg->report_path = argv[++i];
         }
-      else if ((strcmp (argv[i], "-h") == 0) || (strcmp (argv[i], "--help") == 0))
+      else if ((strcmp (argv[i], "-h") == 0)
+               || (strcmp (argv[i], "--help") == 0))
         {
           usage (argv[0]);
           return 1;
@@ -446,12 +447,8 @@ fixture_stop (BenchFixture *fixture)
 }
 
 static int
-fixture_start_h2 (BenchFixture *fixture)
+fixture_setup_common (BenchFixture *fixture)
 {
-  SocketHTTPServer_Config cfg;
-  volatile int retries;
-  volatile int started = 0;
-
   if (fixture == NULL)
     return -1;
 
@@ -462,23 +459,7 @@ fixture_start_h2 (BenchFixture *fixture)
                               fixture->key_path,
                               sizeof (fixture->key_path))
       != 0)
-    {
-      return -1;
-    }
-
-  TRY
-    {
-      const char *alpn[2] = { "h2", "http/1.1" };
-      fixture->server_tls
-          = SocketTLSContext_new_server (fixture->cert_path, fixture->key_path, NULL);
-      SocketTLSContext_set_alpn_protos (fixture->server_tls, alpn, 2);
-    }
-  EXCEPT (SocketTLS_Failed)
-    {
-      fixture_stop (fixture);
-      return -1;
-    }
-  END_TRY;
+    return -1;
 
   fixture->grpc_server = SocketGRPC_Server_new (NULL);
   if (fixture->grpc_server == NULL)
@@ -495,6 +476,33 @@ fixture_start_h2 (BenchFixture *fixture)
       return -1;
     }
 
+  return 0;
+}
+
+static int
+fixture_start_h2 (BenchFixture *fixture)
+{
+  SocketHTTPServer_Config cfg;
+  volatile int retries;
+  volatile int started = 0;
+
+  if (fixture_setup_common (fixture) != 0)
+    return -1;
+
+  TRY
+  {
+    const char *alpn[2] = { "h2", "http/1.1" };
+    fixture->server_tls = SocketTLSContext_new_server (
+        fixture->cert_path, fixture->key_path, NULL);
+    SocketTLSContext_set_alpn_protos (fixture->server_tls, alpn, 2);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    fixture_stop (fixture);
+    return -1;
+  }
+  END_TRY;
+
   for (retries = 0; retries < 10 && !started; retries++)
     {
       fixture->port = next_h2_port ();
@@ -505,26 +513,26 @@ fixture_start_h2 (BenchFixture *fixture)
       cfg.tls_context = fixture->server_tls;
 
       TRY
-        {
-          fixture->http2_server = SocketHTTPServer_new (&cfg);
-          if (fixture->http2_server != NULL)
-            {
-              SocketGRPC_Server_bind_http2 (fixture->grpc_server,
-                                            fixture->http2_server);
-              if (SocketHTTPServer_start (fixture->http2_server) == 0)
-                started = 1;
-              else
-                SocketHTTPServer_free (&fixture->http2_server);
-            }
-        }
+      {
+        fixture->http2_server = SocketHTTPServer_new (&cfg);
+        if (fixture->http2_server != NULL)
+          {
+            SocketGRPC_Server_bind_http2 (fixture->grpc_server,
+                                          fixture->http2_server);
+            if (SocketHTTPServer_start (fixture->http2_server) == 0)
+              started = 1;
+            else
+              SocketHTTPServer_free (&fixture->http2_server);
+          }
+      }
       EXCEPT (SocketHTTPServer_Failed)
-        {
-          SocketHTTPServer_free (&fixture->http2_server);
-        }
+      {
+        SocketHTTPServer_free (&fixture->http2_server);
+      }
       EXCEPT (Socket_Failed)
-        {
-          SocketHTTPServer_free (&fixture->http2_server);
-        }
+      {
+        SocketHTTPServer_free (&fixture->http2_server);
+      }
       END_TRY;
 
       if (!started)
@@ -557,37 +565,11 @@ fixture_start_h3 (BenchFixture *fixture)
 {
   SocketHTTP3_ServerConfig cfg;
 
-  if (fixture == NULL)
+  if (fixture_setup_common (fixture) != 0)
     return -1;
-
-  memset (fixture, 0, sizeof (*fixture));
-
-  if (create_temp_cert_files (fixture->cert_path,
-                              sizeof (fixture->cert_path),
-                              fixture->key_path,
-                              sizeof (fixture->key_path))
-      != 0)
-    {
-      return -1;
-    }
 
   fixture->arena = Arena_new ();
   if (fixture->arena == NULL)
-    {
-      fixture_stop (fixture);
-      return -1;
-    }
-
-  fixture->grpc_server = SocketGRPC_Server_new (NULL);
-  if (fixture->grpc_server == NULL)
-    {
-      fixture_stop (fixture);
-      return -1;
-    }
-
-  if (SocketGRPC_Server_register_unary (
-          fixture->grpc_server, BENCH_METHOD, grpc_echo_handler, NULL)
-      != 0)
     {
       fixture_stop (fixture);
       return -1;
@@ -654,8 +636,8 @@ run_single_unary (const BenchScenario *scenario,
   volatile int64_t started_ns = 0;
   volatile int64_t ended_ns = 0;
   volatile int rc = -1;
-  SocketGRPC_Status status = { SOCKET_GRPC_STATUS_INTERNAL,
-                               "call not started" };
+  SocketGRPC_Status status
+      = { SOCKET_GRPC_STATUS_INTERNAL, "call not started" };
 
   if (scenario == NULL || fixture == NULL || request_payload == NULL
       || request_payload_len == 0)
@@ -688,13 +670,13 @@ run_single_unary (const BenchScenario *scenario,
   if (scenario->mode == SOCKET_GRPC_CHANNEL_MODE_HTTP2)
     {
       TRY
-        {
-          client_tls = SocketTLSContext_new_client (fixture->cert_path);
-        }
+      {
+        client_tls = SocketTLSContext_new_client (fixture->cert_path);
+      }
       EXCEPT (SocketTLS_Failed)
-        {
-          goto cleanup;
-        }
+      {
+        goto cleanup;
+      }
       END_TRY;
       channel_cfg.tls_context = client_tls;
     }
@@ -716,18 +698,32 @@ run_single_unary (const BenchScenario *scenario,
 
   started_ns = now_ns ();
   TRY
-    {
-      rc = SocketGRPC_Call_unary_h2 (call,
-                                     request_payload,
-                                     request_payload_len,
-                                     arena,
-                                     &response_payload,
-                                     &response_payload_len);
-    }
+  {
+    rc = SocketGRPC_Call_unary_h2 (call,
+                                   request_payload,
+                                   request_payload_len,
+                                   arena,
+                                   &response_payload,
+                                   &response_payload_len);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    rc = -1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    rc = -1;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_Failed)
+  {
+    rc = -1;
+  }
+#endif
   ELSE
-    {
-      rc = -1;
-    }
+  {
+    rc = -1;
+  }
   END_TRY;
   ended_ns = now_ns ();
 
@@ -740,13 +736,15 @@ run_single_unary (const BenchScenario *scenario,
 
   if (rc == SOCKET_GRPC_STATUS_OK)
     {
-      if (response_payload == NULL || response_payload_len != request_payload_len)
+      if (response_payload == NULL
+          || response_payload_len != request_payload_len)
         {
           status.code = SOCKET_GRPC_STATUS_INTERNAL;
           status.message = "response payload mismatch";
           rc = SOCKET_GRPC_STATUS_INTERNAL;
         }
-      else if (memcmp (response_payload, request_payload, request_payload_len) != 0)
+      else if (memcmp (response_payload, request_payload, request_payload_len)
+               != 0)
         {
           status.code = SOCKET_GRPC_STATUS_INTERNAL;
           status.message = "response payload differs";
@@ -816,8 +814,9 @@ run_scenario (const BenchScenario *scenario,
   if (cfg->smoke && scenario->mode == SOCKET_GRPC_CHANNEL_MODE_HTTP2
       && scenario->request_compression)
     {
-      set_result_status (
-          result, "skipped", "smoke profile skips HTTP/2 compression stress case");
+      set_result_status (result,
+                         "skipped",
+                         "smoke profile skips HTTP/2 compression stress case");
       return;
     }
 
@@ -839,8 +838,9 @@ run_scenario (const BenchScenario *scenario,
   if (!started)
     {
       if (scenario->mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3)
-        set_result_status (
-            result, "skipped", "HTTP/3 runtime unavailable in this environment");
+        set_result_status (result,
+                           "skipped",
+                           "HTTP/3 runtime unavailable in this environment");
       else
         set_result_status (result, "error", "failed to start HTTP/2 fixture");
       goto cleanup;
@@ -861,10 +861,9 @@ run_scenario (const BenchScenario *scenario,
           if (scenario->mode == SOCKET_GRPC_CHANNEL_MODE_HTTP3
               && warm_status.code == SOCKET_GRPC_STATUS_UNAVAILABLE)
             {
-              set_result_status (
-                  result,
-                  "skipped",
-                  "HTTP/3 transport unavailable during warmup");
+              set_result_status (result,
+                                 "skipped",
+                                 "HTTP/3 transport unavailable during warmup");
             }
           else if (scenario->mode == SOCKET_GRPC_CHANNEL_MODE_HTTP2
                    && scenario->request_compression)
@@ -876,9 +875,8 @@ run_scenario (const BenchScenario *scenario,
             }
           else
             {
-              set_result_status (result,
-                                 "error",
-                                 SocketGRPC_Status_message (&warm_status));
+              set_result_status (
+                  result, "error", SocketGRPC_Status_message (&warm_status));
             }
           goto cleanup;
         }
@@ -922,9 +920,8 @@ run_scenario (const BenchScenario *scenario,
             }
           else
             {
-              set_result_status (result,
-                                 "error",
-                                 SocketGRPC_Status_message (&status));
+              set_result_status (
+                  result, "error", SocketGRPC_Status_message (&status));
             }
           goto cleanup;
         }
@@ -943,8 +940,7 @@ run_scenario (const BenchScenario *scenario,
       result->p95_ms = percentile (latencies, (size_t)result->successes, 95.0);
       result->p99_ms = percentile (latencies, (size_t)result->successes, 99.0);
       if (sum_ms > 0.0)
-        result->throughput_rps
-            = ((double)result->successes / sum_ms) * 1000.0;
+        result->throughput_rps = ((double)result->successes / sum_ms) * 1000.0;
     }
 
   set_result_status (result, "ok", "");
@@ -1182,7 +1178,8 @@ main (int argc, char **argv)
         report = fopen (cfg.report_path, "w");
         if (report == NULL)
           {
-            fprintf (stderr, "failed to open report path: %s\n", cfg.report_path);
+            fprintf (
+                stderr, "failed to open report path: %s\n", cfg.report_path);
             return 1;
           }
       }
@@ -1211,7 +1208,8 @@ main (int argc, char **argv)
         report = fopen (cfg.report_path, "w");
         if (report == NULL)
           {
-            fprintf (stderr, "failed to open report path: %s\n", cfg.report_path);
+            fprintf (
+                stderr, "failed to open report path: %s\n", cfg.report_path);
             return 1;
           }
       }

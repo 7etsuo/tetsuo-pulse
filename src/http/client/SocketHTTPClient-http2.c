@@ -33,92 +33,68 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #define PSEUDO_HEADER_STATUS ":status"
 #define PSEUDO_HEADER_STATUS_LEN 7
 
+/* --------------------------------------------------------------------------
+ * Exception wrapper macros for safe HTTP/2 calls.
+ *
+ * H2_TLS_EXCEPTS is defined separately because #ifdef cannot appear inside
+ * a macro body.  H2_SAFE_CALL composes the common TRY/EXCEPT boilerplate
+ * used by the 6 wrappers that return int or ssize_t.
+ * -------------------------------------------------------------------------- */
+
+#if SOCKET_HAS_TLS
+#define H2_TLS_EXCEPTS(fail_stmt)    \
+  EXCEPT (SocketTLS_HandshakeFailed) \
+  {                                  \
+    fail_stmt;                       \
+  }                                  \
+  EXCEPT (SocketTLS_VerifyFailed)    \
+  {                                  \
+    fail_stmt;                       \
+  }                                  \
+  EXCEPT (SocketTLS_Failed)          \
+  {                                  \
+    fail_stmt;                       \
+  }
+#else
+#define H2_TLS_EXCEPTS(fail_stmt)
+#endif
+
+#define H2_SAFE_CALL(type, init, call) \
+  volatile type rc = (init);           \
+  TRY                                  \
+  {                                    \
+    rc = (type)(call);                 \
+  }                                    \
+  EXCEPT (SocketHTTP2)                 \
+  {                                    \
+    rc = (init);                       \
+  }                                    \
+  EXCEPT (Socket_Failed)               \
+  {                                    \
+    rc = (init);                       \
+  }                                    \
+  EXCEPT (Socket_Closed)               \
+  {                                    \
+    rc = (init);                       \
+  }                                    \
+  H2_TLS_EXCEPTS (rc = (init))         \
+  ELSE                                 \
+  {                                    \
+    rc = (init);                       \
+  }                                    \
+  END_TRY;                             \
+  return rc
+
 static int
 httpclient_h2_conn_flush_safe (SocketHTTP2_Conn_T conn)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Conn_flush (conn);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  H2_SAFE_CALL (int, -1, SocketHTTP2_Conn_flush (conn));
 }
 
 static int
 httpclient_h2_conn_process_safe (SocketHTTP2_Conn_T conn, unsigned events)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Conn_process (conn, events);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  H2_SAFE_CALL (int, -1, SocketHTTP2_Conn_process (conn, events));
 }
 
 static int
@@ -126,45 +102,8 @@ httpclient_h2_stream_send_request_safe (SocketHTTP2_Stream_T stream,
                                         const SocketHTTP_Request *http_req,
                                         int end_stream)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_send_request (stream, http_req, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  H2_SAFE_CALL (
+      int, -1, SocketHTTP2_Stream_send_request (stream, http_req, end_stream));
 }
 
 static ssize_t
@@ -173,45 +112,8 @@ httpclient_h2_stream_send_data_safe (SocketHTTP2_Stream_T stream,
                                      size_t len,
                                      int end_stream)
 {
-  volatile ssize_t rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_send_data (stream, buf, len, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  H2_SAFE_CALL (
+      ssize_t, -1, SocketHTTP2_Stream_send_data (stream, buf, len, end_stream));
 }
 
 static int
@@ -221,46 +123,10 @@ httpclient_h2_stream_recv_headers_safe (SocketHTTP2_Stream_T stream,
                                         size_t *header_count,
                                         int *end_stream)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_recv_headers (
-        stream, headers, headers_cap, header_count, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  H2_SAFE_CALL (int,
+                -1,
+                SocketHTTP2_Stream_recv_headers (
+                    stream, headers, headers_cap, header_count, end_stream));
 }
 
 static ssize_t
@@ -269,46 +135,11 @@ httpclient_h2_stream_recv_data_safe (SocketHTTP2_Stream_T stream,
                                      size_t len,
                                      int *end_stream)
 {
-  volatile ssize_t rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_recv_data (stream, buf, len, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  H2_SAFE_CALL (
+      ssize_t, -1, SocketHTTP2_Stream_recv_data (stream, buf, len, end_stream));
 }
+
+/* stream_close and stream_new have unique patterns — left unwrapped. */
 
 static void
 httpclient_h2_stream_close_safe (SocketHTTP2_Stream_T stream, int error_code)
@@ -397,15 +228,14 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
       if (headers[i].name_len != PSEUDO_HEADER_STATUS_LEN)
         continue;
 
-      if (memcmp (headers[i].name, PSEUDO_HEADER_STATUS,
-                  PSEUDO_HEADER_STATUS_LEN)
+      if (memcmp (
+              headers[i].name, PSEUDO_HEADER_STATUS, PSEUDO_HEADER_STATUS_LEN)
           != 0)
         continue;
 
       /* Found :status - parse and validate (RFC 9113 §8.3.2) */
-      if (http2_parse_status_code (headers[i].value,
-                                   headers[i].value_len,
-                                   &response->status_code)
+      if (http2_parse_status_code (
+              headers[i].value, headers[i].value_len, &response->status_code)
           < 0)
         return -1;
 
@@ -430,10 +260,10 @@ httpclient_http2_parse_response_headers (const SocketHPACK_Header *headers,
         continue; /* Skip pseudo-headers */
 
       if (SocketHTTP_Headers_add_n (response->headers,
-                                   headers[i].name,
-                                   headers[i].name_len,
-                                   headers[i].value,
-                                   headers[i].value_len)
+                                    headers[i].name,
+                                    headers[i].name_len,
+                                    headers[i].value,
+                                    headers[i].value_len)
           != 0)
         return -1;
     }
@@ -455,7 +285,8 @@ httpclient_http2_send_request (SocketHTTP2_Stream_T stream,
 
   if (has_body)
     {
-      ssize_t sent = httpclient_h2_stream_send_data_safe (stream, body, body_len, 1);
+      ssize_t sent
+          = httpclient_h2_stream_send_data_safe (stream, body, body_len, 1);
       if (sent < 0)
         return -1;
     }
@@ -483,11 +314,12 @@ httpclient_http2_recv_headers (SocketHTTP2_Stream_T stream,
 
   while (header_count == 0)
     {
-      int r = httpclient_h2_stream_recv_headers_safe (stream,
-                                                      headers,
-                                                      SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                                      &header_count,
-                                                      end_stream);
+      int r = httpclient_h2_stream_recv_headers_safe (
+          stream,
+          headers,
+          SOCKETHTTP2_MAX_DECODED_HEADERS,
+          &header_count,
+          end_stream);
       if (r < 0)
         return -1;
 

@@ -178,6 +178,98 @@ h3_headers_add (SocketHTTP_Headers_T hdrs,
 }
 
 /**
+ * @brief Decode an Indexed Field Line (§4.5.2).
+ */
+static int
+decode_indexed_field (SocketHTTP_Headers_T hdrs,
+                      const uint8_t *data,
+                      size_t len,
+                      size_t *consumed)
+{
+  uint64_t index;
+  int is_static;
+  SocketQPACK_Result qres = SocketQPACK_decode_indexed_field (
+      data, len, &index, &is_static, consumed);
+  if (qres != QPACK_OK)
+    return -1;
+
+  if (!is_static)
+    return -1; /* no dynamic table */
+
+  const char *name, *value;
+  size_t name_len, value_len;
+  qres = SocketQPACK_static_table_get (
+      index, &name, &name_len, &value, &value_len);
+  if (qres != QPACK_OK)
+    return -1;
+
+  return h3_headers_add (hdrs, name, name_len, value, value_len);
+}
+
+/**
+ * @brief Decode a Literal with Name Reference (§4.5.4).
+ */
+static int
+decode_literal_nameref (SocketHTTP_Headers_T hdrs,
+                        Arena_T arena,
+                        const uint8_t *data,
+                        size_t len,
+                        size_t *consumed)
+{
+  SocketQPACK_LiteralNameRef ref;
+  SocketQPACK_Result qres = SocketQPACK_decode_literal_name_ref_arena (
+      data, len, arena, &ref, consumed);
+  if (qres != QPACK_OK)
+    return -1;
+
+  if (!ref.is_static)
+    return -1; /* no dynamic table */
+
+  const char *name;
+  size_t name_len;
+  qres = SocketQPACK_static_table_get (
+      ref.name_index, &name, &name_len, NULL, NULL);
+  if (qres != QPACK_OK)
+    return -1;
+
+  return h3_headers_add (hdrs, name, name_len, ref.value, ref.value_len);
+}
+
+/**
+ * @brief Decode a Literal with Literal Name (§4.5.6).
+ */
+static int
+decode_literal_field (SocketHTTP_Headers_T hdrs,
+                      const uint8_t *data,
+                      size_t len,
+                      size_t *consumed)
+{
+  unsigned char name_buf[H3_MAX_HEADER_NAME];
+  unsigned char value_buf[H3_MAX_HEADER_VALUE];
+  size_t name_len, value_len;
+  bool never_indexed;
+  SocketQPACK_Result qres
+      = SocketQPACK_decode_literal_field_literal_name (data,
+                                                       len,
+                                                       name_buf,
+                                                       sizeof (name_buf),
+                                                       &name_len,
+                                                       value_buf,
+                                                       sizeof (value_buf),
+                                                       &value_len,
+                                                       &never_indexed,
+                                                       consumed);
+  if (qres != QPACK_OK)
+    return -1;
+
+  return h3_headers_add (hdrs,
+                         (const char *)name_buf,
+                         name_len,
+                         (const char *)value_buf,
+                         value_len);
+}
+
+/**
  * @brief QPACK-decode a field section into an HTTP headers collection.
  *
  * Handles all five field line representation types. Since we use static-
@@ -224,96 +316,31 @@ h3_qpack_decode_headers (Arena_T arena,
   while (pos < len)
     {
       uint8_t first_byte = data[pos];
+      int rc;
 
       if (first_byte & 0x80)
         {
-          /* 1xxxxxxx: Indexed Field Line (§4.5.2) */
-          uint64_t index;
-          int is_static;
-          qres = SocketQPACK_decode_indexed_field (
-              data + pos, len - pos, &index, &is_static, &consumed);
-          if (qres != QPACK_OK)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
-          pos += consumed;
-
-          if (!is_static)
-            return -(int)QPACK_DECOMPRESSION_FAILED; /* no dynamic table */
-
-          const char *name, *value;
-          size_t name_len, value_len;
-          qres = SocketQPACK_static_table_get (
-              index, &name, &name_len, &value, &value_len);
-          if (qres != QPACK_OK)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
-
-          if (h3_headers_add (hdrs, name, name_len, value, value_len) < 0)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
+          rc = decode_indexed_field (hdrs, data + pos, len - pos, &consumed);
         }
       else if ((first_byte & 0xC0) == 0x40)
         {
-          /* 01xxxxxx: Literal with Name Reference (§4.5.4) */
-          SocketQPACK_LiteralNameRef ref;
-          qres = SocketQPACK_decode_literal_name_ref_arena (
-              data + pos, len - pos, arena, &ref, &consumed);
-          if (qres != QPACK_OK)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
-          pos += consumed;
-
-          if (!ref.is_static)
-            return -(int)QPACK_DECOMPRESSION_FAILED; /* no dynamic table */
-
-          const char *name;
-          size_t name_len;
-          qres = SocketQPACK_static_table_get (
-              ref.name_index, &name, &name_len, NULL, NULL);
-          if (qres != QPACK_OK)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
-
-          if (h3_headers_add (hdrs, name, name_len, ref.value, ref.value_len)
-              < 0)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
+          rc = decode_literal_nameref (
+              hdrs, arena, data + pos, len - pos, &consumed);
         }
       else if ((first_byte & 0xE0) == 0x20)
         {
-          /* 001xxxxx: Literal with Literal Name (§4.5.6) */
-          unsigned char name_buf[H3_MAX_HEADER_NAME];
-          unsigned char value_buf[H3_MAX_HEADER_VALUE];
-          size_t name_len, value_len;
-          bool never_indexed;
-          qres = SocketQPACK_decode_literal_field_literal_name (
-              data + pos,
-              len - pos,
-              name_buf,
-              sizeof (name_buf),
-              &name_len,
-              value_buf,
-              sizeof (value_buf),
-              &value_len,
-              &never_indexed,
-              &consumed);
-          if (qres != QPACK_OK)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
-          pos += consumed;
-
-          if (h3_headers_add (hdrs,
-                              (const char *)name_buf,
-                              name_len,
-                              (const char *)value_buf,
-                              value_len)
-              < 0)
-            return -(int)QPACK_DECOMPRESSION_FAILED;
-        }
-      else if ((first_byte & 0xF0) == 0x10)
-        {
-          /* 0001xxxx: Indexed with Post-Base (§4.5.3) — needs dynamic table */
-          return -(int)QPACK_DECOMPRESSION_FAILED;
+          rc = decode_literal_field (hdrs, data + pos, len - pos, &consumed);
         }
       else
         {
-          /* 0000xxxx: Literal with Post-Base Name (§4.5.5) — needs dynamic
-           * table */
+          /* Post-base references (§4.5.3, §4.5.5) — needs dynamic table */
           return -(int)QPACK_DECOMPRESSION_FAILED;
         }
+
+      if (rc < 0)
+        return -(int)QPACK_DECOMPRESSION_FAILED;
+
+      pos += consumed;
     }
 
   return 0;
