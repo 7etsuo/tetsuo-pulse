@@ -651,8 +651,8 @@ run_single_unary (const BenchScenario *scenario,
   uint8_t *response_payload = NULL;
   size_t response_payload_len = 0;
   char target[BENCH_TARGET_CAP];
-  int64_t started_ns = 0;
-  int64_t ended_ns = 0;
+  volatile int64_t started_ns = 0;
+  volatile int64_t ended_ns = 0;
   volatile int rc = -1;
   SocketGRPC_Status status = { SOCKET_GRPC_STATUS_INTERNAL,
                                "call not started" };

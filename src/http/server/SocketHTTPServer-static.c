@@ -132,10 +132,6 @@ validate_static_path (const char *path)
   if (path[0] == '/')
     return 0;
 
-  /* Reject paths with null bytes (injection attack) */
-  if (strchr (path, '\0') != path + strlen (path))
-    return 0;
-
   /* Check for path traversal sequences */
   p = path;
   while (*p != '\0')
@@ -189,6 +185,19 @@ validate_static_path (const char *path)
     }
 
   return 1;
+}
+
+static int
+path_is_within_directory (const char *path, const char *dir, size_t dir_len)
+{
+  if (path == NULL || dir == NULL || dir_len == 0)
+    return 0;
+
+  /* Ensure prefix match AND boundary: "/var/www" must not match "/var/www2". */
+  if (strncmp (path, dir, dir_len) != 0)
+    return 0;
+
+  return path[dir_len] == '\0' || path[dir_len] == '/';
 }
 
 /**
@@ -494,9 +503,8 @@ static_file_resolve_path (const StaticRoute *route,
   if (realpath (full_path, resolved_path) == NULL)
     return -1;
 
-  if (strncmp (
-          resolved_path, route->resolved_directory, route->resolved_dir_len)
-      != 0)
+  if (!path_is_within_directory (
+          resolved_path, route->resolved_directory, route->resolved_dir_len))
     {
       SOCKET_LOG_WARN_MSG ("Path traversal attempt blocked: %.100s", file_path);
       return -1;

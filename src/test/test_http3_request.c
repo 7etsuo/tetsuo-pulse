@@ -325,6 +325,59 @@ TEST (h3_req_recv_200_with_body)
   Arena_dispose (&arena);
 }
 
+TEST (h3_req_recv_content_length_overflow_rejected)
+{
+  Arena_T arena = Arena_new ();
+  SocketHTTP3_Conn_T conn = make_client_conn (arena);
+  SocketHTTP3_Request_T req = SocketHTTP3_Request_new (conn);
+
+  /* Send GET request */
+  SocketHTTP_Headers_T h = make_get_headers (arena);
+  SocketHTTP3_Request_send_headers (req, h, 1);
+  SocketHTTP3_Conn_drain_output (conn);
+
+  /* Response headers with Content-Length overflowing int64_t */
+  uint8_t frame_buf[512];
+  SocketHTTP_Headers_T resp_h = SocketHTTP_Headers_new (arena);
+  add_pseudo (resp_h, ":status", "200");
+  SocketHTTP_Headers_add (resp_h, "content-length", "9223372036854775808");
+
+  size_t hlen = build_response_frame (frame_buf, sizeof (frame_buf), resp_h);
+  ASSERT_NE (0ULL, hlen);
+
+  int rc = SocketHTTP3_Request_feed (req, frame_buf, hlen, 1);
+  ASSERT_EQ (-(int)H3_MESSAGE_ERROR, rc);
+
+  Arena_dispose (&arena);
+}
+
+TEST (h3_req_recv_duplicate_content_length_mismatch_rejected)
+{
+  Arena_T arena = Arena_new ();
+  SocketHTTP3_Conn_T conn = make_client_conn (arena);
+  SocketHTTP3_Request_T req = SocketHTTP3_Request_new (conn);
+
+  /* Send GET request */
+  SocketHTTP_Headers_T h = make_get_headers (arena);
+  SocketHTTP3_Request_send_headers (req, h, 1);
+  SocketHTTP3_Conn_drain_output (conn);
+
+  /* Response headers with mismatched duplicate Content-Length values */
+  uint8_t frame_buf[512];
+  SocketHTTP_Headers_T resp_h = SocketHTTP_Headers_new (arena);
+  add_pseudo (resp_h, ":status", "200");
+  SocketHTTP_Headers_add (resp_h, "content-length", "5");
+  SocketHTTP_Headers_add (resp_h, "content-length", "6");
+
+  size_t hlen = build_response_frame (frame_buf, sizeof (frame_buf), resp_h);
+  ASSERT_NE (0ULL, hlen);
+
+  int rc = SocketHTTP3_Request_feed (req, frame_buf, hlen, 1);
+  ASSERT_EQ (-(int)H3_MESSAGE_ERROR, rc);
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * Test 5: Receive interim 100 response followed by 200
  * ============================================================================
