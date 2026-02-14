@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,7 @@ const Except_T SocketTimer_Failed
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTimer);
 
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
+static _Atomic uint64_t sockettimer_capacity_evictions = 0;
 
 static SocketTimer_heap_T *
 sockettimer_validate_heap (SocketPoll_T poll)
@@ -336,6 +338,110 @@ sockettimer_extract_root (SocketTimer_heap_T *heap)
   return result;
 }
 
+static struct SocketTimer_T *
+sockettimer_remove_at (SocketTimer_heap_T *heap, size_t index)
+{
+  struct SocketTimer_T *removed;
+  size_t last_index;
+
+  assert (heap);
+  assert (heap->count > 0);
+  assert (index < heap->count);
+
+  removed = heap->timers[index];
+  last_index = heap->count - 1;
+
+  if (index != last_index)
+    {
+      heap->timers[index] = heap->timers[last_index];
+      heap->timers[index]->heap_index = index;
+    }
+
+  heap->count--;
+
+  if (index < heap->count)
+    {
+      if (index > 0
+          && heap->timers[index]->expiry_ms
+                 < heap->timers[sockettimer_heap_parent (index)]->expiry_ms)
+        sockettimer_heap_sift_up (heap->timers, index);
+      else
+        sockettimer_heap_sift_down (heap->timers, heap->count, index);
+    }
+
+  removed->heap_index = SOCKET_TIMER_INVALID_HEAP_INDEX;
+  return removed;
+}
+
+static size_t
+sockettimer_find_capacity_victim (const SocketTimer_heap_T *heap)
+{
+  size_t i;
+  size_t victim = SOCKET_TIMER_INVALID_HEAP_INDEX;
+  int64_t victim_expiry = INT64_MIN;
+
+  for (i = 0; i < heap->count; i++)
+    {
+      if (heap->timers[i]->cancelled)
+        return i;
+    }
+
+  for (i = 0; i < heap->count; i++)
+    {
+      if (heap->timers[i]->interval_ms > 0)
+        continue;
+
+      if (victim == SOCKET_TIMER_INVALID_HEAP_INDEX
+          || heap->timers[i]->expiry_ms > victim_expiry)
+        {
+          victim = i;
+          victim_expiry = heap->timers[i]->expiry_ms;
+        }
+    }
+
+  if (victim != SOCKET_TIMER_INVALID_HEAP_INDEX)
+    return victim;
+
+  for (i = 0; i < heap->count; i++)
+    {
+      if (victim == SOCKET_TIMER_INVALID_HEAP_INDEX
+          || heap->timers[i]->expiry_ms > victim_expiry)
+        {
+          victim = i;
+          victim_expiry = heap->timers[i]->expiry_ms;
+        }
+    }
+
+  return victim;
+}
+
+static void
+sockettimer_make_room_at_capacity (SocketTimer_heap_T *heap)
+{
+  size_t victim_index;
+  struct SocketTimer_T *victim;
+  uint64_t evictions;
+
+  victim_index = sockettimer_find_capacity_victim (heap);
+  if (victim_index == SOCKET_TIMER_INVALID_HEAP_INDEX)
+    return;
+
+  victim = sockettimer_remove_at (heap, victim_index);
+  victim->cancelled = 1;
+
+  evictions = atomic_fetch_add (&sockettimer_capacity_evictions, 1) + 1;
+  if (evictions <= 5 || (evictions % 1000) == 0)
+    {
+      SOCKET_LOG_WARN_MSG ("Timer heap saturated at %u entries; evicted "
+                           "timer id=%" PRIu64
+                           " expiry_ms=%" PRId64 " interval_ms=%" PRId64,
+                           SOCKET_MAX_TIMERS_PER_HEAP,
+                           victim->id,
+                           victim->expiry_ms,
+                           victim->interval_ms);
+    }
+}
+
 static void
 sockettimer_reschedule_repeating (SocketTimer_heap_T *heap,
                                   struct SocketTimer_T *timer)
@@ -511,11 +617,17 @@ SocketTimer_heap_push (SocketTimer_heap_T *heap, struct SocketTimer_T *timer)
 
   TRY
   {
+    sockettimer_skip_cancelled (heap);
+
     if (heap->count >= SOCKET_MAX_TIMERS_PER_HEAP)
-      SOCKET_RAISE_MSG (SocketTimer,
-                        SocketTimer_Failed,
-                        "Cannot add timer: maximum %u timers per heap exceeded",
-                        SOCKET_MAX_TIMERS_PER_HEAP);
+      sockettimer_make_room_at_capacity (heap);
+
+    if (heap->count >= SOCKET_MAX_TIMERS_PER_HEAP)
+      SOCKET_RAISE_MSG (
+          SocketTimer,
+          SocketTimer_Failed,
+          "Cannot add timer: maximum %u timers per heap exceeded",
+          SOCKET_MAX_TIMERS_PER_HEAP);
 
     sockettimer_ensure_capacity (heap);
     sockettimer_assign_id (heap, timer);

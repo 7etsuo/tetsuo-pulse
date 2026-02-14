@@ -2949,6 +2949,51 @@ test_lru_with_malloc (void)
   return success;
 }
 
+/**
+ * test_arena_capacity_no_fail_open - Capacity pressure must not default allow
+ */
+static int
+test_arena_capacity_no_fail_open (void)
+{
+  Arena_T arena = NULL;
+  SocketSYNProtect_T protect = NULL;
+  SocketSYNProtect_Config config;
+  SocketSYNProtect_Stats stats;
+  volatile int success = 0;
+
+  TRY
+  {
+    arena = Arena_new ();
+    SocketSYNProtect_config_defaults (&config);
+    config.max_tracked_ips = 1;
+    config.score_throttle = 0.95f;
+    config.score_challenge = 0.95f;
+    config.score_block = 0.95f;
+
+    protect = SocketSYNProtect_new (arena, &config);
+
+    SocketSYN_Action first = SocketSYNProtect_check (protect, "10.1.1.1", NULL);
+    SocketSYN_Action second
+        = SocketSYNProtect_check (protect, "10.1.1.2", NULL);
+
+    SocketSYNProtect_stats (protect, &stats);
+
+    success = (first != SYN_ACTION_ALLOW);
+    success = success && (second != SYN_ACTION_ALLOW);
+    success = success && (stats.current_tracked_ips <= 1);
+
+    SocketSYNProtect_free (&protect);
+    Arena_dispose (&arena);
+  }
+  ELSE
+  {
+    success = 0;
+  }
+  END_TRY;
+
+  return success;
+}
+
 /* ============================================================================
  * Main Test Runner
  * ============================================================================
@@ -3060,6 +3105,7 @@ main (void)
   RUN_TEST (test_lru_eviction_single);
   RUN_TEST (test_lru_eviction_removes_from_hash);
   RUN_TEST (test_lru_with_malloc);
+  RUN_TEST (test_arena_capacity_no_fail_open);
 
   printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
 

@@ -7,6 +7,8 @@
 /* Core utility subsystems: time utilities */
 
 #include <errno.h>
+#include <stdatomic.h>
+#include <stdint.h>
 #include <time.h>
 
 #include "core/SocketConfig.h"
@@ -20,6 +22,7 @@
 
 /* Flag for one-time CLOCK_MONOTONIC fallback warning */
 static volatile int monotonic_fallback_warned = 0;
+static _Atomic int64_t monotonic_fallback_last_ms = 0;
 
 /* Fail instead of falling back to CLOCK_REALTIME (default: 0 for compat) */
 #ifndef SOCKET_MONOTONIC_STRICT
@@ -77,6 +80,28 @@ socket_warn_monotonic_fallback (void)
     }
 }
 
+static int64_t
+socket_clamp_monotonic_ms (int64_t candidate_ms)
+{
+  int64_t observed = atomic_load_explicit (&monotonic_fallback_last_ms,
+                                           memory_order_acquire);
+
+  while (1)
+    {
+      int64_t clamped = candidate_ms;
+
+      if (clamped <= observed)
+        clamped = (observed == INT64_MAX) ? INT64_MAX : (observed + 1);
+
+      if (atomic_compare_exchange_weak_explicit (&monotonic_fallback_last_ms,
+                                                 &observed,
+                                                 clamped,
+                                                 memory_order_acq_rel,
+                                                 memory_order_acquire))
+        return clamped;
+    }
+}
+
 int64_t
 Socket_get_monotonic_ms (void)
 {
@@ -102,7 +127,7 @@ Socket_get_monotonic_ms (void)
   if (socket_try_clock (CLOCK_REALTIME, &result_ms))
     {
       socket_warn_monotonic_fallback ();
-      return result_ms;
+      return socket_clamp_monotonic_ms (result_ms);
     }
 
   return 0;

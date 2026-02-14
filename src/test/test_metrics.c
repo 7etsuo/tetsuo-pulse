@@ -1232,6 +1232,21 @@ TEST (metrics_export_statsd_type_suffixes)
   ASSERT_NOT_NULL (strstr (buffer, "|g"));
 }
 
+TEST (metrics_export_statsd_prefix_sanitized)
+{
+  SocketMetrics_init ();
+  SocketMetrics_reset ();
+  SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 1);
+
+  char buffer[8192];
+  size_t len = SocketMetrics_export_statsd (
+      buffer, sizeof (buffer), "app\nattack.metric:1|c");
+
+  ASSERT (len > 0);
+  ASSERT_NOT_NULL (strstr (buffer, "appattack.metric1c."));
+  ASSERT_NULL (strstr (buffer, "attack.metric:1|c"));
+}
+
 TEST (metrics_export_statsd_percentile_names)
 {
   SocketMetrics_init ();

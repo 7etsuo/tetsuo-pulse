@@ -497,7 +497,7 @@ TEST (timer_heap_capacity_growth)
   END_TRY;
 }
 
-/* Test: Maximum heap size enforcement */
+/* Test: Heap saturation should evict and continue accepting timers */
 TEST (timer_heap_max_size_enforcement)
 {
   Arena_T arena = Arena_new ();
@@ -506,11 +506,7 @@ TEST (timer_heap_max_size_enforcement)
   SocketTimer_heap_T *heap = SocketTimer_heap_new (arena);
   ASSERT_NOT_NULL (heap);
 
-  /* This test would take too long with actual max (100000),
-   * so we test the exception mechanism with a small heap */
   int64_t base_time = Socket_get_monotonic_ms ();
-
-  volatile int exception_caught = 0;
 
   TRY
   {
@@ -525,22 +521,24 @@ TEST (timer_heap_max_size_enforcement)
 
     if (heap->count == SOCKET_MAX_TIMERS_PER_HEAP)
       {
-        /* Try to push one more - should raise exception */
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + INT64_MAX / 4);
+        ASSERT_NOT_NULL (timer);
+
+        /* Push beyond capacity: implementation should evict one entry and keep
+         * heap operational. */
         SocketTimer_heap_push (heap, timer);
-        /* Should not reach here */
+
+        ASSERT_EQ (heap->count, SOCKET_MAX_TIMERS_PER_HEAP);
+        ASSERT (verify_heap_property (heap));
       }
   }
   EXCEPT (SocketTimer_Failed)
   {
-    exception_caught = 1;
+    ASSERT (0);
   }
   FINALLY
   {
-    if (heap->count == SOCKET_MAX_TIMERS_PER_HEAP)
-      {
-        ASSERT_EQ (exception_caught, 1);
-      }
     SocketTimer_heap_free (&heap);
     Arena_dispose (&arena);
   }

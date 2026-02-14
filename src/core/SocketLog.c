@@ -281,6 +281,88 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
 }
 
 static int
+socketlog_append_char (char *buffer, size_t *pos, size_t bufsize, char c)
+{
+  if (*pos >= bufsize - 1)
+    return 0;
+
+  buffer[*pos] = c;
+  (*pos)++;
+  buffer[*pos] = '\0';
+  return 1;
+}
+
+static int
+socketlog_append_literal (char *buffer,
+                          size_t *pos,
+                          size_t bufsize,
+                          const char *literal)
+{
+  size_t i = 0;
+  while (literal[i] != '\0')
+    {
+      if (!socketlog_append_char (buffer, pos, bufsize, literal[i]))
+        return 0;
+      i++;
+    }
+  return 1;
+}
+
+static int
+socketlog_append_escaped_value (char *buffer,
+                                size_t *pos,
+                                size_t bufsize,
+                                const char *src,
+                                int key_mode)
+{
+  const unsigned char *p = (const unsigned char *)src;
+
+  while (*p != '\0')
+    {
+      if (*p == '\n')
+        {
+          if (!socketlog_append_literal (buffer, pos, bufsize, "\\n"))
+            return 0;
+        }
+      else if (*p == '\r')
+        {
+          if (!socketlog_append_literal (buffer, pos, bufsize, "\\r"))
+            return 0;
+        }
+      else if (*p == '\t')
+        {
+          if (!socketlog_append_literal (buffer, pos, bufsize, "\\t"))
+            return 0;
+        }
+      else if (*p == '=')
+        {
+          if (key_mode)
+            {
+              if (!socketlog_append_char (buffer, pos, bufsize, '_'))
+                return 0;
+            }
+          else
+            {
+              if (!socketlog_append_literal (buffer, pos, bufsize, "\\="))
+                return 0;
+            }
+        }
+      else if (*p < 0x20 || *p == 0x7F)
+        {
+          if (!socketlog_append_char (buffer, pos, bufsize, '?'))
+            return 0;
+        }
+      else if (!socketlog_append_char (buffer, pos, bufsize, (char)*p))
+        {
+          return 0;
+        }
+      p++;
+    }
+
+  return 1;
+}
+
+static int
 socketlog_append_field_if_space (char *buffer,
                                  size_t *pos,
                                  size_t bufsize,
@@ -289,20 +371,15 @@ socketlog_append_field_if_space (char *buffer,
   if (field->key == NULL || field->value == NULL)
     return 0;
 
-  size_t remaining = bufsize - *pos;
-  int written
-      = snprintf (buffer + *pos, remaining, " %s=%s", field->key, field->value);
+  if (!socketlog_append_char (buffer, pos, bufsize, ' '))
+    return 0;
+  if (!socketlog_append_escaped_value (buffer, pos, bufsize, field->key, 1))
+    return 0;
+  if (!socketlog_append_char (buffer, pos, bufsize, '='))
+    return 0;
+  if (!socketlog_append_escaped_value (buffer, pos, bufsize, field->value, 0))
+    return 0;
 
-  if (written < 0)
-    return -1;
-
-  if ((size_t)written >= remaining)
-    {
-      *pos = bufsize - 1; /* Indicate truncation */
-      return 0;
-    }
-
-  *pos += (size_t)written;
   return 1;
 }
 
@@ -319,8 +396,6 @@ socketlog_format_fields (char *buffer,
     {
       int res
           = socketlog_append_field_if_space (buffer, &pos, bufsize, &fields[i]);
-      if (res < 0)
-        break; /* snprintf error */
       if (res == 0)
         break; /* null field or truncated */
     }

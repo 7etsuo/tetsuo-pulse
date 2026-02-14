@@ -110,9 +110,12 @@ create_ip_entry (T protect, const char *ip, int64_t now_ms)
   SocketSYN_IPEntry *entry;
   unsigned bucket;
 
-  while (protect->use_malloc
-         && protect->ip_entry_count >= protect->config.max_tracked_ips)
-    evict_lru_entry (protect);
+  while (protect->ip_entry_count >= protect->config.max_tracked_ips)
+    {
+      if (protect->lru_tail == NULL)
+        break;
+      evict_lru_entry (protect);
+    }
 
   if (protect->ip_entry_count >= protect->config.max_tracked_ips)
     return NULL;
@@ -716,8 +719,10 @@ process_tracked_ip (T protect,
   entry = get_or_create_ip_entry (protect, client_ip, now_ms);
   if (entry == NULL)
     {
-      atomic_fetch_add (&protect->stat_allowed, 1);
-      return SYN_ACTION_ALLOW;
+      update_action_stats (protect, SYN_ACTION_THROTTLE);
+      fill_ip_state_out (
+          state_out, client_ip, SYN_REP_SUSPECT, protect->config.score_block);
+      return SYN_ACTION_THROTTLE;
     }
 
   action = process_ip_attempt (protect, entry, now_ms);

@@ -401,6 +401,10 @@ arena_release_all_chunks (T arena)
       chunk_cache_return (chunk);
     }
 
+  /* Ensure no stale pointers remain after all chunks are recycled/freed. */
+  arena->avail = NULL;
+  arena->limit = NULL;
+
   assert (arena->prev == NULL);
   assert (arena->avail == NULL);
   assert (arena->limit == NULL);
