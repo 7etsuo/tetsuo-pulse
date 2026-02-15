@@ -295,7 +295,7 @@ update_pmtu_on_probe_failure (SocketQUICPMTU_T pmtu,
 
   size_t failed_size = probe->size;
   size_t new_target
-      = pmtu->current_pmtu + (failed_size - pmtu->current_pmtu) / 2;
+      = pmtu->current_pmtu + ((failed_size - pmtu->current_pmtu) >> 1); /* Optimized: / 2 */
 
   if (new_target > pmtu->current_pmtu)
     {

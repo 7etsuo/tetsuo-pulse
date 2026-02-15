@@ -883,7 +883,7 @@ SocketQUICPacket_decode_pn (uint32_t truncated_pn,
   /* Calculate the expected packet number window */
   expected_pn = largest_pn + 1;
   pn_win = (uint64_t)1 << (pn_length * 8);
-  pn_hwin = pn_win / 2;
+  pn_hwin = pn_win >> 1; /* Optimized: / 2 */
   pn_mask = pn_win - 1;
 
   /* The truncated PN is in the lower bits */

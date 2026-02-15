@@ -207,7 +207,7 @@ SocketQUICLoss_init_rtt (SocketQUICLossRTT_T *rtt)
     return;
 
   rtt->smoothed_rtt = QUIC_LOSS_INITIAL_RTT_US;
-  rtt->rtt_var = QUIC_LOSS_INITIAL_RTT_US / 2;
+  rtt->rtt_var = QUIC_LOSS_INITIAL_RTT_US >> 1; /* Optimized: / 2 */
   rtt->min_rtt = 0;
   rtt->latest_rtt = 0;
   rtt->has_sample = 0;
@@ -237,7 +237,7 @@ SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt,
   if (!rtt->has_sample)
     {
       rtt->smoothed_rtt = latest_rtt_us;
-      rtt->rtt_var = latest_rtt_us / 2;
+      rtt->rtt_var = latest_rtt_us >> 1; /* Optimized: / 2 */
       rtt->has_sample = 1;
       return;
     }
