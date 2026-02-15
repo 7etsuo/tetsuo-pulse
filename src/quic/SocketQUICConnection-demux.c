@@ -120,6 +120,9 @@ hash_cid (const uint8_t *data, size_t len, size_t bucket_count, uint32_t seed)
     {
       hash = QUIC_HASH_FNV1A_STEP (hash, data[i]);
     }
+  /* Optimize modulo for power-of-2 bucket counts */
+  if ((bucket_count & (bucket_count - 1)) == 0)
+    return hash & (bucket_count - 1);
   return hash % bucket_count;
 }
 
@@ -146,6 +149,9 @@ hash_addr_pair (const uint8_t *local_addr,
   hash = QUIC_HASH_FNV1A_STEP (hash, (local_port >> 8) & 0xFF);
   hash = QUIC_HASH_FNV1A_STEP (hash, peer_port & 0xFF);
   hash = QUIC_HASH_FNV1A_STEP (hash, (peer_port >> 8) & 0xFF);
+  /* Optimize modulo for power-of-2 bucket counts */
+  if ((bucket_count & (bucket_count - 1)) == 0)
+    return hash & (bucket_count - 1);
   return hash % bucket_count;
 }
 

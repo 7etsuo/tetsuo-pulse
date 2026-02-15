@@ -73,7 +73,27 @@ struct T
   /* Async I/O support (optional) */
   struct SocketAsync_T *async;
   struct Socket_T *socket;
+  /* Performance: Track if capacity is power-of-2 for fast modulo */
+  int is_power_of_2;
 };
+
+
+/* Helper: Check if value is a power of 2 (for fast modulo optimization) */
+static inline int
+is_power_of_2 (size_t n)
+{
+  return n > 0 && (n & (n - 1)) == 0;
+}
+
+/* Helper: Fast modulo for power-of-2 capacity, else normal modulo */
+static inline size_t
+fast_modulo (size_t value, size_t capacity, int is_pow2)
+{
+  if (is_pow2)
+    return value & (capacity - 1);
+  else
+    return value % capacity;
+}
 
 
 bool
@@ -140,6 +160,7 @@ SocketBuf_new (Arena_T arena, size_t capacity)
   buf->arena = arena;
   buf->async = NULL;
   buf->socket = NULL;
+  buf->is_power_of_2 = is_power_of_2 (capacity);
 
   return buf;
 }
@@ -195,7 +216,7 @@ SocketBuf_write (T buf, const void *data, size_t len)
       if (chunk == 0)
         break;
       circular_copy_to_buffer (buf, src + written, buf->tail, chunk);
-      buf->tail = (buf->tail + chunk) % buf->capacity;
+      buf->tail = fast_modulo (buf->tail + chunk, buf->capacity, buf->is_power_of_2);
       written += chunk;
     }
 
@@ -234,7 +255,7 @@ SocketBuf_read (T buf, void *data, size_t len)
       if (chunk == 0)
         break;
       circular_copy_from_buffer (buf, dst + bytes_read, buf->head, chunk);
-      buf->head = (buf->head + chunk) % buf->capacity;
+      buf->head = fast_modulo (buf->head + chunk, buf->capacity, buf->is_power_of_2);
       bytes_read += chunk;
     }
 
@@ -266,7 +287,7 @@ SocketBuf_peek (T buf, void *data, size_t len)
       if (chunk == 0)
         break;
       circular_copy_from_buffer (buf, dst + bytes_peeked, head, chunk);
-      head = (head + chunk) % buf->capacity;
+      head = fast_modulo (head + chunk, buf->capacity, buf->is_power_of_2);
       bytes_peeked += chunk;
     }
 
@@ -284,7 +305,7 @@ SocketBuf_consume (T buf, size_t len)
                len,
                buf->size);
 
-  buf->head = (buf->head + len) % buf->capacity;
+  buf->head = fast_modulo (buf->head + len, buf->capacity, buf->is_power_of_2);
   buf->size -= len;
 
   SOCKETBUF_INVARIANTS (buf);
@@ -530,7 +551,7 @@ SocketBuf_written (T buf, size_t len)
                len,
                buf->capacity - buf->size);
 
-  buf->tail = (buf->tail + len) % buf->capacity;
+  buf->tail = fast_modulo (buf->tail + len, buf->capacity, buf->is_power_of_2);
   buf->size += len;
 
   SOCKETBUF_INVARIANTS (buf);
@@ -673,7 +694,7 @@ SocketBuf_ensure (T buf, size_t min_space)
 static unsigned char
 get_byte_at_offset (const T buf, size_t offset)
 {
-  return (unsigned char)buf->data[(buf->head + offset) % buf->capacity];
+  return (unsigned char)buf->data[fast_modulo (buf->head + offset, buf->capacity, buf->is_power_of_2)];
 }
 
 
