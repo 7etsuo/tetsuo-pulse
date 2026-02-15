@@ -58,59 +58,60 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 #define HTTP_DATE_BUFFER_SIZE 30
 #endif
 
-/* MIME type mappings */
+/* MIME type mappings with precomputed extension lengths for performance */
 static const struct
 {
   const char *extension;
   const char *mime_type;
+  unsigned char ext_len; /* Precomputed strlen(extension) */
 } mime_types[] = {
   /* Text */
-  { ".html", "text/html; charset=utf-8" },
-  { ".htm", "text/html; charset=utf-8" },
-  { ".css", "text/css; charset=utf-8" },
-  { ".js", "text/javascript; charset=utf-8" },
-  { ".mjs", "text/javascript; charset=utf-8" },
-  { ".json", "application/json; charset=utf-8" },
-  { ".xml", "application/xml; charset=utf-8" },
-  { ".txt", "text/plain; charset=utf-8" },
-  { ".csv", "text/csv; charset=utf-8" },
-  { ".md", "text/markdown; charset=utf-8" },
+  { ".html", "text/html; charset=utf-8", 5 },
+  { ".htm", "text/html; charset=utf-8", 4 },
+  { ".css", "text/css; charset=utf-8", 4 },
+  { ".js", "text/javascript; charset=utf-8", 3 },
+  { ".mjs", "text/javascript; charset=utf-8", 4 },
+  { ".json", "application/json; charset=utf-8", 5 },
+  { ".xml", "application/xml; charset=utf-8", 4 },
+  { ".txt", "text/plain; charset=utf-8", 4 },
+  { ".csv", "text/csv; charset=utf-8", 4 },
+  { ".md", "text/markdown; charset=utf-8", 3 },
 
   /* Images */
-  { ".png", "image/png" },
-  { ".jpg", "image/jpeg" },
-  { ".jpeg", "image/jpeg" },
-  { ".gif", "image/gif" },
-  { ".webp", "image/webp" },
-  { ".svg", "image/svg+xml" },
-  { ".ico", "image/x-icon" },
-  { ".bmp", "image/bmp" },
-  { ".avif", "image/avif" },
+  { ".png", "image/png", 4 },
+  { ".jpg", "image/jpeg", 4 },
+  { ".jpeg", "image/jpeg", 5 },
+  { ".gif", "image/gif", 4 },
+  { ".webp", "image/webp", 5 },
+  { ".svg", "image/svg+xml", 4 },
+  { ".ico", "image/x-icon", 4 },
+  { ".bmp", "image/bmp", 4 },
+  { ".avif", "image/avif", 5 },
 
   /* Fonts */
-  { ".woff", "font/woff" },
-  { ".woff2", "font/woff2" },
-  { ".ttf", "font/ttf" },
-  { ".otf", "font/otf" },
-  { ".eot", "application/vnd.ms-fontobject" },
+  { ".woff", "font/woff", 5 },
+  { ".woff2", "font/woff2", 6 },
+  { ".ttf", "font/ttf", 4 },
+  { ".otf", "font/otf", 4 },
+  { ".eot", "application/vnd.ms-fontobject", 4 },
 
   /* Media */
-  { ".mp3", "audio/mpeg" },
-  { ".mp4", "video/mp4" },
-  { ".webm", "video/webm" },
-  { ".ogg", "audio/ogg" },
-  { ".wav", "audio/wav" },
+  { ".mp3", "audio/mpeg", 4 },
+  { ".mp4", "video/mp4", 4 },
+  { ".webm", "video/webm", 5 },
+  { ".ogg", "audio/ogg", 4 },
+  { ".wav", "audio/wav", 4 },
 
   /* Archives */
-  { ".zip", "application/zip" },
-  { ".gz", "application/gzip" },
-  { ".tar", "application/x-tar" },
+  { ".zip", "application/zip", 4 },
+  { ".gz", "application/gzip", 3 },
+  { ".tar", "application/x-tar", 4 },
 
   /* Documents */
-  { ".pdf", "application/pdf" },
-  { ".wasm", "application/wasm" },
+  { ".pdf", "application/pdf", 4 },
+  { ".wasm", "application/wasm", 5 },
 
-  { NULL, NULL }
+  { NULL, NULL, 0 }
 };
 
 
@@ -235,21 +236,33 @@ parse_http_date (const char *date_str)
   if (date_str == NULL)
     return -1;
 
+  /* Single memset instead of three - memset is expensive */
   memset (&tm, 0, sizeof (tm));
 
   /* Try RFC 7231 format: "Sun, 06 Nov 1994 08:49:37 GMT" */
   if (strptime (date_str, "%a, %d %b %Y %H:%M:%S GMT", &tm) != NULL)
     return timegm (&tm);
 
-  memset (&tm, 0, sizeof (tm));
-
   /* Try RFC 850 format: "Sunday, 06-Nov-94 08:49:37 GMT" */
+  /* Reset only the fields that strptime might have modified */
+  tm.tm_year = 0;
+  tm.tm_mon = 0;
+  tm.tm_mday = 0;
+  tm.tm_hour = 0;
+  tm.tm_min = 0;
+  tm.tm_sec = 0;
+  tm.tm_wday = 0;
   if (strptime (date_str, "%A, %d-%b-%y %H:%M:%S GMT", &tm) != NULL)
     return timegm (&tm);
 
-  memset (&tm, 0, sizeof (tm));
-
   /* Try ANSI C format: "Sun Nov  6 08:49:37 1994" */
+  tm.tm_year = 0;
+  tm.tm_mon = 0;
+  tm.tm_mday = 0;
+  tm.tm_hour = 0;
+  tm.tm_min = 0;
+  tm.tm_sec = 0;
+  tm.tm_wday = 0;
   if (strptime (date_str, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
     return timegm (&tm);
 
@@ -323,10 +336,10 @@ get_mime_type (const char *file_path)
   path_len = strlen (file_path);
   ext_len = path_len - (size_t)(ext - file_path);
 
-  /* Check against known extensions (case-insensitive) */
+  /* Check against known extensions (case-insensitive, using precomputed lengths) */
   for (int i = 0; mime_types[i].extension != NULL; i++)
     {
-      if (strlen (mime_types[i].extension) == ext_len
+      if (mime_types[i].ext_len == ext_len
           && strcasecmp (ext, mime_types[i].extension) == 0)
         {
           return mime_types[i].mime_type;

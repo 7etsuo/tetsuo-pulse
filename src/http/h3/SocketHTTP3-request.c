@@ -360,11 +360,13 @@ h3_coalesce_cookies (Arena_T arena, SocketHTTP_Headers_T headers)
   if (n <= 1)
     return;
 
-  /* Calculate total length: sum of values + "; " separators */
+  /* Calculate total length and cache string lengths to avoid redundant strlen() */
+  size_t lengths[H3_MAX_COOKIE_HEADERS];
   size_t total = 0;
   for (size_t i = 0; i < n; i++)
     {
-      total += strlen (values[i]);
+      lengths[i] = strlen (values[i]);
+      total += lengths[i];
       if (i > 0)
         total += 2; /* "; " */
     }
@@ -378,9 +380,8 @@ h3_coalesce_cookies (Arena_T arena, SocketHTTP_Headers_T headers)
           memcpy (combined + pos, "; ", 2);
           pos += 2;
         }
-      size_t vlen = strlen (values[i]);
-      memcpy (combined + pos, values[i], vlen);
-      pos += vlen;
+      memcpy (combined + pos, values[i], lengths[i]);
+      pos += lengths[i];
     }
   combined[pos] = '\0';
 
