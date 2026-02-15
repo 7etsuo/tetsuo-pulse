@@ -646,9 +646,26 @@ server_serve_static_file (SocketHTTPServer_T server,
       use_range = 1;
     }
 
+  /* Open with O_NOFOLLOW to prevent symlink attacks.
+   * Re-validate file type after open to prevent TOCTOU race. */
+#ifdef O_NOFOLLOW
+  fd = open (resolved_path, O_RDONLY | O_NOFOLLOW);
+#else
   fd = open (resolved_path, O_RDONLY);
+#endif
   if (fd < 0)
     return 0;
+
+  /* Re-check file type with fstat() to prevent TOCTOU race between
+   * initial stat() and open() - file could have been replaced. */
+  {
+    struct stat st_verify;
+    if (fstat (fd, &st_verify) < 0 || !S_ISREG (st_verify.st_mode))
+      {
+        close (fd);
+        return 0;
+      }
+  }
 
   if (!use_range)
     {
