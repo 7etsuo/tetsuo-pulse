@@ -676,9 +676,10 @@ server_serve_static_file (SocketHTTPServer_T server,
       }
 
     /* Use the verified size for subsequent operations to avoid
-     * inconsistencies if file size changed between stat() and open() */
+     * inconsistencies if file size changed between stat() and open().
+     * Note: We don't update st_mtime because it was already used for
+     * conditional GET processing before the file was opened. */
     st.st_size = st_verify.st_size;
-    st.st_mtime = st_verify.st_mtime;
   }
 
   if (!use_range)
