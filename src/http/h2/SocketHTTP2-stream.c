@@ -787,6 +787,18 @@ http2_encode_and_alloc_block (SocketHTTP2_Conn_T conn,
 #define PSEUDO_BIT_STATUS (1 << 4)
 #define PSEUDO_BIT_PROTOCOL (1 << 5)
 
+#define CHECK_PSEUDO_DUP(seen, bit, name_str)                            \
+  do                                                                     \
+    {                                                                    \
+      if (*(seen) & (bit))                                               \
+        {                                                                \
+          SOCKET_LOG_ERROR_MSG ("Duplicate " name_str " pseudo-header"); \
+          return -1;                                                     \
+        }                                                                \
+      *(seen) |= (bit);                                                  \
+    }                                                                    \
+  while (0)
+
 static int
 validate_pseudo_header (SocketHTTP2_Conn_T conn,
                         SocketHTTP2_Stream_T stream,
@@ -795,17 +807,10 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn,
                         int *pseudo_headers_seen,
                         HTTP2_PseudoHeaderState *state)
 {
-  /* Dispatch by pseudo-header name with duplicate detection */
   if (h->name_len == STRLEN_LIT (":method")
       && memcmp (h->name, ":method", STRLEN_LIT (":method")) == 0)
     {
-      if (*pseudo_headers_seen & PSEUDO_BIT_METHOD)
-        {
-          SOCKET_LOG_ERROR_MSG ("Duplicate :method pseudo-header");
-          return -1;
-        }
-      *pseudo_headers_seen |= PSEUDO_BIT_METHOD;
-
+      CHECK_PSEUDO_DUP (pseudo_headers_seen, PSEUDO_BIT_METHOD, ":method");
       if (http2_validate_method_header (h, is_request, state) < 0)
         {
           SOCKET_LOG_ERROR_MSG ("Invalid HTTP method in :method pseudo-header");
@@ -817,49 +822,29 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn,
   if (h->name_len == STRLEN_LIT (":scheme")
       && memcmp (h->name, ":scheme", STRLEN_LIT (":scheme")) == 0)
     {
-      if (*pseudo_headers_seen & PSEUDO_BIT_SCHEME)
-        {
-          SOCKET_LOG_ERROR_MSG ("Duplicate :scheme pseudo-header");
-          return -1;
-        }
-      *pseudo_headers_seen |= PSEUDO_BIT_SCHEME;
+      CHECK_PSEUDO_DUP (pseudo_headers_seen, PSEUDO_BIT_SCHEME, ":scheme");
       return http2_validate_scheme_header (h, state);
     }
 
   if (h->name_len == STRLEN_LIT (":authority")
       && memcmp (h->name, ":authority", STRLEN_LIT (":authority")) == 0)
     {
-      if (*pseudo_headers_seen & PSEUDO_BIT_AUTHORITY)
-        {
-          SOCKET_LOG_ERROR_MSG ("Duplicate :authority pseudo-header");
-          return -1;
-        }
-      *pseudo_headers_seen |= PSEUDO_BIT_AUTHORITY;
+      CHECK_PSEUDO_DUP (
+          pseudo_headers_seen, PSEUDO_BIT_AUTHORITY, ":authority");
       return http2_validate_authority_header (h, state);
     }
 
   if (h->name_len == STRLEN_LIT (":path")
       && memcmp (h->name, ":path", STRLEN_LIT (":path")) == 0)
     {
-      if (*pseudo_headers_seen & PSEUDO_BIT_PATH)
-        {
-          SOCKET_LOG_ERROR_MSG ("Duplicate :path pseudo-header");
-          return -1;
-        }
-      *pseudo_headers_seen |= PSEUDO_BIT_PATH;
+      CHECK_PSEUDO_DUP (pseudo_headers_seen, PSEUDO_BIT_PATH, ":path");
       return http2_validate_path_header (h, state);
     }
 
   if (h->name_len == STRLEN_LIT (":status")
       && memcmp (h->name, ":status", STRLEN_LIT (":status")) == 0)
     {
-      if (*pseudo_headers_seen & PSEUDO_BIT_STATUS)
-        {
-          SOCKET_LOG_ERROR_MSG ("Duplicate :status pseudo-header");
-          return -1;
-        }
-      *pseudo_headers_seen |= PSEUDO_BIT_STATUS;
-
+      CHECK_PSEUDO_DUP (pseudo_headers_seen, PSEUDO_BIT_STATUS, ":status");
       if (http2_validate_status_header (h, is_request, state) < 0)
         {
           SOCKET_LOG_ERROR_MSG (
@@ -872,13 +857,7 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn,
   if (h->name_len == STRLEN_LIT (":protocol")
       && memcmp (h->name, ":protocol", STRLEN_LIT (":protocol")) == 0)
     {
-      if (*pseudo_headers_seen & PSEUDO_BIT_PROTOCOL)
-        {
-          SOCKET_LOG_ERROR_MSG ("Duplicate :protocol pseudo-header");
-          return -1;
-        }
-      *pseudo_headers_seen |= PSEUDO_BIT_PROTOCOL;
-
+      CHECK_PSEUDO_DUP (pseudo_headers_seen, PSEUDO_BIT_PROTOCOL, ":protocol");
       if (http2_validate_protocol_header (conn, stream, h, state) < 0)
         {
           if (conn->role != HTTP2_ROLE_SERVER)
@@ -1179,8 +1158,8 @@ http2_recombine_cookie_headers (Arena_T arena,
     return 0;
 
   size_t cookie_indices_bytes;
-  if (!SocketSecurity_check_multiply (*count, sizeof (size_t),
-                                      &cookie_indices_bytes))
+  if (!SocketSecurity_check_multiply (
+          *count, sizeof (size_t), &cookie_indices_bytes))
     return -1;
 
   cookie_indices
@@ -1198,8 +1177,8 @@ http2_recombine_cookie_headers (Arena_T arena,
           cookie_indices[num_cookies] = i;
           if (first_cookie_idx == (size_t)-1)
             first_cookie_idx = i;
-          if (!SocketSecurity_check_add (total_value_len, h->value_len,
-                                         &total_value_len))
+          if (!SocketSecurity_check_add (
+                  total_value_len, h->value_len, &total_value_len))
             return -1;
           num_cookies++;
         }
@@ -1213,8 +1192,8 @@ http2_recombine_cookie_headers (Arena_T arena,
   size_t delimiter_bytes;
   if (!SocketSecurity_check_multiply (cookie_count - 1, 2, &delimiter_bytes))
     return -1;
-  if (!SocketSecurity_check_add (total_value_len, delimiter_bytes,
-                                 &total_value_len))
+  if (!SocketSecurity_check_add (
+          total_value_len, delimiter_bytes, &total_value_len))
     return -1;
 
   size_t alloc_len;
@@ -1372,7 +1351,8 @@ init_pending_header_block (SocketHTTP2_Conn_T conn,
                            size_t len)
 {
   size_t capacity;
-  if (!SocketSecurity_check_add (len, HTTP2_INITIAL_HEADER_BLOCK_SIZE, &capacity))
+  if (!SocketSecurity_check_add (
+          len, HTTP2_INITIAL_HEADER_BLOCK_SIZE, &capacity))
     return -1;
   stream->header_block = alloc_header_block (conn, capacity);
   if (!stream->header_block)
@@ -2264,7 +2244,8 @@ http2_process_data (SocketHTTP2_Conn_T conn,
 
   /* Track total DATA bytes received for Content-Length validation */
   size_t new_total;
-  if (!SocketSecurity_check_add (stream->total_data_received, data_len, &new_total))
+  if (!SocketSecurity_check_add (
+          stream->total_data_received, data_len, &new_total))
     {
       http2_send_stream_error (conn, stream->id, HTTP2_PROTOCOL_ERROR);
       return -1;
@@ -2534,9 +2515,8 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
 
   max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
   size_t new_len;
-  if (!SocketSecurity_check_add (stream->header_block_len,
-                                 (size_t)header->length,
-                                 &new_len)
+  if (!SocketSecurity_check_add (
+          stream->header_block_len, (size_t)header->length, &new_len)
       || new_len > max_header_list)
     {
       http2_send_stream_error (

@@ -553,10 +553,6 @@ TEST (httpserver_state_query)
     server = SocketHTTPServer_new (&config);
     ASSERT_NOT_NULL (server);
 
-    /* Before start */
-    SocketHTTPServer_State state1 = SocketHTTPServer_state (server);
-    (void)state1;
-
     SocketHTTPServer_start (server);
 
     /* After start */
@@ -629,9 +625,7 @@ TEST (httpserver_multiple_start_stop)
 
     SocketHTTPServer_stop (server);
 
-    /* State should be updated */
-    SocketHTTPServer_State state = SocketHTTPServer_state (server);
-    (void)state;
+    /* State should be updated after stop */
   }
   FINALLY
   {
@@ -898,7 +892,8 @@ TEST (httpserver_static_symlink_escape_blocked)
     ASSERT_NOT_NULL (server);
 
     SocketHTTPServer_set_handler (server, always_404_handler, NULL);
-    ASSERT_EQ (0, SocketHTTPServer_add_static_dir (server, "/static", base_dir));
+    ASSERT_EQ (0,
+               SocketHTTPServer_add_static_dir (server, "/static", base_dir));
     ASSERT_EQ (0, SocketHTTPServer_start (server));
 
     int listen_fd = SocketHTTPServer_fd (server);
@@ -920,14 +915,12 @@ TEST (httpserver_static_symlink_escape_blocked)
     addr.sin_port = htons ((uint16_t)port);
     ASSERT_EQ (1, inet_pton (AF_INET, "127.0.0.1", &addr.sin_addr));
 
-    ASSERT_EQ (0,
-               connect (client_fd, (struct sockaddr *)&addr, sizeof (addr)));
+    ASSERT_EQ (0, connect (client_fd, (struct sockaddr *)&addr, sizeof (addr)));
 
-    const char *req =
-        "GET /static/link/secret.txt HTTP/1.1\r\n"
-        "Host: 127.0.0.1\r\n"
-        "Connection: close\r\n"
-        "\r\n";
+    const char *req = "GET /static/link/secret.txt HTTP/1.1\r\n"
+                      "Host: 127.0.0.1\r\n"
+                      "Connection: close\r\n"
+                      "\r\n";
 
     size_t req_len = strlen (req);
     size_t sent = 0;
@@ -954,8 +947,8 @@ TEST (httpserver_static_symlink_escape_blocked)
       {
         (void)SocketHTTPServer_process (server, 10);
 
-        ssize_t n
-            = recv (client_fd, resp + resp_len, sizeof (resp) - 1 - resp_len, 0);
+        ssize_t n = recv (
+            client_fd, resp + resp_len, sizeof (resp) - 1 - resp_len, 0);
         if (n > 0)
           {
             resp_len += (size_t)n;
