@@ -317,15 +317,21 @@ find_matching_proto (const char *const *server_protos,
  * @client_count: Number of client protocols
  *
  * Returns: true if found, false otherwise
+ *
+ * PERFORMANCE: Optimized with early string length check.
  */
 static bool
 find_in_client_list (const char *proto,
                      const char *const *client_protos,
                      size_t client_count)
 {
+  const size_t proto_len = strlen (proto);
+
   for (size_t i = 0; i < client_count; i++)
     {
-      if (strcmp (proto, client_protos[i]) == 0)
+      /* Quick length check before expensive strcmp */
+      if (proto_len == strlen (client_protos[i])
+          && strcmp (proto, client_protos[i]) == 0)
         return true;
     }
   return false;
