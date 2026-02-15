@@ -35,6 +35,20 @@
  *
  * PERFORMANCE: Pre-computed at compile time to eliminate 2048 iterations
  * (256*8) of runtime table generation on first use.
+ *
+ * VERIFICATION: This table matches the standard CRC-32 implementation used by:
+ * - zlib (crc32.c)
+ * - gzip (RFC 1952)
+ * - PNG (ISO/IEC 15948)
+ * - IEEE 802.3 Ethernet
+ *
+ * Generation algorithm (for verification):
+ *   for (i = 0; i < 256; i++) {
+ *     crc = i;
+ *     for (j = 0; j < 8; j++)
+ *       crc = (crc & 1) ? (crc >> 1) ^ 0xEDB88320 : (crc >> 1);
+ *     table[i] = crc;
+ *   }
  */
 static const uint32_t crc32_table[256] = {
     0x00000000U, 0x77073096U, 0xee0e612cU, 0x990951baU, 0x076dc419U,
