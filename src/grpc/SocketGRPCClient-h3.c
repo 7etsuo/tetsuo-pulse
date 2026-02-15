@@ -26,21 +26,6 @@
 #include <string.h>
 #include <time.h>
 
-#define GRPC_CONTENT_TYPE "application/grpc"
-#define GRPC_TIMEOUT_HEADER_MAX 32U
-#define GRPC_RESPONSE_CHUNK 4096U
-#define GRPC_STREAM_RECV_BUFFER_INITIAL 4096U
-#define GRPC_ACCEPT_ENCODING_VALUE "identity,gzip"
-#define GRPC_ENCODING_IDENTITY "identity"
-#define GRPC_ENCODING_GZIP "gzip"
-
-typedef enum
-{
-  GRPC_COMPRESSION_IDENTITY = 0,
-  GRPC_COMPRESSION_GZIP = 1,
-  GRPC_COMPRESSION_UNSUPPORTED = 2
-} SocketGRPC_Compression;
-
 typedef struct
 {
   Arena_T arena;
@@ -74,38 +59,6 @@ struct SocketGRPC_ClientStreamInterceptorEntry
   void *userdata;
   struct SocketGRPC_ClientStreamInterceptorEntry *next;
 };
-
-static int
-str_has_prefix (const char *str, const char *prefix)
-{
-  size_t prefix_len;
-
-  if (str == NULL || prefix == NULL)
-    return 0;
-  prefix_len = strlen (prefix);
-  return strncmp (str, prefix, prefix_len) == 0;
-}
-
-static void
-grpc_call_status_set (SocketGRPC_Call_T call,
-                      SocketGRPC_StatusCode code,
-                      const char *message)
-{
-  SocketGRPC_status_set (&call->last_status, code, message);
-}
-
-static int
-grpc_status_code_valid (SocketGRPC_StatusCode code)
-{
-  return code >= SOCKET_GRPC_STATUS_OK
-         && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
-}
-
-static SocketGRPC_StatusCode
-grpc_normalize_status_code (SocketGRPC_StatusCode code)
-{
-  return grpc_status_code_valid (code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
-}
 
 static int
 grpc_client_observability_enabled (SocketGRPC_Call_T call)

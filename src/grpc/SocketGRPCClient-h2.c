@@ -33,21 +33,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#define GRPC_CONTENT_TYPE "application/grpc"
-#define GRPC_TIMEOUT_HEADER_MAX 32U
-#define GRPC_RESPONSE_CHUNK 4096U
-#define GRPC_STREAM_RECV_BUFFER_INITIAL 4096U
-#define GRPC_ACCEPT_ENCODING_VALUE "identity,gzip"
-#define GRPC_ENCODING_GZIP "gzip"
-#define GRPC_ENCODING_IDENTITY "identity"
-
-typedef enum
-{
-  GRPC_COMPRESSION_IDENTITY = 0,
-  GRPC_COMPRESSION_GZIP = 1,
-  GRPC_COMPRESSION_UNSUPPORTED = 2
-} SocketGRPC_Compression;
-
 typedef struct
 {
   SocketHTTPClient_T http_client;
@@ -92,89 +77,13 @@ struct SocketGRPC_ClientStreamInterceptorEntry
 static int
 grpc_h2_conn_process_safe (SocketHTTP2_Conn_T conn, unsigned events)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Conn_process (conn, events);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_INT(SocketHTTP2_Conn_process (conn, events), -1);
 }
 
 static int
 grpc_h2_conn_flush_safe (SocketHTTP2_Conn_T conn)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Conn_flush (conn);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_INT(SocketHTTP2_Conn_flush (conn), -1);
 }
 
 static int
@@ -182,45 +91,7 @@ grpc_h2_stream_send_request_safe (SocketHTTP2_Stream_T stream,
                                   const SocketHTTP_Request *http_req,
                                   int end_stream)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_send_request (stream, http_req, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_INT(SocketHTTP2_Stream_send_request (stream, http_req, end_stream), -1);
 }
 
 static ssize_t
@@ -229,45 +100,7 @@ grpc_h2_stream_send_data_safe (SocketHTTP2_Stream_T stream,
                                size_t len,
                                int end_stream)
 {
-  volatile ssize_t rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_send_data (stream, buf, len, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_SSIZE(SocketHTTP2_Stream_send_data (stream, buf, len, end_stream), -1);
 }
 
 static int
@@ -276,46 +109,8 @@ grpc_h2_stream_send_headers_safe (SocketHTTP2_Stream_T stream,
                                   size_t header_count,
                                   int end_stream)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_send_headers (
-        stream, headers, header_count, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_INT(SocketHTTP2_Stream_send_headers (
+      stream, headers, header_count, end_stream), -1);
 }
 
 static void
@@ -324,34 +119,7 @@ grpc_h2_stream_cancel_safe (SocketHTTP2_Stream_T stream)
   if (stream == NULL)
     return;
 
-  TRY
-  {
-    SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-  }
-  EXCEPT (Socket_Failed)
-  {
-  }
-  EXCEPT (Socket_Closed)
-  {
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-  }
-#endif
-  ELSE
-  {
-  }
-  END_TRY;
+  GRPC_H2_SAFE_CALL_VOID(SocketHTTP2_Stream_close (stream, HTTP2_CANCEL));
 }
 
 static ssize_t
@@ -360,45 +128,7 @@ grpc_h2_stream_recv_data_safe (SocketHTTP2_Stream_T stream,
                                size_t len,
                                int *end_stream)
 {
-  volatile ssize_t rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_recv_data (stream, buf, len, end_stream);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_SSIZE(SocketHTTP2_Stream_recv_data (stream, buf, len, end_stream), -1);
 }
 
 static int
@@ -407,46 +137,8 @@ grpc_h2_stream_recv_trailers_safe (SocketHTTP2_Stream_T stream,
                                    size_t trailers_cap,
                                    size_t *trailer_count)
 {
-  volatile int rc = -1;
-
-  TRY
-  {
-    rc = SocketHTTP2_Stream_recv_trailers (
-        stream, trailers, trailers_cap, trailer_count);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    rc = -1;
-  }
-  EXCEPT (Socket_Closed)
-  {
-    rc = -1;
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    rc = -1;
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    rc = -1;
-  }
-#endif
-  ELSE
-  {
-    rc = -1;
-  }
-  END_TRY;
-
-  return rc;
+  GRPC_H2_SAFE_CALL_INT(SocketHTTP2_Stream_recv_trailers (
+      stream, trailers, trailers_cap, trailer_count), -1);
 }
 
 static void
@@ -457,44 +149,7 @@ grpc_release_connection_safe (SocketHTTPClient_T http_client,
   if (http_client == NULL || conn == NULL)
     return;
 
-  TRY
-  {
-    httpclient_release_connection (http_client, conn, success);
-  }
-  EXCEPT (SocketHTTP2)
-  {
-  }
-  EXCEPT (Socket_Failed)
-  {
-  }
-  EXCEPT (Socket_Closed)
-  {
-  }
-#if SOCKET_HAS_TLS
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-  }
-#endif
-  ELSE
-  {
-  }
-  END_TRY;
-}
-
-static int
-str_has_prefix (const char *str, const char *prefix)
-{
-  size_t prefix_len;
-  if (str == NULL || prefix == NULL)
-    return 0;
-  prefix_len = strlen (prefix);
-  return strncmp (str, prefix, prefix_len) == 0;
+  GRPC_H2_SAFE_CALL_VOID(httpclient_release_connection (http_client, conn, success));
 }
 
 static SocketGRPC_StatusCode
@@ -522,27 +177,6 @@ grpc_map_httpclient_error (SocketHTTPClient_Error error)
     default:
       return SOCKET_GRPC_STATUS_UNKNOWN;
     }
-}
-
-static void
-grpc_call_status_set (SocketGRPC_Call_T call,
-                      SocketGRPC_StatusCode code,
-                      const char *message)
-{
-  SocketGRPC_status_set (&call->last_status, code, message);
-}
-
-static int
-grpc_status_code_valid (SocketGRPC_StatusCode code)
-{
-  return code >= SOCKET_GRPC_STATUS_OK
-         && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
-}
-
-static SocketGRPC_StatusCode
-grpc_normalize_status_code (SocketGRPC_StatusCode code)
-{
-  return grpc_status_code_valid (code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
 }
 
 static int
