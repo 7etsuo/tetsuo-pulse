@@ -557,7 +557,9 @@ SocketDNS_name_decode (const unsigned char *msg,
         return -1;
     }
 
-  /* Null terminate */
+  /* Null terminate - ensure buffer has space */
+  if (out_pos >= buflen)
+    return -1;
   buf[out_pos] = '\0';
 
   if (consumed)
