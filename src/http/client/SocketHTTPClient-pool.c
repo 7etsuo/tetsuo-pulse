@@ -237,13 +237,6 @@ host_port_secure_match (const HTTPPoolEntry *entry,
 {
   if (entry->port != port || entry->is_secure != is_secure)
     return 0;
-  
-  /* Quick length check before expensive strcasecmp */
-  size_t host_len = strlen (host);
-  size_t entry_len = strlen (entry->host);
-  if (host_len != entry_len)
-    return 0;
-    
   return strcasecmp (entry->host, host) == 0;
 }
 
@@ -263,12 +256,6 @@ verify_sni_hostname_match (const HTTPPoolEntry *entry, const char *host)
   /* Not secure or no host - no SNI verification needed */
   if (!entry->is_secure || host == NULL)
     return 1;
-
-  /* Quick length check before expensive strcasecmp */
-  size_t host_len = strlen (host);
-  size_t sni_len = strlen (entry->sni_hostname);
-  if (host_len != sni_len)
-    return 0;
 
   /* Hostnames are case-insensitive per RFC 1035 */
   return strcasecmp (entry->sni_hostname, host) == 0;

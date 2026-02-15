@@ -236,33 +236,21 @@ parse_http_date (const char *date_str)
   if (date_str == NULL)
     return -1;
 
-  /* Single memset instead of three - memset is expensive */
   memset (&tm, 0, sizeof (tm));
 
   /* Try RFC 7231 format: "Sun, 06 Nov 1994 08:49:37 GMT" */
   if (strptime (date_str, "%a, %d %b %Y %H:%M:%S GMT", &tm) != NULL)
     return timegm (&tm);
 
+  memset (&tm, 0, sizeof (tm));
+
   /* Try RFC 850 format: "Sunday, 06-Nov-94 08:49:37 GMT" */
-  /* Reset only the fields that strptime might have modified */
-  tm.tm_year = 0;
-  tm.tm_mon = 0;
-  tm.tm_mday = 0;
-  tm.tm_hour = 0;
-  tm.tm_min = 0;
-  tm.tm_sec = 0;
-  tm.tm_wday = 0;
   if (strptime (date_str, "%A, %d-%b-%y %H:%M:%S GMT", &tm) != NULL)
     return timegm (&tm);
 
+  memset (&tm, 0, sizeof (tm));
+
   /* Try ANSI C format: "Sun Nov  6 08:49:37 1994" */
-  tm.tm_year = 0;
-  tm.tm_mon = 0;
-  tm.tm_mday = 0;
-  tm.tm_hour = 0;
-  tm.tm_min = 0;
-  tm.tm_sec = 0;
-  tm.tm_wday = 0;
   if (strptime (date_str, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
     return timegm (&tm);
 
