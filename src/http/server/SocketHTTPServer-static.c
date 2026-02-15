@@ -657,7 +657,9 @@ server_serve_static_file (SocketHTTPServer_T server,
     return 0;
 
   /* Re-check file type with fstat() to prevent TOCTOU race between
-   * initial stat() and open() - file could have been replaced. */
+   * initial stat() and open() - file could have been replaced.
+   * Also verify it's the same file by comparing inode numbers, and
+   * use the verified size to prevent inconsistencies. */
   {
     struct stat st_verify;
     if (fstat (fd, &st_verify) < 0 || !S_ISREG (st_verify.st_mode))
@@ -665,6 +667,18 @@ server_serve_static_file (SocketHTTPServer_T server,
         close (fd);
         return 0;
       }
+
+    /* Verify this is the same file (same device and inode) */
+    if (st_verify.st_dev != st.st_dev || st_verify.st_ino != st.st_ino)
+      {
+        close (fd);
+        return 0;
+      }
+
+    /* Use the verified size for subsequent operations to avoid
+     * inconsistencies if file size changed between stat() and open() */
+    st.st_size = st_verify.st_size;
+    st.st_mtime = st_verify.st_mtime;
   }
 
   if (!use_range)
