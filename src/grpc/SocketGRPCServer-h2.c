@@ -74,19 +74,6 @@ struct SocketGRPC_ServerContext
 };
 
 static int
-grpc_status_code_valid (int code)
-{
-  return code >= SOCKET_GRPC_STATUS_OK
-         && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
-}
-
-static SocketGRPC_StatusCode
-grpc_normalize_status_code (SocketGRPC_StatusCode code)
-{
-  return grpc_status_code_valid ((int)code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
-}
-
-static int
 grpc_server_observability_enabled (SocketGRPC_Server_T server)
 {
   return server != NULL && server->config.enable_observability;

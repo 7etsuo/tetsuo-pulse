@@ -15,6 +15,23 @@
 #define SOCKETGRPC_PRIVATE_INCLUDED
 
 #include "grpc/SocketGRPC.h"
+#include <string.h>
+
+/* Common gRPC protocol constants shared between H2 and H3 implementations */
+#define GRPC_CONTENT_TYPE "application/grpc"
+#define GRPC_TIMEOUT_HEADER_MAX 32U
+#define GRPC_RESPONSE_CHUNK 4096U
+#define GRPC_STREAM_RECV_BUFFER_INITIAL 4096U
+#define GRPC_ACCEPT_ENCODING_VALUE "identity,gzip"
+#define GRPC_ENCODING_IDENTITY "identity"
+#define GRPC_ENCODING_GZIP "gzip"
+
+typedef enum
+{
+  GRPC_COMPRESSION_IDENTITY = 0,
+  GRPC_COMPRESSION_GZIP = 1,
+  GRPC_COMPRESSION_UNSUPPORTED = 2
+} SocketGRPC_Compression;
 
 typedef struct SocketGRPC_ServerMethod SocketGRPC_ServerMethod;
 typedef struct SocketGRPC_ServerUnaryInterceptorEntry
@@ -96,6 +113,96 @@ extern void SocketGRPC_status_set (SocketGRPC_Status *status,
 
 extern const char *
 SocketGRPC_status_default_message (SocketGRPC_StatusCode code);
+
+/* Common helper functions for gRPC client implementations */
+static inline int
+str_has_prefix (const char *str, const char *prefix)
+{
+  size_t prefix_len;
+
+  if (str == NULL || prefix == NULL)
+    return 0;
+  prefix_len = strlen (prefix);
+  return strncmp (str, prefix, prefix_len) == 0;
+}
+
+static inline void
+grpc_call_status_set (SocketGRPC_Call_T call,
+                      SocketGRPC_StatusCode code,
+                      const char *message)
+{
+  SocketGRPC_status_set (&call->last_status, code, message);
+}
+
+static inline int
+grpc_status_code_valid (SocketGRPC_StatusCode code)
+{
+  return code >= SOCKET_GRPC_STATUS_OK
+         && code <= SOCKET_GRPC_STATUS_UNAUTHENTICATED;
+}
+
+static inline SocketGRPC_StatusCode
+grpc_normalize_status_code (SocketGRPC_StatusCode code)
+{
+  return grpc_status_code_valid (code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
+}
+
+/* Macro to wrap gRPC H2 operations that can throw exceptions
+ * Returns error_val on any exception */
+#define GRPC_H2_SAFE_CALL_INT(call_expr, error_val) \
+  do { \
+    volatile int rc = (error_val); \
+    TRY { \
+      rc = (call_expr); \
+    } \
+    EXCEPT (SocketHTTP2) { rc = (error_val); } \
+    EXCEPT (Socket_Failed) { rc = (error_val); } \
+    EXCEPT (Socket_Closed) { rc = (error_val); } \
+    SOCKET_TLS_EXCEPT(rc = (error_val);) \
+    ELSE { rc = (error_val); } \
+    END_TRY; \
+    return rc; \
+  } while (0)
+
+/* Similar macro for ssize_t return type */
+#define GRPC_H2_SAFE_CALL_SSIZE(call_expr, error_val) \
+  do { \
+    volatile ssize_t rc = (error_val); \
+    TRY { \
+      rc = (call_expr); \
+    } \
+    EXCEPT (SocketHTTP2) { rc = (error_val); } \
+    EXCEPT (Socket_Failed) { rc = (error_val); } \
+    EXCEPT (Socket_Closed) { rc = (error_val); } \
+    SOCKET_TLS_EXCEPT(rc = (error_val);) \
+    ELSE { rc = (error_val); } \
+    END_TRY; \
+    return rc; \
+  } while (0)
+
+/* Macro for void functions that swallow all exceptions */
+#define GRPC_H2_SAFE_CALL_VOID(call_expr) \
+  do { \
+    TRY { \
+      call_expr; \
+    } \
+    EXCEPT (SocketHTTP2) { } \
+    EXCEPT (Socket_Failed) { } \
+    EXCEPT (Socket_Closed) { } \
+    SOCKET_TLS_EXCEPT() \
+    ELSE { } \
+    END_TRY; \
+  } while (0)
+
+/* Helper macro for TLS exception handlers */
+#if SOCKET_HAS_TLS
+#define SOCKET_TLS_EXCEPT(action) \
+  EXCEPT (SocketTLS_HandshakeFailed) { action } \
+  EXCEPT (SocketTLS_VerifyFailed) { action } \
+  EXCEPT (SocketTLS_Failed) { action }
+#else
+#define SOCKET_TLS_EXCEPT(action)
+#endif
 
 extern void SocketGRPC_server_methods_clear (SocketGRPC_Server_T server);
 extern void SocketGRPC_server_interceptors_clear (SocketGRPC_Server_T server);
