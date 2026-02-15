@@ -361,6 +361,46 @@ TEST (quic_connection_update_dcid)
   Arena_dispose (&arena);
 }
 
+TEST (quic_connection_update_dcid_longer_cid)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+  /* Simulate connect_start: add initial 8-byte random DCID as peer CID */
+  SocketQUICConnectionID_T initial_dcid;
+  const uint8_t initial_data[]
+      = { 0x23, 0xd3, 0x36, 0xa6, 0x20, 0x53, 0x8b, 0xbe };
+  SocketQUICConnectionID_set (
+      &initial_dcid, initial_data, sizeof (initial_data));
+  SocketQUICConnection_add_peer_cid (conn, &initial_dcid);
+  ASSERT_EQ (conn->peer_cid_count, 1);
+  ASSERT_EQ (conn->peer_cids[0].len, 8);
+
+  /* Simulate receiving server's SCID (20 bytes, e.g. nginx) and updating */
+  SocketQUICConnectionID_T server_scid;
+  const uint8_t server_data[]
+      = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x05, 0x74, 0xb8, 0x2d,
+          0x81, 0x77, 0xe6, 0x42, 0x96, 0x93, 0xdc, 0xdf, 0x75, 0xAA };
+  SocketQUICConnectionID_set (&server_scid, server_data, sizeof (server_data));
+
+  SocketQUICConnection_Result result
+      = SocketQUICConnection_update_dcid (conn, &server_scid);
+  ASSERT_EQ (result, QUIC_CONN_OK);
+
+  /* peer_cid_count stays 1 (update, not add) */
+  ASSERT_EQ (conn->peer_cid_count, 1);
+
+  /* Verify the CID was fully replaced with the 20-byte server SCID */
+  const SocketQUICConnectionID_T *peer
+      = SocketQUICConnection_get_peer_cid (conn);
+  ASSERT_NOT_NULL (peer);
+  ASSERT_EQ (peer->len, 20);
+  ASSERT (memcmp (peer->data, server_data, 20) == 0);
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * Bounds Validation Tests for retire_cid (Issue #788)
  * ============================================================================

@@ -2105,6 +2105,17 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
 
       if (t->connecting && !t->connected)
         {
+          /* RFC 9000 §7.2: adopt server's SCID as our DCID upon receiving
+           * the first Initial or Handshake packet from the server. */
+          if (result.scid.len > 0
+              && (result.type == QUIC_PACKET_TYPE_INITIAL
+                  || result.type == QUIC_PACKET_TYPE_HANDSHAKE))
+            {
+              t->dcid = result.scid;
+              SocketQUICConnection_update_dcid (t->handshake->conn,
+                                                &result.scid);
+            }
+
           /* Drive TLS handshake forward after each packet. */
           check_and_derive_keys (t);
 
