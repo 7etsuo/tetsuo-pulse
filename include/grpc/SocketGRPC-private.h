@@ -147,6 +147,16 @@ grpc_normalize_status_code (SocketGRPC_StatusCode code)
   return grpc_status_code_valid (code) ? code : SOCKET_GRPC_STATUS_UNKNOWN;
 }
 
+/* Helper macro for TLS exception handlers */
+#if SOCKET_HAS_TLS
+#define SOCKET_TLS_EXCEPT(action) \
+  EXCEPT (SocketTLS_HandshakeFailed) { action } \
+  EXCEPT (SocketTLS_VerifyFailed) { action } \
+  EXCEPT (SocketTLS_Failed) { action }
+#else
+#define SOCKET_TLS_EXCEPT(action)
+#endif
+
 /* Macro to wrap gRPC H2 operations that can throw exceptions
  * Returns error_val on any exception */
 #define GRPC_H2_SAFE_CALL_INT(call_expr, error_val) \
@@ -193,16 +203,6 @@ grpc_normalize_status_code (SocketGRPC_StatusCode code)
     ELSE { } \
     END_TRY; \
   } while (0)
-
-/* Helper macro for TLS exception handlers */
-#if SOCKET_HAS_TLS
-#define SOCKET_TLS_EXCEPT(action) \
-  EXCEPT (SocketTLS_HandshakeFailed) { action } \
-  EXCEPT (SocketTLS_VerifyFailed) { action } \
-  EXCEPT (SocketTLS_Failed) { action }
-#else
-#define SOCKET_TLS_EXCEPT(action)
-#endif
 
 extern void SocketGRPC_server_methods_clear (SocketGRPC_Server_T server);
 extern void SocketGRPC_server_interceptors_clear (SocketGRPC_Server_T server);
