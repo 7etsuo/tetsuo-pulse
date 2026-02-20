@@ -15,11 +15,6 @@
 #include "core/Arena.h"
 #include "socket/SocketAsync.h"
 
-/* ============================================================================
- * Internal Structure
- * ============================================================================
- */
-
 /**
  * @brief Linked list node for tracking callback contexts.
  *
@@ -40,11 +35,6 @@ struct SocketSimple_Async
   ContextTracker *contexts; /**< Tracked contexts for cancel cleanup */
 };
 
-/* ============================================================================
- * Helper: Map Simple flags to core flags
- * ============================================================================
- */
-
 static SocketAsync_Flags
 simple_to_core_flags (SocketSimple_AsyncFlags flags)
 {
@@ -53,11 +43,6 @@ simple_to_core_flags (SocketSimple_AsyncFlags flags)
     core |= ASYNC_FLAG_URGENT;
   return core;
 }
-
-/* ============================================================================
- * Helper: Callback wrapper
- * ============================================================================
- */
 
 /**
  * Wrapper structure to translate between core and simple callbacks.
@@ -72,11 +57,6 @@ struct CallbackContext
   struct SocketSimple_Async *async; /**< Back-pointer for tracker removal */
   unsigned request_id;              /**< Request ID for tracker lookup */
 };
-
-/* ============================================================================
- * Helper: Context Tracker for Cancellation Cleanup
- * ============================================================================
- */
 
 /**
  * @brief Add a context to the tracker.
@@ -193,11 +173,6 @@ get_core_socket (SocketSimple_Socket_T simple)
   return simple->socket;
 }
 
-/* ============================================================================
- * Async Lifecycle
- * ============================================================================
- */
-
 SocketSimple_Async_T
 Socket_simple_async_new (void)
 {
@@ -260,11 +235,6 @@ Socket_simple_async_free (SocketSimple_Async_T *async)
   free (*async);
   *async = NULL;
 }
-
-/* ============================================================================
- * Async Send/Recv Operations
- * ============================================================================
- */
 
 /**
  * Function pointer types for core async operations.
@@ -556,11 +526,6 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
                                  "Failed to submit async recv");
 }
 
-/* ============================================================================
- * Completion Processing
- * ============================================================================
- */
-
 int
 Socket_simple_async_process (SocketSimple_Async_T async, int timeout_ms)
 {
@@ -574,11 +539,6 @@ Socket_simple_async_process (SocketSimple_Async_T async, int timeout_ms)
 
   return SocketAsync_process_completions (async->async, timeout_ms);
 }
-
-/* ============================================================================
- * Request Management
- * ============================================================================
- */
 
 int
 Socket_simple_async_cancel (SocketSimple_Async_T async, unsigned request_id)
@@ -625,11 +585,6 @@ Socket_simple_async_cancel_all (SocketSimple_Async_T async)
 
   return result;
 }
-
-/* ============================================================================
- * Progress and Continuation
- * ============================================================================
- */
 
 int
 Socket_simple_async_get_progress (SocketSimple_Async_T async,
@@ -683,11 +638,6 @@ Socket_simple_async_recv_continue (SocketSimple_Async_T async,
   return SocketAsync_recv_continue (async->async, request_id);
 }
 
-/* ============================================================================
- * Timeout Configuration
- * ============================================================================
- */
-
 void
 Socket_simple_async_set_timeout (SocketSimple_Async_T async, int64_t timeout_ms)
 {
@@ -719,11 +669,6 @@ Socket_simple_async_expire_stale (SocketSimple_Async_T async)
 
   return SocketAsync_expire_stale (async->async);
 }
-
-/* ============================================================================
- * Backend Information
- * ============================================================================
- */
 
 int
 Socket_simple_async_is_available (SocketSimple_Async_T async)

@@ -20,18 +20,10 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Types
-   *============================================================================*/
-
   /**
    * @brief Opaque socket handle.
    */
   typedef struct SocketSimple_Socket *SocketSimple_Socket_T;
-
-  /*============================================================================
-   * TCP Client Functions
-   *============================================================================*/
 
   /**
    * @brief Connect to a TCP server.
@@ -63,10 +55,6 @@ extern "C"
   extern SocketSimple_Socket_T
   Socket_simple_connect_timeout (const char *host, int port, int timeout_ms);
 
-  /*============================================================================
-   * TCP Server Functions
-   *============================================================================*/
-
   /**
    * @brief Create a listening TCP server socket.
    *
@@ -96,10 +84,6 @@ extern "C"
    */
   extern SocketSimple_Socket_T
   Socket_simple_accept_timeout (SocketSimple_Socket_T server, int timeout_ms);
-
-  /*============================================================================
-   * I/O Functions
-   *============================================================================*/
 
   /**
    * @brief Send all data (loops until complete).
@@ -160,10 +144,6 @@ extern "C"
                                           char *buf,
                                           size_t maxlen);
 
-  /*============================================================================
-   * Socket Options
-   *============================================================================*/
-
   /**
    * @brief Set send/receive timeouts.
    *
@@ -194,10 +174,6 @@ extern "C"
    */
   extern int Socket_simple_is_connected (SocketSimple_Socket_T sock);
 
-  /*============================================================================
-   * Cleanup
-   *============================================================================*/
-
   /**
    * @brief Close socket and release resources.
    *
@@ -206,10 +182,6 @@ extern "C"
    * @param sock Pointer to socket handle.
    */
   extern void Socket_simple_close (SocketSimple_Socket_T *sock);
-
-  /*============================================================================
-   * UDP Functions
-   *============================================================================*/
 
   /**
    * @brief Create a UDP socket bound to address.
@@ -262,10 +234,6 @@ extern "C"
                                              char *from_host,
                                              size_t host_len,
                                              int *from_port);
-
-  /*============================================================================
-   * UDP Advanced Features (Multicast, Broadcast)
-   *============================================================================*/
 
   /**
    * @brief Join a multicast group.
@@ -387,10 +355,6 @@ extern "C"
   extern ssize_t
   Socket_simple_udp_recv (SocketSimple_Socket_T sock, void *buf, size_t len);
 
-  /*============================================================================
-   * Unix Domain Socket Functions
-   *============================================================================*/
-
   /**
    * @brief Connect to a Unix domain socket.
    *
@@ -418,10 +382,6 @@ extern "C"
    */
   extern SocketSimple_Socket_T
   Socket_simple_listen_unix (const char *path, int backlog);
-
-  /*============================================================================
-   * TCP Socket Options
-   *============================================================================*/
 
   /**
    * @brief Enable/disable TCP_NODELAY (Nagle's algorithm).
@@ -559,10 +519,6 @@ extern "C"
   extern int
   Socket_simple_set_reuseport (SocketSimple_Socket_T sock, int enable);
 
-  /*============================================================================
-   * Socket Address Information
-   *============================================================================*/
-
   /**
    * @brief Get local address of socket.
    *
@@ -604,10 +560,6 @@ extern "C"
                                            int *pid,
                                            int *uid,
                                            int *gid);
-
-  /*============================================================================
-   * Scatter-Gather I/O
-   *============================================================================*/
 
 #include <sys/uio.h>
 

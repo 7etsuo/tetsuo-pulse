@@ -82,8 +82,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketIOV);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketIOV, e)
 
-/* ==================== Scatter/Gather I/O ==================== */
-
 /**
  * Note: socket_sendv_internal() and socket_recvv_internal() are TLS-aware
  * internal functions defined in SocketIO.c and declared in SocketIO.h.
@@ -101,8 +99,6 @@ Socket_recvv (T socket, struct iovec *iov, int iovcnt)
 {
   return socket_recvv_internal (socket, iov, iovcnt, 0);
 }
-
-/* ==================== Sendfile Operations ==================== */
 
 /**
  * safe_add_off_t - Add to off_t with overflow checking
@@ -465,8 +461,6 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
   return (ssize_t)total_sent;
 }
 
-/* ==================== Advanced Messaging ==================== */
-
 ssize_t
 Socket_sendmsg (T socket, const struct msghdr *msg, int flags)
 {
@@ -515,8 +509,6 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
 
   return result;
 }
-
-/* ==================== Guaranteed Completion Functions ==================== */
 
 /* Wrapper functions removed - using type-specific iteration functions instead
  */
@@ -728,8 +720,6 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 
   return (ssize_t)total_received;
 }
-
-/* ==================== I/O Operations with Timeout ==================== */
 
 /**
  * socket_wait_with_timeout - Wait for socket readiness with timeout handling
@@ -1016,8 +1006,6 @@ Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt, int timeout_ms)
   return socket_recvv_internal (socket, iov, iovcnt, 0);
 }
 
-/* ==================== Advanced I/O Operations ==================== */
-
 #ifdef __linux__
 
 /**
@@ -1221,8 +1209,6 @@ Socket_peek (T socket, void *buf, size_t len)
 
   return result;
 }
-
-/* ==================== Socket Duplication ==================== */
 
 /**
  * Socket_dup - Duplicate a socket

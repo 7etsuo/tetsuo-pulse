@@ -128,8 +128,6 @@ hash_to_hex (const unsigned char *hash, char *hex_out)
   hex_out[64] = '\0';
 }
 
-/* ==================== Basic Pin Management Tests ==================== */
-
 TEST (pinning_context_initialization)
 {
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
@@ -360,8 +358,6 @@ TEST (pinning_enforcement_mode)
   SocketTLSContext_free (&ctx);
 }
 
-/* ==================== Invalid Input Tests ==================== */
-
 TEST (pinning_invalid_hex_format)
 {
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
@@ -495,8 +491,6 @@ TEST (pinning_invalid_cert_file)
   SocketTLSContext_free (&ctx);
 }
 
-/* ==================== Verification Tests ==================== */
-
 TEST (pinning_verify_pin_null_safe)
 {
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
@@ -554,8 +548,6 @@ TEST (pinning_verify_cert_pin)
   }
   END_TRY;
 }
-
-/* ==================== Live Handshake Tests ==================== */
 
 TEST (pinning_handshake_with_correct_pin)
 {
@@ -797,8 +789,6 @@ TEST (pinning_handshake_warn_only_mode)
   END_TRY;
 }
 
-/* ==================== Binary Search Tests ==================== */
-
 TEST (pinning_binary_search_correctness)
 {
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
@@ -839,8 +829,6 @@ TEST (pinning_binary_search_correctness)
 
   SocketTLSContext_free (&ctx);
 }
-
-/* ==================== Server Context Tests ==================== */
 
 TEST (pinning_on_server_context)
 {

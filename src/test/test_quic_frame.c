@@ -493,11 +493,6 @@ TEST (frame_null_pointers)
              SocketQUICFrame_parse (data, 1, &frame, NULL));
 }
 
-/* ============================================================================
- * MAX_DATA Frame Tests (RFC 9000 Section 19.9)
- * ============================================================================
- */
-
 TEST (frame_encode_max_data_basic)
 {
   uint8_t buf[16];
@@ -572,11 +567,6 @@ TEST (frame_encode_max_data_null)
   ASSERT_EQ (0, len);
 }
 
-/* ============================================================================
- * MAX_STREAM_DATA Frame Tests (RFC 9000 Section 19.10)
- * ============================================================================
- */
-
 TEST (frame_encode_max_stream_data_basic)
 {
   uint8_t buf[32];
@@ -640,11 +630,6 @@ TEST (frame_encode_max_stream_data_null)
   len = SocketQUICFrame_encode_max_stream_data (4, 2048, NULL, 32);
   ASSERT_EQ (0, len);
 }
-
-/* ============================================================================
- * MAX_STREAMS Frame Tests (RFC 9000 Section 19.11)
- * ============================================================================
- */
 
 TEST (frame_encode_max_streams_bidi)
 {
@@ -729,11 +714,6 @@ TEST (frame_encode_max_streams_null)
   len = SocketQUICFrame_encode_max_streams (1, 100, NULL, 16);
   ASSERT_EQ (0, len);
 }
-
-/* ============================================================================
- * CONNECTION_CLOSE frame encoding tests (RFC 9000 Section 19.19)
- * ============================================================================
- */
 
 TEST (frame_encode_connection_close_transport_basic)
 {
@@ -908,11 +888,6 @@ TEST (frame_encode_connection_close_large_error_code)
   ASSERT_EQ (QUIC_FRAME_OK, res);
   ASSERT_EQ (large_code, frame.data.connection_close.error_code);
 }
-
-/* ============================================================================
- * Connection ID Frame Tests (RFC 9000 §19.15-19.16)
- * ============================================================================
- */
 
 TEST (frame_new_connection_id_encode_basic)
 {
@@ -1135,11 +1110,6 @@ TEST (frame_connection_id_validation)
   ASSERT_EQ (QUIC_FRAME_OK, SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
 }
 
-/* ============================================================================
- * Flow Control Frame Encoding Tests (RFC 9000 §19.12-19.14)
- * ============================================================================
- */
-
 TEST (frame_encode_data_blocked_basic)
 {
   uint8_t buf[16];
@@ -1353,11 +1323,6 @@ TEST (frame_encode_streams_blocked_null)
   ASSERT_EQ (0, len);
 }
 
-/* ============================================================================
- * Overflow Protection Tests (32-bit safety)
- * ============================================================================
- */
-
 TEST (frame_crypto_overflow_32bit)
 {
   /* On 32-bit systems, a uint64_t length > SIZE_MAX should be rejected.
@@ -1550,11 +1515,6 @@ TEST (frame_datagram_overflow_32bit)
   ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
 #endif
 }
-
-/* ============================================================================
- * CONNECTION_CLOSE Encoding Overflow Tests (Issue #1146)
- * ============================================================================
- */
 
 TEST (frame_encode_connection_close_transport_overflow_protection)
 {

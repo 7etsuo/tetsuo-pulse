@@ -71,8 +71,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== Context Creation Tests ==================== */
-
 TEST (context_create_client)
 {
   SocketTLSContext_T ctx = NULL;
@@ -136,8 +134,6 @@ TEST (context_free_null_safe)
   ASSERT_NULL (ctx);
 }
 
-/* ==================== Certificate Loading Tests ==================== */
-
 TEST (context_load_certificate)
 {
   const char *cert_file = "test_ctx_cert.crt";
@@ -192,8 +188,6 @@ TEST (context_load_certificate_nonexistent_fails)
   }
   END_TRY;
 }
-
-/* ==================== CA Loading Tests ==================== */
 
 TEST (context_load_ca)
 {
@@ -255,8 +249,6 @@ TEST (context_load_ca_multiple)
   }
   END_TRY;
 }
-
-/* ==================== Verify Mode Tests ==================== */
 
 TEST (context_verify_mode_none)
 {
@@ -322,8 +314,6 @@ TEST (context_verify_mode_fail_if_no_peer)
   END_TRY;
 }
 
-/* ==================== ALPN Configuration Tests ==================== */
-
 TEST (context_alpn_single_protocol)
 {
   SocketTLSContext_T ctx = NULL;
@@ -363,8 +353,6 @@ TEST (context_alpn_multiple_protocols)
   }
   END_TRY;
 }
-
-/* ==================== Cipher Suite Configuration Tests ==================== */
 
 TEST (context_cipher_list)
 {
@@ -406,8 +394,6 @@ TEST (context_ciphersuites_tls13)
   }
   END_TRY;
 }
-
-/* ==================== Protocol Version Tests ==================== */
 
 TEST (context_min_protocol_version)
 {
@@ -466,8 +452,6 @@ generate_sni_certs (const char *cert_file,
   return (system (cmd) == 0) ? 0 : -1;
 }
 
-/* ==================== SNI Certificate Tests ==================== */
-
 TEST (context_add_sni_certificate)
 {
   const char *cert_file1 = "test_ctx_sni1.crt";
@@ -517,8 +501,6 @@ TEST (context_add_sni_certificate)
   }
   END_TRY;
 }
-
-/* ==================== Error Handling Tests ==================== */
 
 TEST (context_invalid_cipher_fails)
 {

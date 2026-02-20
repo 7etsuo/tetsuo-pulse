@@ -39,11 +39,6 @@
 #include "quic/SocketQUICVersion.h"
 #include "socket/SocketDgram.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define TRANSPORT_SEND_BUF_SIZE 1500
 #define TRANSPORT_RECV_BUF_SIZE 65536
 #define TRANSPORT_MAX_STREAMS 256
@@ -54,11 +49,6 @@
 #define TRANSPORT_SCID_LEN 8
 #define TRANSPORT_DCID_LEN 8
 #define TRANSPORT_PN_LEN 4
-
-/* ============================================================================
- * Per-stream send offset tracking
- * ============================================================================
- */
 
 typedef struct StreamSegment
 {
@@ -95,11 +85,6 @@ typedef struct
   int fin_delivered;
   int active;
 } QUICStreamState;
-
-/* ============================================================================
- * Internal transport structure
- * ============================================================================
- */
 
 struct SocketQUICTransport
 {
@@ -188,11 +173,6 @@ struct SocketQUICTransport
   int zero_rtt_flow_base_set;
 };
 
-/* ============================================================================
- * Time helpers
- * ============================================================================
- */
-
 static uint64_t
 now_us (void)
 {
@@ -209,11 +189,6 @@ static void transport_close_with_error (SocketQUICTransport_T t,
 static uint64_t
 peer_initial_stream_send_max (const SocketQUICTransportParams_T *peer_params,
                               uint64_t stream_id);
-
-/* ============================================================================
- * UDP I/O wrappers (exception -> return code)
- * ============================================================================
- */
 
 static int
 transport_send_packet (SocketQUICTransport_T t, const uint8_t *data, size_t len)
@@ -247,11 +222,6 @@ transport_recv_packet (SocketQUICTransport_T t, uint8_t *buf, size_t len)
   END_TRY;
   return nbytes;
 }
-
-/* ============================================================================
- * Stream state helpers
- * ============================================================================
- */
 
 static QUICStreamState *
 find_or_create_stream (SocketQUICTransport_T t, uint64_t stream_id)
@@ -308,11 +278,6 @@ find_or_create_stream (SocketQUICTransport_T t, uint64_t stream_id)
 
   return s;
 }
-
-/* ============================================================================
- * Stream receive reassembly (minimal ordered delivery)
- * ============================================================================
- */
 
 static int
 stream_deliver_chunk (SocketQUICTransport_T t,
@@ -613,11 +578,6 @@ peer_initial_stream_send_max (const SocketQUICTransportParams_T *peer_params,
                         : peer_params->initial_max_stream_data_bidi_local;
 }
 
-/* ============================================================================
- * 0-RTT early send buffering (replay on rejection)
- * ============================================================================
- */
-
 static void
 zero_rtt_buffer_clear (SocketQUICTransport_T t)
 {
@@ -697,11 +657,6 @@ zero_rtt_rollback_send_state (SocketQUICTransport_T t)
 
   t->zero_rtt_flow_base_set = 0;
 }
-
-/* ============================================================================
- * Packet building helpers
- * ============================================================================
- */
 
 typedef enum
 {
@@ -864,11 +819,6 @@ transport_close_with_error (SocketQUICTransport_T t,
   t->connected = 0;
 }
 
-/* ============================================================================
- * ACK frame sending
- * ============================================================================
- */
-
 static int
 send_ack_if_needed (SocketQUICTransport_T t,
                     SocketQUIC_PNSpace space,
@@ -900,11 +850,6 @@ send_ack_if_needed (SocketQUICTransport_T t,
   return rc;
 }
 
-/* ============================================================================
- * Congestion control callbacks for ACK processing
- * ============================================================================
- */
-
 typedef struct
 {
   size_t acked_bytes;
@@ -932,11 +877,6 @@ transport_lost_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
   if (pkt->sent_time_us > c->latest_lost_sent_time)
     c->latest_lost_sent_time = pkt->sent_time_us;
 }
-
-/* ============================================================================
- * Frame processing during poll()
- * ============================================================================
- */
 
 static int
 process_frames (SocketQUICTransport_T t,
@@ -1118,11 +1058,6 @@ process_frames (SocketQUICTransport_T t,
   return events;
 }
 
-/* ============================================================================
- * Handshake: send TLS data at a given crypto level
- * ============================================================================
- */
-
 static int
 send_crypto_initial (SocketQUICTransport_T t,
                      const uint8_t *frame_buf,
@@ -1272,11 +1207,6 @@ send_crypto_data (SocketQUICTransport_T t,
     }
 }
 
-/* ============================================================================
- * Flush all pending TLS output data
- * ============================================================================
- */
-
 static int
 flush_tls_output (SocketQUICTransport_T t)
 {
@@ -1302,11 +1232,6 @@ flush_tls_output (SocketQUICTransport_T t)
 
   return 0;
 }
-
-/* ============================================================================
- * Try to derive keys from TLS at each level
- * ============================================================================
- */
 
 static SocketQUIC_AEAD
 aead_from_secret_len (size_t secret_len)
@@ -1414,11 +1339,6 @@ check_and_derive_keys (SocketQUICTransport_T t)
     vr[i] = 0;
 }
 
-/* ============================================================================
- * Config defaults
- * ============================================================================
- */
-
 void
 SocketQUICTransportConfig_defaults (SocketQUICTransportConfig *config)
 {
@@ -1434,11 +1354,6 @@ SocketQUICTransportConfig_defaults (SocketQUICTransportConfig *config)
   config->ca_file = NULL;
   config->verify_peer = 1;
 }
-
-/* ============================================================================
- * New
- * ============================================================================
- */
 
 SocketQUICTransport_T
 SocketQUICTransport_new (Arena_T arena, const SocketQUICTransportConfig *config)
@@ -1483,11 +1398,6 @@ SocketQUICTransport_new (Arena_T arena, const SocketQUICTransportConfig *config)
 
   return t;
 }
-
-/* ============================================================================
- * Connect (start + blocking wrapper)
- * ============================================================================
- */
 
 /**
  * @brief Complete TLS/0-RTT handshake setup after CID generation.
@@ -1699,11 +1609,6 @@ SocketQUICTransport_connect (SocketQUICTransport_T t,
   return t->connected ? 0 : -1;
 }
 
-/* ============================================================================
- * Close
- * ============================================================================
- */
-
 /**
  * @brief Release all owned resources (socket, keys, TLS, tickets).
  *
@@ -1769,11 +1674,6 @@ SocketQUICTransport_close (SocketQUICTransport_T t)
   transport_free_resources (t);
   return 0;
 }
-
-/* ============================================================================
- * Send stream data
- * ============================================================================
- */
 
 static int
 transport_send_stream_common (SocketQUICTransport_T t,
@@ -1957,11 +1857,6 @@ zero_rtt_replay_buffer_as_1rtt (SocketQUICTransport_T t)
   return 0;
 }
 
-/* ============================================================================
- * Handshake completion after TLS finishes
- * ============================================================================
- */
-
 /**
  * @brief Finalize handshake if TLS is complete.
  *
@@ -2039,11 +1934,6 @@ complete_handshake_if_ready (SocketQUICTransport_T t)
   t->connecting = 0;
   return 0;
 }
-
-/* ============================================================================
- * Poll
- * ============================================================================
- */
 
 int
 SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
@@ -2148,11 +2038,6 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
   return total_events;
 }
 
-/* ============================================================================
- * Stream callback
- * ============================================================================
- */
-
 void
 SocketQUICTransport_set_stream_callback (SocketQUICTransport_T t,
                                          SocketQUICTransport_StreamCB cb,
@@ -2163,11 +2048,6 @@ SocketQUICTransport_set_stream_callback (SocketQUICTransport_T t,
   t->stream_cb = cb;
   t->stream_cb_userdata = userdata;
 }
-
-/* ============================================================================
- * Queries
- * ============================================================================
- */
 
 int
 SocketQUICTransport_is_connected (SocketQUICTransport_T t)
@@ -2306,11 +2186,6 @@ SocketQUICTransport_open_bidi_stream (SocketQUICTransport_T t)
   t->next_bidi_id += 4;
   return id;
 }
-
-/* ============================================================================
- * Peer CONNECTION_CLOSE accessors (RFC 9000 §19.19)
- * ============================================================================
- */
 
 int
 SocketQUICTransport_peer_close_received (SocketQUICTransport_T t)

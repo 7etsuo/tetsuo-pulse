@@ -25,11 +25,6 @@
 #include "http/qpack/SocketQPACKEncoderStream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * STATIC TABLE INDEX ERRORS
- * ============================================================================
- */
-
 TEST (qpack_error_static_index_out_of_range)
 {
   unsigned char buf[32];
@@ -74,11 +69,6 @@ TEST (qpack_error_resolve_static_index_invalid)
       = SocketQPACK_resolve_indexed_field (99, 1, 100, 0, &abs_index);
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 }
-
-/* ============================================================================
- * DYNAMIC TABLE EVICTION ERRORS
- * ============================================================================
- */
 
 TEST (qpack_error_evicted_entry_reference)
 {
@@ -148,11 +138,6 @@ TEST (qpack_error_table_lookup_evicted)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * DYNAMIC TABLE INDEX OUT OF RANGE
- * ============================================================================
- */
-
 TEST (qpack_error_dynamic_index_underflow)
 {
   uint64_t abs_index = 0;
@@ -188,11 +173,6 @@ TEST (qpack_error_dynamic_index_exceeds_base)
       = SocketQPACK_resolve_indexed_field (10, 0, 5, 0, &abs_index);
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 }
-
-/* ============================================================================
- * REQUIRED INSERT COUNT ERRORS
- * ============================================================================
- */
 
 TEST (qpack_error_ric_exceeds_total_inserts)
 {
@@ -237,11 +217,6 @@ TEST (qpack_error_ric_decode_encoded_exceeds_fullrange)
   ASSERT_EQ (result, QPACK_ERR_DECOMPRESSION);
 }
 
-/* ============================================================================
- * BASE/DELTA_BASE ERRORS
- * ============================================================================
- */
-
 TEST (qpack_error_base_underflow)
 {
   SocketQPACK_FieldSectionPrefix prefix;
@@ -256,11 +231,6 @@ TEST (qpack_error_base_underflow)
       buf, sizeof (buf), 128, 10, &prefix, &consumed);
   ASSERT_EQ (result, QPACK_ERR_DECOMPRESSION);
 }
-
-/* ============================================================================
- * POST-BASE INDEX ERRORS
- * ============================================================================
- */
 
 TEST (qpack_error_postbase_index_exceeds_table)
 {
@@ -314,11 +284,6 @@ TEST (qpack_error_postbase_name_index_exceeds_table)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * LITERAL NAME REFERENCE ERRORS
- * ============================================================================
- */
-
 TEST (qpack_error_literal_name_ref_static_invalid)
 {
   Arena_T arena = Arena_new ();
@@ -369,11 +334,6 @@ TEST (qpack_error_literal_name_ref_dynamic_evicted)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * BUFFER OVERFLOW/UNDERFLOW
- * ============================================================================
- */
 
 TEST (qpack_error_encode_buffer_too_small)
 {
@@ -447,11 +407,6 @@ TEST (qpack_error_decode_incomplete_literal)
   ASSERT_EQ (result, QPACK_INCOMPLETE);
 }
 
-/* ============================================================================
- * NULL PARAMETER HANDLING
- * ============================================================================
- */
-
 TEST (qpack_error_null_output_buffer)
 {
   size_t written = 0;
@@ -506,11 +461,6 @@ TEST (qpack_error_null_table)
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * EMPTY INPUT HANDLING
- * ============================================================================
- */
-
 TEST (qpack_error_empty_input_decode)
 {
   uint64_t index = 0;
@@ -533,11 +483,6 @@ TEST (qpack_error_empty_input_prefix)
       = SocketQPACK_decode_prefix (NULL, 0, 128, 0, &prefix, &consumed);
   ASSERT_EQ (result, QPACK_INCOMPLETE);
 }
-
-/* ============================================================================
- * PATTERN MISMATCH ERRORS
- * ============================================================================
- */
 
 TEST (qpack_error_decode_indexed_wrong_pattern)
 {
@@ -571,11 +516,6 @@ TEST (qpack_error_decode_literal_literal_wrong_pattern)
   /* Verify pattern check */
   ASSERT_EQ (SocketQPACK_is_literal_field_literal_name (buf[0]), false);
 }
-
-/* ============================================================================
- * HUFFMAN DECODING ERRORS
- * ============================================================================
- */
 
 TEST (qpack_error_huffman_decode_invalid)
 {
@@ -624,11 +564,6 @@ TEST (qpack_error_huffman_decode_invalid)
   ASSERT (result == QPACK_ERR_HUFFMAN || result == QPACK_ERR_DECOMPRESSION);
 }
 
-/* ============================================================================
- * TABLE CAPACITY ERRORS
- * ============================================================================
- */
-
 TEST (qpack_error_table_insert_exceeds_capacity)
 {
   Arena_T arena = Arena_new ();
@@ -675,11 +610,6 @@ TEST (qpack_error_table_zero_capacity)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * VALIDATE PREFIX ERRORS
- * ============================================================================
- */
-
 TEST (qpack_error_validate_prefix_null)
 {
   SocketQPACK_Result result = SocketQPACK_validate_prefix (NULL, 100);
@@ -695,11 +625,6 @@ TEST (qpack_error_validate_prefix_ric_exceeds)
   SocketQPACK_Result result = SocketQPACK_validate_prefix (&prefix, 50);
   ASSERT_EQ (result, QPACK_ERR_DECOMPRESSION);
 }
-
-/* ============================================================================
- * DECOMPRESSION FAILURE SCENARIOS
- * ============================================================================
- */
 
 TEST (qpack_error_decompression_future_reference)
 {
@@ -750,11 +675,6 @@ TEST (qpack_error_field_section_invalid_sequence)
 
   /* Encoding succeeds but decoding/resolution would need to validate */
 }
-
-/* ============================================================================
- * HTTP/3 ERROR CODE MAPPING (RFC 9204 Section 4.2 & 6)
- * ============================================================================
- */
 
 TEST (qpack_error_h3_code_constants)
 {
@@ -907,11 +827,6 @@ TEST (qpack_error_result_string_out_of_range)
   const char *str = SocketQPACK_result_string ((SocketQPACK_Result)999);
   ASSERT (strcmp (str, "Unknown error") == 0);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

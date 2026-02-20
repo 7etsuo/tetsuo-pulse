@@ -22,9 +22,8 @@
 #include <string.h>
 
 /* Forward declarations of internal functions from SocketSYNProtect-ip.c */
-extern int parse_ip_address (const char *ip,
-                              uint8_t *addr_bytes,
-                              size_t addr_size);
+extern int
+parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size);
 
 /* Test counters */
 static int tests_run = 0;
@@ -47,11 +46,6 @@ static int tests_passed = 0;
         }                                       \
     }                                           \
   while (0)
-
-/* ============================================================================
- * IPv4 Parsing Tests
- * ============================================================================
- */
 
 /**
  * test_ipv4_standard - Test standard IPv4 address parsing
@@ -141,11 +135,6 @@ test_ipv4_broadcast (void)
   return memcmp (addr_bytes, &expected.s_addr, SOCKET_IPV4_ADDR_BYTES) == 0;
 }
 
-/* ============================================================================
- * IPv6 Parsing Tests
- * ============================================================================
- */
-
 /**
  * test_ipv6_standard - Test standard IPv6 address parsing
  */
@@ -222,9 +211,9 @@ test_ipv6_full_form (void)
   uint8_t addr_bytes[SOCKET_IPV6_ADDR_BYTES];
   int family;
 
-  family = parse_ip_address (
-      "2001:0db8:0000:0000:0000:0000:0000:0001", addr_bytes,
-      sizeof (addr_bytes));
+  family = parse_ip_address ("2001:0db8:0000:0000:0000:0000:0000:0001",
+                             addr_bytes,
+                             sizeof (addr_bytes));
 
   if (family != AF_INET6)
     return 0;
@@ -254,11 +243,6 @@ test_ipv6_compressed (void)
 
   return memcmp (addr_bytes, expected.s6_addr, SOCKET_IPV6_ADDR_BYTES) == 0;
 }
-
-/* ============================================================================
- * Invalid Input Tests
- * ============================================================================
- */
 
 /**
  * test_null_ip_pointer - Test NULL ip parameter
@@ -325,7 +309,8 @@ test_invalid_ipv4_string (void)
     return 0;
 
   /* Invalid IPv4 - non-numeric */
-  family = parse_ip_address ("abc.def.ghi.jkl", addr_bytes, sizeof (addr_bytes));
+  family
+      = parse_ip_address ("abc.def.ghi.jkl", addr_bytes, sizeof (addr_bytes));
   if (family != 0)
     return 0;
 
@@ -396,11 +381,6 @@ test_whitespace_string (void)
 
   return 1;
 }
-
-/* ============================================================================
- * Edge Cases
- * ============================================================================
- */
 
 /**
  * test_buffer_zeroing - Test that IPv4 zeros upper bytes
@@ -482,11 +462,6 @@ test_ipv4_mapped_ipv6 (void)
   return memcmp (addr_bytes, expected.s6_addr, SOCKET_IPV6_ADDR_BYTES) == 0;
 }
 
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
-
 int
 main (void)
 {
@@ -520,8 +495,7 @@ main (void)
   RUN_TEST (test_large_buffer_size);
   RUN_TEST (test_ipv4_mapped_ipv6);
 
-  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed,
-          tests_run);
+  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }

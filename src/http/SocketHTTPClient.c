@@ -1559,12 +1559,8 @@ SocketHTTPClient_upload (SocketHTTPClient_T client,
     }
   close (fd);
 
-  if (SocketHTTPClient_put (client,
-                            url,
-                            "application/octet-stream",
-                            buffer,
-                            file_size,
-                            &response)
+  if (SocketHTTPClient_put (
+          client, url, "application/octet-stream", buffer, file_size, &response)
       != 0)
     {
       free (buffer);
@@ -1716,8 +1712,6 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client,
   return httpclient_execute_json (
       client, HTTP_METHOD_POST, url, json_body, json_out, json_len);
 }
-
-/* ===== Prepared Request API (Issue #185) ===== */
 
 
 /**

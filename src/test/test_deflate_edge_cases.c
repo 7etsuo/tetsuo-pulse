@@ -90,10 +90,6 @@ build_stored_block (uint8_t *buf,
   return pos;
 }
 
-/* =========================================================================
- * 1. BTYPE=11 Reserved Rejection Tests
- * ========================================================================= */
-
 TEST (edge_btype11_reserved_bfinal0)
 {
   /*
@@ -109,9 +105,8 @@ TEST (edge_btype11_reserved_bfinal0)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR_INVALID_BTYPE);
 }
@@ -130,9 +125,8 @@ TEST (edge_btype11_reserved_bfinal1)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR_INVALID_BTYPE);
 }
@@ -153,23 +147,19 @@ TEST (edge_btype11_in_multiblock_stream)
   ensure_tables ();
 
   /* Block 1: Valid stored block with BFINAL=0 */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"ABC", 3, 0);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"ABC", 3, 0);
 
   /* Block 2: Invalid BTYPE=11 */
   input[pos++] = 0x06; /* BFINAL=0, BTYPE=11 */
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, sizeof (output), &written);
 
   /* Should error on the reserved block type */
   ASSERT_EQ (result, DEFLATE_ERROR_INVALID_BTYPE);
 }
-
-/* =========================================================================
- * 2. Invalid Literal/Length Codes 286-287 Rejection Tests
- * ========================================================================= */
 
 TEST (edge_litlen_code_286_rejection)
 {
@@ -228,10 +218,6 @@ TEST (edge_litlen_all_valid_codes)
     }
 }
 
-/* =========================================================================
- * 3. Invalid Distance Codes 30-31 Rejection Tests
- * ========================================================================= */
-
 TEST (edge_distance_code_30_rejection)
 {
   /*
@@ -280,10 +266,6 @@ TEST (edge_distance_all_valid_codes)
       ASSERT_EQ (SocketDeflate_is_valid_distance_code (code), 1);
     }
 }
-
-/* =========================================================================
- * 4. Maximum Code Length (15) Enforcement Tests
- * ========================================================================= */
 
 TEST (edge_max_code_length_15_enforcement)
 {
@@ -357,10 +339,6 @@ TEST (edge_code_length_zero_handled)
   ASSERT_EQ (result, DEFLATE_OK);
 }
 
-/* =========================================================================
- * 5. Run-Length Codes Crossing Alphabet Boundaries Tests
- * ========================================================================= */
-
 TEST (edge_rle_code_16_basic)
 {
   /*
@@ -394,8 +372,8 @@ TEST (edge_rle_code_17_zeros)
 
   memset (lengths, 0, sizeof (lengths));
 
-  encoded_count = SocketDeflate_encode_code_lengths (lengths, 10, output,
-                                                     sizeof (output));
+  encoded_count = SocketDeflate_encode_code_lengths (
+      lengths, 10, output, sizeof (output));
 
   /* Should use RLE for zeros */
   ASSERT (encoded_count > 0);
@@ -415,8 +393,8 @@ TEST (edge_rle_code_18_many_zeros)
 
   memset (lengths, 0, sizeof (lengths));
 
-  encoded_count = SocketDeflate_encode_code_lengths (lengths, 100, output,
-                                                     sizeof (output));
+  encoded_count = SocketDeflate_encode_code_lengths (
+      lengths, 100, output, sizeof (output));
 
   /* Should heavily compress the zeros */
   ASSERT (encoded_count > 0);
@@ -434,15 +412,11 @@ TEST (edge_rle_mixed_pattern)
 
   ensure_tables ();
 
-  encoded_count = SocketDeflate_encode_code_lengths (lengths, 11, output,
-                                                     sizeof (output));
+  encoded_count = SocketDeflate_encode_code_lengths (
+      lengths, 11, output, sizeof (output));
 
   ASSERT (encoded_count > 0);
 }
-
-/* =========================================================================
- * 6. Overlapping Copy (distance < length) - RFC Example Tests
- * ========================================================================= */
 
 TEST (edge_overlapping_copy_distance_1)
 {
@@ -500,8 +474,8 @@ TEST (edge_overlapping_copy_distance_1)
     }
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 4); /* 'a' + 3 more from back-reference */
@@ -559,17 +533,13 @@ TEST (edge_overlapping_copy_rfc_example)
     }
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 7); /* "ab" + 5 more from overlapping copy */
   ASSERT (memcmp (output, "abababa", 7) == 0);
 }
-
-/* =========================================================================
- * 7. Distance Exceeding Output Position Tests
- * ========================================================================= */
 
 TEST (edge_distance_exceeds_output_simple)
 {
@@ -616,8 +586,8 @@ TEST (edge_distance_exceeds_output_simple)
     }
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   /* Should fail: only 1 byte in history, trying to reference distance 5 */
   ASSERT_EQ (result, DEFLATE_ERROR_DISTANCE_TOO_FAR);
@@ -639,12 +609,12 @@ TEST (edge_distance_exactly_at_boundary)
   ensure_tables ();
 
   /* First block: output exactly 5 bytes */
-  pos = build_stored_block (input, sizeof (input), (const uint8_t *)"ABCDE", 5,
-                            1);
+  pos = build_stored_block (
+      input, sizeof (input), (const uint8_t *)"ABCDE", 5, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 5);
@@ -653,10 +623,6 @@ TEST (edge_distance_exactly_at_boundary)
   ASSERT_EQ (SocketDeflate_Inflater_total_out (inf), 5);
 }
 
-/* =========================================================================
- * 8. Empty Block Sequences Tests
- * ========================================================================= */
-
 TEST (edge_empty_stored_block)
 {
   /*
@@ -664,9 +630,11 @@ TEST (edge_empty_stored_block)
    * Output should be empty but stream should be valid.
    */
   uint8_t input[] = {
-    0x01,       /* BFINAL=1, BTYPE=00 */
-    0x00, 0x00, /* LEN = 0 */
-    0xFF, 0xFF  /* NLEN = ~0 = 0xFFFF */
+    0x01, /* BFINAL=1, BTYPE=00 */
+    0x00,
+    0x00, /* LEN = 0 */
+    0xFF,
+    0xFF /* NLEN = ~0 = 0xFFFF */
   };
   uint8_t output[64];
   size_t consumed, written;
@@ -676,9 +644,8 @@ TEST (edge_empty_stored_block)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -690,13 +657,24 @@ TEST (edge_multiple_empty_stored_blocks)
   /*
    * Multiple consecutive empty stored blocks, final one has BFINAL=1.
    */
-  uint8_t input[] = {
-    /* Block 1: empty, BFINAL=0 */
-    0x00, 0x00, 0x00, 0xFF, 0xFF,
-    /* Block 2: empty, BFINAL=0 */
-    0x00, 0x00, 0x00, 0xFF, 0xFF,
-    /* Block 3: empty, BFINAL=1 */
-    0x01, 0x00, 0x00, 0xFF, 0xFF
+  uint8_t input[] = { /* Block 1: empty, BFINAL=0 */
+                      0x00,
+                      0x00,
+                      0x00,
+                      0xFF,
+                      0xFF,
+                      /* Block 2: empty, BFINAL=0 */
+                      0x00,
+                      0x00,
+                      0x00,
+                      0xFF,
+                      0xFF,
+                      /* Block 3: empty, BFINAL=1 */
+                      0x01,
+                      0x00,
+                      0x00,
+                      0xFF,
+                      0xFF
   };
   uint8_t output[64];
   size_t consumed, written;
@@ -706,9 +684,8 @@ TEST (edge_multiple_empty_stored_blocks)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -740,8 +717,8 @@ TEST (edge_empty_fixed_block)
   input[1] = (bits >> 8) & 0xFF;
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, 2, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, 2, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -770,21 +747,17 @@ TEST (edge_mixed_empty_and_data_blocks)
   input[pos++] = 0xFF; /* NLEN */
 
   /* Block 2: non-empty stored with "Hello" */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"Hello", 5, 1);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"Hello", 5, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 5);
   ASSERT (memcmp (output, "Hello", 5) == 0);
 }
-
-/* =========================================================================
- * 9. Window Boundary Tests (32KB max distance)
- * ========================================================================= */
 
 TEST (edge_window_max_distance_32768)
 {
@@ -864,9 +837,13 @@ TEST (edge_window_fills_exactly_32k)
       int is_final = (i == 63);
       pos = build_stored_block (input, sizeof (input), chunk, 512, is_final);
 
-      result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed,
+      result = SocketDeflate_Inflater_inflate (inf,
+                                               input,
+                                               pos,
+                                               &consumed,
                                                large_output + total_written,
-                                               40000 - total_written, &written);
+                                               40000 - total_written,
+                                               &written);
       total_written += written;
       ASSERT (result == DEFLATE_OK || result == DEFLATE_INCOMPLETE);
     }
@@ -877,10 +854,6 @@ TEST (edge_window_fills_exactly_32k)
 
   free (large_output);
 }
-
-/* =========================================================================
- * 10. Huffman Tree Validation Tests
- * ========================================================================= */
 
 TEST (edge_huffman_oversubscribed_tree)
 {
@@ -984,21 +957,15 @@ TEST (edge_huffman_valid_canonical_tree)
   ASSERT_EQ (result, DEFLATE_OK);
 }
 
-/* =========================================================================
- * 11. NLEN Validation Tests
- * ========================================================================= */
-
 TEST (edge_nlen_correct_complement)
 {
   /*
    * Verify NLEN = ~LEN is accepted.
    */
-  uint8_t input[] = {
-    0x01,       /* BFINAL=1, BTYPE=00 */
-    0x05, 0x00, /* LEN = 5 */
-    0xFA, 0xFF, /* NLEN = ~5 = 0xFFFA */
-    'H', 'e', 'l', 'l', 'o'
-  };
+  uint8_t input[] = { 0x01,       /* BFINAL=1, BTYPE=00 */
+                      0x05, 0x00, /* LEN = 5 */
+                      0xFA, 0xFF, /* NLEN = ~5 = 0xFFFA */
+                      'H',  'e',  'l', 'l', 'o' };
   uint8_t output[64];
   size_t consumed, written;
   SocketDeflate_Result result;
@@ -1007,9 +974,8 @@ TEST (edge_nlen_correct_complement)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 5);
@@ -1021,12 +987,10 @@ TEST (edge_nlen_wrong_complement)
   /*
    * NLEN != ~LEN should be rejected.
    */
-  uint8_t input[] = {
-    0x01,       /* BFINAL=1, BTYPE=00 */
-    0x05, 0x00, /* LEN = 5 */
-    0x00, 0x00, /* NLEN = 0 (should be 0xFFFA) */
-    'H', 'e', 'l', 'l', 'o'
-  };
+  uint8_t input[] = { 0x01,       /* BFINAL=1, BTYPE=00 */
+                      0x05, 0x00, /* LEN = 5 */
+                      0x00, 0x00, /* NLEN = 0 (should be 0xFFFA) */
+                      'H',  'e',  'l', 'l', 'o' };
   uint8_t output[64];
   size_t consumed, written;
   SocketDeflate_Result result;
@@ -1035,9 +999,8 @@ TEST (edge_nlen_wrong_complement)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
@@ -1047,12 +1010,10 @@ TEST (edge_nlen_off_by_one)
   /*
    * NLEN off by one bit should be rejected.
    */
-  uint8_t input[] = {
-    0x01,       /* BFINAL=1, BTYPE=00 */
-    0x05, 0x00, /* LEN = 5 */
-    0xFB, 0xFF, /* NLEN = 0xFFFB (should be 0xFFFA) */
-    'H', 'e', 'l', 'l', 'o'
-  };
+  uint8_t input[] = { 0x01,       /* BFINAL=1, BTYPE=00 */
+                      0x05, 0x00, /* LEN = 5 */
+                      0xFB, 0xFF, /* NLEN = 0xFFFB (should be 0xFFFA) */
+                      'H',  'e',  'l', 'l', 'o' };
   uint8_t output[64];
   size_t consumed, written;
   SocketDeflate_Result result;
@@ -1061,9 +1022,8 @@ TEST (edge_nlen_off_by_one)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
@@ -1074,9 +1034,11 @@ TEST (edge_nlen_zero_length)
    * LEN=0, NLEN=0xFFFF is valid.
    */
   uint8_t input[] = {
-    0x01,       /* BFINAL=1, BTYPE=00 */
-    0x00, 0x00, /* LEN = 0 */
-    0xFF, 0xFF  /* NLEN = ~0 = 0xFFFF */
+    0x01, /* BFINAL=1, BTYPE=00 */
+    0x00,
+    0x00, /* LEN = 0 */
+    0xFF,
+    0xFF /* NLEN = ~0 = 0xFFFF */
   };
   uint8_t output[64];
   size_t consumed, written;
@@ -1086,9 +1048,8 @@ TEST (edge_nlen_zero_length)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -1105,10 +1066,6 @@ TEST (edge_nlen_max_length)
 
   ASSERT_EQ (nlen, 0);
 }
-
-/* =========================================================================
- * 12. Dynamic Block Header Bounds Tests
- * ========================================================================= */
 
 TEST (edge_dynamic_hlit_min)
 {
@@ -1199,9 +1156,8 @@ TEST (edge_dynamic_truncated_header)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   /* Should fail - incomplete header */
   ASSERT (result == DEFLATE_INCOMPLETE || result == DEFLATE_ERROR);
@@ -1225,9 +1181,8 @@ TEST (edge_dynamic_valid_minimal_block)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 4096);
@@ -1238,10 +1193,6 @@ TEST (edge_dynamic_valid_minimal_block)
       ASSERT_EQ (output[i], 0);
     }
 }
-
-/* =========================================================================
- * Additional Edge Case Tests
- * ========================================================================= */
 
 TEST (edge_length_code_boundaries)
 {

@@ -42,11 +42,6 @@
 #define T SocketTLSContext_T
 typedef struct T *T;
 
-/* ============================================================================
- * Context Creation
- * ============================================================================
- */
-
 /**
  * @brief Create server TLS context with cert/key.
  * @param cert_file Server certificate (PEM)
@@ -80,11 +75,6 @@ extern T SocketTLSContext_new (const SocketTLSConfig_T *config);
  * @param ctx_p Pointer to context (set to NULL)
  */
 extern void SocketTLSContext_free (T *ctx_p);
-
-/* ============================================================================
- * Certificate Management
- * ============================================================================
- */
 
 /**
  * @brief Load server certificate and key.
@@ -126,11 +116,6 @@ extern void SocketTLSContext_load_ca (T ctx, const char *ca_file);
  */
 extern void SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
 
-/* ============================================================================
- * Custom Verification
- * ============================================================================
- */
-
 /**
  * @brief User-defined verification callback.
  * @param preverify_ok OpenSSL result (1=OK, 0=fail)
@@ -158,11 +143,6 @@ extern void
 SocketTLSContext_set_verify_callback (T ctx,
                                       SocketTLSVerifyCallback callback,
                                       void *user_data);
-
-/* ============================================================================
- * CRL Support
- * ============================================================================
- */
 
 /**
  * @brief Load CRL file or directory.
@@ -207,11 +187,6 @@ extern int SocketTLSContext_crl_check_refresh (T ctx);
 
 /** @brief Get ms until next CRL refresh. Returns -1 if disabled. */
 extern long SocketTLSContext_crl_next_refresh_ms (T ctx);
-
-/* ============================================================================
- * OCSP Support
- * ============================================================================
- */
 
 /**
  * @brief Set static OCSP response for stapling (server).
@@ -273,11 +248,6 @@ extern OCSPMustStapleMode SocketTLSContext_get_ocsp_must_staple (T ctx);
 /** @brief Check if certificate has must-staple extension. */
 extern int SocketTLSContext_cert_has_must_staple (const X509 *cert);
 
-/* ============================================================================
- * Custom Certificate Lookup
- * ============================================================================
- */
-
 /**
  * @brief Certificate lookup callback for HSM/database sources.
  * @param store_ctx OpenSSL store context
@@ -302,11 +272,6 @@ SocketTLSContext_set_cert_lookup_callback (T ctx,
                                            SocketTLSCertLookupCallback callback,
                                            void *user_data);
 
-/* ============================================================================
- * Protocol Configuration
- * ============================================================================
- */
-
 /** @brief Set minimum TLS version. */
 extern void SocketTLSContext_set_min_protocol (T ctx, int version);
 
@@ -324,11 +289,6 @@ extern void SocketTLSContext_set_ciphersuites (T ctx, const char *ciphersuites);
 
 /** @brief Validate TLS 1.3 ciphersuites. Returns 1 if valid. */
 extern int SocketTLSContext_validate_ciphersuites (const char *ciphersuites);
-
-/* ============================================================================
- * ALPN Support
- * ============================================================================
- */
 
 /**
  * @brief Set ALPN protocols.
@@ -348,11 +308,6 @@ typedef const char *(*SocketTLSAlpnCallback) (const char **client_protos,
 extern void SocketTLSContext_set_alpn_callback (T ctx,
                                                 SocketTLSAlpnCallback callback,
                                                 void *user_data);
-
-/* ============================================================================
- * Session Management
- * ============================================================================
- */
 
 /**
  * @brief Set session ID context (server).
@@ -406,11 +361,6 @@ extern int SocketTLSContext_session_tickets_enabled (T ctx);
 /** @brief Disable session tickets. */
 extern void SocketTLSContext_disable_session_tickets (T ctx);
 
-/* ============================================================================
- * Certificate Pinning (SPKI SHA256)
- * ============================================================================
- */
-
 /** @brief Add pin (32-byte SHA256 hash). */
 extern void SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash);
 
@@ -448,11 +398,6 @@ extern int SocketTLSContext_verify_cert_pin (T ctx, const X509 *cert);
 /** @brief Exception for pin verification failure. */
 extern const Except_T SocketTLS_PinVerifyFailed;
 
-/* ============================================================================
- * Certificate Transparency (RFC 6962)
- * ============================================================================
- */
-
 /** @brief CT validation mode. */
 typedef enum
 {
@@ -471,11 +416,6 @@ extern CTValidationMode SocketTLSContext_get_ct_mode (T ctx);
 
 /** @brief Load custom CT log list. */
 extern void SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file);
-
-/* ============================================================================
- * 0-RTT Early Data Replay Protection
- * ============================================================================
- */
 
 /**
  * @brief Early data replay detection callback.
@@ -507,11 +447,6 @@ extern int
 SocketTLSContext_check_early_data_replay (T ctx,
                                           const unsigned char *session_id,
                                           size_t session_id_len);
-
-/* ============================================================================
- * Internal Functions
- * ============================================================================
- */
 
 /** @brief Get underlying SSL_CTX*. */
 extern void *SocketTLSContext_get_ssl_ctx (T ctx);

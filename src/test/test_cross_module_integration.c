@@ -42,11 +42,6 @@
 #include "tls/SocketTLSContext.h"
 #endif
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 51000
 #define TEST_TIMEOUT_MS 5000
 
@@ -57,11 +52,6 @@ get_cross_test_port (void)
 {
   return TEST_PORT_BASE + (cross_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Proxy + HTTP + TLS Integration Server
- * ============================================================================
- */
 
 typedef struct
 {
@@ -188,11 +178,6 @@ proxy_http_tls_server_stop (ProxyHTTPTLSServer *server)
 
   Arena_dispose (&server->arena);
 }
-
-/* ============================================================================
- * Pool + Auto-Reconnection Integration Server
- * ============================================================================
- */
 
 typedef struct
 {
@@ -325,11 +310,6 @@ pool_reconnect_server_stop (PoolReconnectServer *server)
 
   Arena_dispose (&server->arena);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (integration_cross_module_http_basic)
 {

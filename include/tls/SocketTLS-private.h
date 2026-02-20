@@ -78,11 +78,6 @@
 #include <openssl/stack.h> /* For STACK_OF and sk_* functions */
 #include <openssl/x509.h>
 
-/* ============================================================================
- * Thread-Local Error Handling for SocketTLS
- * ============================================================================
- */
-
 /**
  * @brief tls_error_buf - Thread-local TLS error message buffer (see
  * SocketTLS.h for details).
@@ -213,11 +208,6 @@
     _ssl;                                             \
   })
 
-/* ============================================================================
- * SSL Object Access
- * ============================================================================
- */
-
 /**
  * @brief tls_socket_get_ssl - Get SSL* from socket
  * @ingroup security
@@ -238,11 +228,6 @@ tls_socket_get_ssl (Socket_T socket)
     return NULL;
   return (SSL *)socket->tls_ssl;
 }
-
-/* ============================================================================
- * SSL Error Handling
- * ============================================================================
- */
 
 /**
  * @brief tls_handle_ssl_error - Map OpenSSL errors to TLSHandshakeState
@@ -404,11 +389,6 @@ tls_format_openssl_error (const char *context)
       context, socket_error_buf, SOCKET_ERROR_BUFSIZE);
 }
 
-/* ============================================================================
- * Input Validation
- * ============================================================================
- */
-
 /**
  * @brief Validate file path for certificates, keys, or CAs against security
  * threats.
@@ -427,21 +407,6 @@ tls_validate_file_path (const char *path)
 {
   return ssl_validate_file_path (path, SOCKET_TLS_MAX_PATH_LEN);
 }
-
-/* ============================================================================
- * ALPN Temp Buffer Management (for UAF fix in selection callback)
- * ============================================================================
- *
- * ALPN (Application-Layer Protocol Negotiation) requires careful memory
- * management in OpenSSL callbacks. The callback receives protocol strings
- * that may have limited lifetime, so we create persistent copies in ex_data.
- * This prevents use-after-free bugs when callbacks return pointers to
- * temporary buffers.
- *
- * The ex_data index is lazily initialized once per process to store
- * the protocol string copy. Cleanup is performed before SSL_free to
- * prevent memory leaks.
- */
 
 /**
  * @brief Get global ex_data index for ALPN temporary protocol buffers.
@@ -575,11 +540,6 @@ tls_validate_hostname (const char *hostname)
   /* Final label: must exist, not exceed 63 chars, and not end with hyphen */
   return (label_len > 0 && label_len <= 63 && !prev_hyphen);
 }
-
-/* ============================================================================
- * SocketTLSContext_T Structure and Internal Definitions
- * ============================================================================
- */
 
 #define T SocketTLSContext_T
 
@@ -859,11 +819,6 @@ struct T
     }                                                                \
   while (0)
 
-/* ============================================================================
- * Thread-Local Error Handling for SocketTLSContext
- * ============================================================================
- */
-
 /**
  * @brief Raise a SocketTLSContext module exception using current error state.
  * @ingroup security
@@ -921,11 +876,6 @@ struct T
 #define RAISE_CTX_ERROR_FMT(exception, fmt, ...) \
   SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, __VA_ARGS__)
 
-/* ============================================================================
- * Utility Macros
- * ============================================================================
- */
-
 /**
  * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
@@ -935,11 +885,6 @@ struct T
  * @see SOCKET_SSL_UNUSED in SocketSSL-internal.h
  */
 #define TLS_UNUSED(x) SOCKET_SSL_UNUSED (x)
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Raise a SocketTLSContext exception from an OpenSSL error.
@@ -1077,11 +1022,6 @@ extern SocketTLSContext_T tls_context_get_from_ssl_ctx (SSL_CTX *ssl_ctx);
 extern SocketTLSContext_T
 ctx_alloc_and_init (const SSL_METHOD *method, int is_server);
 
-/* ============================================================================
- * Certificate Pinning Internal Functions
- * ============================================================================
- */
-
 /**
  * @brief Initialize TLS certificate pinning configuration.
  * @ingroup security
@@ -1168,11 +1108,6 @@ tls_pinning_check_chain (SocketTLSContext_T ctx, const STACK_OF (X509) * chain);
 extern int tls_pinning_find (const TLSCertPin *pins,
                              size_t count,
                              const unsigned char *hash);
-
-/* ============================================================================
- * kTLS Internal Functions
- * ============================================================================
- */
 
 /**
  * @brief Called after TLS handshake completion to update kTLS offload status.

@@ -16,12 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ============================================================================
- * Frame Validation Table (RFC 9000 Table 3)
- * ============================================================================
- * Maps frame types to allowed packet types.
- */
-
 /* All packet types */
 #define PKT_ALL \
   (QUIC_PKT_INITIAL | QUIC_PKT_0RTT | QUIC_PKT_HANDSHAKE | QUIC_PKT_1RTT)
@@ -75,11 +69,6 @@ static const struct
   { 0, 0 } /* Sentinel */
 };
 
-/* ============================================================================
- * Helper: Decode varint with bounds check
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 decode_varint (const uint8_t *data, size_t len, size_t *pos, uint64_t *value)
 {
@@ -99,11 +88,6 @@ decode_varint (const uint8_t *data, size_t len, size_t *pos, uint64_t *value)
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Helper: Check remaining bytes without overflow
- * ============================================================================
- */
-
 static inline int
 have_bytes (size_t pos, size_t len, uint64_t need)
 {
@@ -111,11 +95,6 @@ have_bytes (size_t pos, size_t len, uint64_t need)
     return 0;
   return need <= (uint64_t)(len - pos);
 }
-
-/* ============================================================================
- * Parse PADDING frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_padding (const uint8_t *data,
@@ -132,11 +111,6 @@ parse_padding (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse PING frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_ping (const uint8_t *data,
             size_t len,
@@ -151,11 +125,6 @@ parse_ping (const uint8_t *data,
   /* PING is just the type byte, already consumed */
   return QUIC_FRAME_OK;
 }
-
-/* ============================================================================
- * Parse ACK frames
- * ============================================================================
- */
 
 /**
  * @brief Parse basic ACK fields (largest_ack, ack_delay, range_count,
@@ -322,11 +291,6 @@ parse_ack (const uint8_t *data,
   return parse_ack_internal (data, len, pos, frame, NULL);
 }
 
-/* ============================================================================
- * Parse RESET_STREAM frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_reset_stream (const uint8_t *data,
                     size_t len,
@@ -351,11 +315,6 @@ parse_reset_stream (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse STOP_SENDING frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_stop_sending (const uint8_t *data,
                     size_t len,
@@ -375,11 +334,6 @@ parse_stop_sending (const uint8_t *data,
 
   return QUIC_FRAME_OK;
 }
-
-/* ============================================================================
- * Parse CRYPTO frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_crypto (const uint8_t *data,
@@ -408,11 +362,6 @@ parse_crypto (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse NEW_TOKEN frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_new_token (const uint8_t *data,
                  size_t len,
@@ -438,11 +387,6 @@ parse_new_token (const uint8_t *data,
 
   return QUIC_FRAME_OK;
 }
-
-/* ============================================================================
- * Parse STREAM frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_stream (const uint8_t *data,
@@ -494,11 +438,6 @@ parse_stream (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse MAX_DATA frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_max_data (const uint8_t *data,
                 size_t len,
@@ -507,11 +446,6 @@ parse_max_data (const uint8_t *data,
 {
   return decode_varint (data, len, pos, &frame->data.max_data.max_data);
 }
-
-/* ============================================================================
- * Parse MAX_STREAM_DATA frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_max_stream_data (const uint8_t *data,
@@ -529,11 +463,6 @@ parse_max_stream_data (const uint8_t *data,
   return decode_varint (data, len, pos, &msd->max_data);
 }
 
-/* ============================================================================
- * Parse MAX_STREAMS frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_max_streams (const uint8_t *data,
                    size_t len,
@@ -545,11 +474,6 @@ parse_max_streams (const uint8_t *data,
   return decode_varint (data, len, pos, &ms->max_streams);
 }
 
-/* ============================================================================
- * Parse DATA_BLOCKED frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_data_blocked (const uint8_t *data,
                     size_t len,
@@ -558,11 +482,6 @@ parse_data_blocked (const uint8_t *data,
 {
   return decode_varint (data, len, pos, &frame->data.data_blocked.limit);
 }
-
-/* ============================================================================
- * Parse STREAM_DATA_BLOCKED frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_stream_data_blocked (const uint8_t *data,
@@ -580,11 +499,6 @@ parse_stream_data_blocked (const uint8_t *data,
   return decode_varint (data, len, pos, &sdb->limit);
 }
 
-/* ============================================================================
- * Parse STREAMS_BLOCKED frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_streams_blocked (const uint8_t *data,
                        size_t len,
@@ -595,11 +509,6 @@ parse_streams_blocked (const uint8_t *data,
   sb->is_bidi = (frame->type == QUIC_FRAME_STREAMS_BLOCKED_BIDI);
   return decode_varint (data, len, pos, &sb->limit);
 }
-
-/* ============================================================================
- * Parse NEW_CONNECTION_ID frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_new_connection_id (const uint8_t *data,
@@ -652,11 +561,6 @@ parse_new_connection_id (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse RETIRE_CONNECTION_ID frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_retire_connection_id (const uint8_t *data,
                             size_t len,
@@ -666,11 +570,6 @@ parse_retire_connection_id (const uint8_t *data,
   return decode_varint (
       data, len, pos, &frame->data.retire_connection_id.sequence);
 }
-
-/* ============================================================================
- * Parse PATH_CHALLENGE frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_path_challenge (const uint8_t *data,
@@ -687,11 +586,6 @@ parse_path_challenge (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse PATH_RESPONSE frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_path_response (const uint8_t *data,
                      size_t len,
@@ -706,11 +600,6 @@ parse_path_response (const uint8_t *data,
 
   return QUIC_FRAME_OK;
 }
-
-/* ============================================================================
- * Parse CONNECTION_CLOSE frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_connection_close (const uint8_t *data,
@@ -750,11 +639,6 @@ parse_connection_close (const uint8_t *data,
   return QUIC_FRAME_OK;
 }
 
-/* ============================================================================
- * Parse HANDSHAKE_DONE frames
- * ============================================================================
- */
-
 static SocketQUICFrame_Result
 parse_handshake_done (const uint8_t *data,
                       size_t len,
@@ -769,11 +653,6 @@ parse_handshake_done (const uint8_t *data,
   /* HANDSHAKE_DONE is just the type byte */
   return QUIC_FRAME_OK;
 }
-
-/* ============================================================================
- * Parse DATAGRAM frames
- * ============================================================================
- */
 
 static SocketQUICFrame_Result
 parse_datagram (const uint8_t *data,
@@ -805,11 +684,6 @@ parse_datagram (const uint8_t *data,
 
   return QUIC_FRAME_OK;
 }
-
-/* ============================================================================
- * Frame Parser Dispatch Table
- * ============================================================================
- */
 
 typedef SocketQUICFrame_Result (*frame_parser_fn) (const uint8_t *data,
                                                    size_t len,
@@ -919,11 +793,6 @@ dispatch_frame_parser (uint64_t type,
   /* Dispatch to type-specific parser */
   return parser (data, len, pos, frame);
 }
-
-/* ============================================================================
- * Public Functions
- * ============================================================================
- */
 
 void
 SocketQUICFrame_init (SocketQUICFrame_T *frame)

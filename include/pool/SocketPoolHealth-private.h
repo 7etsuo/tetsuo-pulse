@@ -160,10 +160,6 @@ typedef struct SocketPoolHealth_T
    */
   Arena_T arena;
 
-  /* ========================================================================
-   * Circuit Breaker Hash Table
-   * ======================================================================== */
-
   /**
    * @brief Hash table of circuit entries.
    *
@@ -199,10 +195,6 @@ typedef struct SocketPoolHealth_T
    */
   unsigned int hash_seed;
 
-  /* ========================================================================
-   * Probe Callback
-   * ======================================================================== */
-
   /**
    * @brief User-defined health probe callback.
    *
@@ -215,10 +207,6 @@ typedef struct SocketPoolHealth_T
    * @brief User data for probe callback.
    */
   void *probe_cb_data;
-
-  /* ========================================================================
-   * Background Worker Thread
-   * ======================================================================== */
 
   /**
    * @brief Worker thread handle.
@@ -260,10 +248,6 @@ typedef struct SocketPoolHealth_T
    */
   int worker_started;
 
-  /* ========================================================================
-   * Configuration
-   * ======================================================================== */
-
   /**
    * @brief Copied configuration.
    *
@@ -271,10 +255,6 @@ typedef struct SocketPoolHealth_T
    * Can be updated at runtime (mutex protected).
    */
   SocketPoolHealth_Config config;
-
-  /* ========================================================================
-   * Statistics
-   * ======================================================================== */
 
   /**
    * @brief Total probe operations executed.
@@ -299,11 +279,6 @@ typedef struct SocketPoolHealth_T
   _Atomic uint64_t stats_circuits_opened;
 
 } *SocketPoolHealth_T;
-
-/* ============================================================================
- * Internal Function Declarations
- * ============================================================================
- */
 
 /**
  * @brief Create health subsystem context.

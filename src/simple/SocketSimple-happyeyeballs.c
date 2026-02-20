@@ -16,10 +16,6 @@
 
 #include <sys/socket.h>
 
-/*============================================================================
- * Configuration Helpers
- *============================================================================*/
-
 void
 Socket_simple_happyeyeballs_config_defaults (
     SocketSimple_HappyEyeballs_Config *config)
@@ -32,10 +28,6 @@ Socket_simple_happyeyeballs_config_defaults (
   config->prefer_ipv6 = 1;
   config->max_attempts = 0;
 }
-
-/*============================================================================
- * Connection Functions
- *============================================================================*/
 
 SocketSimple_Socket_T
 Socket_simple_happyeyeballs_connect (const char *host, int port, int timeout_ms)
@@ -128,10 +120,6 @@ Socket_simple_happyeyeballs_connect_config (
     }
   return handle;
 }
-
-/*============================================================================
- * Query Functions
- *============================================================================*/
 
 int
 Socket_simple_get_family (SocketSimple_Socket_T sock)

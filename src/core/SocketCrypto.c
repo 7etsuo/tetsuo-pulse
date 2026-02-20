@@ -251,17 +251,11 @@ SocketCrypto_hmac_sha256 (const void *key,
 #endif
 }
 
-/* ============================================================================
- * HKDF Functions (RFC 5869, RFC 8446 §7.1)
- * ============================================================================
- */
-
 #define HKDF_LABEL_PREFIX "tls13 "
 #define HKDF_LABEL_PREFIX_LEN 6
 #define HKDF_MAX_LABEL_LEN 255
 #define HKDF_MAX_OUTPUT_LEN 255
-#define HKDF_MAX_INFO_LEN \
-  (2 + 1 + HKDF_MAX_LABEL_LEN + 1 + HKDF_MAX_LABEL_LEN)
+#define HKDF_MAX_INFO_LEN (2 + 1 + HKDF_MAX_LABEL_LEN + 1 + HKDF_MAX_LABEL_LEN)
 
 /*
  * build_expand_input - Build HMAC input for one HKDF-Expand iteration
@@ -471,11 +465,6 @@ SocketCrypto_hkdf_expand_label (const unsigned char *prk,
   hkdf_expand (prk, prk_len, hkdf_label, hkdf_label_len, output, output_len);
   SocketCrypto_secure_clear (hkdf_label, sizeof (hkdf_label));
 }
-
-/* ============================================================================
- * AEAD Functions (RFC 5116, RFC 9001 §5.3)
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 /**

@@ -44,11 +44,6 @@
 /* Embedded test certificates */
 #include "../fuzz/fuzz_test_certs.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 47000
 #define TEST_TIMEOUT_MS 5000
 
@@ -59,11 +54,6 @@ get_h2_test_port (void)
 {
   return TEST_PORT_BASE + (h2_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Certificate File Helpers
- * ============================================================================
- */
 
 static char cert_file[64];
 static char key_file[64];
@@ -101,11 +91,6 @@ cleanup_temp_cert_files (void)
   unlink (cert_file);
   unlink (key_file);
 }
-
-/* ============================================================================
- * HTTP/2 Server Thread
- * ============================================================================
- */
 
 typedef struct
 {
@@ -308,11 +293,6 @@ h2_server_stop (H2TestServer *server)
   if (server->tls_ctx)
     SocketTLSContext_free (&server->tls_ctx);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (http2_integration_tls_alpn)
 {
@@ -590,11 +570,6 @@ TEST (http2_integration_no_tls)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

@@ -28,20 +28,15 @@
 /* Test exception type for testing */
 static const Except_T TestException = { &TestException, "Test exception" };
 
-/* ==========================================================================
- * Test wrapper declarations for static helper functions
- * These wrappers are conditionally compiled with -DTESTING
- * ==========================================================================
- */
 #ifdef TESTING
 extern void test_wrapper_except_flush_stderr (void);
 extern void test_wrapper_except_emit_fatal (const char *message);
 extern void test_wrapper_except_emit_reason (const Except_T *e);
 extern void test_wrapper_except_emit_location (const char *file, int line);
 extern void test_wrapper_except_store_exception (Except_Frame *frame,
-                                                  const Except_T *e,
-                                                  const char *file,
-                                                  int line);
+                                                 const Except_T *e,
+                                                 const char *file,
+                                                 int line);
 extern void test_wrapper_except_pop_frame (Except_Frame *frame);
 extern const char *test_wrapper_except_basename (const char *path);
 #endif
@@ -857,13 +852,6 @@ TEST (except_volatile_preservation)
   ASSERT_EQ (in_handler, 42);
 }
 
-/* ==========================================================================
- * Fork-based tests for abort() paths (100% coverage)
- * These tests exercise code paths that call abort() by forking the process
- * and verifying the child receives SIGABRT.
- * ==========================================================================
- */
-
 /* Coverage support for child processes that call abort().
  *
  * For LLVM coverage (-fprofile-instr-generate -fcoverage-mapping):
@@ -1068,11 +1056,6 @@ TEST (except_uncaught_no_location_aborts)
   ASSERT_EQ (WTERMSIG (status), SIGABRT);
 }
 
-/* ==========================================================================
- * Tests for caught exceptions with edge case parameters
- * ==========================================================================
- */
-
 /* Test NULL file parameter in caught exception (covers "unknown" branch) */
 TEST (except_null_file_handled)
 {
@@ -1143,12 +1126,6 @@ TEST (except_negative_line_handled)
   ASSERT_EQ (line, 0);
 }
 
-/* ==========================================================================
- * Direct unit tests for static helper functions (requires -DTESTING)
- * These tests verify implementation details for documentation and debugging.
- * Note: Integration tests above already provide comprehensive coverage.
- * ==========================================================================
- */
 #ifdef TESTING
 
 /* Test except_flush_stderr - verifies fflush(stderr) is called */
@@ -1375,12 +1352,6 @@ TEST (except_helper_basename_empty)
 
 #endif /* TESTING */
 
-/* ==========================================================================
- * Unit tests for except_basename edge cases (issue #3016)
- * Tests the static except_basename function via test-only wrapper
- * ==========================================================================
- */
-
 #ifdef TESTING
 /* Test except_basename with forward slash */
 TEST (except_basename_forward_slash)
@@ -1521,13 +1492,6 @@ TEST (except_basename_no_actual_path)
 }
 #endif /* TESTING */
 
-/* ==========================================================================
- * Tests for SOCKET_EXCEPT_VERBOSE_UNCAUGHT build mode
- * These tests verify that exception location reporting behaves correctly
- * in both verbose (debug) and non-verbose (release) builds.
- * ==========================================================================
- */
-
 #if SOCKET_EXCEPT_VERBOSE_UNCAUGHT
 /* Test verbose mode reports full file path in uncaught exceptions
  * This test exercises line 108 in Except.c: const char *display_file = file;
@@ -1604,7 +1568,8 @@ TEST (except_non_verbose_mode_basename_uncaught)
       flush_coverage_before_abort ();
 
       /* Use a path with directory components */
-      static const Except_T NonVerboseEx = { &NonVerboseEx, "Non-verbose test" };
+      static const Except_T NonVerboseEx
+          = { &NonVerboseEx, "Non-verbose test" };
       Except_raise (&NonVerboseEx, "/some/absolute/path/to/test_file.c", 123);
       _exit (0);
     }

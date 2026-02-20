@@ -17,21 +17,11 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * CALCULATE BASE - NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_calculate_base_null_output)
 {
   SocketQPACK_Result result = SocketQPACK_calculate_base (0, 10, 5, NULL);
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 }
-
-/* ============================================================================
- * CALCULATE BASE - POSITIVE DELTA (Sign = 0)
- * ============================================================================
- */
 
 TEST (qpack_calculate_base_positive_delta_zero)
 {
@@ -88,11 +78,6 @@ TEST (qpack_calculate_base_positive_delta_max_no_overflow)
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (base, UINT64_MAX);
 }
-
-/* ============================================================================
- * CALCULATE BASE - NEGATIVE DELTA (Sign = 1)
- * ============================================================================
- */
 
 TEST (qpack_calculate_base_negative_delta_simple)
 {
@@ -164,11 +149,6 @@ TEST (qpack_calculate_base_negative_delta_large_values)
   ASSERT_EQ (base, 499999);
 }
 
-/* ============================================================================
- * VALIDATE BASE TESTS
- * ============================================================================
- */
-
 TEST (qpack_validate_base_positive_valid)
 {
   /* Sign=0, RIC=10, Delta=5: valid */
@@ -210,11 +190,6 @@ TEST (qpack_validate_base_negative_boundary)
   SocketQPACK_Result result = SocketQPACK_validate_base (1, 5, 4);
   ASSERT_EQ (result, QPACK_OK);
 }
-
-/* ============================================================================
- * ENCODE BASE TESTS
- * ============================================================================
- */
 
 TEST (qpack_encode_base_null_sign)
 {
@@ -308,11 +283,6 @@ TEST (qpack_encode_base_large_values)
   ASSERT_EQ (delta, 500000);
 }
 
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
-
 TEST (qpack_base_roundtrip_positive)
 {
   int sign = 0;
@@ -385,22 +355,12 @@ TEST (qpack_base_roundtrip_zero_base)
   ASSERT_EQ (base_out, 0);
 }
 
-/* ============================================================================
- * RESULT STRING TESTS
- * ============================================================================
- */
-
 TEST (qpack_result_string_invalid_base)
 {
   const char *str = SocketQPACK_result_string (QPACK_ERR_INVALID_BASE);
   ASSERT_NOT_NULL (str);
   ASSERT (str[0] != '\0');
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

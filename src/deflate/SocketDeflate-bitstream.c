@@ -70,8 +70,8 @@ refill_bits (SocketDeflate_BitReader_T reader)
          && reader->in_pos < reader->input_len)
     {
       /* Add new byte at position bits_avail (top of valid bits) */
-      reader->bits
-          |= (uint64_t)reader->input[reader->in_pos++] << reader->bits_avail;
+      reader->bits |= (uint64_t)reader->input[reader->in_pos++]
+                      << reader->bits_avail;
       reader->bits_avail += 8;
     }
 }
@@ -97,7 +97,8 @@ SocketDeflate_BitReader_new (Arena_T arena)
 
 void
 SocketDeflate_BitReader_init (SocketDeflate_BitReader_T reader,
-                              const uint8_t *data, size_t size)
+                              const uint8_t *data,
+                              size_t size)
 {
   reader->bits = 0;
   reader->bits_avail = 0;
@@ -107,7 +108,8 @@ SocketDeflate_BitReader_init (SocketDeflate_BitReader_T reader,
 }
 
 SocketDeflate_Result
-SocketDeflate_BitReader_read (SocketDeflate_BitReader_T reader, unsigned int n,
+SocketDeflate_BitReader_read (SocketDeflate_BitReader_T reader,
+                              unsigned int n,
                               uint32_t *value)
 {
   /* Validate n is in range 1-25 */
@@ -131,7 +133,8 @@ SocketDeflate_BitReader_read (SocketDeflate_BitReader_T reader, unsigned int n,
 }
 
 SocketDeflate_Result
-SocketDeflate_BitReader_peek (SocketDeflate_BitReader_T reader, unsigned int n,
+SocketDeflate_BitReader_peek (SocketDeflate_BitReader_T reader,
+                              unsigned int n,
                               uint32_t *value)
 {
   /* Validate n is in range 1-25 */
@@ -176,7 +179,8 @@ SocketDeflate_BitReader_align (SocketDeflate_BitReader_T reader)
 
 SocketDeflate_Result
 SocketDeflate_BitReader_read_bytes (SocketDeflate_BitReader_T reader,
-                                    uint8_t *dest, size_t count)
+                                    uint8_t *dest,
+                                    size_t count)
 {
   size_t i;
 
@@ -275,25 +279,6 @@ SocketDeflate_reverse_bits (uint32_t value, unsigned int nbits)
   return result;
 }
 
-/*
- * ============================================================================
- * Bit Stream Writer Implementation (RFC 1951 Section 3.1.1)
- * ============================================================================
- *
- * LSB-first bit output for DEFLATE compression.
- * Mirrors the reader's bit ordering for consistency.
- *
- * Bit Accumulator Model (Writer):
- * - 32-bit accumulator holds pending bits LSB-aligned
- * - New bits are added at position bits_pending
- * - Complete bytes are flushed from the bottom
- *
- * Example: Writing 0xA (4 bits) then 0x3 (2 bits)
- *   After write 0xA: bits = 0xA, bits_pending = 4
- *   After write 0x3: bits = (0x3 << 4) | 0xA = 0x3A, bits_pending = 6
- *   Output byte (when flushed): 0x3A (LSB-first packed)
- */
-
 /**
  * Bit writer state structure.
  *
@@ -361,7 +346,8 @@ SocketDeflate_BitWriter_new (Arena_T arena)
 }
 
 void
-SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer, uint8_t *data,
+SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer,
+                              uint8_t *data,
                               size_t capacity)
 {
   writer->data = data;
@@ -372,7 +358,8 @@ SocketDeflate_BitWriter_init (SocketDeflate_BitWriter_T writer, uint8_t *data,
 }
 
 SocketDeflate_Result
-SocketDeflate_BitWriter_write (SocketDeflate_BitWriter_T writer, uint32_t value,
+SocketDeflate_BitWriter_write (SocketDeflate_BitWriter_T writer,
+                               uint32_t value,
                                unsigned int n)
 {
   /* Validate n is in range 1-25 */
@@ -396,7 +383,8 @@ SocketDeflate_BitWriter_write (SocketDeflate_BitWriter_T writer, uint32_t value,
 
 SocketDeflate_Result
 SocketDeflate_BitWriter_write_huffman (SocketDeflate_BitWriter_T writer,
-                                       uint32_t code, unsigned int len)
+                                       uint32_t code,
+                                       unsigned int len)
 {
   /*
    * Huffman codes are defined MSB-first in RFC 1951 but stored LSB-first

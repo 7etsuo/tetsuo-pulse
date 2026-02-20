@@ -34,11 +34,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * SocketRateLimit Tests
- * ============================================================================
- */
-
 /* Test rate limiter creation with arena */
 TEST (ratelimit_create_with_arena)
 {
@@ -292,11 +287,6 @@ TEST (ratelimit_zero_tokens)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * SocketIPTracker Tests
- * ============================================================================
- */
 
 /* Test IP tracker creation */
 TEST (iptracker_create)
@@ -686,11 +676,6 @@ TEST (iptracker_release_nonexistent)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * SocketPool Rate Limiting Tests
- * ============================================================================
- */
-
 /* Test connection rate limiting in pool */
 TEST (pool_connection_rate_limit)
 {
@@ -823,11 +808,6 @@ TEST (pool_accept_allowed_check)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Socket Bandwidth Limiting Tests
- * ============================================================================
- */
-
 /* Test socket bandwidth limiting API */
 TEST (socket_bandwidth_api)
 {
@@ -852,11 +832,6 @@ TEST (socket_bandwidth_api)
   ASSERT (0);
   END_TRY;
 }
-
-/* ============================================================================
- * Thread Safety Tests
- * ============================================================================
- */
 
 /* Thread test data for rate limiter */
 static SocketRateLimit_T thread_test_limiter;
@@ -1017,11 +992,6 @@ TEST (iptracker_thread_safety)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test Suite Entry Point
- * ============================================================================
- */
 
 int
 main (void)

@@ -43,10 +43,6 @@ extern "C"
 {
 #endif
 
-/*============================================================================
- * DTLS Constants
- *============================================================================*/
-
 /**
  * @brief Default MTU for DTLS connections.
  *
@@ -55,10 +51,6 @@ extern "C"
  * record plus UDP/IP headers fit within the path MTU.
  */
 #define SOCKET_SIMPLE_DTLS_DEFAULT_MTU 1400
-
-  /*============================================================================
-   * DTLS Options
-   *============================================================================*/
 
   /**
    * @brief DTLS connection options.
@@ -75,10 +67,6 @@ extern "C"
     const char **alpn; /**< ALPN protocol list (NULL-terminated) */
     size_t alpn_count; /**< Number of ALPN protocols */
   } SocketSimple_DTLSOptions;
-
-  /*============================================================================
-   * DTLS Client Functions
-   *============================================================================*/
 
   /**
    * @brief Connect to a DTLS server with default options.
@@ -120,10 +108,6 @@ extern "C"
                                         const char *hostname,
                                         const SocketSimple_DTLSOptions *opts);
 
-  /*============================================================================
-   * DTLS Server Functions
-   *============================================================================*/
-
   /**
    * @brief Create a DTLS server socket.
    *
@@ -151,10 +135,6 @@ extern "C"
    */
   extern SocketSimple_Socket_T
   Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms);
-
-  /*============================================================================
-   * DTLS I/O Functions
-   *============================================================================*/
 
   /**
    * @brief Send encrypted data over DTLS.
@@ -213,10 +193,6 @@ extern "C"
                                               size_t host_len,
                                               int *port);
 
-  /*============================================================================
-   * DTLS Control Functions
-   *============================================================================*/
-
   /**
    * @brief Perform DTLS handshake (blocking).
    *
@@ -248,10 +224,6 @@ extern "C"
    */
   extern int
   Socket_simple_dtls_set_mtu (SocketSimple_Socket_T sock, size_t mtu);
-
-  /*============================================================================
-   * DTLS Info Functions
-   *============================================================================*/
 
   /**
    * @brief Check if socket has DTLS enabled.

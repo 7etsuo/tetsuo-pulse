@@ -31,11 +31,6 @@
 #include <string.h>
 #include <unistd.h>
 
-/* ============================================================================
- * Test Framework
- * ============================================================================
- */
-
 static int tests_run = 0;
 static int tests_passed = 0;
 static int tests_failed = 0;
@@ -82,11 +77,6 @@ static int tests_failed = 0;
 #define ASSERT_NOT_NULL(p, msg) ASSERT_TRUE ((p) != NULL, msg)
 #define ASSERT_STR_EQ(a, b, msg) ASSERT_TRUE (strcmp ((a), (b)) == 0, msg)
 
-/* ============================================================================
- * Configuration Tests
- * ============================================================================
- */
-
 static void
 test_config_defaults (void)
 {
@@ -116,11 +106,6 @@ test_config_defaults (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Client Lifecycle Tests
- * ============================================================================
- */
 
 static void
 test_client_new_free (void)
@@ -157,11 +142,6 @@ test_client_with_config (void)
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Request Builder Tests
- * ============================================================================
- */
 
 static void
 test_request_new_free (void)
@@ -254,11 +234,6 @@ test_request_timeout (void)
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Cookie Jar Tests
- * ============================================================================
- */
 
 static void
 test_cookie_jar_new_free (void)
@@ -396,11 +371,6 @@ test_cookie_jar_association (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Authentication Tests
- * ============================================================================
- */
-
 static void
 test_auth_basic (void)
 {
@@ -465,11 +435,6 @@ test_auth_per_request (void)
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Digest Authentication Tests
- * ============================================================================
- */
 
 /**
  * Test Basic auth header generation
@@ -905,11 +870,6 @@ test_auth_secure_clear (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Pool Statistics Tests
- * ============================================================================
- */
-
 static void
 test_pool_stats (void)
 {
@@ -950,11 +910,6 @@ test_pool_clear (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Error Handling Tests
- * ============================================================================
- */
-
 static void
 test_error_strings (void)
 {
@@ -994,11 +949,6 @@ test_last_error (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Response Free Test
- * ============================================================================
- */
-
 static void
 test_response_free (void)
 {
@@ -1016,11 +966,6 @@ test_response_free (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * URL Parsing Tests
- * ============================================================================
- */
 
 static void
 test_url_parsing_http (void)
@@ -1090,11 +1035,6 @@ test_url_parsing_various (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Pool Statistics Extended Tests
- * ============================================================================
- */
-
 static void
 test_pool_stats_extended (void)
 {
@@ -1129,11 +1069,6 @@ test_pool_stats_extended (void)
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Connection Pool Configuration Tests
- * ============================================================================
- */
 
 static void
 test_pool_config_limits (void)
@@ -1181,11 +1116,6 @@ test_pool_no_pooling (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Response Size Limit Tests
- * ============================================================================
- */
-
 static void
 test_max_response_size_config (void)
 {
@@ -1203,20 +1133,6 @@ test_max_response_size_config (void)
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Async Request Tests
- * ============================================================================
- * NOTE: Async request API removed in issue #2227 (stub implementations).
- * The async I/O functionality (io_uring) still works via enable_async_io
- * config.
- * ============================================================================
- */
-
-/* ============================================================================
- * Concurrency Configuration Tests
- * ============================================================================
- */
 
 static void
 test_concurrency_config (void)
@@ -1282,11 +1198,6 @@ test_multiple_clients (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Timeout Configuration Tests
- * ============================================================================
- */
-
 static void
 test_timeout_configuration (void)
 {
@@ -1316,11 +1227,6 @@ test_timeout_configuration (void)
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Prepared Request Tests (Issue #185)
- * ============================================================================
- */
 
 static void
 test_prepared_request_basic (void)
@@ -1464,11 +1370,6 @@ test_prepared_request_free_null (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * I/O Safety Tests (Issue #2676)
- * ============================================================================
- */
-
 /**
  * @brief Test httpclient_io_safe_send with NULL conn parameter.
  *
@@ -1520,11 +1421,6 @@ test_io_safe_recv_null_conn (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

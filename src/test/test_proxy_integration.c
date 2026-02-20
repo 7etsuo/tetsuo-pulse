@@ -42,11 +42,6 @@
 #include "socket/SocketProxy.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 48000
 #define TEST_TIMEOUT_MS 5000
 
@@ -57,11 +52,6 @@ get_proxy_test_port (void)
 {
   return TEST_PORT_BASE + (proxy_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Mini SOCKS5 Proxy Server
- * ============================================================================
- */
 
 typedef struct
 {
@@ -605,11 +595,6 @@ socks5_server_stop (Socks5TestServer *server)
     Socket_free (&server->target_listen);
 }
 
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
-
 TEST (proxy_integration_url_parsing)
 {
   SocketProxy_Config config;
@@ -834,11 +819,6 @@ TEST (proxy_integration_config_defaults)
   ASSERT (config.connect_timeout_ms > 0);
   ASSERT (config.handshake_timeout_ms > 0);
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

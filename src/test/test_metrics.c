@@ -31,11 +31,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Lifecycle Tests
- * ============================================================================
- */
-
 TEST (metrics_init_shutdown)
 {
   /* Should be idempotent and not crash */
@@ -60,11 +55,6 @@ TEST (metrics_init_idempotent)
   ASSERT_EQ (0, result2);
   ASSERT_EQ (0, result3);
 }
-
-/* ============================================================================
- * Counter Tests
- * ============================================================================
- */
 
 TEST (metrics_counter_inc)
 {
@@ -138,11 +128,6 @@ TEST (metrics_counter_multiple_increments)
   ASSERT_EQ (100, value);
 }
 
-/* ============================================================================
- * Gauge Tests
- * ============================================================================
- */
-
 TEST (metrics_gauge_set)
 {
   SocketMetrics_init ();
@@ -213,11 +198,6 @@ TEST (metrics_gauge_negative_values)
   SocketMetrics_gauge_set (SOCKET_GAU_POOL_IDLE_CONNECTIONS, -10);
   ASSERT_EQ (-10, SocketMetrics_gauge_get (SOCKET_GAU_POOL_IDLE_CONNECTIONS));
 }
-
-/* ============================================================================
- * Histogram Tests
- * ============================================================================
- */
 
 TEST (metrics_histogram_observe)
 {
@@ -320,11 +300,6 @@ TEST (metrics_histogram_empty)
   ASSERT (p50 == 0.0);
 }
 
-/* ============================================================================
- * Snapshot and Reset Tests
- * ============================================================================
- */
-
 TEST (metrics_get_snapshot)
 {
   SocketMetrics_init ();
@@ -405,11 +380,6 @@ TEST (metrics_reset_histograms_only)
                  SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS));
 }
 
-/* ============================================================================
- * Export Format Tests
- * ============================================================================
- */
-
 TEST (metrics_export_prometheus_format)
 {
   SocketMetrics_init ();
@@ -485,11 +455,6 @@ TEST (metrics_export_buffer_sizing)
   ASSERT (len >= sizeof (small_buffer));
 }
 
-/* ============================================================================
- * Socket Count Tracking Tests
- * ============================================================================
- */
-
 TEST (metrics_socket_count)
 {
   SocketMetrics_init ();
@@ -554,11 +519,6 @@ TEST (metrics_reset_peaks)
   /* Peak should be reset to current count */
   ASSERT (peak_after <= peak_before);
 }
-
-/* ============================================================================
- * SocketMetrics_update_peak_if_needed Tests
- * ============================================================================
- */
 
 TEST (metrics_update_peak_basic)
 {
@@ -637,11 +597,6 @@ TEST (metrics_update_peak_incremental)
       ASSERT_EQ (i, SocketMetrics_get_peak_connections ());
     }
 }
-
-/* ============================================================================
- * SocketMetrics_update_peak_if_needed Concurrency Tests
- * ============================================================================
- */
 
 #include <pthread.h>
 
@@ -799,11 +754,6 @@ TEST (metrics_update_peak_concurrent_descending)
   ASSERT_EQ (expected_max, final_peak);
 }
 
-/* ============================================================================
- * Metadata Tests
- * ============================================================================
- */
-
 TEST (metrics_counter_name)
 {
   const char *name = SocketMetrics_counter_name (SOCKET_CTR_SOCKET_CREATED);
@@ -901,11 +851,6 @@ TEST (metrics_grpc_metadata_names_and_help_are_mapped)
   ASSERT (strlen (stream_gauge_help) > 0);
   ASSERT (strlen (client_latency_help) > 0);
 }
-
-/* ============================================================================
- * Export Edge Cases - Buffer Overflow Tests
- * ============================================================================
- */
 
 TEST (metrics_export_prometheus_exact_buffer_size)
 {
@@ -1072,11 +1017,6 @@ TEST (metrics_export_json_zero_buffer)
   size_t result = SocketMetrics_export_json (buffer, 0);
   ASSERT_EQ (0, result);
 }
-
-/* ============================================================================
- * Export Edge Cases - Data Accuracy Tests
- * ============================================================================
- */
 
 TEST (metrics_export_prometheus_large_values)
 {
@@ -1383,11 +1323,6 @@ TEST (metrics_export_json_timestamp_present)
   /* Should contain timestamp_ms field */
   ASSERT_NOT_NULL (strstr (buffer, "\"timestamp_ms\""));
 }
-
-/* ============================================================================
- * Main - Run all metrics tests
- * ============================================================================
- */
 
 int
 main (void)

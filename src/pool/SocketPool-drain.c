@@ -37,11 +37,6 @@
 
 #define T SocketPool_T
 
-/* ============================================================================
- * Drain Constants
- * ============================================================================
- */
-
 /** Minimum backoff for drain_wait polling (milliseconds) */
 #define SOCKET_POOL_DRAIN_BACKOFF_MIN_MS 1
 
@@ -53,11 +48,6 @@
 
 /** Infinite timeout sentinel */
 #define SOCKET_POOL_DRAIN_TIMEOUT_INFINITE (-1)
-
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
 
 /**
  * @brief Atomically load pool state with acquire semantics.
@@ -100,11 +90,6 @@ shutdown_socket_gracefully (Socket_T sock)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Force Close Helpers
- * ============================================================================
- */
 
 /**
  * allocate_closing_buffer - Allocate or get buffer for closing sockets
@@ -197,11 +182,6 @@ close_collected_connections (T pool, Socket_T *sockets, size_t count)
     }
 }
 
-/* ============================================================================
- * State Query Functions (Lock-Free with C11 Atomics)
- * ============================================================================
- */
-
 /**
  * SocketPool_state - Get current pool lifecycle state
  * @pool: Pool instance
@@ -275,11 +255,6 @@ SocketPool_is_stopped (const T pool)
   assert (pool);
   return load_pool_state (pool) == POOL_STATE_STOPPED;
 }
-
-/* ============================================================================
- * Internal State Transition Helpers
- * ============================================================================
- */
 
 /**
  * transition_to_stopped - Transition pool to STOPPED state and invoke callback
@@ -386,11 +361,6 @@ force_close_all_connections (T pool)
                    "Forced close of %zu connections",
                    close_count);
 }
-
-/* ============================================================================
- * Drain API Implementation
- * ============================================================================
- */
 
 /**
  * SocketPool_drain - Initiate graceful shutdown
@@ -682,11 +652,6 @@ SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb, void *data)
   pool->drain_cb_data = data;
   POOL_UNLOCK (pool);
 }
-
-/* ============================================================================
- * Idle Connection Cleanup
- * ============================================================================
- */
 
 /**
  * SocketPool_set_idle_timeout - Set idle connection timeout

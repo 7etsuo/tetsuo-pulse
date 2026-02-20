@@ -44,8 +44,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ==================== Basic Enable Tests ==================== */
-
 TEST (tls_enable_on_tcp_socket)
 {
   Socket_T socket = NULL;
@@ -117,8 +115,6 @@ TEST (tls_enable_with_server_context)
   END_TRY;
 }
 
-/* ==================== Double Enable Detection ==================== */
-
 TEST (tls_double_enable_fails)
 {
   Socket_T socket = NULL;
@@ -158,8 +154,6 @@ TEST (tls_double_enable_fails)
   }
   END_TRY;
 }
-
-/* ==================== Disable Tests ==================== */
 
 TEST (tls_disable_after_enable)
 {
@@ -211,8 +205,6 @@ TEST (tls_disable_without_enable)
   }
   END_TRY;
 }
-
-/* ==================== Null Safety Tests ==================== */
 
 TEST (tls_enable_null_socket_fails)
 {
@@ -273,8 +265,6 @@ TEST (tls_enable_null_context_fails)
   }
   END_TRY;
 }
-
-/* ==================== Hostname Setting Tests ==================== */
 
 TEST (tls_set_hostname_after_enable)
 {
@@ -348,8 +338,6 @@ TEST (tls_set_hostname_null_rejected)
   END_TRY;
 }
 
-/* ==================== Info Query Before Handshake ==================== */
-
 TEST (tls_info_queries_before_handshake)
 {
   Socket_T socket = NULL;
@@ -388,8 +376,6 @@ TEST (tls_info_queries_before_handshake)
   END_TRY;
 }
 
-/* ==================== Socket Free with TLS Enabled ==================== */
-
 TEST (tls_socket_free_with_tls_enabled)
 {
   Socket_T socket = NULL;
@@ -422,8 +408,6 @@ TEST (tls_socket_free_with_tls_enabled)
   }
   END_TRY;
 }
-
-/* ==================== Socket Pair with TLS ==================== */
 
 TEST (tls_on_socket_pair)
 {
@@ -476,8 +460,6 @@ TEST (tls_on_socket_pair)
   }
   END_TRY;
 }
-
-/* ==================== Non-blocking Mode ==================== */
 
 TEST (tls_enable_on_nonblocking_socket)
 {

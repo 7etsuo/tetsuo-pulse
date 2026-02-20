@@ -54,11 +54,6 @@
 #include "tls/SocketTLSContext.h"
 #endif
 
-/* ============================================================================
- * HIGH-LEVEL CONVENIENCE FUNCTIONS TESTS
- * ============================================================================
- */
-
 /* Test Socket_listen_tcp convenience function */
 TEST (socket_listen_tcp_basic)
 {
@@ -184,11 +179,6 @@ TEST (socket_connect_nonblocking_basic)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * SOCKET STATISTICS & METRICS TESTS
- * ============================================================================
- */
-
 /* Test Socket_getstats function */
 TEST (socket_getstats_basic)
 {
@@ -228,11 +218,6 @@ TEST (socket_metrics_basic)
   ASSERT_NOT_NULL (name);
   ASSERT (strlen (name) > 0);
 }
-
-/* ============================================================================
- * CONNECTION POOL ENHANCEMENTS TESTS
- * ============================================================================
- */
 
 /* Helper function: match connection by socket */
 static int
@@ -349,11 +334,6 @@ TEST (socketpool_stats_basic)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * DNS CACHE ENHANCEMENTS TESTS
- * ============================================================================
- */
-
 /* Test DNS cache functions */
 TEST (socketdns_cache_basic)
 {
@@ -400,11 +380,6 @@ TEST (socketdns_config_basic)
 
   SocketDNS_free (&dns);
 }
-
-/* ============================================================================
- * CONNECTION HEALTH & PROBING TESTS
- * ============================================================================
- */
 
 /* Test Socket_probe function */
 TEST (socket_probe_basic)
@@ -497,11 +472,6 @@ TEST (socket_get_tcp_info_basic)
   Socket_free (&server);
 #endif
 }
-
-/* ============================================================================
- * I/O ENHANCEMENTS WITH TIMEOUTS TESTS
- * ============================================================================
- */
 
 /* Test Socket_sendv_timeout function */
 TEST (socket_sendv_timeout_basic)
@@ -600,11 +570,6 @@ TEST (socket_recvall_timeout_basic)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * ADVANCED I/O OPERATIONS TESTS
- * ============================================================================
- */
-
 /* Test Socket_splice function (Linux-specific) */
 TEST (socket_splice_basic)
 {
@@ -676,11 +641,6 @@ TEST (socket_peek_basic)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * SOCKET DUPLICATION TESTS
- * ============================================================================
- */
-
 /* Test Socket_dup function */
 TEST (socket_dup_basic)
 {
@@ -713,11 +673,6 @@ TEST (socket_dup2_basic)
   Socket_free (&duped);
   Socket_free (&sock);
 }
-
-/* ============================================================================
- * TLS ENHANCEMENTS TESTS
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 #if SOCKET_HAS_TLS
@@ -767,11 +722,6 @@ TEST (socket_tls_ocsp_basic)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * HTTP CLIENT ENHANCEMENTS TESTS
- * ============================================================================
- */
-
 /* Test HTTP client convenience functions (would need real server) */
 TEST (socket_http_client_convenience_basic)
 {
@@ -780,21 +730,11 @@ TEST (socket_http_client_convenience_basic)
   /* SocketHTTPClient_download(), SocketHTTPClient_upload(), etc. */
 }
 
-/* ============================================================================
- * WEBSOCKET ENHANCEMENTS TESTS
- * ============================================================================
- */
-
 /* Test WebSocket convenience functions (would need WebSocket server) */
 TEST (socket_ws_convenience_basic)
 {
   /* SocketWS_connect(), SocketWS_send_json(), etc. require WebSocket server */
 }
-
-/* ============================================================================
- * EVENT SYSTEM ENHANCEMENTS TESTS
- * ============================================================================
- */
 
 /* Test SocketPoll_get_backend_name */
 TEST (socketpoll_get_backend_name_basic)
@@ -905,11 +845,6 @@ TEST (sockettimer_pause_resume_basic)
   SocketTimer_cancel (poll, timer);
   SocketPoll_free (&poll);
 }
-
-/* ============================================================================
- * BUFFER ENHANCEMENTS TESTS
- * ============================================================================
- */
 
 /* Test SocketBuf_compact function */
 TEST (socketbuf_compact_basic)
@@ -1047,11 +982,6 @@ TEST (socketbuf_writev_basic)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * ASYNC I/O ENHANCEMENTS TESTS
- * ============================================================================
- */
 
 /* Test SocketAsync_submit_batch */
 

@@ -21,11 +21,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
-
 static H3_PushEntry *
 find_push_entry (SocketHTTP3_Conn_T conn, uint64_t push_id)
 {
@@ -59,15 +54,10 @@ send_control_frame (SocketHTTP3_Conn_T conn,
     stream_buf_append (&conn->control_out, conn->arena, payload, payload_len);
 
   return h3_output_queue_push (&conn->output,
-                                conn->local_control_id,
-                                conn->control_out.data,
-                                conn->control_out.len);
+                               conn->local_control_id,
+                               conn->control_out.data,
+                               conn->control_out.len);
 }
-
-/* ============================================================================
- * Server-Side Push
- * ============================================================================
- */
 
 int
 SocketHTTP3_Conn_allocate_push_id (SocketHTTP3_Conn_T conn,
@@ -118,8 +108,8 @@ SocketHTTP3_Conn_send_push_promise (SocketHTTP3_Conn_T conn,
   /* QPACK-encode the promised headers */
   uint8_t *qpack_data;
   size_t qpack_len;
-  int rc = h3_qpack_encode_headers (conn->arena, headers, &qpack_data,
-                                     &qpack_len);
+  int rc
+      = h3_qpack_encode_headers (conn->arena, headers, &qpack_data, &qpack_len);
   if (rc != 0)
     return rc;
 
@@ -146,10 +136,8 @@ SocketHTTP3_Conn_send_push_promise (SocketHTTP3_Conn_T conn,
   stream_buf_append (&promise_buf, conn->arena, push_id_buf, push_id_len);
   stream_buf_append (&promise_buf, conn->arena, qpack_data, qpack_len);
 
-  h3_output_queue_push (&conn->output,
-                         request_stream_id,
-                         promise_buf.data,
-                         promise_buf.len);
+  h3_output_queue_push (
+      &conn->output, request_stream_id, promise_buf.data, promise_buf.len);
 
   /* Create push entry */
   H3_PushEntry *entry = &conn->pushes[conn->push_count++];
@@ -203,14 +191,12 @@ SocketHTTP3_Conn_open_push_stream (SocketHTTP3_Conn_T conn, uint64_t push_id)
   stream_buf_append (&stream_hdr, conn->arena, &type_byte, 1);
   stream_buf_append (&stream_hdr, conn->arena, push_id_buf, push_id_len);
 
-  h3_output_queue_push (&conn->output,
-                         stream_id,
-                         stream_hdr.data,
-                         stream_hdr.len);
+  h3_output_queue_push (
+      &conn->output, stream_id, stream_hdr.data, stream_hdr.len);
 
   /* Register in stream map */
-  SocketHTTP3_StreamMap_register (conn->stream_map, stream_id,
-                                  H3_STREAM_TYPE_PUSH);
+  SocketHTTP3_StreamMap_register (
+      conn->stream_map, stream_id, H3_STREAM_TYPE_PUSH);
 
   /* Update entry */
   entry->push_stream_id = stream_id;
@@ -220,15 +206,10 @@ SocketHTTP3_Conn_open_push_stream (SocketHTTP3_Conn_T conn, uint64_t push_id)
   return req;
 }
 
-/* ============================================================================
- * Client-Side Push
- * ============================================================================
- */
-
 void
 SocketHTTP3_Conn_on_push (SocketHTTP3_Conn_T conn,
-                           SocketHTTP3_PushCallback cb,
-                           void *userdata)
+                          SocketHTTP3_PushCallback cb,
+                          void *userdata)
 {
   if (conn == NULL)
     return;
@@ -257,8 +238,8 @@ SocketHTTP3_Conn_send_max_push_id (SocketHTTP3_Conn_T conn,
   if (payload_len < 0)
     return -(int)H3_INTERNAL_ERROR;
 
-  int rc = send_control_frame (conn, HTTP3_FRAME_MAX_PUSH_ID,
-                                payload, (size_t)payload_len);
+  int rc = send_control_frame (
+      conn, HTTP3_FRAME_MAX_PUSH_ID, payload, (size_t)payload_len);
   if (rc < 0)
     return rc;
 
@@ -266,11 +247,6 @@ SocketHTTP3_Conn_send_max_push_id (SocketHTTP3_Conn_T conn,
   conn->local_max_push_id_sent = 1;
   return 0;
 }
-
-/* ============================================================================
- * Both Roles — Cancel Push
- * ============================================================================
- */
 
 int
 SocketHTTP3_Conn_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id)
@@ -287,8 +263,8 @@ SocketHTTP3_Conn_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id)
   if (payload_len < 0)
     return -(int)H3_INTERNAL_ERROR;
 
-  int rc = send_control_frame (conn, HTTP3_FRAME_CANCEL_PUSH,
-                                payload, (size_t)payload_len);
+  int rc = send_control_frame (
+      conn, HTTP3_FRAME_CANCEL_PUSH, payload, (size_t)payload_len);
   if (rc < 0)
     return rc;
 
@@ -304,11 +280,6 @@ SocketHTTP3_Conn_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id)
   return 0;
 }
 
-/* ============================================================================
- * Internal: Handle CANCEL_PUSH from peer
- * ============================================================================
- */
-
 void
 h3_handle_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id)
 {
@@ -321,16 +292,11 @@ h3_handle_cancel_push (SocketHTTP3_Conn_T conn, uint64_t push_id)
     SocketHTTP3_Request_cancel (entry->request);
 }
 
-/* ============================================================================
- * Internal: Receive PUSH_PROMISE (client side)
- * ============================================================================
- */
-
 int
 h3_conn_recv_push_promise (SocketHTTP3_Conn_T conn,
-                            uint64_t request_stream_id,
-                            const uint8_t *payload,
-                            size_t payload_len)
+                           uint64_t request_stream_id,
+                           const uint8_t *payload,
+                           size_t payload_len)
 {
   if (conn == NULL)
     return -1;
@@ -381,17 +347,12 @@ h3_conn_recv_push_promise (SocketHTTP3_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Internal: Feed push stream data (client side)
- * ============================================================================
- */
-
 int
 h3_feed_push_stream (SocketHTTP3_Conn_T conn,
-                      uint64_t stream_id,
-                      const uint8_t *data,
-                      size_t len,
-                      int fin)
+                     uint64_t stream_id,
+                     const uint8_t *data,
+                     size_t len,
+                     int fin)
 {
   if (conn == NULL)
     return -1;

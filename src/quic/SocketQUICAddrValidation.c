@@ -18,18 +18,8 @@
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
-
 const Except_T SocketQUICAddrValidation_Failed
     = { &SocketQUICAddrValidation_Failed, "QUIC address validation failed" };
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Hash sockaddr into fixed-size buffer.
@@ -72,11 +62,6 @@ hash_address (const struct sockaddr *addr,
   /* Use first QUIC_TOKEN_ADDR_HASH_SIZE bytes of SHA-256 */
   memcpy (hash, sha256_output, QUIC_TOKEN_ADDR_HASH_SIZE);
 }
-
-/* ============================================================================
- * Amplification Limit Functions
- * ============================================================================
- */
 
 int
 SocketQUICAddrValidation_check_amplification_limit (
@@ -158,11 +143,6 @@ SocketQUICAddrValidation_mark_validated (
   state->address_validated = 1;
   state->validation_time = timestamp;
 }
-
-/* ============================================================================
- * Token Functions
- * ============================================================================
- */
 
 /**
  * @brief Compute and verify token HMAC.
@@ -330,11 +310,6 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
   return QUIC_ADDR_VALIDATION_OK;
 }
 
-/* ============================================================================
- * Path Validation Functions
- * ============================================================================
- */
-
 void
 SocketQUICPathChallenge_init (SocketQUICPathChallenge_T *challenge)
 {
@@ -442,11 +417,6 @@ SocketQUICPathChallenge_is_pending (const SocketQUICPathChallenge_T *challenge)
 
   return challenge->pending;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 const char *
 SocketQUICAddrValidation_result_string (SocketQUICAddrValidation_Result result)

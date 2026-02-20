@@ -443,11 +443,6 @@ extern int httpclient_async_init (SocketHTTPClient_T client);
  */
 extern void httpclient_async_cleanup (SocketHTTPClient_T client);
 
-/* ============================================================================
- * INLINE HELPER FUNCTIONS
- * ============================================================================
- */
-
 /**
  * @brief Get effective auth (request-level or client default).
  */
@@ -484,11 +479,6 @@ hostname_safe (const char *host, size_t len)
   return 1;
 }
 
-/* ============================================================================
- * I/O WRAPPER FUNCTIONS (SocketHTTPClient-io.c)
- * ============================================================================
- */
-
 extern ssize_t httpclient_io_safe_send (SocketHTTPClient_T client,
                                         HTTPPoolEntry *conn,
                                         const void *data,
@@ -500,11 +490,6 @@ extern int httpclient_io_safe_recv (SocketHTTPClient_T client,
                                     char *buf,
                                     size_t size,
                                     ssize_t *n);
-
-/* ============================================================================
- * BODY HANDLING FUNCTIONS (SocketHTTPClient-body.c)
- * ============================================================================
- */
 
 extern int httpclient_body_check_size_limit (HTTPBodyAccumulator *acc,
                                              size_t len,
@@ -524,11 +509,6 @@ extern void httpclient_body_fill_response (SocketHTTPClient_Response *response,
                                            const SocketHTTP_Response *parsed,
                                            HTTPBodyAccumulator *acc,
                                            Arena_T resp_arena);
-
-/* ============================================================================
- * HEADER BUILDING FUNCTIONS (SocketHTTPClient-headers.c)
- * ============================================================================
- */
 
 extern void httpclient_headers_add_host (SocketHTTPClient_Request_T req);
 
@@ -557,11 +537,6 @@ httpclient_store_response_cookies (SocketHTTPClient_T client,
                                    SocketHTTPClient_Request_T req,
                                    SocketHTTPClient_Response *response);
 
-/* ============================================================================
- * HTTP/1.1 PROTOCOL FUNCTIONS (SocketHTTPClient-http1.c)
- * ============================================================================
- */
-
 extern void httpclient_http1_build_request (SocketHTTPClient_Request_T req,
                                             SocketHTTP_Request *http_req);
 
@@ -586,11 +561,6 @@ extern int httpclient_http1_execute (HTTPPoolEntry *conn,
                                      SocketHTTPClient_Response *response,
                                      size_t max_response_size,
                                      int discard_body);
-
-/* ============================================================================
- * HTTP/2 PROTOCOL FUNCTIONS (SocketHTTPClient-http2.c)
- * ============================================================================
- */
 
 extern void
 httpclient_http2_build_request (const SocketHTTPClient_Request_T req,
@@ -626,11 +596,6 @@ extern int httpclient_http2_execute (HTTPPoolEntry *conn,
                                      SocketHTTPClient_Response *response,
                                      size_t max_response_size,
                                      int discard_body);
-
-/* ============================================================================
- * REDIRECT/AUTH RETRY FUNCTIONS (SocketHTTPClient-retry.c)
- * ============================================================================
- */
 
 extern int httpclient_is_redirect_status (int status_code);
 

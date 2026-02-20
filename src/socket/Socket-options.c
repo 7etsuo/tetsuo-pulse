@@ -44,10 +44,6 @@
 
 #define T Socket_T
 
-/* ============================================================================
- * MODULE EXCEPTION INFRASTRUCTURE
- * ============================================================================
- */
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketOptions);
 
@@ -69,11 +65,6 @@ socket_setbuf_size (T socket, int optname, int size, const char *buf_type);
 
 /* sanitize_timeout is defined in SocketCommon.c - use extern declaration */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
-
-/* ============================================================================
- * SOCKET FLAGS
- * ============================================================================
- */
 
 /**
  * Socket_setnonblocking - Set socket to non-blocking mode
@@ -145,11 +136,6 @@ Socket_setcloexec (T socket, int enable)
   SocketCommon_setcloexec_with_error (socket->base, val, Socket_Failed);
 }
 
-/* ============================================================================
- * TIMEOUT OPERATIONS
- * ============================================================================
- */
-
 /**
  * Socket_settimeout - Set socket I/O timeout
  * @socket: Socket instance
@@ -193,11 +179,6 @@ Socket_gettimeout (T socket)
 
   return (int)tv.tv_sec;
 }
-
-/* ============================================================================
- * SOCKET TIMEOUTS API
- * ============================================================================
- */
 
 /**
  * Socket_timeouts_get - Get socket timeout configuration
@@ -339,11 +320,6 @@ Socket_timeouts_get_extended (const T socket,
   extended->operation_timeout_ms = socket->base->timeouts.operation_timeout_ms;
 }
 
-/* ============================================================================
- * SHUTDOWN
- * ============================================================================
- */
-
 void
 Socket_shutdown (T socket, int how)
 {
@@ -362,11 +338,6 @@ Socket_shutdown (T socket, int how)
                how,
                Socket_safe_strerror (errno));
 }
-
-/* ============================================================================
- * KEEPALIVE OPERATIONS
- * ============================================================================
- */
 
 /**
  * socket_get_option_quiet - Get socket option without raising exception
@@ -549,11 +520,6 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 #endif
 }
 
-/* ============================================================================
- * TCP OPTIONS
- * ============================================================================
- */
-
 /**
  * Socket_setnodelay - Enable or disable TCP_NODELAY (Nagle's algorithm)
  * @socket: Socket instance
@@ -648,11 +614,6 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
 #endif
 }
 
-/* ============================================================================
- * BUFFER SIZE OPERATIONS
- * ============================================================================
- */
-
 void
 Socket_setrcvbuf (T socket, int size)
 {
@@ -721,11 +682,6 @@ socket_setbuf_size (T socket, int optname, int size, const char *buf_type)
   SocketCommon_set_option_int (
       socket->base, SOCKET_SOL_SOCKET, optname, size, Socket_Failed);
 }
-
-/* ============================================================================
- * PLATFORM-SPECIFIC TCP OPTIONS
- * ============================================================================
- */
 
 void
 Socket_setfastopen (T socket, int enable)
@@ -798,11 +754,6 @@ Socket_getusertimeout (T socket)
   return 0;
 #endif
 }
-
-/* ============================================================================
- * SYN FLOOD PROTECTION OPTIONS
- * ============================================================================
- */
 
 /**
  * set_deferaccept_linux - Set TCP_DEFER_ACCEPT on Linux

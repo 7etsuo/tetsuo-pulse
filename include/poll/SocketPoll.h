@@ -149,11 +149,6 @@ typedef struct SocketAsync_T *SocketAsync_T;
 #define T SocketPoll_T
 typedef struct T *T;
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
-
 /**
  * @brief SocketPoll operation failure exception.
  * @ingroup event_system

@@ -34,11 +34,6 @@
 #include <string.h>
 #include <unistd.h>
 
-/* ============================================================================
- * Configuration Tests
- * ============================================================================
- */
-
 TEST (proxy_config_defaults)
 {
   SocketProxy_Config config;
@@ -55,11 +50,6 @@ TEST (proxy_config_defaults)
   ASSERT_EQ (SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS,
              config.handshake_timeout_ms);
 }
-
-/* ============================================================================
- * URL Parser Tests
- * ============================================================================
- */
 
 TEST (proxy_parse_url_socks5_simple)
 {
@@ -239,11 +229,6 @@ TEST (proxy_parse_url_with_arena)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
-
 TEST (proxy_result_string_ok)
 {
   const char *str = SocketProxy_result_string (PROXY_OK);
@@ -272,11 +257,6 @@ TEST (proxy_result_string_timeout)
   ASSERT (strstr (str, "timed") != NULL || strstr (str, "Timed") != NULL);
 }
 
-/* ============================================================================
- * State String Tests
- * ============================================================================
- */
-
 TEST (proxy_state_string_idle)
 {
   const char *str = SocketProxy_state_string (PROXY_STATE_IDLE);
@@ -298,11 +278,6 @@ TEST (proxy_state_string_failed)
   ASSERT (strcmp (str, "FAILED") == 0);
 }
 
-/* ============================================================================
- * Type String Tests
- * ============================================================================
- */
-
 TEST (proxy_type_string_none)
 {
   const char *str = SocketProxy_type_string (SOCKET_PROXY_NONE);
@@ -323,11 +298,6 @@ TEST (proxy_type_string_http)
   ASSERT_NOT_NULL (str);
   ASSERT (strstr (str, "HTTP") != NULL);
 }
-
-/* ============================================================================
- * SOCKS5 Reply Code Mapping Tests
- * ============================================================================
- */
 
 TEST (proxy_socks5_reply_success)
 {
@@ -383,11 +353,6 @@ TEST (proxy_socks5_reply_address_type_not_supported)
   ASSERT_EQ (PROXY_ERROR_UNSUPPORTED, result);
 }
 
-/* ============================================================================
- * SOCKS4 Reply Code Mapping Tests
- * ============================================================================
- */
-
 TEST (proxy_socks4_reply_granted)
 {
   SocketProxy_Result result = proxy_socks4_reply_to_result (90);
@@ -411,11 +376,6 @@ TEST (proxy_socks4_reply_identd_mismatch)
   SocketProxy_Result result = proxy_socks4_reply_to_result (93);
   ASSERT_EQ (PROXY_ERROR_AUTH_FAILED, result);
 }
-
-/* ============================================================================
- * HTTP Status Code Mapping Tests
- * ============================================================================
- */
 
 TEST (proxy_http_status_200)
 {
@@ -446,11 +406,6 @@ TEST (proxy_http_status_504)
   SocketProxy_Result result = proxy_http_status_to_result (504);
   ASSERT_EQ (PROXY_ERROR_TIMEOUT, result);
 }
-
-/* ============================================================================
- * Mock Proxy Server Tests (using socketpair)
- * ============================================================================
- */
 
 /**
  * Helper to create a connected socket pair for testing
@@ -493,11 +448,6 @@ TEST (proxy_conn_free_null)
 
   ASSERT_NULL (conn);
 }
-
-/* ============================================================================
- * Protocol Message Building Tests
- * ============================================================================
- */
 
 TEST (proxy_socks5_greeting_no_auth)
 {
@@ -698,11 +648,6 @@ TEST (proxy_http_connect_with_auth)
           != NULL);
 }
 
-/* ============================================================================
- * Response Parsing Tests
- * ============================================================================
- */
-
 TEST (proxy_socks5_recv_method_no_auth)
 {
   struct SocketProxy_Conn_T conn;
@@ -845,11 +790,6 @@ TEST (proxy_socks4_recv_response_incomplete)
 
   ASSERT_EQ (PROXY_IN_PROGRESS, result);
 }
-
-/* ============================================================================
- * Async State Machine Tests
- * ============================================================================
- */
 
 TEST (proxy_state_string_connecting)
 {
@@ -1098,11 +1038,6 @@ TEST (proxy_tunnel_invalid_type)
   close (fds[0]);
   close (fds[1]);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

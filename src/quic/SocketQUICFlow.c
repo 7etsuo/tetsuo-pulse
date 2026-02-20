@@ -15,11 +15,6 @@
 #include <assert.h>
 #include <string.h>
 
-/* ============================================================================
- * Internal Macros
- * ============================================================================
- */
-
 /**
  * @brief Helper macro for consume_send flow control logic.
  *
@@ -113,11 +108,6 @@
    : ((ptr)->consumed_field >= (ptr)->max_field)        \
        ? 0                                              \
        : ((ptr)->max_field - (ptr)->consumed_field))
-
-/* ============================================================================
- * Connection-Level Flow Control
- * ============================================================================
- */
 
 SocketQUICFlow_T
 SocketQUICFlow_new (Arena_T arena)
@@ -228,11 +218,6 @@ SocketQUICFlow_recv_window (const SocketQUICFlow_T fc)
   return GET_FLOW_WINDOW (fc, recv_consumed, recv_max_data);
 }
 
-/* ============================================================================
- * Stream-Level Flow Control
- * ============================================================================
- */
-
 SocketQUICFlowStream_T
 SocketQUICFlowStream_new (Arena_T arena, uint64_t stream_id)
 {
@@ -340,11 +325,6 @@ SocketQUICFlowStream_recv_window (const SocketQUICFlowStream_T fs)
   return GET_FLOW_WINDOW (fs, recv_consumed, recv_max_data);
 }
 
-/* ============================================================================
- * Stream Count Management
- * ============================================================================
- */
-
 SocketQUICFlow_Result
 SocketQUICFlow_update_max_streams_bidi (SocketQUICFlow_T fc,
                                         uint64_t max_streams)
@@ -450,11 +430,6 @@ SocketQUICFlow_close_stream_uni (SocketQUICFlow_T fc)
   fc->streams_uni_count--;
   return QUIC_FLOW_OK;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 static const char *result_strings[] = {
   [QUIC_FLOW_OK] = "QUIC_FLOW_OK",

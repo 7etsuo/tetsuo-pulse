@@ -1020,8 +1020,6 @@ extern void SocketCommon_timeouts_getdefaults (SocketTimeouts_T *timeouts);
 extern void
 SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
 
-/* ==================== Socket State Helpers ==================== */
-
 /**
  * @brief Check if IPv4 socket is bound
  * @ingroup core_io
@@ -1078,11 +1076,6 @@ SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
     return SocketCommon_check_bound_unix (addr);
   return 0;
 }
-
-/* ============================================================================
- * Live Socket Count Tracking
- * ============================================================================
- */
 
 /**
  * @brief Thread-safe live count tracker for socket instances.
@@ -1160,16 +1153,6 @@ SocketLiveCount_get (struct SocketLiveCount *tracker)
   pthread_mutex_unlock (&tracker->mutex);
   return count;
 }
-
-/*
- * =============================================================================
- * Global DNS Resolution Configuration
- *
- * These functions configure the global DNS resolver used by Socket_bind(),
- * Socket_connect(), SocketDgram_bind(), and SocketDgram_connect(). The global
- * resolver provides timeout guarantees for all DNS operations.
- * =============================================================================
- */
 
 /* Forward declaration - full type in SocketDNS.h */
 

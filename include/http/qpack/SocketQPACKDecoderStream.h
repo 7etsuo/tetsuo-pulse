@@ -36,11 +36,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "http/qpack/SocketQPACKEncoderStream.h" /* For SocketQPACKStream_Result */
 
-/* ============================================================================
- * DECODER INSTRUCTION BIT PATTERNS (RFC 9204 Section 4.4)
- * ============================================================================
- */
-
 /**
  * @brief Section Acknowledgment instruction prefix.
  *
@@ -65,11 +60,6 @@
 #define QPACK_DINSTR_INSERT_COUNT_INC_MASK 0x00
 #define QPACK_DINSTR_INSERT_COUNT_INC_PREFIX 6
 
-/* ============================================================================
- * CONFIGURATION CONSTANTS
- * ============================================================================
- */
-
 /**
  * @brief Default decoder stream buffer size.
  *
@@ -88,22 +78,12 @@
 #define QPACK_DECODER_STREAM_MAX_BUFSIZE (64 * 1024)
 #endif
 
-/* ============================================================================
- * OPAQUE TYPE
- * ============================================================================
- */
-
 /**
  * @brief Opaque type for QPACK decoder stream.
  *
  * Manages decoder stream state and instruction buffer.
  */
 typedef struct SocketQPACK_DecoderStream *SocketQPACK_DecoderStream_T;
-
-/* ============================================================================
- * LIFECYCLE FUNCTIONS
- * ============================================================================
- */
 
 /**
  * @brief Create a new QPACK decoder stream.
@@ -196,11 +176,6 @@ SocketQPACK_DecoderStream_is_open (SocketQPACK_DecoderStream_T stream);
 extern uint64_t
 SocketQPACK_DecoderStream_get_id (SocketQPACK_DecoderStream_T stream);
 
-/* ============================================================================
- * DECODER INSTRUCTIONS (RFC 9204 Section 4.4)
- * ============================================================================
- */
-
 /**
  * @brief Write Section Acknowledgment instruction.
  *
@@ -269,11 +244,6 @@ extern SocketQPACKStream_Result
 SocketQPACK_DecoderStream_write_insert_count_inc (
     SocketQPACK_DecoderStream_T stream, uint64_t increment);
 
-/* ============================================================================
- * BUFFER MANAGEMENT
- * ============================================================================
- */
-
 /**
  * @brief Get accumulated instruction buffer for transmission.
  *
@@ -319,14 +289,6 @@ SocketQPACK_DecoderStream_reset_buffer (SocketQPACK_DecoderStream_T stream);
  */
 extern size_t
 SocketQPACK_DecoderStream_buffer_size (SocketQPACK_DecoderStream_T stream);
-
-/* ============================================================================
- * DECODER INSTRUCTION DECODING (RFC 9204 Section 4.4)
- *
- * These functions decode decoder instructions received from the peer's
- * decoder stream. Used by the encoder to process acknowledgments.
- * ============================================================================
- */
 
 /**
  * @brief Decoder instruction type enumeration.
@@ -578,14 +540,6 @@ SocketQPACK_decode_decoder_instruction (const unsigned char *input,
                                         SocketQPACK_DecoderInstruction *instr,
                                         size_t *consumed);
 
-/* ============================================================================
- * KNOWN RECEIVED COUNT MANAGEMENT (RFC 9204 Section 3.3)
- *
- * Tracks the encoder's view of which dynamic table entries the decoder
- * has acknowledged receiving.
- * ============================================================================
- */
-
 /**
  * @brief Opaque type for QPACK acknowledgment state.
  *
@@ -640,7 +594,8 @@ SocketQPACK_AckState_register_section (SocketQPACK_AckState_T state,
  *         QPACK_STREAM_ERR_INVALID_INDEX if stream has no pending RIC
  *
  * @note If stored RIC exceeds insert_count (indicates state corruption),
- *       RIC is capped to insert_count to prevent KRC from exceeding valid range.
+ *       RIC is capped to insert_count to prevent KRC from exceeding valid
+ * range.
  *
  * @since 1.0.0
  */
@@ -714,16 +669,6 @@ SocketQPACK_AckState_get_known_received_count (SocketQPACK_AckState_T state);
  */
 extern bool SocketQPACK_AckState_can_evict (SocketQPACK_AckState_T state,
                                             uint64_t abs_index);
-
-/* ============================================================================
- * DECODER SYNCHRONIZATION STATE (RFC 9204 Section 2.2.2)
- *
- * Manages automatic generation of decoder instructions in response to:
- * - Field section decoding (Section Acknowledgment)
- * - Stream reset/cancellation (Stream Cancellation)
- * - Dynamic table entry reception (Insert Count Increment)
- * ============================================================================
- */
 
 /**
  * @brief Opaque type for decoder synchronization state.

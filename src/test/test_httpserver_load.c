@@ -45,11 +45,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 19000
 #define TEST_HOST "127.0.0.1"
 #define LOAD_TEST_CONNECTIONS                   \
@@ -83,11 +78,6 @@ get_test_port (void)
   return TEST_PORT_BASE + atomic_fetch_add (&test_port_counter, 1);
 }
 
-/* ============================================================================
- * Simple Request Handler
- * ============================================================================
- */
-
 static void
 simple_handler (SocketHTTPServer_Request_T req, void *userdata)
 {
@@ -114,11 +104,6 @@ simple_handler (SocketHTTPServer_Request_T req, void *userdata)
   SocketHTTPServer_Request_finish (req);
 }
 
-/* ============================================================================
- * Streaming Response Handler
- * ============================================================================
- */
-
 static void
 streaming_handler (SocketHTTPServer_Request_T req, void *userdata)
 {
@@ -144,11 +129,6 @@ streaming_handler (SocketHTTPServer_Request_T req, void *userdata)
   SocketHTTPServer_Request_end_stream (req);
 }
 
-/* ============================================================================
- * Validation Handler (Middleware Test)
- * ============================================================================
- */
-
 static int
 validation_callback (SocketHTTPServer_Request_T req,
                      int *reject_status,
@@ -165,11 +145,6 @@ validation_callback (SocketHTTPServer_Request_T req,
 
   return 1; /* Allow */
 }
-
-/* ============================================================================
- * Client Thread
- * ============================================================================
- */
 
 typedef struct
 {
@@ -236,11 +211,6 @@ client_thread (void *arg)
   return NULL;
 }
 
-/* ============================================================================
- * Server Runner Thread
- * ============================================================================
- */
-
 typedef struct
 {
   SocketHTTPServer_T server;
@@ -260,11 +230,6 @@ server_thread (void *arg)
 
   return NULL;
 }
-
-/* ============================================================================
- * Basic Server Tests
- * ============================================================================
- */
 
 TEST (httpserver_config_defaults)
 {
@@ -331,11 +296,6 @@ TEST (httpserver_set_handler)
   SocketHTTPServer_free (&server);
 }
 
-/* ============================================================================
- * Single Client Tests
- * ============================================================================
- */
-
 TEST (httpserver_single_request)
 {
   setup_signals ();
@@ -398,11 +358,6 @@ TEST (httpserver_single_request)
 
   SocketHTTPServer_free (&server);
 }
-
-/* ============================================================================
- * Streaming Tests
- * ============================================================================
- */
 
 TEST (httpserver_streaming_response)
 {
@@ -473,11 +428,6 @@ TEST (httpserver_streaming_response)
   SocketHTTPServer_free (&server);
 }
 
-/* ============================================================================
- * Validation/Middleware Tests
- * ============================================================================
- */
-
 TEST (httpserver_validation_reject)
 {
   setup_signals ();
@@ -536,11 +486,6 @@ TEST (httpserver_validation_reject)
 
   SocketHTTPServer_free (&server);
 }
-
-/* ============================================================================
- * Rate Limiting Tests
- * ============================================================================
- */
 
 TEST (httpserver_rate_limiting)
 {
@@ -618,11 +563,6 @@ TEST (httpserver_rate_limiting)
   SocketHTTPServer_free (&server);
 }
 
-/* ============================================================================
- * Graceful Shutdown Tests
- * ============================================================================
- */
-
 TEST (httpserver_graceful_shutdown)
 {
   setup_signals ();
@@ -652,11 +592,6 @@ TEST (httpserver_graceful_shutdown)
 
   SocketHTTPServer_free (&server);
 }
-
-/* ============================================================================
- * Statistics Tests
- * ============================================================================
- */
 
 TEST (httpserver_statistics)
 {
@@ -729,11 +664,6 @@ TEST (httpserver_statistics)
 
   SocketHTTPServer_free (&server);
 }
-
-/* ============================================================================
- * Load Tests (Scaled down for unit testing)
- * ============================================================================
- */
 
 TEST (httpserver_concurrent_connections)
 {
@@ -866,11 +796,6 @@ TEST (httpserver_per_client_limit)
 
   SocketHTTPServer_free (&server);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

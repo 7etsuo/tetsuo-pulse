@@ -14,20 +14,12 @@
 #include "core/Arena.h"
 #include "socket/SocketBuf.h"
 
-/*============================================================================
- * Internal Buffer Handle Structure
- *============================================================================*/
-
 struct SocketSimple_Buf
 {
   Arena_T arena;
   SocketBuf_T buf;
   size_t initial_capacity;
 };
-
-/*============================================================================
- * Buffer Creation and Destruction
- *============================================================================*/
 
 SocketSimple_Buf_T
 Socket_simple_buf_new (size_t capacity)
@@ -94,10 +86,6 @@ Socket_simple_buf_free (SocketSimple_Buf_T *buf)
   free (b);
   *buf = NULL;
 }
-
-/*============================================================================
- * Write Operations
- *============================================================================*/
 
 ssize_t
 Socket_simple_buf_write (SocketSimple_Buf_T buf, const void *data, size_t len)
@@ -173,10 +161,6 @@ Socket_simple_buf_commit (SocketSimple_Buf_T buf, size_t len)
 
   return 0;
 }
-
-/*============================================================================
- * Read Operations
- *============================================================================*/
 
 ssize_t
 Socket_simple_buf_read (SocketSimple_Buf_T buf, void *data, size_t len)
@@ -329,10 +313,6 @@ Socket_simple_buf_readline (SocketSimple_Buf_T buf, char *line, size_t maxlen)
   return n;
 }
 
-/*============================================================================
- * Buffer State Query
- *============================================================================*/
-
 size_t
 Socket_simple_buf_available (SocketSimple_Buf_T buf)
 {
@@ -372,10 +352,6 @@ Socket_simple_buf_full (SocketSimple_Buf_T buf)
     return 0;
   return SocketBuf_full (buf->buf);
 }
-
-/*============================================================================
- * Buffer Management
- *============================================================================*/
 
 void
 Socket_simple_buf_clear (SocketSimple_Buf_T buf)
@@ -461,10 +437,6 @@ Socket_simple_buf_compact (SocketSimple_Buf_T buf)
   return 0;
 }
 
-/*============================================================================
- * Search Operations
- *============================================================================*/
-
 ssize_t
 Socket_simple_buf_find (SocketSimple_Buf_T buf,
                         const void *needle,
@@ -499,10 +471,6 @@ Socket_simple_buf_find (SocketSimple_Buf_T buf,
 
   return pos;
 }
-
-/*============================================================================
- * Scatter-Gather I/O
- *============================================================================*/
 
 ssize_t
 Socket_simple_buf_readv (SocketSimple_Buf_T buf,

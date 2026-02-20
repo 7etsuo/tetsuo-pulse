@@ -17,11 +17,6 @@
 
 #include <pthread.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS 5
 #define SOCKET_SIMPLE_MAX_HEADER_NAME_LEN 256
 #define SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS 30000
@@ -29,11 +24,6 @@
 
 /* Performance: Compile-time string length for header lookups */
 #define STRLEN_LIT(s) (sizeof (s) - 1)
-
-/* ============================================================================
- * Shared Global HTTP Client (Lazy Initialization)
- * ============================================================================
- */
 
 static SocketHTTPClient_T g_http_client = NULL;
 static pthread_once_t g_http_once = PTHREAD_ONCE_INIT;
@@ -76,11 +66,6 @@ get_global_http_client (void)
   return g_http_client;
 }
 
-/* ============================================================================
- * HTTP Options Init
- * ============================================================================
- */
-
 void
 Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
 {
@@ -92,11 +77,6 @@ Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
   opts->max_redirects = SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS;
   opts->verify_ssl = 1;
 }
-
-/* ============================================================================
- * Response Conversion Helper
- * ============================================================================
- */
 
 static int
 convert_response (const SocketHTTPClient_Response *src,
@@ -167,11 +147,6 @@ convert_response (const SocketHTTPClient_Response *src,
   return 0;
 }
 
-/* ============================================================================
- * Error Mapping Helper
- * ============================================================================
- */
-
 static void
 set_http_error_from_exception (void)
 {
@@ -186,11 +161,6 @@ set_http_error_from_exception (void)
       simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
     }
 }
-
-/* ============================================================================
- * Exception Handling Macros
- * ============================================================================
- */
 
 /**
  * @brief Common exception handling for HTTP client operations.
@@ -257,11 +227,6 @@ set_http_error_from_exception (void)
     exception_var = 1;                                                      \
   }
 
-/* ============================================================================
- * Header Parsing Helper
- * ============================================================================
- */
-
 static void
 add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
 {
@@ -293,11 +258,6 @@ add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
         }
     }
 }
-
-/* ============================================================================
- * One-liner HTTP Functions
- * ============================================================================
- */
 
 int
 Socket_simple_http_get (const char *url, SocketSimple_HTTPResponse *response)
@@ -754,11 +714,6 @@ Socket_simple_http_options (const char *url,
   return ret;
 }
 
-/* ============================================================================
- * Extended Functions with Custom Headers
- * ============================================================================
- */
-
 int
 Socket_simple_http_post_ex (const char *url,
                             const char **headers,
@@ -1146,11 +1101,6 @@ Socket_simple_http_options_ex (const char *url,
   return ret;
 }
 
-/* ============================================================================
- * Generic Request Function
- * ============================================================================
- */
-
 static SocketHTTP_Method
 simple_method_to_http_method (SocketSimple_HTTPMethod method)
 {
@@ -1317,11 +1267,6 @@ Socket_simple_http_request (SocketSimple_HTTPMethod method,
 
   return ret;
 }
-
-/* ============================================================================
- * JSON Convenience
- * ============================================================================
- */
 
 int
 Socket_simple_http_get_json (const char *url, char **json_out, size_t *json_len)
@@ -1507,11 +1452,6 @@ Socket_simple_http_put_json (const char *url,
   return status;
 }
 
-/* ============================================================================
- * File Operations
- * ============================================================================
- */
-
 int
 Socket_simple_http_download (const char *url, const char *filepath)
 {
@@ -1613,11 +1553,6 @@ Socket_simple_http_upload (const char *url,
 
   return ret;
 }
-
-/* ============================================================================
- * Reusable Client
- * ============================================================================
- */
 
 SocketSimple_HTTP_T
 Socket_simple_http_new (void)

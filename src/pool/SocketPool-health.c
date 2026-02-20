@@ -31,11 +31,6 @@
 
 /* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
 
-/* ============================================================================
- * Hash Functions
- * ============================================================================
- */
-
 /**
  * @brief DJB2 hash for string keys with seed randomization.
  * @param key String to hash.
@@ -71,11 +66,6 @@ health_make_host_key (const char *host, int port, char *buf, size_t len)
     return -1;
   return n;
 }
-
-/* ============================================================================
- * Circuit Entry Management
- * ============================================================================
- */
 
 /**
  * @brief Find or create circuit entry.
@@ -200,11 +190,6 @@ circuit_try_half_open_probe (SocketPoolCircuit_Entry_T entry, int max_probes)
   return 0; /* Max probes reached */
 }
 
-/* ============================================================================
- * Default Health Probe
- * ============================================================================
- */
-
 /**
  * @brief Default probe using poll() to detect connection errors.
  * @param pool Connection pool.
@@ -240,11 +225,6 @@ health_default_probe (struct SocketPool_T *pool,
 
   return 1; /* Healthy */
 }
-
-/* ============================================================================
- * Background Worker Thread
- * ============================================================================
- */
 
 /**
  * @brief Check and transition circuits from OPEN to HALF_OPEN if timeout
@@ -443,11 +423,6 @@ health_stop_worker (SocketPoolHealth_T health)
   health->worker_started = 0;
 }
 
-/* ============================================================================
- * Health Context Lifecycle
- * ============================================================================
- */
-
 /**
  * @brief Initialize circuit breaker hash table.
  * @param health Health context.
@@ -515,11 +490,6 @@ health_create (struct SocketPool_T *pool, Arena_T arena)
 
   return health;
 }
-
-/* ============================================================================
- * Public API Implementation
- * ============================================================================
- */
 
 void
 SocketPoolHealth_config_defaults (SocketPoolHealth_Config *config)

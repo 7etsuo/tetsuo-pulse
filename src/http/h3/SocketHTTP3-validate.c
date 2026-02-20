@@ -21,14 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ============================================================================
- * Forbidden Connection-Specific Headers (RFC 9114 §4.2)
- *
- * Sorted by name for bsearch. Note: HTTP/3 forbids a different set than
- * HTTP/2 — proxy-authenticate and proxy-authorization are NOT forbidden.
- * ============================================================================
- */
-
 typedef struct
 {
   const char *name;
@@ -71,11 +63,6 @@ is_forbidden_header (const char *name, size_t name_len)
          != NULL;
 }
 
-/* ============================================================================
- * Common Validation Helpers
- * ============================================================================
- */
-
 static int
 has_uppercase (const char *name, size_t name_len)
 {
@@ -92,11 +79,6 @@ is_pseudo_header (const char *name, size_t name_len)
 {
   return name_len > 0 && name[0] == ':';
 }
-
-/* ============================================================================
- * Request Header Validation (RFC 9114 §4.3.1)
- * ============================================================================
- */
 
 int
 SocketHTTP3_validate_request_headers (const SocketHTTP_Headers_T headers)
@@ -200,11 +182,6 @@ SocketHTTP3_validate_request_headers (const SocketHTTP_Headers_T headers)
 
   return 0;
 }
-
-/* ============================================================================
- * Response Header Validation (RFC 9114 §4.3.2)
- * ============================================================================
- */
 
 int
 SocketHTTP3_validate_response_headers (const SocketHTTP_Headers_T headers)

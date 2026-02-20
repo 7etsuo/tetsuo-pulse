@@ -23,11 +23,6 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-CC"
 
-/* ============================================================================
- * Internal Structure
- * ============================================================================
- */
-
 struct SocketQUICCongestion
 {
   Arena_T arena;
@@ -38,11 +33,6 @@ struct SocketQUICCongestion
   uint64_t recovery_start_time_us; /**< 0 when not in recovery */
 };
 
-/* ============================================================================
- * Time Helper
- * ============================================================================
- */
-
 static uint64_t
 now_us (void)
 {
@@ -50,11 +40,6 @@ now_us (void)
   clock_gettime (CLOCK_MONOTONIC, &ts);
   return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
 }
-
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
 
 /**
  * Check if sent_time falls within the current recovery period.
@@ -84,11 +69,6 @@ enter_recovery (SocketQUICCongestion_T cc)
   cc->recovery_start_time_us = now_us ();
   cc->phase = QUIC_CC_RECOVERY;
 }
-
-/* ============================================================================
- * Lifecycle
- * ============================================================================
- */
 
 SocketQUICCongestion_T
 SocketQUICCongestion_new (Arena_T arena, size_t max_datagram_size)
@@ -125,11 +105,6 @@ SocketQUICCongestion_reset (SocketQUICCongestion_T cc)
   cc->recovery_start_time_us = 0;
 }
 
-/* ============================================================================
- * Sending Gate
- * ============================================================================
- */
-
 int
 SocketQUICCongestion_can_send (const SocketQUICCongestion_T cc,
                                size_t bytes_in_flight,
@@ -140,11 +115,6 @@ SocketQUICCongestion_can_send (const SocketQUICCongestion_T cc,
 
   return bytes_in_flight + packet_size <= cc->cwnd;
 }
-
-/* ============================================================================
- * Event Notifications
- * ============================================================================
- */
 
 void
 SocketQUICCongestion_on_packets_acked (SocketQUICCongestion_T cc,
@@ -242,11 +212,6 @@ SocketQUICCongestion_on_persistent_congestion (SocketQUICCongestion_T cc)
   cc->phase = QUIC_CC_SLOW_START;
 }
 
-/* ============================================================================
- * Query
- * ============================================================================
- */
-
 size_t
 SocketQUICCongestion_cwnd (const SocketQUICCongestion_T cc)
 {
@@ -271,11 +236,6 @@ SocketQUICCongestion_phase (const SocketQUICCongestion_T cc)
   return cc->phase;
 }
 
-/* ============================================================================
- * Persistent Congestion Helper
- * ============================================================================
- */
-
 uint64_t
 SocketQUICCongestion_persistent_duration (const SocketQUICLossRTT_T *rtt,
                                           uint64_t max_ack_delay_us)
@@ -295,11 +255,6 @@ SocketQUICCongestion_persistent_duration (const SocketQUICLossRTT_T *rtt,
 
   return pto * QUIC_PERSISTENT_CONGESTION_THRESHOLD;
 }
-
-/* ============================================================================
- * Utilities
- * ============================================================================
- */
 
 static const char *phase_names[] = {
   [QUIC_CC_SLOW_START] = "SLOW_START",

@@ -68,8 +68,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== DTLS Enable Tests ==================== */
-
 TEST (dtls_enable_on_dgram_socket)
 {
   SocketDgram_T socket = NULL;
@@ -159,8 +157,6 @@ TEST (dtls_enable_null_context_fails)
   END_TRY;
 }
 
-/* ==================== DTLS State Query Tests ==================== */
-
 TEST (dtls_state_queries_before_handshake)
 {
   SocketDgram_T socket = NULL;
@@ -193,8 +189,6 @@ TEST (dtls_state_queries_before_handshake)
   }
   END_TRY;
 }
-
-/* ==================== DTLS Connection Info Tests ==================== */
 
 TEST (dtls_info_queries_before_handshake)
 {
@@ -231,8 +225,6 @@ TEST (dtls_info_queries_before_handshake)
   }
   END_TRY;
 }
-
-/* ==================== DTLS Hostname Setting Tests ==================== */
 
 TEST (dtls_set_hostname)
 {
@@ -283,8 +275,6 @@ TEST (dtls_set_peer)
   }
   END_TRY;
 }
-
-/* ==================== DTLS Handshake Tests ==================== */
 
 TEST (dtls_handshake_single_step)
 {
@@ -362,8 +352,6 @@ TEST (dtls_handshake_loop_zero_timeout)
   END_TRY;
 }
 
-/* ==================== DTLS I/O Before Handshake Tests ==================== */
-
 TEST (dtls_send_before_handshake_fails)
 {
   SocketDgram_T socket = NULL;
@@ -436,8 +424,6 @@ TEST (dtls_recv_before_handshake_fails)
   END_TRY;
 }
 
-/* ==================== DTLS Shutdown Tests ==================== */
-
 TEST (dtls_shutdown_before_handshake)
 {
   SocketDgram_T socket = NULL;
@@ -469,8 +455,6 @@ TEST (dtls_shutdown_before_handshake)
   }
   END_TRY;
 }
-
-/* ==================== Socket Free with DTLS Enabled ==================== */
 
 TEST (dtls_socket_free_with_dtls_enabled)
 {

@@ -49,9 +49,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Set cookies with fuzzed names and values
-     * ==================================================================== */
     if (size > 10)
       {
         size_t offset = 0;
@@ -103,9 +100,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
 
-    /* ====================================================================
-     * Test 2: Get cookies with fuzzed domain/path/name
-     * ==================================================================== */
     {
       /* Create fuzzed domain, path, and name for lookup */
       char domain[128], path[128], name[64];
@@ -159,9 +153,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Cookie attributes validation
-     * ==================================================================== */
     {
       /* Test with various cookie attribute combinations */
       const struct
@@ -198,9 +189,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: Expiration handling
-     * ==================================================================== */
     if (size >= 4)
       {
         /* Create cookies with fuzzed expiration times */
@@ -225,9 +213,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketHTTPClient_CookieJar_clear_expired (cookie_jar);
       }
 
-    /* ====================================================================
-     * Test 5: Clear operations
-     * ==================================================================== */
     {
       /* Clear expired first */
       SocketHTTPClient_CookieJar_clear_expired (cookie_jar);
@@ -251,9 +236,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       SocketHTTPClient_CookieJar_set (cookie_jar, &cookie);
     }
 
-    /* ====================================================================
-     * Test 6: SameSite attribute handling
-     * ==================================================================== */
     {
       /* Test SameSite values */
       SocketHTTPClient_SameSite samesite_values[] = { COOKIE_SAMESITE_NONE,
@@ -278,9 +260,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Long cookie values
-     * ==================================================================== */
     if (size > 100)
       {
         /* Create a cookie with long name and value from fuzz data */
@@ -322,9 +301,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketHTTPClient_CookieJar_set (cookie_jar, &cookie);
       }
 
-    /* ====================================================================
-     * Test 8: Domain matching edge cases
-     * ==================================================================== */
     {
       /* Create cookies with various domain formats */
       const struct

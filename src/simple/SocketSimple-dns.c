@@ -16,11 +16,6 @@
 
 #include <netdb.h>
 
-/* ============================================================================
- * DNS Resolution - Helper Functions
- * ============================================================================
- */
-
 /**
  * @brief Count the number of addresses in an addrinfo linked list.
  * @param res The addrinfo list to count.
@@ -170,11 +165,6 @@ convert_addrinfo_to_result (struct addrinfo *res,
 
   return 0;
 }
-
-/* ============================================================================
- * DNS Resolution - Public API
- * ============================================================================
- */
 
 #define SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS 5000
 
@@ -428,11 +418,6 @@ Socket_simple_dns_result_free (SocketSimple_DNSResult *result)
   memset (result, 0, sizeof (*result));
 }
 
-/* ============================================================================
- * Async DNS Internal Structures
- * ============================================================================
- */
-
 struct SocketSimple_DNS
 {
   SocketDNS_T dns;
@@ -490,11 +475,6 @@ simple_dns_callback_wrapper (SocketDNS_Request_T *req,
   free (ctx);
 }
 
-/* ============================================================================
- * Async DNS Resolver Lifecycle
- * ============================================================================
- */
-
 SocketSimple_DNS_T
 Socket_simple_dns_new (void)
 {
@@ -549,11 +529,6 @@ Socket_simple_dns_free (SocketSimple_DNS_T *dns)
   *dns = NULL;
 }
 
-/* ============================================================================
- * Async DNS Configuration
- * ============================================================================
- */
-
 void
 Socket_simple_dns_set_timeout (SocketSimple_DNS_T dns, int timeout_ms)
 {
@@ -593,11 +568,6 @@ Socket_simple_dns_prefer_ipv6 (SocketSimple_DNS_T dns, int prefer_ipv6)
     return;
   SocketDNS_prefer_ipv6 (dns->dns, prefer_ipv6);
 }
-
-/* ============================================================================
- * Async DNS Resolution (Callback Mode)
- * ============================================================================
- */
 
 int
 Socket_simple_dns_resolve_async (SocketSimple_DNS_T dns,
@@ -640,11 +610,6 @@ Socket_simple_dns_resolve_async (SocketSimple_DNS_T dns,
 
   return 0;
 }
-
-/* ============================================================================
- * Async DNS Resolution (Polling Mode)
- * ============================================================================
- */
 
 SocketSimple_DNSRequest_T
 Socket_simple_dns_resolve_start (SocketSimple_DNS_T dns, const char *hostname)
@@ -816,11 +781,6 @@ Socket_simple_dns_request_free (SocketSimple_DNSRequest_T *req)
   free (handle);
   *req = NULL;
 }
-
-/* ============================================================================
- * DNS Cache Control
- * ============================================================================
- */
 
 void
 Socket_simple_dns_cache_clear (SocketSimple_DNS_T dns)

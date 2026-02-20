@@ -218,9 +218,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Default configuration parsing
-     * ==================================================================== */
     {
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
       if (parser)
@@ -258,9 +255,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 2: Strict mode configuration
-     * ==================================================================== */
     {
       SocketHTTP1_Config strict_cfg;
       SocketHTTP1_config_defaults (&strict_cfg);
@@ -277,9 +271,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Incremental parsing with various chunk sizes
-     * ==================================================================== */
     {
       size_t chunk_sizes[] = { 1, 3, 7, 16, 64, 256, 1024 };
 
@@ -297,9 +288,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: All valid status code categories
-     * ==================================================================== */
     {
       /* 1xx Informational */
       const char *informational[]
@@ -421,9 +409,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Malformed responses (security edge cases)
-     * ==================================================================== */
     {
       const char *malformed_responses[] = {
         /* Invalid status line */
@@ -508,9 +493,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Chunked responses with trailers
-     * ==================================================================== */
     {
       const char *chunked_responses[] = {
         /* Basic chunked */
@@ -581,9 +563,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Keep-alive handling
-     * ==================================================================== */
     {
       const char *keepalive_responses[] = {
         /* HTTP/1.1 default keep-alive */
@@ -622,9 +601,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 8: Build response with fuzzed components
-     * ==================================================================== */
     if (size > 10)
       {
         char response_buf[8192];
@@ -661,9 +637,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
 
-    /* ====================================================================
-     * Test 9: Responses with multiple Set-Cookie headers
-     * ==================================================================== */
     {
       const char *cookie_response
           = "HTTP/1.1 200 OK\r\n"

@@ -16,11 +16,6 @@
 
 #include "socket/SocketCommon.h"
 
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 /**
  * @brief Check if an error code represents a timeout condition.
  *
@@ -37,11 +32,6 @@ is_timeout_error (int err)
   return Socket_error_is_retryable (err)
          && (err == ETIMEDOUT || err == EAGAIN || err == EINPROGRESS);
 }
-
-/* ============================================================================
- * TCP Client Functions
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_connect (const char *host, int port)
@@ -93,11 +83,6 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
     }
   return handle;
 }
-
-/* ============================================================================
- * TCP Server Functions
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_listen (const char *host, int port, int backlog)
@@ -216,11 +201,6 @@ Socket_simple_accept_timeout (SocketSimple_Socket_T server, int timeout_ms)
     }
   return handle;
 }
-
-/* ============================================================================
- * I/O Functions
- * ============================================================================
- */
 
 int
 Socket_simple_send (SocketSimple_Socket_T sock, const void *data, size_t len)
@@ -435,11 +415,6 @@ Socket_simple_recv_line (SocketSimple_Socket_T sock, char *buf, size_t maxlen)
   return (ssize_t)pos;
 }
 
-/* ============================================================================
- * Socket Options
- * ============================================================================
- */
-
 int
 Socket_simple_set_timeout (SocketSimple_Socket_T sock, int send_ms, int recv_ms)
 {
@@ -493,11 +468,6 @@ Socket_simple_is_connected (SocketSimple_Socket_T sock)
   return sock->is_connected;
 }
 
-/* ============================================================================
- * Cleanup
- * ============================================================================
- */
-
 void
 Socket_simple_close (SocketSimple_Socket_T *sock)
 {
@@ -527,11 +497,6 @@ Socket_simple_close (SocketSimple_Socket_T *sock)
   free (s);
   *sock = NULL;
 }
-
-/* ============================================================================
- * UDP Functions
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_udp_bind (const char *host, int port)
@@ -663,11 +628,6 @@ Socket_simple_udp_recvfrom (SocketSimple_Socket_T sock,
 
   return received;
 }
-
-/* ============================================================================
- * UDP Advanced Features (Multicast, Broadcast)
- * ============================================================================
- */
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -964,11 +924,6 @@ Socket_simple_udp_recv (SocketSimple_Socket_T sock, void *buf, size_t len)
   return received;
 }
 
-/* ============================================================================
- * Unix Domain Socket Functions
- * ============================================================================
- */
-
 #include <sys/un.h>
 #include <unistd.h>
 
@@ -1046,11 +1001,6 @@ Socket_simple_listen_unix (const char *path, int backlog)
   return handle;
 }
 
-/* ============================================================================
- * TCP Socket Options
- * ============================================================================
- */
-
 #include <netinet/tcp.h>
 #include <fcntl.h>
 
@@ -1104,11 +1054,6 @@ Socket_simple_get_nodelay (SocketSimple_Socket_T sock)
 
   return val ? 1 : 0;
 }
-
-/* ============================================================================
- * Keepalive Helper Functions
- * ============================================================================
- */
 
 static int
 set_keepalive_idle (int fd, int idle_secs)
@@ -1175,11 +1120,6 @@ set_keepalive_count (int fd, int count)
 #endif
   return 0;
 }
-
-/* ============================================================================
- * Keepalive Configuration
- * ============================================================================
- */
 
 int
 Socket_simple_set_keepalive (SocketSimple_Socket_T sock,
@@ -1497,11 +1437,6 @@ Socket_simple_set_reuseport (SocketSimple_Socket_T sock, int enable)
 #endif
 }
 
-/* ============================================================================
- * Socket Address Information
- * ============================================================================
- */
-
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
@@ -1619,11 +1554,6 @@ Socket_simple_get_peer_creds (SocketSimple_Socket_T sock,
   return -1;
 #endif
 }
-
-/* ============================================================================
- * Scatter-Gather I/O
- * ============================================================================
- */
 
 #include <sys/uio.h>
 

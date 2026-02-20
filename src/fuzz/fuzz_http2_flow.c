@@ -559,44 +559,20 @@ test_flow_violations (const uint8_t *data, size_t size)
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  /* ====================================================================
-   * Test 1: Window overflow detection
-   * ==================================================================== */
   test_window_overflow (data, size);
 
-  /* ====================================================================
-   * Test 2: Zero increment detection (protocol error)
-   * ==================================================================== */
   test_zero_increment (data, size);
 
-  /* ====================================================================
-   * Test 3: Negative window detection
-   * ==================================================================== */
   test_negative_window (data, size);
 
-  /* ====================================================================
-   * Test 4: SETTINGS_INITIAL_WINDOW_SIZE changes
-   * ==================================================================== */
   test_initial_window_size_changes (data, size);
 
-  /* ====================================================================
-   * Test 5: Connection vs stream window interaction
-   * ==================================================================== */
   test_connection_stream_windows (data, size);
 
-  /* ====================================================================
-   * Test 6: WINDOW_UPDATE frame payload
-   * ==================================================================== */
   test_window_update_payload (data, size);
 
-  /* ====================================================================
-   * Test 7: Edge cases and boundary conditions
-   * ==================================================================== */
   test_edge_cases (data, size);
 
-  /* ====================================================================
-   * Test 8: Flow control violation scenarios
-   * ==================================================================== */
   test_flow_violations (data, size);
 
   return 0;

@@ -14,11 +14,6 @@
 
 #include "poll/SocketPoll.h"
 
-/* ============================================================================
- * Internal Structure
- * ============================================================================
- */
-
 /**
  * @brief Socket mapping entry for tracking Socket_T -> SocketSimple_Socket_T.
  */
@@ -37,11 +32,6 @@ struct SocketSimple_Poll
   SocketMapEntry *socket_map; /**< Linked list mapping core to simple sockets */
 };
 
-/* ============================================================================
- * Helper: Validate poll and socket arguments
- * ============================================================================
- */
-
 static int
 validate_poll_and_socket (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
 {
@@ -53,11 +43,6 @@ validate_poll_and_socket (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
     }
   return 0;
 }
-
-/* ============================================================================
- * Helper: Extract and validate core socket handle
- * ============================================================================
- */
 
 static Socket_T
 get_core_socket (SocketSimple_Socket_T sock)
@@ -75,11 +60,6 @@ get_core_socket (SocketSimple_Socket_T sock)
   simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket handle");
   return NULL;
 }
-
-/* ============================================================================
- * Helper: Map Simple events to core events
- * ============================================================================
- */
 
 static unsigned
 simple_to_core_events (int events)
@@ -110,11 +90,6 @@ core_to_simple_events (unsigned events)
     simple |= SOCKET_SIMPLE_POLL_HANGUP;
   return simple;
 }
-
-/* ============================================================================
- * Helper: Socket Map Operations
- * ============================================================================
- */
 
 /**
  * @brief Add or update a socket mapping.
@@ -196,11 +171,6 @@ socket_map_free_all (SocketSimple_Poll_T poll)
   poll->socket_map = NULL;
 }
 
-/* ============================================================================
- * Poll Lifecycle
- * ============================================================================
- */
-
 SocketSimple_Poll_T
 Socket_simple_poll_new (int max_events_arg)
 {
@@ -267,11 +237,6 @@ Socket_simple_poll_free (SocketSimple_Poll_T *poll)
   *poll = NULL;
 }
 
-/* ============================================================================
- * Socket Registration
- * ============================================================================
- */
-
 int
 Socket_simple_poll_add (SocketSimple_Poll_T poll,
                         SocketSimple_Socket_T sock,
@@ -305,8 +270,13 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll,
   if (socket_map_put (poll, core_sock, sock) != 0)
     {
       /* Rollback: remove from poll on mapping failure */
-      TRY { SocketPoll_del (poll->poll, core_sock); }
-      EXCEPT (SocketPoll_Failed) { /* Ignore cleanup failure */ }
+      TRY
+      {
+        SocketPoll_del (poll->poll, core_sock);
+      }
+      EXCEPT (SocketPoll_Failed)
+      { /* Ignore cleanup failure */
+      }
       END_TRY;
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
                         "Failed to store socket mapping");
@@ -421,11 +391,6 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
   return 0;
 }
 
-/* ============================================================================
- * Event Waiting
- * ============================================================================
- */
-
 int
 Socket_simple_poll_wait (SocketSimple_Poll_T poll,
                          SocketSimple_PollEvent *events,
@@ -484,11 +449,6 @@ Socket_simple_poll_wait (SocketSimple_Poll_T poll,
   return count;
 }
 
-/* ============================================================================
- * Poll Information
- * ============================================================================
- */
-
 const char *
 Socket_simple_poll_backend (SocketSimple_Poll_T poll)
 {
@@ -536,11 +496,6 @@ Socket_simple_poll_set_timeout (SocketSimple_Poll_T poll, int timeout_ms)
 
   return 0;
 }
-
-/* ============================================================================
- * Internal Helper: Access core poll handle (used by timer module)
- * ============================================================================
- */
 
 SocketPoll_T
 simple_poll_get_core (SocketSimple_Poll_T poll)

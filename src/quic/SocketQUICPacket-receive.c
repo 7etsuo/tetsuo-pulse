@@ -26,11 +26,6 @@
 #include "quic/SocketQUICConstants.h"
 #include "quic/SocketQUICVarInt.h"
 
-/* ============================================================================
- * Result String Table
- * ============================================================================
- */
-
 static const char *result_strings[]
     = { [QUIC_RECEIVE_OK] = "OK",
         [QUIC_RECEIVE_ERROR_NULL] = "NULL pointer argument",
@@ -44,11 +39,6 @@ static const char *result_strings[]
         [QUIC_RECEIVE_ERROR_KEY_PHASE] = "Key phase mismatch" };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICReceive, QUIC_RECEIVE_ERROR_KEY_PHASE)
-
-/* ============================================================================
- * Receive Context Management
- * ============================================================================
- */
 
 void
 SocketQUICReceive_init (SocketQUICReceive_T *ctx)
@@ -121,11 +111,6 @@ SocketQUICReceive_get_largest_pn (const SocketQUICReceive_T *ctx,
   *out_pn = ctx->spaces[space].largest_pn;
   return 1;
 }
-
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Map packet type to packet number space.
@@ -308,11 +293,6 @@ compute_payload_bounds (size_t pn_offset,
   return QUIC_RECEIVE_OK;
 }
 
-/* ============================================================================
- * Header Parsing Functions
- * ============================================================================
- */
-
 /**
  * @brief Parse long header packet type and connection IDs.
  *
@@ -423,11 +403,6 @@ parse_short_header (const uint8_t *packet,
 
   return QUIC_RECEIVE_OK;
 }
-
-/* ============================================================================
- * Packet Type Processing Functions
- * ============================================================================
- */
 
 /**
  * @brief Process and decrypt an Initial packet.
@@ -716,11 +691,6 @@ update_largest_pn (SocketQUICReceive_T *ctx,
       ctx->spaces[space].has_received = 1;
     }
 }
-
-/* ============================================================================
- * Main Receive Pipeline
- * ============================================================================
- */
 
 SocketQUICReceive_Result
 SocketQUICReceive_packet (SocketQUICReceive_T *ctx,

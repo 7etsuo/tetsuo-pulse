@@ -1712,8 +1712,6 @@ SocketAsync_recv_timeout (T async,
 }
 
 
-/* ==================== io_uring Availability Check ==================== */
-
 #ifdef __linux__
 #include <sys/utsname.h>
 #endif
@@ -1925,9 +1923,6 @@ SocketAsync_pending_count (const T async)
 #endif
 }
 
-
-/* ==================== Registered Buffers Implementation ====================
- */
 
 int
 SocketAsync_register_buffers (T async,
@@ -2230,8 +2225,6 @@ SocketAsync_recv_fixed (T async,
 #endif
 }
 
-
-/* ==================== Fixed Files Implementation ==================== */
 
 int
 SocketAsync_register_files (T async, int *fds, unsigned count)

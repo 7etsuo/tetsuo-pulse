@@ -39,22 +39,12 @@
 #include "quic/SocketQUICConnectionID.h"
 #include "quic/SocketQUICPacket.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief Initial salt length in bytes.
  *
  * Both QUIC v1 and v2 use 20-byte (160-bit) salts for HKDF-Extract.
  */
 #define QUIC_INITIAL_SALT_LEN 20
-
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
 
 /**
  * @brief Result codes for QUIC crypto operations.
@@ -73,11 +63,6 @@ typedef enum
   QUIC_CRYPTO_ERROR_INPUT       /**< Invalid input (e.g., too short) */
 } SocketQUICCrypto_Result;
 
-/* ============================================================================
- * AEAD Algorithm Types (RFC 9001 Section 5.1)
- * ============================================================================
- */
-
 /**
  * @brief AEAD algorithms supported for QUIC packet protection.
  *
@@ -91,11 +76,6 @@ typedef enum
   QUIC_AEAD_CHACHA20_POLY1305, /**< TLS_CHACHA20_POLY1305_SHA256 */
   QUIC_AEAD_COUNT              /**< Number of supported algorithms */
 } SocketQUIC_AEAD;
-
-/* ============================================================================
- * Packet Protection Keys (RFC 9001 Section 5.1)
- * ============================================================================
- */
 
 /** Maximum AEAD key length (AES-256 / ChaCha20) */
 #define QUIC_PACKET_KEY_MAX_LEN 32
@@ -127,11 +107,6 @@ typedef struct SocketQUICPacketKeys
   SocketQUIC_AEAD aead;                   /**< Algorithm in use */
 } SocketQUICPacketKeys_T;
 
-/* ============================================================================
- * Intermediate Secrets Structure (for testing)
- * ============================================================================
- */
-
 /**
  * @brief Intermediate secrets from Initial key derivation.
  *
@@ -155,11 +130,6 @@ typedef struct SocketQUICCryptoSecrets
   /**< Server secret derived with "server in" label (32 bytes) */
 
 } SocketQUICCryptoSecrets_T;
-
-/* ============================================================================
- * Key Derivation Functions
- * ============================================================================
- */
 
 /**
  * @brief Derive Initial packet keys from client DCID.
@@ -222,11 +192,6 @@ SocketQUICCrypto_derive_traffic_keys (const uint8_t *secret,
                                       uint8_t *iv,
                                       uint8_t *hp_key);
 
-/* ============================================================================
- * Salt Access Functions
- * ============================================================================
- */
-
 /**
  * @brief Get the Initial salt for a QUIC version.
  *
@@ -244,11 +209,6 @@ SocketQUICCrypto_get_initial_salt (uint32_t version,
                                    const uint8_t **salt,
                                    size_t *salt_len);
 
-/* ============================================================================
- * Security Functions
- * ============================================================================
- */
-
 /**
  * @brief Securely clear intermediate secrets.
  *
@@ -258,11 +218,6 @@ SocketQUICCrypto_get_initial_salt (uint32_t version,
  * @param secrets Secrets structure to clear (may be NULL).
  */
 extern void SocketQUICCryptoSecrets_clear (SocketQUICCryptoSecrets_T *secrets);
-
-/* ============================================================================
- * Packet Protection Key Derivation (RFC 9001 Section 5.1)
- * ============================================================================
- */
 
 /**
  * @brief Derive packet protection keys from a TLS secret.
@@ -345,11 +300,6 @@ extern void SocketQUICPacketKeys_clear (SocketQUICPacketKeys_T *keys);
  */
 extern const char *SocketQUIC_AEAD_string (SocketQUIC_AEAD aead);
 
-/* ============================================================================
- * AEAD Packet Payload Encryption/Decryption (RFC 9001 Section 5.3)
- * ============================================================================
- */
-
 /**
  * @brief Encrypt a QUIC packet payload using AEAD (RFC 9001 §5.3).
  *
@@ -415,11 +365,6 @@ SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
                                   size_t ciphertext_len,
                                   uint8_t *plaintext,
                                   size_t *plaintext_len);
-
-/* ============================================================================
- * Header Protection (RFC 9001 Section 5.4)
- * ============================================================================
- */
 
 /** Header protection sample size in bytes. */
 #define QUIC_HP_SAMPLE_LEN 16
@@ -510,11 +455,6 @@ SocketQUICCrypto_unprotect_header_ex (const SocketQUICPacketKeys_T *keys,
                                       uint8_t *packet,
                                       size_t packet_len,
                                       size_t pn_offset);
-
-/* ============================================================================
- * Key Update (RFC 9001 Section 6)
- * ============================================================================
- */
 
 /**
  * @defgroup quic_key_update QUIC Key Update Mechanism
@@ -874,11 +814,6 @@ SocketQUICCrypto_set_key_phase (uint8_t *first_byte, int phase)
 }
 
 /** @} */ /* End of quic_key_update group */
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of result code.

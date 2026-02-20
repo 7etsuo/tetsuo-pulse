@@ -33,11 +33,6 @@
 typedef struct SocketQUICConnection *SocketQUICConnection_T;
 typedef struct SocketQUICStream *SocketQUICStream_T;
 
-/* ============================================================================
- * Transport Error Codes (RFC 9000 Section 20.1)
- * ============================================================================
- */
-
 /**
  * @brief QUIC transport error codes for CONNECTION_CLOSE frames.
  *
@@ -150,11 +145,6 @@ typedef enum
 
 } SocketQUIC_TransportError;
 
-/* ============================================================================
- * Crypto Error Codes (RFC 9000 Section 20.1)
- * ============================================================================
- */
-
 /**
  * @brief Base value for crypto (TLS) error codes.
  *
@@ -192,11 +182,6 @@ typedef enum
  * @return TLS AlertDescription value (0-255).
  */
 #define QUIC_CRYPTO_ALERT(code) ((code) & 0xff)
-
-/* ============================================================================
- * TLS 1.3 Alert Descriptions (RFC 8446 Section 6)
- * ============================================================================
- */
 
 /**
  * @brief TLS 1.3 AlertDescription values for QUIC crypto errors.
@@ -237,11 +222,6 @@ typedef enum
   TLS_ALERT_NO_APPLICATION_PROTOCOL = 120
 } SocketTLS_Alert;
 
-/* ============================================================================
- * QUIC-Specific TLS Errors (RFC 9001 Section 8)
- * ============================================================================
- */
-
 /**
  * @brief QUIC error for ALPN negotiation failure (RFC 9001 §8.1).
  *
@@ -261,11 +241,6 @@ typedef enum
  */
 extern const char *SocketQUIC_tls_alert_string (uint8_t alert);
 
-/* ============================================================================
- * Application Error Codes (RFC 9000 Section 20.2)
- * ============================================================================
- */
-
 /**
  * @brief Base value for application protocol error codes.
  *
@@ -275,11 +250,6 @@ extern const char *SocketQUIC_tls_alert_string (uint8_t alert);
  * frames with type 0x1d.
  */
 #define QUIC_APPLICATION_ERROR_BASE 0x0200
-
-/* ============================================================================
- * Error Code Limits
- * ============================================================================
- */
 
 /**
  * @brief Maximum transport error code defined in RFC 9000.
@@ -304,11 +274,6 @@ extern const char *SocketQUIC_tls_alert_string (uint8_t alert);
  * still allowing detailed error messages.
  */
 #define QUIC_MAX_REASON_LENGTH 0xFFFF
-
-/* ============================================================================
- * Error Code Classification
- * ============================================================================
- */
 
 /**
  * @brief Error code category.
@@ -366,11 +331,6 @@ SocketQUIC_is_transport_error (uint64_t code)
   return code <= QUIC_TRANSPORT_ERROR_MAX;
 }
 
-/* ============================================================================
- * String Conversion
- * ============================================================================
- */
-
 /**
  * @brief Maximum buffer size for crypto error string formatting.
  *
@@ -416,11 +376,6 @@ SocketQUIC_error_category_string (SocketQUIC_ErrorCategory category)
 
   return names[category];
 }
-
-/* ============================================================================
- * Error Handling (RFC 9000 Section 11)
- * ============================================================================
- */
 
 /**
  * @brief Check if an error code causes connection-level termination.

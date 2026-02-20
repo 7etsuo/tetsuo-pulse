@@ -46,11 +46,6 @@ _Static_assert (QUIC_ACK_MAX_RANGES <= SIZE_MAX / 2,
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-ACK"
 
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
-
 static const char *result_strings[] = {
   [QUIC_ACK_OK] = "OK",
   [QUIC_ACK_ERROR_NULL] = "NULL pointer argument",
@@ -62,11 +57,6 @@ static const char *result_strings[] = {
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICAck, QUIC_ACK_ERROR_BUFFER)
-
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
 
 SocketQUICAckState_T
 SocketQUICAck_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay_us)
@@ -128,11 +118,6 @@ SocketQUICAck_reset (SocketQUICAckState_T state)
   memset (&state->ecn_counts, 0, sizeof (state->ecn_counts));
   state->ecn_validated = 0;
 }
-
-/* ============================================================================
- * Internal Range Functions
- * ============================================================================
- */
 
 static int
 grow_ranges (SocketQUICAckState_T state)
@@ -216,11 +201,6 @@ merge_ranges (SocketQUICAckState_T state, size_t idx)
       state->range_count--;
     }
 }
-
-/* ============================================================================
- * Packet Recording
- * ============================================================================
- */
 
 SocketQUICAck_Result
 SocketQUICAck_record_packet (SocketQUICAckState_T state,
@@ -317,11 +297,6 @@ SocketQUICAck_record_ecn (SocketQUICAckState_T state, int ecn_type)
     }
 }
 
-/* ============================================================================
- * ACK Generation
- * ============================================================================
- */
-
 int
 SocketQUICAck_should_send (const SocketQUICAckState_T state,
                            uint64_t current_time)
@@ -352,11 +327,6 @@ SocketQUICAck_should_send (const SocketQUICAckState_T state,
 
   return 0;
 }
-
-/* ============================================================================
- * Internal Encoding Helpers
- * ============================================================================
- */
 
 /**
  * @brief Encode ACK frame header (type, largest, delay, range count).
@@ -600,11 +570,6 @@ SocketQUICAck_mark_sent (SocketQUICAckState_T state, uint64_t current_time)
   state->last_ack_sent_time = current_time;
 }
 
-/* ============================================================================
- * Query Functions
- * ============================================================================
- */
-
 uint64_t
 SocketQUICAck_get_largest (const SocketQUICAckState_T state)
 {
@@ -632,11 +597,6 @@ SocketQUICAck_range_count (const SocketQUICAckState_T state)
     return 0;
   return state->range_count;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 void
 SocketQUICAck_prune (SocketQUICAckState_T state,

@@ -37,11 +37,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * CONSTANTS
- * ============================================================================
- */
-
 /** Required Insert Count prefix bits (8-bit integer) */
 #define RIC_PREFIX_BITS 8
 
@@ -50,11 +45,6 @@
 
 /** Sign bit mask for Delta Base (bit 7 of second field) */
 #define DELTA_BASE_SIGN_BIT 0x80
-
-/* ============================================================================
- * ENCODE FIELD SECTION PREFIX (RFC 9204 Section 4.5.1)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_prefix (uint64_t required_insert_count,
@@ -153,11 +143,6 @@ SocketQPACK_encode_prefix (uint64_t required_insert_count,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * DECODE HELPERS
- * ============================================================================
- */
-
 /*
  * Decode Required Insert Count from encoded value (RFC 9204 Section 4.5.1.1).
  *
@@ -226,11 +211,6 @@ compute_base_from_delta (uint64_t required_insert_count,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE FIELD SECTION PREFIX (RFC 9204 Section 4.5.1)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_prefix (const unsigned char *input,
@@ -321,11 +301,6 @@ SocketQPACK_decode_prefix (const unsigned char *input,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * VALIDATE PREFIX (RFC 9204 Section 4.5.1)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_validate_prefix (const SocketQPACK_FieldSectionPrefix *prefix,
                              uint64_t total_insert_count)
@@ -365,11 +340,6 @@ SocketQPACK_validate_prefix (const SocketQPACK_FieldSectionPrefix *prefix,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * COMPUTE MAX ENTRIES (RFC 9204 Section 4.5.1)
- * ============================================================================
- */
-
 uint64_t
 SocketQPACK_compute_max_entries (uint64_t max_table_capacity)
 {
@@ -387,11 +357,6 @@ SocketQPACK_max_entries (uint64_t max_table_capacity)
 {
   return SocketQPACK_compute_max_entries (max_table_capacity);
 }
-
-/* ============================================================================
- * REQUIRED INSERT COUNT ENCODING (RFC 9204 Section 4.5.1.1)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_required_insert_count (uint64_t required_insert_count,

@@ -21,11 +21,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Config Defaults
- * ============================================================================
- */
-
 void
 SocketHTTP3_ConnConfig_defaults (SocketHTTP3_ConnConfig *config,
                                  SocketHTTP3_Role role)
@@ -36,11 +31,6 @@ SocketHTTP3_ConnConfig_defaults (SocketHTTP3_ConnConfig *config,
   config->role = role;
   SocketHTTP3_Settings_init (&config->local_settings);
 }
-
-/* ============================================================================
- * Connection Creation
- * ============================================================================
- */
 
 SocketHTTP3_Conn_T
 SocketHTTP3_Conn_new (Arena_T arena,
@@ -104,11 +94,6 @@ SocketHTTP3_Conn_new (Arena_T arena,
 
   return conn;
 }
-
-/* ============================================================================
- * Connection Initialization
- * ============================================================================
- */
 
 int
 SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
@@ -200,11 +185,6 @@ SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
   conn->state = H3_CONN_STATE_OPEN;
   return 0;
 }
-
-/* ============================================================================
- * Control Stream Processing
- * ============================================================================
- */
 
 static int
 process_control_stream (SocketHTTP3_Conn_T conn,
@@ -348,11 +328,6 @@ process_control_stream (SocketHTTP3_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Feed Stream
- * ============================================================================
- */
-
 int
 SocketHTTP3_Conn_feed_stream (SocketHTTP3_Conn_T conn,
                               uint64_t stream_id,
@@ -490,11 +465,6 @@ SocketHTTP3_Conn_feed_stream (SocketHTTP3_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Shutdown (GOAWAY)
- * ============================================================================
- */
-
 int
 SocketHTTP3_Conn_shutdown (SocketHTTP3_Conn_T conn, uint64_t last_id)
 {
@@ -545,11 +515,6 @@ SocketHTTP3_Conn_shutdown (SocketHTTP3_Conn_T conn, uint64_t last_id)
   return 0;
 }
 
-/* ============================================================================
- * Close
- * ============================================================================
- */
-
 int
 SocketHTTP3_Conn_close (SocketHTTP3_Conn_T conn, uint64_t error_code)
 {
@@ -559,11 +524,6 @@ SocketHTTP3_Conn_close (SocketHTTP3_Conn_T conn, uint64_t error_code)
   conn->state = H3_CONN_STATE_CLOSED;
   return (int)error_code;
 }
-
-/* ============================================================================
- * Accessors
- * ============================================================================
- */
 
 SocketHTTP3_ConnState
 SocketHTTP3_Conn_state (SocketHTTP3_Conn_T conn)

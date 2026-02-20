@@ -20,11 +20,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * ENCODE SET CAPACITY TESTS
- * ============================================================================
- */
-
 TEST (qpack_encode_capacity_null_output)
 {
   size_t written = 999;
@@ -132,11 +127,6 @@ TEST (qpack_encode_capacity_buffer_too_small)
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
 
-/* ============================================================================
- * DECODE SET CAPACITY TESTS
- * ============================================================================
- */
-
 TEST (qpack_decode_capacity_null_capacity)
 {
   unsigned char buf[] = { 0x20 };
@@ -228,11 +218,6 @@ TEST (qpack_decode_capacity_multibyte)
   ASSERT_EQ (capacity, 31);
   ASSERT_EQ (consumed, 2);
 }
-
-/* ============================================================================
- * ENCODE/DECODE ROUNDTRIP TESTS
- * ============================================================================
- */
 
 TEST (qpack_capacity_roundtrip_zero)
 {
@@ -327,11 +312,6 @@ TEST (qpack_capacity_roundtrip_large)
   ASSERT_EQ (decoded_capacity, original);
   ASSERT_EQ (consumed, written);
 }
-
-/* ============================================================================
- * APPLY SET CAPACITY TESTS
- * ============================================================================
- */
 
 TEST (qpack_apply_capacity_null_table)
 {
@@ -525,11 +505,6 @@ TEST (qpack_apply_capacity_evict_all)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

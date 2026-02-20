@@ -40,11 +40,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
 /** Macro for setting connection-specific error messages (like PROXY_ERROR_MSG
  * for thread-local errors) */
 #define CONN_ERROR_MSG(conn, ...) \
@@ -97,11 +92,6 @@
 
 /** CRLF size for HTTP line endings */
 #define SOCKET_PROXY_CRLF_SIZE (sizeof ("\r\n") - 1)
-
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
 
 /**
  * proxy_http_append_formatted - Append formatted HTTP line to request buffer
@@ -206,20 +196,6 @@ build_basic_auth (const char *username,
 
   return (encoded_len < 0) ? -1 : 0;
 }
-
-/* ============================================================================
- * HTTP CONNECT Request Building
- * ============================================================================
- *
- * Request format:
- * CONNECT host:port HTTP/1.1\r\n
- * Host: host:port\r\n
- * [Proxy-Authorization: Basic base64(user:pass)\r\n]
- * [Extra-Headers]\r\n
- * \r\n
- *
- * Note: Use target host:port, not the proxy address
- */
 
 /**
  * append_request_line - Append CONNECT request line to buffer
@@ -428,24 +404,6 @@ proxy_http_send_connect (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/* ============================================================================
- * HTTP CONNECT Response Parsing
- * ============================================================================
- *
- * Response format:
- * HTTP/1.1 200 Connection established\r\n
- * [Optional headers]\r\n
- * \r\n
- *
- * Success status codes: 200 OK
- * Auth required: 407 Proxy Authentication Required
- * Forbidden: 403 Forbidden
- * Bad gateway: 502 Bad Gateway
- * Service unavailable: 503 Service Unavailable
- *
- * Uses SocketHTTP1_Parser_T for safe parsing (prevents smuggling attacks).
- */
-
 /**
  * create_http_parser - Lazily create HTTP parser for response parsing
  * @conn: Proxy connection context
@@ -556,11 +514,6 @@ proxy_http_recv_response (struct SocketProxy_Conn_T *conn)
 
   return parse_http_response (conn);
 }
-
-/* ============================================================================
- * HTTP Status Code Mapping
- * ============================================================================
- */
 
 /**
  * handle_client_error_status - Map 4xx HTTP status codes to proxy results

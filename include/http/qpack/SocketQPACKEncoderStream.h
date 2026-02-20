@@ -36,11 +36,6 @@
 #include "core/Arena.h"
 #include "http/qpack/SocketQPACK.h"
 
-/* ============================================================================
- * STREAM TYPE CONSTANTS (RFC 9204 Section 4.2)
- * ============================================================================
- */
-
 /**
  * @brief QPACK encoder stream type (RFC 9204 Section 4.2).
  *
@@ -54,11 +49,6 @@
  * A decoder stream is a unidirectional stream of type 0x03.
  */
 #define QPACK_DECODER_STREAM_TYPE 0x03
-
-/* ============================================================================
- * ERROR CODES
- * ============================================================================
- */
 
 /**
  * @brief QPACK encoder stream error codes.
@@ -80,11 +70,6 @@ typedef enum
   QPACK_STREAM_ERR_INTERNAL         /**< Internal error */
 } SocketQPACKStream_Result;
 
-/* ============================================================================
- * CONFIGURATION CONSTANTS
- * ============================================================================
- */
-
 /**
  * @brief Default encoder stream buffer size.
  *
@@ -102,11 +87,6 @@ typedef enum
 #ifndef QPACK_ENCODER_STREAM_MAX_BUFSIZE
 #define QPACK_ENCODER_STREAM_MAX_BUFSIZE (256 * 1024)
 #endif
-
-/* ============================================================================
- * INSTRUCTION BIT PATTERNS (RFC 9204 Section 4.3)
- * ============================================================================
- */
 
 /**
  * @brief Set Dynamic Table Capacity instruction prefix.
@@ -152,22 +132,12 @@ typedef enum
 #define QPACK_VALUE_HUFFMAN_MASK 0x80
 #define QPACK_VALUE_LENGTH_PREFIX 7
 
-/* ============================================================================
- * OPAQUE TYPE
- * ============================================================================
- */
-
 /**
  * @brief Opaque type for QPACK encoder stream.
  *
  * Manages encoder stream state and instruction buffer.
  */
 typedef struct SocketQPACK_EncoderStream *SocketQPACK_EncoderStream_T;
-
-/* ============================================================================
- * LIFECYCLE FUNCTIONS
- * ============================================================================
- */
 
 /**
  * @brief Create a new QPACK encoder stream.
@@ -244,11 +214,6 @@ SocketQPACK_EncoderStream_is_open (SocketQPACK_EncoderStream_T stream);
  */
 extern uint64_t
 SocketQPACK_EncoderStream_get_id (SocketQPACK_EncoderStream_T stream);
-
-/* ============================================================================
- * ENCODER INSTRUCTIONS (RFC 9204 Section 4.3)
- * ============================================================================
- */
 
 /**
  * @brief Write Set Dynamic Table Capacity instruction.
@@ -359,11 +324,6 @@ SocketQPACK_EncoderStream_write_duplicate (SocketQPACK_EncoderStream_T stream,
                                            uint64_t insert_count,
                                            uint64_t dropped_count);
 
-/* ============================================================================
- * BUFFER MANAGEMENT
- * ============================================================================
- */
-
 /**
  * @brief Get accumulated instruction buffer for transmission.
  *
@@ -410,11 +370,6 @@ SocketQPACK_EncoderStream_reset_buffer (SocketQPACK_EncoderStream_T stream);
 extern size_t
 SocketQPACK_EncoderStream_buffer_size (SocketQPACK_EncoderStream_T stream);
 
-/* ============================================================================
- * UTILITY FUNCTIONS
- * ============================================================================
- */
-
 /**
  * @brief Get human-readable string for stream result code.
  *
@@ -446,11 +401,6 @@ SocketQPACKStream_result_string (SocketQPACKStream_Result result);
  */
 extern uint64_t
 SocketQPACKStream_result_to_h3_error (SocketQPACKStream_Result result);
-
-/* ============================================================================
- * INSERT WITH NAME REFERENCE PRIMITIVES (RFC 9204 Section 4.3.2)
- * ============================================================================
- */
 
 /**
  * @brief Decoded Insert with Name Reference instruction.

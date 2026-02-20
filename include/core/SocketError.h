@@ -30,11 +30,6 @@
 
 #include "core/SocketConfig.h"
 
-/* ============================================================================
- * ERROR HANDLING SUBSYSTEM
- * ============================================================================
- */
-
 /**
  * @brief Normalized error codes mapping POSIX errno values.
  * @ingroup foundation
@@ -157,22 +152,6 @@ const char *Socket_safe_strerror (int errnum);
 #define SOCKET_EHOSTUNREACH "Host unreachable"
 #define SOCKET_EPIPE "Broken pipe"
 #define SOCKET_ECONNRESET "Connection reset by peer"
-
-/* ============================================================================
- * ERROR CATEGORIZATION
- * ============================================================================
- *
- * Provides error classification for determining retry eligibility and
- * appropriate error handling strategies.
- *
- * Categories:
- * - NETWORK: Transient network errors (usually retryable)
- * - PROTOCOL: Protocol/format errors (usually not retryable)
- * - APPLICATION: Application-level errors (context-dependent)
- * - TIMEOUT: Timeout errors (usually retryable with backoff)
- * - RESOURCE: Resource exhaustion (may be retryable after delay)
- * - UNKNOWN: Unclassified errors
- */
 
 /**
  * @brief High-level classification of error types.

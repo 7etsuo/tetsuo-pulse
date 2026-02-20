@@ -34,11 +34,6 @@
 
 #include "quic/SocketQUICConnectionID.h"
 
-/* ============================================================================
- * Transport Parameter IDs (RFC 9000 Section 18.2)
- * ============================================================================
- */
-
 /**
  * @brief Transport parameter identifiers.
  *
@@ -75,11 +70,6 @@ typedef enum
   QUIC_TP_GREASE_MIN = 0x1b,  /**< First GREASE value pattern */
   QUIC_TP_GREASE_MAX = 0xff00 /**< Last common GREASE range */
 } SocketQUICTransportParamID;
-
-/* ============================================================================
- * Constants (RFC 9000 Section 18.2)
- * ============================================================================
- */
 
 /**
  * @brief Minimum max_udp_payload_size value (RFC 9000 Section 18.2).
@@ -152,11 +142,6 @@ typedef enum
  */
 #define QUIC_TP_MAX_ENCODED_SIZE 512
 
-/* ============================================================================
- * Preferred Address Structure (RFC 9000 Section 18.2)
- * ============================================================================
- */
-
 /**
  * @brief Preferred address transport parameter structure.
  *
@@ -173,11 +158,6 @@ typedef struct SocketQUICPreferredAddress
   uint8_t stateless_reset_token[QUIC_STATELESS_RESET_TOKEN_LEN]; /**< Token */
   int present; /**< Non-zero if preferred address is set */
 } SocketQUICPreferredAddress_T;
-
-/* ============================================================================
- * Transport Parameters Structure
- * ============================================================================
- */
 
 /**
  * @brief QUIC Transport Parameters structure.
@@ -234,11 +214,6 @@ typedef struct SocketQUICTransportParams
 
 } SocketQUICTransportParams_T;
 
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
-
 /**
  * @brief Result codes for transport parameter operations.
  */
@@ -264,11 +239,6 @@ typedef enum
   QUIC_ROLE_SERVER = 1  /**< Server role */
 } SocketQUICRole;
 
-/* ============================================================================
- * Initialization Functions
- * ============================================================================
- */
-
 /**
  * @brief Initialize transport parameters with RFC 9000 defaults.
  *
@@ -292,11 +262,6 @@ SocketQUICTransportParams_init (SocketQUICTransportParams_T *params);
 extern void
 SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
                                         SocketQUICRole role);
-
-/* ============================================================================
- * Encoding Functions
- * ============================================================================
- */
 
 /**
  * @brief Calculate encoded size of transport parameters.
@@ -331,11 +296,6 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
                                   uint8_t *output,
                                   size_t output_size);
 
-/* ============================================================================
- * Decoding Functions
- * ============================================================================
- */
-
 /**
  * @brief Decode transport parameters from wire format.
  *
@@ -356,11 +316,6 @@ SocketQUICTransportParams_decode (const uint8_t *data,
                                   SocketQUICRole peer_role,
                                   SocketQUICTransportParams_T *params,
                                   size_t *consumed);
-
-/* ============================================================================
- * Validation Functions
- * ============================================================================
- */
 
 /**
  * @brief Validate transport parameters for correctness.
@@ -390,11 +345,6 @@ SocketQUICTransportParams_validate (const SocketQUICTransportParams_T *params,
 extern SocketQUICTransportParams_Result
 SocketQUICTransportParams_validate_required (
     const SocketQUICTransportParams_T *params, SocketQUICRole role);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Copy transport parameters.

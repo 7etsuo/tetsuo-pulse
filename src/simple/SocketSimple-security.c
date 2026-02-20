@@ -19,11 +19,6 @@
 #include "core/SocketIPTracker.h"
 #include "core/SocketSYNProtect.h"
 
-/* ============================================================================
- * Internal Structures
- * ============================================================================
- */
-
 struct SocketSimple_SYNProtect
 {
   SocketSYNProtect_T protect;
@@ -33,11 +28,6 @@ struct SocketSimple_IPTracker
 {
   SocketIPTracker_T tracker;
 };
-
-/* ============================================================================
- * Internal Wrapper Macro
- * ============================================================================
- */
 
 /**
  * @brief Common pattern for wrapping core security objects in Simple API
@@ -107,11 +97,6 @@ struct SocketSimple_IPTracker
     }                                                               \
   while (0)
 
-/* ============================================================================
- * SYN Protection Config
- * ============================================================================
- */
-
 void
 Socket_simple_syn_config_init (SocketSimple_SYNConfig *config)
 {
@@ -129,11 +114,6 @@ Socket_simple_syn_config_init (SocketSimple_SYNConfig *config)
   config->score_block = SOCKET_SYN_DEFAULT_SCORE_BLOCK;
   config->max_tracked_ips = SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS;
 }
-
-/* ============================================================================
- * SYN Protection Lifecycle
- * ============================================================================
- */
 
 SocketSimple_SYNProtect_T
 Socket_simple_syn_new (const SocketSimple_SYNConfig *config)
@@ -185,11 +165,6 @@ Socket_simple_syn_free (SocketSimple_SYNProtect_T *protect)
   *protect = NULL;
 }
 
-/* ============================================================================
- * SYN Protection Core Functions
- * ============================================================================
- */
-
 SocketSimple_SYNAction
 Socket_simple_syn_check (SocketSimple_SYNProtect_T protect,
                          const char *client_ip)
@@ -235,11 +210,6 @@ Socket_simple_syn_report_failure (SocketSimple_SYNProtect_T protect,
   SocketSYNProtect_report_failure (protect->protect, client_ip, 0);
 }
 
-/* ============================================================================
- * SYN Protection Whitelist
- * ============================================================================
- */
-
 int
 Socket_simple_syn_whitelist_add (SocketSimple_SYNProtect_T protect,
                                  const char *ip)
@@ -280,11 +250,6 @@ Socket_simple_syn_whitelist_contains (SocketSimple_SYNProtect_T protect,
   return SocketSYNProtect_whitelist_contains (protect->protect, ip);
 }
 
-/* ============================================================================
- * SYN Protection Blacklist
- * ============================================================================
- */
-
 int
 Socket_simple_syn_blacklist_add (SocketSimple_SYNProtect_T protect,
                                  const char *ip,
@@ -315,11 +280,6 @@ Socket_simple_syn_blacklist_contains (SocketSimple_SYNProtect_T protect,
 
   return SocketSYNProtect_blacklist_contains (protect->protect, ip);
 }
-
-/* ============================================================================
- * SYN Protection Statistics
- * ============================================================================
- */
 
 int
 Socket_simple_syn_stats (SocketSimple_SYNProtect_T protect,
@@ -395,11 +355,6 @@ Socket_simple_syn_get_ip_state (SocketSimple_SYNProtect_T protect,
   return 1;
 }
 
-/* ============================================================================
- * SYN Protection Maintenance
- * ============================================================================
- */
-
 size_t
 Socket_simple_syn_cleanup (SocketSimple_SYNProtect_T protect)
 {
@@ -417,11 +372,6 @@ Socket_simple_syn_reset (SocketSimple_SYNProtect_T protect)
 
   SocketSYNProtect_reset (protect->protect);
 }
-
-/* ============================================================================
- * SYN Protection String Helpers
- * ============================================================================
- */
 
 const char *
 Socket_simple_syn_action_name (SocketSimple_SYNAction action)
@@ -458,11 +408,6 @@ Socket_simple_syn_reputation_name (SocketSimple_Reputation rep)
       return "UNKNOWN";
     }
 }
-
-/* ============================================================================
- * IP Tracker Functions
- * ============================================================================
- */
 
 SocketSimple_IPTracker_T
 Socket_simple_ip_tracker_new (int max_per_ip)

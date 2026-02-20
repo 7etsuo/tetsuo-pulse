@@ -70,8 +70,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== Handshake State Tests ==================== */
-
 TEST (handshake_state_enum_values)
 {
   /* Verify all TLSHandshakeState enum values are distinct */
@@ -119,8 +117,6 @@ TEST (handshake_single_step_unconnected)
   }
   END_TRY;
 }
-
-/* ==================== Socket Pair Handshake Tests ==================== */
 
 TEST (handshake_complete_socket_pair)
 {
@@ -265,8 +261,6 @@ TEST (handshake_loop_with_timeout)
   END_TRY;
 }
 
-/* ==================== Handshake Auto Tests ==================== */
-
 TEST (handshake_auto_socket_pair)
 {
   const char *cert_file = "test_hs_auto.crt";
@@ -337,8 +331,6 @@ TEST (handshake_auto_socket_pair)
   END_TRY;
 }
 
-/* ==================== Error Condition Tests ==================== */
-
 TEST (handshake_before_enable_fails)
 {
   Socket_T socket = NULL;
@@ -394,8 +386,6 @@ TEST (handshake_null_socket_fails)
 
   ASSERT_EQ (caught, 1);
 }
-
-/* ==================== Extended Handshake Loop Tests ==================== */
 
 TEST (handshake_loop_ex_with_poll_interval)
 {
@@ -467,8 +457,6 @@ TEST (handshake_loop_ex_with_poll_interval)
   }
   END_TRY;
 }
-
-/* ==================== Post-Handshake Info Tests ==================== */
 
 TEST (handshake_verify_result_after_complete)
 {

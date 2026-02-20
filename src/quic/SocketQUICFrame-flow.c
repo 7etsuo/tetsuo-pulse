@@ -24,15 +24,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/* ============================================================================
- * MAX_DATA Frame Encoding (RFC 9000 Section 19.9)
- * ============================================================================
- *
- * Format:
- *   Type (0x10)
- *   Maximum Data (varint)
- */
-
 size_t
 SocketQUICFrame_encode_max_data (uint64_t max_data,
                                  uint8_t *out,
@@ -64,16 +55,6 @@ SocketQUICFrame_encode_max_data (uint64_t max_data,
 
   return pos;
 }
-
-/* ============================================================================
- * MAX_STREAM_DATA Frame Encoding (RFC 9000 Section 19.10)
- * ============================================================================
- *
- * Format:
- *   Type (0x11)
- *   Stream ID (varint)
- *   Maximum Stream Data (varint)
- */
 
 size_t
 SocketQUICFrame_encode_max_stream_data (uint64_t stream_id,
@@ -113,15 +94,6 @@ SocketQUICFrame_encode_max_stream_data (uint64_t stream_id,
   return pos;
 }
 
-/* ============================================================================
- * MAX_STREAMS Frame Encoding (RFC 9000 Section 19.11)
- * ============================================================================
- *
- * Format:
- *   Type (0x12 for bidirectional, 0x13 for unidirectional)
- *   Maximum Streams (varint)
- */
-
 size_t
 SocketQUICFrame_encode_max_streams (int bidirectional,
                                     uint64_t max_streams,
@@ -155,11 +127,6 @@ SocketQUICFrame_encode_max_streams (int bidirectional,
 
   return pos;
 }
-
-/* ============================================================================
- * DATA_BLOCKED Frame Encoding (RFC 9000 Section 19.12)
- * ============================================================================
- */
 
 /**
  * @brief Encode a DATA_BLOCKED frame.
@@ -208,11 +175,6 @@ SocketQUICFrame_encode_data_blocked (uint64_t max_data,
 
   return pos;
 }
-
-/* ============================================================================
- * STREAM_DATA_BLOCKED Frame Encoding (RFC 9000 Section 19.13)
- * ============================================================================
- */
 
 /**
  * @brief Encode a STREAM_DATA_BLOCKED frame.
@@ -270,11 +232,6 @@ SocketQUICFrame_encode_stream_data_blocked (uint64_t stream_id,
 
   return pos;
 }
-
-/* ============================================================================
- * STREAMS_BLOCKED Frame Encoding (RFC 9000 Section 19.14)
- * ============================================================================
- */
 
 /**
  * @brief Encode a STREAMS_BLOCKED frame.

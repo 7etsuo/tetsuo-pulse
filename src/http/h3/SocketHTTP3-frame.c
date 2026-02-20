@@ -19,11 +19,6 @@
  * SETTINGS frames are small; 64 is generous. */
 #define MAX_SETTINGS_IDS 64
 
-/* ============================================================================
- * Frame Header Parse/Write
- * ============================================================================
- */
-
 SocketHTTP3_ParseResult
 SocketHTTP3_Frame_parse_header (const uint8_t *buf,
                                 size_t buflen,
@@ -81,11 +76,6 @@ SocketHTTP3_Frame_write_header (uint64_t type,
 
   return (int)pos;
 }
-
-/* ============================================================================
- * SETTINGS (RFC 9114 Section 7.2.4)
- * ============================================================================
- */
 
 void
 SocketHTTP3_Settings_init (SocketHTTP3_Settings *settings)
@@ -209,11 +199,6 @@ SocketHTTP3_Settings_write (const SocketHTTP3_Settings *settings,
   return (int)pos;
 }
 
-/* ============================================================================
- * Single-Varint Helpers
- * ============================================================================
- */
-
 static int
 parse_single_varint (const uint8_t *buf, size_t len, uint64_t *value)
 {
@@ -241,11 +226,6 @@ write_single_varint (uint64_t value, uint8_t *buf, size_t buflen)
   return (int)written;
 }
 
-/* ============================================================================
- * GOAWAY (RFC 9114 Section 7.2.6)
- * ============================================================================
- */
-
 int
 SocketHTTP3_Goaway_parse (const uint8_t *buf, size_t len, uint64_t *id)
 {
@@ -257,11 +237,6 @@ SocketHTTP3_Goaway_write (uint64_t id, uint8_t *buf, size_t buflen)
 {
   return write_single_varint (id, buf, buflen);
 }
-
-/* ============================================================================
- * MAX_PUSH_ID (RFC 9114 Section 7.2.7)
- * ============================================================================
- */
 
 int
 SocketHTTP3_MaxPushId_parse (const uint8_t *buf, size_t len, uint64_t *id)
@@ -275,11 +250,6 @@ SocketHTTP3_MaxPushId_write (uint64_t id, uint8_t *buf, size_t buflen)
   return write_single_varint (id, buf, buflen);
 }
 
-/* ============================================================================
- * CANCEL_PUSH (RFC 9114 Section 7.2.3)
- * ============================================================================
- */
-
 int
 SocketHTTP3_CancelPush_parse (const uint8_t *buf, size_t len, uint64_t *push_id)
 {
@@ -291,11 +261,6 @@ SocketHTTP3_CancelPush_write (uint64_t push_id, uint8_t *buf, size_t buflen)
 {
   return write_single_varint (push_id, buf, buflen);
 }
-
-/* ============================================================================
- * PUSH_PROMISE (RFC 9114 Section 7.2.5)
- * ============================================================================
- */
 
 int
 SocketHTTP3_PushPromise_parse_id (const uint8_t *buf,
@@ -318,11 +283,6 @@ SocketHTTP3_PushPromise_parse_id (const uint8_t *buf,
   *payload_offset = consumed;
   return 0;
 }
-
-/* ============================================================================
- * Frame Validation (RFC 9114 Section 7.2)
- * ============================================================================
- */
 
 uint64_t
 SocketHTTP3_Frame_validate (uint64_t frame_type,

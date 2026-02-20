@@ -16,11 +16,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Pool Creation Tests
- * ============================================================================
- */
-
 TEST (connid_pool_new_creates_pool)
 {
   Arena_T arena = Arena_new ();
@@ -54,11 +49,6 @@ TEST (connid_pool_new_enforces_minimum_peer_limit)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Add Connection ID Tests
- * ============================================================================
- */
 
 TEST (connid_pool_add_basic)
 {
@@ -165,11 +155,6 @@ TEST (connid_pool_add_rejects_duplicate)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Lookup Tests
- * ============================================================================
- */
-
 TEST (connid_pool_lookup_by_bytes)
 {
   Arena_T arena = Arena_new ();
@@ -225,11 +210,6 @@ TEST (connid_pool_lookup_by_sequence)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Remove Tests
- * ============================================================================
- */
-
 TEST (connid_pool_remove_basic)
 {
   Arena_T arena = Arena_new ();
@@ -266,11 +246,6 @@ TEST (connid_pool_remove_not_found)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Retire Prior To Tests (RFC 9000 §5.1.2)
- * ============================================================================
- */
 
 TEST (connid_pool_retire_prior_to_basic)
 {
@@ -412,11 +387,6 @@ TEST (connid_pool_purge_retired)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Iteration and Availability Tests
- * ============================================================================
- */
-
 static int
 count_iterator (SocketQUICConnectionIDEntry_T *entry, void *context)
 {
@@ -521,11 +491,6 @@ TEST (connid_pool_needs_more)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
-
 TEST (connid_pool_result_strings)
 {
   ASSERT_NOT_NULL (
@@ -539,11 +504,6 @@ TEST (connid_pool_result_strings)
   ASSERT_NOT_NULL (
       SocketQUICConnectionIDPool_result_string (QUIC_CONNID_POOL_NOT_FOUND));
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

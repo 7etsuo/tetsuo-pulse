@@ -162,8 +162,10 @@ except_validate_not_null (const Except_T *e)
 }
 
 EXCEPT_COLD
-    EXCEPT_NORETURN EXCEPT_NONNULL (1) static void except_abort_uncaught (
-        const Except_T *e, const char *file, int line)
+EXCEPT_NORETURN
+    EXCEPT_NONNULL (1) static void except_abort_uncaught (const Except_T *e,
+                                                          const char *file,
+                                                          int line)
 {
   fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
   except_emit_reason (e);
@@ -220,11 +222,6 @@ Except_raise (const Except_T *e, const char *file, int line)
   except_jump_to_handler (frame);
 }
 
-/* ==========================================================================
- * Test wrappers for static helper functions
- * These allow direct unit testing of internal implementation details
- * ==========================================================================
- */
 #ifdef TESTING
 
 /* Test wrapper for except_flush_stderr */

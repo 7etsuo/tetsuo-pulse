@@ -174,8 +174,6 @@
  */
 #define SOCKET_DATA_HASH_SIZE SOCKET_HASH_TABLE_SIZE
 
-/* ==================== Internal Type Definitions ==================== */
-
 /**
  * @brief Linked-list node for socket-to-userdata mapping in internal hash
  * table.
@@ -426,10 +424,6 @@ struct T
   unsigned hash_seed; /**< Random seed for FD hashing to mitigate collisions */
 };
 
-/* ==================== Exception Handling ==================== */
-
-/* ==================== Hash Chain Removal Macro ==================== */
-
 /**
  * @brief Generic linked-list removal from hash chain (double-pointer
  * traversal).
@@ -479,8 +473,6 @@ struct T
         }                                                                     \
     }                                                                         \
   while (0)
-
-/* ==================== Exception Handling ==================== */
 
 /**
  * @brief Module-specific exception raising macro for SocketPoll errors.
@@ -560,8 +552,6 @@ struct T
  * @see Except_stack thread-local stack
  */
 #define RAISE_POLL_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketPoll, e)
-
-/* ==================== Timer Heap Access ==================== */
 
 /**
  * @brief Retrieve integrated timer heap from SocketPoll instance.

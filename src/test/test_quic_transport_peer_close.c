@@ -36,11 +36,6 @@ TEST (quic_transport_peer_close_null_safety)
   ASSERT_EQ (SocketQUICTransport_peer_close_is_app (NULL), 0);
 }
 
-/* ============================================================================
- * Test Runner
- * ============================================================================
- */
-
 int
 main (void)
 {

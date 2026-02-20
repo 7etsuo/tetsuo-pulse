@@ -16,11 +16,6 @@
 #include "quic/SocketQUICWire.h"
 #include "quic/SocketQUICConstants.h"
 
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
-
 static const char *result_strings[] = {
   [QUIC_PN_OK] = "OK",
   [QUIC_PN_ERROR_NULL] = "NULL pointer argument",
@@ -30,11 +25,6 @@ static const char *result_strings[] = {
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICWire, QUIC_PN_ERROR_BITS)
-
-/* ============================================================================
- * Encoding Functions (RFC 9000 Appendix A.2)
- * ============================================================================
- */
 
 unsigned
 SocketQUICWire_pn_length (uint64_t full_pn, uint64_t largest_acked)
@@ -124,11 +114,6 @@ SocketQUICWire_pn_encode (uint64_t full_pn,
   /* Write truncated packet number in network byte order */
   return SocketQUICWire_pn_write (full_pn, pn_len, output, output_size);
 }
-
-/* ============================================================================
- * Decoding Functions (RFC 9000 Appendix A.3)
- * ============================================================================
- */
 
 SocketQUICWire_Result
 SocketQUICWire_pn_decode (uint64_t largest_pn,

@@ -176,16 +176,6 @@ struct SocketBase_T
   SocketStats_T stats; /**< Cumulative I/O statistics for this socket */
 };
 
-/* ============================================================================
- * Accessor Functions for SocketBase_T Fields
- * ============================================================================
- * These functions provide controlled access to private fields of SocketBase_T.
- * Defined in SocketCommon.c; used by socket subtypes for internal operations.
- * Generally not thread-safe; caller must acquire base->mutex if needed.
- * @internal
- * @ingroup core_io
- */
-
 /**
  * @brief Retrieve the socket file descriptor from the base structure.
  * @internal
@@ -593,19 +583,6 @@ extern int SocketCommon_get_family (SocketBase_T base,
                                     bool raise_on_fail,
                                     Except_T exc_type);
 
-/* ============================================================================
- * Shared Socket Option Functions
- * ============================================================================
- * Consolidated implementations for common socket options to avoid duplication
- * across Socket.c, SocketDgram.c, and other modules. These handle setsockopt()
- * with proper error raising via exceptions.
- *
- * @internal
- * @ingroup core_io
- * @note All functions lock base->mutex for thread-safety.
- * @note Platform-specific handling (e.g., SO_NOSIGPIPE on BSD).
- */
-
 /**
  * @brief Enable address reuse (SO_REUSEADDR).
  * @internal
@@ -675,17 +652,6 @@ extern void SocketCommon_disable_sigpipe (int fd);
  * @see getaddrinfo(3)
  */
 extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
-
-/* ============================================================================
- * Internal Low-Level Utility Functions
- * ============================================================================
- * Helper functions for hostname validation, IP detection, and string
- * conversion. Shared across SocketCommon-resolve.c and SocketCommon-utils.c
- * implementations. Prefixed 'socketcommon_' for internal namespace.
- *
- * @internal
- * @ingroup core_io
- */
 
 /**
  * @brief Normalize and validate host string for safe resolution use.
@@ -900,18 +866,6 @@ extern const Except_T SocketCommon_Failed;
  * @see docs/TIMEOUTS.md for timeout configuration guide
  */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
-
-/* ============================================================================
- * Shared Poll and Connect Helpers
- * ============================================================================
- * Consolidated implementations for poll EINTR retry and SO_ERROR checking
- * to eliminate duplication across Socket-connect.c and Socket-convenience.c.
- * These helpers provide consistent behavior for non-blocking connection
- * handling.
- *
- * @internal
- * @ingroup core_io
- */
 
 /**
  * @brief Poll for socket events with automatic EINTR retry.

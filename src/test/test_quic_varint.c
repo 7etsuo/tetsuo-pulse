@@ -18,11 +18,6 @@
 #include "quic/SocketQUICVarInt.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * RFC 9000 Section 16 Test Vectors
- * ============================================================================
- */
-
 TEST (quic_varint_decode_1byte_zero)
 {
   const uint8_t data[] = { 0x00 };
@@ -196,11 +191,6 @@ TEST (quic_varint_decode_rfc_sample_151288809941952652)
   ASSERT_EQ (consumed, 8);
 }
 
-/* ============================================================================
- * Encoding Tests
- * ============================================================================
- */
-
 TEST (quic_varint_encode_zero)
 {
   uint8_t buf[8];
@@ -296,11 +286,6 @@ TEST (quic_varint_encode_8byte_max)
   ASSERT_EQ (buf[7], 0xFF);
 }
 
-/* ============================================================================
- * Round-Trip Tests
- * ============================================================================
- */
-
 TEST (quic_varint_roundtrip_boundary_values)
 {
   uint64_t test_values[] = { 0,
@@ -338,11 +323,6 @@ TEST (quic_varint_roundtrip_boundary_values)
     }
 }
 
-/* ============================================================================
- * Size Calculation Tests
- * ============================================================================
- */
-
 TEST (quic_varint_size_1byte)
 {
   ASSERT_EQ (SocketQUICVarInt_size (0), 1);
@@ -373,11 +353,6 @@ TEST (quic_varint_size_overflow)
   ASSERT_EQ (SocketQUICVarInt_size (SOCKETQUICVARINT_MAX + 1), 0);
   ASSERT_EQ (SocketQUICVarInt_size (UINT64_MAX), 0);
 }
-
-/* ============================================================================
- * Error Condition Tests
- * ============================================================================
- */
 
 TEST (quic_varint_decode_null_data)
 {
@@ -475,11 +450,6 @@ TEST (quic_varint_encode_overflow)
   ASSERT_EQ (len, 0);
 }
 
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
-
 TEST (quic_varint_result_string)
 {
   ASSERT_NOT_NULL (SocketQUICVarInt_result_string (QUIC_VARINT_OK));
@@ -490,11 +460,6 @@ TEST (quic_varint_result_string)
   ASSERT_NOT_NULL (
       SocketQUICVarInt_result_string ((SocketQUICVarInt_Result)99));
 }
-
-/* ============================================================================
- * Extra bytes in buffer test (ensure we only consume what we need)
- * ============================================================================
- */
 
 TEST (quic_varint_decode_extra_bytes)
 {
@@ -525,11 +490,6 @@ TEST (quic_varint_decode_2byte_extra_bytes)
   ASSERT_EQ (value, 15293);
   ASSERT_EQ (consumed, 2);
 }
-
-/* ============================================================================
- * VALIDATE_VARINT_SIZES Macro Tests (Issue #2023)
- * ============================================================================
- */
 
 TEST (quic_varint_validate_sizes_all_valid)
 {

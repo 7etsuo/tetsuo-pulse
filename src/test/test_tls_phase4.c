@@ -154,11 +154,6 @@ raising_verify_cb (int pre_ok,
   return 1;                 /* Unreachable */
 }
 
-/* ============================================================================
- * Verify Callback Parameter Validation Tests (todo_ssl.md 2.4)
- * ============================================================================
- */
-
 /**
  * Structure to capture callback parameters for verification.
  * Used to test that verify callback receives correct parameters.
@@ -423,11 +418,6 @@ TEST (tls_verify_callback_reject)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * End of Verify Callback Parameter Tests
- * ============================================================================
- */
 
 TEST (verify_callback_api)
 {
@@ -783,8 +773,6 @@ TEST (ocsp_status_full)
 #endif
 }
 
-/* ==================== Certificate Loading Tests ==================== */
-
 TEST (tls_load_certificate_basic)
 {
 #if SOCKET_HAS_TLS
@@ -842,8 +830,6 @@ TEST (tls_load_certificate_invalid_path)
   (void)0;
 #endif
 }
-
-/* ==================== CA Loading Tests ==================== */
 
 TEST (tls_load_ca_basic)
 {
@@ -909,8 +895,6 @@ TEST (tls_load_ca_invalid_path)
   (void)0;
 #endif
 }
-
-/* ==================== SNI Certificate Tests ==================== */
 
 /* Helper to generate cert for specific hostname */
 static int
@@ -1131,8 +1115,6 @@ TEST (tls_sni_add_default_certificate)
 /* Removed duplicate TEST(crl_refresh_api) - covered in crl_load_api extensions
  */
 
-/* ==================== Protocol Version Tests ==================== */
-
 TEST (tls_set_min_protocol)
 {
 #if SOCKET_HAS_TLS
@@ -1311,8 +1293,6 @@ TEST (tls_config_defaults_null_safe)
 #endif
 }
 
-/* ==================== Cipher List Tests ==================== */
-
 TEST (tls_set_cipher_list_valid)
 {
 #if SOCKET_HAS_TLS
@@ -1379,8 +1359,6 @@ TEST (tls_set_cipher_list_invalid)
 #endif
 }
 
-/* ==================== OCSP Response Tests ==================== */
-
 TEST (tls_ocsp_response_set_valid)
 {
 #if SOCKET_HAS_TLS
@@ -1444,8 +1422,6 @@ TEST (tls_ocsp_response_set_valid)
   (void)0;
 #endif
 }
-
-/* ==================== ALPN Callback Tests ==================== */
 
 static const char *
 custom_alpn_callback (const char **client_protos,
@@ -1521,8 +1497,6 @@ TEST (tls_alpn_callback_null)
   (void)0;
 #endif
 }
-
-/* ==================== SNI Hostname Validation Tests ==================== */
 
 TEST (tls_hostname_edge_cases)
 {
@@ -1602,8 +1576,6 @@ TEST (tls_hostname_edge_cases)
   (void)0;
 #endif
 }
-
-/* ==================== Verify Error String Tests ==================== */
 
 TEST (tls_verify_error_string_api)
 {
@@ -1697,8 +1669,6 @@ TEST (tls_verify_error_string_api)
 #endif
 }
 
-/* ==================== Context Accessor Tests ==================== */
-
 TEST (tls_context_accessors)
 {
 #if SOCKET_HAS_TLS
@@ -1741,8 +1711,6 @@ TEST (tls_context_accessors)
   (void)0;
 #endif
 }
-
-/* ==================== ALPN Protocol Wire Format Tests ==================== */
 
 TEST (tls_alpn_protos_validation)
 {
@@ -1841,9 +1809,6 @@ TEST (tls_alpn_protos_validation)
 #endif
 }
 
-/* ==================== Session Ticket Key Validation Tests
- * ==================== */
-
 TEST (tls_session_tickets_key_length)
 {
 #if SOCKET_HAS_TLS
@@ -1917,9 +1882,6 @@ TEST (tls_session_tickets_key_length)
   (void)0;
 #endif
 }
-
-/* ==================== Session Ticket Rotation Tests
- * ==================== */
 
 TEST (tls_session_tickets_rotation)
 {
@@ -2128,8 +2090,6 @@ TEST (tls_session_tickets_null_check)
 #endif
 }
 
-/* ==================== Error Path Tests ==================== */
-
 TEST (tls_enable_without_fd)
 {
 #if SOCKET_HAS_TLS
@@ -2218,9 +2178,6 @@ TEST (tls_double_enable)
 #endif
 }
 
-/* ==================== Verify Callback Exception Handling Tests
- * ==================== */
-
 TEST (tls_verify_callback_exception)
 {
 #if SOCKET_HAS_TLS
@@ -2307,8 +2264,6 @@ TEST (tls_verify_callback_exception)
 #endif
 }
 
-/* ==================== Session Cache Zero Size Test ==================== */
-
 TEST (tls_session_cache_zero_size)
 {
 #if SOCKET_HAS_TLS
@@ -2337,9 +2292,6 @@ TEST (tls_session_cache_zero_size)
 #endif
 }
 
-/* ==================== Session Cache Stats NULL Context Test
- * ==================== */
-
 TEST (session_cache_stats_null_context)
 {
 #if SOCKET_HAS_TLS
@@ -2354,9 +2306,6 @@ TEST (session_cache_stats_null_context)
   (void)0;
 #endif
 }
-
-/* ==================== Session Cache Stats Disabled Test ====================
- */
 
 TEST (session_cache_stats_disabled)
 {
@@ -2377,9 +2326,6 @@ TEST (session_cache_stats_disabled)
   (void)0;
 #endif
 }
-
-/* ==================== Session Cache Stats Partial NULL Pointers Test
- * ==================== */
 
 TEST (session_cache_stats_partial_null)
 {
@@ -2417,8 +2363,6 @@ TEST (session_cache_stats_partial_null)
   (void)0;
 #endif
 }
-
-/* ==================== Session Cache Server Mode Test ==================== */
 
 TEST (session_cache_server_mode)
 {
@@ -2464,9 +2408,6 @@ TEST (session_cache_server_mode)
 #endif
 }
 
-/* ==================== Session Cache Timeout Defaults Test
- * ==================== */
-
 TEST (session_cache_timeout_defaults)
 {
 #if SOCKET_HAS_TLS
@@ -2508,9 +2449,6 @@ TEST (session_cache_timeout_defaults)
 #endif
 }
 
-/* ==================== Session Cache With Zero Max Sessions Test
- * ==================== */
-
 TEST (session_cache_zero_max_sessions)
 {
 #if SOCKET_HAS_TLS
@@ -2540,8 +2478,6 @@ TEST (session_cache_zero_max_sessions)
   (void)0;
 #endif
 }
-
-/* ==================== Session ID Context Tests ==================== */
 
 TEST (session_id_context_valid)
 {
@@ -2766,9 +2702,6 @@ TEST (session_id_context_with_cache)
 #endif
 }
 
-/* ==================== Session Resumption Integration Test
- * ==================== */
-
 TEST (session_resumption_stats)
 {
 #if SOCKET_HAS_TLS
@@ -2848,13 +2781,6 @@ TEST (session_resumption_stats)
 #endif
 }
 
-/* =========================================================================
- * COVERAGE TESTS FOR SocketTLSContext-verify.c
- * =========================================================================
- */
-
-/* ==================== Verify Mode All Cases Test ==================== */
-
 TEST (tls_verify_mode_all_cases)
 {
 #if SOCKET_HAS_TLS
@@ -2883,9 +2809,6 @@ TEST (tls_verify_mode_all_cases)
   (void)0;
 #endif
 }
-
-/* ==================== Verify Callback Generic Exception Test
- * ==================== */
 
 /* Custom exception for testing the ELSE block in internal_verify_callback */
 static const Except_T Test_GenericException
@@ -2992,8 +2915,6 @@ TEST (tls_verify_callback_generic_exception)
 #endif
 }
 
-/* ==================== CRL Load NULL Path Test ==================== */
-
 TEST (tls_crl_load_null_path)
 {
 #if SOCKET_HAS_TLS
@@ -3081,8 +3002,6 @@ TEST (tls_crl_load_file)
 #endif
 }
 
-/* ==================== Min Protocol Fallback Tests ==================== */
-
 TEST (tls_min_protocol_fallback)
 {
 #if SOCKET_HAS_TLS
@@ -3136,8 +3055,6 @@ TEST (tls_min_protocol_fallback)
 #endif
 }
 
-/* ==================== OCSP Response Size Limit Test ==================== */
-
 TEST (tls_ocsp_response_too_large)
 {
 #if SOCKET_HAS_TLS
@@ -3186,8 +3103,6 @@ TEST (tls_ocsp_response_too_large)
   (void)0;
 #endif
 }
-
-/* ==================== OCSP Response Validation Test ==================== */
 
 TEST (tls_ocsp_set_valid_response)
 {
@@ -3250,8 +3165,6 @@ TEST (tls_ocsp_set_valid_response)
 #endif
 }
 
-/* ==================== OCSP Status Socket States Tests ==================== */
-
 TEST (tls_ocsp_status_socket_states)
 {
 #if SOCKET_HAS_TLS
@@ -3302,8 +3215,6 @@ TEST (tls_ocsp_status_socket_states)
   (void)0;
 #endif
 }
-
-/* ==================== OCSP Status No Response Test ==================== */
 
 TEST (tls_ocsp_status_no_response)
 {
@@ -3381,9 +3292,6 @@ TEST (tls_ocsp_status_no_response)
   (void)0;
 #endif
 }
-
-/* ==================== OCSP Gen Callback Integration Test ====================
- */
 
 /* Counter to verify callback was actually invoked */
 static volatile int ocsp_gen_callback_invoked = 0;
@@ -3488,8 +3396,6 @@ TEST (tls_ocsp_gen_callback_integration)
   (void)0;
 #endif
 }
-
-/* ==================== OCSP With Valid Response Test ==================== */
 
 /* Create a minimal valid-looking OCSP response that passes d2i_OCSP_RESPONSE
  */
@@ -3646,9 +3552,6 @@ TEST (tls_ocsp_with_valid_response)
 #endif
 }
 
-/* ==================== OCSP With Successful Status Response Test
- * ==================== */
-
 TEST (tls_ocsp_with_successful_response)
 {
 #if SOCKET_HAS_TLS
@@ -3738,9 +3641,6 @@ TEST (tls_ocsp_with_successful_response)
 #endif
 }
 
-/* ==================== OCSP With Full Basic Response Test ====================
- */
-
 TEST (tls_ocsp_with_full_basic_response)
 {
 #if SOCKET_HAS_TLS
@@ -3829,11 +3729,6 @@ TEST (tls_ocsp_with_full_basic_response)
 #endif
 }
 
-/* =========================================================================
- * COVERAGE TESTS FOR SocketTLSContext-certs.c
- * =========================================================================
- */
-
 /* Helper to create invalid PEM file */
 static int
 create_invalid_pem (const char *path)
@@ -3881,9 +3776,6 @@ generate_two_cert_pairs (const char *cert1,
 
   return 0;
 }
-
-/* ==================== Test 1: Certificate Loading Error Paths
- * ==================== */
 
 TEST (tls_load_certificate_errors)
 {
@@ -4094,8 +3986,6 @@ TEST (tls_load_certificate_mismatch)
 #endif
 }
 
-/* ==================== Test 2: CA Directory Fallback ==================== */
-
 TEST (tls_load_ca_directory_fallback)
 {
 #if SOCKET_HAS_TLS
@@ -4147,9 +4037,6 @@ TEST (tls_load_ca_directory_fallback)
 #endif
 }
 
-/* ==================== Test 3: SNI Client Context Rejection
- * ==================== */
-
 TEST (tls_sni_client_context_rejection)
 {
 #if SOCKET_HAS_TLS
@@ -4200,9 +4087,6 @@ TEST (tls_sni_client_context_rejection)
 #endif
 }
 
-/* ==================== Test 4: SNI Max Certificates Limit ====================
- */
-
 /* Note: Testing 100 cert limit would require generating 101 certificates
  * which is slow. Instead we verify the limit check path works. */
 TEST (tls_sni_max_certificates_check)
@@ -4242,8 +4126,6 @@ TEST (tls_sni_max_certificates_check)
   (void)0;
 #endif
 }
-
-/* ==================== Test 5: SNI Capacity Expansion ==================== */
 
 TEST (tls_sni_capacity_expansion)
 {
@@ -4341,8 +4223,6 @@ TEST (tls_sni_capacity_expansion)
   (void)0;
 #endif
 }
-
-/* ==================== Test 6: SNI Invalid Hostname ==================== */
 
 TEST (tls_sni_invalid_hostname)
 {
@@ -4516,8 +4396,6 @@ TEST (tls_sni_invalid_hostname)
 #endif
 }
 
-/* ==================== Test 7: SNI Cert/Key Mismatch ==================== */
-
 TEST (tls_sni_cert_key_mismatch)
 {
 #if SOCKET_HAS_TLS
@@ -4595,8 +4473,6 @@ TEST (tls_sni_cert_key_mismatch)
   (void)0;
 #endif
 }
-
-/* ==================== Test 8: SNI Callback Selection ==================== */
 
 TEST (tls_sni_callback_selection)
 {
@@ -4728,8 +4604,6 @@ TEST (tls_sni_callback_selection)
   (void)0;
 #endif
 }
-
-/* ==================== Test 9: SNI Callback No Match ==================== */
 
 TEST (tls_sni_callback_no_match)
 {
@@ -4891,9 +4765,6 @@ TEST (tls_sni_callback_no_match)
 #endif
 }
 
-/* ==================== Test 10: Invalid PEM File Parsing ====================
- */
-
 TEST (tls_load_invalid_pem_files)
 {
 #if SOCKET_HAS_TLS
@@ -4976,9 +4847,6 @@ TEST (tls_load_invalid_pem_files)
   (void)0;
 #endif
 }
-
-/* ==================== Test: SNI Add Certificate Invalid Path
- * ==================== */
 
 TEST (tls_sni_add_certificate_path_traversal)
 {

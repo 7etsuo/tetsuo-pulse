@@ -31,11 +31,6 @@
 
 #define T SocketPool_T
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketPool_Failed
     = { &SocketPool_Failed, "SocketPool operation failed" };
 
@@ -52,11 +47,6 @@ __declspec (thread) Except_T SocketPool_DetailedException;
 #else
 __thread Except_T SocketPool_DetailedException;
 #endif
-
-/* ============================================================================
- * Time Utility
- * ============================================================================
- */
 
 /**
  * @brief Get current time with error handling.
@@ -79,11 +69,6 @@ safe_time (void)
     RAISE_POOL_MSG (SocketPool_Failed, "System time() call failed");
   return t;
 }
-
-/* ============================================================================
- * Hash Functions
- * ============================================================================
- */
 
 /**
  * @brief Compute hash for socket (internal).
@@ -187,11 +172,6 @@ find_slot (T pool, const Socket_T socket)
   return NULL;
 }
 
-/* ============================================================================
- * Allocation Functions
- * ============================================================================
- */
-
 /**
  * @brief Generic allocation helper for pool components.
  * @param arena Arena for allocation (NULL for system malloc)
@@ -278,11 +258,6 @@ SocketPool_cleanup_allocate_buffer (Arena_T arena, size_t maxconns)
   return pool_alloc (NULL, maxconns, sizeof (Socket_T), "cleanup buffer");
 }
 
-/* ============================================================================
- * Slot Initialization
- * ============================================================================
- */
-
 /**
  * SocketPool_connections_initialize_slot - Initialize connection slot
  * @conn: Slot to initialize
@@ -340,11 +315,6 @@ SocketPool_connections_alloc_buffers (Arena_T arena,
     }
   return 0;
 }
-
-/* ============================================================================
- * Pool Creation Helpers (static)
- * ============================================================================
- */
 
 /**
  * allocate_pool_structure - Allocate the main pool structure
@@ -534,11 +504,6 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   return pool;
 }
 
-/* ============================================================================
- * Pool Lifecycle API
- * ============================================================================
- */
-
 /**
  * SocketPool_new - Create a new connection pool
  * @arena: Arena for memory allocation
@@ -568,11 +533,6 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 
   return pool;
 }
-
-/* ============================================================================
- * Pool Destruction Helpers (static)
- * ============================================================================
- */
 
 /**
  * free_tls_sessions - Free all TLS sessions in pool
@@ -727,11 +687,6 @@ SocketPool_free (T *pool)
   *pool = NULL;
 }
 
-/* ============================================================================
- * Reconnection Support - Internal Helpers
- * ============================================================================
- */
-
 /**
  * update_connection_socket - Update connection with new socket after reconnect
  * @conn: Connection to update
@@ -836,11 +791,6 @@ log_reconnect_enabled (const char *host, int port)
                    host,
                    port);
 }
-
-/* ============================================================================
- * Reconnection Support - Public API
- * ============================================================================
- */
 
 /**
  * SocketPool_set_reconnect_policy - Set default reconnection policy for pool
@@ -1044,11 +994,6 @@ SocketPool_reconnect_timeout_ms (T pool)
   return min_timeout;
 }
 
-/* ============================================================================
- * Connection Reconnection Accessors
- * ============================================================================
- */
-
 /**
  * Connection_reconnect - Get reconnection context for connection
  * @conn: Connection
@@ -1078,11 +1023,6 @@ Connection_has_reconnect (const Connection_T conn)
     return 0;
   return conn->reconnect != NULL;
 }
-
-/* ============================================================================
- * Callback Configuration
- * ============================================================================
- */
 
 /**
  * SocketPool_set_validation_callback - Set connection validation callback
@@ -1125,11 +1065,6 @@ SocketPool_set_resize_callback (T pool,
   pool->resize_cb_data = data;
   POOL_UNLOCK (pool);
 }
-
-/* ============================================================================
- * Pool Statistics
- * ============================================================================
- */
 
 /**
  * @brief Overflow-safe uint64_t addition with saturation.

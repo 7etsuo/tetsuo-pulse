@@ -49,10 +49,6 @@ extern "C"
 {
 #endif
 
-/*============================================================================
- * Configuration
- *============================================================================*/
-
 /**
  * @brief Default resolution delay in milliseconds (RFC 8305 § 5).
  *
@@ -80,10 +76,6 @@ extern "C"
     int max_attempts; /**< Max addresses to try per family (0=unlimited,
                          default: 0) */
   } SocketSimple_HappyEyeballs_Config;
-
-  /*============================================================================
-   * Connection Functions
-   *============================================================================*/
 
   /**
    * @brief Connect using Happy Eyeballs algorithm (RFC 8305).
@@ -125,10 +117,6 @@ extern "C"
       int timeout_ms,
       const SocketSimple_HappyEyeballs_Config *config);
 
-  /*============================================================================
-   * Configuration Helpers
-   *============================================================================*/
-
   /**
    * @brief Initialize configuration with default values.
    *
@@ -142,10 +130,6 @@ extern "C"
    */
   extern void Socket_simple_happyeyeballs_config_defaults (
       SocketSimple_HappyEyeballs_Config *config);
-
-  /*============================================================================
-   * Query Functions
-   *============================================================================*/
 
   /**
    * @brief Get address family of connected socket.

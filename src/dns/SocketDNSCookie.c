@@ -702,8 +702,6 @@ SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie,
   return (int)(p - buf);
 }
 
-/* ========== Internal helper functions ========== */
-
 /*
  * Generate entropy for secrets/cookies
  */

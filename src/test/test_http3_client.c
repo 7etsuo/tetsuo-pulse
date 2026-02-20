@@ -24,11 +24,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Alt-Svc Parsing Tests (RFC 7838)
- * ============================================================================
- */
-
 TEST (h3_client_alt_svc_basic_port)
 {
   char host[256] = { 0 };
@@ -110,11 +105,6 @@ TEST (h3_client_alt_svc_host_too_long)
   ASSERT_EQ ('\0', host[0]);
 }
 
-/* ============================================================================
- * Config Defaults Tests
- * ============================================================================
- */
-
 TEST (h3_client_config_defaults)
 {
   SocketHTTP3_ClientConfig config;
@@ -136,11 +126,6 @@ TEST (h3_client_config_defaults_null)
   /* Should not crash */
   SocketHTTP3_ClientConfig_defaults (NULL);
 }
-
-/* ============================================================================
- * Client Creation Tests
- * ============================================================================
- */
 
 TEST (h3_client_new_with_defaults)
 {
@@ -172,11 +157,6 @@ TEST (h3_client_new_null_arena)
   SocketHTTP3_Client_T client = SocketHTTP3_Client_new (NULL, NULL);
   ASSERT_NULL (client);
 }
-
-/* ============================================================================
- * Client State Tests
- * ============================================================================
- */
 
 TEST (h3_client_not_connected_state)
 {
@@ -212,11 +192,6 @@ TEST (h3_client_conn_null)
   ASSERT_NULL (SocketHTTP3_Client_conn (NULL));
 }
 
-/* ============================================================================
- * Request Before Connect Tests
- * ============================================================================
- */
-
 TEST (h3_client_request_before_connect)
 {
   Arena_T arena = Arena_new ();
@@ -251,11 +226,6 @@ TEST (h3_client_request_null_path)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Streaming API Before Connect Tests
- * ============================================================================
- */
 
 TEST (h3_client_new_request_before_connect)
 {
@@ -294,11 +264,6 @@ TEST (h3_client_poll_before_connect)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Close Tests
- * ============================================================================
- */
-
 TEST (h3_client_close_without_connect)
 {
   Arena_T arena = Arena_new ();
@@ -319,11 +284,6 @@ TEST (h3_client_close_null)
   ASSERT_EQ (-1, rc);
 }
 
-/* ============================================================================
- * Connect Error Tests
- * ============================================================================
- */
-
 TEST (h3_client_connect_null_client)
 {
   int rc = SocketHTTP3_Client_connect (NULL, "example.com", 443);
@@ -342,11 +302,6 @@ TEST (h3_client_connect_null_host)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Flush/Poll Null Tests
- * ============================================================================
- */
-
 TEST (h3_client_flush_null)
 {
   int rc = SocketHTTP3_Client_flush (NULL);
@@ -358,11 +313,6 @@ TEST (h3_client_poll_null)
   int rc = SocketHTTP3_Client_poll (NULL, 0);
   ASSERT_EQ (-1, rc);
 }
-
-/* ============================================================================
- * H3 Connection Integration Tests
- * ============================================================================
- */
 
 TEST (h3_client_conn_state_idle)
 {
@@ -378,11 +328,6 @@ TEST (h3_client_conn_state_idle)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Entry point
- * ============================================================================
- */
 
 int
 main (void)

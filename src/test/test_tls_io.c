@@ -97,8 +97,6 @@ complete_handshake (Socket_T client, Socket_T server)
              : -1;
 }
 
-/* ==================== Basic Send/Recv Tests ==================== */
-
 TEST (tls_io_basic_send_recv)
 {
   const char *cert_file = "test_io_basic.crt";
@@ -243,8 +241,6 @@ TEST (tls_io_bidirectional)
   END_TRY;
 }
 
-/* ==================== Zero-Length Tests ==================== */
-
 TEST (tls_io_zero_length_send)
 {
   const char *cert_file = "test_io_zero.crt";
@@ -336,8 +332,6 @@ TEST (tls_io_zero_length_recv)
   }
   END_TRY;
 }
-
-/* ==================== Large Buffer Tests ==================== */
 
 TEST (tls_io_large_message)
 {
@@ -433,8 +427,6 @@ TEST (tls_io_large_message)
   END_TRY;
 }
 
-/* ==================== Error Condition Tests ==================== */
-
 TEST (tls_io_send_before_handshake_fails)
 {
   Socket_T socket = NULL;
@@ -522,8 +514,6 @@ TEST (tls_io_recv_before_handshake_fails)
   }
   END_TRY;
 }
-
-/* ==================== Multiple Cycles Tests ==================== */
 
 TEST (tls_io_multiple_send_recv_cycles)
 {

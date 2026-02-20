@@ -24,11 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ============================================================================
- * Test Utilities
- * ============================================================================
- */
-
 static int tests_run = 0;
 static int tests_passed = 0;
 
@@ -60,11 +55,6 @@ static int tests_passed = 0;
       return 1;            \
     }                      \
   while (0)
-
-/* ============================================================================
- * Configuration Tests
- * ============================================================================
- */
 
 static int
 test_config_sliding_window_defaults (void)
@@ -142,11 +132,6 @@ test_config_custom_values (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * TimeWindow Unit Tests (for sliding window behavior)
- * ============================================================================
- */
 
 static int
 test_timewindow_basic (void)
@@ -263,11 +248,6 @@ test_timewindow_churn_detection (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Rate Limit Constants Tests
- * ============================================================================
- */
-
 static int
 test_rate_limit_constants (void)
 {
@@ -322,11 +302,6 @@ test_cve_2023_44487_constants (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

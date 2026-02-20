@@ -19,10 +19,6 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Types
-   *============================================================================*/
-
   /**
    * @brief DNS resolution result.
    */
@@ -33,10 +29,6 @@ extern "C"
     int count;        /**< Number of addresses */
     int family;       /**< Address family (AF_INET or AF_INET6) */
   } SocketSimple_DNSResult;
-
-  /*============================================================================
-   * Resolution Functions
-   *============================================================================*/
 
   /**
    * @brief Resolve hostname to IP addresses (blocking).
@@ -127,20 +119,12 @@ extern "C"
   extern int
   Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len);
 
-  /*============================================================================
-   * Cleanup
-   *============================================================================*/
-
   /**
    * @brief Free DNS result resources.
    *
    * @param result Result structure to free.
    */
   extern void Socket_simple_dns_result_free (SocketSimple_DNSResult *result);
-
-  /*============================================================================
-   * Async DNS Types
-   *============================================================================*/
 
   /**
    * @brief Opaque async DNS resolver handle.
@@ -168,10 +152,6 @@ extern "C"
   typedef void (*SocketSimple_DNSCallback) (SocketSimple_DNSResult *result,
                                             int error,
                                             void *userdata);
-
-  /*============================================================================
-   * Async DNS Resolver Lifecycle
-   *============================================================================*/
 
   /**
    * @brief Create async DNS resolver.
@@ -222,10 +202,6 @@ extern "C"
    */
   extern void Socket_simple_dns_free (SocketSimple_DNS_T *dns);
 
-  /*============================================================================
-   * Async DNS Configuration
-   *============================================================================*/
-
   /**
    * @brief Set default timeout for async resolutions.
    *
@@ -261,10 +237,6 @@ extern "C"
   extern void
   Socket_simple_dns_prefer_ipv6 (SocketSimple_DNS_T dns, int prefer_ipv6);
 
-  /*============================================================================
-   * Async DNS Resolution (Callback Mode)
-   *============================================================================*/
-
   /**
    * @brief Start async DNS resolution with callback.
    *
@@ -280,10 +252,6 @@ extern "C"
                                               const char *hostname,
                                               SocketSimple_DNSCallback callback,
                                               void *userdata);
-
-  /*============================================================================
-   * Async DNS Resolution (Polling Mode)
-   *============================================================================*/
 
   /**
    * @brief Start async DNS resolution (polling mode).
@@ -364,10 +332,6 @@ extern "C"
    * @param req Pointer to request handle.
    */
   extern void Socket_simple_dns_request_free (SocketSimple_DNSRequest_T *req);
-
-  /*============================================================================
-   * DNS Cache Control
-   *============================================================================*/
 
   /**
    * @brief Clear DNS cache.

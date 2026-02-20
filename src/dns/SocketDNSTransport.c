@@ -999,8 +999,6 @@ SocketDNSTransport_pending_count (T transport)
   return transport->pending_count;
 }
 
-/* ============== TCP Transport Implementation ============== */
-
 /* Close a TCP connection and reset state */
 static void
 tcp_conn_close (struct DNSTCPConnection *conn)

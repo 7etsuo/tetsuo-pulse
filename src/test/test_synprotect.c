@@ -62,11 +62,6 @@ static int tests_passed = 0;
     }                                           \
   while (0)
 
-/* ============================================================================
- * Lifecycle Tests
- * ============================================================================
- */
-
 /**
  * test_new_free_basic - Test basic lifecycle with defaults
  */
@@ -173,11 +168,6 @@ test_free_null (void)
   return success;
 }
 
-/* ============================================================================
- * Configuration Tests
- * ============================================================================
- */
-
 /**
  * test_config_defaults - Test config defaults are reasonable
  */
@@ -235,11 +225,6 @@ test_configure_runtime (void)
 
   return success;
 }
-
-/* ============================================================================
- * Basic Check Tests
- * ============================================================================
- */
 
 /**
  * test_check_null_ip - Test check with NULL IP
@@ -351,11 +336,6 @@ test_check_with_state (void)
   return success;
 }
 
-/* ============================================================================
- * Scoring Tests
- * ============================================================================
- */
-
 /**
  * test_score_penalty - Test score penalty on repeated attempts
  */
@@ -459,11 +439,6 @@ test_score_failure_penalty (void)
 
   return success;
 }
-
-/* ============================================================================
- * Whitelist Tests
- * ============================================================================
- */
 
 /**
  * test_whitelist_add_single - Test adding single IP to whitelist
@@ -687,11 +662,6 @@ test_whitelist_clear (void)
   return success;
 }
 
-/* ============================================================================
- * Blacklist Tests
- * ============================================================================
- */
-
 /**
  * test_blacklist_add - Test adding to blacklist
  */
@@ -823,11 +793,6 @@ test_blacklist_remove (void)
   return success;
 }
 
-/* ============================================================================
- * Statistics Tests
- * ============================================================================
- */
-
 /**
  * test_stats_basic - Test basic statistics collection
  */
@@ -896,11 +861,6 @@ test_stats_reset (void)
   return success;
 }
 
-/* ============================================================================
- * Action Name Tests
- * ============================================================================
- */
-
 /**
  * test_action_names - Test action name lookup
  */
@@ -956,11 +916,6 @@ test_reputation_names (void)
 
   return success;
 }
-
-/* ============================================================================
- * Maintenance Tests
- * ============================================================================
- */
 
 /**
  * test_cleanup - Test cleanup removes expired entries
@@ -1073,11 +1028,6 @@ test_reset (void)
   return success;
 }
 
-/* ============================================================================
- * IP State Query Tests
- * ============================================================================
- */
-
 /**
  * test_get_ip_state_found - Test getting state for tracked IP
  */
@@ -1136,11 +1086,6 @@ test_get_ip_state_not_found (void)
 
   return success;
 }
-
-/* ============================================================================
- * IPv6 Tests
- * ============================================================================
- */
 
 /**
  * test_ipv6_basic - Test basic IPv6 address handling
@@ -1233,11 +1178,6 @@ test_ipv6_cidr (void)
 
   return success;
 }
-
-/* ============================================================================
- * Sliding Window Algorithm Tests
- * ============================================================================
- */
 
 /**
  * test_window_rotation_no_rotation - Test window does not rotate within window
@@ -1374,8 +1314,9 @@ test_window_progress_0_percent (void)
     success = (state.attempts_previous == 10);
     success = success && (state.attempts_current == 1);
     /* Effective attempts should be ~11 (1 + 10*1.0) */
-    success = success && (state.attempts_current + state.attempts_previous
-                          >= expected_min);
+    success
+        = success
+          && (state.attempts_current + state.attempts_previous >= expected_min);
 
     SocketSYNProtect_free (&protect);
   }
@@ -1433,8 +1374,7 @@ test_window_progress_50_percent (void)
     success = success && (state.attempts_current >= 5);
     /* Total should be between current and current+previous */
     uint32_t total_effective = state.attempts_current + state.attempts_previous;
-    success = success && (total_effective >= 11)
-              && (total_effective <= 16);
+    success = success && (total_effective >= 11) && (total_effective <= 16);
 
     SocketSYNProtect_free (&protect);
   }
@@ -1657,11 +1597,6 @@ test_monotonic_time_handling (void)
   return success;
 }
 
-/* ============================================================================
- * CIDR Matching Algorithm Tests
- * ============================================================================
- */
-
 /**
  * test_cidr_full_bytes_match - Test full byte matching for CIDR ranges
  */
@@ -1717,9 +1652,9 @@ test_cidr_partial_byte_match (void)
     return 0;
 
   /* Test /23: partial byte with 7 bits */
-  uint8_t ip4[4] = { 192, 168, 2, 0 };  /* byte[2] = 00000010 */
-  uint8_t ip5[4] = { 192, 168, 3, 0 };  /* byte[2] = 00000011 */
-  uint8_t ip6[4] = { 192, 168, 4, 0 };  /* byte[2] = 00000100 */
+  uint8_t ip4[4] = { 192, 168, 2, 0 }; /* byte[2] = 00000010 */
+  uint8_t ip5[4] = { 192, 168, 3, 0 }; /* byte[2] = 00000011 */
+  uint8_t ip6[4] = { 192, 168, 4, 0 }; /* byte[2] = 00000100 */
 
   /* Top 7 bits of byte 2: 0000001x matches */
   int match3 = cidr_partial_byte_match (ip4, ip5, 2, 7);
@@ -2093,13 +2028,6 @@ test_cidr_prefix_boundaries (void)
   return 1;
 }
 
-/* ============================================================================
- * Thread Safety Test
- * Thread Safety Test
- * LRU Eviction Tests
- * ============================================================================
- */
-
 /* Forward declarations for thread worker (used in concurrent eviction test) */
 static SocketSYNProtect_T g_protect = NULL;
 static volatile int g_thread_errors = 0;
@@ -2340,7 +2268,7 @@ test_lru_with_malloc_allocation (void)
     SocketSYNProtect_check (protect, "198.51.100.2", NULL);
     SocketSYNProtect_check (protect, "198.51.100.3", NULL);
     SocketSYNProtect_check (protect, "198.51.100.4", NULL); /* Triggers eviction
-                                                              */
+                                                             */
 
     SocketSYNProtect_stats (protect, &stats);
     success = (stats.current_tracked_ips == 3);
@@ -2454,11 +2382,6 @@ test_lru_concurrent_eviction (void)
   return success;
 }
 
-/* ============================================================================
- * Thread Safety Test
- * ============================================================================
- */
-
 static void *
 thread_worker (void *arg)
 {
@@ -2524,11 +2447,6 @@ test_thread_safety (void)
 
   return success;
 }
-
-/* ============================================================================
- * LRU Eviction Tests
- * ============================================================================
- */
 
 /**
  * test_lru_ordering_basic - Test LRU order is newest-to-oldest
@@ -2870,8 +2788,8 @@ test_lru_eviction_removes_from_hash (void)
 
     /* Verify all present */
     SocketSYN_IPState state;
-    success = (SocketSYNProtect_get_ip_state (protect, "100.0.0.1", &state)
-               == 1);
+    success
+        = (SocketSYNProtect_get_ip_state (protect, "100.0.0.1", &state) == 1);
     success = success
               && (SocketSYNProtect_get_ip_state (protect, "100.0.0.2", &state)
                   == 1);
@@ -2993,11 +2911,6 @@ test_arena_capacity_no_fail_open (void)
 
   return success;
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

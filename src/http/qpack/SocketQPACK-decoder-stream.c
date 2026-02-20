@@ -29,21 +29,11 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Maximum integer encoding buffer size (1 prefix + 10 continuation bytes) */
 #define QPACK_INT_ENCODE_BUF_SIZE 16
 
 /** Growth factor for buffer expansion */
 #define QPACK_BUFFER_GROWTH_FACTOR 2
-
-/* ============================================================================
- * INTERNAL STRUCTURE
- * ============================================================================
- */
 
 /**
  * @brief QPACK decoder stream internal structure.
@@ -57,11 +47,6 @@ struct SocketQPACK_DecoderStream
   size_t buffer_cap;     /**< Buffer capacity */
   int initialized;       /**< Has stream been initialized? */
 };
-
-/* ============================================================================
- * BUFFER MANAGEMENT (INTERNAL)
- * ============================================================================
- */
 
 /**
  * @brief Ensure buffer has at least required_space additional bytes.
@@ -151,14 +136,6 @@ append_to_buffer (SocketQPACK_DecoderStream_T stream,
   return QPACK_STREAM_OK;
 }
 
-/* ============================================================================
- * INTEGER ENCODING (INTERNAL)
- *
- * Uses HPACK integer encoding (RFC 7541 Section 5.1) which is the same
- * encoding used by QPACK primitives (RFC 9204 Section 4.1.1).
- * ============================================================================
- */
-
 /**
  * @brief Encode an integer with prefix and append to buffer.
  *
@@ -189,11 +166,6 @@ encode_and_append_int (SocketQPACK_DecoderStream_T stream,
 
   return append_to_buffer (stream, int_buf, int_len);
 }
-
-/* ============================================================================
- * LIFECYCLE FUNCTIONS
- * ============================================================================
- */
 
 SocketQPACK_DecoderStream_T
 SocketQPACK_DecoderStream_new (Arena_T arena, uint64_t stream_id)
@@ -273,11 +245,6 @@ SocketQPACK_DecoderStream_get_id (SocketQPACK_DecoderStream_T stream)
 
   return stream->stream_id;
 }
-
-/* ============================================================================
- * DECODER INSTRUCTIONS (RFC 9204 Section 4.4)
- * ============================================================================
- */
 
 SocketQPACKStream_Result
 SocketQPACK_DecoderStream_write_section_ack (SocketQPACK_DecoderStream_T stream,
@@ -366,11 +333,6 @@ SocketQPACK_DecoderStream_write_insert_count_inc (
                                 QPACK_DINSTR_INSERT_COUNT_INC_MASK);
 }
 
-/* ============================================================================
- * BUFFER MANAGEMENT
- * ============================================================================
- */
-
 const unsigned char *
 SocketQPACK_DecoderStream_get_buffer (SocketQPACK_DecoderStream_T stream,
                                       size_t *len)
@@ -408,14 +370,6 @@ SocketQPACK_DecoderStream_buffer_size (SocketQPACK_DecoderStream_T stream)
 
   return stream->buffer_len;
 }
-
-/* ============================================================================
- * DECODER INSTRUCTION DECODING (RFC 9204 Section 4.4)
- *
- * These functions decode decoder instructions received from the peer's
- * decoder stream. Used by the encoder to process acknowledgments.
- * ============================================================================
- */
 
 SocketQPACK_DecoderInstrType
 SocketQPACK_identify_decoder_instruction (uint8_t first_byte)
@@ -750,13 +704,6 @@ SocketQPACK_decode_decoder_instruction (const unsigned char *input,
   return result;
 }
 
-/* ============================================================================
- * ACKNOWLEDGMENT STATE MANAGEMENT (RFC 9204 Section 3.3)
- *
- * Simple hash table to track pending stream RICs and Known Received Count.
- * ============================================================================
- */
-
 /** Default capacity for pending stream tracking (power of 2) */
 #define QPACK_ACK_STATE_DEFAULT_CAPACITY 64
 
@@ -1016,16 +963,6 @@ SocketQPACK_AckState_can_evict (SocketQPACK_AckState_T state,
 
   return abs_index < state->known_received_count;
 }
-
-/* ============================================================================
- * DECODER SYNCHRONIZATION STATE (RFC 9204 Section 2.2.2)
- *
- * Manages automatic generation of decoder instructions:
- * - Section Acknowledgment (2.2.2.1) - after decoding field sections
- * - Stream Cancellation (2.2.2.2) - on stream reset
- * - Insert Count Increment (2.2.2.3) - on encoder stream updates
- * ============================================================================
- */
 
 /** Default coalescing threshold (emit after each entry for timely feedback) */
 #define QPACK_DECODER_SYNC_DEFAULT_THRESHOLD 1

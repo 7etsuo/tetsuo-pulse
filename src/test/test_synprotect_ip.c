@@ -18,13 +18,9 @@
 
 #include "core/SocketConfig.h"
 #include "core/SocketSYNProtect-private.h"
-#undef T  /* Undefine T from SocketSYNProtect-private.h before including Test.h */
+#undef T /* Undefine T from SocketSYNProtect-private.h before including Test.h \
+          */
 #include "test/Test.h"
-
-/* ============================================================================
- * IPv4 Parsing Tests
- * ============================================================================
- */
 
 TEST (parse_ipv4_valid_loopback)
 {
@@ -146,11 +142,6 @@ TEST (parse_ipv4_invalid_non_numeric)
 
   ASSERT_EQ (result, 0);
 }
-
-/* ============================================================================
- * IPv6 Parsing Tests
- * ============================================================================
- */
 
 TEST (parse_ipv6_valid_loopback)
 {
@@ -275,16 +266,10 @@ TEST (parse_ipv6_invalid_too_many_groups)
   ASSERT_EQ (result, 0);
 }
 
-/* ============================================================================
- * Dual-Stack parse_ip_address Tests
- * ============================================================================
- */
-
 TEST (parse_ip_address_ipv4_returns_AF_INET)
 {
   uint8_t bytes[SOCKET_IPV6_ADDR_BYTES];
-  int family
-      = parse_ip_address ("192.168.1.1", bytes, SOCKET_IPV6_ADDR_BYTES);
+  int family = parse_ip_address ("192.168.1.1", bytes, SOCKET_IPV6_ADDR_BYTES);
 
   ASSERT_EQ (family, AF_INET);
   ASSERT_EQ (bytes[0], 192);
@@ -308,8 +293,7 @@ TEST (parse_ip_address_ipv6_returns_AF_INET6)
 TEST (parse_ip_address_invalid_returns_zero)
 {
   uint8_t bytes[SOCKET_IPV6_ADDR_BYTES];
-  int family
-      = parse_ip_address ("invalid", bytes, SOCKET_IPV6_ADDR_BYTES);
+  int family = parse_ip_address ("invalid", bytes, SOCKET_IPV6_ADDR_BYTES);
 
   ASSERT_EQ (family, 0);
 }
@@ -338,11 +322,6 @@ TEST (parse_ip_address_insufficient_buffer_returns_zero)
   ASSERT_EQ (family, 0);
 }
 
-/* ============================================================================
- * IP Address Equality Tests (Format Normalization)
- * ============================================================================
- */
-
 TEST (ip_addresses_equal_same_ipv4_literal)
 {
   int result = ip_addresses_equal ("192.168.1.1", "192.168.1.1");
@@ -355,7 +334,8 @@ TEST (ip_addresses_equal_ipv4_leading_zeros_rejected)
   /* "192.168.001.001" should NOT parse (inet_pton rejects leading zeros) */
   int result = ip_addresses_equal ("192.168.1.1", "192.168.001.001");
 
-  /* Leading zeros are rejected by inet_pton for security, so this should fail */
+  /* Leading zeros are rejected by inet_pton for security, so this should fail
+   */
   ASSERT_EQ (result, 0);
 }
 
@@ -376,8 +356,8 @@ TEST (ip_addresses_equal_same_ipv6_compressed)
 TEST (ip_addresses_equal_ipv6_different_representations)
 {
   /* Full vs compressed representation of same address */
-  int result = ip_addresses_equal (
-      "2001:db8::1", "2001:0db8:0000:0000:0000:0000:0000:0001");
+  int result = ip_addresses_equal ("2001:db8::1",
+                                   "2001:0db8:0000:0000:0000:0000:0000:0001");
 
   ASSERT_EQ (result, 1);
 }
@@ -385,7 +365,8 @@ TEST (ip_addresses_equal_ipv6_different_representations)
 TEST (ip_addresses_equal_ipv6_loopback_representations)
 {
   /* Different representations of IPv6 loopback */
-  int result = ip_addresses_equal ("::1", "0000:0000:0000:0000:0000:0000:0000:0001");
+  int result
+      = ip_addresses_equal ("::1", "0000:0000:0000:0000:0000:0000:0000:0001");
 
   ASSERT_EQ (result, 1);
 }
@@ -447,11 +428,6 @@ TEST (ip_addresses_equal_both_invalid)
   ASSERT_EQ (result, 0);
 }
 
-/* ============================================================================
- * Edge Cases and Boundary Tests
- * ============================================================================
- */
-
 TEST (parse_ipv4_edge_case_octet_255)
 {
   uint8_t bytes[SOCKET_IPV6_ADDR_BYTES];
@@ -500,11 +476,6 @@ TEST (parse_ipv6_edge_case_documentation)
     }
 }
 
-/* ============================================================================
- * Format Bypass Prevention Tests
- * ============================================================================
- */
-
 TEST (format_bypass_ipv4_octal_notation_rejected)
 {
   /* Octal notation like "0177.0.0.1" (127.0.0.1 in octal) should not parse */
@@ -550,11 +521,6 @@ TEST (format_bypass_ipv6_leading_zeros_normalized)
 
   ASSERT_EQ (result, 1);
 }
-
-/* ============================================================================
- * Integration Tests with parse_ip_address
- * ============================================================================
- */
 
 TEST (integration_parse_and_compare_ipv4)
 {

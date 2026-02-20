@@ -48,8 +48,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ==================== Test Helpers ==================== */
-
 /**
  * generate_test_certs - Generate self-signed test certificates
  * @cert_file: Output certificate file path
@@ -79,8 +77,6 @@ cleanup_test_certs (const char *cert_file, const char *key_file)
   unlink (cert_file);
   unlink (key_file);
 }
-
-/* ==================== Basic TLS Configuration Tests ==================== */
 
 TEST (tls_reconnect_set_tls_basic)
 {
@@ -243,8 +239,6 @@ TEST (tls_reconnect_empty_hostname_rejected)
   END_TRY;
 }
 
-/* ==================== Session Resumption Tests ==================== */
-
 TEST (tls_reconnect_session_resumption_enable_disable)
 {
   SocketReconnect_T conn = NULL;
@@ -280,8 +274,6 @@ TEST (tls_reconnect_session_resumption_enable_disable)
   END_TRY;
 }
 
-/* ==================== State Query Tests ==================== */
-
 TEST (tls_reconnect_handshake_state_not_connected)
 {
   SocketReconnect_T conn = NULL;
@@ -312,8 +304,6 @@ TEST (tls_reconnect_handshake_state_not_connected)
   }
   END_TRY;
 }
-
-/* ==================== Reconnect State Machine Tests ==================== */
 
 TEST (tls_reconnect_disconnect_resets_tls_state)
 {
@@ -380,8 +370,6 @@ TEST (tls_reconnect_reset_preserves_tls_config)
   END_TRY;
 }
 
-/* ==================== Hostname Validation Tests ==================== */
-
 TEST (tls_reconnect_hostname_stored_correctly)
 {
   SocketReconnect_T conn = NULL;
@@ -443,8 +431,6 @@ TEST (tls_reconnect_reconfigure_hostname)
   }
   END_TRY;
 }
-
-/* ==================== Resource Cleanup Tests ==================== */
 
 TEST (tls_reconnect_free_with_tls_configured)
 {
@@ -516,8 +502,6 @@ TEST (tls_reconnect_multiple_tls_instances)
   }
   END_TRY;
 }
-
-/* ==================== Policy Integration Tests ==================== */
 
 TEST (tls_reconnect_with_custom_policy)
 {

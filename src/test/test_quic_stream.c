@@ -18,11 +18,6 @@
 #include "quic/SocketQUICStream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Stream ID Type Detection Tests (RFC 9000 Section 2.1)
- * ============================================================================
- */
-
 TEST (quic_stream_type_bidi_client)
 {
   /* Client-initiated bidirectional: 0x0, 0x4, 0x8, ... */
@@ -59,11 +54,6 @@ TEST (quic_stream_type_uni_server)
   ASSERT_EQ (SocketQUICStream_type (0x103), QUIC_STREAM_UNI_SERVER);
 }
 
-/* ============================================================================
- * Stream Initiator Tests
- * ============================================================================
- */
-
 TEST (quic_stream_is_client_initiated)
 {
   /* Client-initiated: bit 0 = 0 */
@@ -93,11 +83,6 @@ TEST (quic_stream_is_server_initiated)
   ASSERT (!SocketQUICStream_is_server_initiated (0x4));
   ASSERT (!SocketQUICStream_is_server_initiated (0x6));
 }
-
-/* ============================================================================
- * Stream Directionality Tests
- * ============================================================================
- */
 
 TEST (quic_stream_is_bidirectional)
 {
@@ -129,11 +114,6 @@ TEST (quic_stream_is_unidirectional)
   ASSERT (!SocketQUICStream_is_unidirectional (0x5));
 }
 
-/* ============================================================================
- * Stream ID Validation Tests
- * ============================================================================
- */
-
 TEST (quic_stream_is_valid_id)
 {
   /* Valid stream IDs */
@@ -146,11 +126,6 @@ TEST (quic_stream_is_valid_id)
   ASSERT (!SocketQUICStream_is_valid_id (QUIC_STREAM_ID_MAX + 1));
   ASSERT (!SocketQUICStream_is_valid_id (UINT64_MAX));
 }
-
-/* ============================================================================
- * Stream ID Sequence Tests
- * ============================================================================
- */
 
 TEST (quic_stream_first_id)
 {
@@ -217,11 +192,6 @@ TEST (quic_stream_sequence)
   ASSERT_EQ (SocketQUICStream_sequence (1000), 250);
 }
 
-/* ============================================================================
- * Stream Creation Tests
- * ============================================================================
- */
-
 TEST (quic_stream_new_bidi_client)
 {
   Arena_T arena = Arena_new ();
@@ -286,11 +256,6 @@ TEST (quic_stream_new_invalid_id)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Stream Init/Reset Tests
- * ============================================================================
- */
-
 TEST (quic_stream_init)
 {
   struct SocketQUICStream stream;
@@ -343,11 +308,6 @@ TEST (quic_stream_reset_null)
   SocketQUICStream_Result res = SocketQUICStream_reset (NULL);
   ASSERT_EQ (res, QUIC_STREAM_ERROR_NULL);
 }
-
-/* ============================================================================
- * Stream Access Function Tests
- * ============================================================================
- */
 
 TEST (quic_stream_get_id_null)
 {
@@ -421,11 +381,6 @@ TEST (quic_stream_is_local)
   stream.is_local = 1;
   ASSERT_EQ (SocketQUICStream_is_local (&stream), 1);
 }
-
-/* ============================================================================
- * String Utility Tests
- * ============================================================================
- */
 
 TEST (quic_stream_type_string)
 {
@@ -528,11 +483,6 @@ TEST (quic_stream_event_string)
           == 0);
 }
 
-/* ============================================================================
- * Combined Type and Sequence Tests
- * ============================================================================
- */
-
 TEST (quic_stream_type_sequence_combined)
 {
   /* Verify that types repeat every 4 IDs */
@@ -554,11 +504,6 @@ TEST (quic_stream_large_sequence)
   ASSERT_EQ (SocketQUICStream_type (large_id), QUIC_STREAM_BIDI_CLIENT);
   ASSERT_EQ (SocketQUICStream_sequence (large_id), large_id >> 2);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

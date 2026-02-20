@@ -64,14 +64,6 @@ SocketTimeouts_T socket_default_timeouts
         .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS };
 pthread_mutex_t socket_default_timeouts_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/*
- * =============================================================================
- * Global DNS Resolver with Lazy Initialization
- *
- * Provides timeout-guaranteed DNS resolution for all Socket/SocketDgram APIs.
- * The resolver is lazily initialized on first use via pthread_once.
- * =============================================================================
- */
 static SocketDNS_T g_dns_resolver = NULL;
 static pthread_once_t g_dns_init_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t g_dns_config_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -168,9 +160,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCommon);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketCommon, e)
 
-/* ==================== Conditional Error Reporting Macro ====================
- */
-
 /**
  * COND_ERROR_MSG - Conditionally raise exception or log error message
  * @use_exc: If true, raise exception; if false, log error only
@@ -194,8 +183,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCommon);
         }                                                                \
     }                                                                    \
   while (0)
-
-/* ==================== String Parsing Utilities ==================== */
 
 /**
  * socketcommon_safe_strtol - Parse string to long with errno preservation
@@ -266,8 +253,6 @@ cidr_validate_prefix_range (int family, long prefix)
   return -1; /* Unknown family */
 }
 
-/* ==================== Timeout Utilities ==================== */
-
 int
 socketcommon_sanitize_timeout (int timeout_ms)
 {
@@ -278,8 +263,6 @@ socketcommon_sanitize_timeout (int timeout_ms)
     }
   return timeout_ms;
 }
-
-/* ==================== Validation Operations ==================== */
 
 void
 SocketCommon_validate_port (int port, Except_T exception_type)
@@ -593,8 +576,6 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
   return socketcommon_compare_masked_addresses (ip, network, ip_family);
 }
 
-/* ==================== RFC 1123 Hostname Validation ==================== */
-
 /**
  * socketcommon_is_valid_label_char - Check if character is valid for hostname
  * label
@@ -777,8 +758,6 @@ SocketCommon_validate_hostname (const char *host, Except_T exception_type)
       != 0)
     return;
 }
-
-/* ==================== Socket Option Operations ==================== */
 
 static void
 set_single_timeout_opt (int fd,
@@ -1130,8 +1109,6 @@ SocketCommon_disable_sigpipe (int fd)
 #endif
 }
 
-/* ==================== Base Lifecycle ==================== */
-
 SocketBase_T
 SocketCommon_new_base (int domain, int type, int protocol)
 {
@@ -1247,8 +1224,6 @@ SocketCommon_update_local_endpoint (SocketBase_T base)
     }
 }
 
-/* ==================== Accessor Functions ==================== */
-
 int
 SocketBase_fd (SocketBase_T base)
 {
@@ -1310,8 +1285,6 @@ SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
   socket_default_timeouts = local;
   pthread_mutex_unlock (&socket_default_timeouts_mutex);
 }
-
-/* ==================== Address Resolution ==================== */
 
 void
 SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
@@ -1744,8 +1717,6 @@ SocketCommon_reverse_lookup (const struct sockaddr *addr,
   return 0;
 }
 
-/* ==================== Bind Operations ==================== */
-
 int
 SocketCommon_try_bind_address (SocketBase_T base,
                                const struct sockaddr *addr,
@@ -1849,8 +1820,6 @@ SocketCommon_format_bind_error (const char *host, int port)
       break;
     }
 }
-
-/* ==================== I/O Vector Operations ==================== */
 
 size_t
 SocketCommon_calculate_total_iov_len (const struct iovec *iov, int iovcnt)
@@ -2063,8 +2032,6 @@ SocketCommon_alloc_iov_copy (const struct iovec *iov,
   return copy;
 }
 
-/* ==================== Address Utilities ==================== */
-
 const char *
 socketcommon_get_safe_host (const char *host)
 {
@@ -2145,8 +2112,6 @@ SocketCommon_cache_endpoint (Arena_T arena,
   *port_out = socketcommon_parse_port_number (serv);
   return 0;
 }
-
-/* ==================== Multicast Operations ==================== */
 
 /* Multicast operation type */
 typedef enum
@@ -2438,9 +2403,6 @@ SocketCommon_wait_for_fd (int fd, short events, int timeout_ms)
 
   return 1;
 }
-
-/* ==================== DNS Resolver to Addrinfo Conversion ====================
- */
 
 /**
  * SocketCommon_free_resolver_addrinfo - Free addrinfo list created by

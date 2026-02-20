@@ -21,11 +21,6 @@
 
 #include "core/SocketSecurity.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Average entry size estimate for capacity calculation */
 #define QPACK_AVERAGE_ENTRY_SIZE 50
 
@@ -40,13 +35,6 @@
 
 /** Maximum blocked sections per stream */
 #define QPACK_MAX_SECTIONS_PER_STREAM 64
-
-/* ============================================================================
- * FIELD LINE INSTRUCTION PATTERNS (RFC 9204 Section 4.5)
- *
- * Wire format patterns for field section instructions.
- * ============================================================================
- */
 
 /**
  * @brief Literal Field Line with Literal Name instruction pattern.
@@ -73,13 +61,6 @@
 #define QPACK_FIELD_LITERAL_VALUE_HUFFMAN 0x80 /**< H bit for value */
 #define QPACK_FIELD_LITERAL_VALUE_PREFIX 7     /**< Value length prefix bits */
 
-/* ============================================================================
- * INDEX METADATA (Internal)
- *
- * Tracks metadata for dynamic table entries as per RFC 9204 Section 3.2.4.
- * ============================================================================
- */
-
 /**
  * @brief Metadata for a dynamic table entry.
  * @internal
@@ -95,11 +76,6 @@ struct QPACKIndexMetadata
   uint32_t ref_count;    /**< Reference count for tracking (future use) */
 };
 
-/* ============================================================================
- * DYNAMIC TABLE ENTRY
- * ============================================================================
- */
-
 /**
  * @brief Dynamic table entry structure.
  * @internal
@@ -112,11 +88,6 @@ typedef struct
   size_t value_len;
   struct QPACKIndexMetadata meta; /**< Index metadata per RFC 9204 3.2.4 */
 } QPACK_DynamicEntry;
-
-/* ============================================================================
- * DYNAMIC TABLE STRUCTURE
- * ============================================================================
- */
 
 /**
  * @brief Per-stream dynamic table reference for accurate cancellation.
@@ -171,11 +142,6 @@ struct SocketQPACK_Table
   Arena_T arena; /**< Memory arena for allocations */
 };
 
-/* ============================================================================
- * INTERNAL HELPERS
- * ============================================================================
- */
-
 /**
  * @brief Calculate entry size per RFC 9204 Section 3.2.1.
  * @internal
@@ -197,11 +163,6 @@ qpack_entry_size (size_t name_len, size_t value_len)
     }
   return SIZE_MAX;
 }
-
-/* ============================================================================
- * BLOCKED STREAM MANAGEMENT (RFC 9204 Sections 2.1.2, 2.2.1)
- * ============================================================================
- */
 
 /**
  * @brief Queued field section waiting for dynamic table entries.

@@ -118,11 +118,6 @@ TEST (quic_transport_export_resumption_requires_connected)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test Runner
- * ============================================================================
- */
-
 int
 main (void)
 {

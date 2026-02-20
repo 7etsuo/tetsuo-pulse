@@ -38,8 +38,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ==================== Basic Resolver Tests ==================== */
-
 TEST (socketdns_new_creates_resolver)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -56,8 +54,6 @@ TEST (socketdns_pollfd)
   ASSERT_NE (fd, -1);
   SocketDNS_free (&dns);
 }
-
-/* ==================== Resolution Tests ==================== */
 
 TEST (socketdns_resolve_localhost)
 {
@@ -168,8 +164,6 @@ TEST (socketdns_resolve_without_port)
   END_TRY;
 }
 
-/* ==================== Multiple Resolution Tests ==================== */
-
 TEST (socketdns_multiple_resolutions)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -222,8 +216,6 @@ TEST (socketdns_sequential_resolutions)
   SocketDNS_free (&dns);
   END_TRY;
 }
-
-/* ==================== Callback Tests ==================== */
 
 static void
 slow_queue_callback (Request_T req,
@@ -305,8 +297,6 @@ TEST (socketdns_callback_with_user_data)
   END_TRY;
 }
 
-/* ==================== Cancellation Tests ==================== */
-
 TEST (socketdns_cancel_request)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -343,8 +333,6 @@ TEST (socketdns_cancel_multiple)
   SocketDNS_free (&dns);
   END_TRY;
 }
-
-/* ==================== Check Operation Tests ==================== */
 
 TEST (socketdns_check_returns_completion_count)
 {
@@ -406,8 +394,6 @@ TEST (socketdns_check_before_completion)
   }
   END_TRY;
 }
-
-/* ==================== GetResult Tests ==================== */
 
 TEST (socketdns_getresult_before_completion)
 {
@@ -473,8 +459,6 @@ TEST (socketdns_getresult_clears_result)
   END_TRY;
 }
 
-/* ==================== Concurrent Resolution Tests ==================== */
-
 TEST (socketdns_many_concurrent_resolutions)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -506,8 +490,6 @@ TEST (socketdns_many_concurrent_resolutions)
   SocketDNS_free (&dns);
   END_TRY;
 }
-
-/* ==================== Stress Tests ==================== */
 
 TEST (socketdns_rapid_resolution_requests)
 {
@@ -558,8 +540,6 @@ TEST (socketdns_resolve_cancel_cycle)
   SocketDNS_free (&dns);
   END_TRY;
 }
-
-/* ==================== Thread Safety Tests ==================== */
 
 static void *
 thread_resolve_requests (void *arg)
@@ -704,8 +684,6 @@ TEST (socketdns_concurrent_cancel)
   SocketDNS_free (&dns);
 }
 
-/* ==================== Thread Pool Tests ==================== */
-
 #if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads. \
        * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketdns_thread_pool_processes_requests)
@@ -738,8 +716,6 @@ TEST(socketdns_thread_pool_processes_requests)
     END_TRY;
 }
 #endif
-
-/* ==================== Parameter Validation Tests ==================== */
 
 TEST (socketdns_resolve_null_hostname)
 {
@@ -939,8 +915,6 @@ TEST (socketdns_cancel_null_request)
   SocketDNS_free (&dns);
 }
 
-/* ==================== Error Handling Tests ==================== */
-
 TEST (socketdns_getresult_null_request)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -990,8 +964,6 @@ TEST (socketdns_getresult_cancelled_request)
   SocketDNS_free (&dns);
   END_TRY;
 }
-
-/* ==================== Queue Management Tests ==================== */
 
 TEST (socketdns_queue_full_handling)
 {
@@ -1069,8 +1041,6 @@ TEST (socketdns_multiple_resolvers_independent)
   }
   END_TRY;
 }
-
-/* ==================== Timeout Configuration Tests ==================== */
 
 TEST (socketdns_timeout_get_set)
 {
@@ -1211,8 +1181,6 @@ TEST (socketdns_request_timeout_in_worker)
   END_TRY;
 }
 
-/* ==================== Close-on-Exec Tests ==================== */
-
 TEST (socketdns_pipe_has_cloexec)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -1227,8 +1195,6 @@ TEST (socketdns_pipe_has_cloexec)
 
   SocketDNS_free (&dns);
 }
-
-/* ==================== Security Tests (Issue #716) ==================== */
 
 /* Test: SocketDNS_resolve_sync rejects NULL dns parameter */
 TEST (socketdns_resolve_sync_null_dns_rejected)
@@ -1287,9 +1253,6 @@ TEST (socketdns_resolve_sync_with_timeout_protection)
   }
   END_TRY;
 }
-
-/* ==================== Resolver Sync Tests (Issue #1067) ====================
- */
 
 /* Test: SocketDNSResolver_resolve_sync with localhost hostname */
 TEST (test_socketdnsresolver_resolve_sync_hostname)
@@ -1605,8 +1568,6 @@ TEST (test_socketdnsresolver_resolve_sync_cache_paths)
 
   ASSERT_NE (success, 0);
 }
-
-/* ==================== Pending Count Tests ==================== */
 
 TEST (socketdns_pending_count_initialization)
 {

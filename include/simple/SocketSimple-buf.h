@@ -49,18 +49,10 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Type
-   *============================================================================*/
-
   /**
    * @brief Opaque circular buffer handle.
    */
   typedef struct SocketSimple_Buf *SocketSimple_Buf_T;
-
-  /*============================================================================
-   * Buffer Creation and Destruction
-   *============================================================================*/
 
   /**
    * @brief Create a new circular buffer.
@@ -87,10 +79,6 @@ extern "C"
    * @param buf Pointer to buffer handle.
    */
   extern void Socket_simple_buf_free (SocketSimple_Buf_T *buf);
-
-  /*============================================================================
-   * Write Operations
-   *============================================================================*/
 
   /**
    * @brief Write data into the buffer.
@@ -135,10 +123,6 @@ extern "C"
    * @return 0 on success, -1 on error.
    */
   extern int Socket_simple_buf_commit (SocketSimple_Buf_T buf, size_t len);
-
-  /*============================================================================
-   * Read Operations
-   *============================================================================*/
 
   /**
    * @brief Read and remove data from the buffer.
@@ -205,10 +189,6 @@ extern "C"
                                              char *line,
                                              size_t maxlen);
 
-  /*============================================================================
-   * Buffer State Query
-   *============================================================================*/
-
   /**
    * @brief Get number of bytes available for reading.
    *
@@ -249,10 +229,6 @@ extern "C"
    */
   extern int Socket_simple_buf_full (SocketSimple_Buf_T buf);
 
-  /*============================================================================
-   * Buffer Management
-   *============================================================================*/
-
   /**
    * @brief Clear the buffer (reset to empty).
    *
@@ -291,10 +267,6 @@ extern "C"
    */
   extern int Socket_simple_buf_compact (SocketSimple_Buf_T buf);
 
-  /*============================================================================
-   * Search Operations
-   *============================================================================*/
-
   /**
    * @brief Search for a byte sequence in the buffer.
    *
@@ -315,10 +287,6 @@ extern "C"
   extern ssize_t Socket_simple_buf_find (SocketSimple_Buf_T buf,
                                          const void *needle,
                                          size_t needle_len);
-
-  /*============================================================================
-   * Scatter-Gather I/O
-   *============================================================================*/
 
 #include <sys/uio.h>
 

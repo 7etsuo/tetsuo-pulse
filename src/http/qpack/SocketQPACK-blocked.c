@@ -29,21 +29,11 @@
 
 #include "core/SocketSecurity.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Growth factor for dynamic arrays */
 #define BLOCKED_GROWTH_FACTOR 2
 
 /** Initial section array capacity per stream */
 #define INITIAL_SECTION_CAPACITY 4
-
-/* ============================================================================
- * HELPER FUNCTIONS
- * ============================================================================
- */
 
 /**
  * @brief Find a blocked stream by stream ID.
@@ -193,8 +183,8 @@ remove_blocked_section (SocketQPACK_BlockedManager_T manager,
     return;
 
   /* Update byte counts (including section structure overhead, fixes #3470) */
-  size_t section_bytes = stream->sections[index].data_len
-                         + sizeof (SocketQPACK_BlockedSection);
+  size_t section_bytes
+      = stream->sections[index].data_len + sizeof (SocketQPACK_BlockedSection);
   stream->total_bytes -= section_bytes;
   manager->total_blocked_bytes -= section_bytes;
 
@@ -233,11 +223,6 @@ update_stream_min_ric (SocketQPACK_BlockedStream *stream)
             = stream->sections[i].required_insert_count;
     }
 }
-
-/* ============================================================================
- * PUBLIC API IMPLEMENTATION
- * ============================================================================
- */
 
 SocketQPACK_BlockedManager_T
 SocketQPACK_BlockedManager_new (Arena_T arena,
@@ -309,8 +294,8 @@ SocketQPACK_queue_blocked (SocketQPACK_BlockedManager_T manager,
    * Each blocked section consumes data + metadata (SocketQPACK_BlockedSection).
    * This prevents memory exhaustion via many small blocked sections.
    */
-  if (!SocketSecurity_check_add (data_len, sizeof (SocketQPACK_BlockedSection),
-                                  &section_cost))
+  if (!SocketSecurity_check_add (
+          data_len, sizeof (SocketQPACK_BlockedSection), &section_cost))
     return QPACK_BLOCKED_LIMIT_BYTES;
 
   if (!SocketSecurity_check_add (

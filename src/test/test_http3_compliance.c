@@ -40,11 +40,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Test Helpers (same pattern as test_http3_connection.c)
- * ============================================================================
- */
-
 static size_t
 build_settings_frame (uint8_t *buf,
                       size_t buflen,
@@ -149,11 +144,6 @@ make_server_conn_with_peer (Arena_T arena)
   return conn;
 }
 
-/* ============================================================================
- * RFC 9114 §4.1 — transfer-encoding is forbidden in HTTP/3
- * ============================================================================
- */
-
 TEST (h3_comply_transfer_encoding)
 {
   Arena_T arena = Arena_new ();
@@ -171,11 +161,6 @@ TEST (h3_comply_transfer_encoding)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * RFC 9114 §9 — Unknown frame types on control stream MUST be ignored
- * ============================================================================
- */
-
 TEST (h3_comply_unknown_frame_type)
 {
   Arena_T arena = Arena_new ();
@@ -192,11 +177,6 @@ TEST (h3_comply_unknown_frame_type)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * RFC 9114 §7.2.8 — GREASE frames on control stream MUST be ignored
- * ============================================================================
- */
 
 TEST (h3_comply_grease_frames)
 {
@@ -217,11 +197,6 @@ TEST (h3_comply_grease_frames)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * RFC 9114 §7.2.4.1 — GREASE setting IDs in SETTINGS MUST be ignored
- * ============================================================================
- */
 
 TEST (h3_comply_grease_settings)
 {
@@ -258,11 +233,6 @@ TEST (h3_comply_grease_settings)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * RFC 9114 §7.2.4 — Duplicate SETTINGS frame on control stream
- * ============================================================================
- */
-
 TEST (h3_comply_duplicate_settings)
 {
   Arena_T arena = Arena_new ();
@@ -292,11 +262,6 @@ TEST (h3_comply_duplicate_settings)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * RFC 9114 §7.2.2 — HEADERS frame on control stream MUST be rejected
- * ============================================================================
- */
-
 TEST (h3_comply_headers_on_control_rejected)
 {
   Arena_T arena = Arena_new ();
@@ -313,11 +278,6 @@ TEST (h3_comply_headers_on_control_rejected)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * RFC 9114 §7.2.7 — MAX_PUSH_ID must not decrease
- * ============================================================================
- */
 
 TEST (h3_comply_max_push_id_decreasing)
 {
@@ -341,12 +301,6 @@ TEST (h3_comply_max_push_id_decreasing)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * RFC 9114 §4.1 — Request headers with proper pseudo-headers and a large
- *                  custom header should encode successfully
- * ============================================================================
- */
 
 TEST (h3_comply_request_large_headers)
 {
@@ -385,11 +339,6 @@ TEST (h3_comply_request_large_headers)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * RFC 9114 §7.2.4 — Peer SETTINGS with max_field_section_size is stored
- * ============================================================================
- */
-
 TEST (h3_comply_settings_max_field_section_stored)
 {
   Arena_T arena = Arena_new ();
@@ -421,11 +370,6 @@ TEST (h3_comply_settings_max_field_section_stored)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

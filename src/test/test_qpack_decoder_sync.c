@@ -22,11 +22,6 @@
 #include "http/qpack/SocketQPACKDecoderStream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * HELPER: Create initialized decoder stream and sync state
- * ============================================================================
- */
-
 static SocketQPACK_DecoderSync_T
 create_sync_state (Arena_T arena, SocketQPACK_DecoderStream_T *out_stream)
 {
@@ -41,11 +36,6 @@ create_sync_state (Arena_T arena, SocketQPACK_DecoderStream_T *out_stream)
   *out_stream = stream;
   return SocketQPACK_DecoderSync_new (arena, stream);
 }
-
-/* ============================================================================
- * CREATION TESTS
- * ============================================================================
- */
 
 TEST (qpack_decoder_sync_new_basic)
 {
@@ -85,11 +75,6 @@ TEST (qpack_decoder_sync_new_null_stream)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * SECTION ACKNOWLEDGMENT TESTS (RFC 9204 Section 2.2.2.1)
- * ============================================================================
- */
 
 TEST (qpack_decoder_sync_section_decoded_ric_nonzero)
 {
@@ -192,11 +177,6 @@ TEST (qpack_decoder_sync_section_decoded_null)
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * STREAM CANCELLATION TESTS (RFC 9204 Section 2.2.2.2)
- * ============================================================================
- */
-
 TEST (qpack_decoder_sync_stream_reset_basic)
 {
   Arena_T arena = Arena_new ();
@@ -275,11 +255,6 @@ TEST (qpack_decoder_sync_stream_reset_null)
       = SocketQPACK_DecoderSync_on_stream_reset (NULL, 55);
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
-
-/* ============================================================================
- * INSERT COUNT INCREMENT TESTS (RFC 9204 Section 2.2.2.3)
- * ============================================================================
- */
 
 TEST (qpack_decoder_sync_insert_received_immediate)
 {
@@ -409,11 +384,6 @@ TEST (qpack_decoder_sync_insert_received_null)
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * FLUSH TESTS
- * ============================================================================
- */
-
 TEST (qpack_decoder_sync_flush_pending)
 {
   Arena_T arena = Arena_new ();
@@ -492,11 +462,6 @@ TEST (qpack_decoder_sync_flush_null)
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * COALESCE THRESHOLD TESTS
- * ============================================================================
- */
-
 TEST (qpack_decoder_sync_set_threshold_valid)
 {
   Arena_T arena = Arena_new ();
@@ -550,11 +515,6 @@ TEST (qpack_decoder_sync_get_threshold_null)
   ASSERT_EQ (threshold, 0);
 }
 
-/* ============================================================================
- * GETTER TESTS FOR NULL
- * ============================================================================
- */
-
 TEST (qpack_decoder_sync_get_insert_count_null)
 {
   uint64_t count = SocketQPACK_DecoderSync_get_insert_count (NULL);
@@ -566,11 +526,6 @@ TEST (qpack_decoder_sync_get_acknowledged_count_null)
   uint64_t count = SocketQPACK_DecoderSync_get_acknowledged_count (NULL);
   ASSERT_EQ (count, 0);
 }
-
-/* ============================================================================
- * MIXED INSTRUCTION TESTS
- * ============================================================================
- */
 
 TEST (qpack_decoder_sync_mixed_instructions)
 {
@@ -636,11 +591,6 @@ TEST (qpack_decoder_sync_mixed_instructions)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * LARGE VALUE TESTS
- * ============================================================================
- */
-
 TEST (qpack_decoder_sync_large_stream_id)
 {
   Arena_T arena = Arena_new ();
@@ -694,11 +644,6 @@ TEST (qpack_decoder_sync_large_increment)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * EDGE CASE TESTS
- * ============================================================================
- */
 
 TEST (qpack_decoder_sync_insert_received_zero_count)
 {
@@ -880,11 +825,6 @@ TEST (qpack_decoder_sync_stream_id_zero)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

@@ -14,10 +14,6 @@
 
 #include "socket/SocketReconnect.h"
 
-/*============================================================================
- * Internal Structure
- *============================================================================*/
-
 struct SocketSimple_Reconnect
 {
   SocketReconnect_T core;
@@ -25,10 +21,6 @@ struct SocketSimple_Reconnect
   void *user_data;
   SocketSimple_Socket_T simple_socket; /* Wrapper for underlying socket */
 };
-
-/*============================================================================
- * Internal Callback Wrapper
- *============================================================================*/
 
 static void
 state_callback_wrapper (SocketReconnect_T core __attribute__ ((unused)),
@@ -46,10 +38,6 @@ state_callback_wrapper (SocketReconnect_T core __attribute__ ((unused)),
                            conn->user_data);
     }
 }
-
-/*============================================================================
- * Policy Helpers
- *============================================================================*/
 
 /* Default reconnection policy values */
 #define RECONNECT_DEFAULT_INITIAL_DELAY_MS 100
@@ -102,10 +90,6 @@ Socket_simple_reconnect_policy_defaults (SocketSimple_Reconnect_Policy *policy)
   policy->health_interval_ms = RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
   policy->health_timeout_ms = RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
 }
-
-/*============================================================================
- * Lifecycle Functions
- *============================================================================*/
 
 SocketSimple_Reconnect_T
 Socket_simple_reconnect_new (const char *host,
@@ -186,10 +170,6 @@ Socket_simple_reconnect_free (SocketSimple_Reconnect_T *conn)
   *conn = NULL;
 }
 
-/*============================================================================
- * Connection Control
- *============================================================================*/
-
 int
 Socket_simple_reconnect_connect (SocketSimple_Reconnect_T conn)
 {
@@ -244,10 +224,6 @@ Socket_simple_reconnect_reset (SocketSimple_Reconnect_T conn)
   SocketReconnect_reset (conn->core);
   return 0;
 }
-
-/*============================================================================
- * State Query
- *============================================================================*/
 
 SocketSimple_Reconnect_State
 Socket_simple_reconnect_state (SocketSimple_Reconnect_T conn)
@@ -305,10 +281,6 @@ Socket_simple_reconnect_failures (SocketSimple_Reconnect_T conn)
   return SocketReconnect_failures (conn->core);
 }
 
-/*============================================================================
- * Event Loop Integration
- *============================================================================*/
-
 int
 Socket_simple_reconnect_fd (SocketSimple_Reconnect_T conn)
 {
@@ -356,10 +328,6 @@ Socket_simple_reconnect_process (SocketSimple_Reconnect_T conn)
   SocketReconnect_process (conn->core);
   return 0;
 }
-
-/*============================================================================
- * Passthrough I/O
- *============================================================================*/
 
 ssize_t
 Socket_simple_reconnect_send (SocketSimple_Reconnect_T conn,
@@ -417,10 +385,6 @@ Socket_simple_reconnect_recv (SocketSimple_Reconnect_T conn,
   return n;
 }
 
-/*============================================================================
- * Configuration
- *============================================================================*/
-
 int
 Socket_simple_reconnect_set_callback (SocketSimple_Reconnect_T conn,
                                       SocketSimple_Reconnect_Callback callback,
@@ -463,10 +427,6 @@ Socket_simple_reconnect_set_health_check (
   SocketReconnect_set_health_check (conn->core, NULL);
   return 0;
 }
-
-/*============================================================================
- * Underlying Socket Access
- *============================================================================*/
 
 SocketSimple_Socket_T
 Socket_simple_reconnect_get_socket (SocketSimple_Reconnect_T conn)

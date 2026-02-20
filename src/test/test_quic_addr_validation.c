@@ -19,11 +19,6 @@
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 static void
 setup_ipv4_addr (struct sockaddr_in *addr, const char *ip, uint16_t port)
 {
@@ -41,11 +36,6 @@ setup_ipv6_addr (struct sockaddr_in6 *addr, const char *ip, uint16_t port)
   addr->sin6_port = htons (port);
   inet_pton (AF_INET6, ip, &addr->sin6_addr);
 }
-
-/* ============================================================================
- * Amplification Limit Tests
- * ============================================================================
- */
 
 static void
 test_amplification_limit_before_validation (void)
@@ -162,11 +152,6 @@ test_counter_both_overflow (void)
   printf ("PASS: test_counter_both_overflow\n");
 }
 
-/* ============================================================================
- * Token Generation and Validation Tests
- * ============================================================================
- */
-
 static void
 test_token_generation_and_validation (void)
 {
@@ -278,11 +263,6 @@ test_token_ipv6 (void)
   printf ("PASS: test_token_ipv6\n");
 }
 
-/* ============================================================================
- * Path Challenge Tests
- * ============================================================================
- */
-
 static void
 test_path_challenge_generation (void)
 {
@@ -392,11 +372,6 @@ test_path_challenge_ipv6 (void)
   printf ("PASS: test_path_challenge_ipv6\n");
 }
 
-/* ============================================================================
- * Error Handling Tests
- * ============================================================================
- */
-
 static void
 test_null_parameter_handling (void)
 {
@@ -473,11 +448,6 @@ test_result_strings (void)
 
   printf ("PASS: test_result_strings\n");
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

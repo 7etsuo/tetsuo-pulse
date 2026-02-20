@@ -44,11 +44,6 @@ static void SocketPool_connections_release_buffers (Connection_T conn);
 static void
 remove_known_connection (T pool, Connection_T conn, Socket_T socket);
 
-/* ============================================================================
- * Free List Management
- * ============================================================================
- */
-
 /**
  * @brief Get next free slot from free list.
  * @ingroup connection_mgmt
@@ -101,11 +96,6 @@ return_to_free_list (T pool, Connection_T conn)
   conn->free_next = pool->free_list;
   pool->free_list = conn;
 }
-
-/* ============================================================================
- * Active List Management
- * ============================================================================
- */
 
 /**
  * @brief Add connection to active list (O(1) append to tail).
@@ -185,11 +175,6 @@ prepare_free_slot (T pool, Connection_T conn)
 
   return 0;
 }
-
-/* ============================================================================
- * Connection Slot Operations
- * ============================================================================
- */
 
 /**
  * @brief Update activity timestamp.
@@ -334,11 +319,6 @@ SocketPool_connections_reset_slot (Connection_T conn)
   reset_slot_base_fields (conn);
   reset_slot_tls_fields (conn);
 }
-
-/* ============================================================================
- * TLS Session Management
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 /**
@@ -524,11 +504,6 @@ cleanup_tls_and_save_session (Connection_T conn, Socket_T socket)
   save_tls_session (conn, socket);
 }
 #endif
-
-/* ============================================================================
- * Connection Add/Get/Remove API
- * ============================================================================
- */
 
 /**
  * @brief Handle case when socket already exists in pool.
@@ -927,11 +902,6 @@ SocketPool_remove (T pool, Socket_T socket)
   POOL_UNLOCK (pool);
 }
 
-/* ============================================================================
- * Idle Connection Cleanup
- * ============================================================================
- */
-
 /**
  * @brief Check if connection has exceeded idle timeout (overflow-safe).
  * @param last_activity Last activity timestamp
@@ -1089,11 +1059,6 @@ SocketPool_cleanup (T pool, time_t idle_timeout)
   close_collected_sockets (pool, close_count);
 }
 
-/* ============================================================================
- * Connection Accessor Functions
- * ============================================================================
- */
-
 /**
  * @brief Get connection's socket.
  * @conn Connection instance
@@ -1205,11 +1170,6 @@ Connection_created_at (const Connection_T conn)
   assert (conn);
   return conn->created_at;
 }
-
-/* ============================================================================
- * Connection Health Check
- * ============================================================================
- */
 
 /**
  * @brief Check basic socket health (error and connected state).

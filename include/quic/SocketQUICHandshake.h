@@ -37,11 +37,6 @@
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICTransportParams.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief CRYPTO stream receive buffer size per encryption level.
  *
@@ -50,11 +45,6 @@
 #ifndef QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE
 #define QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE 16384
 #endif
-
-/* ============================================================================
- * Types
- * ============================================================================
- */
 
 /**
  * @brief QUIC encryption levels (RFC 9000 Section 4.1.4).
@@ -226,17 +216,7 @@ struct SocketQUICHandshake
   int hello_retry_received;  /**< HRR received (forces 0-RTT rejection) */
 };
 
-/* ============================================================================
- * Exceptions
- * ============================================================================
- */
-
 extern const Except_T SocketQUICHandshake_Failed;
-
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
 
 /**
  * @brief Create a new handshake context.
@@ -258,11 +238,6 @@ SocketQUICHandshake_new (Arena_T arena,
  * @param handshake Pointer to handshake context (set to NULL after).
  */
 extern void SocketQUICHandshake_free (SocketQUICHandshake_T *handshake);
-
-/* ============================================================================
- * Initialization Functions
- * ============================================================================
- */
 
 /**
  * @brief Initialize handshake for a connection.
@@ -290,11 +265,6 @@ SocketQUICHandshake_init (SocketQUICConnection_T conn,
  */
 extern SocketQUICHandshake_Result SocketQUICHandshake_set_transport_params (
     SocketQUICHandshake_T handshake, const SocketQUICTransportParams_T *params);
-
-/* ============================================================================
- * Handshake Operations
- * ============================================================================
- */
 
 /**
  * @brief Send Initial packet to start handshake.
@@ -352,11 +322,6 @@ SocketQUICHandshake_derive_keys (SocketQUICConnection_T conn,
 extern SocketQUICHandshake_Result
 SocketQUICHandshake_process (SocketQUICHandshake_T handshake);
 
-/* ============================================================================
- * Key Management Functions
- * ============================================================================
- */
-
 /**
  * @brief Check if keys are available for encryption level.
  *
@@ -389,11 +354,6 @@ extern void *SocketQUICHandshake_get_keys (SocketQUICHandshake_T handshake,
  */
 extern void SocketQUICHandshake_discard_keys (SocketQUICHandshake_T handshake,
                                               SocketQUICCryptoLevel level);
-
-/* ============================================================================
- * Key Discard Triggers (RFC 9001 Section 4.9)
- * ============================================================================
- */
 
 /**
  * @brief Notify that client sent first Handshake packet (RFC 9001 §4.9.1).
@@ -449,11 +409,6 @@ SocketQUICHandshake_on_1rtt_keys_installed (SocketQUICHandshake_T handshake);
  */
 extern void
 SocketQUICHandshake_on_1rtt_packet_received (SocketQUICHandshake_T handshake);
-
-/* ============================================================================
- * Key Availability Checks (RFC 9001 Section 4.9)
- * ============================================================================
- */
 
 /**
  * @brief Check if Initial packets can be sent.
@@ -525,11 +480,6 @@ extern int SocketQUICHandshake_can_send_0rtt (SocketQUICHandshake_T handshake);
  */
 extern int
 SocketQUICHandshake_can_receive_0rtt (SocketQUICHandshake_T handshake);
-
-/* ============================================================================
- * 0-RTT Early Data Functions (RFC 9001 Section 4.6)
- * ============================================================================
- */
 
 /**
  * @brief Initialize 0-RTT state to default values.
@@ -634,11 +584,6 @@ SocketQUICHandshake_0rtt_handle_rejection (SocketQUICHandshake_T handshake);
 extern void
 SocketQUICHandshake_on_hello_retry_request (SocketQUICHandshake_T handshake);
 
-/* ============================================================================
- * State Query Functions
- * ============================================================================
- */
-
 /**
  * @brief Get current handshake state.
  *
@@ -680,11 +625,6 @@ extern int SocketQUICHandshake_is_confirmed (SocketQUICHandshake_T handshake);
  */
 extern const SocketQUICTransportParams_T *
 SocketQUICHandshake_get_peer_params (SocketQUICHandshake_T handshake);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of crypto level.

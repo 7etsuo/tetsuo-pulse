@@ -502,11 +502,6 @@ extern void *SocketBuf_writeptr (T buf, size_t *len);
  */
 extern void SocketBuf_written (T buf, size_t len);
 
-/* ============================================================================
- * Buffer Management Operations
- * ============================================================================
- */
-
 /**
  * @brief Move data to front of buffer, maximizing contiguous write space.
  * @ingroup core_io
@@ -631,11 +626,6 @@ extern ssize_t SocketBuf_find (T buf, const void *needle, size_t needle_len);
  */
 extern ssize_t SocketBuf_readline (T buf, char *line, size_t max_len);
 
-/* ============================================================================
- * Scatter-Gather I/O Operations
- * ============================================================================
- */
-
 #include <sys/uio.h>
 
 /**
@@ -705,11 +695,6 @@ extern ssize_t SocketBuf_readv (T buf, const struct iovec *iov, int iovcnt);
  * @see writev(2) system call for analogous operation.
  */
 extern ssize_t SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt);
-
-/* ============================================================================
- * Async I/O Operations (requires SocketAsync backend)
- * ============================================================================
- */
 
 /* Forward declarations for async types - use actual struct names */
 #ifndef SOCKET_INCLUDED

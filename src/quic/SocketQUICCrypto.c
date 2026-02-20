@@ -32,11 +32,6 @@
 #include <openssl/params.h>
 #endif
 
-/* ============================================================================
- * Constants - RFC 9001 Section 5.2
- * ============================================================================
- */
-
 /**
  * QUIC v1 Initial salt (RFC 9001 Section 5.2).
  * 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a
@@ -63,11 +58,6 @@ static const char label_quic_hp[] = "quic hp";
 /* Compile-time string length for labels */
 #define STRLEN_LIT(s) (sizeof (s) - 1)
 
-/* ============================================================================
- * Result String Table
- * ============================================================================
- */
-
 static const char *result_strings[]
     = { [QUIC_CRYPTO_OK] = "OK",
         [QUIC_CRYPTO_ERROR_NULL] = "NULL pointer argument",
@@ -79,11 +69,6 @@ static const char *result_strings[]
         [QUIC_CRYPTO_ERROR_BUFFER] = "Output buffer too small",
         [QUIC_CRYPTO_ERROR_TAG] = "AEAD tag verification failed",
         [QUIC_CRYPTO_ERROR_INPUT] = "Invalid input" };
-
-/* ============================================================================
- * AEAD Algorithm Tables (RFC 9001 Section 5.1)
- * ============================================================================
- */
 
 /**
  * AEAD algorithm parameters per RFC 9001 Section 5.1.
@@ -127,11 +112,6 @@ SocketQUICCrypto_result_string (SocketQUICCrypto_Result result)
     return result_strings[result];
   return "UNKNOWN";
 }
-
-/* ============================================================================
- * HKDF Functions (RFC 5869, RFC 8446) - OpenSSL 3.x API
- * ============================================================================
- */
 
 #ifdef SOCKET_HAS_TLS
 
@@ -328,11 +308,6 @@ hkdf_expand_label (const uint8_t *secret,
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * Salt Access
- * ============================================================================
- */
-
 SocketQUICCrypto_Result
 SocketQUICCrypto_get_initial_salt (uint32_t version,
                                    const uint8_t **salt,
@@ -360,11 +335,6 @@ SocketQUICCrypto_get_initial_salt (uint32_t version,
     }
 }
 
-/* ============================================================================
- * Security Functions
- * ============================================================================
- */
-
 void
 SocketQUICCryptoSecrets_clear (SocketQUICCryptoSecrets_T *secrets)
 {
@@ -372,11 +342,6 @@ SocketQUICCryptoSecrets_clear (SocketQUICCryptoSecrets_T *secrets)
     return;
   SocketCrypto_secure_clear (secrets, sizeof (*secrets));
 }
-
-/* ============================================================================
- * Traffic Keys Derivation
- * ============================================================================
- */
 
 SocketQUICCrypto_Result
 SocketQUICCrypto_derive_traffic_keys (const uint8_t *secret,
@@ -439,11 +404,6 @@ SocketQUICCrypto_derive_traffic_keys (const uint8_t *secret,
   return QUIC_CRYPTO_ERROR_NO_TLS;
 #endif
 }
-
-/* ============================================================================
- * Initial Secrets Derivation
- * ============================================================================
- */
 
 SocketQUICCrypto_Result
 SocketQUICCrypto_derive_initial_secrets (const SocketQUICConnectionID_T *dcid,
@@ -577,11 +537,6 @@ SocketQUICCrypto_derive_initial_keys (const SocketQUICConnectionID_T *dcid,
   return SocketQUICCrypto_derive_initial_secrets (dcid, version, NULL, keys);
 }
 
-/* ============================================================================
- * AEAD Algorithm Functions
- * ============================================================================
- */
-
 const char *
 SocketQUIC_AEAD_string (SocketQUIC_AEAD aead)
 {
@@ -620,11 +575,6 @@ SocketQUICCrypto_get_aead_secret_len (SocketQUIC_AEAD aead, size_t *secret_len)
 
   return QUIC_CRYPTO_OK;
 }
-
-/* ============================================================================
- * Packet Protection Keys (RFC 9001 Section 5.1)
- * ============================================================================
- */
 
 void
 SocketQUICPacketKeys_init (SocketQUICPacketKeys_T *keys)
@@ -734,11 +684,6 @@ SocketQUICCrypto_derive_packet_keys (const uint8_t *secret,
   return QUIC_CRYPTO_ERROR_NO_TLS;
 #endif
 }
-
-/* ============================================================================
- * AEAD Packet Payload Encryption/Decryption (RFC 9001 Section 5.3)
- * ============================================================================
- */
 
 /**
  * Form AEAD nonce by XORing IV with packet number (RFC 9001 §5.3).
@@ -953,11 +898,6 @@ SocketQUICCrypto_decrypt_payload (const SocketQUICPacketKeys_T *keys,
 #endif
 }
 
-/* ============================================================================
- * Header Protection (RFC 9001 Section 5.4)
- * ============================================================================
- */
-
 #ifdef SOCKET_HAS_TLS
 
 /** Offset from pn_offset to sample start (RFC 9001 §5.4.2). */
@@ -1155,11 +1095,6 @@ apply_hp_mask (uint8_t *packet,
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * Public Header Protection API
- * ============================================================================
- */
-
 SocketQUICCrypto_Result
 SocketQUICCrypto_protect_header (const uint8_t *hp_key,
                                  size_t hp_key_len,
@@ -1330,11 +1265,6 @@ SocketQUICCrypto_unprotect_header_ex (const SocketQUICPacketKeys_T *keys,
       keys->hp_key, keys->hp_len, keys->aead, packet, packet_len, pn_offset);
 }
 
-/* ============================================================================
- * Key Update (RFC 9001 Section 6)
- * ============================================================================
- */
-
 /* HKDF-Expand-Label label for key update (RFC 9001 §6.1) */
 static const char label_quic_ku[] = "quic ku";
 
@@ -1442,14 +1372,6 @@ precompute_next_read_keys (SocketQUICKeyUpdate_T *state)
   state->next_read_keys_valid = 1;
   return QUIC_CRYPTO_OK;
 }
-
-/* ============================================================================
- * Key Update Helper Functions (Internal)
- *
- * Small, single-purpose functions for key rotation operations.
- * Each function does exactly one thing and is independently testable.
- * ============================================================================
- */
 
 /**
  * Save current read keys as previous for delayed packet handling.

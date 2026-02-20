@@ -51,11 +51,6 @@
 #define QUICTLS_COMPAT 1
 #endif
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /** QUIC CRYPTO_ERROR base per RFC 9001 §4.8 */
 #define QUIC_TLS_CRYPTO_ERROR_BASE 0x0100
 
@@ -64,11 +59,6 @@
 
 /** Maximum CRYPTO output buffer size */
 #define QUIC_TLS_MAX_CRYPTO_BUFFER QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE
-
-/* ============================================================================
- * Internal Structures
- * ============================================================================
- */
 
 /**
  * @brief Per-level CRYPTO output buffer.
@@ -99,11 +89,6 @@ typedef struct
   int alert_received;
 } TLSState_T;
 
-/* ============================================================================
- * Forward Declarations
- * ============================================================================
- */
-
 static int quic_set_encryption_secrets (SSL *ssl,
                                         OSSL_ENCRYPTION_LEVEL level,
                                         const uint8_t *read_secret,
@@ -120,22 +105,12 @@ static int quic_flush_flight (SSL *ssl);
 static int
 quic_send_alert (SSL *ssl, OSSL_ENCRYPTION_LEVEL level, uint8_t alert);
 
-/* ============================================================================
- * SSL_QUIC_METHOD Definition
- * ============================================================================
- */
-
 static const SSL_QUIC_METHOD quic_method = {
   .set_encryption_secrets = quic_set_encryption_secrets,
   .add_handshake_data = quic_add_handshake_data,
   .flush_flight = quic_flush_flight,
   .send_alert = quic_send_alert,
 };
-
-/* ============================================================================
- * Level Conversion
- * ============================================================================
- */
 
 /**
  * @brief Convert OpenSSL encryption level to QUIC crypto level.
@@ -178,11 +153,6 @@ quic_level_to_ossl (SocketQUICCryptoLevel level)
       return ssl_encryption_initial;
     }
 }
-
-/* ============================================================================
- * TLS State Management
- * ============================================================================
- */
 
 /**
  * @brief Get TLS state from handshake context.
@@ -227,11 +197,6 @@ get_handshake_from_ssl (SSL *ssl)
     return NULL;
   return (SocketQUICHandshake_T)SSL_get_app_data (ssl);
 }
-
-/* ============================================================================
- * CRYPTO Buffer Operations
- * ============================================================================
- */
 
 /**
  * @brief Ensure CRYPTO buffer has capacity.
@@ -284,11 +249,6 @@ crypto_buffer_append (Arena_T arena,
   buf->len += len;
   return 1;
 }
-
-/* ============================================================================
- * SSL_QUIC_METHOD Callbacks
- * ============================================================================
- */
 
 /**
  * @brief Called when TLS derives new encryption secrets.
@@ -394,11 +354,6 @@ quic_send_alert (SSL *ssl, OSSL_ENCRYPTION_LEVEL level, uint8_t alert)
   return 1;
 }
 
-/* ============================================================================
- * ALPN Callback
- * ============================================================================
- */
-
 /**
  * @brief ALPN selection callback for server mode (RFC 9001 §8.1).
  *
@@ -452,11 +407,6 @@ alpn_select_callback (SSL *ssl,
 
   return SSL_TLSEXT_ERR_ALERT_FATAL;
 }
-
-/* ============================================================================
- * Context Initialization Helpers
- * ============================================================================
- */
 
 /**
  * @brief Create base SSL_CTX with TLS 1.3 and QUIC method.
@@ -596,11 +546,6 @@ tls_configure_early_data (SSL_CTX *ctx, const SocketQUICTLSConfig_T *config)
 #endif
 }
 
-/* ============================================================================
- * Context Initialization
- * ============================================================================
- */
-
 SocketQUICTLS_Result
 SocketQUICTLS_init_context (SocketQUICHandshake_T handshake,
                             const SocketQUICTLSConfig_T *config)
@@ -643,11 +588,6 @@ SocketQUICTLS_init_context (SocketQUICHandshake_T handshake,
   return QUIC_TLS_OK;
 }
 
-/* ============================================================================
- * SSL Object Creation
- * ============================================================================
- */
-
 SocketQUICTLS_Result
 SocketQUICTLS_create_ssl (SocketQUICHandshake_T handshake)
 {
@@ -683,11 +623,6 @@ SocketQUICTLS_create_ssl (SocketQUICHandshake_T handshake)
   handshake->tls_ssl = ssl;
   return QUIC_TLS_OK;
 }
-
-/* ============================================================================
- * Cleanup
- * ============================================================================
- */
 
 void
 SocketQUICTLS_free (SocketQUICHandshake_T handshake)
@@ -727,11 +662,6 @@ SocketQUICTLS_free (SocketQUICHandshake_T handshake)
       handshake->tls_ctx = NULL;
     }
 }
-
-/* ============================================================================
- * Handshake Operations
- * ============================================================================
- */
 
 SocketQUICTLS_Result
 SocketQUICTLS_do_handshake (SocketQUICHandshake_T handshake)
@@ -879,11 +809,6 @@ SocketQUICTLS_is_complete (SocketQUICHandshake_T handshake)
   return SSL_is_init_finished (ssl);
 }
 
-/* ============================================================================
- * Key Management
- * ============================================================================
- */
-
 int
 SocketQUICTLS_has_keys (SocketQUICHandshake_T handshake,
                         SocketQUICCryptoLevel level)
@@ -953,11 +878,6 @@ SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
   return QUIC_TLS_OK;
 }
 
-/* ============================================================================
- * Alert Handling
- * ============================================================================
- */
-
 uint64_t
 SocketQUICTLS_alert_to_error (uint8_t alert)
 {
@@ -985,11 +905,6 @@ SocketQUICTLS_get_error_string (SocketQUICHandshake_T handshake)
 
   return handshake->error_reason;
 }
-
-/* ============================================================================
- * Transport Parameters
- * ============================================================================
- */
 
 SocketQUICTLS_Result
 SocketQUICTLS_set_transport_params (SocketQUICHandshake_T handshake,
@@ -1028,11 +943,6 @@ SocketQUICTLS_get_peer_transport_params (SocketQUICHandshake_T handshake,
 
   return QUIC_TLS_OK;
 }
-
-/* ============================================================================
- * Transport Parameters Integration (RFC 9001 §8.2)
- * ============================================================================
- */
 
 SocketQUICTLS_Result
 SocketQUICTLS_set_local_transport_params (SocketQUICHandshake_T handshake)
@@ -1141,11 +1051,6 @@ SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake)
   return QUIC_TLS_OK;
 }
 
-/* ============================================================================
- * ALPN Functions (RFC 9001 Section 8.1)
- * ============================================================================
- */
-
 SocketQUICTLS_Result
 SocketQUICTLS_check_alpn_negotiated (SocketQUICHandshake_T handshake)
 {
@@ -1213,11 +1118,6 @@ SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
   *len = selected_len;
   return QUIC_TLS_OK;
 }
-
-/* ============================================================================
- * 0-RTT Session Ticket Functions (RFC 9001 Section 4.6)
- * ============================================================================
- */
 
 /** QUIC sentinel value for max_early_data_size per RFC 9001 §4.6.1 */
 #define QUIC_MAX_EARLY_DATA_SENTINEL 0xffffffff
@@ -1437,11 +1337,6 @@ SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
 }
 
 #endif /* HAVE_OPENSSL_QUIC */
-
-/* ============================================================================
- * Stub Implementations (TLS without QUIC support - OpenSSL < 3.0)
- * ============================================================================
- */
 
 #if !HAVE_OPENSSL_QUIC
 
@@ -1693,11 +1588,6 @@ SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * Stub Implementations (No TLS at all)
- * ============================================================================
- */
-
 #if !SOCKET_HAS_TLS
 
 SocketQUICTLS_Result
@@ -1942,11 +1832,6 @@ SocketQUICTLS_validate_0rtt_params (const SocketQUICTransportParams_T *original,
 }
 
 #endif /* !SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Utility Functions (Always Available)
- * ============================================================================
- */
 
 const char *
 SocketQUICTLS_result_string (SocketQUICTLS_Result result)

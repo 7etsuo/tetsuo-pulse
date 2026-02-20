@@ -59,11 +59,6 @@ extern "C"
 {
 #endif
 
-  /* ==========================================================================
-   * Server API
-   * ==========================================================================
-   */
-
   /**
    * @brief Check if HTTP/2 stream is a WebSocket upgrade request
    * @ingroup websocket
@@ -102,11 +97,6 @@ extern "C"
    */
   extern SocketWS_T SocketWSH2_server_accept (SocketHTTP2_Stream_T stream,
                                               const SocketWS_Config *config);
-
-  /* ==========================================================================
-   * Client API
-   * ==========================================================================
-   */
 
   /**
    * @brief Check if peer supports WebSocket over HTTP/2
@@ -149,11 +139,6 @@ extern "C"
   extern SocketWS_T SocketWSH2_client_connect (SocketHTTP2_Conn_T conn,
                                                const char *path,
                                                const SocketWS_Config *config);
-
-  /* ==========================================================================
-   * Accessor Functions
-   * ==========================================================================
-   */
 
   /**
    * @brief Get HTTP/2 stream underlying a WebSocket connection

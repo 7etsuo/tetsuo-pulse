@@ -19,11 +19,6 @@
 #include "quic/SocketQUICConstants.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Packet Number Decoding Tests (RFC 9000 Appendix A)
- * ============================================================================
- */
-
 /**
  * Test basic PN decoding with 1-byte truncated PN.
  * Window size = 256, half window = 128.
@@ -183,8 +178,8 @@ TEST (quic_pn_decode_3byte_wrap_backward)
   /*
    * Scenario: largest_pn = 0x1000000 (16777216), truncated_pn = 0xFFFFFF
    * expected_pn = 0x1000001, pn_win = 0x1000000, pn_hwin = 0x800000
-   * candidate = (0x1000001 & ~0xFFFFFF) | 0xFFFFFF = 0x1000000 | 0xFFFFFF = 0x1FFFFFF
-   * 0x1FFFFFF > 0x1000001 + 0x800000 (0x1800001), so subtract pn_win
+   * candidate = (0x1000001 & ~0xFFFFFF) | 0xFFFFFF = 0x1000000 | 0xFFFFFF =
+   * 0x1FFFFFF 0x1FFFFFF > 0x1000001 + 0x800000 (0x1800001), so subtract pn_win
    * Result: 0xFFFFFF
    */
   uint64_t pn = SocketQUICPacket_decode_pn (0xFFFFFF, 3, 0x1000000);
@@ -232,11 +227,6 @@ TEST (quic_pn_decode_first_packet)
   ASSERT_EQ (SocketQUICPacket_decode_pn (42, 1, 0), 42ULL);
   ASSERT_EQ (SocketQUICPacket_decode_pn (1000, 2, 0), 1000ULL);
 }
-
-/* ============================================================================
- * Receive Context Tests
- * ============================================================================
- */
 
 /**
  * Test receive context initialization.
@@ -331,17 +321,13 @@ TEST (quic_receive_get_largest_pn_invalid_space)
   SocketQUICReceive_init (&ctx);
 
   /* Invalid space should return 0 */
-  int result = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_COUNT, &pn);
+  int result
+      = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_COUNT, &pn);
   ASSERT_EQ (result, 0);
 
   result = SocketQUICReceive_get_largest_pn (&ctx, -1, &pn);
   ASSERT_EQ (result, 0);
 }
-
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
 
 /**
  * Test result string function returns valid strings.
@@ -372,11 +358,6 @@ TEST (quic_receive_result_string_unknown)
   ASSERT_NOT_NULL (str);
   ASSERT (strstr (str, "Unknown") != NULL);
 }
-
-/* ============================================================================
- * Packet Reception Error Cases
- * ============================================================================
- */
 
 /**
  * Test receive with NULL context.
@@ -530,11 +511,6 @@ TEST (quic_receive_1rtt_no_keys)
   ASSERT_EQ (r, QUIC_RECEIVE_ERROR_NO_KEYS);
 }
 
-/* ============================================================================
- * Malformed Input Tests
- * ============================================================================
- */
-
 /**
  * Test receive with oversized DCID in long header (> 20 bytes).
  */
@@ -545,10 +521,12 @@ TEST (quic_receive_oversized_dcid_long)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x15;                   /* DCID len = 21 (invalid, max is 20) */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x15; /* DCID len = 21 (invalid, max is 20) */
 
   SocketQUICReceive_init (&ctx);
 
@@ -567,12 +545,14 @@ TEST (quic_receive_oversized_scid_long)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID bytes 6-13 */
-  packet[14] = 0x15;                  /* SCID len = 21 (invalid) */
+  packet[14] = 0x15; /* SCID len = 21 (invalid) */
 
   SocketQUICReceive_init (&ctx);
 
@@ -596,8 +576,8 @@ TEST (quic_receive_oversized_dcid_short)
   SocketQUICReceive_init (&ctx);
 
   /* dcid_len = 21, which exceeds QUIC_CONNID_MAX_LEN (20) */
-  SocketQUICReceive_Result r
-      = SocketQUICReceive_packet (&ctx, packet, sizeof (packet), 21, 1, &result);
+  SocketQUICReceive_Result r = SocketQUICReceive_packet (
+      &ctx, packet, sizeof (packet), 21, 1, &result);
   ASSERT_EQ (r, QUIC_RECEIVE_ERROR_HEADER);
 }
 
@@ -611,10 +591,12 @@ TEST (quic_receive_retry_packet)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xF0;                   /* Long header, Retry type (bits 4-5 = 11) */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len */
+  packet[0] = 0xF0; /* Long header, Retry type (bits 4-5 = 11) */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len */
 
   SocketQUICReceive_init (&ctx);
 
@@ -633,10 +615,12 @@ TEST (quic_receive_dcid_past_boundary)
 
   uint8_t packet[10];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x14;                   /* DCID len = 20, but packet only 10 bytes */
+  packet[0] = 0xC0; /* Long header */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x14; /* DCID len = 20, but packet only 10 bytes */
 
   SocketQUICReceive_init (&ctx);
 
@@ -644,11 +628,6 @@ TEST (quic_receive_dcid_past_boundary)
       = SocketQUICReceive_packet (&ctx, packet, sizeof (packet), 8, 1, &result);
   ASSERT_EQ (r, QUIC_RECEIVE_ERROR_HEADER);
 }
-
-/* ============================================================================
- * Edge Case Tests
- * ============================================================================
- */
 
 /**
  * Test receive with zero-length DCID (valid per RFC 9000).
@@ -660,13 +639,15 @@ TEST (quic_receive_zero_length_dcid)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x00;                   /* DCID len = 0 */
-  packet[6] = 0x00;                   /* SCID len = 0 */
-  packet[7] = 0x00;                   /* Token len = 0 (varint) */
-  packet[8] = 0x10;                   /* Length = 16 (varint) */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x00; /* DCID len = 0 */
+  packet[6] = 0x00; /* SCID len = 0 */
+  packet[7] = 0x00; /* Token len = 0 (varint) */
+  packet[8] = 0x10; /* Length = 16 (varint) */
 
   SocketQUICReceive_init (&ctx);
 
@@ -688,26 +669,28 @@ TEST (quic_receive_max_length_cids)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x14;                   /* DCID len = 20 (max) */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x14; /* DCID len = 20 (max) */
   /* DCID = 20 bytes at offset 6-25 */
   for (int i = 0; i < 20; i++)
     packet[6 + i] = (uint8_t)(i + 1);
 
-  packet[26] = 0x14;                  /* SCID len = 20 (max) */
+  packet[26] = 0x14; /* SCID len = 20 (max) */
   /* SCID = 20 bytes at offset 27-46 */
   for (int i = 0; i < 20; i++)
     packet[27 + i] = (uint8_t)(i + 0x80);
 
-  packet[47] = 0x00;                  /* Token len = 0 */
-  packet[48] = 0x10;                  /* Length = 16 */
+  packet[47] = 0x00; /* Token len = 0 */
+  packet[48] = 0x10; /* Length = 16 */
 
   SocketQUICReceive_init (&ctx);
 
-  SocketQUICReceive_Result r
-      = SocketQUICReceive_packet (&ctx, packet, sizeof (packet), 20, 1, &result);
+  SocketQUICReceive_Result r = SocketQUICReceive_packet (
+      &ctx, packet, sizeof (packet), 20, 1, &result);
   ASSERT_EQ (r, QUIC_RECEIVE_ERROR_NO_KEYS);
   ASSERT_EQ (result.dcid.len, 20);
   ASSERT_EQ (result.scid.len, 20);
@@ -736,8 +719,10 @@ TEST (quic_receive_packet_type_identification)
 
   /* Initial (type = 0) */
   packet[0] = 0xC0;
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01;
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01;
   packet[5] = 0x08;
   packet[14] = 0x00;
   packet[15] = 0x10;
@@ -788,11 +773,6 @@ TEST (quic_receive_spin_bit)
   ASSERT_EQ (result.spin_bit, 1);
 }
 
-/* ============================================================================
- * Edge Case Tests: Token and VarInt
- * ============================================================================
- */
-
 /**
  * Test receive Initial packet with large token (2-byte varint length).
  */
@@ -804,16 +784,18 @@ TEST (quic_receive_large_token_2byte_varint)
   /* Initial packet with 64-byte token (requires 2-byte varint: 0x40 | 64) */
   uint8_t packet[200];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID = 8 bytes at offset 6-13 */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x40;                  /* Token len = 64 (2-byte varint: 0x40xx) */
-  packet[16] = 0x40;                  /* 0x4040 = 64 */
+  packet[14] = 0x00; /* SCID len = 0 */
+  packet[15] = 0x40; /* Token len = 64 (2-byte varint: 0x40xx) */
+  packet[16] = 0x40; /* 0x4040 = 64 */
   /* Token = 64 bytes at offset 17-80 */
-  packet[81] = 0x10;                  /* Length = 16 (varint) */
+  packet[81] = 0x10; /* Length = 16 (varint) */
 
   SocketQUICReceive_init (&ctx);
 
@@ -836,11 +818,13 @@ TEST (quic_receive_large_token_4byte_varint)
   /* This is impractical but tests the varint parser */
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x00;                   /* DCID len = 0 */
-  packet[6] = 0x00;                   /* SCID len = 0 */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x00; /* DCID len = 0 */
+  packet[6] = 0x00; /* SCID len = 0 */
   /* Token len = 16384 using 4-byte varint: 0x80004000 */
   packet[7] = 0x80;
   packet[8] = 0x00;
@@ -866,15 +850,17 @@ TEST (quic_receive_2byte_length_varint)
   /* Length = 200 (requires 2-byte varint: 0x40C8) */
   uint8_t packet[250];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID at 6-13 */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x00;                  /* Token len = 0 */
-  packet[16] = 0x40;                  /* Length = 200 (2-byte varint) */
-  packet[17] = 0xC8;                  /* 0x40C8 = 200 */
+  packet[14] = 0x00; /* SCID len = 0 */
+  packet[15] = 0x00; /* Token len = 0 */
+  packet[16] = 0x40; /* Length = 200 (2-byte varint) */
+  packet[17] = 0xC8; /* 0x40C8 = 200 */
 
   SocketQUICReceive_init (&ctx);
 
@@ -895,11 +881,13 @@ TEST (quic_receive_truncated_token_varint)
 
   uint8_t packet[20];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xC0;                   /* Long header, Initial */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x00;                   /* DCID len = 0 */
-  packet[6] = 0x00;                   /* SCID len = 0 */
+  packet[0] = 0xC0; /* Long header, Initial */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x00; /* DCID len = 0 */
+  packet[6] = 0x00; /* SCID len = 0 */
   /* 2-byte varint but only 1 byte available */
   packet[7] = 0x40;
 
@@ -910,11 +898,6 @@ TEST (quic_receive_truncated_token_varint)
       = SocketQUICReceive_packet (&ctx, packet, 8, 0, 1, &result);
   ASSERT_EQ (r, QUIC_RECEIVE_ERROR_HEADER);
 }
-
-/* ============================================================================
- * Key Setter Tests
- * ============================================================================
- */
 
 /**
  * Test setting 0-RTT keys.
@@ -964,21 +947,20 @@ TEST (quic_receive_set_all_keys)
   SocketQUICPacketKeys_init (&zero_rtt);
   SocketQUICKeyUpdate_init (&key_update);
 
-  ASSERT_EQ (SocketQUICReceive_set_initial_keys (&ctx, &initial), QUIC_RECEIVE_OK);
-  ASSERT_EQ (SocketQUICReceive_set_handshake_keys (&ctx, &handshake), QUIC_RECEIVE_OK);
-  ASSERT_EQ (SocketQUICReceive_set_0rtt_keys (&ctx, &zero_rtt), QUIC_RECEIVE_OK);
-  ASSERT_EQ (SocketQUICReceive_set_1rtt_keys (&ctx, &key_update), QUIC_RECEIVE_OK);
+  ASSERT_EQ (SocketQUICReceive_set_initial_keys (&ctx, &initial),
+             QUIC_RECEIVE_OK);
+  ASSERT_EQ (SocketQUICReceive_set_handshake_keys (&ctx, &handshake),
+             QUIC_RECEIVE_OK);
+  ASSERT_EQ (SocketQUICReceive_set_0rtt_keys (&ctx, &zero_rtt),
+             QUIC_RECEIVE_OK);
+  ASSERT_EQ (SocketQUICReceive_set_1rtt_keys (&ctx, &key_update),
+             QUIC_RECEIVE_OK);
 
   ASSERT_EQ (ctx.initial_keys, &initial);
   ASSERT_EQ (ctx.handshake_keys, &handshake);
   ASSERT_EQ (ctx.zero_rtt_keys, &zero_rtt);
   ASSERT_EQ (ctx.key_update, &key_update);
 }
-
-/* ============================================================================
- * Packet Type Recognition Tests (0-RTT, Handshake)
- * ============================================================================
- */
 
 /**
  * Test 0-RTT packet requires keys.
@@ -990,13 +972,15 @@ TEST (quic_receive_0rtt_no_keys)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xD0;                   /* Long header, 0-RTT type (bits 4-5 = 01) */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xD0; /* Long header, 0-RTT type (bits 4-5 = 01) */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID at 6-13 */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x10;                  /* Length = 16 */
+  packet[14] = 0x00; /* SCID len = 0 */
+  packet[15] = 0x10; /* Length = 16 */
 
   SocketQUICReceive_init (&ctx);
 
@@ -1017,13 +1001,15 @@ TEST (quic_receive_handshake_no_keys)
 
   uint8_t packet[100];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xE0;                   /* Long header, Handshake type (bits 4-5 = 10) */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xE0; /* Long header, Handshake type (bits 4-5 = 10) */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID at 6-13 */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x10;                  /* Length = 16 */
+  packet[14] = 0x00; /* SCID len = 0 */
+  packet[15] = 0x10; /* Length = 16 */
 
   SocketQUICReceive_init (&ctx);
 
@@ -1033,11 +1019,6 @@ TEST (quic_receive_handshake_no_keys)
   ASSERT_EQ (result.type, QUIC_PACKET_TYPE_HANDSHAKE);
   ASSERT_EQ (result.pn_space, QUIC_PN_SPACE_HANDSHAKE);
 }
-
-/* ============================================================================
- * Integration Tests with Real Encryption
- * ============================================================================
- */
 
 /**
  * Test complete Initial packet reception with derived keys.
@@ -1053,9 +1034,8 @@ TEST (quic_receive_initial_integration)
   SocketQUICConnectionID_T dcid;
 
   /* RFC 9001 Appendix A.1 test vector DCID */
-  static const uint8_t test_dcid[] = {
-    0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08
-  };
+  static const uint8_t test_dcid[]
+      = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
   dcid.len = sizeof (test_dcid);
   memcpy (dcid.data, test_dcid, dcid.len);
 
@@ -1069,13 +1049,15 @@ TEST (quic_receive_initial_integration)
   memset (packet, 0, sizeof (packet));
 
   /* Build unprotected header */
-  packet[0] = 0xC3;                   /* Long header, Initial, PN len = 4 (0-1 bits = 11) */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
-  memcpy (packet + 6, test_dcid, 8);  /* DCID */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x00;                  /* Token len = 0 */
+  packet[0] = 0xC3; /* Long header, Initial, PN len = 4 (0-1 bits = 11) */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01;                  /* Version 1 */
+  packet[5] = 0x08;                  /* DCID len = 8 */
+  memcpy (packet + 6, test_dcid, 8); /* DCID */
+  packet[14] = 0x00;                 /* SCID len = 0 */
+  packet[15] = 0x00;                 /* Token len = 0 */
 
   /* Length field: PN (4) + payload (16) + tag (16) = 36 = 0x24 */
   packet[16] = 0x24;
@@ -1089,7 +1071,7 @@ TEST (quic_receive_initial_integration)
   /* Payload: CRYPTO frame with "Hello" (just padding for test) */
   size_t pn_offset = 17;
   size_t header_len = 21;
-  uint8_t plaintext[16] = { 0x06, 0x00, 0x05, 'H', 'e', 'l', 'l', 'o',
+  uint8_t plaintext[16] = { 0x06, 0x00, 0x05, 'H',  'e',  'l',  'l',  'o',
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
   /* Create SocketQUICPacketKeys_T from Initial keys for encryption */
@@ -1104,25 +1086,35 @@ TEST (quic_receive_initial_integration)
 
   /* Encrypt using client Initial keys (we're receiving as server) */
   size_t ciphertext_len = sizeof (plaintext) + 16;
-  SocketQUICCrypto_Result encrypt_result = SocketQUICCrypto_encrypt_payload (
-      &client_keys, 0, packet, header_len, plaintext, sizeof (plaintext),
-      packet + header_len, &ciphertext_len);
+  SocketQUICCrypto_Result encrypt_result
+      = SocketQUICCrypto_encrypt_payload (&client_keys,
+                                          0,
+                                          packet,
+                                          header_len,
+                                          plaintext,
+                                          sizeof (plaintext),
+                                          packet + header_len,
+                                          &ciphertext_len);
   ASSERT_EQ (encrypt_result, QUIC_CRYPTO_OK);
 
   size_t packet_len = header_len + ciphertext_len;
 
   /* Apply header protection */
-  SocketQUICCrypto_Result hp_result = SocketQUICCrypto_protect_header (
-      client_keys.hp_key, client_keys.hp_len, client_keys.aead,
-      packet, packet_len, pn_offset);
+  SocketQUICCrypto_Result hp_result
+      = SocketQUICCrypto_protect_header (client_keys.hp_key,
+                                         client_keys.hp_len,
+                                         client_keys.aead,
+                                         packet,
+                                         packet_len,
+                                         pn_offset);
   ASSERT_EQ (hp_result, QUIC_CRYPTO_OK);
 
   /* Now receive the packet */
   SocketQUICReceive_init (&ctx);
   SocketQUICReceive_set_initial_keys (&ctx, &keys);
 
-  SocketQUICReceive_Result r = SocketQUICReceive_packet (
-      &ctx, packet, packet_len, 8, 1, &result);
+  SocketQUICReceive_Result r
+      = SocketQUICReceive_packet (&ctx, packet, packet_len, 8, 1, &result);
 
   ASSERT_EQ (r, QUIC_RECEIVE_OK);
   ASSERT_EQ (result.type, QUIC_PACKET_TYPE_INITIAL);
@@ -1134,7 +1126,8 @@ TEST (quic_receive_initial_integration)
 
   /* Verify largest_pn was updated */
   uint64_t largest;
-  int has_pn = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_INITIAL, &largest);
+  int has_pn = SocketQUICReceive_get_largest_pn (
+      &ctx, QUIC_PN_SPACE_INITIAL, &largest);
   ASSERT_EQ (has_pn, 1);
   ASSERT_EQ (largest, 0ULL);
 
@@ -1152,9 +1145,8 @@ TEST (quic_receive_initial_pn_sequence)
   SocketQUICConnectionID_T dcid;
 
   /* Use RFC test DCID */
-  static const uint8_t test_dcid[] = {
-    0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08
-  };
+  static const uint8_t test_dcid[]
+      = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
   dcid.len = sizeof (test_dcid);
   memcpy (dcid.data, test_dcid, dcid.len);
 
@@ -1180,26 +1172,37 @@ TEST (quic_receive_initial_pn_sequence)
       memset (packet, 0, sizeof (packet));
 
       /* Header with 1-byte PN (sufficient for small values) */
-      packet[0] = 0xC0;               /* PN len = 1 (bits 0-1 = 00) */
-      packet[1] = 0x00; packet[2] = 0x00;
-      packet[3] = 0x00; packet[4] = 0x01;
+      packet[0] = 0xC0; /* PN len = 1 (bits 0-1 = 00) */
+      packet[1] = 0x00;
+      packet[2] = 0x00;
+      packet[3] = 0x00;
+      packet[4] = 0x01;
       packet[5] = 0x08;
       memcpy (packet + 6, test_dcid, 8);
       packet[14] = 0x00;
       packet[15] = 0x00;
-      packet[16] = 0x21;              /* Length = 33 (1 PN + 16 payload + 16 tag) */
-      packet[17] = (uint8_t)pn;       /* Truncated PN */
+      packet[16] = 0x21;        /* Length = 33 (1 PN + 16 payload + 16 tag) */
+      packet[17] = (uint8_t)pn; /* Truncated PN */
 
       size_t pn_offset = 17;
       size_t header_len = 18;
       uint8_t plaintext[16] = { 0 };
-      plaintext[0] = (uint8_t)pn;     /* Mark payload with PN for verification */
+      plaintext[0] = (uint8_t)pn; /* Mark payload with PN for verification */
 
       size_t ct_len = 32;
-      SocketQUICCrypto_encrypt_payload (&client_keys, pn, packet, header_len,
-                                        plaintext, 16, packet + header_len, &ct_len);
-      SocketQUICCrypto_protect_header (client_keys.hp_key, client_keys.hp_len,
-                                       client_keys.aead, packet, header_len + ct_len,
+      SocketQUICCrypto_encrypt_payload (&client_keys,
+                                        pn,
+                                        packet,
+                                        header_len,
+                                        plaintext,
+                                        16,
+                                        packet + header_len,
+                                        &ct_len);
+      SocketQUICCrypto_protect_header (client_keys.hp_key,
+                                       client_keys.hp_len,
+                                       client_keys.aead,
+                                       packet,
+                                       header_len + ct_len,
                                        pn_offset);
 
       SocketQUICReceive_Result r = SocketQUICReceive_packet (
@@ -1229,8 +1232,10 @@ TEST (quic_receive_initial_wrong_keys)
   SocketQUICConnectionID_T dcid1, dcid2;
 
   /* Two different DCIDs produce different keys */
-  static const uint8_t dcid1_data[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
-  static const uint8_t dcid2_data[] = { 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18 };
+  static const uint8_t dcid1_data[]
+      = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  static const uint8_t dcid2_data[]
+      = { 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18 };
 
   dcid1.len = 8;
   memcpy (dcid1.data, dcid1_data, 8);
@@ -1245,7 +1250,9 @@ TEST (quic_receive_initial_wrong_keys)
   SocketQUICPacketKeys_init (&correct_client);
   memcpy (correct_client.key, correct_keys.client_key, QUIC_INITIAL_KEY_LEN);
   memcpy (correct_client.iv, correct_keys.client_iv, QUIC_INITIAL_IV_LEN);
-  memcpy (correct_client.hp_key, correct_keys.client_hp_key, QUIC_INITIAL_HP_KEY_LEN);
+  memcpy (correct_client.hp_key,
+          correct_keys.client_hp_key,
+          QUIC_INITIAL_HP_KEY_LEN);
   correct_client.key_len = QUIC_INITIAL_KEY_LEN;
   correct_client.hp_len = QUIC_INITIAL_HP_KEY_LEN;
   correct_client.aead = QUIC_AEAD_AES_128_GCM;
@@ -1254,8 +1261,10 @@ TEST (quic_receive_initial_wrong_keys)
   uint8_t packet[200];
   memset (packet, 0, sizeof (packet));
   packet[0] = 0xC0;
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01;
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01;
   packet[5] = 0x08;
   memcpy (packet + 6, dcid1_data, 8);
   packet[14] = 0x00;
@@ -1265,19 +1274,21 @@ TEST (quic_receive_initial_wrong_keys)
 
   uint8_t plaintext[16] = { 0 };
   size_t ct_len = 32;
-  SocketQUICCrypto_encrypt_payload (&correct_client, 0, packet, 18,
-                                    plaintext, 16, packet + 18, &ct_len);
+  SocketQUICCrypto_encrypt_payload (
+      &correct_client, 0, packet, 18, plaintext, 16, packet + 18, &ct_len);
   SocketQUICCrypto_protect_header (correct_client.hp_key,
                                    correct_client.hp_len,
                                    correct_client.aead,
-                                   packet, 18 + ct_len, 17);
+                                   packet,
+                                   18 + ct_len,
+                                   17);
 
   /* Try to receive with wrong_keys */
   SocketQUICReceive_init (&ctx);
   SocketQUICReceive_set_initial_keys (&ctx, &wrong_keys);
 
-  SocketQUICReceive_Result r = SocketQUICReceive_packet (
-      &ctx, packet, 18 + ct_len, 8, 1, &result);
+  SocketQUICReceive_Result r
+      = SocketQUICReceive_packet (&ctx, packet, 18 + ct_len, 8, 1, &result);
 
   /* Should fail decryption */
   ASSERT_EQ (r, QUIC_RECEIVE_ERROR_DECRYPT);
@@ -1307,30 +1318,39 @@ TEST (quic_receive_handshake_integration)
   uint8_t secret[32];
   memset (secret, 0x42, sizeof (secret));
 
-  SocketQUICCrypto_derive_packet_keys (secret, sizeof (secret),
-                                       QUIC_AEAD_AES_128_GCM, &keys);
+  SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, &keys);
 
   /* Build Handshake packet */
   uint8_t packet[200];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xE0;                   /* Long header, Handshake, PN len = 1 */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xE0; /* Long header, Handshake, PN len = 1 */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID at 6-13 */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x21;                  /* Length = 33 (1 PN + 16 + 16) */
-  packet[16] = 0x00;                  /* PN = 0 */
+  packet[14] = 0x00; /* SCID len = 0 */
+  packet[15] = 0x21; /* Length = 33 (1 PN + 16 + 16) */
+  packet[16] = 0x00; /* PN = 0 */
 
   size_t pn_offset = 16;
   size_t header_len = 17;
-  uint8_t plaintext[16] = { 0x06, 0x00, 0x05, 'T', 'e', 's', 't', '!',
+  uint8_t plaintext[16] = { 0x06, 0x00, 0x05, 'T',  'e',  's',  't',  '!',
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
   size_t ct_len = 32;
-  SocketQUICCrypto_encrypt_payload (&keys, 0, packet, header_len,
-                                    plaintext, 16, packet + header_len, &ct_len);
-  SocketQUICCrypto_protect_header_ex (&keys, packet, header_len + ct_len, pn_offset);
+  SocketQUICCrypto_encrypt_payload (&keys,
+                                    0,
+                                    packet,
+                                    header_len,
+                                    plaintext,
+                                    16,
+                                    packet + header_len,
+                                    &ct_len);
+  SocketQUICCrypto_protect_header_ex (
+      &keys, packet, header_len + ct_len, pn_offset);
 
   /* Receive */
   SocketQUICReceive_init (&ctx);
@@ -1348,7 +1368,8 @@ TEST (quic_receive_handshake_integration)
 
   /* Verify Handshake space updated */
   uint64_t pn;
-  int has = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_HANDSHAKE, &pn);
+  int has
+      = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_HANDSHAKE, &pn);
   ASSERT_EQ (has, 1);
   ASSERT_EQ (pn, 0ULL);
 
@@ -1367,29 +1388,38 @@ TEST (quic_receive_0rtt_integration)
   /* Derive 0-RTT keys from test secret */
   uint8_t secret[32];
   memset (secret, 0x55, sizeof (secret));
-  SocketQUICCrypto_derive_packet_keys (secret, sizeof (secret),
-                                       QUIC_AEAD_AES_128_GCM, &keys);
+  SocketQUICCrypto_derive_packet_keys (
+      secret, sizeof (secret), QUIC_AEAD_AES_128_GCM, &keys);
 
   /* Build 0-RTT packet */
   uint8_t packet[200];
   memset (packet, 0, sizeof (packet));
-  packet[0] = 0xD0;                   /* Long header, 0-RTT, PN len = 1 */
-  packet[1] = 0x00; packet[2] = 0x00;
-  packet[3] = 0x00; packet[4] = 0x01; /* Version 1 */
-  packet[5] = 0x08;                   /* DCID len = 8 */
+  packet[0] = 0xD0; /* Long header, 0-RTT, PN len = 1 */
+  packet[1] = 0x00;
+  packet[2] = 0x00;
+  packet[3] = 0x00;
+  packet[4] = 0x01; /* Version 1 */
+  packet[5] = 0x08; /* DCID len = 8 */
   /* DCID at 6-13 */
-  packet[14] = 0x00;                  /* SCID len = 0 */
-  packet[15] = 0x21;                  /* Length */
-  packet[16] = 0x00;                  /* PN = 0 */
+  packet[14] = 0x00; /* SCID len = 0 */
+  packet[15] = 0x21; /* Length */
+  packet[16] = 0x00; /* PN = 0 */
 
   size_t pn_offset = 16;
   size_t header_len = 17;
   uint8_t plaintext[16] = { 0 };
 
   size_t ct_len = 32;
-  SocketQUICCrypto_encrypt_payload (&keys, 0, packet, header_len,
-                                    plaintext, 16, packet + header_len, &ct_len);
-  SocketQUICCrypto_protect_header_ex (&keys, packet, header_len + ct_len, pn_offset);
+  SocketQUICCrypto_encrypt_payload (&keys,
+                                    0,
+                                    packet,
+                                    header_len,
+                                    plaintext,
+                                    16,
+                                    packet + header_len,
+                                    &ct_len);
+  SocketQUICCrypto_protect_header_ex (
+      &keys, packet, header_len + ct_len, pn_offset);
 
   /* Receive */
   SocketQUICReceive_init (&ctx);
@@ -1405,7 +1435,8 @@ TEST (quic_receive_0rtt_integration)
 
   /* 0-RTT uses Application space */
   uint64_t pn;
-  int has = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_APPLICATION, &pn);
+  int has
+      = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_APPLICATION, &pn);
   ASSERT_EQ (has, 1);
   ASSERT_EQ (pn, 0ULL);
 
@@ -1436,21 +1467,30 @@ TEST (quic_receive_1rtt_integration)
   uint8_t packet[200];
   memset (packet, 0, sizeof (packet));
 
-  /* Short header: fixed bit (1), spin (0), reserved (0), key phase (0), PN len (0 = 1 byte) */
-  packet[0] = 0x40;                   /* 0100 0000: short header, key phase 0 */
-  memcpy (packet + 1, dcid, 8);       /* DCID */
-  packet[9] = 0x00;                   /* PN = 0 */
+  /* Short header: fixed bit (1), spin (0), reserved (0), key phase (0), PN len
+   * (0 = 1 byte) */
+  packet[0] = 0x40;             /* 0100 0000: short header, key phase 0 */
+  memcpy (packet + 1, dcid, 8); /* DCID */
+  packet[9] = 0x00;             /* PN = 0 */
 
   size_t pn_offset = 9;
   size_t header_len = 10;
   uint8_t plaintext[16] = { 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-  /* Encrypt with write keys (we're receiving, so use peer's write = our read) */
+  /* Encrypt with write keys (we're receiving, so use peer's write = our read)
+   */
   size_t ct_len = 32;
-  SocketQUICCrypto_encrypt_payload (&ku.read_keys, 0, packet, header_len,
-                                    plaintext, 16, packet + header_len, &ct_len);
-  SocketQUICCrypto_protect_header_ex (&ku.read_keys, packet, header_len + ct_len, pn_offset);
+  SocketQUICCrypto_encrypt_payload (&ku.read_keys,
+                                    0,
+                                    packet,
+                                    header_len,
+                                    plaintext,
+                                    16,
+                                    packet + header_len,
+                                    &ct_len);
+  SocketQUICCrypto_protect_header_ex (
+      &ku.read_keys, packet, header_len + ct_len, pn_offset);
 
   /* Receive */
   SocketQUICReceive_init (&ctx);
@@ -1468,7 +1508,8 @@ TEST (quic_receive_1rtt_integration)
 
   /* Verify Application space updated */
   uint64_t pn;
-  int has = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_APPLICATION, &pn);
+  int has
+      = SocketQUICReceive_get_largest_pn (&ctx, QUIC_PN_SPACE_APPLICATION, &pn);
   ASSERT_EQ (has, 1);
   ASSERT_EQ (pn, 0ULL);
 
@@ -1488,7 +1529,8 @@ TEST (quic_receive_out_of_order_packets)
   SocketQUICInitialKeys_T keys;
   SocketQUICConnectionID_T dcid;
 
-  static const uint8_t test_dcid[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+  static const uint8_t test_dcid[]
+      = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
   dcid.len = 8;
   memcpy (dcid.data, test_dcid, 8);
 
@@ -1517,8 +1559,10 @@ TEST (quic_receive_out_of_order_packets)
       memset (packet, 0, sizeof (packet));
 
       packet[0] = 0xC0;
-      packet[1] = 0x00; packet[2] = 0x00;
-      packet[3] = 0x00; packet[4] = 0x01;
+      packet[1] = 0x00;
+      packet[2] = 0x00;
+      packet[3] = 0x00;
+      packet[4] = 0x01;
       packet[5] = 0x08;
       memcpy (packet + 6, test_dcid, 8);
       packet[14] = 0x00;
@@ -1528,13 +1572,17 @@ TEST (quic_receive_out_of_order_packets)
 
       uint8_t plaintext[16] = { 0 };
       size_t ct_len = 32;
-      SocketQUICCrypto_encrypt_payload (&client_keys, pn, packet, 18,
-                                        plaintext, 16, packet + 18, &ct_len);
-      SocketQUICCrypto_protect_header (client_keys.hp_key, client_keys.hp_len,
-                                       client_keys.aead, packet, 50, 17);
+      SocketQUICCrypto_encrypt_payload (
+          &client_keys, pn, packet, 18, plaintext, 16, packet + 18, &ct_len);
+      SocketQUICCrypto_protect_header (client_keys.hp_key,
+                                       client_keys.hp_len,
+                                       client_keys.aead,
+                                       packet,
+                                       50,
+                                       17);
 
-      SocketQUICReceive_Result r = SocketQUICReceive_packet (
-          &ctx, packet, 50, 8, 1, &result);
+      SocketQUICReceive_Result r
+          = SocketQUICReceive_packet (&ctx, packet, 50, 8, 1, &result);
 
       ASSERT_EQ (r, QUIC_RECEIVE_OK);
       ASSERT_EQ (result.packet_number, pn);
@@ -1547,11 +1595,6 @@ TEST (quic_receive_out_of_order_packets)
 
   SocketQUICInitialKeys_clear (&keys);
 }
-
-/* ============================================================================
- * Key Phase Tests (RFC 9001 §6)
- * ============================================================================
- */
 
 /**
  * Test receiving 1-RTT packet with key phase 1 (peer-initiated key update).
@@ -1571,8 +1614,8 @@ TEST (quic_receive_1rtt_key_phase_change)
   memset (read_secret, 0xBB, sizeof (read_secret));
 
   SocketQUICKeyUpdate_init (&ku);
-  SocketQUICKeyUpdate_set_initial_keys (&ku, write_secret, read_secret, 32,
-                                        QUIC_AEAD_AES_128_GCM);
+  SocketQUICKeyUpdate_set_initial_keys (
+      &ku, write_secret, read_secret, 32, QUIC_AEAD_AES_128_GCM);
 
   /* Verify initial state: phase 0, next_read_keys pre-computed */
   ASSERT_EQ (ku.key_phase, 0);
@@ -1594,12 +1637,21 @@ TEST (quic_receive_1rtt_key_phase_change)
 
   /* Encrypt with NEXT read keys (peer's new AEAD keys = our next_read_keys) */
   size_t ct_len = 32;
-  SocketQUICCrypto_encrypt_payload (&ku.next_read_keys, 0, packet, header_len,
-                                    plaintext, 16, packet + header_len, &ct_len);
+  SocketQUICCrypto_encrypt_payload (&ku.next_read_keys,
+                                    0,
+                                    packet,
+                                    header_len,
+                                    plaintext,
+                                    16,
+                                    packet + header_len,
+                                    &ct_len);
   /* HP key doesn't change with key update - use current read_keys HP */
-  SocketQUICCrypto_protect_header (ku.read_keys.hp_key, ku.read_keys.hp_len,
-                                   ku.read_keys.aead, packet,
-                                   header_len + ct_len, pn_offset);
+  SocketQUICCrypto_protect_header (ku.read_keys.hp_key,
+                                   ku.read_keys.hp_len,
+                                   ku.read_keys.aead,
+                                   packet,
+                                   header_len + ct_len,
+                                   pn_offset);
 
   /* Receive */
   SocketQUICReceive_init (&ctx);
@@ -1638,8 +1690,8 @@ TEST (quic_receive_1rtt_delayed_packet_same_phase)
   memset (read_secret, 0xDD, sizeof (read_secret));
 
   SocketQUICKeyUpdate_init (&ku);
-  SocketQUICKeyUpdate_set_initial_keys (&ku, write_secret, read_secret, 32,
-                                        QUIC_AEAD_AES_128_GCM);
+  SocketQUICKeyUpdate_set_initial_keys (
+      &ku, write_secret, read_secret, 32, QUIC_AEAD_AES_128_GCM);
 
   SocketQUICReceive_init (&ctx);
   SocketQUICReceive_set_1rtt_keys (&ctx, &ku);
@@ -1659,11 +1711,20 @@ TEST (quic_receive_1rtt_delayed_packet_same_phase)
     uint8_t plaintext[16] = { 0x05 };
 
     size_t ct_len = 32;
-    SocketQUICCrypto_encrypt_payload (&ku.read_keys, 5, packet, header_len,
-                                      plaintext, 16, packet + header_len, &ct_len);
-    SocketQUICCrypto_protect_header (ku.read_keys.hp_key, ku.read_keys.hp_len,
-                                     ku.read_keys.aead, packet,
-                                     header_len + ct_len, pn_offset);
+    SocketQUICCrypto_encrypt_payload (&ku.read_keys,
+                                      5,
+                                      packet,
+                                      header_len,
+                                      plaintext,
+                                      16,
+                                      packet + header_len,
+                                      &ct_len);
+    SocketQUICCrypto_protect_header (ku.read_keys.hp_key,
+                                     ku.read_keys.hp_len,
+                                     ku.read_keys.aead,
+                                     packet,
+                                     header_len + ct_len,
+                                     pn_offset);
 
     SocketQUICReceive_Result r = SocketQUICReceive_packet (
         &ctx, packet, header_len + ct_len, 8, 0, &result);
@@ -1684,11 +1745,20 @@ TEST (quic_receive_1rtt_delayed_packet_same_phase)
     uint8_t plaintext[16] = { 0x02 };
 
     size_t ct_len = 32;
-    SocketQUICCrypto_encrypt_payload (&ku.read_keys, 2, packet, header_len,
-                                      plaintext, 16, packet + header_len, &ct_len);
-    SocketQUICCrypto_protect_header (ku.read_keys.hp_key, ku.read_keys.hp_len,
-                                     ku.read_keys.aead, packet,
-                                     header_len + ct_len, pn_offset);
+    SocketQUICCrypto_encrypt_payload (&ku.read_keys,
+                                      2,
+                                      packet,
+                                      header_len,
+                                      plaintext,
+                                      16,
+                                      packet + header_len,
+                                      &ct_len);
+    SocketQUICCrypto_protect_header (ku.read_keys.hp_key,
+                                     ku.read_keys.hp_len,
+                                     ku.read_keys.aead,
+                                     packet,
+                                     header_len + ct_len,
+                                     pn_offset);
 
     SocketQUICReceive_Result r = SocketQUICReceive_packet (
         &ctx, packet, header_len + ct_len, 8, 0, &result);
@@ -1721,8 +1791,8 @@ TEST (quic_receive_1rtt_multiple_key_updates)
   memset (read_secret, 0xFF, sizeof (read_secret));
 
   SocketQUICKeyUpdate_init (&ku);
-  SocketQUICKeyUpdate_set_initial_keys (&ku, write_secret, read_secret, 32,
-                                        QUIC_AEAD_AES_128_GCM);
+  SocketQUICKeyUpdate_set_initial_keys (
+      &ku, write_secret, read_secret, 32, QUIC_AEAD_AES_128_GCM);
 
   SocketQUICReceive_init (&ctx);
   SocketQUICReceive_set_1rtt_keys (&ctx, &ku);
@@ -1747,17 +1817,25 @@ TEST (quic_receive_1rtt_multiple_key_updates)
 
       /* Get the appropriate AEAD keys for this phase */
       const SocketQUICPacketKeys_T *encrypt_keys;
-      SocketQUICKeyUpdate_get_read_keys (&ku, expected_phase, update + 1,
-                                         &encrypt_keys);
+      SocketQUICKeyUpdate_get_read_keys (
+          &ku, expected_phase, update + 1, &encrypt_keys);
 
       size_t ct_len = 32;
-      SocketQUICCrypto_encrypt_payload (encrypt_keys, update + 1, packet,
-                                        header_len, plaintext, 16,
-                                        packet + header_len, &ct_len);
+      SocketQUICCrypto_encrypt_payload (encrypt_keys,
+                                        update + 1,
+                                        packet,
+                                        header_len,
+                                        plaintext,
+                                        16,
+                                        packet + header_len,
+                                        &ct_len);
       /* HP key doesn't change - always use current read_keys HP */
-      SocketQUICCrypto_protect_header (ku.read_keys.hp_key, ku.read_keys.hp_len,
-                                       ku.read_keys.aead, packet,
-                                       header_len + ct_len, pn_offset);
+      SocketQUICCrypto_protect_header (ku.read_keys.hp_key,
+                                       ku.read_keys.hp_len,
+                                       ku.read_keys.aead,
+                                       packet,
+                                       header_len + ct_len,
+                                       pn_offset);
 
       SocketQUICReceive_Result r = SocketQUICReceive_packet (
           &ctx, packet, header_len + ct_len, 8, 0, &result);
@@ -1791,8 +1869,8 @@ TEST (quic_receive_1rtt_wrong_keys_fail)
   memset (read_secret, 0x22, sizeof (read_secret));
 
   SocketQUICKeyUpdate_init (&ku);
-  SocketQUICKeyUpdate_set_initial_keys (&ku, write_secret, read_secret, 32,
-                                        QUIC_AEAD_AES_128_GCM);
+  SocketQUICKeyUpdate_set_initial_keys (
+      &ku, write_secret, read_secret, 32, QUIC_AEAD_AES_128_GCM);
 
   /* Create completely different keys for encryption */
   uint8_t wrong_write[32], wrong_read[32];
@@ -1801,8 +1879,8 @@ TEST (quic_receive_1rtt_wrong_keys_fail)
 
   SocketQUICKeyUpdate_T wrong_ku;
   SocketQUICKeyUpdate_init (&wrong_ku);
-  SocketQUICKeyUpdate_set_initial_keys (&wrong_ku, wrong_write, wrong_read, 32,
-                                        QUIC_AEAD_AES_128_GCM);
+  SocketQUICKeyUpdate_set_initial_keys (
+      &wrong_ku, wrong_write, wrong_read, 32, QUIC_AEAD_AES_128_GCM);
 
   /* Build packet encrypted with wrong keys */
   uint8_t dcid[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
@@ -1818,10 +1896,16 @@ TEST (quic_receive_1rtt_wrong_keys_fail)
   uint8_t plaintext[16] = { 0 };
 
   size_t ct_len = 32;
-  SocketQUICCrypto_encrypt_payload (&wrong_ku.read_keys, 0, packet, header_len,
-                                    plaintext, 16, packet + header_len, &ct_len);
-  SocketQUICCrypto_protect_header_ex (&wrong_ku.read_keys, packet,
-                                      header_len + ct_len, pn_offset);
+  SocketQUICCrypto_encrypt_payload (&wrong_ku.read_keys,
+                                    0,
+                                    packet,
+                                    header_len,
+                                    plaintext,
+                                    16,
+                                    packet + header_len,
+                                    &ct_len);
+  SocketQUICCrypto_protect_header_ex (
+      &wrong_ku.read_keys, packet, header_len + ct_len, pn_offset);
 
   /* Receive with correct ku (should fail) */
   SocketQUICReceive_init (&ctx);
@@ -1839,11 +1923,6 @@ TEST (quic_receive_1rtt_wrong_keys_fail)
   SocketQUICKeyUpdate_clear (&ku);
   SocketQUICKeyUpdate_clear (&wrong_ku);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

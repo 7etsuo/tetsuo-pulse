@@ -33,11 +33,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 50000
 #define TEST_TIMEOUT_MS 5000
 
@@ -48,11 +43,6 @@ get_load_test_port (void)
 {
   return TEST_PORT_BASE + (load_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Load Testing Server
- * ============================================================================
- */
 
 typedef struct
 {
@@ -180,11 +170,6 @@ load_test_server_stop (LoadTestServer *server)
   Arena_dispose (&server->arena);
 }
 
-/* ============================================================================
- * Load Testing Client
- * ============================================================================
- */
-
 typedef struct
 {
   pthread_t thread;
@@ -269,11 +254,6 @@ load_test_client_stop (LoadTestClient *client)
   client->running = 0;
   pthread_join (client->thread, NULL);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (integration_load_connection_churn)
 {

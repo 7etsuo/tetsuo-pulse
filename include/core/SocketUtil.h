@@ -43,15 +43,6 @@
 #include "core/SocketEvent.h"
 #include "core/SocketLog.h"
 
-/* ============================================================================
- * SOCKETUTIL SUB-HEADERS
- * ============================================================================
- *
- * These sub-modules have been split from the original monolithic SocketUtil.h
- * for improved maintainability and reduced compilation dependencies.
- * Include order respects dependencies between headers.
- */
-
 /* Foundational - no internal dependencies */
 #include "core/SocketUtil/Core.h"        /* Bit macros, MIN/MAX, ARRAY_LENGTH */
 #include "core/SocketUtil/Constants.h"   /* Port limits, buffer sizes */

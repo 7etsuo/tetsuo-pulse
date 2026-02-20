@@ -142,11 +142,6 @@ httpclient_clear_response_for_retry (SocketHTTPClient_Response *response)
   CLEAR_RESPONSE (response);
 }
 
-/* ============================================================================
- * REDIRECT HANDLING
- * ============================================================================
- */
-
 int
 httpclient_is_redirect_status (int status_code)
 {

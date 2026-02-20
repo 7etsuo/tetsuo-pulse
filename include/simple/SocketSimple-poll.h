@@ -49,18 +49,10 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Types
-   *============================================================================*/
-
   /**
    * @brief Opaque poll instance handle.
    */
   typedef struct SocketSimple_Poll *SocketSimple_Poll_T;
-
-/*============================================================================
- * Constants
- *============================================================================*/
 
 /**
  * @brief Default maximum events for poll instance when not specified.
@@ -80,10 +72,6 @@ extern "C"
  */
 #define SOCKET_POLL_TIMEOUT_USE_DEFAULT (-2)
 
-  /*============================================================================
-   * Event Flags
-   *============================================================================*/
-
   /**
    * @brief Poll event flags.
    */
@@ -95,10 +83,6 @@ extern "C"
     SOCKET_SIMPLE_POLL_HANGUP = 0x08 /**< Peer disconnected */
   } SocketSimple_PollEvents;
 
-  /*============================================================================
-   * Event Structure
-   *============================================================================*/
-
   /**
    * @brief Event notification from poll_wait.
    */
@@ -108,10 +92,6 @@ extern "C"
     int events;                 /**< Bitmask of SocketSimple_PollEvents */
     void *data;                 /**< User data from poll_add */
   } SocketSimple_PollEvent;
-
-  /*============================================================================
-   * Poll Lifecycle
-   *============================================================================*/
 
   /**
    * @brief Create a new poll instance.
@@ -129,10 +109,6 @@ extern "C"
    * @param poll Pointer to poll handle.
    */
   extern void Socket_simple_poll_free (SocketSimple_Poll_T *poll);
-
-  /*============================================================================
-   * Socket Registration
-   *============================================================================*/
 
   /**
    * @brief Register a socket for monitoring.
@@ -186,10 +162,6 @@ extern "C"
                                                int add_events,
                                                int remove_events);
 
-  /*============================================================================
-   * Event Waiting
-   *============================================================================*/
-
   /**
    * @brief Wait for events.
    *
@@ -204,10 +176,6 @@ extern "C"
                                       SocketSimple_PollEvent *events,
                                       int max_events,
                                       int timeout_ms);
-
-  /*============================================================================
-   * Poll Information
-   *============================================================================*/
 
   /**
    * @brief Get the poll backend name.

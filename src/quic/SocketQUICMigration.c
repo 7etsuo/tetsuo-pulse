@@ -18,18 +18,8 @@
 #include <arpa/inet.h>
 #include <assert.h>
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketQUICMigration_Failed
     = { &SocketQUICMigration_Failed, "SocketQUICMigration failed" };
-
-/* ============================================================================
- * Helper Functions (Forward Declarations)
- * ============================================================================
- */
 
 static int sockaddr_equal (const struct sockaddr_storage *a,
                            const struct sockaddr_storage *b);
@@ -42,11 +32,6 @@ find_path_by_challenge (SocketQUICMigration_T *migration,
 static SocketQUICPath_T *allocate_path_slot (SocketQUICMigration_T *migration);
 static size_t find_path_index (const SocketQUICMigration_T *migration,
                                const SocketQUICPath_T *path);
-
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
 
 SocketQUICMigration_T *
 SocketQUICMigration_new (Arena_T arena,
@@ -93,11 +78,6 @@ SocketQUICMigration_free (SocketQUICMigration_T **migration)
   /* No dynamic allocations to free - arena-managed */
   *migration = NULL;
 }
-
-/* ============================================================================
- * Path Management Functions
- * ============================================================================
- */
 
 SocketQUICMigration_Result
 SocketQUICMigration_init_path (SocketQUICMigration_T *migration,
@@ -169,11 +149,6 @@ SocketQUICMigration_find_path (SocketQUICMigration_T *migration,
 
   return NULL;
 }
-
-/* ============================================================================
- * Path Validation Functions (RFC 9000 Section 8.2)
- * ============================================================================
- */
 
 SocketQUICMigration_Result
 SocketQUICMigration_probe_path (SocketQUICMigration_T *migration,
@@ -336,11 +311,6 @@ SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
   return timeout_count;
 }
 
-/* ============================================================================
- * Migration Functions (RFC 9000 Section 9)
- * ============================================================================
- */
-
 SocketQUICMigration_Result
 SocketQUICMigration_initiate (SocketQUICMigration_T *migration,
                               SocketQUICPath_T *new_path)
@@ -437,11 +407,6 @@ SocketQUICMigration_handle_peer_address_change (
   return SocketQUICMigration_probe_path (migration, peer_addr);
 }
 
-/* ============================================================================
- * Congestion Control Functions (RFC 9000 Section 9.4)
- * ============================================================================
- */
-
 void
 SocketQUICMigration_reset_congestion (SocketQUICPath_T *new_path,
                                       const SocketQUICPath_T *old_path)
@@ -492,11 +457,6 @@ SocketQUICMigration_update_rtt (SocketQUICPath_T *path, uint64_t rtt_us)
                      / QUIC_RTT_SMOOTH_DENOM;
     }
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 int
 SocketQUICMigration_can_migrate (const SocketQUICMigration_T *migration)
@@ -600,11 +560,6 @@ SocketQUICMigration_path_to_string (const SocketQUICPath_T *path,
 
   return SOCKET_SNPRINTF_CHECK (written, size);
 }
-
-/* ============================================================================
- * Helper Function Implementations
- * ============================================================================
- */
 
 /**
  * @brief Compare two sockaddr_storage structures for equality.

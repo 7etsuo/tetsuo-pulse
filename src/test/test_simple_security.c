@@ -18,11 +18,6 @@
 #include "simple/SocketSimple-security.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * SYN Protection Tests
- * ============================================================================
- */
-
 TEST (syn_new_default_config)
 {
   SocketSimple_SYNProtect_T protect;
@@ -103,11 +98,6 @@ TEST (syn_whitelist)
 
   Socket_simple_syn_free (&protect);
 }
-
-/* ============================================================================
- * IP Tracker Tests
- * ============================================================================
- */
 
 TEST (ip_tracker_new)
 {
@@ -234,11 +224,6 @@ TEST (ip_tracker_clear)
 
   Socket_simple_ip_tracker_free (&tracker);
 }
-
-/* ============================================================================
- * Test Runner
- * ============================================================================
- */
 
 int
 main (void)

@@ -15,11 +15,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * PATH_CHALLENGE Frame Encoding Tests
- * ============================================================================
- */
-
 TEST (frame_path_challenge_encode_basic)
 {
   uint8_t buf[128];
@@ -107,11 +102,6 @@ TEST (frame_path_challenge_encode_zero_buffer_size)
   size_t len = SocketQUICFrame_encode_path_challenge (data, buf, 0);
   ASSERT_EQ (0, len);
 }
-
-/* ============================================================================
- * PATH_RESPONSE Frame Encoding Tests
- * ============================================================================
- */
 
 TEST (frame_path_response_encode_basic)
 {
@@ -201,11 +191,6 @@ TEST (frame_path_response_encode_zero_buffer_size)
   ASSERT_EQ (0, len);
 }
 
-/* ============================================================================
- * PATH_CHALLENGE/PATH_RESPONSE Interaction Tests
- * ============================================================================
- */
-
 TEST (frame_path_challenge_response_echo)
 {
   uint8_t challenge_buf[128];
@@ -243,11 +228,6 @@ TEST (frame_path_challenge_response_echo)
   ASSERT_EQ (9, res);
   ASSERT (memcmp (response_data, challenge_data, 8) == 0);
 }
-
-/* ============================================================================
- * Buffer Size Validation Security Tests (Issue #950)
- * ============================================================================
- */
 
 TEST (frame_path_challenge_buffer_validation_issue_950)
 {

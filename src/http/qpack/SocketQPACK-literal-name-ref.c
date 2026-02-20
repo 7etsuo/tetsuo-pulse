@@ -42,11 +42,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Literal Field Line with Name Reference pattern mask: 01xxxxxx */
 #define QPACK_LITERAL_NAMEREF_PATTERN 0x40
 
@@ -76,14 +71,6 @@
 
 /** Maximum integer encoding buffer size */
 #define QPACK_INT_ENCODE_BUF_SIZE 16
-
-/* ============================================================================
- * QPACK STATIC TABLE (RFC 9204 Appendix A)
- *
- * The QPACK static table has 99 entries (indices 0-98).
- * This table is separate from the HPACK static table (61 entries).
- * ============================================================================
- */
 
 /**
  * @brief QPACK static table entry.
@@ -247,11 +234,6 @@ SocketQPACK_static_table_get (uint64_t index,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * ENCODE LITERAL FIELD LINE WITH NAME REFERENCE (RFC 9204 Section 4.5.4)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_encode_literal_name_ref (unsigned char *output,
                                      size_t output_size,
@@ -363,11 +345,6 @@ SocketQPACK_encode_literal_name_ref (unsigned char *output,
   *bytes_written = pos;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE LITERAL FIELD LINE WITH NAME REFERENCE (RFC 9204 Section 4.5.4)
- * ============================================================================
- */
 
 /**
  * @brief Internal decode implementation with optional arena.
@@ -548,11 +525,6 @@ SocketQPACK_decode_literal_name_ref_arena (const unsigned char *input,
       input, input_len, arena, result, consumed);
 }
 
-/* ============================================================================
- * VALIDATE NAME INDEX (RFC 9204 Section 4.5.4)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_validate_literal_name_ref_index (bool is_static,
                                              uint64_t name_index,
@@ -587,11 +559,6 @@ SocketQPACK_validate_literal_name_ref_index (bool is_static,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * RESOLVE NAME (RFC 9204 Section 4.5.4)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_resolve_literal_name_ref (bool is_static,

@@ -39,21 +39,11 @@
 #include <errno.h>
 #include <string.h>
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
 /** SOCKS4 response size in bytes */
 #define SOCKS4_RESPONSE_SIZE 8
 
 /** SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
 static const unsigned char SOCKS4A_MARKER_IP[4] = { 0x00, 0x00, 0x00, 0x01 };
-
-/* ============================================================================
- * Static Helper Functions
- * ============================================================================
- */
 
 /**
  * socks4_ensure_buffer_space - Validate buffer space before write
@@ -237,24 +227,6 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
 }
 
 
-/* ============================================================================
- * SOCKS4 Connect Request
- * ============================================================================
- *
- * Request format:
- * +----+----+----+----+----+----+----+----+----+----+...+----+
- * | VN | CD | DSTPORT |      DSTIP        | USERID  |NULL|
- * +----+----+----+----+----+----+----+----+----+----+...+----+
- *   1    1      2              4           variable    1
- *
- * VN: SOCKS version (0x04)
- * CD: Command code (0x01 = CONNECT)
- * DSTPORT: Destination port (network byte order)
- * DSTIP: Destination IP (network byte order)
- * USERID: User ID string (can be empty)
- * NULL: Null terminator for USERID
- */
-
 int
 proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
 {
@@ -325,23 +297,6 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
 
   return 0;
 }
-
-/* ============================================================================
- * SOCKS4a Connect Request
- * ============================================================================
- *
- * SOCKS4a extension format:
- * +----+----+----+----+----+----+----+----+----+...+----+----+...+----+
- * | VN | CD | DSTPORT |      DSTIP        | USERID  |NULL| HOSTNAME |NULL|
- * +----+----+----+----+----+----+----+----+----+...+----+----+...+----+
- *   1    1      2        0.0.0.x (4)       variable   1    variable   1
- *
- * DSTIP: Set to 0.0.0.x where x != 0 to signal hostname follows
- * HOSTNAME: Domain name to resolve at proxy
- *
- * This allows the proxy to resolve the hostname, avoiding DNS leaks
- * when the client shouldn't be making DNS queries.
- */
 
 /**
  * socks4a_is_ipv4_target - Check if target is an IPv4 address
@@ -452,28 +407,6 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/* ============================================================================
- * SOCKS4 Response
- * ============================================================================
- *
- * Response format:
- * +----+----+----+----+----+----+----+----+
- * | VN | CD | DSTPORT |      DSTIP        |
- * +----+----+----+----+----+----+----+----+
- *   1    1      2              4
- *
- * VN: Reply version (0x00, not 0x04!)
- * CD: Result code
- * DSTPORT: Server-assigned port (or 0)
- * DSTIP: Server-assigned IP (or 0)
- *
- * Result codes:
- * 90: Request granted
- * 91: Request rejected or failed
- * 92: Request rejected - no identd
- * 93: Request rejected - identd mismatch
- */
-
 SocketProxy_Result
 proxy_socks4_recv_response (struct SocketProxy_Conn_T *conn)
 {
@@ -505,11 +438,6 @@ proxy_socks4_recv_response (struct SocketProxy_Conn_T *conn)
   conn->recv_offset += SOCKS4_RESPONSE_SIZE; /* Consume response bytes */
   return PROXY_OK;
 }
-
-/* ============================================================================
- * SOCKS4 Reply Code Mapping
- * ============================================================================
- */
 
 SocketProxy_Result
 proxy_socks4_reply_to_result (int reply)

@@ -18,17 +18,7 @@
 
 #include "SocketSimple-internal.h"
 
-/* ============================================================================
- * Thread-Local Error State
- * ============================================================================
- */
-
 __thread SimpleError simple_error = { 0 };
-
-/* ============================================================================
- * Error Helper Functions (used by sub-modules)
- * ============================================================================
- */
 
 void
 simple_set_error (SocketSimple_ErrorCode code, const char *msg)
@@ -56,11 +46,6 @@ simple_set_error_errno (SocketSimple_ErrorCode code, const char *prefix)
             prefix,
             Socket_safe_strerror (errno));
 }
-
-/* ============================================================================
- * Error Access Functions (public API)
- * ============================================================================
- */
 
 const char *
 Socket_simple_error (void)
@@ -97,11 +82,6 @@ Socket_simple_clear_error (void)
   simple_error.errno_value = 0;
   simple_error.message[0] = '\0';
 }
-
-/* ============================================================================
- * Handle Helper Functions (used by sub-modules)
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 simple_create_handle (Socket_T sock, int is_server, int is_tls)

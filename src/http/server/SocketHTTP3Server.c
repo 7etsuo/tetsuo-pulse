@@ -25,17 +25,7 @@
 #include "http/SocketHTTP3-private.h"
 #include "quic/SocketQUICServer.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define H3_SERVER_MAX_CONNS 256
-
-/* ============================================================================
- * Per-connection H3 state
- * ============================================================================
- */
 
 typedef struct H3ServerConn
 {
@@ -44,11 +34,6 @@ typedef struct H3ServerConn
   Arena_T arena;
   struct H3ServerConn *next;
 } H3ServerConn;
-
-/* ============================================================================
- * Server structure
- * ============================================================================
- */
 
 struct SocketHTTP3_Server
 {
@@ -70,11 +55,6 @@ struct SocketHTTP3_Server
   int started;
   int closed;
 };
-
-/* ============================================================================
- * Helpers
- * ============================================================================
- */
 
 static H3ServerConn *
 find_h3_conn (SocketHTTP3_Server_T server, QUICServerConn_T quic_conn)
@@ -109,11 +89,6 @@ flush_h3_output (H3ServerConn *hc)
   return 0;
 }
 
-/* ============================================================================
- * Request-ready callback: H3 connection notifies us when headers decoded
- * ============================================================================
- */
-
 static void
 h3_request_ready (SocketHTTP3_Conn_T conn,
                   struct SocketHTTP3_Request *req,
@@ -141,11 +116,6 @@ h3_request_ready (SocketHTTP3_Conn_T conn,
         }
     }
 }
-
-/* ============================================================================
- * QUIC callbacks
- * ============================================================================
- */
 
 static void
 quic_conn_callback (QUICServerConn_T quic_conn, void *userdata)
@@ -216,11 +186,6 @@ quic_stream_callback (QUICServerConn_T quic_conn,
   flush_h3_output (hc);
 }
 
-/* ============================================================================
- * Config defaults
- * ============================================================================
- */
-
 void
 SocketHTTP3_ServerConfig_defaults (SocketHTTP3_ServerConfig *config)
 {
@@ -238,11 +203,6 @@ SocketHTTP3_ServerConfig_defaults (SocketHTTP3_ServerConfig *config)
   config->max_connections = 256;
   config->max_header_size = 65536;
 }
-
-/* ============================================================================
- * New
- * ============================================================================
- */
 
 SocketHTTP3_Server_T
 SocketHTTP3_Server_new (Arena_T arena, const SocketHTTP3_ServerConfig *config)
@@ -279,11 +239,6 @@ SocketHTTP3_Server_new (Arena_T arena, const SocketHTTP3_ServerConfig *config)
   return server;
 }
 
-/* ============================================================================
- * Handler registration
- * ============================================================================
- */
-
 void
 SocketHTTP3_Server_on_request (SocketHTTP3_Server_T server,
                                SocketHTTP3_RequestHandler handler,
@@ -294,11 +249,6 @@ SocketHTTP3_Server_on_request (SocketHTTP3_Server_T server,
   server->handler = handler;
   server->handler_userdata = userdata;
 }
-
-/* ============================================================================
- * Start
- * ============================================================================
- */
 
 int
 SocketHTTP3_Server_start (SocketHTTP3_Server_T server)
@@ -313,11 +263,6 @@ SocketHTTP3_Server_start (SocketHTTP3_Server_T server)
   return 0;
 }
 
-/* ============================================================================
- * Poll
- * ============================================================================
- */
-
 int
 SocketHTTP3_Server_poll (SocketHTTP3_Server_T server, int timeout_ms)
 {
@@ -326,11 +271,6 @@ SocketHTTP3_Server_poll (SocketHTTP3_Server_T server, int timeout_ms)
 
   return SocketQUICServer_poll (server->quic_server, timeout_ms);
 }
-
-/* ============================================================================
- * Shutdown
- * ============================================================================
- */
 
 int
 SocketHTTP3_Server_shutdown (SocketHTTP3_Server_T server)
@@ -351,11 +291,6 @@ SocketHTTP3_Server_shutdown (SocketHTTP3_Server_T server)
 
   return 0;
 }
-
-/* ============================================================================
- * Close
- * ============================================================================
- */
 
 void
 SocketHTTP3_Server_close (SocketHTTP3_Server_T server)
@@ -383,11 +318,6 @@ SocketHTTP3_Server_close (SocketHTTP3_Server_T server)
   server->started = 0;
   server->closed = 1;
 }
-
-/* ============================================================================
- * Queries
- * ============================================================================
- */
 
 size_t
 SocketHTTP3_Server_active_connections (SocketHTTP3_Server_T server)

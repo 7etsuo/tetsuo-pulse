@@ -47,11 +47,6 @@
 #include "tls/SocketTLSContext.h"
 #endif
 
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 static int
 create_listening_server (int *out_port)
 {
@@ -77,11 +72,6 @@ create_listening_server (int *out_port)
   END_TRY;
   return -1;
 }
-
-/* ============================================================================
- * Socket Error Path Tests
- * ============================================================================
- */
 
 TEST (cov_socket_new_from_invalid_fd)
 {
@@ -301,11 +291,6 @@ TEST (cov_socket_recv_not_connected)
   ASSERT (raised == 1);
 }
 
-/* ============================================================================
- * Socket Options Tests
- * ============================================================================
- */
-
 TEST (cov_socket_options_all)
 {
   Socket_T sock = NULL;
@@ -337,11 +322,6 @@ TEST (cov_socket_options_all)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Socket Dgram Tests
- * ============================================================================
- */
 
 TEST (cov_socketdgram_send_recv)
 {
@@ -428,11 +408,6 @@ TEST (cov_socketdgram_broadcast)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Socket Buffer Tests
- * ============================================================================
- */
 
 TEST (cov_socketbuf_operations)
 {
@@ -542,11 +517,6 @@ TEST (cov_socketbuf_direct_access)
   END_TRY;
 }
 
-/* ============================================================================
- * Socket Poll Tests
- * ============================================================================
- */
-
 TEST (cov_socketpoll_timeout)
 {
   SocketPoll_T poll = NULL;
@@ -615,11 +585,6 @@ TEST (cov_socketpoll_modify)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Socket Pool Tests
- * ============================================================================
- */
 
 TEST (cov_socketpool_resize)
 {
@@ -773,11 +738,6 @@ TEST (cov_socketpool_foreach)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Socket Reconnect Additional Edge Case Tests
- * ============================================================================
- */
 
 TEST (cov_socketreconnect_backoff_minimum_delay)
 {
@@ -1123,11 +1083,6 @@ TEST (cov_socketreconnect_unlimited_attempts)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Arena Edge Cases
- * ============================================================================
- */
-
 TEST (cov_arena_large_allocation)
 {
   Arena_T arena = Arena_new ();
@@ -1165,11 +1120,6 @@ TEST (cov_arena_calloc)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * DNS Edge Cases
- * ============================================================================
- */
 
 static atomic_int dns_callback_called = 0;
 static atomic_int dns_callback_error = 0;
@@ -1263,11 +1213,6 @@ TEST (cov_dns_resolve_invalid)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * TLS Tests (if available)
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 
@@ -1484,11 +1429,6 @@ TEST (cov_tls_protocol_version_fallback)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * Utility Function Tests
- * ============================================================================
- */
-
 TEST (cov_socket_timeouts)
 {
   Socket_T sock = NULL;
@@ -1524,11 +1464,6 @@ TEST (cov_socket_timeouts)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

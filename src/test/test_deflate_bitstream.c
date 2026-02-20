@@ -382,9 +382,9 @@ TEST (bitreader_max_bits_read)
   SocketDeflate_BitReader_T reader = make_reader (data, 4);
   uint32_t value;
 
-  ASSERT_EQ (SocketDeflate_BitReader_read (reader, DEFLATE_MAX_BITS_READ,
-                                           &value),
-             DEFLATE_OK);
+  ASSERT_EQ (
+      SocketDeflate_BitReader_read (reader, DEFLATE_MAX_BITS_READ, &value),
+      DEFLATE_OK);
   ASSERT_EQ (value, 0x1FFFFFF); /* 25 bits all set */
 }
 
@@ -436,7 +436,7 @@ TEST (bitreader_huffman_code_orientation)
    *
    * So: stream_bits = reverse_bits(code, code_len)
    */
-  uint32_t code = 0x6;     /* 0b110 MSB-first */
+  uint32_t code = 0x6; /* 0b110 MSB-first */
   uint32_t code_len = 3;
   uint32_t stream_bits = SocketDeflate_reverse_bits (code, code_len);
   ASSERT_EQ (stream_bits, 0x3); /* 0b011 LSB-first */
@@ -730,12 +730,6 @@ TEST (bitreader_reinit)
 }
 
 /*
- * ============================================================================
- * Bit Writer Tests
- * ============================================================================
- */
-
-/*
  * Helper: Create and initialize a bit writer with output buffer
  */
 static SocketDeflate_BitWriter_T
@@ -873,9 +867,12 @@ TEST (bitwriter_multivalue_packing)
   uint8_t buffer[16];
   SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
 
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1), DEFLATE_OK);   /* BFINAL */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 2), DEFLATE_OK);   /* BTYPE */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 28, 5), DEFLATE_OK);  /* HLIT */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1),
+             DEFLATE_OK); /* BFINAL */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 2),
+             DEFLATE_OK); /* BTYPE */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 28, 5),
+             DEFLATE_OK); /* HLIT */
 
   ASSERT_EQ (SocketDeflate_BitWriter_size (writer), 1);
   ASSERT_EQ (buffer[0], 0xE3);
@@ -1119,11 +1116,16 @@ TEST (bitwriter_reader_roundtrip_block_header)
   SocketDeflate_BitWriter_T writer = make_writer (buffer, sizeof (buffer));
 
   /* Write DEFLATE block header for dynamic Huffman block */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1), DEFLATE_OK); /* BFINAL=1 */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 2, 2), DEFLATE_OK); /* BTYPE=10 */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 28, 5), DEFLATE_OK); /* HLIT=28 */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 29, 5), DEFLATE_OK); /* HDIST=29 */
-  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 14, 4), DEFLATE_OK); /* HCLEN=14 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 1, 1),
+             DEFLATE_OK); /* BFINAL=1 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 2, 2),
+             DEFLATE_OK); /* BTYPE=10 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 28, 5),
+             DEFLATE_OK); /* HLIT=28 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 29, 5),
+             DEFLATE_OK); /* HDIST=29 */
+  ASSERT_EQ (SocketDeflate_BitWriter_write (writer, 14, 4),
+             DEFLATE_OK); /* HCLEN=14 */
 
   size_t total = SocketDeflate_BitWriter_flush (writer);
 

@@ -19,18 +19,10 @@ extern "C"
 {
 #endif
 
-/*============================================================================
- * Constants
- *============================================================================*/
-
 /**
  * @brief Default WebSocket connection timeout in milliseconds.
  */
 #define SOCKET_SIMPLE_WS_DEFAULT_TIMEOUT_MS 30000
-
-  /*============================================================================
-   * Types
-   *============================================================================*/
 
   /**
    * @brief Opaque WebSocket handle.
@@ -81,10 +73,6 @@ extern "C"
    */
   extern void Socket_simple_ws_options_init (SocketSimple_WSOptions *opts);
 
-  /*============================================================================
-   * Connection Functions
-   *============================================================================*/
-
   /**
    * @brief Connect to WebSocket server.
    *
@@ -126,10 +114,6 @@ extern "C"
   extern SocketSimple_WS_T
   Socket_simple_ws_connect_ex (const char *url,
                                const SocketSimple_WSOptions *opts);
-
-  /*============================================================================
-   * Send Functions
-   *============================================================================*/
 
   /**
    * @brief Send text message.
@@ -173,10 +157,6 @@ extern "C"
    */
   extern int Socket_simple_ws_ping (SocketSimple_WS_T ws);
 
-  /*============================================================================
-   * Receive Functions
-   *============================================================================*/
-
   /**
    * @brief Receive message (blocking).
    *
@@ -200,10 +180,6 @@ extern "C"
   extern int Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws,
                                             SocketSimple_WSMessage *msg,
                                             int timeout_ms);
-
-  /*============================================================================
-   * Close Functions
-   *============================================================================*/
 
   /**
    * @brief Initiate graceful close.
@@ -234,10 +210,6 @@ extern "C"
    */
   extern void Socket_simple_ws_message_free (SocketSimple_WSMessage *msg);
 
-  /*============================================================================
-   * Status Functions
-   *============================================================================*/
-
   /**
    * @brief Check if WebSocket is open.
    *
@@ -263,10 +235,6 @@ extern "C"
    * @return File descriptor, or -1 if invalid.
    */
   extern int Socket_simple_ws_fd (SocketSimple_WS_T ws);
-
-/*============================================================================
- * Server Types
- *============================================================================*/
 
 /**
  * @brief Default maximum frame size (16 MB).
@@ -298,10 +266,6 @@ extern "C"
    */
   extern void
   Socket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config);
-
-  /*============================================================================
-   * Server Functions
-   *============================================================================*/
 
   /**
    * @brief Check if an HTTP request is a WebSocket upgrade.

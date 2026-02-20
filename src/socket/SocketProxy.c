@@ -1032,11 +1032,6 @@ proxy_setup_after_tcp_connect (struct SocketProxy_Conn_T *conn, int sync_mode)
   return 0;
 }
 
-/* ============================================================================
- * Async Connection - Lifecycle
- * ============================================================================
- */
-
 SocketProxy_Conn_T
 SocketProxy_Conn_start (SocketDNSResolver_T resolver,
                         SocketPoll_T poll,
@@ -1837,11 +1832,6 @@ proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
   return 0;
 }
 
-/* ============================================================================
- * Synchronous API
- * ============================================================================
- */
-
 #if SOCKET_HAS_TLS
 /**
  * proxy_tunnel_ensure_tls_context - Create TLS context if not provided
@@ -2138,11 +2128,6 @@ SocketProxy_connect (const SocketProxy_Config *proxy,
 
   return result;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 const char *
 SocketProxy_result_string (SocketProxy_Result result)

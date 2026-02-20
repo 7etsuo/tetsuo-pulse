@@ -89,11 +89,6 @@ validate_and_store_window_bits (SocketWS_T ws, int bits, const char *type_name)
   return validated;
 }
 
-/*
- * ============================================================================
- * Native DEFLATE Implementation (RFC 1951)
- * ============================================================================
- */
 #ifdef SOCKETWS_HAS_NATIVE_DEFLATE
 
 #include "deflate/SocketDeflate.h"
@@ -550,12 +545,6 @@ ws_decompress_message (SocketWS_T ws,
 }
 
 #else /* zlib-based implementation */
-/*
- * ============================================================================
- * zlib Implementation (Fallback)
- * ============================================================================
- */
-
 #include <zlib.h>
 
 /** Default compression level */

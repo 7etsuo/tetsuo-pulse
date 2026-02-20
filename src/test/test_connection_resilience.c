@@ -29,11 +29,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
-
 TEST (integration_connection_state_preservation)
 {
   Socket_T client = NULL;

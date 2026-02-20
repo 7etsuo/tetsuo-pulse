@@ -36,11 +36,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 static void
 setup_signals (void)
 {
@@ -75,11 +70,6 @@ timer_callback_with_check (void *userdata)
       ctx->call_count++;
     }
 }
-
-/* ============================================================================
- * Basic Timer Creation Tests
- * ============================================================================
- */
 
 TEST (timer_add_one_shot)
 {
@@ -146,11 +136,6 @@ TEST (timer_add_multiple)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Timer Cancellation Tests
- * ============================================================================
- */
 
 TEST (timer_cancel_pending)
 {
@@ -226,11 +211,6 @@ TEST (timer_cancel_already_cancelled)
  * but behavior depends on debug settings.
  */
 
-/* ============================================================================
- * Timer Remaining Time Tests
- * ============================================================================
- */
-
 TEST (timer_remaining_query)
 {
   setup_signals ();
@@ -279,11 +259,6 @@ TEST (timer_remaining_on_cancelled)
 
 /* Note: timer_remaining_null_timer is not tested because the library uses
  * assert() for null timer validation, which aborts the program.
- */
-
-/* ============================================================================
- * Timer Reschedule Tests
- * ============================================================================
  */
 
 TEST (timer_reschedule)
@@ -339,11 +314,6 @@ TEST (timer_reschedule_cancelled)
 /* Note: timer_reschedule_null is not tested because the library uses
  * assert() for null timer validation, which aborts the program rather
  * than raising an exception.
- */
-
-/* ============================================================================
- * Timer Pause/Resume Tests
- * ============================================================================
  */
 
 TEST (timer_pause_resume)
@@ -443,11 +413,6 @@ TEST (timer_pause_cancelled)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Timer Callback Invocation Tests
- * ============================================================================
- */
 
 TEST (timer_callback_invoked)
 {
@@ -562,11 +527,6 @@ TEST (timer_cancelled_not_invoked)
   END_TRY;
 }
 
-/* ============================================================================
- * Timer Edge Cases
- * ============================================================================
- */
-
 TEST (timer_zero_delay)
 {
   setup_signals ();
@@ -660,11 +620,6 @@ TEST (timer_multiple_timers_added)
   END_TRY;
 }
 
-/* ============================================================================
- * Timer Error Handling Tests
- * ============================================================================
- */
-
 /* Note: timer_add_null_poll is not tested because the library uses
  * assert() for null poll validation, which aborts the program rather
  * than raising an exception. This is by design for programming errors.
@@ -737,11 +692,6 @@ TEST (timer_repeating_zero_interval)
 
   ASSERT (caught);
 }
-
-/* ============================================================================
- * Comprehensive Repeating Timer Tests (Issue #3053)
- * ============================================================================
- */
 
 /* Test basic repeating timer with various intervals */
 TEST (timer_repeating_basic_intervals)
@@ -866,7 +816,8 @@ TEST (timer_repeating_count_firings)
         (void)SocketPoll_wait (poll, &events, 50);
       }
 
-    /* Should have fired at least 6 times (allowing tolerance for slower systems) */
+    /* Should have fired at least 6 times (allowing tolerance for slower
+     * systems) */
     ASSERT (ctx.call_count >= 6);
     /* Should not have fired more than 18 times */
     ASSERT (ctx.call_count <= 18);
@@ -990,7 +941,8 @@ TEST (timer_repeating_minimum_interval)
   TRY
   {
     /* SOCKET_TIMER_MIN_INTERVAL_MS = 1 */
-    timer = SocketTimer_add_repeating (poll, 1, timer_callback_with_check, &ctx);
+    timer
+        = SocketTimer_add_repeating (poll, 1, timer_callback_with_check, &ctx);
     ASSERT_NOT_NULL (timer);
 
     /* Wait a short time - loop to ensure time passes */
@@ -1002,7 +954,8 @@ TEST (timer_repeating_minimum_interval)
         (void)SocketPoll_wait (poll, &events, 10);
       }
 
-    /* Should have fired many times (at least 20 in 100ms, allowing for overhead) */
+    /* Should have fired many times (at least 20 in 100ms, allowing for
+     * overhead) */
     ASSERT (ctx.call_count >= 20);
 
     SocketTimer_cancel (poll, timer);
@@ -1219,11 +1172,6 @@ TEST (timer_repeating_first_firing_timing)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Advanced Cancellation Tests (Issue #3065)
- * ============================================================================
- */
 
 TEST (timer_cancel_after_fired)
 {
@@ -1470,11 +1418,6 @@ TEST (timer_cancelled_timers_skipped_at_heap_root)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Main - Run all timer tests
- * ============================================================================
- */
 
 int
 main (void)

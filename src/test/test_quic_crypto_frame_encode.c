@@ -16,11 +16,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/* ============================================================================
- * CRYPTO Frame Encoding Tests
- * ============================================================================
- */
-
 TEST (frame_crypto_encode_basic)
 {
   uint8_t buf[128];
@@ -217,11 +212,6 @@ TEST (frame_crypto_encode_roundtrip_multiple)
   ASSERT_EQ (14, frame.length);
 }
 
-/* ============================================================================
- * CRYPTO Frame Decoding Tests
- * ============================================================================
- */
-
 TEST (frame_crypto_decode_null_params)
 {
   uint8_t buf[] = { 0x06, 0x00, 0x00 };
@@ -309,11 +299,6 @@ TEST (frame_crypto_decode_error_distinction)
   ASSERT (QUIC_FRAME_ERROR_NULL != QUIC_FRAME_ERROR_TRUNCATED);
   ASSERT (QUIC_FRAME_ERROR_TYPE != QUIC_FRAME_ERROR_TRUNCATED);
 }
-
-/* ============================================================================
- * CRYPTO Frame Integration Tests
- * ============================================================================
- */
 
 TEST (frame_crypto_verify_frame_type)
 {

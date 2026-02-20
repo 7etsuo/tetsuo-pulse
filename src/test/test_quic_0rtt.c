@@ -29,11 +29,6 @@
 #include "quic/SocketQUICTransportParams.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 /**
  * @brief Create a test handshake context for 0-RTT testing.
  */
@@ -77,11 +72,6 @@ init_test_params (SocketQUICTransportParams_T *params)
   params->active_connection_id_limit = 8;
   params->disable_active_migration = 0;
 }
-
-/* ============================================================================
- * State Machine Tests
- * ============================================================================
- */
 
 /* Test: Initial state is NONE */
 TEST (zero_rtt_init_state_none)
@@ -143,7 +133,8 @@ TEST (zero_rtt_set_ticket_transitions_to_offered)
 
   /* Verify params were saved */
   ASSERT_EQ (hs->zero_rtt.saved_params_valid, 1);
-  ASSERT_EQ (hs->zero_rtt.saved_params.initial_max_data, params.initial_max_data);
+  ASSERT_EQ (hs->zero_rtt.saved_params.initial_max_data,
+             params.initial_max_data);
 
   /* Verify ALPN was saved */
   ASSERT_EQ (hs->zero_rtt.saved_alpn_len, 2);
@@ -207,11 +198,6 @@ TEST (zero_rtt_disabled_by_hrr)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Transport Parameter Validation Tests (RFC 9001 §4.6.3)
- * ============================================================================
- */
 
 /* Test: Equal parameters are valid */
 TEST (zero_rtt_param_validation_accepts_equal)
@@ -389,11 +375,6 @@ TEST (zero_rtt_param_validation_rejects_decreased_cid_limit)
   ASSERT_EQ (res, QUIC_TLS_ERROR_TRANSPORT);
 }
 
-/* ============================================================================
- * Rejection Handling Tests
- * ============================================================================
- */
-
 /* Test: Rejection discards 0-RTT keys */
 TEST (zero_rtt_rejection_discards_keys)
 {
@@ -459,10 +440,11 @@ TEST (zero_rtt_rejection_clears_buffer)
 
   /* Allocate and populate early data buffer */
   hs->zero_rtt.early_data_capacity = 1024;
-  hs->zero_rtt.early_data_buffer
-      = Arena_alloc (arena, hs->zero_rtt.early_data_capacity, __FILE__, __LINE__);
+  hs->zero_rtt.early_data_buffer = Arena_alloc (
+      arena, hs->zero_rtt.early_data_capacity, __FILE__, __LINE__);
   ASSERT_NOT_NULL (hs->zero_rtt.early_data_buffer);
-  memset (hs->zero_rtt.early_data_buffer, 0x55, hs->zero_rtt.early_data_capacity);
+  memset (
+      hs->zero_rtt.early_data_buffer, 0x55, hs->zero_rtt.early_data_capacity);
   hs->zero_rtt.early_data_len = 512;
 
   /* Handle rejection */
@@ -508,11 +490,6 @@ TEST (zero_rtt_rejection_updates_state)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Ticket Storage Tests
- * ============================================================================
- */
-
 /* Test: Ticket storage allocates copy */
 TEST (zero_rtt_ticket_storage_allocates_copy)
 {
@@ -551,11 +528,6 @@ TEST (zero_rtt_ticket_storage_allocates_copy)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * NULL Safety Tests
- * ============================================================================
- */
-
 /* Test: All functions handle NULL gracefully */
 TEST (zero_rtt_null_safety)
 {
@@ -569,8 +541,9 @@ TEST (zero_rtt_null_safety)
   ASSERT_EQ (SocketQUICHandshake_0rtt_get_state (NULL), QUIC_0RTT_STATE_NONE);
   ASSERT_EQ (SocketQUICHandshake_0rtt_accepted (NULL), 0);
 
-  ASSERT_EQ (SocketQUICHandshake_0rtt_set_ticket (NULL, ticket, 64, &params, "h3", 2),
-             QUIC_HANDSHAKE_ERROR_NULL);
+  ASSERT_EQ (
+      SocketQUICHandshake_0rtt_set_ticket (NULL, ticket, 64, &params, "h3", 2),
+      QUIC_HANDSHAKE_ERROR_NULL);
 
   ASSERT_EQ (SocketQUICHandshake_0rtt_handle_rejection (NULL),
              QUIC_HANDSHAKE_ERROR_NULL);
@@ -613,16 +586,12 @@ TEST (zero_rtt_set_ticket_null_ticket)
       QUIC_HANDSHAKE_ERROR_NULL);
 
   /* NULL params should fail */
-  ASSERT_EQ (SocketQUICHandshake_0rtt_set_ticket (hs, ticket, 64, NULL, "h3", 2),
-             QUIC_HANDSHAKE_ERROR_NULL);
+  ASSERT_EQ (
+      SocketQUICHandshake_0rtt_set_ticket (hs, ticket, 64, NULL, "h3", 2),
+      QUIC_HANDSHAKE_ERROR_NULL);
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * State Transition Tests
- * ============================================================================
- */
 
 /* Test: Re-initializing 0-RTT resets state */
 TEST (zero_rtt_reinit_resets_state)
@@ -913,11 +882,6 @@ TEST (zero_rtt_tls_early_data_accepted_null)
   /* NULL should return 0 (not accepted) */
   ASSERT_EQ (SocketQUICTLS_early_data_accepted (NULL), 0);
 }
-
-/* ============================================================================
- * Main Function
- * ============================================================================
- */
 
 int
 main (void)

@@ -41,11 +41,6 @@ typedef struct
 } SocketHPACK_Decode_Params;
 
 
-/* ============================================================================
- * Constants - RFC 7541 Field Type Bit Patterns
- * ============================================================================
- */
-
 /* Field type identification masks (RFC 7541 Section 6) */
 #define HPACK_INDEXED_MASK 0x80
 #define HPACK_LITERAL_INDEXED_MASK 0xC0
@@ -110,11 +105,6 @@ typedef enum
   HPACK_FIELD_UNKNOWN
 } HpackFieldType;
 
-/* ============================================================================
- * Validation Helpers
- * ============================================================================
- */
-
 static inline bool
 valid_prefix_bits (int prefix_bits)
 {
@@ -142,11 +132,6 @@ classify_field_type (unsigned char byte)
 
   return HPACK_FIELD_UNKNOWN;
 }
-
-/* ============================================================================
- * Header Name Normalization (RFC 9113 §8.2)
- * ============================================================================
- */
 
 /**
  * Create lowercase copy of header name in arena.
@@ -198,22 +183,12 @@ lowercase_header_name (Arena_T arena, const char *name, size_t len)
   return lower;
 }
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketHPACK_Error
     = { &SocketHPACK_Error, "HPACK compression error" };
 
 static __thread Except_T SocketHPACK_DetailedException __attribute__ ((unused));
 
 #define RAISE_HPACK_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHPACK, e)
-
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
 
 static const char *result_strings[] = {
   [HPACK_OK] = "OK",
@@ -235,11 +210,6 @@ SocketHPACK_result_string (SocketHPACK_Result result)
     return "Unknown error";
   return result_strings[result];
 }
-
-/* ============================================================================
- * Integer Coding (RFC 7541 Section 5.1)
- * ============================================================================
- */
 
 static size_t
 encode_int_continuation (uint64_t value,
@@ -381,11 +351,6 @@ SocketHPACK_int_decode (const unsigned char *input,
   *consumed = pos;
   return HPACK_OK;
 }
-
-/* ============================================================================
- * String Literal Encoding/Decoding (RFC 7541 Section 5.2)
- * ============================================================================
- */
 
 static ssize_t
 hpack_encode_int_with_flag (uint64_t value,
@@ -565,11 +530,6 @@ hpack_decode_string (const unsigned char *input,
   return HPACK_OK;
 }
 
-/* ============================================================================
- * Encoder Configuration
- * ============================================================================
- */
-
 void
 SocketHPACK_encoder_config_defaults (SocketHPACK_EncoderConfig *config)
 {
@@ -580,11 +540,6 @@ SocketHPACK_encoder_config_defaults (SocketHPACK_EncoderConfig *config)
   config->huffman_encode = 1;
   config->use_indexing = 1;
 }
-
-/* ============================================================================
- * Encoder Implementation
- * ============================================================================
- */
 
 SocketHPACK_Encoder_T
 SocketHPACK_Encoder_new (const SocketHPACK_EncoderConfig *config, Arena_T arena)
@@ -912,11 +867,6 @@ SocketHPACK_Encoder_encode (SocketHPACK_Encoder_T encoder,
   return (ssize_t)pos;
 }
 
-/* ============================================================================
- * Decoder Configuration
- * ============================================================================
- */
-
 void
 SocketHPACK_decoder_config_defaults (SocketHPACK_DecoderConfig *config)
 {
@@ -935,11 +885,6 @@ SocketHPACK_decoder_config_defaults (SocketHPACK_DecoderConfig *config)
                   * HPACK_DEFAULT_EXPANSION_MULTIPLIER
             : HPACK_DEFAULT_MAX_OUTPUT_BYTES;
 }
-
-/* ============================================================================
- * Decoder Implementation
- * ============================================================================
- */
 
 SocketHPACK_Decoder_T
 SocketHPACK_Decoder_new (const SocketHPACK_DecoderConfig *config, Arena_T arena)

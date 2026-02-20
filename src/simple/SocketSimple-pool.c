@@ -15,11 +15,6 @@
 #include "core/Arena.h"
 #include "pool/SocketPool.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define SOCKET_SIMPLE_DEFAULT_BUFFER_SIZE 4096
 #define SOCKET_SIMPLE_DEFAULT_MAX_CONNECTIONS 1024
 
@@ -28,11 +23,6 @@
  * Examples: 0ms→0s, 1ms→1s, 999ms→1s, 1000ms→1s, 1001ms→2s
  */
 #define MS_TO_SEC_ROUND_UP(ms) (((ms) + 999) / 1000)
-
-/* ============================================================================
- * Internal Structures
- * ============================================================================
- */
 
 struct SocketSimple_Pool
 {
@@ -46,11 +36,6 @@ struct SocketSimple_Conn
   Connection_T conn;
   SocketSimple_Socket_T simple_sock; /* Cached simple socket wrapper */
 };
-
-/* ============================================================================
- * Helper: Map pool state to simple state
- * ============================================================================
- */
 
 static SocketSimple_PoolState
 core_to_simple_state (SocketPool_State state)
@@ -67,11 +52,6 @@ core_to_simple_state (SocketPool_State state)
       return SOCKET_SIMPLE_POOL_STOPPED;
     }
 }
-
-/* ============================================================================
- * Pool Lifecycle
- * ============================================================================
- */
 
 void
 Socket_simple_pool_options_init (SocketSimple_PoolOptions *opts)
@@ -178,11 +158,6 @@ Socket_simple_pool_free (SocketSimple_Pool_T *pool)
   free (p);
   *pool = NULL;
 }
-
-/* ============================================================================
- * Connection Management
- * ============================================================================
- */
 
 /**
  * @brief Helper: Validate pool and socket for operations
@@ -320,11 +295,6 @@ Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms)
   return 0;
 }
 
-/* ============================================================================
- * Accept with Rate Limiting - Helper Functions
- * ============================================================================
- */
-
 /**
  * @brief Validate listener socket for accept operations.
  * @param pool Pool instance
@@ -377,11 +347,6 @@ wrap_and_add_to_pool (SocketSimple_Pool_T pool, Socket_T client)
 
   return conn;
 }
-
-/* ============================================================================
- * Accept with Rate Limiting - Public Functions
- * ============================================================================
- */
 
 SocketSimple_Conn_T
 Socket_simple_pool_accept (SocketSimple_Pool_T pool,
@@ -454,11 +419,6 @@ Socket_simple_pool_accept_limited (SocketSimple_Pool_T pool,
   return wrap_and_add_to_pool (pool, client);
 }
 
-/* ============================================================================
- * Rate Limiting Configuration
- * ============================================================================
- */
-
 int
 Socket_simple_pool_set_conn_rate (SocketSimple_Pool_T pool, int conns_per_sec)
 {
@@ -488,11 +448,6 @@ Socket_simple_pool_set_max_per_ip (SocketSimple_Pool_T pool, int max)
   SocketPool_setmaxperip (pool->pool, max);
   return 0;
 }
-
-/* ============================================================================
- * Graceful Shutdown (Drain)
- * ============================================================================
- */
 
 int
 Socket_simple_pool_drain (SocketSimple_Pool_T pool, int timeout_ms)
@@ -547,11 +502,6 @@ Socket_simple_pool_state (SocketSimple_Pool_T pool)
   return core_to_simple_state (SocketPool_state (pool->pool));
 }
 
-/* ============================================================================
- * Statistics
- * ============================================================================
- */
-
 int
 Socket_simple_pool_get_stats (SocketSimple_Pool_T pool,
                               SocketSimple_PoolStats *stats)
@@ -604,11 +554,6 @@ Socket_simple_pool_reset_stats (SocketSimple_Pool_T pool)
   SocketPool_reset_stats (pool->pool);
   return 0;
 }
-
-/* ============================================================================
- * Connection Accessors
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_conn_socket (SocketSimple_Conn_T conn)

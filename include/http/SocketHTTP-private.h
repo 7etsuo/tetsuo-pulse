@@ -80,7 +80,8 @@ extern const unsigned char sockethttp_uri_unreserved[256];
 
 extern const unsigned char sockethttp_hex_value[256];
 #define SOCKETHTTP_HEX_VALUE(c) (sockethttp_hex_value[(unsigned char)(c)])
-#define HEX_INVALID 255 /* Invalid hex digit sentinel from SOCKETHTTP_HEX_VALUE */
+#define HEX_INVALID \
+  255 /* Invalid hex digit sentinel from SOCKETHTTP_HEX_VALUE */
 
 static inline const char *
 sockethttp_skip_whitespace (const char *p)
@@ -124,11 +125,6 @@ sockethttp_is_token_valid (const char *s, size_t len)
   return 1;
 }
 
-/* ============================================================================
- * HTTP PORT UTILITIES
- * ============================================================================
- */
-
 /**
  * @brief Check if port is default for HTTP/HTTPS scheme.
  * @param port Port number (-1 for default, or explicit port).
@@ -149,11 +145,6 @@ is_default_http_port (int port, int is_https)
   return port == -1
          || port == (is_https ? HTTPS_DEFAULT_PORT : HTTP_DEFAULT_PORT);
 }
-
-/* ============================================================================
- * RFC 7230 WHITESPACE HANDLING
- * ============================================================================
- */
 
 /**
  * @brief Skip optional whitespace (OWS) as defined by RFC 7230.

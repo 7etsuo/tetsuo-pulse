@@ -25,11 +25,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Push State (RFC 9114 §4.6)
- * ============================================================================
- */
-
 #ifdef SOCKET_HAS_H3_PUSH
 
 /** Maximum number of concurrent push promises tracked per connection. */
@@ -167,13 +162,6 @@ struct SocketHTTP3_Conn
 #endif
 };
 
-/* ============================================================================
- * Shared Inline Helpers
- *
- * Used by both SocketHTTP3-connection.c and SocketHTTP3-request.c.
- * ============================================================================
- */
-
 static inline int
 h3_output_queue_push (H3_OutputQueue *queue,
                       uint64_t stream_id,
@@ -292,14 +280,6 @@ h3_growbuf_append (Arena_T arena,
     }                                              \
   while (0)
 
-/* ============================================================================
- * QPACK Static Table Lookup Helpers
- *
- * Shared between SocketHTTP3-request.c (encoding) and tests (response
- * building).  Depend on SocketQPACK_static_table_get() from SocketQPACK.h.
- * ============================================================================
- */
-
 #include "http/qpack/SocketQPACK.h"
 
 /**
@@ -346,11 +326,6 @@ h3_find_static_name (const char *name, size_t name_len)
     }
   return -1;
 }
-
-/* ============================================================================
- * QPACK Encode/Decode Helpers (shared between request.c and push.c)
- * ============================================================================
- */
 
 #ifdef SOCKET_HAS_H3_PUSH
 int h3_conn_recv_push_promise (SocketHTTP3_Conn_T conn,

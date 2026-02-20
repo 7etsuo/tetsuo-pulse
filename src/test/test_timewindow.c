@@ -18,11 +18,6 @@
 #include "core/TimeWindow.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Basic Lifecycle Tests
- * ============================================================================
- */
-
 TEST (timewindow_init_basic)
 {
   TimeWindow_T tw;
@@ -131,11 +126,6 @@ TEST (timewindow_init_very_negative_duration)
   ASSERT_EQ (tw.previous_count, 0u);
 }
 
-/* ============================================================================
- * Recording Tests
- * ============================================================================
- */
-
 TEST (timewindow_record_increments_count)
 {
   TimeWindow_T tw;
@@ -171,11 +161,6 @@ TEST (timewindow_record_rotates_when_expired)
   ASSERT_EQ (tw.current_count, 1u);
   ASSERT_EQ (tw.previous_count, 2u);
 }
-
-/* ============================================================================
- * Rotation Tests
- * ============================================================================
- */
 
 TEST (timewindow_rotate_before_expiry)
 {
@@ -353,11 +338,6 @@ TEST (timewindow_rotate_sequence)
   ASSERT_EQ (tw.previous_count, 3u);
 }
 
-/* ============================================================================
- * Effective Count (Interpolation) Tests
- * ============================================================================
- */
-
 TEST (timewindow_effective_count_at_start)
 {
   TimeWindow_T tw;
@@ -432,11 +412,6 @@ TEST (timewindow_effective_count_no_previous)
   ASSERT_EQ (effective, 7u);
 }
 
-/* ============================================================================
- * Progress Tests
- * ============================================================================
- */
-
 TEST (timewindow_progress_at_start)
 {
   TimeWindow_T tw;
@@ -494,11 +469,6 @@ TEST (timewindow_progress_clamped_negative)
   ASSERT (progress < 0.001f);
 }
 
-/* ============================================================================
- * Reset Tests
- * ============================================================================
- */
-
 TEST (timewindow_reset_clears_counts)
 {
   TimeWindow_T tw;
@@ -524,11 +494,6 @@ TEST (timewindow_reset_keeps_duration)
 
   ASSERT_EQ (tw.duration_ms, 5000);
 }
-
-/* ============================================================================
- * Edge Cases
- * ============================================================================
- */
 
 TEST (timewindow_multiple_rotations)
 {
@@ -570,11 +535,6 @@ TEST (timewindow_large_count)
   uint32_t effective = TimeWindow_effective_count (&tw, now + 500);
   ASSERT_EQ (effective, 1500000u); /* 1M + 1M * 0.5 */
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

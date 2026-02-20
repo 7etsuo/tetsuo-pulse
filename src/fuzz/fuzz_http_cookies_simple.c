@@ -217,9 +217,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Direct fuzzed cookie value parsing
-     * ==================================================================== */
     {
       char *cookie_str = Arena_alloc (arena, size + 1, __FILE__, __LINE__);
       if (cookie_str)
@@ -231,9 +228,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 2: Parse through HTTP/1.1 parser
-     * ==================================================================== */
     {
       char *cookie_str = Arena_alloc (arena, size + 1, __FILE__, __LINE__);
       if (cookie_str)
@@ -253,9 +247,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Valid cookie formats
-     * ==================================================================== */
     {
       const char *valid_cookies[] = {
         "session=abc123",
@@ -281,9 +272,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: Invalid/malformed cookie formats
-     * ==================================================================== */
     {
       const char *malformed_cookies[] = {
         "",             /* Empty */
@@ -319,9 +307,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Security attack vectors
-     * ==================================================================== */
     {
       const char *attack_cookies[] = {
         /* CRLF injection (sanitized before passing) */
@@ -367,9 +352,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Build cookies from fuzz data
-     * ==================================================================== */
     if (size > 10)
       {
         char built_cookie[4096];
@@ -442,9 +424,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
 
-    /* ====================================================================
-     * Test 7: Edge cases
-     * ==================================================================== */
     {
       /* Single character cookies */
       parse_cookie_header ("a=b", 3, arena);

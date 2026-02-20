@@ -36,11 +36,6 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-/* ============================================================================
- * Common Utility Macros
- * ============================================================================
- */
-
 /**
  * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
@@ -68,11 +63,6 @@
  * @see OPENSSL_VERSION_NUMBER for runtime OpenSSL version
  */
 #define SOCKET_OPENSSL_VERSION_3_0 0x30000000L
-
-/* ============================================================================
- * Common File Path Validation
- * ============================================================================
- */
 
 /**
  * @brief Maximum path length for TLS/DTLS credential files.
@@ -261,11 +251,6 @@ ssl_validate_file_path (const char *path, size_t max_len)
   return 1;
 }
 
-/* ============================================================================
- * Common Buffer Management
- * ============================================================================
- */
-
 /**
  * @brief Securely clear a buffer if allocated.
  * @ingroup security
@@ -302,11 +287,6 @@ ssl_secure_clear_hostname (const char *hostname)
       SocketCrypto_secure_clear ((void *)hostname, len);
     }
 }
-
-/* ============================================================================
- * Common OpenSSL Error Formatting
- * ============================================================================
- */
 
 /**
  * @brief OpenSSL error string buffer size.
@@ -449,11 +429,6 @@ ssl_format_openssl_error_to_buf (const char *context,
    * should be cleared using ERR_clear_error()" */
   ERR_clear_error ();
 }
-
-/* ============================================================================
- * Common SSL/TLS Operations
- * ============================================================================
- */
 
 /**
  * @brief Apply SNI hostname to SSL object with verification enabled.

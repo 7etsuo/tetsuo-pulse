@@ -5,7 +5,8 @@
  */
 
 /**
- * test_utf8_integration.c - Integration tests for SocketUTF8 in protocol modules
+ * test_utf8_integration.c - Integration tests for SocketUTF8 in protocol
+ * modules
  *
  * Tests UTF-8 validation integration in higher-level protocols that require
  * UTF-8 validation per RFC requirements:
@@ -31,11 +32,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ============================================================================
- * WebSocket Text Frame UTF-8 Integration Tests
- * ============================================================================
- */
-
 /**
  * Test that simulates WebSocket text frame validation with valid UTF-8.
  * RFC 6455 §5.6: All text frames MUST be valid UTF-8.
@@ -54,8 +50,8 @@ TEST (websocket_text_frame_valid_utf8)
 
   /* Count code points */
   size_t count = 0;
-  result = SocketUTF8_count_codepoints ((const unsigned char *)payload, len,
-                                        &count);
+  result = SocketUTF8_count_codepoints (
+      (const unsigned char *)payload, len, &count);
 
   ASSERT_EQ (UTF8_VALID, result);
   ASSERT_EQ (17, count); /* H e l l o , SP 世 界 ! SP 🌍 SP C a f é */
@@ -68,8 +64,7 @@ TEST (websocket_text_frame_valid_utf8)
 TEST (websocket_text_frame_invalid_surrogate)
 {
   /* Invalid UTF-8: lone surrogate U+D800 */
-  const unsigned char payload[] = { 'H', 'e', 'l', 'l', 'o',
-                                    0xED, 0xA0, 0x80 };
+  const unsigned char payload[] = { 'H', 'e', 'l', 'l', 'o', 0xED, 0xA0, 0x80 };
 
   SocketUTF8_Result result = SocketUTF8_validate (payload, sizeof (payload));
 
@@ -84,8 +79,8 @@ TEST (websocket_text_frame_invalid_surrogate)
 TEST (websocket_text_frame_overlong_encoding)
 {
   /* Overlong encoding of '/' (0x2F) as C0 AF */
-  const unsigned char payload[] = { 'H', 'T', 'T', 'P', 0xC0, 0xAF, 'p', 'a',
-                                    't', 'h' };
+  const unsigned char payload[]
+      = { 'H', 'T', 'T', 'P', 0xC0, 0xAF, 'p', 'a', 't', 'h' };
 
   SocketUTF8_Result result = SocketUTF8_validate (payload, sizeof (payload));
 
@@ -151,11 +146,6 @@ TEST (websocket_fragmented_incomplete_final)
   ASSERT_EQ (UTF8_INCOMPLETE, result);
 }
 
-/* ============================================================================
- * WebSocket Close Frame Reason UTF-8 Tests
- * ============================================================================
- */
-
 /**
  * Test valid UTF-8 in WebSocket close frame reason text.
  * RFC 6455 §5.5.1: Close reason MUST be valid UTF-8.
@@ -163,8 +153,7 @@ TEST (websocket_fragmented_incomplete_final)
 TEST (websocket_close_reason_valid)
 {
   const char *reason = "Going away - server restart";
-  SocketUTF8_Result result
-      = SocketUTF8_validate_str (reason);
+  SocketUTF8_Result result = SocketUTF8_validate_str (reason);
 
   ASSERT_EQ (UTF8_VALID, result);
 }
@@ -194,15 +183,10 @@ TEST (websocket_close_reason_emoji)
 
   /* Verify code point count */
   size_t count = 0;
-  SocketUTF8_count_codepoints ((const unsigned char *)reason, strlen (reason),
-                               &count);
+  SocketUTF8_count_codepoints (
+      (const unsigned char *)reason, strlen (reason), &count);
   ASSERT_EQ (24, count); /* "Goodbye 👋 See you later!" */
 }
-
-/* ============================================================================
- * HTTP/2 Header Field Value UTF-8 Tests
- * ============================================================================
- */
 
 /**
  * Test UTF-8 validation for HTTP/2 custom header values.
@@ -223,8 +207,8 @@ TEST (http2_header_value_valid_utf8)
 TEST (http2_header_value_invalid_utf8)
 {
   /* Invalid: overlong encoding of 'A' (U+0041) */
-  const unsigned char header_value[] = { 'V', 'a', 'l', 'u', 'e', '=',
-                                         0xC1, 0x81 };
+  const unsigned char header_value[]
+      = { 'V', 'a', 'l', 'u', 'e', '=', 0xC1, 0x81 };
 
   SocketUTF8_Result result
       = SocketUTF8_validate (header_value, sizeof (header_value));
@@ -243,11 +227,6 @@ TEST (http2_header_idn_host)
 
   ASSERT_EQ (UTF8_VALID, result);
 }
-
-/* ============================================================================
- * HPACK String Literal UTF-8 Tests
- * ============================================================================
- */
 
 /**
  * Test UTF-8 validation after HPACK Huffman decoding.
@@ -268,8 +247,9 @@ TEST (hpack_decoded_string_valid_utf8)
 TEST (hpack_decoded_string_invalid_utf8)
 {
   /* Simulated decoded value with invalid UTF-8 */
-  const unsigned char decoded[] = { 't', 'e', 'x', 't', '/', 0xF5, 0x80, 0x80,
-                                    0x80 }; /* Invalid: 0xF5 is invalid start byte */
+  const unsigned char decoded[] = {
+    't', 'e', 'x', 't', '/', 0xF5, 0x80, 0x80, 0x80
+  }; /* Invalid: 0xF5 is invalid start byte */
 
   SocketUTF8_Result result = SocketUTF8_validate (decoded, sizeof (decoded));
 
@@ -287,11 +267,6 @@ TEST (hpack_literal_utf8_content_type)
 
   ASSERT_EQ (UTF8_VALID, result);
 }
-
-/* ============================================================================
- * Boundary and Edge Case Tests
- * ============================================================================
- */
 
 /**
  * Test maximum valid Unicode code point in protocol context.
@@ -340,19 +315,14 @@ TEST (protocol_empty_payload)
   ASSERT_EQ (UTF8_VALID, result);
 }
 
-/* ============================================================================
- * Security-Critical Validation Tests
- * ============================================================================
- */
-
 /**
  * Test rejection of NULL byte overlong encoding (security bypass attempt).
  */
 TEST (security_overlong_null_bypass)
 {
   /* Overlong NULL: C0 80 (could bypass NULL checks) */
-  const unsigned char payload[] = { 'p', 'a', 't', 'h', 0xC0,
-                                    0x80, 'f', 'i', 'l', 'e' };
+  const unsigned char payload[]
+      = { 'p', 'a', 't', 'h', 0xC0, 0x80, 'f', 'i', 'l', 'e' };
 
   SocketUTF8_Result result = SocketUTF8_validate (payload, sizeof (payload));
 
@@ -365,8 +335,8 @@ TEST (security_overlong_null_bypass)
 TEST (security_overlong_path_traversal)
 {
   /* Overlong '..' using C0 AE C0 AE */
-  const unsigned char payload[] = { '/', 'p', 'a', 't', 'h', '/', 0xC0, 0xAE,
-                                    0xC0, 0xAE, '/', 'e', 't', 'c' };
+  const unsigned char payload[] = { '/',  'p',  'a',  't', 'h', '/', 0xC0,
+                                    0xAE, 0xC0, 0xAE, '/', 'e', 't', 'c' };
 
   SocketUTF8_Result result = SocketUTF8_validate (payload, sizeof (payload));
 
@@ -386,22 +356,16 @@ TEST (security_surrogate_pair_injection)
   ASSERT_EQ (UTF8_SURROGATE, result);
 }
 
-/* ============================================================================
- * Real-World Mixed Content Tests
- * ============================================================================
- */
-
 /**
  * Test realistic WebSocket message with mixed scripts.
  */
 TEST (realworld_mixed_scripts)
 {
-  const char *message
-      = "System status: OK ✓\n"
-        "データ転送完了\n"
-        "Статус: активен\n"
-        "حالة: نشط\n"
-        "🚀 Deployment successful!";
+  const char *message = "System status: OK ✓\n"
+                        "データ転送完了\n"
+                        "Статус: активен\n"
+                        "حالة: نشط\n"
+                        "🚀 Deployment successful!";
 
   SocketUTF8_Result result = SocketUTF8_validate_str (message);
 
@@ -409,8 +373,8 @@ TEST (realworld_mixed_scripts)
 
   /* Count code points */
   size_t count = 0;
-  SocketUTF8_count_codepoints ((const unsigned char *)message,
-                               strlen (message), &count);
+  SocketUTF8_count_codepoints (
+      (const unsigned char *)message, strlen (message), &count);
   /* Should be able to count all valid code points */
   ASSERT (count > 0);
 }
@@ -465,8 +429,8 @@ TEST (realworld_state_reuse)
 
   /* First message */
   const char *msg1 = "First message 📝";
-  SocketUTF8_Result result = SocketUTF8_update (
-      &state, (const unsigned char *)msg1, strlen (msg1));
+  SocketUTF8_Result result
+      = SocketUTF8_update (&state, (const unsigned char *)msg1, strlen (msg1));
   ASSERT_EQ (UTF8_VALID, result);
   ASSERT_EQ (UTF8_VALID, SocketUTF8_finish (&state));
 
@@ -474,16 +438,11 @@ TEST (realworld_state_reuse)
   SocketUTF8_reset (&state);
 
   const char *msg2 = "Second message ✅";
-  result = SocketUTF8_update (&state, (const unsigned char *)msg2,
-                              strlen (msg2));
+  result
+      = SocketUTF8_update (&state, (const unsigned char *)msg2, strlen (msg2));
   ASSERT_EQ (UTF8_VALID, result);
   ASSERT_EQ (UTF8_VALID, SocketUTF8_finish (&state));
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

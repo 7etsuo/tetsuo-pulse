@@ -24,11 +24,6 @@
 
 #include "core/Arena.h"
 
-/* ============================================================================
- * SNPRINTF UTILITIES
- * ============================================================================
- */
-
 /**
  * @brief Check snprintf return value for truncation
  * @ingroup foundation
@@ -44,11 +39,6 @@
  */
 #define SOCKET_SNPRINTF_CHECK(ret, buflen) \
   ((ret) < 0 || (size_t)(ret) >= (buflen) ? -1 : (ret))
-
-/* ============================================================================
- * ARENA STRING UTILITIES
- * ============================================================================
- */
 
 /**
  * @brief Duplicate string into arena.
@@ -150,11 +140,6 @@ arena_strndup (Arena_T arena, const char *src, size_t len)
 {
   return socket_util_arena_strdup_len (arena, src, len);
 }
-
-/* ============================================================================
- * SAFE STRING COPY UTILITIES
- * ============================================================================
- */
 
 /**
  * @brief Safely copy IP address string with null termination

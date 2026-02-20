@@ -236,8 +236,6 @@ extern SSL *socket_get_ssl (T socket);
 extern SSL *socket_validate_tls_ready (T socket);
 #endif
 
-/* ==================== Common I/O Error Helpers ==================== */
-
 /**
  * @brief Check if errno indicates operation would block
  * @ingroup core_io

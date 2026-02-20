@@ -24,11 +24,6 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketHTTP"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define SHORT_NAME_LEN 3
 #define GMT_LEN 3
 #define IMF_FIXDATE_MIN_LEN 29
@@ -46,11 +41,6 @@
 #define LOG_DATE_TRUNCATE_LEN 50
 #define MAX_YEAR 9999
 #define MAX_HTTP_DATE_LEN 128 /* RFC 9110: HTTP dates are bounded by format */
-
-/* ============================================================================
- * Lookup Tables
- * ============================================================================
- */
 
 static const char *const day_names_short[]
     = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
@@ -82,11 +72,6 @@ typedef struct DateParts
   int minute;
   int second;
 } DateParts;
-
-/* ============================================================================
- * Validation Helpers
- * ============================================================================
- */
 
 static int
 is_leap_year (int year)
@@ -125,11 +110,6 @@ valid_date_parts (const DateParts *parts)
 
   return 1;
 }
-
-/* ============================================================================
- * Parsing Helpers
- * ============================================================================
- */
 
 static int
 parse_day_short (const char *s)
@@ -265,11 +245,6 @@ parse_time_hms (const char **p, const char *end, DateParts *parts)
   return 0;
 }
 
-/* ============================================================================
- * Time Conversion
- * ============================================================================
- */
-
 static pthread_mutex_t tz_mutex __attribute__ ((unused))
 = PTHREAD_MUTEX_INITIALIZER;
 
@@ -332,11 +307,6 @@ convert_parts_to_time (const DateParts *parts, time_t *out)
 
   return 0;
 }
-
-/* ============================================================================
- * Format Parsers
- * ============================================================================
- */
 
 static const char *
 find_comma (const char *s, const char *end)
@@ -565,11 +535,6 @@ parse_asctime (const char *s, size_t len, time_t *out)
   return convert_parts_to_time (&parts, out);
 }
 
-/* ============================================================================
- * Format Detection
- * ============================================================================
- */
-
 static int
 is_imf_fixdate (const char *s, size_t len)
 {
@@ -594,11 +559,6 @@ is_asctime (const char *s, size_t len)
 {
   return (len >= ASCTIME_MIN_LEN && s[SHORT_NAME_LEN] == ' ');
 }
-
-/* ============================================================================
- * Public API
- * ============================================================================
- */
 
 int
 SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)

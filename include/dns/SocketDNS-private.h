@@ -231,9 +231,6 @@ struct SocketDNS_T
  */
 #define SANITIZE_TIMEOUT_MS(timeout_ms) ((timeout_ms) < 0 ? 0 : (timeout_ms))
 
-/* ==================== Mutex-Protected Field Access Macros ====================
- */
-
 /**
  * @brief Thread-safe getter for int field with mutex protection.
  * @ingroup dns

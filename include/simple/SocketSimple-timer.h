@@ -58,18 +58,10 @@ extern "C"
   /* Forward declaration */
   typedef struct SocketSimple_Poll *SocketSimple_Poll_T;
 
-  /*============================================================================
-   * Opaque Handle Type
-   *============================================================================*/
-
   /**
    * @brief Opaque timer handle.
    */
   typedef struct SocketSimple_Timer *SocketSimple_Timer_T;
-
-  /*============================================================================
-   * Timer Callback
-   *============================================================================*/
 
   /**
    * @brief Timer callback function type.
@@ -77,10 +69,6 @@ extern "C"
    * @param userdata User data provided when timer was created.
    */
   typedef void (*SocketSimple_TimerCallback) (void *userdata);
-
-  /*============================================================================
-   * Timer Creation
-   *============================================================================*/
 
   /**
    * @brief Add a one-shot timer.
@@ -132,10 +120,6 @@ extern "C"
                                      SocketSimple_TimerCallback callback,
                                      void *userdata);
 
-  /*============================================================================
-   * Timer Control
-   *============================================================================*/
-
   /**
    * @brief Cancel a pending timer.
    *
@@ -180,10 +164,6 @@ extern "C"
   extern int Socket_simple_timer_resume (SocketSimple_Poll_T poll,
                                          SocketSimple_Timer_T timer);
 
-  /*============================================================================
-   * Timer Query
-   *============================================================================*/
-
   /**
    * @brief Get milliseconds remaining until timer fires.
    *
@@ -203,10 +183,6 @@ extern "C"
    */
   extern int Socket_simple_timer_is_pending (SocketSimple_Poll_T poll,
                                              SocketSimple_Timer_T timer);
-
-  /*============================================================================
-   * Timer Processing (Event Loop Integration)
-   *============================================================================*/
 
   /**
    * @brief Get timeout for next timer expiry.
@@ -246,10 +222,6 @@ extern "C"
    * @return Number of timers cancelled, or -1 on error.
    */
   extern int Socket_simple_timer_cancel_all (SocketSimple_Poll_T poll);
-
-  /*============================================================================
-   * Timer Statistics
-   *============================================================================*/
 
   /**
    * @brief Get number of active timers.

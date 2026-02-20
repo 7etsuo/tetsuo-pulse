@@ -27,11 +27,6 @@
 /* Compile-time string literal length (avoids strlen at runtime) */
 #define STRLEN_LIT(s) (sizeof (s) - 1)
 
-/* ============================================================================
- * Request Receive Buffer
- * ============================================================================
- */
-
 #define H3_REQ_RECV_BUF_INIT_CAP 1024
 #define H3_REQ_DATA_BUF_INIT_CAP 4096
 #define H3_QPACK_ENCODE_BUF 8192
@@ -39,24 +34,6 @@
 #define H3_MAX_HEADER_VALUE 4096
 #define H3_MAX_COOKIE_HEADERS 32
 #define H3_FIELD_SECTION_ENTRY_OVERHEAD 32
-
-/* ============================================================================
- * QPACK Encoding Helpers (Static Table Only)
- *
- * Key static table indices for pseudo-headers (RFC 9204 Appendix A):
- *   0: :authority ""        15: :method CONNECT
- *   1: :path /              17: :method GET
- *  22: :scheme http         20: :method POST
- *  23: :scheme https        24: :status 103
- *  25: :status 200          26: :status 304
- *  27: :status 404          28: :status 503
- *  29: :status 100          30: :status 204
- *  31: :status 206          32: :status 302
- *  33: :status 400          34: :status 403
- *  35: :status 421          36: :status 425
- *  37: :status 500
- * ============================================================================
- */
 
 /* Static table lookup uses h3_find_static_exact/name from private.h */
 #define find_static_exact h3_find_static_exact
@@ -155,11 +132,6 @@ h3_qpack_encode_headers (Arena_T arena,
   *out_len = pos;
   return 0;
 }
-
-/* ============================================================================
- * QPACK Decoding Helpers
- * ============================================================================
- */
 
 /**
  * @brief Add a decoded header, dispatching pseudo vs regular.
@@ -346,11 +318,6 @@ h3_qpack_decode_headers (Arena_T arena,
   return 0;
 }
 
-/* ============================================================================
- * Cookie Concatenation (RFC 9114 §4.2.1)
- * ============================================================================
- */
-
 static void
 h3_coalesce_cookies (Arena_T arena, SocketHTTP_Headers_T headers)
 {
@@ -387,11 +354,6 @@ h3_coalesce_cookies (Arena_T arena, SocketHTTP_Headers_T headers)
   SocketHTTP_Headers_remove_all (headers, "cookie");
   SocketHTTP_Headers_add_n (headers, "cookie", 6, combined, pos);
 }
-
-/* ============================================================================
- * Request Struct
- * ============================================================================
- */
 
 struct SocketHTTP3_Request
 {
@@ -437,11 +399,6 @@ struct SocketHTTP3_Request
   uint64_t push_id;
 #endif
 };
-
-/* ============================================================================
- * Request Lifecycle
- * ============================================================================
- */
 
 SocketHTTP3_Request_T
 SocketHTTP3_Request_new (SocketHTTP3_Conn_T conn)
@@ -555,11 +512,6 @@ SocketHTTP3_Request_new_incoming (SocketHTTP3_Conn_T conn, uint64_t stream_id)
   return req;
 }
 
-/* ============================================================================
- * Push Request Constructor (RFC 9114 §4.6)
- * ============================================================================
- */
-
 #ifdef SOCKET_HAS_H3_PUSH
 SocketHTTP3_Request_T
 SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
@@ -606,11 +558,6 @@ SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
   return req;
 }
 #endif /* SOCKET_HAS_H3_PUSH */
-
-/* ============================================================================
- * Send Side
- * ============================================================================
- */
 
 int
 SocketHTTP3_Request_send_headers (SocketHTTP3_Request_T req,
@@ -753,11 +700,6 @@ SocketHTTP3_Request_send_trailers (SocketHTTP3_Request_T req,
 
   return 0;
 }
-
-/* ============================================================================
- * Receive Side — Feed
- * ============================================================================
- */
 
 /* Buffer append wrappers using generic h3_growbuf_append() */
 #define recv_buf_append(req, data, len)    \
@@ -1131,11 +1073,6 @@ SocketHTTP3_Request_feed (SocketHTTP3_Request_T req,
   return 0;
 }
 
-/* ============================================================================
- * Receive Side — Read
- * ============================================================================
- */
-
 int
 SocketHTTP3_Request_recv_headers (SocketHTTP3_Request_T req,
                                   SocketHTTP_Headers_T *headers,
@@ -1188,11 +1125,6 @@ SocketHTTP3_Request_recv_data (SocketHTTP3_Request_T req,
 
   return (ssize_t)to_copy;
 }
-
-/* ============================================================================
- * Control
- * ============================================================================
- */
 
 int
 SocketHTTP3_Request_cancel (SocketHTTP3_Request_T req)

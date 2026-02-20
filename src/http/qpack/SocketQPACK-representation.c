@@ -34,11 +34,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * CONSTANTS
- * ============================================================================
- */
-
 /** Indexed Field Line pattern mask (bit 7 must be 1) */
 #define QPACK_INDEXED_FIELD_MASK 0x80
 
@@ -50,11 +45,6 @@
 
 /** Maximum valid static table index (0-98, 99 entries total) */
 #define QPACK_STATIC_TABLE_MAX_INDEX 98
-
-/* ============================================================================
- * ENCODE INDEXED FIELD LINE (RFC 9204 Section 4.5.2)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_indexed_field (unsigned char *output,
@@ -106,11 +96,6 @@ SocketQPACK_encode_indexed_field (unsigned char *output,
   *bytes_written = encoded_len;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE INDEXED FIELD LINE (RFC 9204 Section 4.5.2)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_indexed_field (const unsigned char *input,
@@ -167,11 +152,6 @@ SocketQPACK_decode_indexed_field (const unsigned char *input,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * INDEXED FIELD LINE WITH BASE RESOLUTION (RFC 9204 Section 4.5.2)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_resolve_indexed_field (uint64_t index,
                                    int is_static,
@@ -215,11 +195,6 @@ SocketQPACK_resolve_indexed_field (uint64_t index,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * CHECK IF BYTE IS INDEXED FIELD LINE
- * ============================================================================
- */
 
 int
 SocketQPACK_is_indexed_field_line (unsigned char byte)

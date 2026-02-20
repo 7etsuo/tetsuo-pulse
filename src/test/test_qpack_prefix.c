@@ -17,11 +17,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * COMPUTE MAX ENTRIES TESTS
- * ============================================================================
- */
-
 TEST (qpack_compute_max_entries_zero)
 {
   uint64_t max_entries = SocketQPACK_compute_max_entries (0);
@@ -56,11 +51,6 @@ TEST (qpack_compute_max_entries_large)
   ASSERT_EQ (max_entries, 2048);
 }
 
-/* ============================================================================
- * ENCODE PREFIX NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_encode_prefix_null_output)
 {
   size_t written = 999;
@@ -85,11 +75,6 @@ TEST (qpack_encode_prefix_zero_buffer)
       = SocketQPACK_encode_prefix (0, 0, 128, buf, 0, &written);
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
-
-/* ============================================================================
- * ENCODE PREFIX BASIC TESTS
- * ============================================================================
- */
 
 TEST (qpack_encode_prefix_ric_zero_base_zero)
 {
@@ -206,11 +191,6 @@ TEST (qpack_encode_prefix_max_entries_zero)
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
 
-/* ============================================================================
- * DECODE PREFIX NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_decode_prefix_null_prefix)
 {
   unsigned char buf[] = { 0x00, 0x00 };
@@ -238,11 +218,6 @@ TEST (qpack_decode_prefix_empty_input)
   ASSERT_EQ (result, QPACK_INCOMPLETE);
   ASSERT_EQ (consumed, 0);
 }
-
-/* ============================================================================
- * DECODE PREFIX BASIC TESTS
- * ============================================================================
- */
 
 TEST (qpack_decode_prefix_ric_zero_base_zero)
 {
@@ -356,11 +331,6 @@ TEST (qpack_decode_prefix_max_entries_zero)
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
 
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
-
 TEST (qpack_prefix_roundtrip_zero)
 {
   unsigned char buf[16];
@@ -444,11 +414,6 @@ TEST (qpack_prefix_roundtrip_large_values)
   ASSERT_EQ (prefix.base, 1200);
 }
 
-/* ============================================================================
- * VALIDATE PREFIX TESTS
- * ============================================================================
- */
-
 TEST (qpack_validate_prefix_null)
 {
   SocketQPACK_Result result = SocketQPACK_validate_prefix (NULL, 100);
@@ -490,11 +455,6 @@ TEST (qpack_validate_prefix_valid_zero)
   SocketQPACK_Result result = SocketQPACK_validate_prefix (&prefix, 0);
   ASSERT_EQ (result, QPACK_OK);
 }
-
-/* ============================================================================
- * EDGE CASE TESTS
- * ============================================================================
- */
 
 TEST (qpack_encode_prefix_delta_base_zero)
 {
@@ -544,11 +504,6 @@ TEST (qpack_decode_prefix_base_underflow_check)
   ASSERT_EQ (result, QPACK_ERR_DECOMPRESSION);
 }
 
-/* ============================================================================
- * MULTI-BYTE INTEGER TESTS
- * ============================================================================
- */
-
 TEST (qpack_encode_prefix_multi_byte_ric)
 {
   unsigned char buf[16];
@@ -597,11 +552,6 @@ TEST (qpack_encode_prefix_multi_byte_delta)
   ASSERT_EQ (prefix.base, 300);
 }
 
-/* ============================================================================
- * MAX ENTRIES ALIAS TESTS
- * ============================================================================
- */
-
 TEST (qpack_max_entries_alias)
 {
   /* Verify alias function produces same results */
@@ -611,11 +561,6 @@ TEST (qpack_max_entries_alias)
   ASSERT_EQ (SocketQPACK_max_entries (65536),
              SocketQPACK_compute_max_entries (65536));
 }
-
-/* ============================================================================
- * ENCODE REQUIRED INSERT COUNT TESTS (RFC 9204 Section 4.5.1.1)
- * ============================================================================
- */
 
 TEST (qpack_encode_ric_null_output)
 {
@@ -699,11 +644,6 @@ TEST (qpack_encode_ric_max_in_range)
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (encoded, 256);
 }
-
-/* ============================================================================
- * DECODE REQUIRED INSERT COUNT TESTS (RFC 9204 Section 4.5.1.1)
- * ============================================================================
- */
 
 TEST (qpack_decode_ric_null_output)
 {
@@ -815,11 +755,6 @@ TEST (qpack_decode_ric_at_full_range_boundary)
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (ric, 255);
 }
-
-/* ============================================================================
- * ENCODE/DECODE ROUND-TRIP TESTS (RFC 9204 Section 4.5.1.1)
- * ============================================================================
- */
 
 TEST (qpack_ric_roundtrip_zero)
 {
@@ -945,11 +880,6 @@ TEST (qpack_ric_roundtrip_values_0_to_512)
       ASSERT_EQ (decoded, ric);
     }
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

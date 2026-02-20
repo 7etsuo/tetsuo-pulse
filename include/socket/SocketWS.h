@@ -114,18 +114,8 @@
 struct SocketPoll_T;
 typedef struct SocketPoll_T *SocketPoll_T;
 
-/* ============================================================================
- * Opaque Type
- * ============================================================================
- */
-
 #define T SocketWS_T
 typedef struct SocketWS *T;
-
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
 
 /**
  * @brief Exception raised for general WebSocket operation failures.
@@ -160,11 +150,6 @@ extern const Except_T SocketWS_ProtocolError;
  */
 extern const Except_T SocketWS_Closed;
 
-/* ============================================================================
- * WebSocket Opcodes (RFC 6455 Section 5.2)
- * ============================================================================
- */
-
 /**
  * @brief WebSocket frame opcodes as defined in RFC 6455 section 5.2.
  * @ingroup websocket
@@ -184,11 +169,6 @@ typedef enum
   WS_OPCODE_PING = 0x9,         /**< Ping control frame (keepalive). */
   WS_OPCODE_PONG = 0xA          /**< Pong control frame (response to ping). */
 } SocketWS_Opcode;
-
-/* ============================================================================
- * Close Status Codes (RFC 6455 Section 7.4.1)
- * ============================================================================
- */
 
 /**
  * @brief Status codes for WebSocket CLOSE frames (RFC 6455 section 7.4).
@@ -222,11 +202,6 @@ typedef enum
   WS_CLOSE_BAD_GATEWAY = 1014,      /**< Bad gateway or tunnel error. */
   WS_CLOSE_TLS_HANDSHAKE = 1015     /**< Failed TLS handshake (internal). */
 } SocketWS_CloseCode;
-
-/* ============================================================================
- * Connection State
- * ============================================================================
- */
 
 /**
  * @brief WebSocket connection lifecycle states.
@@ -262,11 +237,6 @@ typedef enum
   WS_ROLE_SERVER  /**< Server: rejects unmasked incoming data frames. */
 } SocketWS_Role;
 
-/* ============================================================================
- * Error Codes
- * ============================================================================
- */
-
 /**
  * @brief WebSocket-specific error codes for SocketWS_last_error().
  * @ingroup websocket
@@ -292,11 +262,6 @@ typedef enum
   WS_ERROR_WOULD_BLOCK,       /**< Non-blocking I/O would block. */
   WS_ERROR_TIMEOUT            /**< Operation timed out (ping or I/O). */
 } SocketWS_Error;
-
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
 
 /**
  * @brief Configuration parameters for WebSocket instances.
@@ -335,22 +300,18 @@ typedef struct
       *subprotocols; /**< NULL-terminated array of supported subprotocols. */
 
   /* Origin validation (server only) */
-  const char *
-      *allowed_origins; /**< NULL-terminated array of allowed Origin values.
-                             If NULL or empty, all origins are allowed.
-                             Example: {"https://example.com", "https://app.example.com", NULL} */
-  int validate_origin;  /**< If non-zero, reject requests with missing or invalid Origin (default: 0). */
+  const char **allowed_origins; /**< NULL-terminated array of allowed Origin
+                                   values. If NULL or empty, all origins are
+                                   allowed. Example: {"https://example.com",
+                                   "https://app.example.com", NULL} */
+  int validate_origin; /**< If non-zero, reject requests with missing or invalid
+                          Origin (default: 0). */
 
   /* Keepalive */
   int ping_interval_ms; /**< Auto-ping interval in ms (0=disabled, default: 0).
                          */
   int ping_timeout_ms;  /**< Timeout for pong response in ms (default: 5000). */
 } SocketWS_Config;
-
-/* ============================================================================
- * Received Frame Structure
- * ============================================================================
- */
 
 /**
  * @brief Structure representing a parsed WebSocket frame.
@@ -371,11 +332,6 @@ typedef struct
   size_t payload_len; /**< Length of payload in bytes. */
 } SocketWS_Frame;
 
-/* ============================================================================
- * Received Message Structure (reassembled)
- * ============================================================================
- */
-
 /**
  * @brief Complete reassembled WebSocket message from recv_message().
  * @ingroup websocket
@@ -394,11 +350,6 @@ typedef struct
   size_t len;          /**< Total message length in bytes. */
 } SocketWS_Message;
 
-/* ============================================================================
- * Configuration Functions
- * ============================================================================
- */
-
 /**
  * @brief Initialize WebSocket configuration with default values.
  * @ingroup websocket
@@ -414,11 +365,6 @@ typedef struct
  * @see SocketWS_Config for individual field descriptions and customization.
  */
 extern void SocketWS_config_defaults (SocketWS_Config *config);
-
-/* ============================================================================
- * Client API
- * ============================================================================
- */
 
 /**
  * @brief Create a new client WebSocket instance from a connected TCP socket.
@@ -512,11 +458,6 @@ extern T SocketWS_client_new (Socket_T socket,
                               const char *path,
                               const SocketWS_Config *config);
 
-/* ============================================================================
- * Server API
- * ============================================================================
- */
-
 /**
  * @brief Check if an HTTP request is a valid WebSocket upgrade request.
  * @ingroup websocket
@@ -585,11 +526,6 @@ extern T SocketWS_server_accept (Socket_T socket,
  */
 extern void
 SocketWS_server_reject (Socket_T socket, int status_code, const char *reason);
-
-/* ============================================================================
- * Connection Lifecycle
- * ============================================================================
- */
 
 /**
  * @brief Dispose of a WebSocket instance, closing connection if open.
@@ -699,11 +635,6 @@ extern const char *SocketWS_selected_subprotocol (T ws);
  * @see SocketWS_Config for compression configuration.
  */
 extern int SocketWS_compression_enabled (T ws);
-
-/* ============================================================================
- * Sending
- * ============================================================================
- */
 
 /**
  * @brief Send a text message over the WebSocket (opcode TEXT).
@@ -823,11 +754,6 @@ extern int SocketWS_pong (T ws, const void *data, size_t len);
  */
 extern int SocketWS_close (T ws, int code, const char *reason);
 
-/* ============================================================================
- * Receiving
- * ============================================================================
- */
-
 /**
  * @brief Receive and reassemble a complete WebSocket message.
  * @ingroup websocket
@@ -869,11 +795,6 @@ extern int SocketWS_recv_message (T ws, SocketWS_Message *msg);
  * @see SocketWS_last_error() for error details.
  */
 extern int SocketWS_recv_available (T ws);
-
-/* ============================================================================
- * Event Loop Integration
- * ============================================================================
- */
 
 /**
  * @brief Get the underlying socket file descriptor for use with
@@ -982,11 +903,6 @@ extern int SocketWS_enable_auto_ping (T ws, SocketPoll_T poll);
  */
 extern void SocketWS_disable_auto_ping (T ws);
 
-/* ============================================================================
- * Close Status
- * ============================================================================
- */
-
 /**
  * @brief Get close code from close frame.
  * @ingroup websocket
@@ -1007,11 +923,6 @@ extern int SocketWS_close_code (T ws);
  * @see SocketWS_close_code() for close code.
  */
 extern const char *SocketWS_close_reason (T ws);
-
-/* ============================================================================
- * Error Handling
- * ============================================================================
- */
 
 /**
  * @brief Retrieve the most recent error code for this WebSocket instance.
@@ -1046,11 +957,6 @@ extern SocketWS_Error SocketWS_last_error (T ws);
  * @see SocketWS_Error enum for error codes.
  */
 extern const char *SocketWS_error_string (SocketWS_Error error);
-
-/* ============================================================================
- * Convenience Functions
- * ============================================================================
- */
 
 /**
  * @brief One-liner WebSocket client connection

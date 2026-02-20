@@ -36,11 +36,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Constants (RFC 9002)
- * ============================================================================
- */
-
 /**
  * @brief Initial RTT estimate in microseconds (333ms per RFC 9002).
  */
@@ -83,11 +78,6 @@
  * @brief Maximum PTO backoff exponent.
  */
 #define QUIC_LOSS_MAX_PTO_COUNT 16
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief Information about a sent packet for loss detection.
@@ -181,11 +171,6 @@ typedef enum
   QUIC_LOSS_ERROR_INVALID    /**< Invalid packet number or state */
 } SocketQUICLoss_Result;
 
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
-
 /**
  * @brief Create a new loss detection state for a packet number space.
  *
@@ -204,11 +189,6 @@ SocketQUICLoss_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay);
  * @param state Loss state to reset.
  */
 extern void SocketQUICLoss_reset (SocketQUICLossState_T state);
-
-/* ============================================================================
- * Sent Packet Tracking
- * ============================================================================
- */
 
 /**
  * @brief Record a sent packet for loss detection.
@@ -231,11 +211,6 @@ SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
                                int ack_eliciting,
                                int in_flight,
                                int is_crypto);
-
-/* ============================================================================
- * ACK Processing
- * ============================================================================
- */
 
 /**
  * @brief Process an ACK frame and detect lost packets.
@@ -279,11 +254,6 @@ extern void SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt,
                                        uint64_t latest_rtt_us,
                                        uint64_t ack_delay_us,
                                        int is_handshake);
-
-/* ============================================================================
- * Loss Detection Timers
- * ============================================================================
- */
 
 /**
  * @brief Calculate the Probe Timeout (PTO) interval.
@@ -339,11 +309,6 @@ SocketQUICLoss_on_loss_timeout (SocketQUICLossState_T state,
                                 void *context,
                                 size_t *lost_count);
 
-/* ============================================================================
- * Query Functions
- * ============================================================================
- */
-
 /**
  * @brief Get the number of bytes currently in flight.
  *
@@ -369,11 +334,6 @@ extern int SocketQUICLoss_has_in_flight (const SocketQUICLossState_T state);
  * @param rtt RTT state to initialize.
  */
 extern void SocketQUICLoss_init_rtt (SocketQUICLossRTT_T *rtt);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of loss result code.

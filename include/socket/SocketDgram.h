@@ -969,11 +969,6 @@ extern void SocketDgram_setcloexec (T socket, int enable);
  */
 extern int SocketDgram_debug_live_count (void);
 
-/* ============================================================================
- * Convenience Functions - One-Call Socket Setup
- * ============================================================================
- */
-
 /**
  * @ingroup socket_dgram
  * @brief Create a bound IPv4 UDP socket in one call.

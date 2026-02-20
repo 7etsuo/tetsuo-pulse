@@ -28,11 +28,6 @@
 #include <assert.h>
 #include <stddef.h>
 
-/* ============================================================================
- * Event String Table
- * ============================================================================
- */
-
 static const char *event_strings[]
     = { [QUIC_STREAM_EVENT_SEND_DATA] = "SendData",
         [QUIC_STREAM_EVENT_SEND_FIN] = "SendFin",
@@ -55,11 +50,6 @@ SocketQUICStream_event_string (SocketQUICStreamEvent event)
   return event_strings[event];
 }
 
-/* ============================================================================
- * State Accessor Functions
- * ============================================================================
- */
-
 SocketQUICStreamState
 SocketQUICStream_get_send_state (const SocketQUICStream_T stream)
 {
@@ -75,11 +65,6 @@ SocketQUICStream_get_recv_state (const SocketQUICStream_T stream)
     return QUIC_STREAM_STATE_RECV;
   return stream->recv_state;
 }
-
-/* ============================================================================
- * Legacy State Update Helpers
- * ============================================================================
- */
 
 /**
  * @brief Update legacy combined state based on send state.
@@ -112,11 +97,6 @@ update_legacy_state_recv (SocketQUICStream_T stream)
       || stream->recv_state == QUIC_STREAM_STATE_SIZE_KNOWN)
     stream->state = stream->recv_state;
 }
-
-/* ============================================================================
- * State Transition Infrastructure
- * ============================================================================
- */
 
 /**
  * @brief State transition table entry.
@@ -188,11 +168,6 @@ do_state_transition (SocketQUICStream_T stream,
   /* No valid transition found */
   return QUIC_STREAM_ERROR_STATE;
 }
-
-/* ============================================================================
- * Send-Side State Machine (RFC 9000 Section 3.1)
- * ============================================================================
- */
 
 /**
  * @brief Send-side state transition table (RFC 9000 Section 3.1).
@@ -320,11 +295,6 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
                               &stream->send_state,
                               update_send_state);
 }
-
-/* ============================================================================
- * Receive-Side State Machine (RFC 9000 Section 3.2)
- * ============================================================================
- */
 
 /**
  * @brief Receive-side state transition table (RFC 9000 Section 3.2).

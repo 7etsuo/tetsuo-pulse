@@ -23,11 +23,6 @@
 
 #include "core/Except.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /** @brief SHA-1 digest size in bytes. */
 #define SOCKET_CRYPTO_SHA1_SIZE 20
 
@@ -49,11 +44,6 @@
 /** @brief Sec-WebSocket-Accept buffer size (Base64-encoded). */
 #define SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE 29
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
-
 /**
  * @brief Exception for cryptographic operation failures.
  *
@@ -61,11 +51,6 @@
  * missing crypto support (SOCKET_HAS_TLS == 0).
  */
 extern const Except_T SocketCrypto_Failed;
-
-/* ============================================================================
- * Hash Functions
- * ============================================================================
- */
 
 /**
  * @brief Compute SHA-1 hash of input data (RFC 3174).
@@ -112,11 +97,6 @@ extern void SocketCrypto_md5 (const void *input,
                               size_t input_len,
                               unsigned char output[SOCKET_CRYPTO_MD5_SIZE]);
 
-/* ============================================================================
- * HMAC Functions
- * ============================================================================
- */
-
 /**
  * @brief Compute HMAC-SHA256 message authentication code (RFC 2104, FIPS
  * 198-1).
@@ -136,11 +116,6 @@ SocketCrypto_hmac_sha256 (const void *key,
                           const void *data,
                           size_t data_len,
                           unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
-
-/* ============================================================================
- * HKDF Functions (RFC 5869)
- * ============================================================================
- */
 
 /**
  * @brief HKDF-Extract: Extract a PRK from salt and IKM (RFC 5869 §2.2).
@@ -188,11 +163,6 @@ extern void SocketCrypto_hkdf_expand_label (const unsigned char *prk,
                                             unsigned char *output,
                                             size_t output_len);
 
-/* ============================================================================
- * AEAD Constants (RFC 5116, RFC 9001)
- * ============================================================================
- */
-
 /** @brief AEAD authentication tag size in bytes (RFC 9001 §5.3). */
 #define SOCKET_CRYPTO_AEAD_TAG_SIZE 16
 
@@ -219,11 +189,6 @@ typedef enum
   SOCKET_CRYPTO_AEAD_AES_256_GCM = 1,      /**< TLS_AES_256_GCM_SHA384 */
   SOCKET_CRYPTO_AEAD_CHACHA20_POLY1305 = 2 /**< TLS_CHACHA20_POLY1305_SHA256 */
 } SocketCrypto_AeadAlg;
-
-/* ============================================================================
- * AEAD Functions (RFC 5116, RFC 9001 §5.3)
- * ============================================================================
- */
 
 /**
  * @brief AEAD encryption for QUIC packet protection.
@@ -296,11 +261,6 @@ SocketCrypto_aead_decrypt (SocketCrypto_AeadAlg alg,
                            const unsigned char tag[SOCKET_CRYPTO_AEAD_TAG_SIZE],
                            unsigned char *plaintext);
 
-/* ============================================================================
- * Base64 Encoding (RFC 4648)
- * ============================================================================
- */
-
 /**
  * @brief Encode binary data to Base64 string (RFC 4648).
  *
@@ -354,11 +314,6 @@ extern size_t SocketCrypto_base64_encoded_size (size_t input_len);
  */
 extern size_t SocketCrypto_base64_decoded_size (size_t input_len);
 
-/* ============================================================================
- * Hexadecimal Encoding
- * ============================================================================
- */
-
 /**
  * @brief Encode binary data to hexadecimal string.
  *
@@ -389,11 +344,6 @@ extern ssize_t SocketCrypto_hex_decode (const char *input,
                                         size_t input_len,
                                         unsigned char *output,
                                         size_t output_capacity);
-
-/* ============================================================================
- * Random Number Generation
- * ============================================================================
- */
 
 /**
  * @brief Generate cryptographically secure random bytes.
@@ -426,11 +376,6 @@ extern uint32_t SocketCrypto_random_uint32 (void);
  */
 extern void SocketCrypto_cleanup (void);
 
-/* ============================================================================
- * WebSocket Handshake Helpers (RFC 6455)
- * ============================================================================
- */
-
 /**
  * @brief Compute Sec-WebSocket-Accept for server handshake (RFC 6455 §4.2.2).
  *
@@ -456,11 +401,6 @@ extern int SocketCrypto_websocket_accept (
 extern int
 SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
 
-/* ============================================================================
- * Lifecycle Management
- * ============================================================================
- */
-
 /**
  * @brief Cleanup cryptographic resources.
  *
@@ -476,11 +416,6 @@ SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
  * @threadsafe Yes (mutex protected).
  */
 extern void SocketCrypto_cleanup (void);
-
-/* ============================================================================
- * Security Utilities
- * ============================================================================
- */
 
 /**
  * @brief Constant-time comparison to prevent timing attacks.

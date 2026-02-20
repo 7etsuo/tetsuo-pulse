@@ -19,11 +19,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * ENCODE NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_literal_name_ref_encode_null_output)
 {
   size_t written = 999;
@@ -81,11 +76,6 @@ TEST (qpack_literal_name_ref_encode_zero_buffer)
                                              &written);
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
-
-/* ============================================================================
- * ENCODE BASIC TESTS
- * ============================================================================
- */
 
 TEST (qpack_literal_name_ref_encode_static_basic)
 {
@@ -228,11 +218,6 @@ TEST (qpack_literal_name_ref_encode_buffer_too_small)
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
 
-/* ============================================================================
- * DECODE NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_literal_name_ref_decode_null_result)
 {
   unsigned char buf[] = { 0x50, 0x03, 'f', 'o', 'o' };
@@ -263,11 +248,6 @@ TEST (qpack_literal_name_ref_decode_empty_input)
   ASSERT_EQ (result, QPACK_INCOMPLETE);
   ASSERT_EQ (consumed, 0);
 }
-
-/* ============================================================================
- * DECODE BASIC TESTS
- * ============================================================================
- */
 
 TEST (qpack_literal_name_ref_decode_static_basic)
 {
@@ -432,11 +412,6 @@ TEST (qpack_literal_name_ref_decode_wrong_pattern)
   ASSERT_EQ (result, QPACK_ERR_INTERNAL);
 }
 
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
-
 TEST (qpack_literal_name_ref_roundtrip_static)
 {
   unsigned char buf[64];
@@ -550,11 +525,6 @@ TEST (qpack_literal_name_ref_roundtrip_empty_value)
   ASSERT_EQ (decoded.value_len, 0);
 }
 
-/* ============================================================================
- * HUFFMAN ENCODING TESTS
- * ============================================================================
- */
-
 TEST (qpack_literal_name_ref_encode_huffman)
 {
   unsigned char buf[64];
@@ -624,11 +594,6 @@ TEST (qpack_literal_name_ref_decode_arena_null)
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * VALIDATE INDEX TESTS
- * ============================================================================
- */
-
 TEST (qpack_literal_name_ref_validate_static_valid)
 {
   SocketQPACK_Result result = SocketQPACK_validate_literal_name_ref_index (
@@ -678,11 +643,6 @@ TEST (qpack_literal_name_ref_validate_dynamic_evicted)
   /* rel=9, abs = 10 - 9 - 1 = 0, which is < dropped=5 */
   ASSERT_EQ (result, QPACK_ERR_EVICTED_INDEX);
 }
-
-/* ============================================================================
- * RESOLVE NAME TESTS
- * ============================================================================
- */
 
 TEST (qpack_literal_name_ref_resolve_static)
 {
@@ -743,11 +703,6 @@ TEST (qpack_literal_name_ref_resolve_dynamic_null_table)
       false, 0, 10, NULL, &name, &name_len);
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 }
-
-/* ============================================================================
- * EDGE CASE TESTS
- * ============================================================================
- */
 
 TEST (qpack_literal_name_ref_max_index_continuation)
 {
@@ -845,11 +800,6 @@ TEST (qpack_literal_name_ref_all_flags_combination)
       ASSERT_EQ (decoded.never_indexed, combinations[i].never_indexed);
     }
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

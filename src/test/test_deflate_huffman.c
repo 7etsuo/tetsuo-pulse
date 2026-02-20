@@ -53,10 +53,6 @@ decode_from_bytes (const uint8_t *data, size_t size, uint16_t *symbol)
   return SocketDeflate_HuffmanTable_decode (test_table, test_reader, symbol);
 }
 
-/* ========================================================================
- * Basic Build Tests
- * ======================================================================== */
-
 /*
  * Test: Build RFC 1951 example tree (A=2, B=1, C=3, D=3).
  *
@@ -151,10 +147,6 @@ TEST (huffman_build_fixed_dist)
 
   teardown ();
 }
-
-/* ========================================================================
- * Decode Tests
- * ======================================================================== */
 
 /*
  * Test: Decode single symbol from simple tree.
@@ -362,10 +354,6 @@ TEST (huffman_decode_end_of_block)
 
   teardown ();
 }
-
-/* ========================================================================
- * Validation Tests
- * ======================================================================== */
 
 /*
  * Test: Over-subscribed tree must fail.
@@ -588,10 +576,6 @@ TEST (huffman_all_same_length)
   teardown ();
 }
 
-/* ========================================================================
- * Edge Case Tests
- * ======================================================================== */
-
 /*
  * Test: Empty alphabet (all lengths = 0).
  */
@@ -763,10 +747,6 @@ TEST (huffman_table_reset)
   teardown ();
 }
 
-/* ========================================================================
- * Fixed Table Tests
- * ======================================================================== */
-
 /*
  * Test: Initialize fixed tables.
  */
@@ -890,10 +870,6 @@ TEST (huffman_fixed_tables_singleton)
 
   teardown ();
 }
-
-/* ========================================================================
- * Test Runner
- * ======================================================================== */
 
 int
 main (void)

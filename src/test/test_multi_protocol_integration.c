@@ -33,11 +33,6 @@
 #include "socket/SocketWS.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 48000
 #define TEST_TIMEOUT_MS 5000
 
@@ -48,11 +43,6 @@ get_mp_test_port (void)
 {
   return TEST_PORT_BASE + (mp_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * HTTP to WebSocket Upgrade Server
- * ============================================================================
- */
 
 typedef struct
 {
@@ -186,11 +176,6 @@ upgrade_test_server_stop (UpgradeTestServer *server)
     Arena_dispose (&server->arena);
 }
 
-/* ============================================================================
- * IPv6 Dual-Stack Server
- * ============================================================================
- */
-
 typedef struct
 {
   Socket_T listen_socket_ipv4;
@@ -308,11 +293,6 @@ dual_stack_server_stop (DualStackServer *server)
     Arena_dispose (&server->arena);
 }
 
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
-
 TEST (integration_http_websocket_upgrade_handshake)
 {
   UpgradeTestServer server;
@@ -395,8 +375,7 @@ TEST (integration_ipv6_dual_stack)
 
     /* Receive echo */
     char ipv4_buf[1024] = { 0 };
-    ssize_t received
-        = Socket_recv (ipv4_client, ipv4_buf, sizeof (ipv4_buf));
+    ssize_t received = Socket_recv (ipv4_client, ipv4_buf, sizeof (ipv4_buf));
     ASSERT_EQ (received, sent);
     ASSERT_EQ (strcmp (ipv4_buf, ipv4_msg), 0);
 

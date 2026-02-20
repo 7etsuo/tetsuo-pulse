@@ -364,14 +364,6 @@ extern __thread char tls_error_buf[];
 #define T SocketTLS_T
 typedef struct T *T;
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- *
- * RETRYABILITY: TLS errors are generally NOT retryable as they indicate
- * configuration issues, certificate problems, or protocol mismatches.
- */
-
 /**
  * @brief General TLS operation failure.
  * @ingroup security
@@ -1255,11 +1247,6 @@ extern int SocketTLS_is_session_reused (Socket_T socket);
  */
 extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
 
-/* ============================================================================
- * TLS Session Management
- * ============================================================================
- */
-
 /**
  * @brief Export TLS session for later resumption
  * @ingroup security
@@ -1405,11 +1392,6 @@ extern int SocketTLS_session_restore (Socket_T socket,
                                       const unsigned char *buffer,
                                       size_t len);
 
-/* ============================================================================
- * TLS Renegotiation Control
- * ============================================================================
- */
-
 /**
  * @brief Check for and process pending renegotiation
  * @ingroup security
@@ -1497,11 +1479,6 @@ extern int SocketTLS_disable_renegotiation (Socket_T socket);
  * @see SocketTLS_disable_renegotiation() to block renegotiation
  */
 extern int SocketTLS_get_renegotiation_count (Socket_T socket);
-
-/* ============================================================================
- * TLS Certificate Information
- * ============================================================================
- */
 
 /**
  * @brief Peer certificate information structure
@@ -1666,11 +1643,6 @@ extern int SocketTLS_get_peer_cert_chain (Socket_T socket,
                                           X509 ***chain_out,
                                           int *chain_len);
 
-/* ============================================================================
- * OCSP Status (Client-side)
- * ============================================================================
- */
-
 /**
  * @brief Get OCSP stapling status from server response
  * @ingroup security
@@ -1761,89 +1733,6 @@ extern int SocketTLS_get_ocsp_response_status (Socket_T socket);
  */
 extern int
 SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update);
-
-/* ============================================================================
- * Kernel TLS (kTLS) Offload Support
- * ============================================================================
- *
- * kTLS offloads TLS record encryption/decryption to the Linux kernel,
- * reducing context switches and improving performance for high-throughput
- * applications. When kTLS is active, SSL_write/SSL_read continue to work
- * normally - OpenSSL handles the kernel offload internally through its
- * BIO layer.
- *
- * ## Kernel Requirements
- *
- * | Feature | Minimum Kernel | Notes |
- * |---------|----------------|-------|
- * | TLS_TX (transmit offload) | Linux 4.13+ | send() uses kernel crypto |
- * | TLS_RX (receive offload) | Linux 4.17+ | recv() uses kernel crypto |
- * | ChaCha20-Poly1305 | Linux 5.11+ | In addition to AES-GCM |
- * | CONFIG_TLS | Required | Kernel TLS module |
- *
- * ## OpenSSL Requirements
- *
- * - OpenSSL 3.0+ compiled with `enable-ktls` option
- * - Check with: `openssl version -a | grep KTLS`
- * - At runtime: `#ifndef OPENSSL_NO_KTLS`
- *
- * ## Supported Cipher Suites
- *
- * | Cipher | kTLS Support | Notes |
- * |--------|--------------|-------|
- * | TLS_AES_128_GCM_SHA256 | Yes | Most widely supported |
- * | TLS_AES_256_GCM_SHA384 | Yes | Highest security |
- * | TLS_CHACHA20_POLY1305_SHA256 | Linux 5.11+ | ARM-friendly |
- *
- * ## Performance Characteristics
- *
- * - **Reduced syscalls**: Single syscall vs user/kernel copies per record
- * - **Zero-copy sendfile**: SSL_sendfile() for file transfers when TX active
- * - **CPU savings**: 10-30% reduction in TLS overhead on supported hardware
- * - **Best for**: High-throughput bulk transfers (file serving, streaming)
- *
- * ## Usage Example
- *
- * @code{.c}
- * // Check system support first
- * if (SocketTLS_ktls_available()) {
- *     printf("kTLS is available on this system\n");
- * }
- *
- * // Enable kTLS before handshake
- * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
- * Socket_connect(sock, "example.com", 443);
- *
- * SocketTLSContext_T ctx = SocketTLSContext_new_client(NULL);
- * SocketTLS_enable(sock, ctx);
- * SocketTLS_enable_ktls(sock);  // Request kTLS offload
- * SocketTLS_set_hostname(sock, "example.com");
- *
- * // Handshake - kTLS activated automatically if possible
- * SocketTLS_handshake_auto(sock);
- *
- * // Check what was activated
- * if (SocketTLS_is_ktls_tx_active(sock)) {
- *     printf("TX offload active - using kernel encryption\n");
- * }
- * if (SocketTLS_is_ktls_rx_active(sock)) {
- *     printf("RX offload active - using kernel decryption\n");
- * }
- *
- * // I/O works normally - OpenSSL uses kernel internally
- * SocketTLS_send(sock, data, len);
- * SocketTLS_recv(sock, buf, sizeof(buf));
- *
- * // Zero-copy file transfer when TX offload active
- * if (SocketTLS_is_ktls_tx_active(sock)) {
- *     SocketTLS_sendfile(sock, file_fd, 0, file_size);
- * }
- * @endcode
- *
- * @note kTLS is opportunistic - falls back to userspace if unavailable
- * @warning kTLS does not support TLS renegotiation (TLS 1.2 only)
- * @warning kTLS may not work with all OpenSSL features (e.g., custom BIOs)
- */
 
 /**
  * @brief Check if kTLS support is available on this system
@@ -2064,17 +1953,6 @@ extern int SocketTLS_is_ktls_rx_active (Socket_T socket);
 extern ssize_t
 SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size);
 
-/* ============================================================================
- * TLS Performance Optimizations
- * ============================================================================
- *
- * These functions provide performance optimizations for TLS connections:
- * - TCP tuning for handshake latency reduction
- * - TLS 1.3 0-RTT early data support
- * - Session cache sharding for multi-threaded servers
- * - Buffer pooling for high-connection scenarios
- */
-
 /**
  * @brief Optimize TCP settings for faster TLS handshake
  * @ingroup security
@@ -2126,32 +2004,6 @@ extern int SocketTLS_optimize_handshake (Socket_T socket);
  * @see SocketTLS_optimize_handshake() to apply handshake optimizations
  */
 extern int SocketTLS_restore_tcp_defaults (Socket_T socket);
-
-/* ============================================================================
- * TLS 1.3 0-RTT Early Data Support
- * ============================================================================
- *
- * 0-RTT (Zero Round Trip Time) allows sending data in the first handshake
- * flight, reducing latency by one RTT. Available in TLS 1.3 with session
- * resumption.
- *
- * ## Security Warning
- *
- * Early data is NOT replay-protected by the TLS protocol. Applications MUST:
- * - Only use early data for idempotent operations (GET, not POST)
- * - Implement application-level replay detection
- * - Never include sensitive state-changing operations
- *
- * ## Recommended Use Cases
- * - HTTP GET requests
- * - DNS queries
- * - Heartbeat/ping messages
- *
- * ## NOT Recommended For
- * - POST requests that modify state
- * - Financial transactions
- * - Any non-idempotent operation
- */
 
 /**
  * @brief Early data status codes for TLS 1.3 0-RTT
@@ -2298,37 +2150,6 @@ extern int SocketTLS_read_early_data (Socket_T socket,
 extern SocketTLS_EarlyDataStatus
 SocketTLS_get_early_data_status (Socket_T socket);
 
-/* ============================================================================
- * TLS 1.3 KeyUpdate Support
- * ============================================================================
- *
- * TLS 1.3 replaces renegotiation with KeyUpdate, a lightweight mechanism to
- * rotate encryption keys without a full handshake. This provides forward
- * secrecy for long-lived connections.
- *
- * ## Use Cases
- *
- * - Long-lived database connections
- * - VPN tunnels
- * - Persistent WebSocket connections
- * - Any connection open for hours/days
- *
- * ## Comparison to Renegotiation
- *
- * | Aspect | KeyUpdate (TLS 1.3) | Renegotiation (TLS 1.2) |
- * |--------|---------------------|-------------------------|
- * | Overhead | Very light | Full handshake |
- * | Cert change | No | Yes |
- * | Cipher change | No | Yes |
- * | Security | Forward secrecy | Vulnerable to attacks |
- *
- * ## Recommended Usage
- *
- * For connections lasting hours or processing large data volumes, call
- * SocketTLS_request_key_update() periodically (e.g., every hour or every
- * 1GB of data transferred) to maintain forward secrecy.
- */
-
 /**
  * @brief Request TLS 1.3 key rotation
  * @ingroup security
@@ -2389,11 +2210,6 @@ SocketTLS_request_key_update (Socket_T socket, int request_peer_update);
  */
 extern int SocketTLS_get_key_update_count (Socket_T socket);
 
-/* ============================================================================
- * Session Cache Optimization
- * ============================================================================
- */
-
 /**
  * @brief Create sharded session cache for multi-threaded servers
  * @ingroup security
@@ -2429,14 +2245,6 @@ extern void SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx,
                                                 size_t *total_hits,
                                                 size_t *total_misses,
                                                 size_t *total_stores);
-
-/* ============================================================================
- * TLS Buffer Pool for High-Connection Scenarios
- * ============================================================================
- *
- * Pre-allocated buffer pool for servers with thousands of concurrent TLS
- * connections. Reduces allocation overhead and memory fragmentation.
- */
 
 /**
  * @brief Opaque TLS buffer pool type

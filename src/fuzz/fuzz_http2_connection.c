@@ -47,15 +47,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ============================================================================
- * Fuzzer Operation Codes
- * ============================================================================
- *
- * The fuzzer interprets the input as a sequence of operations to perform on
- * the HTTP/2 connection. Each operation is a single byte opcode followed by
- * operation-specific parameters.
- */
-
 typedef enum
 {
   OP_INJECT_DATA = 0,      /* Inject raw bytes into socket */
@@ -84,11 +75,6 @@ typedef enum
   OP_MAX
 } FuzzOp;
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define MAX_STREAMS 16        /* Max streams to track */
 #define MAX_DATA_SIZE 1024    /* Max data per operation */
 #define MAX_HEADERS 8         /* Max headers per operation */
@@ -96,11 +82,6 @@ typedef enum
 
 /* HTTP/2 connection preface (24 bytes) */
 static const uint8_t HTTP2_PREFACE[24] = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
-
-/* ============================================================================
- * Fuzzer State
- * ============================================================================
- */
 
 typedef struct
 {
@@ -115,11 +96,6 @@ typedef struct
   const uint8_t *data; /* Current fuzz input */
   size_t size;         /* Remaining size */
 } FuzzState;
-
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
 
 /**
  * Read a byte from fuzz input, return 0 if exhausted
@@ -228,11 +204,6 @@ build_frame (uint8_t *buf,
   buf[7] = (stream_id >> 8) & 0xFF;
   buf[8] = stream_id & 0xFF;
 }
-
-/* ============================================================================
- * Operation Handlers
- * ============================================================================
- */
 
 /**
  * OP_INJECT_DATA: Inject raw fuzzed bytes into socket
@@ -1065,15 +1036,6 @@ op_query_state (FuzzState *state)
     }
 }
 
-/* ============================================================================
- * Custom Mutator for Structure-Aware Fuzzing
- * ============================================================================
- *
- * This mutator understands HTTP/2 frame structure and makes intelligent
- * mutations that are more likely to produce valid frames while still
- * exploring edge cases.
- */
-
 /**
  * Parse HTTP/2 frame header from bytes
  */
@@ -1417,11 +1379,6 @@ LLVMFuzzerCustomCrossOver (const uint8_t *data1,
 
   return out_pos;
 }
-
-/* ============================================================================
- * Main Fuzzer Entry Point
- * ============================================================================
- */
 
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)

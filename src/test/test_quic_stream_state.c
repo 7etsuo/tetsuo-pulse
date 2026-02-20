@@ -19,11 +19,6 @@
 #include "quic/SocketQUICStream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Send State Machine Tests (RFC 9000 Section 3.1)
- * ============================================================================
- */
-
 TEST (quic_stream_send_ready_to_send)
 {
   struct SocketQUICStream stream;
@@ -193,11 +188,6 @@ TEST (quic_stream_send_null_stream)
   ASSERT_EQ (res, QUIC_STREAM_ERROR_NULL);
 }
 
-/* ============================================================================
- * Receive State Machine Tests (RFC 9000 Section 3.2)
- * ============================================================================
- */
-
 TEST (quic_stream_recv_initial_state)
 {
   struct SocketQUICStream stream;
@@ -360,11 +350,6 @@ TEST (quic_stream_recv_null_stream)
   ASSERT_EQ (res, QUIC_STREAM_ERROR_NULL);
 }
 
-/* ============================================================================
- * Combined State Machine Tests
- * ============================================================================
- */
-
 TEST (quic_stream_independent_state_machines)
 {
   struct SocketQUICStream stream;
@@ -433,11 +418,6 @@ TEST (quic_stream_stop_sending_triggers_reset)
   ASSERT_EQ (stream.send_state, QUIC_STREAM_STATE_RESET_SENT);
 }
 
-/* ============================================================================
- * State Accessor Tests
- * ============================================================================
- */
-
 TEST (quic_stream_get_send_state)
 {
   struct SocketQUICStream stream;
@@ -469,11 +449,6 @@ TEST (quic_stream_get_recv_state_null)
   ASSERT_EQ (SocketQUICStream_get_recv_state (NULL), QUIC_STREAM_STATE_RECV);
 }
 
-/* ============================================================================
- * Utility Function Tests
- * ============================================================================
- */
-
 TEST (quic_stream_event_string)
 {
   ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_SEND_DATA),
@@ -489,11 +464,6 @@ TEST (quic_stream_event_string)
                   "Unknown")
           == 0);
 }
-
-/* ============================================================================
- * Edge Case Tests
- * ============================================================================
- */
 
 TEST (quic_stream_multiple_data_sends)
 {
@@ -547,11 +517,6 @@ TEST (quic_stream_early_reset_from_ready)
   ASSERT_EQ (res, QUIC_STREAM_OK);
   ASSERT_EQ (stream.send_state, QUIC_STREAM_STATE_RESET_SENT);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

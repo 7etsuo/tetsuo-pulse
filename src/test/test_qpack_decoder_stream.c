@@ -41,11 +41,6 @@
     }                                                                        \
   while (0)
 
-/* ============================================================================
- * STREAM TYPE VALIDATION TESTS (RFC 9204 Section 4.2)
- * ============================================================================
- */
-
 /**
  * Test decoder stream type validation.
  *
@@ -78,11 +73,6 @@ test_stream_type_validation (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * STREAM LIFECYCLE TESTS
- * ============================================================================
- */
 
 /**
  * Test decoder stream creation.
@@ -234,11 +224,6 @@ test_stream_lifecycle_null_params (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * SECTION ACKNOWLEDGMENT TESTS (RFC 9204 Section 4.4.1)
- * ============================================================================
- */
-
 /**
  * Test Section Acknowledgment instruction encoding.
  *
@@ -347,11 +332,6 @@ test_write_section_ack_not_init (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * STREAM CANCELLATION TESTS (RFC 9204 Section 4.4.2)
- * ============================================================================
- */
-
 /**
  * Test Stream Cancellation instruction encoding.
  *
@@ -429,11 +409,6 @@ test_write_stream_cancel_not_init (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * INSERT COUNT INCREMENT TESTS (RFC 9204 Section 4.4.3)
- * ============================================================================
- */
 
 /**
  * Test Insert Count Increment instruction encoding.
@@ -536,11 +511,6 @@ test_write_insert_count_inc_not_init (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * INSERT COUNT INCREMENT PRIMITIVES TESTS (RFC 9204 Section 4.4.3)
- * ============================================================================
- */
 
 /**
  * Test standalone encode function for Insert Count Increment.
@@ -975,11 +945,6 @@ test_insert_count_inc_sequential (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * BUFFER MANAGEMENT TESTS
- * ============================================================================
- */
-
 /**
  * Test buffer management - get, reset, size.
  */
@@ -1062,11 +1027,6 @@ test_buffer_accumulation (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * SECURITY TESTS
- * ============================================================================
- */
 
 /**
  * Test NULL parameter handling for instruction functions.
@@ -1167,11 +1127,6 @@ test_instruction_bit_patterns (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * SECTION ACKNOWLEDGMENT DECODING TESTS (RFC 9204 Section 4.4.1)
- * ============================================================================
- */
 
 /**
  * Test instruction type identification.
@@ -1435,11 +1390,6 @@ test_section_ack_roundtrip (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * ACKNOWLEDGMENT STATE TESTS (RFC 9204 Section 3.3)
- * ============================================================================
- */
 
 /**
  * Test AckState creation.
@@ -1706,11 +1656,6 @@ test_ack_state_null_params (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * TEST SUITE
- * ============================================================================
- */
-
 static void
 run_stream_type_tests (void)
 {
@@ -1737,11 +1682,6 @@ run_section_ack_tests (void)
   test_write_section_ack_large_id ();
   test_write_section_ack_not_init ();
 }
-
-/* ============================================================================
- * STREAM CANCELLATION DECODE TESTS (RFC 9204 Section 4.4.2)
- * ============================================================================
- */
 
 /**
  * Test decoding single-octet Stream Cancellation (ID < 64).
@@ -2018,8 +1958,8 @@ test_stream_cancel_roundtrip (void)
       TEST_ASSERT (buf != NULL && len > 0, "buffer has data");
 
       /* Decode */
-      res = SocketQPACK_decode_stream_cancel (buf, len, &decoded_stream_id,
-                                              &consumed);
+      res = SocketQPACK_decode_stream_cancel (
+          buf, len, &decoded_stream_id, &consumed);
       TEST_ASSERT (res == QPACK_STREAM_OK, "decode succeeds");
       TEST_ASSERT (decoded_stream_id == test_ids[i], "roundtrip matches");
       TEST_ASSERT (consumed == len, "all bytes consumed");

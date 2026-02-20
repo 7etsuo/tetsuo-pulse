@@ -17,11 +17,6 @@
 #include "core/SocketUtil/Time.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * TEST INFRASTRUCTURE FOR LOG CAPTURE
- * ============================================================================
- */
-
 /* Capture state for SocketLog_emit calls */
 static struct
 {
@@ -71,11 +66,6 @@ restore_log_handler (void)
   SocketLog_setcallback (NULL, NULL);
 }
 
-/* ============================================================================
- * TESTS FOR Socket_get_monotonic_ms
- * ============================================================================
- */
-
 /* Test that Socket_get_monotonic_ms returns non-zero */
 TEST (socketutil_time_monotonic_returns_nonzero)
 {
@@ -109,11 +99,6 @@ TEST (socketutil_time_monotonic_progresses)
   /* Time should have advanced (or at worst stayed the same on fast systems) */
   ASSERT (time2 >= time1);
 }
-
-/* ============================================================================
- * TESTS FOR socket_warn_monotonic_fallback (indirect testing)
- * ============================================================================
- */
 
 /*
  * NOTE: socket_warn_monotonic_fallback is a static function in SocketUtil.c.
@@ -204,11 +189,6 @@ TEST (socketutil_time_monotonic_fallback_warning_content)
 
   restore_log_handler ();
 }
-
-/* ============================================================================
- * TESTS FOR timespec CONVERSION UTILITIES
- * ============================================================================
- */
 
 /* Test ms_to_timespec conversion */
 TEST (socketutil_time_ms_to_timespec_basic)

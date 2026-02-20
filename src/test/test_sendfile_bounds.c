@@ -31,11 +31,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 /* Create a temporary test file */
 static int
 create_test_file (const char *path, const char *content, size_t len)
@@ -100,11 +95,6 @@ create_socket_pair (Socket_T *client, Socket_T *server_accepted)
 
   return result;
 }
-
-/* ============================================================================
- * Tests
- * ============================================================================
- */
 
 /**
  * Test normal sendfile operation with small file
@@ -303,11 +293,6 @@ TEST (sendfile_bounds_check_concept)
    * transferring SSIZE_MAX+1 bytes, which is impractical.
    * This test documents the fix exists and verifies preconditions. */
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

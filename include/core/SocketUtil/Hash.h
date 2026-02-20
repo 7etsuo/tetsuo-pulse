@@ -26,11 +26,6 @@
 #include "core/SocketConfig.h"
 #include "core/SocketUtil/Core.h"
 
-/* ============================================================================
- * GOLDEN RATIO HASH FUNCTIONS
- * ============================================================================
- */
-
 /**
  * @brief Hash file descriptor using golden ratio multiplicative.
  * @ingroup foundation
@@ -90,11 +85,6 @@ socket_util_hash_uint_seeded (unsigned value,
   uint64_t h = (uint64_t)value * HASH_GOLDEN_RATIO + (uint64_t)seed;
   return (unsigned)(h % table_size);
 }
-
-/* ============================================================================
- * DJB2 HASH FUNCTIONS
- * ============================================================================
- */
 
 /** DJB2 hash algorithm seed value (Daniel J. Bernstein) */
 #define SOCKET_UTIL_DJB2_SEED 5381u
@@ -273,11 +263,6 @@ socket_util_hash_djb2_seeded_ci_len (const char *str,
   return hash % table_size;
 }
 
-/* ============================================================================
- * PRIME 31 HASH FOR BYTE SEQUENCES
- * ============================================================================
- */
-
 /**
  * @brief Hash byte sequence with prime multiplier 31 for random data.
  * @ingroup foundation
@@ -315,11 +300,6 @@ socket_util_hash_bytes_prime31 (const unsigned char *data,
   return hash;
 }
 
-/* ============================================================================
- * DNS HOSTNAME UTILITIES
- * ============================================================================
- */
-
 /**
  * @brief Normalize hostname to lowercase for case-insensitive comparison.
  * @ingroup foundation
@@ -339,11 +319,6 @@ socket_util_normalize_hostname (char *dest, const char *src, size_t max_len)
     dest[i] = (char)ASCII_TOLOWER ((unsigned char)src[i]);
   dest[i] = '\0';
 }
-
-/* ============================================================================
- * POWER OF 2 UTILITIES
- * ============================================================================
- */
 
 /**
  * @brief Round up to next power of 2.

@@ -22,11 +22,6 @@
 #include <assert.h>
 #include <string.h>
 
-/* ============================================================================
- * Result String Table
- * ============================================================================
- */
-
 static const char *result_strings[]
     = { [QUIC_PMTU_OK] = "OK",
         [QUIC_PMTU_ERROR_NULL] = "NULL pointer argument",
@@ -37,11 +32,6 @@ static const char *result_strings[]
         [QUIC_PMTU_ERROR_ARENA] = "Arena allocation failed" };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICPMTU, QUIC_PMTU_ERROR_ARENA)
-
-/* ============================================================================
- * PMTU Context Management
- * ============================================================================
- */
 
 SocketQUICPMTU_T
 SocketQUICPMTU_new (Arena_T arena, size_t initial_pmtu, size_t max_pmtu)
@@ -85,11 +75,6 @@ SocketQUICPMTU_free (SocketQUICPMTU_T *pmtu)
   *pmtu = NULL;
 }
 
-/* ============================================================================
- * Initial Packet Padding (RFC 9000 Section 14.1)
- * ============================================================================
- */
-
 SocketQUICPMTU_Result
 SocketQUICPMTU_pad_initial (uint8_t *packet, size_t *len, size_t max_len)
 {
@@ -127,11 +112,6 @@ SocketQUICPMTU_validate_initial_size (size_t packet_len)
   return QUIC_PMTU_OK;
 }
 
-/* ============================================================================
- * PMTU Discovery State Machine (RFC 8899)
- * ============================================================================
- */
-
 SocketQUICPMTU_Result
 SocketQUICPMTU_start_discovery (SocketQUICPMTU_T pmtu)
 {
@@ -167,11 +147,6 @@ SocketQUICPMTU_get_next_probe_size (SocketQUICPMTU_T pmtu, size_t *size_out)
   *size_out = pmtu->target_pmtu;
   return QUIC_PMTU_OK;
 }
-
-/* ============================================================================
- * Probe Tracking
- * ============================================================================
- */
 
 SocketQUICPMTU_Result
 SocketQUICPMTU_send_probe (SocketQUICPMTU_T pmtu,
@@ -325,11 +300,6 @@ SocketQUICPMTU_probe_lost (SocketQUICPMTU_T pmtu, uint64_t packet_number)
   return QUIC_PMTU_OK;
 }
 
-/* ============================================================================
- * ICMP Processing (RFC 9000 Section 14.2)
- * ============================================================================
- */
-
 SocketQUICPMTU_Result
 SocketQUICPMTU_process_icmp (SocketQUICPMTU_T pmtu, size_t icmp_mtu)
 {
@@ -352,11 +322,6 @@ SocketQUICPMTU_process_icmp (SocketQUICPMTU_T pmtu, size_t icmp_mtu)
   return QUIC_PMTU_OK;
 }
 
-/* ============================================================================
- * Query Functions
- * ============================================================================
- */
-
 size_t
 SocketQUICPMTU_get_current (SocketQUICPMTU_T pmtu)
 {
@@ -370,11 +335,6 @@ SocketQUICPMTU_get_state (SocketQUICPMTU_T pmtu)
   assert (pmtu);
   return pmtu->state;
 }
-
-/* ============================================================================
- * Timeout Handling
- * ============================================================================
- */
 
 SocketQUICPMTU_Result
 SocketQUICPMTU_check_timeouts (SocketQUICPMTU_T pmtu, uint64_t current_time_ms)

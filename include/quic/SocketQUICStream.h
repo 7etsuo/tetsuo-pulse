@@ -39,11 +39,6 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 
-/* ============================================================================
- * Constants (RFC 9000 Section 2.1)
- * ============================================================================
- */
-
 /**
  * @brief Bit mask for extracting stream initiator.
  *
@@ -80,11 +75,6 @@
  * Sequence number = stream_id >> QUIC_STREAM_TYPE_BITS
  */
 #define QUIC_STREAM_TYPE_BITS 2
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief Stream types based on initiator and directionality.
@@ -206,11 +196,6 @@ struct SocketQUICStream
   unsigned int reset_received : 1; /**< RESET_STREAM received */
 };
 
-/* ============================================================================
- * Stream ID Functions
- * ============================================================================
- */
-
 /**
  * @brief Check if stream ID indicates client-initiated stream.
  *
@@ -312,11 +297,6 @@ extern uint64_t SocketQUICStream_first_id (SocketQUICStreamType type);
  */
 extern uint64_t SocketQUICStream_sequence (uint64_t stream_id);
 
-/* ============================================================================
- * Stream Lifecycle Functions
- * ============================================================================
- */
-
 /**
  * @brief Create a new stream structure.
  *
@@ -356,11 +336,6 @@ SocketQUICStream_init (SocketQUICStream_T stream, uint64_t stream_id);
  */
 extern SocketQUICStream_Result
 SocketQUICStream_reset (SocketQUICStream_T stream);
-
-/* ============================================================================
- * Stream Access Functions
- * ============================================================================
- */
 
 /**
  * @brief Get stream ID.
@@ -420,11 +395,6 @@ SocketQUICStream_get_send_state (const SocketQUICStream_T stream);
 extern SocketQUICStreamState
 SocketQUICStream_get_recv_state (const SocketQUICStream_T stream);
 
-/* ============================================================================
- * State Transition Functions (RFC 9000 Section 3)
- * ============================================================================
- */
-
 /**
  * @brief Transition the send-side state machine.
  *
@@ -472,11 +442,6 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
 extern SocketQUICStream_Result
 SocketQUICStream_transition_recv (SocketQUICStream_T stream,
                                   SocketQUICStreamEvent event);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of stream type.

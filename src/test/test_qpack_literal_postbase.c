@@ -41,11 +41,6 @@
     }                                                                        \
   while (0)
 
-/* ============================================================================
- * BASIC ENCODING TESTS
- * ============================================================================
- */
-
 /**
  * Test basic encoding of literal field line with post-base name reference.
  *
@@ -227,11 +222,6 @@ test_encode_empty_value (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * BASIC DECODING TESTS
- * ============================================================================
- */
-
 /**
  * Test basic decoding of literal field line with post-base name reference.
  */
@@ -394,11 +384,6 @@ test_decode_invalid_pattern (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
-
 /**
  * Test round-trip encode/decode.
  */
@@ -463,11 +448,6 @@ test_roundtrip (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * VALIDATION TESTS
- * ============================================================================
- */
-
 /**
  * Test post-base index validation.
  */
@@ -527,11 +507,6 @@ test_validate_postbase_index (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * DYNAMIC TABLE RESOLUTION TESTS
- * ============================================================================
- */
 
 /**
  * Test resolving post-base name from dynamic table.
@@ -607,11 +582,6 @@ test_resolve_postbase_name (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * ERROR HANDLING TESTS
- * ============================================================================
- */
 
 /**
  * Test NULL parameter handling.
@@ -692,11 +662,6 @@ test_buffer_size (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * MAIN TEST RUNNER
- * ============================================================================
- */
 
 int
 main (void)

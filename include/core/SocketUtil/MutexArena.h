@@ -35,24 +35,6 @@
 #include "core/SocketError.h"
 #include "core/SocketUtil/Exception.h"
 
-/* ============================================================================
- * MUTEX LOCK/UNLOCK MACROS
- * ============================================================================
- *
- * Standard patterns for mutex operations:
- * - SOCKET_MUTEX_LOCK_OR_RAISE: Lock with error handling via exception
- * - SOCKET_MUTEX_UNLOCK: Unlock (ignores errors per POSIX recommendation)
- * - SOCKET_WITH_MUTEX: Exception-safe scoped locking with TRY/FINALLY
- *
- * Why unlock ignores errors:
- * Per POSIX, pthread_mutex_unlock() errors indicate programming bugs:
- * - EPERM: Calling thread does not own the mutex
- * - EINVAL: Mutex is invalid or uninitialized
- *
- * Raising exceptions in cleanup paths (FINALLY blocks, destructors) causes
- * cascading failures that mask the original error.
- */
-
 /**
  * @brief SOCKET_MUTEX_LOCK_OR_RAISE - Lock mutex with error handling.
  * @param mutex_ptr Pointer to pthread_mutex_t.
@@ -106,35 +88,6 @@
       END_TRY;                                             \
     }                                                      \
   while (0)
-
-/* ============================================================================
- * MUTEX + ARENA ALLOCATION PATTERN
- * ============================================================================
- *
- * Embed SOCKET_MUTEX_ARENA_FIELDS in struct, use SOCKET_MUTEX_ARENA_*() macros.
- *
- * Example usage:
- *   struct MyModule_T {
- *     SOCKET_MUTEX_ARENA_FIELDS;
- *     // ... module-specific fields
- *   };
- *
- *   MyModule_T MyModule_new(Arena_T arena) {
- *     MyModule_T m = arena ? CALLOC(arena, 1, sizeof(*m)) : calloc(1,
- *sizeof(*m));
- *     if (!m) SOCKET_RAISE_MSG(...);
- *     m->arena = arena;
- *     SOCKET_MUTEX_ARENA_INIT(m, MyModule, MyModule_Failed);
- *     return m;
- *   }
- *
- *   void MyModule_free(MyModule_T *m) {
- *     if (!m || !*m) return;
- *     SOCKET_MUTEX_ARENA_DESTROY(*m);
- *     if (!(*m)->arena) free(*m);
- *     *m = NULL;
- *   }
- */
 
 /**
  * @brief Mutex initialization states.

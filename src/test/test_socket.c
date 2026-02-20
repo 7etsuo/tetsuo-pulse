@@ -84,8 +84,6 @@ event_probe_callback (void *userdata, const SocketEventRecord *event)
   probe->last_event = *event;
 }
 
-/* ==================== Basic Socket Tests ==================== */
-
 TEST (socket_new_creates_ipv4_socket)
 {
   setup_signals ();
@@ -122,8 +120,6 @@ TEST (socket_fd_access)
   ASSERT_NE (fd, -1);
   Socket_free (&socket);
 }
-
-/* ==================== Bind Tests ==================== */
 
 TEST (socket_bind_localhost_ipv4)
 {
@@ -179,8 +175,6 @@ TEST (socket_bind_ipv6_any)
   END_TRY;
   Socket_free (&socket);
 }
-
-/* ==================== Unix Domain Socket Tests ==================== */
 
 TEST (socket_bind_unix_regular)
 {
@@ -309,8 +303,6 @@ TEST (socket_unix_peer_credentials)
 }
 #endif
 
-/* ==================== Listen/Accept Tests ==================== */
-
 TEST (socket_listen_basic)
 {
   setup_signals ();
@@ -346,8 +338,6 @@ TEST (socket_accept_nonblocking_returns_null)
   END_TRY;
   Socket_free (&socket);
 }
-
-/* ==================== Connect Tests ==================== */
 
 TEST (socket_connect_localhost_ipv4)
 {
@@ -388,8 +378,6 @@ TEST (socket_connect_localhost_ipv6)
   Socket_free (&server);
   END_TRY;
 }
-
-/* ==================== Send/Receive Tests ==================== */
 
 TEST (socket_send_receive_basic)
 {
@@ -510,8 +498,6 @@ TEST (socket_bidirectional_communication)
   END_TRY;
 }
 
-/* ==================== Socket Options Tests ==================== */
-
 TEST (socket_setnonblocking)
 {
   setup_signals ();
@@ -581,8 +567,6 @@ TEST (socket_setnodelay_disable)
   END_TRY;
   Socket_free (&socket);
 }
-
-/* ==================== Socket Option Getter Tests ==================== */
 
 TEST (socket_gettimeout_returns_set_value)
 {
@@ -706,8 +690,6 @@ TEST (socket_getsndbuf_returns_positive_value)
   Socket_free (&socket);
 }
 
-/* ==================== Connection State Query Tests ==================== */
-
 TEST (socket_isbound_returns_false_for_new_socket)
 {
   setup_signals ();
@@ -828,8 +810,6 @@ TEST (socket_islistening_returns_false_after_connect)
   Socket_free (&client);
 }
 
-/* ==================== Socket Pair Tests ==================== */
-
 TEST (socketpair_new_creates_connected_stream_sockets)
 {
   setup_signals ();
@@ -946,8 +926,6 @@ TEST (socketpair_new_sockets_are_unix_domain)
   if (socket2)
     Socket_free (&socket2);
 }
-
-/* ==================== Address Resolution Helper Tests ==================== */
 
 TEST (socketcommon_parse_ip_validates_ipv4)
 {
@@ -1152,8 +1130,6 @@ TEST (socketcommon_reverse_lookup_hostname_only)
   END_TRY;
 }
 
-/* ==================== Partial I/O Helper Tests ==================== */
-
 TEST (socket_sendall_sends_all_data)
 {
   setup_signals ();
@@ -1256,8 +1232,6 @@ TEST (socket_sendall_handles_partial_sends)
   Socket_free (&server);
   Socket_free (&client);
 }
-
-/* ==================== Scatter/Gather I/O Tests ==================== */
 
 TEST (socket_sendv_sends_from_multiple_buffers)
 {
@@ -1472,8 +1446,6 @@ TEST (socket_recvvall_receives_all_into_multiple_buffers)
   Socket_free (&server);
   Socket_free (&client);
 }
-
-/* ==================== Zero-Copy I/O Tests ==================== */
 
 TEST (socket_sendfile_transfers_file_data)
 {
@@ -1955,8 +1927,6 @@ TEST (socket_sendmsg_with_flags)
   Socket_free (&client);
 }
 
-/* ==================== Advanced Socket Options Tests ==================== */
-
 TEST (socket_setrcvbuf_sets_receive_buffer_size)
 {
   setup_signals ();
@@ -2146,8 +2116,6 @@ TEST (socket_buffer_size_setters_and_getters_work_together)
   Socket_free (&socket);
 }
 
-/* ==================== Close-on-Exec Tests ==================== */
-
 TEST (socket_new_sets_cloexec_by_default)
 {
   setup_signals ();
@@ -2248,8 +2216,6 @@ TEST (socket_cloexec_prevents_leak)
   Socket_free (&socket);
 }
 
-/* ==================== Peer Info Tests ==================== */
-
 TEST (socket_getpeeraddr_after_accept)
 {
   setup_signals ();
@@ -2317,8 +2283,6 @@ TEST (socket_getpeerport_after_accept)
   Socket_free (&server);
   END_TRY;
 }
-
-/* ==================== Error Condition Tests ==================== */
 
 TEST (socket_recv_on_closed_socket_raises)
 {
@@ -2422,8 +2386,6 @@ TEST (socket_multiple_connections)
   END_TRY;
 }
 
-/* ==================== Accessor Tests ==================== */
-
 TEST (socket_getpeeraddr_unknown_when_no_peer)
 {
   setup_signals ();
@@ -2442,8 +2404,6 @@ TEST (socket_getpeerport_zero_when_no_peer)
   ASSERT_EQ (peerport, 0);
   Socket_free (&socket);
 }
-
-/* ==================== Stress Tests ==================== */
 
 TEST (socket_many_sequential_connections)
 {
@@ -2502,8 +2462,6 @@ TEST (socket_rapid_open_close)
     }
 }
 
-/* ==================== Thread Safety Tests ==================== */
-
 static void *
 thread_create_sockets (void *arg)
 {
@@ -2537,8 +2495,6 @@ TEST (socket_concurrent_creation)
   for (int i = 0; i < 4; i++)
     pthread_join (threads[i], NULL);
 }
-
-/* ==================== Async DNS Integration Tests ==================== */
 
 #if 0 /* KNOWN_ISSUE: Hangs on SocketDNS_check() - thread synchronization \
        * issue. See KNOWN_ISSUES.md for details and tracking. */
@@ -2867,8 +2823,6 @@ TEST (socket_bind_async_wildcard_uses_ai_passive)
     SocketDNS_free (&dns);
   END_TRY;
 }
-
-/* ==================== Socket Options Coverage Tests ==================== */
 
 TEST (socket_keepalive_set_get)
 {
@@ -3235,8 +3189,6 @@ TEST (socket_shutdown_invalid_mode)
   Socket_free (&socket);
 }
 
-/* ==================== Timeout API Tests ==================== */
-
 TEST (socket_timeouts_get_set)
 {
   setup_signals ();
@@ -3330,8 +3282,6 @@ TEST (socket_gettimeout)
   Socket_free (&socket);
 }
 
-/* ==================== Socket Flag Tests ==================== */
-
 TEST (socket_setreuseport)
 {
   setup_signals ();
@@ -3371,8 +3321,6 @@ TEST (socket_setcloexec)
 
   Socket_free (&socket);
 }
-
-/* ==================== SocketCommon IOV Helper Tests ==================== */
 
 TEST (socketcommon_calculate_total_iov_len)
 {
@@ -3757,8 +3705,6 @@ TEST (socketcommon_free_addrinfo_null)
   SocketCommon_free_addrinfo (NULL);
 }
 
-/* ==================== Scatter/Gather I/O Tests ==================== */
-
 TEST (socket_sendv_recvv_basic)
 {
   setup_signals ();
@@ -3828,8 +3774,6 @@ TEST (socket_sendv_recvv_basic)
   Socket_free (&client);
   Socket_free (&server);
 }
-
-/* ==================== Error Path Coverage Tests ==================== */
 
 TEST (socket_setkeepalive_invalid_params_raises)
 {
@@ -4086,9 +4030,6 @@ TEST (socket_getrcvbuf_getsndbuf_on_udp)
 
   Socket_free (&udp);
 }
-
-/* ==================== SocketCommon 100% Coverage Tests ====================
- */
 
 /* Hostname Validation Coverage Tests */
 
@@ -5804,8 +5745,6 @@ TEST (socketcommon_alloc_iov_copy_basic)
   END_TRY;
 }
 
-/* ==================== Bandwidth Limiting Tests ==================== */
-
 TEST (socket_setbandwidth_enable_disable)
 {
   setup_signals ();
@@ -6064,8 +6003,6 @@ TEST (socket_bandwidth_wait_ms_with_limit)
   Socket_free (&socket);
 }
 
-/* ==================== Socket_new_from_fd Tests ==================== */
-
 TEST (socket_new_from_fd_basic)
 {
   setup_signals ();
@@ -6139,8 +6076,6 @@ TEST (socket_new_from_fd_non_socket_fd_raises)
   ASSERT_EQ (1, raised);
 }
 
-/* ==================== Socket_listen Error Path Tests ==================== */
-
 TEST (socket_listen_zero_backlog_raises)
 {
   setup_signals ();
@@ -6207,8 +6142,6 @@ TEST (socket_listen_large_backlog_clamps_to_max)
 
   Socket_free (&socket);
 }
-
-/* ==================== Unix Socket Error Path Tests ==================== */
 
 TEST (socket_bind_unix_path_too_long_raises)
 {
@@ -6313,8 +6246,6 @@ TEST (socket_connect_unix_no_listener_raises_econnrefused)
   Socket_free (&client);
 }
 
-/* ==================== Abstract Unix Socket Tests ==================== */
-
 #ifdef __linux__
 TEST (socket_bind_unix_abstract_namespace)
 {
@@ -6368,8 +6299,6 @@ TEST (socket_connect_unix_abstract_namespace)
 }
 #endif /* __linux__ */
 
-/* ==================== SocketPair Error Path Tests ==================== */
-
 TEST (socketpair_new_invalid_type_raises)
 {
   setup_signals ();
@@ -6395,8 +6324,6 @@ TEST (socketpair_new_invalid_type_raises)
   if (socket2)
     Socket_free (&socket2);
 }
-
-/* ==================== Async Bind Cancel Tests ==================== */
 
 TEST (socket_bind_async_cancel_basic)
 {
@@ -6455,8 +6382,6 @@ TEST (socket_bind_async_cancel_null_request_safe)
   if (dns)
     SocketDNS_free (&dns);
 }
-
-/* ==================== Additional Coverage Tests ==================== */
 
 TEST (socket_debug_live_count)
 {
@@ -6859,9 +6784,6 @@ TEST (socket_connect_unix_other_error)
   ASSERT_EQ (1, raised);
   Socket_free (&socket);
 }
-
-/* ==================== File Descriptor Passing (SCM_RIGHTS) Tests
- * ==================== */
 
 TEST (socket_sendfd_recvfd_basic)
 {
@@ -7340,9 +7262,6 @@ TEST (socket_sendfd_peer_closed)
   Socket_free (&sock2);
 }
 
-/* ==================== FD Passing Integration Test (fork-based)
- * ==================== */
-
 TEST (socket_fd_passing_fork_integration)
 {
   setup_signals ();
@@ -7522,8 +7441,6 @@ TEST (socket_islistening_with_error)
   Socket_free (&client);
 }
 
-/* ==================== Timeout Helper Tests ==================== */
-
 TEST (timeout_now_returns_positive)
 {
   int64_t now = SocketTimeout_now_ms ();
@@ -7616,8 +7533,6 @@ TEST (timeout_elapsed_ms_positive)
   ASSERT (elapsed >= 10);
   ASSERT (elapsed < 100); /* Should not be way off */
 }
-
-/* ==================== Extended Timeout API Tests ==================== */
 
 TEST (socket_timeouts_extended_set_get)
 {

@@ -44,22 +44,12 @@
 #include "quic/SocketQUICVersion.h"
 #include "socket/SocketDgram.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define SERVER_SEND_BUF_SIZE 1500
 #define SERVER_RECV_BUF_SIZE 65536
 #define SERVER_MAX_STREAMS 256
 #define SERVER_MAX_STREAM_SEGMENTS 256
 #define SERVER_SCID_LEN 8
 #define SERVER_PN_LEN 4
-
-/* ============================================================================
- * Per-stream send offset tracking
- * ============================================================================
- */
 
 typedef struct ServerStreamSegment
 {
@@ -83,11 +73,6 @@ typedef struct
   int fin_delivered;
   int active;
 } ServerStreamState;
-
-/* ============================================================================
- * Per-connection state
- * ============================================================================
- */
 
 struct QUICServerConn
 {
@@ -144,11 +129,6 @@ struct QUICServerConn
   void *userdata;
 };
 
-/* ============================================================================
- * Server structure
- * ============================================================================
- */
-
 struct SocketQUICServer
 {
   Arena_T arena;
@@ -176,11 +156,6 @@ struct SocketQUICServer
   int closed;
 };
 
-/* ============================================================================
- * Time helpers
- * ============================================================================
- */
-
 static uint64_t
 now_us (void)
 {
@@ -194,13 +169,9 @@ static void conn_close_with_error (QUICServerConn_T c,
                                    uint64_t frame_type,
                                    const char *reason);
 
-static uint64_t peer_initial_stream_send_max (
-    const SocketQUICTransportParams_T *peer_params, uint64_t stream_id);
-
-/* ============================================================================
- * UDP I/O wrappers (exception -> return code)
- * ============================================================================
- */
+static uint64_t
+peer_initial_stream_send_max (const SocketQUICTransportParams_T *peer_params,
+                              uint64_t stream_id);
 
 static int
 server_sendto (SocketQUICServer_T server,
@@ -225,11 +196,6 @@ server_recvfrom (SocketQUICServer_T server,
   *addr_len = sizeof (*addr);
   return recvfrom (fd, buf, len, 0, (struct sockaddr *)addr, addr_len);
 }
-
-/* ============================================================================
- * Per-connection helpers
- * ============================================================================
- */
 
 static int
 conn_send_packet (QUICServerConn_T c, const uint8_t *data, size_t len)
@@ -271,10 +237,8 @@ conn_find_or_create_stream (QUICServerConn_T c, uint64_t stream_id)
       s->flow_stream = SocketQUICFlowStream_new (c->arena, stream_id);
       if (s->flow_stream)
         {
-          SocketQUICFlowStream_init (s->flow_stream,
-                                     stream_id,
-                                     c->server->config.max_stream_data,
-                                     0);
+          SocketQUICFlowStream_init (
+              s->flow_stream, stream_id, c->server->config.max_stream_data, 0);
 
           const SocketQUICTransportParams_T *peer_params = NULL;
           if (c->handshake)
@@ -288,11 +252,6 @@ conn_find_or_create_stream (QUICServerConn_T c, uint64_t stream_id)
 
   return s;
 }
-
-/* ============================================================================
- * Stream receive reassembly (minimal ordered delivery)
- * ============================================================================
- */
 
 static int
 server_stream_deliver_chunk (QUICServerConn_T c,
@@ -315,12 +274,8 @@ server_stream_deliver_chunk (QUICServerConn_T c,
 
   if (c->server->stream_cb)
     {
-      c->server->stream_cb (c,
-                            s->stream_id,
-                            data,
-                            (size_t)length,
-                            fin,
-                            c->server->cb_userdata);
+      c->server->stream_cb (
+          c, s->stream_id, data, (size_t)length, fin, c->server->cb_userdata);
       if (events)
         (*events)++;
     }
@@ -418,12 +373,8 @@ server_stream_process_buffered (QUICServerConn_T c,
     {
       if (c->server->stream_cb)
         {
-          c->server->stream_cb (c,
-                                s->stream_id,
-                                NULL,
-                                0,
-                                1,
-                                c->server->cb_userdata);
+          c->server->stream_cb (
+              c, s->stream_id, NULL, 0, 1, c->server->cb_userdata);
           if (events)
             (*events)++;
         }
@@ -454,8 +405,10 @@ handle_server_stream_frame (QUICServerConn_T c,
           = is_uni ? 3 : c->server->config.initial_max_streams_bidi;
       if (seq >= max_streams)
         {
-          conn_close_with_error (
-              c, QUIC_STREAM_LIMIT_ERROR, frame_type, "Peer exceeded stream limit");
+          conn_close_with_error (c,
+                                 QUIC_STREAM_LIMIT_ERROR,
+                                 frame_type,
+                                 "Peer exceeded stream limit");
           return -1;
         }
     }
@@ -528,7 +481,8 @@ handle_server_stream_frame (QUICServerConn_T c,
         }
 
       if (c->flow
-          && SocketQUICFlow_consume_recv (c->flow, (size_t)delta) != QUIC_FLOW_OK)
+          && SocketQUICFlow_consume_recv (c->flow, (size_t)delta)
+                 != QUIC_FLOW_OK)
         {
           conn_close_with_error (c,
                                  QUIC_FLOW_CONTROL_ERROR,
@@ -592,11 +546,6 @@ peer_initial_stream_send_max (const SocketQUICTransportParams_T *peer_params,
   return initiator == 1 ? peer_params->initial_max_stream_data_bidi_remote
                         : peer_params->initial_max_stream_data_bidi_local;
 }
-
-/* ============================================================================
- * Packet building
- * ============================================================================
- */
 
 static int
 build_and_send_1rtt_ex (QUICServerConn_T c,
@@ -717,11 +666,6 @@ conn_close_with_error (QUICServerConn_T c,
   c->connected = 0;
 }
 
-/* ============================================================================
- * ACK sending
- * ============================================================================
- */
-
 static int
 conn_send_ack_if_needed (QUICServerConn_T c,
                          SocketQUIC_PNSpace space,
@@ -752,11 +696,6 @@ conn_send_ack_if_needed (QUICServerConn_T c,
   return rc;
 }
 
-/* ============================================================================
- * Congestion control callbacks for ACK processing
- * ============================================================================
- */
-
 typedef struct
 {
   size_t acked_bytes;
@@ -784,11 +723,6 @@ server_lost_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
   if (pkt->sent_time_us > sc->latest_lost_sent_time)
     sc->latest_lost_sent_time = pkt->sent_time_us;
 }
-
-/* ============================================================================
- * Frame processing
- * ============================================================================
- */
 
 static int
 conn_process_frames (QUICServerConn_T c,
@@ -961,11 +895,6 @@ conn_process_frames (QUICServerConn_T c,
   return events;
 }
 
-/* ============================================================================
- * Send crypto data at a given level
- * ============================================================================
- */
-
 static int
 conn_send_crypto_data (QUICServerConn_T c,
                        SocketQUICCryptoLevel level,
@@ -1074,11 +1003,6 @@ conn_send_crypto_data (QUICServerConn_T c,
   return 0;
 }
 
-/* ============================================================================
- * Flush TLS output for a connection
- * ============================================================================
- */
-
 static int
 conn_flush_tls_output (QUICServerConn_T c)
 {
@@ -1103,11 +1027,6 @@ conn_flush_tls_output (QUICServerConn_T c)
 
   return 0;
 }
-
-/* ============================================================================
- * Derive keys from TLS
- * ============================================================================
- */
 
 static void
 conn_check_and_derive_keys (QUICServerConn_T c)
@@ -1175,11 +1094,6 @@ conn_check_and_derive_keys (QUICServerConn_T c)
     vr[i] = 0;
 }
 
-/* ============================================================================
- * DCID lookup
- * ============================================================================
- */
-
 static QUICServerConn_T
 find_conn_by_dcid (SocketQUICServer_T server,
                    const uint8_t *dcid_data,
@@ -1194,11 +1108,6 @@ find_conn_by_dcid (SocketQUICServer_T server,
     }
   return NULL;
 }
-
-/* ============================================================================
- * Handle new Initial packet (create connection)
- * ============================================================================
- */
 
 static QUICServerConn_T
 handle_initial_packet (SocketQUICServer_T server,
@@ -1353,11 +1262,7 @@ handle_initial_packet (SocketQUICServer_T server,
    * available. */
   c->flow = SocketQUICFlow_new (conn_arena);
   if (c->flow)
-    SocketQUICFlow_init (c->flow,
-                         server->config.initial_max_data,
-                         0,
-                         0,
-                         0);
+    SocketQUICFlow_init (c->flow, server->config.initial_max_data, 0, 0, 0);
 
   /* Decrypt the Initial packet */
   SocketQUICReceiveResult_T result;
@@ -1446,11 +1351,6 @@ handle_initial_packet (SocketQUICServer_T server,
   return c;
 }
 
-/* ============================================================================
- * Handle existing connection packet
- * ============================================================================
- */
-
 static int
 handle_existing_conn_packet (QUICServerConn_T c,
                              const uint8_t *pkt,
@@ -1503,8 +1403,8 @@ handle_existing_conn_packet (QUICServerConn_T c,
             {
               if (c->flow)
                 {
-                  SocketQUICFlow_update_send_max (c->flow,
-                                                  peer_params->initial_max_data);
+                  SocketQUICFlow_update_send_max (
+                      c->flow, peer_params->initial_max_data);
                   SocketQUICFlow_update_max_streams_bidi (
                       c->flow, peer_params->initial_max_streams_bidi);
                   SocketQUICFlow_update_max_streams_uni (
@@ -1517,8 +1417,8 @@ handle_existing_conn_packet (QUICServerConn_T c,
                     continue;
                   uint64_t max_data = peer_initial_stream_send_max (
                       peer_params, c->streams[i].stream_id);
-                  SocketQUICFlowStream_update_send_max (c->streams[i].flow_stream,
-                                                        max_data);
+                  SocketQUICFlowStream_update_send_max (
+                      c->streams[i].flow_stream, max_data);
                 }
             }
 
@@ -1545,11 +1445,6 @@ handle_existing_conn_packet (QUICServerConn_T c,
   return events;
 }
 
-/* ============================================================================
- * Config defaults
- * ============================================================================
- */
-
 void
 SocketQUICServerConfig_defaults (SocketQUICServerConfig *config)
 {
@@ -1567,11 +1462,6 @@ SocketQUICServerConfig_defaults (SocketQUICServerConfig *config)
   config->alpn = "h3";
   config->max_connections = 256;
 }
-
-/* ============================================================================
- * New
- * ============================================================================
- */
 
 SocketQUICServer_T
 SocketQUICServer_new (Arena_T arena, const SocketQUICServerConfig *config)
@@ -1609,11 +1499,6 @@ SocketQUICServer_new (Arena_T arena, const SocketQUICServerConfig *config)
   return server;
 }
 
-/* ============================================================================
- * Listen
- * ============================================================================
- */
-
 int
 SocketQUICServer_listen (SocketQUICServer_T server)
 {
@@ -1645,11 +1530,6 @@ SocketQUICServer_listen (SocketQUICServer_T server)
   server->listening = 1;
   return 0;
 }
-
-/* ============================================================================
- * Poll
- * ============================================================================
- */
 
 int
 SocketQUICServer_poll (SocketQUICServer_T server, int timeout_ms)
@@ -1744,11 +1624,6 @@ SocketQUICServer_poll (SocketQUICServer_T server, int timeout_ms)
   return new_conn ? 1 : 0;
 }
 
-/* ============================================================================
- * Close
- * ============================================================================
- */
-
 void
 SocketQUICServer_close (SocketQUICServer_T server)
 {
@@ -1799,11 +1674,6 @@ SocketQUICServer_close (SocketQUICServer_T server)
   server->closed = 1;
 }
 
-/* ============================================================================
- * Set callbacks
- * ============================================================================
- */
-
 void
 SocketQUICServer_set_callbacks (SocketQUICServer_T server,
                                 SocketQUICServer_ConnCB conn_cb,
@@ -1816,11 +1686,6 @@ SocketQUICServer_set_callbacks (SocketQUICServer_T server,
   server->stream_cb = stream_cb;
   server->cb_userdata = userdata;
 }
-
-/* ============================================================================
- * Send stream data
- * ============================================================================
- */
 
 int
 SocketQUICServer_send_stream (QUICServerConn_T conn,
@@ -1869,11 +1734,6 @@ SocketQUICServer_send_stream (QUICServerConn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Close single connection
- * ============================================================================
- */
-
 int
 SocketQUICServer_close_conn (QUICServerConn_T conn, uint64_t error_code)
 {
@@ -1903,11 +1763,6 @@ SocketQUICServer_close_conn (QUICServerConn_T conn, uint64_t error_code)
 
   return 0;
 }
-
-/* ============================================================================
- * Queries
- * ============================================================================
- */
 
 size_t
 SocketQUICServer_active_connections (SocketQUICServer_T server)

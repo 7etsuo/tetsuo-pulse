@@ -41,11 +41,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 45000
 #define TEST_SERVER_TIMEOUT_MS 100
 #define TEST_CLIENT_TIMEOUT_MS 5000
@@ -57,11 +52,6 @@ get_test_port (void)
 {
   return TEST_PORT_BASE + (test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Server Thread Infrastructure
- * ============================================================================
- */
 
 typedef struct
 {
@@ -192,11 +182,6 @@ test_server_stop (TestServer *ts)
   SocketHTTPServer_free (&ts->server);
 }
 
-/* ============================================================================
- * Request Handlers
- * ============================================================================
- */
-
 static void
 echo_handler (SocketHTTPServer_Request_T req, void *userdata)
 {
@@ -288,11 +273,6 @@ echo_handler (SocketHTTPServer_Request_T req, void *userdata)
 
   SocketHTTPServer_Request_finish (req);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (http_integration_get_request)
 {
@@ -646,11 +626,6 @@ TEST (http_integration_multiple_requests)
   test_server_stop (&ts);
   END_TRY;
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

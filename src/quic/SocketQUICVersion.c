@@ -20,11 +20,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/* ============================================================================
- * Version Negotiation Packet Creation (RFC 9000 Section 17.2.1)
- * ============================================================================
- */
-
 /**
  * @brief Create a Version Negotiation packet.
  *
@@ -112,11 +107,6 @@ SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
 
   return (int)pos;
 }
-
-/* ============================================================================
- * Version Negotiation Packet Parsing
- * ============================================================================
- */
 
 /**
  * @brief Parse a Version Negotiation packet.

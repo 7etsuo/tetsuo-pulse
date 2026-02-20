@@ -14,21 +14,6 @@
 #include "http/SocketHTTP3-stream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Stream ID Reference (RFC 9000 §2.1)
- *
- *   0, 4, 8  — Client-initiated bidi  (id & 0x03 == 0x00)
- *   1, 5, 9  — Server-initiated bidi  (id & 0x03 == 0x01)
- *   2, 6, 10 — Client-initiated unidi (id & 0x03 == 0x02)
- *   3, 7, 11 — Server-initiated unidi (id & 0x03 == 0x03)
- * ============================================================================
- */
-
-/* ============================================================================
- * Registration Tests
- * ============================================================================
- */
-
 TEST (h3_stream_register_control)
 {
   Arena_T arena = Arena_new ();
@@ -113,11 +98,6 @@ TEST (h3_stream_register_grease)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Duplicate Critical Stream Tests
- * ============================================================================
- */
-
 TEST (h3_stream_duplicate_control)
 {
   Arena_T arena = Arena_new ();
@@ -162,11 +142,6 @@ TEST (h3_stream_duplicate_qpack_decoder)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Error Condition Tests
- * ============================================================================
- */
-
 TEST (h3_stream_register_bidi_rejected)
 {
   Arena_T arena = Arena_new ();
@@ -196,11 +171,6 @@ TEST (h3_stream_push_from_client_rejected)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Role Classification Tests
- * ============================================================================
- */
 
 TEST (h3_stream_role_bidi_is_request)
 {
@@ -237,11 +207,6 @@ TEST (h3_stream_role_unregistered_unidi)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Critical Streams Ready Tests
- * ============================================================================
- */
 
 TEST (h3_stream_critical_not_ready_initially)
 {
@@ -281,11 +246,6 @@ TEST (h3_stream_critical_partial_not_ready)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Getter Tests
- * ============================================================================
- */
-
 TEST (h3_stream_get_before_register)
 {
   Arena_T arena = Arena_new ();
@@ -313,11 +273,6 @@ TEST (h3_stream_get_after_register)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Local Stream Tests
- * ============================================================================
- */
 
 TEST (h3_stream_set_local_control)
 {
@@ -349,11 +304,6 @@ TEST (h3_stream_local_and_peer_distinct)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Push Stream Tests
- * ============================================================================
- */
-
 TEST (h3_stream_multiple_push_streams)
 {
   Arena_T arena = Arena_new ();
@@ -374,11 +324,6 @@ TEST (h3_stream_multiple_push_streams)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Role Name Test
- * ============================================================================
- */
-
 TEST (h3_stream_role_name)
 {
   ASSERT (SocketHTTP3_StreamRole_name (H3_STREAM_ROLE_REQUEST) != NULL);
@@ -388,11 +333,6 @@ TEST (h3_stream_role_name)
   ASSERT (SocketHTTP3_StreamRole_name (H3_STREAM_ROLE_QPACK_DECODER) != NULL);
   ASSERT (SocketHTTP3_StreamRole_name (H3_STREAM_ROLE_UNKNOWN) != NULL);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

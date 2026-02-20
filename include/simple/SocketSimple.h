@@ -57,10 +57,6 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Error Codes
-   *============================================================================*/
-
   /**
    * @brief Error codes returned by Socket_simple_code()
    */
@@ -126,10 +122,6 @@ extern "C"
     SOCKET_SIMPLE_ERR_ASYNC /**< Async I/O operation failed */
   } SocketSimple_ErrorCode;
 
-  /*============================================================================
-   * Error Access Functions
-   *============================================================================*/
-
   /**
    * @brief Get human-readable error message for last error.
    * @return Thread-local error string, or NULL if no error.
@@ -158,10 +150,6 @@ extern "C"
    * @brief Clear error state.
    */
   extern void Socket_simple_clear_error (void);
-
-/*============================================================================
- * Include Sub-modules
- *============================================================================*/
 
 /* Core socket operations */
 #include "SocketSimple-tcp.h"

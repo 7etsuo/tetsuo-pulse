@@ -117,11 +117,6 @@ typedef struct T *T;
  */
 typedef struct SocketDgram_T *SocketDgram_T;
 
-/* ============================================================================
- * DTLS Context Creation and Destruction
- * ============================================================================
- */
-
 /**
  * @brief Create a server-side DTLS context with certificate and key loading.
  * @ingroup dtls_context
@@ -446,11 +441,6 @@ extern void SocketDTLSContext_free (T *ctx_p);
  */
 extern void SocketDTLSContext_ref (T ctx);
 
-/* ============================================================================
- * Certificate Management
- * ============================================================================
- */
-
 /**
  * @brief Load and configure server certificate and private key into the DTLS
  * context.
@@ -573,11 +563,6 @@ extern void SocketDTLSContext_load_ca (T ctx, const char *ca_file);
  * @threadsafe No
  */
 extern void SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
-
-/* ============================================================================
- * Cookie Exchange (DoS Protection) - DTLS-Specific
- * ============================================================================
- */
 
 /**
  * @brief Enable cookie exchange mechanism for stateless DoS protection in DTLS
@@ -869,11 +854,6 @@ extern void SocketDTLSContext_set_cookie_secret (T ctx,
  */
 extern void SocketDTLSContext_rotate_cookie_secret (T ctx);
 
-/* ============================================================================
- * MTU Configuration
- * ============================================================================
- */
-
 /**
  * @brief Configure the path MTU for DTLS record fragmentation and padding.
  * @ingroup dtls_context
@@ -971,11 +951,6 @@ extern void SocketDTLSContext_set_mtu (T ctx, size_t mtu);
  */
 extern size_t SocketDTLSContext_get_mtu (T ctx);
 
-/* ============================================================================
- * Protocol Configuration
- * ============================================================================
- */
-
 /**
  * @brief Set minimum supported DTLS version
  * @ingroup dtls_context
@@ -1018,11 +993,6 @@ extern void SocketDTLSContext_set_max_protocol (T ctx, int version);
  */
 extern void SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers);
 
-/* ============================================================================
- * ALPN Support
- * ============================================================================
- */
-
 /**
  * @brief Advertise ALPN protocols
  * @ingroup dtls_context
@@ -1042,11 +1012,6 @@ extern void SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers);
  */
 extern void
 SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count);
-
-/* ============================================================================
- * Session Management
- * ============================================================================
- */
 
 /**
  * @brief Enable session caching
@@ -1087,11 +1052,6 @@ extern void SocketDTLSContext_get_cache_stats (T ctx,
                                                size_t *misses,
                                                size_t *stores);
 
-/* ============================================================================
- * Timeout Configuration
- * ============================================================================
- */
-
 /**
  * @brief Set handshake timeout parameters
  * @ingroup dtls_context
@@ -1107,11 +1067,6 @@ extern void SocketDTLSContext_get_cache_stats (T ctx,
  * @threadsafe No
  */
 extern void SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms);
-
-/* ============================================================================
- * Internal Access (for SocketDTLS module)
- * ============================================================================
- */
 
 /**
  * @brief Internal accessor for the underlying OpenSSL SSL_CTX pointer.

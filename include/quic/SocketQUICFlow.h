@@ -33,11 +33,6 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 
-/* ============================================================================
- * Constants (RFC 9000 Section 4)
- * ============================================================================
- */
-
 /**
  * @brief Default initial connection-level flow control window (1 MB).
  */
@@ -65,11 +60,6 @@
  * integers, which have a maximum value of 2^62 - 1.
  */
 #define QUIC_FLOW_MAX_WINDOW ((uint64_t)4611686018427387903ULL)
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief Result codes for flow control operations.
@@ -133,11 +123,6 @@ typedef struct SocketQUICFlowControl *SocketQUICFlow_T;
  * @brief Opaque stream flow control handle.
  */
 typedef struct SocketQUICFlowStream *SocketQUICFlowStream_T;
-
-/* ============================================================================
- * Connection-Level Flow Control Functions
- * ============================================================================
- */
 
 /**
  * @brief Create a new connection-level flow control state.
@@ -249,11 +234,6 @@ extern uint64_t SocketQUICFlow_send_window (const SocketQUICFlow_T fc);
  */
 extern uint64_t SocketQUICFlow_recv_window (const SocketQUICFlow_T fc);
 
-/* ============================================================================
- * Stream-Level Flow Control Functions
- * ============================================================================
- */
-
 /**
  * @brief Create a new stream-level flow control state.
  *
@@ -358,11 +338,6 @@ SocketQUICFlowStream_send_window (const SocketQUICFlowStream_T fs);
 extern uint64_t
 SocketQUICFlowStream_recv_window (const SocketQUICFlowStream_T fs);
 
-/* ============================================================================
- * Stream Count Management
- * ============================================================================
- */
-
 /**
  * @brief Update MAX_STREAMS limit for bidirectional streams.
  *
@@ -452,11 +427,6 @@ SocketQUICFlow_close_stream_bidi (SocketQUICFlow_T fc);
  */
 extern SocketQUICFlow_Result
 SocketQUICFlow_close_stream_uni (SocketQUICFlow_T fc);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of result code.

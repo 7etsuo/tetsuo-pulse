@@ -20,11 +20,6 @@
 #include "quic/SocketQUICConnectionID.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Connection Creation Tests
- * ============================================================================
- */
-
 TEST (quic_connection_new_client)
 {
   Arena_T arena = Arena_new ();
@@ -88,11 +83,6 @@ TEST (quic_connection_add_peer_cid)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Connection Table Tests
- * ============================================================================
- */
 
 TEST (quic_conntable_new)
 {
@@ -167,11 +157,6 @@ TEST (quic_conntable_remove)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Zero-Length DCID (Address-Based Routing) Tests
- * ============================================================================
- */
-
 TEST (quic_connection_zero_length_dcid)
 {
   Arena_T arena = Arena_new ();
@@ -214,11 +199,6 @@ TEST (quic_connection_ipv6_addresses)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * State and String Conversion Tests
- * ============================================================================
- */
-
 TEST (quic_connection_state_transitions)
 {
   Arena_T arena = Arena_new ();
@@ -253,11 +233,6 @@ TEST (quic_connection_result_strings)
                   "SERVER")
           == 0);
 }
-
-/* ============================================================================
- * Multiple CID Tests
- * ============================================================================
- */
 
 TEST (quic_conntable_multiple_cids)
 {
@@ -400,11 +375,6 @@ TEST (quic_connection_update_dcid_longer_cid)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Bounds Validation Tests for retire_cid (Issue #788)
- * ============================================================================
- */
 
 TEST (quic_conntable_retire_cid_from_middle)
 {
@@ -569,11 +539,6 @@ TEST (quic_conntable_retire_first_of_max_cids)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Default Size Test
- * ============================================================================
- */
-
 TEST (quic_conntable_create_default)
 {
   SocketQUICConnTable_T table = SocketQUICConnTable_new (NULL, 0);
@@ -584,11 +549,6 @@ TEST (quic_conntable_create_default)
   SocketQUICConnTable_free (&table);
   ASSERT_NULL (table);
 }
-
-/* ============================================================================
- * Arena Allocation Test
- * ============================================================================
- */
 
 TEST (quic_connection_arena_allocation)
 {
@@ -603,11 +563,6 @@ TEST (quic_connection_arena_allocation)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * DoS Protection Observability Tests
- * ============================================================================
- */
 
 TEST (quic_conntable_stats_initial)
 {
@@ -717,11 +672,6 @@ TEST (quic_conntable_stats_null_params)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

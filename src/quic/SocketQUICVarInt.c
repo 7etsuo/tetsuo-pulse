@@ -15,11 +15,6 @@
 
 #include "quic/SocketQUICVarInt.h"
 
-/* ============================================================================
- * Constants - RFC 9000 Section 16
- * ============================================================================
- */
-
 /* 2-bit prefix values (in top 2 bits of first byte) */
 #define VARINT_PREFIX_MASK 0xC0
 #define VARINT_PREFIX_1BYTE 0x00 /* 00xxxxxx */
@@ -40,18 +35,8 @@
 #define VARINT_MAX_8BYTE \
   SOCKETQUICVARINT_MAX /* (1ULL << 62) - 1 = 4611686018427387903 */
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketQUICVarInt_Error
     = { &SocketQUICVarInt_Error, "QUIC VarInt encoding error" };
-
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
 
 static const char *result_strings[] = {
   [QUIC_VARINT_OK] = "OK",
@@ -77,11 +62,6 @@ SocketQUICVarInt_result_string (SocketQUICVarInt_Result result)
 
   return result_strings[result];
 }
-
-/* ============================================================================
- * Decoding - RFC 9000 Section 16
- * ============================================================================
- */
 
 SocketQUICVarInt_Result
 SocketQUICVarInt_decode (const uint8_t *data,
@@ -153,11 +133,6 @@ SocketQUICVarInt_decode (const uint8_t *data,
   return QUIC_VARINT_OK;
 }
 
-/* ============================================================================
- * Size Calculation
- * ============================================================================
- */
-
 size_t
 SocketQUICVarInt_size (uint64_t value)
 {
@@ -173,11 +148,6 @@ SocketQUICVarInt_size (uint64_t value)
   /* Value exceeds maximum representable value */
   return 0;
 }
-
-/* ============================================================================
- * Encoding - RFC 9000 Section 16
- * ============================================================================
- */
 
 size_t
 SocketQUICVarInt_encode (uint64_t value, uint8_t *output, size_t output_size)

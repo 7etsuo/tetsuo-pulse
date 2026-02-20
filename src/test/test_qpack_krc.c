@@ -24,11 +24,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * ENCODER CREATION TESTS
- * ============================================================================
- */
-
 TEST (qpack_encoder_new_null_arena)
 {
   SocketQPACK_Encoder_T encoder = SocketQPACK_Encoder_new (NULL, 4096);
@@ -51,11 +46,6 @@ TEST (qpack_encoder_new_zero_table_size)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * KRC INITIALIZATION TESTS (Issue #3307 Test Plan Item 1)
- * ============================================================================
- */
-
 TEST (qpack_krc_initialized_to_zero)
 {
   Arena_T arena = Arena_new ();
@@ -74,11 +64,6 @@ TEST (qpack_krc_null_encoder_returns_zero)
   ASSERT_EQ (krc, 0);
 }
 
-/* ============================================================================
- * INSERT COUNT TESTS
- * ============================================================================
- */
-
 TEST (qpack_encoder_insert_count_initially_zero)
 {
   Arena_T arena = Arena_new ();
@@ -96,11 +81,6 @@ TEST (qpack_encoder_insert_count_null_returns_zero)
   uint64_t ic = SocketQPACK_Encoder_insert_count (NULL);
   ASSERT_EQ (ic, 0);
 }
-
-/* ============================================================================
- * IS_ACKNOWLEDGED TESTS (Issue #3307 Test Plan Item 5)
- * ============================================================================
- */
 
 TEST (qpack_is_acknowledged_false_when_krc_zero)
 {
@@ -121,11 +101,6 @@ TEST (qpack_is_acknowledged_null_encoder_returns_false)
   ASSERT (!SocketQPACK_Encoder_is_acknowledged (NULL, 0));
   ASSERT (!SocketQPACK_Encoder_is_acknowledged (NULL, 100));
 }
-
-/* ============================================================================
- * SECTION ACKNOWLEDGMENT TESTS (Issue #3307 Test Plan Items 2, 6)
- * ============================================================================
- */
 
 TEST (qpack_section_ack_null_encoder)
 {
@@ -225,11 +200,6 @@ TEST (qpack_section_ack_multiple_streams_highest_ric_wins)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * INSERT COUNT INCREMENT TESTS (Issue #3307 Test Plan Items 3, 7, 8)
- * ============================================================================
- */
 
 TEST (qpack_insert_count_inc_null_encoder)
 {
@@ -432,11 +402,6 @@ TEST (qpack_mixed_section_ack_and_increment)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * KRC NEVER DECREASES TEST (Issue #3307 Test Plan Item 4)
- * ============================================================================
- */
-
 TEST (qpack_krc_never_decreases)
 {
   Arena_T arena = Arena_new ();
@@ -473,11 +438,6 @@ TEST (qpack_krc_never_decreases)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * STREAM CANCELLATION TESTS
- * ============================================================================
- */
 
 TEST (qpack_stream_cancel_null_encoder)
 {
@@ -532,15 +492,9 @@ TEST (qpack_stream_cancel_removes_pending)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * REGISTER SECTION TESTS
- * ============================================================================
- */
-
 TEST (qpack_register_section_null_encoder)
 {
-  SocketQPACK_Result result
-      = SocketQPACK_Encoder_register_section (NULL, 1, 5);
+  SocketQPACK_Result result = SocketQPACK_Encoder_register_section (NULL, 1, 5);
   ASSERT_EQ (result, QPACK_ERR_NULL_PARAM);
 }
 
@@ -588,11 +542,6 @@ TEST (qpack_register_section_same_stream_updates_ric)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * GET TABLE TEST
- * ============================================================================
- */
-
 TEST (qpack_encoder_get_table_null)
 {
   SocketQPACK_Table_T table = SocketQPACK_Encoder_get_table (NULL);
@@ -610,11 +559,6 @@ TEST (qpack_encoder_get_table_success)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * TABLE KNOWN_RECEIVED SYNC TEST
- * ============================================================================
- */
 
 TEST (qpack_table_known_received_synced)
 {
@@ -650,11 +594,6 @@ TEST (qpack_table_known_received_synced)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

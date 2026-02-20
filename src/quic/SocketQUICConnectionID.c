@@ -24,11 +24,6 @@
 /* Connection ID empty string representation */
 #define CONNID_EMPTY_STR "empty"
 
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
-
 static const char *result_strings[] = {
   [QUIC_CONNID_OK] = "OK",
   [QUIC_CONNID_ERROR_NULL] = "NULL pointer argument",
@@ -39,11 +34,6 @@ static const char *result_strings[] = {
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICConnectionID, QUIC_CONNID_ERROR_RANDOM)
-
-/* ============================================================================
- * Initialization Functions
- * ============================================================================
- */
 
 void
 SocketQUICConnectionID_init (SocketQUICConnectionID_T *cid)
@@ -77,11 +67,6 @@ SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid,
   cid->len = (uint8_t)len;
   return QUIC_CONNID_OK;
 }
-
-/* ============================================================================
- * Generation Functions
- * ============================================================================
- */
 
 SocketQUICConnectionID_Result
 SocketQUICConnectionID_generate (SocketQUICConnectionID_T *cid, size_t len)
@@ -117,11 +102,6 @@ SocketQUICConnectionID_generate_reset_token (SocketQUICConnectionID_T *cid)
   cid->has_reset_token = 1;
   return QUIC_CONNID_OK;
 }
-
-/* ============================================================================
- * Comparison Functions
- * ============================================================================
- */
 
 int
 SocketQUICConnectionID_equal (const SocketQUICConnectionID_T *a,
@@ -172,11 +152,6 @@ SocketQUICConnectionID_copy (SocketQUICConnectionID_T *dst,
   memcpy (dst, src, sizeof (*dst));
   return QUIC_CONNID_OK;
 }
-
-/* ============================================================================
- * Wire Format Functions
- * ============================================================================
- */
 
 size_t
 SocketQUICConnectionID_encode_length (const SocketQUICConnectionID_T *cid,
@@ -289,11 +264,6 @@ SocketQUICConnectionID_decode_fixed (const uint8_t *data,
 
   return QUIC_CONNID_OK;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 uint32_t
 SocketQUICConnectionID_hash (const SocketQUICConnectionID_T *cid)

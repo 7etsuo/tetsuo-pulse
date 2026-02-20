@@ -107,11 +107,6 @@
  */
 typedef struct SocketDTLSContext_T *SocketDTLSContext_T;
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
-
 /**
  * @ingroup security
  * @brief General DTLS operation failure.
@@ -184,11 +179,6 @@ extern const Except_T SocketDTLS_TimeoutExpired;
  */
 extern const Except_T SocketDTLS_ShutdownFailed;
 
-/* ============================================================================
- * Handshake State Machine
- * ============================================================================
- */
-
 /**
  * @brief DTLS handshake progress states.
  * @ingroup security
@@ -212,11 +202,6 @@ typedef enum
   DTLS_HANDSHAKE_COMPLETE = 5,        /**< Handshake completed successfully */
   DTLS_HANDSHAKE_ERROR = 6            /**< Handshake failed */
 } DTLSHandshakeState;
-
-/* ============================================================================
- * DTLS Enable and Configuration
- * ============================================================================
- */
 
 /**
  * @brief Enable DTLS encryption on a datagram socket.
@@ -506,11 +491,6 @@ SocketDTLS_set_hostname (SocketDgram_T socket, const char *hostname);
  */
 extern void SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu);
 
-/* ============================================================================
- * DTLS Handshake
- * ============================================================================
- */
-
 /**
  * @brief Perform one step of the non-blocking DTLS handshake.
  * @ingroup security
@@ -790,11 +770,6 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms);
  */
 extern DTLSHandshakeState SocketDTLS_listen (SocketDgram_T socket);
 
-/* ============================================================================
- * DTLS I/O Operations
- * ============================================================================
- */
-
 /**
  * @brief Send application data over established DTLS connection.
  * @ingroup security
@@ -1015,11 +990,6 @@ extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket,
                                     size_t host_len,
                                     int *port);
 
-/* ============================================================================
- * DTLS Connection Information
- * ============================================================================
- */
-
 /**
  * @brief Get name of negotiated cipher suite.
  * @ingroup security
@@ -1123,11 +1093,6 @@ extern const char *SocketDTLS_get_alpn_selected (SocketDgram_T socket);
  */
 extern size_t SocketDTLS_get_mtu (SocketDgram_T socket);
 
-/* ============================================================================
- * DTLS Shutdown
- * ============================================================================
- */
-
 /**
  * @brief Initiate graceful DTLS connection shutdown.
  * @ingroup security
@@ -1222,11 +1187,6 @@ extern void SocketDTLS_shutdown (SocketDgram_T socket);
  * @ingroup security
  */
 extern int SocketDTLS_is_shutdown (SocketDgram_T socket);
-
-/* ============================================================================
- * DTLS State Queries
- * ============================================================================
- */
 
 /**
  * @brief Check if DTLS is enabled on socket

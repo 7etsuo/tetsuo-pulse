@@ -22,10 +22,6 @@ extern "C"
   /* Forward declaration from SocketSimple-tcp.h */
   typedef struct SocketSimple_Socket *SocketSimple_Socket_T;
 
-/*============================================================================
- * TLS Options
- *============================================================================*/
-
 /**
  * @brief Default TLS handshake timeout (30 seconds).
  */
@@ -52,10 +48,6 @@ extern "C"
    * @param opts Options structure to initialize.
    */
   extern void Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts);
-
-  /*============================================================================
-   * TLS Client Functions
-   *============================================================================*/
 
   /**
    * @brief Connect to a TLS server (one-liner).
@@ -117,10 +109,6 @@ extern "C"
                                           const char *hostname,
                                           const SocketSimple_TLSOptions *opts);
 
-  /*============================================================================
-   * TLS Server Functions
-   *============================================================================*/
-
   /**
    * @brief Create a TLS server socket.
    *
@@ -145,10 +133,6 @@ extern "C"
    */
   extern SocketSimple_Socket_T
   Socket_simple_accept_tls (SocketSimple_Socket_T server);
-
-  /*============================================================================
-   * TLS Information
-   *============================================================================*/
 
   /**
    * @brief Check if socket has TLS enabled.
@@ -198,10 +182,6 @@ extern "C"
   extern int
   Socket_simple_get_cert_cn (SocketSimple_Socket_T sock, char *buf, size_t len);
 
-  /*============================================================================
-   * TLS Cipher Information
-   *============================================================================*/
-
   /**
    * @brief Get negotiated cipher suite name.
    *
@@ -210,10 +190,6 @@ extern "C"
    * error.
    */
   extern const char *Socket_simple_get_cipher (SocketSimple_Socket_T sock);
-
-  /*============================================================================
-   * TLS Session Resumption
-   *============================================================================*/
 
   /**
    * @brief Check if TLS session was reused (abbreviated handshake).

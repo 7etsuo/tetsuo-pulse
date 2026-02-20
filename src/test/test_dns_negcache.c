@@ -605,10 +605,6 @@ TEST (negcache_null_entry)
   Arena_dispose (&arena);
 }
 
-/* ========================================================================= */
-/* RFC 2308 Section 6 Tests - SOA in Authority Section */
-/* ========================================================================= */
-
 /* Helper to create sample SOA RDATA for testing */
 static void
 create_sample_soa_rdata (unsigned char *rdata, size_t *rdlen)

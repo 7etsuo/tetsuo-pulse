@@ -860,11 +860,6 @@ SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt)
   return (ssize_t)total_written;
 }
 
-/* ============================================================================
- * Async I/O Operations
- * ============================================================================
- */
-
 /* Undef T before including SocketAsync.h to avoid macro conflicts */
 #undef T
 #include "socket/SocketAsync.h"

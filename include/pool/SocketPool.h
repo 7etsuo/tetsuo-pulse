@@ -283,11 +283,6 @@ typedef void (*SocketPool_ConnectCallback) (Connection_T conn,
                                             int error,
                                             void *data);
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
-
 /**
  * @brief Pool operation failure.
  * @ingroup connection_mgmt
@@ -854,11 +849,6 @@ extern time_t Connection_lastactivity (const Connection_T conn);
  */
 extern int Connection_isactive (const Connection_T conn);
 
-/* ============================================================================
- * Reconnection Support
- * ============================================================================
- */
-
 /**
  * @brief Set default reconnection policy for pool.
  * @ingroup connection_mgmt
@@ -964,11 +954,6 @@ extern SocketReconnect_T Connection_reconnect (const Connection_T conn);
  * @see Connection_reconnect() to get context.
  */
 extern int Connection_has_reconnect (const Connection_T conn);
-
-/* ============================================================================
- * Rate Limiting
- * ============================================================================
- */
 
 /**
  * @brief Set connection rate limit.
@@ -1114,11 +1099,6 @@ extern void SocketPool_release_ip (T pool, const char *ip);
  */
 extern int SocketPool_ip_count (T pool, const char *ip);
 
-/* ============================================================================
- * SYN Flood Protection
- * ============================================================================
- */
-
 /**
  * @brief Enable SYN flood protection for pool.
  * @ingroup connection_mgmt
@@ -1174,41 +1154,6 @@ extern SocketSYNProtect_T SocketPool_get_syn_protection (T pool);
 extern Socket_T SocketPool_accept_protected (T pool,
                                              Socket_T server,
                                              SocketSYN_Action *action_out);
-
-/* ============================================================================
- * Graceful Shutdown (Drain) API
- * ============================================================================
- *
- * @brief Industry-standard graceful shutdown following patterns from nginx,
- * HAProxy, and Go http.Server. Provides clean state machine transitions,
- * non-blocking APIs for event loop integration, and timeout-guaranteed
- * completion.
- *
- * @ingroup connection_mgmt
- *
- * State Machine:
- *                     drain(timeout)
- *     +---------+    ───────────────>    +----------+
- *     | RUNNING |                        | DRAINING |
- *     +---------+                        +----------+
- *          ^                                  │
- *          │                                  │ (count == 0 OR timeout)
- *          │            +----------+          │
- *          +────────────| STOPPED  |<─────────+
- *           (restart)   +----------+
- *
- * Typical usage:
- *   SocketPool_drain(pool, 30000);  // Start 30s drain
- *   while (SocketPool_drain_poll(pool) > 0) {
- *       // Continue event loop, connections closing naturally
- *       SocketPoll_wait(poll, &events, SocketPool_drain_remaining_ms(pool));
- *   }
- *   SocketPool_free(&pool);
- *
- * @see SocketPool_drain() to initiate drain.
- * @see SocketPool_drain_poll() for non-blocking completion.
- * @see SocketPool_drain_wait() for blocking completion.
- */
 
 /**
  * @brief Pool lifecycle states for graceful shutdown.
@@ -1414,11 +1359,6 @@ extern int SocketPool_drain_wait (T pool, int timeout_ms);
 extern void
 SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb, void *data);
 
-/* ============================================================================
- * Idle Connection Cleanup
- * ============================================================================
- */
-
 /**
  * @brief Set idle connection timeout.
  * @ingroup connection_mgmt
@@ -1476,11 +1416,6 @@ extern int64_t SocketPool_idle_cleanup_due_ms (T pool);
  */
 extern size_t SocketPool_run_idle_cleanup (T pool);
 
-/* ============================================================================
- * Connection Health Check
- * ============================================================================
- */
-
 /**
  * @brief Connection health status enumeration.
  * @ingroup connection_mgmt
@@ -1512,11 +1447,6 @@ typedef enum
 extern SocketPool_ConnHealth
 SocketPool_check_connection (T pool, Connection_T conn);
 
-/* ============================================================================
- * Connection Validation Callback
- * ============================================================================
- */
-
 /* See SocketPool_ValidationCallback typedef above for full callback details
  * and thread safety requirements. */
 
@@ -1540,11 +1470,6 @@ SocketPool_set_validation_callback (T pool,
                                     SocketPool_ValidationCallback cb,
                                     void *data);
 
-/* ============================================================================
- * Pool Resize Callback
- * ============================================================================
- */
-
 /* See SocketPool_ResizeCallback typedef for details. */
 
 /**
@@ -1563,11 +1488,6 @@ SocketPool_set_validation_callback (T pool,
 extern void SocketPool_set_resize_callback (T pool,
                                             SocketPool_ResizeCallback cb,
                                             void *data);
-
-/* ============================================================================
- * Pool Statistics
- * ============================================================================
- */
 
 /**
  * @brief Pool statistics snapshot structure.
@@ -1752,11 +1672,6 @@ SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb, void *data);
  * @see Connection_lastactivity() for last activity time.
  */
 extern time_t Connection_created_at (const Connection_T conn);
-
-/* ============================================================================
- * Health Checking API
- * ============================================================================
- */
 
 /* Full API documentation in SocketPoolHealth.h */
 #include "pool/SocketPoolHealth.h"
