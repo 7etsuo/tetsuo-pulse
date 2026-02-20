@@ -193,15 +193,15 @@ SocketHTTP3_ServerConfig_defaults (SocketHTTP3_ServerConfig *config)
     return;
   memset (config, 0, sizeof (*config));
   config->bind_addr = "0.0.0.0";
-  config->port = 443;
-  config->idle_timeout_ms = 30000;
-  config->initial_max_streams_bidi = 100;
-  config->max_stream_data = 262144;
+  config->port = SOCKET_DEFAULT_HTTPS_PORT;
+  config->idle_timeout_ms = SOCKET_DEFAULT_IDLE_TIMEOUT_MS;
+  config->initial_max_streams_bidi = SOCKET_QUIC_DEFAULT_MAX_STREAMS_BIDI;
+  config->max_stream_data = SOCKET_QUIC_DEFAULT_MAX_STREAM_DATA;
   SocketHTTP3_Settings_init (&config->h3_settings);
   config->cert_file = NULL;
   config->key_file = NULL;
-  config->max_connections = 256;
-  config->max_header_size = 65536;
+  config->max_connections = SOCKET_HTTP3_SERVER_DEFAULT_MAX_CONNECTIONS;
+  config->max_header_size = SOCKET_HTTP3_SERVER_DEFAULT_MAX_HEADER_SIZE;
 }
 
 SocketHTTP3_Server_T

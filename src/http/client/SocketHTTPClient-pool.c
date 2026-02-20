@@ -311,10 +311,9 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
     {
       suggested_size = HTTPCLIENT_POOL_HASH_SIZE;
     }
-  const size_t max_hash_size = 65536; /* Prevent excessive memory use */
-  if (suggested_size > max_hash_size)
+  if (suggested_size > SOCKET_HTTPCLIENT_POOL_HASH_SIZE_MAX)
     {
-      suggested_size = max_hash_size;
+      suggested_size = SOCKET_HTTPCLIENT_POOL_HASH_SIZE_MAX;
     }
   size_t elem_size = sizeof (HTTPPoolEntry *);
   size_t table_bytes;

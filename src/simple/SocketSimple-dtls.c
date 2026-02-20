@@ -20,7 +20,7 @@
 /**
  * @brief Default timeout for DTLS handshakes (30 seconds).
  */
-#define SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS 30000
+#define SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS SOCKET_DEFAULT_TLS_TIMEOUT_MS
 
 /**
  * @brief Cleanup macro for DTLS resources in FINALLY blocks.

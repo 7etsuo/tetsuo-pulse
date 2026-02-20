@@ -52,7 +52,17 @@
  * RFC 1035 §4.2.2: TCP messages have a 16-bit length field,
  * limiting message size to 2^16 - 1 bytes (excluding the length prefix itself).
  */
-#define DOT_MAX_MESSAGE_SIZE 65535
+#define DOT_MAX_MESSAGE_SIZE SOCKET_DNS_MAX_MESSAGE_SIZE
+
+/**
+ * Maximum number of cached TLS sessions per server.
+ */
+#define DOT_SESSION_CACHE_MAX SOCKET_DOT_SESSION_CACHE_MAX
+
+/**
+ * TLS session cache TTL in seconds (5 minutes).
+ */
+#define DOT_SESSION_CACHE_TTL SOCKET_DOT_SESSION_CACHE_TTL
 
 /**
  * Receive buffer size for chunked reads from TLS socket.
@@ -66,7 +76,7 @@
  * Note: Full DNS messages up to DOT_MAX_MESSAGE_SIZE are assembled from
  * multiple chunks using dynamically allocated buffers (see receive_data()).
  */
-#define DOT_RECV_BUFFER_SIZE 4096
+#define DOT_RECV_BUFFER_SIZE SOCKET_DEFAULT_BUFFER_SIZE
 
 /**
  * Maximum total memory for pending query allocations (CWE-770 mitigation).
@@ -300,7 +310,8 @@ create_tls_context (T transport, struct ServerConfig *server)
       }
 
     /* Enable session caching for resumption */
-    SocketTLSContext_enable_session_cache (ctx, 10, 300);
+    SocketTLSContext_enable_session_cache (
+        ctx, DOT_SESSION_CACHE_MAX, DOT_SESSION_CACHE_TTL);
 
     /* Add SPKI pins if configured */
     if (server->spki_pin[0] != '\0')

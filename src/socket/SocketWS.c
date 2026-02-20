@@ -1505,14 +1505,14 @@ ws_parse_url_scheme (const char **url, int *use_tls, int *port)
   if (strncmp (*url, "wss://", 6) == 0)
     {
       *use_tls = 1;
-      *port = 443;
+      *port = SOCKETWS_DEFAULT_HTTPS_PORT;
       *url += 6;
       return 0;
     }
   if (strncmp (*url, "ws://", 5) == 0)
     {
       *use_tls = 0;
-      *port = 80;
+      *port = SOCKETWS_DEFAULT_HTTP_PORT;
       *url += 5;
       return 0;
     }
@@ -1678,7 +1678,9 @@ ws_create_and_connect_socket (const char *host, int port, int use_tls)
       /* Enable TLS with default context */
       SocketTLS_enable (sock, NULL);
       SocketTLS_set_hostname (sock, host);
-      if (SocketTLS_handshake_loop (sock, 10000) < 0)
+      if (SocketTLS_handshake_loop (sock,
+                                    SOCKET_WS_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS)
+          < 0)
         {
           SOCKET_ERROR_MSG ("TLS handshake failed");
           RAISE_WS_ERROR (SocketWS_Failed);
@@ -1798,7 +1800,7 @@ SocketWS_connect (const char *url, const char *protocols)
   SocketWS_Config config;
   char host[NI_MAXHOST] = { 0 };
   char path[SOCKETWS_MAX_PATH_SIZE] = { 0 };
-  volatile int port = 80;
+  volatile int port = SOCKETWS_DEFAULT_HTTP_PORT;
   volatile int use_tls = 0;
   const char *proto_array[2] = { NULL, NULL };
 

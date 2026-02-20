@@ -430,11 +430,12 @@ sockettimer_make_room_at_capacity (SocketTimer_heap_T *heap)
   victim->cancelled = 1;
 
   evictions = atomic_fetch_add (&sockettimer_capacity_evictions, 1) + 1;
-  if (evictions <= 5 || (evictions % 1000) == 0)
+  if (evictions <= SOCKET_TIMER_EVICTION_INITIAL_LOG_COUNT
+      || (evictions % SOCKET_TIMER_EVICTION_LOG_INTERVAL) == 0)
     {
       SOCKET_LOG_WARN_MSG ("Timer heap saturated at %u entries; evicted "
-                           "timer id=%" PRIu64
-                           " expiry_ms=%" PRId64 " interval_ms=%" PRId64,
+                           "timer id=%" PRIu64 " expiry_ms=%" PRId64
+                           " interval_ms=%" PRId64,
                            SOCKET_MAX_TIMERS_PER_HEAP,
                            victim->id,
                            victim->expiry_ms,
@@ -623,11 +624,10 @@ SocketTimer_heap_push (SocketTimer_heap_T *heap, struct SocketTimer_T *timer)
       sockettimer_make_room_at_capacity (heap);
 
     if (heap->count >= SOCKET_MAX_TIMERS_PER_HEAP)
-      SOCKET_RAISE_MSG (
-          SocketTimer,
-          SocketTimer_Failed,
-          "Cannot add timer: maximum %u timers per heap exceeded",
-          SOCKET_MAX_TIMERS_PER_HEAP);
+      SOCKET_RAISE_MSG (SocketTimer,
+                        SocketTimer_Failed,
+                        "Cannot add timer: maximum %u timers per heap exceeded",
+                        SOCKET_MAX_TIMERS_PER_HEAP);
 
     sockettimer_ensure_capacity (heap);
     sockettimer_assign_id (heap, timer);

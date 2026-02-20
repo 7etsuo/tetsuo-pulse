@@ -568,8 +568,8 @@ static int
 disable_compute_shutdown_timeout (void)
 {
   int timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS / 4;
-  if (timeout_ms < 1000)
-    timeout_ms = 1000; /* Minimum 1 second for disable */
+  if (timeout_ms < SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS)
+    timeout_ms = SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS;
   return timeout_ms;
 }
 
@@ -639,7 +639,8 @@ disable_handle_io_wait (Socket_T socket, SSL *ssl, int result, int64_t deadline)
     {
       /* Brief poll then retry */
       unsigned events = (err == SSL_ERROR_WANT_READ) ? POLL_READ : POLL_WRITE;
-      int poll_timeout = SocketTimeout_poll_timeout (100, deadline);
+      int poll_timeout = SocketTimeout_poll_timeout (
+          SOCKET_TLS_SHUTDOWN_POLL_INTERVAL_MS, deadline);
 
       if (poll_timeout > 0)
         {
@@ -2239,7 +2240,7 @@ ocsp_verify_signature (OCSP_BASICRESP *basic, SSL *ssl)
  * Returns: Issuer cert pointer from chain (borrowed), or NULL if not found.
  */
 static X509 *
-ocsp_find_issuer_in_chain (X509 *peer_cert, STACK_OF (X509) *chain)
+ocsp_find_issuer_in_chain (X509 *peer_cert, STACK_OF (X509) * chain)
 {
   if (!peer_cert || !chain)
     return NULL;
@@ -2299,10 +2300,8 @@ ocsp_check_cert_status (OCSP_BASICRESP *basic, SSL *ssl, X509 *peer_cert)
   if (found != 1)
     return -1; /* No matching single response for leaf cert */
 
-  if (!OCSP_check_validity (thisupd,
-                            nextupd,
-                            SOCKET_TLS_OCSP_MAX_AGE_SECONDS,
-                            -1))
+  if (!OCSP_check_validity (
+          thisupd, nextupd, SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1))
     return -1; /* Stale or not-yet-valid */
 
   switch (status)

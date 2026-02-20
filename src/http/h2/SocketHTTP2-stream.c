@@ -31,8 +31,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #define HTTP2_MAX_DECODED_HEADERS SOCKETHTTP2_MAX_DECODED_HEADERS
 #define HTTP2_MAX_STREAM_ID 0x7FFFFFFF
 
-/* Compile-time string length for literals */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* Forward declaration for RFC 9113 §8.4 push method validation */
 static int validate_push_request_method (SocketHTTP2_Stream_T stream);

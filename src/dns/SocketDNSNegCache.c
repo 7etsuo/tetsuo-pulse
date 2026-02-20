@@ -11,12 +11,12 @@
 
 #include "dns/SocketDNSNegCache.h"
 #include "dns/SocketDNSWire.h"
+#include "dns/SocketDNSCache-private.h"
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 
 #include <arpa/inet.h>
-#include <ctype.h>
 #include <pthread.h>
 #include <string.h>
 #include <strings.h>
@@ -85,49 +85,18 @@ struct T
  * SocketUtil.h */
 
 /**
- * @brief Compute hash for cache key tuple.
+ * @brief Compute hash for cache key tuple (wrapper for cache instance).
  *
+ * Delegates to dns_cache_hash_tuple() from SocketDNSCache-private.h.
+ * RFC 2308 cache key semantics:
  * For NXDOMAIN: hash(name, 0, class)
  * For NODATA: hash(name, type, class)
- *
- * Uses a random seed to protect against hash collision DoS attacks.
- *
- * Note: This manually implements DJB2 with qtype/qclass extension rather than
- * using socket_util_hash_djb2_seeded_ci() because RFC 2308 cache semantics
- * require the complete tuple (name, qtype, qclass) to be hashed. The SocketUtil
- * helper only hashes the string portion and would require duplicating the loop
- * logic to extend with qtype/qclass. The current implementation is clearer and
- * avoids intermediate calculations.
- */
-static unsigned
-compute_hash_with_seed (const char *name,
-                        uint16_t qtype,
-                        uint16_t qclass,
-                        uint32_t seed)
-{
-  unsigned hash = SOCKET_UTIL_DJB2_SEED;
-
-  /* Mix in random seed for DoS protection */
-  hash = ((hash << 5) + hash) ^ seed;
-
-  /* Hash the normalized name (case-insensitive per DNS spec) */
-  for (const char *p = name; *p; p++)
-    hash = ((hash << 5) + hash) ^ (unsigned char)tolower ((unsigned char)*p);
-
-  /* Extend hash with qtype and qclass for RFC 2308 cache key tuple */
-  hash = ((hash << 5) + hash) ^ qtype;
-  hash = ((hash << 5) + hash) ^ qclass;
-
-  return hash % NEGCACHE_HASH_SIZE;
-}
-
-/**
- * @brief Compute hash for cache key tuple (wrapper for cache instance).
  */
 static unsigned
 compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass)
 {
-  return compute_hash_with_seed (name, qtype, qclass, cache->hash_seed);
+  return dns_cache_hash_tuple (
+      name, qtype, qclass, cache->hash_seed, NEGCACHE_HASH_SIZE);
 }
 
 /* entry_expired() replaced by socket_util_ttl_expired() from SocketUtil.h */
@@ -135,55 +104,14 @@ compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass)
 /* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from
  * SocketUtil.h */
 
-/**
- * @brief Remove entry from LRU list.
- */
-static void
-lru_remove (T cache, struct NegCacheEntry *entry)
-{
-  if (entry->lru_prev)
-    entry->lru_prev->lru_next = entry->lru_next;
-  else
-    cache->lru_head = entry->lru_next;
-
-  if (entry->lru_next)
-    entry->lru_next->lru_prev = entry->lru_prev;
-  else
-    cache->lru_tail = entry->lru_prev;
-
-  entry->lru_prev = NULL;
-  entry->lru_next = NULL;
-}
-
-/**
- * @brief Add entry to LRU head (most recently used).
- */
-static void
-lru_add_head (T cache, struct NegCacheEntry *entry)
-{
-  entry->lru_prev = NULL;
-  entry->lru_next = cache->lru_head;
-
-  if (cache->lru_head)
-    cache->lru_head->lru_prev = entry;
-  else
-    cache->lru_tail = entry;
-
-  cache->lru_head = entry;
-}
-
-/**
- * @brief Move entry to LRU head (accessed).
- */
-static void
-lru_touch (T cache, struct NegCacheEntry *entry)
-{
-  if (entry != cache->lru_head)
-    {
-      lru_remove (cache, entry);
-      lru_add_head (cache, entry);
-    }
-}
+/* LRU operations use shared macros from SocketDNSCache-private.h:
+ * DNS_LRU_REMOVE, DNS_LRU_INSERT_HEAD, DNS_LRU_TOUCH */
+#define lru_remove(cache, entry) \
+  DNS_LRU_REMOVE ((cache)->lru_head, (cache)->lru_tail, (entry))
+#define lru_add_head(cache, entry) \
+  DNS_LRU_INSERT_HEAD ((cache)->lru_head, (cache)->lru_tail, (entry))
+#define lru_touch(cache, entry) \
+  DNS_LRU_TOUCH ((cache)->lru_head, (cache)->lru_tail, (entry))
 
 /**
  * @brief Remove entry from hash table.

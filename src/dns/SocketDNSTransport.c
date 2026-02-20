@@ -1037,7 +1037,8 @@ tcp_socket_create (int family)
 
   /* Disable Nagle for lower latency (non-fatal optimization) */
   int nodelay = 1;
-  (void)setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof (nodelay));
+  (void)setsockopt (
+      fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY, &nodelay, sizeof (nodelay));
 
   return fd;
 }

@@ -65,6 +65,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"
 
 /**
  * @brief Maximum allowed length for HTTP header names, in bytes.
@@ -137,14 +138,14 @@
  *
  * Standard port for http:// scheme. Used when port is omitted in URI.
  */
-#define HTTP_DEFAULT_PORT 80
+#define HTTP_DEFAULT_PORT SOCKET_DEFAULT_HTTP_PORT
 
 /**
  * @brief Default HTTPS port per RFC 9110 Section 4.2.3.
  *
  * Standard port for https:// scheme. Used when port is omitted in URI.
  */
-#define HTTPS_DEFAULT_PORT 443
+#define HTTPS_DEFAULT_PORT SOCKET_DEFAULT_HTTPS_PORT
 
 /**
  * @brief ASCII character constants for HTTP validation.

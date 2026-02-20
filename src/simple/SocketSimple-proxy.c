@@ -342,14 +342,14 @@ get_default_proxy_port (SocketSimple_ProxyType type)
     {
     case SOCKET_SIMPLE_PROXY_HTTP:
     case SOCKET_SIMPLE_PROXY_HTTPS:
-      return 8080;
+      return SOCKET_DEFAULT_HTTP_ALT_PORT;
     case SOCKET_SIMPLE_PROXY_SOCKS4:
     case SOCKET_SIMPLE_PROXY_SOCKS4A:
     case SOCKET_SIMPLE_PROXY_SOCKS5:
     case SOCKET_SIMPLE_PROXY_SOCKS5H:
-      return 1080;
+      return SOCKET_DEFAULT_SOCKS_PORT;
     default:
-      return 8080;
+      return SOCKET_DEFAULT_HTTP_ALT_PORT;
     }
 }
 

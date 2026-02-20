@@ -469,4 +469,17 @@
   })
 #endif
 
+/**
+ * @brief STRLEN_LIT - Compile-time string literal length
+ * @param s String literal (must be a compile-time constant)
+ * @return Length of the string excluding null terminator
+ * @ingroup foundation
+ *
+ * Avoids runtime strlen() for string literals by using sizeof.
+ * Commonly used with SocketHTTP_Headers_get_n() for O(1) header lookups.
+ */
+#ifndef STRLEN_LIT
+#define STRLEN_LIT(s) (sizeof (s) - 1)
+#endif
+
 #endif /* SOCKETUTIL_CORE_H */

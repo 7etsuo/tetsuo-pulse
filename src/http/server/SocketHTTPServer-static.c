@@ -44,11 +44,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 /* Maximum path length for static files */
 #ifndef HTTPSERVER_STATIC_MAX_PATH
-#define HTTPSERVER_STATIC_MAX_PATH 4096
+#define HTTPSERVER_STATIC_MAX_PATH SOCKET_MAX_PATH_LEN
 #endif
 
-/* String literal length macro (compile-time) */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* Range header prefix constant */
 #define RANGE_HEADER_PREFIX "bytes="
@@ -620,13 +618,16 @@ server_serve_static_file (SocketHTTPServer_T server,
 
   /* Check If-Modified-Since header */
   if_modified_since
-      = SocketHTTP_Headers_get (conn->request->headers, "If-Modified-Since");
+      = SocketHTTP_Headers_get_n (conn->request->headers,
+                                  "If-Modified-Since",
+                                  STRLEN_LIT ("If-Modified-Since"));
   if (handle_conditional_get (
           conn, if_modified_since, st.st_mtime, date_buf, last_modified_buf))
     return 1;
 
   /* Check Range header for partial content */
-  range_header = SocketHTTP_Headers_get (conn->request->headers, "Range");
+  range_header = SocketHTTP_Headers_get_n (
+      conn->request->headers, "Range", STRLEN_LIT ("Range"));
   if (range_header != NULL && conn->request->method == HTTP_METHOD_GET)
     {
       if (!parse_range_header (
@@ -646,8 +647,8 @@ server_serve_static_file (SocketHTTPServer_T server,
       use_range = 1;
     }
 
-  /* Open with O_NOFOLLOW to prevent symlink attacks.
-   * Re-validate file type after open to prevent TOCTOU race. */
+    /* Open with O_NOFOLLOW to prevent symlink attacks.
+     * Re-validate file type after open to prevent TOCTOU race. */
 #ifdef O_NOFOLLOW
   fd = open (resolved_path, O_RDONLY | O_NOFOLLOW);
 #else

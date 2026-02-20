@@ -612,41 +612,41 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
       while (*prev)
         {
           SocketQUICLossSentPacket_T *p = *prev;
-          if (ack_frame_contains (ack, p->packet_number))
+          if (!ack_frame_contains (ack, p->packet_number))
             {
-              /* Inline handle_acked_packet() but unlink in-place to avoid
-               * re-traversal and iterator invalidation. */
-              *prev = p->next;
-              state->sent_count--;
-
-              if (acked_callback)
-                acked_callback (p, context);
-
-              if (p->in_flight)
-                {
-                  if (p->sent_bytes > state->bytes_in_flight)
-                    {
-                      SOCKET_LOG_ERROR_MSG (
-                          "bytes_in_flight underflow: sent_bytes=%zu, "
-                          "in_flight=%zu",
-                          p->sent_bytes,
-                          state->bytes_in_flight);
-                      state->bytes_in_flight = 0;
-                    }
-                  else
-                    {
-                      state->bytes_in_flight -= p->sent_bytes;
-                    }
-                }
-
-              /* Return to free list */
-              p->next = state->free_list;
-              state->free_list = p;
-              total_acked++;
+              prev = &p->next;
               continue;
             }
 
-          prev = &p->next;
+          /* Unlink in-place to avoid re-traversal and iterator
+           * invalidation. */
+          *prev = p->next;
+          state->sent_count--;
+
+          if (acked_callback)
+            acked_callback (p, context);
+
+          if (p->in_flight)
+            {
+              if (p->sent_bytes > state->bytes_in_flight)
+                {
+                  SOCKET_LOG_ERROR_MSG (
+                      "bytes_in_flight underflow: sent_bytes=%zu, "
+                      "in_flight=%zu",
+                      p->sent_bytes,
+                      state->bytes_in_flight);
+                  state->bytes_in_flight = 0;
+                }
+              else
+                {
+                  state->bytes_in_flight -= p->sent_bytes;
+                }
+            }
+
+          /* Return to free list */
+          p->next = state->free_list;
+          state->free_list = p;
+          total_acked++;
         }
     }
 

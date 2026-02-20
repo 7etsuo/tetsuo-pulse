@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"
 #include "core/SocketCrypto.h"
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConnectionID.h"
@@ -203,7 +204,8 @@ init_hash_seed (SocketQUICConnTable_T table)
       clock_gettime (CLOCK_MONOTONIC, &ts);
       table->hash_seed
           = (uint32_t)(((size_t)table ^ (size_t)table->buckets)
-                       ^ ((uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec)
+                       ^ ((uint64_t)ts.tv_sec * SOCKET_NS_PER_SECOND
+                          + ts.tv_nsec)
                        ^ ((uint64_t)getpid () << 32));
     }
 }

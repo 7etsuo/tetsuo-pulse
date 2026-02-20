@@ -31,6 +31,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 #include "dns/SocketDNSWire.h"
 #include "http/SocketHTTPClient.h"
 
@@ -38,7 +39,7 @@
 #define T SocketDNSoverHTTPS_T
 
 /** Maximum DNS message size (64KB). */
-#define DOH_MAX_MESSAGE_SIZE 65535
+#define DOH_MAX_MESSAGE_SIZE SOCKET_DNS_MAX_MESSAGE_SIZE
 
 /** Maximum URL length for GET requests. */
 #define DOH_MAX_URL_LENGTH 2048
@@ -544,7 +545,8 @@ doh_validate_response (const SocketHTTPClient_Response *response,
     }
 
   /* Verify Content-Type */
-  const char *ct = SocketHTTP_Headers_get (response->headers, "Content-Type");
+  const char *ct = SocketHTTP_Headers_get_n (
+      response->headers, "Content-Type", STRLEN_LIT ("Content-Type"));
   if (!ct || strstr (ct, "application/dns-message") == NULL)
     {
       *error_out = DOH_ERROR_CONTENT_TYPE;

@@ -13,17 +13,18 @@
 
 #include "SocketSimple-internal.h"
 
+#include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
 
 #include <pthread.h>
 
 #define SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS 5
 #define SOCKET_SIMPLE_MAX_HEADER_NAME_LEN 256
-#define SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS 30000
-#define SOCKET_SIMPLE_DEFAULT_REQUEST_TIMEOUT_MS 60000
+#define SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS \
+  SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
+#define SOCKET_SIMPLE_DEFAULT_REQUEST_TIMEOUT_MS \
+  SOCKET_DEFAULT_REQUEST_TIMEOUT_MS
 
-/* Performance: Compile-time string length for header lookups */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 static SocketHTTPClient_T g_http_client = NULL;
 static pthread_once_t g_http_once = PTHREAD_ONCE_INIT;
@@ -45,8 +46,10 @@ init_global_http_client (void)
    * servers. The global mutex means slow requests block all threads, so
    * we limit exposure by using short timeouts. Users needing longer
    * timeouts should use Socket_simple_http_new() for per-client control. */
-  config.connect_timeout_ms = 5000;  /* 5 seconds max connect */
-  config.request_timeout_ms = 15000; /* 15 seconds max request */
+  config.connect_timeout_ms
+      = SOCKET_SIMPLE_HTTP_GLOBAL_CONNECT_TIMEOUT_MS; /* short for global */
+  config.request_timeout_ms
+      = SOCKET_SIMPLE_HTTP_GLOBAL_REQUEST_TIMEOUT_MS; /* short for global */
 
   TRY
   {

@@ -511,7 +511,9 @@ try_basic_auth_retry (SocketHTTPClient_Request_T req,
     return 0;
 
   already_sent
-      = (SocketHTTP_Headers_get (req->headers, "Authorization") != NULL);
+      = (SocketHTTP_Headers_get_n (
+             req->headers, "Authorization", STRLEN_LIT ("Authorization"))
+         != NULL);
   if (already_sent)
     return 0;
 
@@ -550,7 +552,8 @@ handle_401_auth_retry (SocketHTTPClient_T client,
   if (auth->type != HTTP_AUTH_BASIC && auth->type != HTTP_AUTH_DIGEST)
     return 1; /* Unsupported auth type */
 
-  www_auth = SocketHTTP_Headers_get (response->headers, "WWW-Authenticate");
+  www_auth = SocketHTTP_Headers_get_n (
+      response->headers, "WWW-Authenticate", STRLEN_LIT ("WWW-Authenticate"));
   if (www_auth == NULL)
     return 1; /* No challenge */
 
@@ -626,9 +629,11 @@ is_same_origin (const char *scheme1,
 
   /* Normalize ports: use default ports if not specified */
   if (port1 <= 0)
-    port1 = (strcasecmp (scheme1, "https") == 0) ? 443 : 80;
+    port1 = (strcasecmp (scheme1, "https") == 0) ? HTTPS_DEFAULT_PORT
+                                                 : HTTP_DEFAULT_PORT;
   if (port2 <= 0)
-    port2 = (strcasecmp (scheme2, "https") == 0) ? 443 : 80;
+    port2 = (strcasecmp (scheme2, "https") == 0) ? HTTPS_DEFAULT_PORT
+                                                 : HTTP_DEFAULT_PORT;
 
   return port1 == port2;
 }
@@ -664,7 +669,8 @@ handle_redirect (SocketHTTPClient_T client,
   if (!httpclient_should_follow_redirect (client, req, response->status_code))
     return 1; /* Not following */
 
-  location = SocketHTTP_Headers_get (response->headers, "Location");
+  location = SocketHTTP_Headers_get_n (
+      response->headers, "Location", STRLEN_LIT ("Location"));
   if (location == NULL)
     return 1; /* No location header */
 
@@ -1576,7 +1582,8 @@ SocketHTTPClient_upload (SocketHTTPClient_T client,
 static int
 is_json_content_type (SocketHTTP_Headers_T headers)
 {
-  const char *content_type = SocketHTTP_Headers_get (headers, "Content-Type");
+  const char *content_type = SocketHTTP_Headers_get_n (
+      headers, "Content-Type", STRLEN_LIT ("Content-Type"));
   return content_type == NULL
          || strstr (content_type, "application/json") != NULL;
 }

@@ -378,6 +378,7 @@ set(LIB_SOURCES
 
     # gRPC module (public scaffolding)
     src/grpc/SocketGRPC-core.c
+    src/grpc/SocketGRPCClient-common.c
     src/grpc/SocketGRPCClient-h2.c
     src/grpc/SocketGRPCClient-h3.c
     src/grpc/SocketGRPCServer-h2.c

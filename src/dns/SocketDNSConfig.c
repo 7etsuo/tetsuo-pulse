@@ -462,6 +462,7 @@ SocketDNSConfig_local_domain (const SocketDNSConfig_T *config)
   return "";
 }
 
+#ifndef NDEBUG
 void
 SocketDNSConfig_dump (const SocketDNSConfig_T *config)
 {
@@ -503,3 +504,4 @@ SocketDNSConfig_dump (const SocketDNSConfig_T *config)
   if (config->local_domain[0] != '\0')
     fprintf (stderr, "  Local domain: %s\n", config->local_domain);
 }
+#endif /* !NDEBUG */

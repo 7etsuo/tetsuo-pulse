@@ -97,6 +97,28 @@ socket_clamp_monotonic_ms (int64_t candidate_ms)
     }
 }
 
+uint64_t
+Socket_get_monotonic_us (void)
+{
+  struct timespec ts;
+
+  if (clock_gettime (CLOCK_MONOTONIC, &ts) == 0)
+    return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
+
+  return 0;
+}
+
+uint64_t
+Socket_get_monotonic_ns (void)
+{
+  struct timespec ts;
+
+  if (clock_gettime (CLOCK_MONOTONIC, &ts) == 0)
+    return (uint64_t)ts.tv_sec * SOCKET_NS_PER_SECOND + (uint64_t)ts.tv_nsec;
+
+  return 0;
+}
+
 int64_t
 Socket_get_monotonic_ms (void)
 {

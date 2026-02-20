@@ -269,15 +269,18 @@ extern int SocketDNSConfig_use_tcp (const SocketDNSConfig_T *config);
 extern const char *
 SocketDNSConfig_local_domain (const SocketDNSConfig_T *config);
 
+#ifndef NDEBUG
 /**
  * @brief Print configuration for debugging.
  * @ingroup dns_config
  *
  * Outputs configuration to stderr in human-readable format.
+ * Only available in debug builds (when NDEBUG is not defined).
  *
  * @param config Configuration structure.
  */
 extern void SocketDNSConfig_dump (const SocketDNSConfig_T *config);
+#endif /* !NDEBUG */
 
 /** @} */ /* End of dns_config group */
 

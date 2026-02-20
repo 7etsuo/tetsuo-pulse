@@ -22,6 +22,7 @@
 
 #include <string.h>
 
+#include "core/SocketUtil.h"
 #include "quic/SocketQUICConstants.h"
 #include "quic/SocketQUICVersion.h"
 
@@ -55,8 +56,6 @@ static const char label_quic_key[] = "quic key";
 static const char label_quic_iv[] = "quic iv";
 static const char label_quic_hp[] = "quic hp";
 
-/* Compile-time string length for labels */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 static const char *result_strings[]
     = { [QUIC_CRYPTO_OK] = "OK",

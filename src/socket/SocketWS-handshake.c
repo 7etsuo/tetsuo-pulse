@@ -126,7 +126,8 @@ ws_validate_no_crlf (const char *str, const char *field_name)
 }
 
 /**
- * @brief Validate Origin header against allowed origins list (RFC 6455 Section 10.2).
+ * @brief Validate Origin header against allowed origins list (RFC 6455
+ * Section 10.2).
  * @internal
  * @param ws WebSocket context with config containing allowed_origins
  * @param headers HTTP request headers
@@ -142,7 +143,7 @@ ws_validate_origin (SocketWS_T ws, SocketHTTP_Headers_T headers)
   if (!ws->config.validate_origin)
     return 0;
 
-  origin = SocketHTTP_Headers_get (headers, "Origin");
+  origin = SocketHTTP_Headers_get_n (headers, "Origin", STRLEN_LIT ("Origin"));
   if (!origin)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Missing Origin header");
@@ -224,7 +225,8 @@ ws_write_subprotocol_header (char *buf,
   if (!subprotocols || !subprotocols[0])
     return 0;
 
-  /* Validate all subprotocols for CRLF injection (security fix for issue #3489) */
+  /* Validate all subprotocols for CRLF injection (security fix for issue #3489)
+   */
   for (proto = subprotocols; *proto; proto++)
     {
       if (ws_validate_no_crlf (*proto, "subprotocol") < 0)
@@ -415,7 +417,8 @@ ws_validate_websocket_upgrade_header (SocketWS_T ws,
                                       SocketHTTP_Headers_T headers,
                                       bool include_value)
 {
-  const char *upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
+  const char *upgrade
+      = SocketHTTP_Headers_get_n (headers, "Upgrade", STRLEN_LIT ("Upgrade"));
   if (!upgrade || strcasecmp (upgrade, SOCKETWS_UPGRADE_VALUE) != 0)
     {
       if (include_value)
@@ -440,7 +443,8 @@ ws_validate_connection_upgrade_header (SocketWS_T ws,
                                        SocketHTTP_Headers_T headers,
                                        bool include_value)
 {
-  const char *connection = SocketHTTP_Headers_get (headers, "Connection");
+  const char *connection = SocketHTTP_Headers_get_n (
+      headers, "Connection", STRLEN_LIT ("Connection"));
   if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     {
       if (include_value)
@@ -522,7 +526,8 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
   size_t accept_len;
   size_t expected_len;
 
-  accept = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Accept");
+  accept = SocketHTTP_Headers_get_n (
+      headers, "Sec-WebSocket-Accept", STRLEN_LIT ("Sec-WebSocket-Accept"));
   if (!accept)
     {
       ws_set_error (
@@ -570,7 +575,8 @@ ws_validate_negotiated_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
   const char *const *p;
   int found;
 
-  protocol = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Protocol");
+  protocol = SocketHTTP_Headers_get_n (
+      headers, "Sec-WebSocket-Protocol", STRLEN_LIT ("Sec-WebSocket-Protocol"));
   if (!protocol)
     return 0;
 
@@ -657,7 +663,10 @@ ws_parse_negotiated_extensions (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
   const char *extensions;
 
-  extensions = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Extensions");
+  extensions
+      = SocketHTTP_Headers_get_n (headers,
+                                  "Sec-WebSocket-Extensions",
+                                  STRLEN_LIT ("Sec-WebSocket-Extensions"));
   if (!extensions)
     return;
 
@@ -991,7 +1000,8 @@ ws_validate_client_key (SocketWS_T ws,
 {
   const char *key;
 
-  key = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Key");
+  key = SocketHTTP_Headers_get_n (
+      headers, "Sec-WebSocket-Key", STRLEN_LIT ("Sec-WebSocket-Key"));
   if (!key)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "Missing Sec-WebSocket-Key");
@@ -1023,7 +1033,8 @@ ws_validate_client_version (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
   const char *version;
 
-  version = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Version");
+  version = SocketHTTP_Headers_get_n (
+      headers, "Sec-WebSocket-Version", STRLEN_LIT ("Sec-WebSocket-Version"));
   if (!version || strcmp (version, SOCKETWS_PROTOCOL_VERSION) != 0)
     {
       ws_set_error (ws,
@@ -1086,7 +1097,8 @@ ws_negotiate_server_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
   char *token;
   char *saveptr = NULL;
 
-  protocol = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Protocol");
+  protocol = SocketHTTP_Headers_get_n (
+      headers, "Sec-WebSocket-Protocol", STRLEN_LIT ("Sec-WebSocket-Protocol"));
   if (!protocol || !ws->config.subprotocols)
     return;
 
@@ -1116,7 +1128,10 @@ ws_negotiate_server_compression (SocketWS_T ws, SocketHTTP_Headers_T headers)
   if (!ws->config.enable_permessage_deflate)
     return;
 
-  extensions = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Extensions");
+  extensions
+      = SocketHTTP_Headers_get_n (headers,
+                                  "Sec-WebSocket-Extensions",
+                                  STRLEN_LIT ("Sec-WebSocket-Extensions"));
 
   ws_parse_permessage_deflate_params (ws, extensions);
 
@@ -1232,15 +1247,19 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
   if (!request || !request->headers)
     return 0;
 
-  upgrade = SocketHTTP_Headers_get (request->headers, "Upgrade");
+  upgrade = SocketHTTP_Headers_get_n (
+      request->headers, "Upgrade", STRLEN_LIT ("Upgrade"));
   if (!upgrade || strcasecmp (upgrade, SOCKETWS_UPGRADE_VALUE) != 0)
     return 0;
 
-  connection = SocketHTTP_Headers_get (request->headers, "Connection");
+  connection = SocketHTTP_Headers_get_n (
+      request->headers, "Connection", STRLEN_LIT ("Connection"));
   if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     return 0;
 
-  version = SocketHTTP_Headers_get (request->headers, "Sec-WebSocket-Version");
+  version = SocketHTTP_Headers_get_n (request->headers,
+                                      "Sec-WebSocket-Version",
+                                      STRLEN_LIT ("Sec-WebSocket-Version"));
   if (!version)
     return 0;
 

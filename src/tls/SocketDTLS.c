@@ -1114,7 +1114,7 @@ dtls_parse_port_string (const char *port_str)
   long p = strtol (port_str, &endptr, 10);
   if (errno == ERANGE || endptr == port_str || *endptr != '\0')
     return 0;
-  if (p >= 1 && p <= 65535)
+  if (p >= 1 && p <= SOCKET_MAX_PORT)
     return (int)p;
   return 0;
 }

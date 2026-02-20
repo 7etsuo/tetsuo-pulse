@@ -17,8 +17,6 @@
 #include <assert.h>
 #include <string.h>
 
-/* Compile-time string literal length (avoids strlen at runtime) */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* Decimal base for numeric conversion */
 #define HTTP1_DECIMAL_BASE 10
@@ -1149,7 +1147,8 @@ add_current_header (SocketHTTP1_Parser_T parser)
   if (!SocketSecurity_check_add (name_len, value_len, &delta_temp)
       || !SocketSecurity_check_add (
           delta_temp, (size_t)HTTP1_HEADER_OVERHEAD, &delta)
-      || !SocketSecurity_check_add (parser->total_header_size, delta, &new_total))
+      || !SocketSecurity_check_add (
+          parser->total_header_size, delta, &new_total))
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
   parser->total_header_size = new_total;
