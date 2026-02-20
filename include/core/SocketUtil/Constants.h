@@ -13,11 +13,6 @@
  * @brief Common constants for ports, buffer sizes, and protocol limits.
  */
 
-/* ============================================================================
- * PORT VALIDATION CONSTANTS
- * ============================================================================
- */
-
 /**
  * @brief Maximum valid TCP/UDP port number (2^16 - 1).
  * @ingroup foundation
@@ -35,11 +30,6 @@
  * @see RFC 768 (UDP) - Port range 0-65535
  */
 #define SOCKET_MAX_PORT 65535
-
-/* ============================================================================
- * BUFFER SIZE CONSTANTS
- * ============================================================================
- */
 
 /**
  * @brief Standard initial buffer capacity for protocol message assembly.

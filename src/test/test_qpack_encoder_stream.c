@@ -41,11 +41,6 @@
     }                                                                        \
   while (0)
 
-/* ============================================================================
- * STREAM TYPE VALIDATION TESTS (RFC 9204 Section 4.2)
- * ============================================================================
- */
-
 /**
  * Test encoder stream type validation.
  *
@@ -77,11 +72,6 @@ test_stream_type_validation (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * STREAM LIFECYCLE TESTS
- * ============================================================================
- */
 
 /**
  * Test encoder stream creation.
@@ -196,11 +186,6 @@ test_stream_lifecycle_null_params (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * SET DYNAMIC TABLE CAPACITY TESTS (RFC 9204 Section 4.3.1)
- * ============================================================================
- */
 
 /**
  * Test Set Dynamic Table Capacity instruction encoding.
@@ -335,11 +320,6 @@ test_write_capacity_not_init (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * INSERT WITH NAME REFERENCE TESTS (RFC 9204 Section 4.3.2)
- * ============================================================================
- */
 
 /**
  * Test Insert with Name Reference - static table.
@@ -504,11 +484,6 @@ test_write_insert_nameref_huffman (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * INSERT WITH LITERAL NAME TESTS (RFC 9204 Section 4.3.3)
- * ============================================================================
- */
-
 /**
  * Test Insert with Literal Name - basic.
  *
@@ -653,11 +628,6 @@ test_write_insert_literal_null_value (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * DUPLICATE INSTRUCTION TESTS (RFC 9204 Section 4.3.4)
- * ============================================================================
- */
-
 /**
  * Test Duplicate instruction encoding.
  *
@@ -732,11 +702,6 @@ test_write_duplicate_not_init (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * BUFFER MANAGEMENT TESTS
- * ============================================================================
- */
 
 /**
  * Test buffer management - get, reset, size.
@@ -822,11 +787,6 @@ test_buffer_accumulation (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * RESULT STRING TESTS
- * ============================================================================
- */
-
 /**
  * Test result string function.
  */
@@ -897,11 +857,6 @@ test_result_strings (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * SECURITY TESTS
- * ============================================================================
- */
 
 /**
  * Test NULL parameter handling for instruction functions.
@@ -975,11 +930,6 @@ test_large_values (void)
   Arena_dispose (&arena);
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * TEST SUITE
- * ============================================================================
- */
 
 static void
 run_stream_type_tests (void)
@@ -1058,11 +1008,6 @@ run_security_tests (void)
   test_instruction_null_params ();
   test_large_values ();
 }
-
-/* ============================================================================
- * INSERT WITH NAME REFERENCE PRIMITIVE TESTS (RFC 9204 Section 4.3.2)
- * ============================================================================
- */
 
 /**
  * Test encode_insert_nameref basic functionality.

@@ -16,11 +16,6 @@
 
 #include <stdio.h>
 
-/* ============================================================================
- * Transport Error Code Names (RFC 9000 Section 20.1)
- * ============================================================================
- */
-
 static const char *transport_error_names[] = {
   "NO_ERROR",                  /* 0x00 */
   "INTERNAL_ERROR",            /* 0x01 */
@@ -43,11 +38,6 @@ static const char *transport_error_names[] = {
 
 #define TRANSPORT_ERROR_COUNT \
   (sizeof (transport_error_names) / sizeof (transport_error_names[0]))
-
-/* ============================================================================
- * TLS Alert Names (RFC 8446 Section 6)
- * ============================================================================
- */
 
 typedef struct
 {
@@ -96,11 +86,6 @@ SocketQUIC_tls_alert_string (uint8_t alert)
     }
   return NULL;
 }
-
-/* ============================================================================
- * String Conversion
- * ============================================================================
- */
 
 const char *
 SocketQUIC_error_string (uint64_t code)

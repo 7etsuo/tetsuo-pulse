@@ -23,11 +23,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Config Defaults Tests
- * ============================================================================
- */
-
 TEST (h3_server_config_defaults)
 {
   SocketHTTP3_ServerConfig config;
@@ -52,11 +47,6 @@ TEST (h3_server_config_defaults_null)
   SocketHTTP3_ServerConfig_defaults (NULL);
 }
 
-/* ============================================================================
- * QUIC Server Config Defaults Tests
- * ============================================================================
- */
-
 TEST (h3_server_quic_config_defaults)
 {
   SocketQUICServerConfig config;
@@ -75,11 +65,6 @@ TEST (h3_server_quic_config_defaults)
   ASSERT_EQ (0, strcmp (config.alpn, "h3"));
   ASSERT_EQ (256U, config.max_connections);
 }
-
-/* ============================================================================
- * Server Creation Tests
- * ============================================================================
- */
 
 TEST (h3_server_new_valid)
 {
@@ -114,11 +99,6 @@ TEST (h3_server_new_null_config)
   ASSERT_NULL (server);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Lifecycle Tests
- * ============================================================================
- */
 
 TEST (h3_server_close_null)
 {
@@ -173,11 +153,6 @@ TEST (h3_server_active_connections_null)
   ASSERT_EQ (0U, SocketHTTP3_Server_active_connections (NULL));
 }
 
-/* ============================================================================
- * Handler Registration Tests
- * ============================================================================
- */
-
 static void
 dummy_handler (SocketHTTP3_Request_T req,
                const SocketHTTP_Headers_T headers,
@@ -214,11 +189,6 @@ TEST (h3_server_handler_null_server)
   SocketHTTP3_Server_on_request (NULL, dummy_handler, NULL);
 }
 
-/* ============================================================================
- * Start / Poll Tests
- * ============================================================================
- */
-
 TEST (h3_server_poll_before_start)
 {
   Arena_T arena = Arena_new ();
@@ -249,11 +219,6 @@ TEST (h3_server_start_null)
   int rc = SocketHTTP3_Server_start (NULL);
   ASSERT_EQ (-1, rc);
 }
-
-/* ============================================================================
- * Request_new_incoming Tests
- * ============================================================================
- */
 
 TEST (h3_server_request_new_incoming_valid)
 {
@@ -334,11 +299,6 @@ TEST (h3_server_request_new_incoming_reject_server_bidi)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Entry point
- * ============================================================================
- */
 
 int
 main (void)

@@ -23,11 +23,6 @@
 #include "http/qpack/SocketQPACKEncoderStream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * INSERT COUNT INCREMENT ENCODE/DECODE (RFC 9204 Section 4.4.3)
- * ============================================================================
- */
-
 TEST (qpack_sync_insert_count_increment_roundtrip)
 {
   unsigned char buf[32];
@@ -104,11 +99,6 @@ TEST (qpack_sync_insert_count_increment_null_params)
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * APPLY INSERT COUNT INCREMENT (RFC 9204 Section 4.4.3)
- * ============================================================================
- */
-
 TEST (qpack_sync_apply_insert_count_inc_basic)
 {
   uint64_t known_received_count = 0;
@@ -154,11 +144,6 @@ TEST (qpack_sync_apply_insert_count_inc_null)
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
 
-/* ============================================================================
- * VALIDATE INSERT COUNT INCREMENT
- * ============================================================================
- */
-
 TEST (qpack_sync_validate_insert_count_inc)
 {
   /* Valid: increment that doesn't exceed insert_count */
@@ -178,11 +163,6 @@ TEST (qpack_sync_validate_insert_count_inc)
   result = SocketQPACK_validate_insert_count_inc (5, 20, 0);
   ASSERT_EQ (result, QPACK_STREAM_ERR_INVALID_INDEX);
 }
-
-/* ============================================================================
- * SECTION ACKNOWLEDGMENT (RFC 9204 Section 4.4.1)
- * ============================================================================
- */
 
 TEST (qpack_sync_section_ack_roundtrip)
 {
@@ -257,11 +237,6 @@ TEST (qpack_sync_section_ack_incomplete)
       = SocketQPACK_decode_section_ack (buf, 1, &stream_id, &consumed);
   ASSERT_EQ (result, QPACK_STREAM_ERR_BUFFER_FULL);
 }
-
-/* ============================================================================
- * STREAM CANCELLATION (RFC 9204 Section 4.4.2)
- * ============================================================================
- */
 
 TEST (qpack_sync_stream_cancel_roundtrip)
 {
@@ -382,11 +357,6 @@ TEST (qpack_sync_per_stream_ref_tracking)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * DECODER INSTRUCTION IDENTIFICATION
- * ============================================================================
- */
-
 TEST (qpack_sync_identify_decoder_instruction)
 {
   /* Section Ack: 1xxxxxxx */
@@ -413,11 +383,6 @@ TEST (qpack_sync_identify_decoder_instruction)
   ASSERT_EQ (SocketQPACK_identify_decoder_instruction (0x15),
              QPACK_DINSTR_TYPE_INSERT_COUNT_INC);
 }
-
-/* ============================================================================
- * DECODE DECODER INSTRUCTION (UNIFIED)
- * ============================================================================
- */
 
 TEST (qpack_sync_decode_decoder_instruction_section_ack)
 {
@@ -470,11 +435,6 @@ TEST (qpack_sync_decode_decoder_instruction_null)
       = SocketQPACK_decode_decoder_instruction (buf, 1, NULL, &consumed);
   ASSERT_EQ (result, QPACK_STREAM_ERR_NULL_PARAM);
 }
-
-/* ============================================================================
- * DECODER STREAM LIFECYCLE
- * ============================================================================
- */
 
 TEST (qpack_sync_decoder_stream_new)
 {
@@ -542,11 +502,6 @@ TEST (qpack_sync_decoder_stream_validate_id)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * DECODER STREAM WRITE INSTRUCTIONS
- * ============================================================================
- */
 
 TEST (qpack_sync_decoder_stream_write_section_ack)
 {
@@ -667,11 +622,6 @@ TEST (qpack_sync_decoder_stream_write_not_init)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * BUFFER MANAGEMENT
- * ============================================================================
- */
-
 TEST (qpack_sync_decoder_stream_buffer_management)
 {
   Arena_T arena = Arena_new ();
@@ -765,11 +715,6 @@ TEST (qpack_sync_decoder_stream_multiple_instructions)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * ENCODER STREAM LIFECYCLE
- * ============================================================================
- */
-
 TEST (qpack_sync_encoder_stream_new)
 {
   Arena_T arena = Arena_new ();
@@ -780,11 +725,6 @@ TEST (qpack_sync_encoder_stream_new)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * KNOWN RECEIVED COUNT TRACKING SCENARIO
- * ============================================================================
- */
 
 TEST (qpack_sync_known_received_count_scenario)
 {
@@ -826,11 +766,6 @@ TEST (qpack_sync_known_received_count_scenario)
   ASSERT_EQ (result, QPACK_STREAM_ERR_INVALID_INDEX);
   ASSERT_EQ (known_received_count, 15); /* Unchanged */
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

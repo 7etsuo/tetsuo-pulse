@@ -20,11 +20,6 @@
 #include <ctype.h>
 #include <errno.h>
 
-/* ============================================================================
- * Configuration Functions
- * ============================================================================
- */
-
 void
 Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config)
 {
@@ -446,11 +441,6 @@ Socket_simple_proxy_type_name (SocketSimple_ProxyType type)
     }
 }
 
-/* ============================================================================
- * Synchronous Connection
- * ============================================================================
- */
-
 /* Helper to build core config from simple config */
 static void
 build_core_config (const SocketSimple_ProxyConfig *simple,
@@ -610,11 +600,6 @@ Socket_simple_proxy_connect_tls (const SocketSimple_ProxyConfig *config,
   return NULL;
 #endif
 }
-
-/* ============================================================================
- * Tunnel on Existing Socket
- * ============================================================================
- */
 
 int
 Socket_simple_proxy_tunnel (SocketSimple_Socket_T sock,

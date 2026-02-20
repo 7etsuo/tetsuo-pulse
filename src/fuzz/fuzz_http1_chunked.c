@@ -200,17 +200,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Direct fuzzed chunked body parsing
-     * ==================================================================== */
     test_chunked_request (
         arena, (const char *)data, size, chunked_request_prefix, 0);
     test_chunked_request (
         arena, (const char *)data, size, chunked_request_prefix, 1);
 
-    /* ====================================================================
-     * Test 2: Valid chunked encodings
-     * ==================================================================== */
     {
       const char *valid_chunked[] = {
         /* Single chunk */
@@ -270,9 +264,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Malformed chunked encodings
-     * ==================================================================== */
     {
       const char *malformed_chunked[] = {
         /* Missing final chunk */
@@ -358,9 +349,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: Chunked with trailer headers
-     * ==================================================================== */
     {
       const char *chunked_trailers[] = {
         /* Valid trailers */
@@ -406,9 +394,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Chunk extension parsing
-     * ==================================================================== */
     {
       const char *extension_tests[] = {
         /* Simple extension */
@@ -449,9 +434,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Chunk size edge cases
-     * ==================================================================== */
     {
       const char *size_tests[] = {
         /* Zero (final only) */
@@ -488,14 +470,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Chunk encoding output
-     * ==================================================================== */
     test_chunk_encoding (data, size);
 
-    /* ====================================================================
-     * Test 8: Build chunked body from fuzz data
-     * ==================================================================== */
     if (size > 10)
       {
         char chunked_body[16384];
@@ -554,9 +530,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
 
-    /* ====================================================================
-     * Test 9: Incremental byte-by-byte parsing
-     * ==================================================================== */
     {
       const char *test_body = "5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n";
       size_t test_len = strlen (test_body);

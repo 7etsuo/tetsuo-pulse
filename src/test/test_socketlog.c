@@ -75,7 +75,9 @@ test_callback (void *userdata,
 
   if (component)
     {
-      strncpy (test_state.last_component, component, sizeof (test_state.last_component) - 1);
+      strncpy (test_state.last_component,
+               component,
+               sizeof (test_state.last_component) - 1);
       test_state.last_component[sizeof (test_state.last_component) - 1] = '\0';
     }
   else
@@ -85,7 +87,9 @@ test_callback (void *userdata,
 
   if (message)
     {
-      strncpy (test_state.last_message, message, sizeof (test_state.last_message) - 1);
+      strncpy (test_state.last_message,
+               message,
+               sizeof (test_state.last_message) - 1);
       test_state.last_message[sizeof (test_state.last_message) - 1] = '\0';
     }
   else
@@ -110,14 +114,21 @@ test_structured_callback (void *userdata,
 
   if (component)
     {
-      strncpy (structured_state.last_component, component, sizeof (structured_state.last_component) - 1);
-      structured_state.last_component[sizeof (structured_state.last_component) - 1] = '\0';
+      strncpy (structured_state.last_component,
+               component,
+               sizeof (structured_state.last_component) - 1);
+      structured_state
+          .last_component[sizeof (structured_state.last_component) - 1]
+          = '\0';
     }
 
   if (message)
     {
-      strncpy (structured_state.last_message, message, sizeof (structured_state.last_message) - 1);
-      structured_state.last_message[sizeof (structured_state.last_message) - 1] = '\0';
+      strncpy (structured_state.last_message,
+               message,
+               sizeof (structured_state.last_message) - 1);
+      structured_state.last_message[sizeof (structured_state.last_message) - 1]
+          = '\0';
     }
 
   structured_state.last_field_count = field_count < 10 ? field_count : 10;
@@ -131,7 +142,8 @@ test_structured_callback (void *userdata,
   if (context)
     {
       structured_state.context_present = 1;
-      memcpy (&structured_state.last_context, context, sizeof (SocketLogContext));
+      memcpy (
+          &structured_state.last_context, context, sizeof (SocketLogContext));
     }
   else
     {
@@ -140,11 +152,6 @@ test_structured_callback (void *userdata,
 
   (void)userdata;
 }
-
-/* ============================================================================
- * Basic Functionality Tests
- * ============================================================================
- */
 
 TEST (socketlog_levelname_valid_levels)
 {
@@ -208,11 +215,6 @@ TEST (socketlog_level_filtering)
   SocketLog_setcallback (NULL, NULL);
   SocketLog_setlevel (SOCKET_LOG_INFO);
 }
-
-/* ============================================================================
- * Callback Management Tests
- * ============================================================================
- */
 
 TEST (socketlog_setcallback_receives_messages)
 {
@@ -286,16 +288,12 @@ TEST (socketlog_callback_with_null_message)
   SocketLog_setcallback (NULL, NULL);
 }
 
-/* ============================================================================
- * Formatted Logging Tests
- * ============================================================================
- */
-
 TEST (socketlog_emitf_basic_formatting)
 {
   reset_test_state ();
   SocketLog_setcallback (test_callback, NULL);
-  SocketLog_emitf (SOCKET_LOG_INFO, "Test", "Value: %d, String: %s", 42, "hello");
+  SocketLog_emitf (
+      SOCKET_LOG_INFO, "Test", "Value: %d, String: %s", 42, "hello");
 
   ASSERT_EQ (test_state.call_count, 1);
   ASSERT (strcmp (test_state.last_message, "Value: 42, String: hello") == 0);
@@ -321,7 +319,8 @@ TEST (socketlog_emitf_buffer_truncation)
   ASSERT_EQ (msg_len, SOCKET_LOG_BUFFER_SIZE - 1);
 
   /* Check for truncation suffix */
-  const char *suffix = test_state.last_message + msg_len - SOCKET_LOG_TRUNCATION_SUFFIX_LEN;
+  const char *suffix
+      = test_state.last_message + msg_len - SOCKET_LOG_TRUNCATION_SUFFIX_LEN;
   ASSERT (strcmp (suffix, SOCKET_LOG_TRUNCATION_SUFFIX) == 0);
 
   /* Cleanup */
@@ -330,7 +329,10 @@ TEST (socketlog_emitf_buffer_truncation)
 
 /* Helper for testing emitfv with NULL format */
 static void
-test_emitfv_null_helper (SocketLogLevel level, const char *component, const char *fmt, ...)
+test_emitfv_null_helper (SocketLogLevel level,
+                         const char *component,
+                         const char *fmt,
+                         ...)
 {
   va_list args;
   va_start (args, fmt);
@@ -352,11 +354,6 @@ TEST (socketlog_emitfv_null_format_string)
   /* Cleanup */
   SocketLog_setcallback (NULL, NULL);
 }
-
-/* ============================================================================
- * Thread-Local Context Tests
- * ============================================================================
- */
 
 TEST (socketlog_setcontext_getcontext_roundtrip)
 {
@@ -425,28 +422,22 @@ TEST (socketlog_context_null_termination_enforcement)
   ASSERT_EQ (retrieved->request_id[SOCKET_LOG_ID_SIZE - 1], '\0');
 }
 
-/* ============================================================================
- * Structured Logging Tests
- * ============================================================================
- */
-
 TEST (socketlog_emit_structured_with_callback)
 {
   reset_test_state ();
   SocketLog_setstructuredcallback (test_structured_callback, NULL);
 
-  SocketLogField fields[] = {
-    { "fd", "42" },
-    { "bytes", "1024" },
-    { "peer", "192.168.1.1" }
-  };
+  SocketLogField fields[]
+      = { { "fd", "42" }, { "bytes", "1024" }, { "peer", "192.168.1.1" } };
 
-  SocketLog_emit_structured (SOCKET_LOG_INFO, "Socket", "Connection established", fields, 3);
+  SocketLog_emit_structured (
+      SOCKET_LOG_INFO, "Socket", "Connection established", fields, 3);
 
   ASSERT_EQ (structured_state.call_count, 1);
   ASSERT_EQ (structured_state.last_level, SOCKET_LOG_INFO);
   ASSERT (strcmp (structured_state.last_component, "Socket") == 0);
-  ASSERT (strcmp (structured_state.last_message, "Connection established") == 0);
+  ASSERT (strcmp (structured_state.last_message, "Connection established")
+          == 0);
   ASSERT_EQ (structured_state.last_field_count, 3);
 
   /* Cleanup */
@@ -459,10 +450,7 @@ TEST (socketlog_emit_structured_fallback_to_default)
   SocketLog_setcallback (test_callback, NULL);
   SocketLog_setstructuredcallback (NULL, NULL);
 
-  SocketLogField fields[] = {
-    { "key1", "value1" },
-    { "key2", "value2" }
-  };
+  SocketLogField fields[] = { { "key1", "value1" }, { "key2", "value2" } };
 
   SocketLog_emit_structured (SOCKET_LOG_INFO, "Test", "Message", fields, 2);
 
@@ -526,8 +514,8 @@ TEST (socketlog_structured_fallback_escapes_injection_chars)
   SocketLog_emit_structured (SOCKET_LOG_INFO, "Test", "Msg", fields, 1);
 
   ASSERT_EQ (test_state.call_count, 1);
-  ASSERT_NOT_NULL (strstr (test_state.last_message,
-                           "user\\nname=line1\\r\\nline2\\=ok"));
+  ASSERT_NOT_NULL (
+      strstr (test_state.last_message, "user\\nname=line1\\r\\nline2\\=ok"));
   ASSERT_NULL (strchr (test_state.last_message, '\n'));
   ASSERT_NULL (strchr (test_state.last_message, '\r'));
 
@@ -542,9 +530,9 @@ TEST (socketlog_structured_field_with_null_key_value)
 
   SocketLogField fields[] = {
     { "valid", "field" },
-    { NULL, "value" },      /* NULL key - formatting stops here */
-    { "key", NULL },        /* NULL value - never reached */
-    { "another", "valid" }  /* Never reached */
+    { NULL, "value" },     /* NULL key - formatting stops here */
+    { "key", NULL },       /* NULL value - never reached */
+    { "another", "valid" } /* Never reached */
   };
 
   SocketLog_emit_structured (SOCKET_LOG_INFO, "Test", "Msg", fields, 4);
@@ -560,11 +548,6 @@ TEST (socketlog_structured_field_with_null_key_value)
   SocketLog_setcallback (NULL, NULL);
 }
 
-/* ============================================================================
- * Thread Safety Tests
- * ============================================================================
- */
-
 typedef struct
 {
   int thread_id;
@@ -578,7 +561,11 @@ thread_log_worker (void *arg)
 
   for (int i = 0; i < args->iterations; i++)
     {
-      SocketLog_emitf (SOCKET_LOG_INFO, "Thread", "Thread %d iteration %d", args->thread_id, i);
+      SocketLog_emitf (SOCKET_LOG_INFO,
+                       "Thread",
+                       "Thread %d iteration %d",
+                       args->thread_id,
+                       i);
     }
 
   return NULL;
@@ -620,7 +607,8 @@ thread_context_worker (void *arg)
 
   SocketLogContext ctx = { 0 };
   snprintf (ctx.trace_id, sizeof (ctx.trace_id), "thread-%d-trace", thread_id);
-  snprintf (ctx.request_id, sizeof (ctx.request_id), "thread-%d-req", thread_id);
+  snprintf (
+      ctx.request_id, sizeof (ctx.request_id), "thread-%d-req", thread_id);
   ctx.connection_fd = thread_id * 100;
 
   SocketLog_setcontext (&ctx);
@@ -631,8 +619,10 @@ thread_context_worker (void *arg)
 
   char expected_trace[SOCKET_LOG_ID_SIZE];
   char expected_request[SOCKET_LOG_ID_SIZE];
-  snprintf (expected_trace, sizeof (expected_trace), "thread-%d-trace", thread_id);
-  snprintf (expected_request, sizeof (expected_request), "thread-%d-req", thread_id);
+  snprintf (
+      expected_trace, sizeof (expected_trace), "thread-%d-trace", thread_id);
+  snprintf (
+      expected_request, sizeof (expected_request), "thread-%d-req", thread_id);
 
   ASSERT (strcmp (retrieved->trace_id, expected_trace) == 0);
   ASSERT (strcmp (retrieved->request_id, expected_request) == 0);
@@ -661,11 +651,6 @@ TEST (socketlog_context_isolation_across_threads)
     }
 }
 
-/* ============================================================================
- * Edge Cases and Error Handling
- * ============================================================================
- */
-
 TEST (socketlog_large_structured_field_array)
 {
   reset_test_state ();
@@ -683,7 +668,8 @@ TEST (socketlog_large_structured_field_array)
       fields[i].value = values[i];
     }
 
-  SocketLog_emit_structured (SOCKET_LOG_INFO, "Test", "Many fields", fields, 100);
+  SocketLog_emit_structured (
+      SOCKET_LOG_INFO, "Test", "Many fields", fields, 100);
 
   ASSERT_EQ (test_state.call_count, 1);
 
@@ -710,11 +696,6 @@ TEST (socketlog_empty_strings)
   /* Cleanup */
   SocketLog_setcallback (NULL, NULL);
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

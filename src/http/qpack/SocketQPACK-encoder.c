@@ -42,11 +42,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Insert with Literal Name instruction mask: 01xxxxxx */
 #define QPACK_INSERT_LITERAL_MASK 0x40
 
@@ -64,11 +59,6 @@
 
 /** Maximum integer encoding buffer size */
 #define QPACK_INT_ENCODE_BUF_SIZE 16
-
-/* ============================================================================
- * DYNAMIC TABLE INSERTION (INTERNAL)
- * ============================================================================
- */
 
 /**
  * @brief Insert entry with literal name into dynamic table.
@@ -195,11 +185,6 @@ qpack_insert_literal_to_table (SocketQPACK_Table_T table,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * ENCODE INSERT WITH LITERAL NAME (RFC 9204 Section 4.3.3)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_insert_literal_name (unsigned char *buf,
@@ -335,11 +320,6 @@ SocketQPACK_encode_insert_literal_name (unsigned char *buf,
   *bytes_written = offset;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE INSERT WITH LITERAL NAME (RFC 9204 Section 4.3.3)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
@@ -485,11 +465,6 @@ SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
   *bytes_consumed = offset;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DYNAMIC TABLE CREATION
- * ============================================================================
- */
 
 SocketQPACK_Table_T
 SocketQPACK_Table_new (Arena_T arena, size_t max_size)
@@ -754,13 +729,6 @@ SocketQPACK_Table_release_stream_refs (SocketQPACK_Table_T table,
     }
   table->stream_ref_count = write;
 }
-
-/* ============================================================================
- * QPACK ENCODER (RFC 9204 Section 2.1.4)
- *
- * Encoder state management with Known Received Count tracking.
- * ============================================================================
- */
 
 /**
  * @brief QPACK encoder internal structure.

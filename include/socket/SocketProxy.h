@@ -100,11 +100,6 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 struct SocketHTTP_Headers;
 typedef struct SocketHTTP_Headers *SocketHTTP_Headers_T;
 
-/* ============================================================================
- * Opaque Type
- * ============================================================================
- */
-
 /**
  * @brief Opaque context for managing asynchronous proxy tunneling operations.
  * @ingroup core_io
@@ -123,11 +118,6 @@ typedef struct SocketHTTP_Headers *SocketHTTP_Headers_T;
 #define T SocketProxy_Conn_T
 typedef struct T *T;
 
-/* ============================================================================
- * Exception
- * ============================================================================
- */
-
 /**
  * @brief Exception raised on general proxy operation failures.
  * @ingroup core_io
@@ -142,12 +132,6 @@ typedef struct T *T;
  * @see docs/ERROR_HANDLING.md for exception handling guidelines.
  */
 extern const Except_T SocketProxy_Failed;
-
-/* ============================================================================
- * Configuration Constants
- * @ingroup core_io
- * ============================================================================
- */
 
 /**
  * @brief Default timeout for establishing connection to proxy server.
@@ -240,11 +224,6 @@ extern const Except_T SocketProxy_Failed;
 #define SOCKET_PROXY_DEFAULT_HTTPS_PORT 8080
 #endif
 
-/* ============================================================================
- * Proxy Types
- * ============================================================================
- */
-
 /**
  * @brief Enumeration of supported proxy protocol types.
  * @ingroup core_io
@@ -272,11 +251,6 @@ typedef enum
   SOCKET_PROXY_SOCKS5H  /**< SOCKS5 with hostname resolution performed by proxy
                            server. */
 } SocketProxyType;
-
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
 
 /**
  * @brief Result codes for proxy operations.
@@ -315,11 +289,6 @@ typedef enum
   PROXY_ERROR_CANCELLED    /**< Operation explicitly cancelled by user. */
 } SocketProxy_Result;
 
-/* ============================================================================
- * Connection State
- * ============================================================================
- */
-
 /**
  * @brief States in the proxy connection state machine.
  * @ingroup core_io
@@ -354,11 +323,6 @@ typedef enum
   PROXY_STATE_FAILED,    /**< Terminal: operation failed with error. */
   PROXY_STATE_CANCELLED  /**< Terminal: operation cancelled by user. */
 } SocketProxy_State;
-
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
 
 /**
  * @brief Configuration structure for proxy connections.
@@ -417,11 +381,6 @@ typedef struct SocketProxy_Config
                                (default: 30s). */
 } SocketProxy_Config;
 
-/* ============================================================================
- * Configuration Helpers
- * ============================================================================
- */
-
 /**
  * @brief Initialize proxy configuration with safe default values.
  * @ingroup core_io
@@ -473,11 +432,6 @@ extern void SocketProxy_config_defaults (SocketProxy_Config *config);
 extern int SocketProxy_parse_url (const char *url,
                                   SocketProxy_Config *config,
                                   Arena_T arena);
-
-/* ============================================================================
- * Synchronous API
- * ============================================================================
- */
 
 /**
  * @brief Establish synchronous connection to target via proxy tunnel.
@@ -570,11 +524,6 @@ SocketProxy_tunnel (Socket_T socket,
                     const char *target_host,
                     int target_port,
                     Arena_T arena /* optional for TLS context allocation */);
-
-/* ============================================================================
- * Asynchronous API
- * ============================================================================
- */
 
 /**
  * @brief Initialize and start fully asynchronous proxy tunneling operation.
@@ -800,11 +749,6 @@ extern void SocketProxy_Conn_cancel (T conn);
  */
 extern void SocketProxy_Conn_free (T *conn);
 
-/* ============================================================================
- * State Query
- * ============================================================================
- */
-
 /**
  * @brief Retrieve current state of proxy connection.
  * @ingroup core_io
@@ -870,11 +814,6 @@ extern SocketProxy_Result SocketProxy_Conn_result (T conn);
  * @see docs/LOGGING.md for error logging best practices.
  */
 extern const char *SocketProxy_Conn_error (T conn);
-
-/* ============================================================================
- * Poll Integration
- * ============================================================================
- */
 
 /**
  * @brief Get underlying file descriptor for poll integration.
@@ -949,11 +888,6 @@ extern unsigned SocketProxy_Conn_events (T conn);
  * @see docs/TIMEOUTS.md for timeout configuration and behavior.
  */
 extern int SocketProxy_Conn_next_timeout_ms (T conn);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Convert SocketProxy_Result code to descriptive string.

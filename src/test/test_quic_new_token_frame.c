@@ -16,11 +16,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * NEW_TOKEN Frame Encoding Tests
- * ============================================================================
- */
-
 TEST (frame_new_token_encode_basic)
 {
   uint8_t buf[128];
@@ -161,11 +156,6 @@ TEST (frame_new_token_roundtrip)
   ASSERT (memcmp (decoded_token, original_token, original_len) == 0);
 }
 
-/* ============================================================================
- * NEW_TOKEN Frame Decoding Tests
- * ============================================================================
- */
-
 TEST (frame_new_token_decode_wrong_type)
 {
   uint8_t buf[128];
@@ -299,11 +289,6 @@ TEST (frame_new_token_integration_with_parser)
   ASSERT (memcmp (frame.data.new_token.token, token, token_len) == 0);
   ASSERT_EQ (encoded_len, consumed);
 }
-
-/* ============================================================================
- * Integer Overflow Protection Tests (Issue #766)
- * ============================================================================
- */
 
 TEST (frame_new_token_encode_overflow_size_max)
 {

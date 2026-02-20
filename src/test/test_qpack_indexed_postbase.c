@@ -42,11 +42,6 @@
     }                                                                        \
   while (0)
 
-/* ============================================================================
- * PATTERN IDENTIFICATION TESTS
- * ============================================================================
- */
-
 /**
  * Test pattern identification for post-base indexed field line.
  *
@@ -92,11 +87,6 @@ test_pattern_identification (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * ENCODE TESTS
- * ============================================================================
- */
 
 /**
  * Test encoding post-base indices that fit in 4-bit prefix (0-14).
@@ -224,11 +214,6 @@ test_encode_errors (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * DECODE TESTS
- * ============================================================================
- */
 
 /**
  * Test decoding post-base indices from 4-bit prefix.
@@ -388,11 +373,6 @@ test_decode_errors (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
-
 /**
  * Test encode -> decode round-trip for various indices.
  */
@@ -437,11 +417,6 @@ test_roundtrip (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * VALIDATION TESTS
- * ============================================================================
- */
 
 /**
  * Test post-base index validation against insert count bounds.
@@ -521,11 +496,6 @@ test_convert_to_absolute (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * TABLE LOOKUP TESTS
- * ============================================================================
- */
 
 /**
  * Test looking up entries using post-base index.
@@ -634,11 +604,6 @@ test_table_lookup_no_postbase (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * BOUNDARY TESTS
- * ============================================================================
- */
-
 /**
  * Test boundary value at max 4-bit prefix (14/15 transition).
  */
@@ -713,11 +678,6 @@ test_max_index (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * TEST SUITE
- * ============================================================================
- */
 
 static void
 run_pattern_tests (void)

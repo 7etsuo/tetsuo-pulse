@@ -20,15 +20,6 @@
 #include "quic/SocketQUICCrypto.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Vectors
- * ============================================================================
- *
- * Initial 1-RTT secrets for testing key update derivation.
- * These are synthetic values for testing - the specific values matter less
- * than verifying the derivation chain is consistent.
- */
-
 /* 32-byte secret for AES-128-GCM (SHA-256) */
 static const uint8_t test_write_secret_sha256[32]
     = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
@@ -54,11 +45,6 @@ static const uint8_t test_read_secret_sha384[48] = {
   0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54,
   0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60
 };
-
-/* ============================================================================
- * Initialization Tests
- * ============================================================================
- */
 
 TEST (key_update_init_null)
 {
@@ -88,11 +74,6 @@ TEST (key_update_init_zeroes_state)
   ASSERT_EQ (0, state.decryption_failures);
   ASSERT_EQ (UINT64_MAX, state.lowest_pn_current_phase);
 }
-
-/* ============================================================================
- * Key Phase Bit Tests
- * ============================================================================
- */
 
 TEST (key_phase_get_zero)
 {
@@ -129,11 +110,6 @@ TEST (key_phase_preserves_other_bits)
   SocketQUICCrypto_set_key_phase (&first_byte, 0);
   ASSERT_EQ (0x5B, first_byte);
 }
-
-/* ============================================================================
- * AEAD Limits Tests
- * ============================================================================
- */
 
 TEST (aead_limits_aes_128_gcm)
 {
@@ -175,11 +151,6 @@ TEST (aead_limits_invalid)
   ASSERT_EQ (0, conf);
   ASSERT_EQ (0, integ);
 }
-
-/* ============================================================================
- * TLS-Dependent Tests
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 
@@ -1064,11 +1035,6 @@ TEST (key_update_clear_zeroes_secrets)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

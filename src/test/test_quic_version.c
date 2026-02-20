@@ -18,11 +18,6 @@
 #include "quic/SocketQUICVersion.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Version Constant Value Tests
- * ============================================================================
- */
-
 TEST (quic_version_negotiation_value)
 {
   ASSERT_EQ (QUIC_VERSION_NEGOTIATION, 0x00000000);
@@ -37,11 +32,6 @@ TEST (quic_version_2_value)
 {
   ASSERT_EQ (QUIC_VERSION_2, 0x6b3343cf);
 }
-
-/* ============================================================================
- * GREASE Version Detection Tests
- * ============================================================================
- */
 
 TEST (quic_version_grease_0a0a0a0a)
 {
@@ -105,11 +95,6 @@ TEST (quic_version_not_grease_almost)
   ASSERT (!QUIC_VERSION_IS_GREASE (0x0b0a0a0a));
 }
 
-/* ============================================================================
- * IETF Reserved Version Tests
- * ============================================================================
- */
-
 TEST (quic_version_ietf_reserved_v1)
 {
   ASSERT (QUIC_VERSION_IS_IETF_RESERVED (QUIC_VERSION_1));
@@ -137,11 +122,6 @@ TEST (quic_version_not_ietf_reserved_high_bits)
   ASSERT (!QUIC_VERSION_IS_IETF_RESERVED (0xffffffff));
 }
 
-/* ============================================================================
- * Version Support Tests
- * ============================================================================
- */
-
 TEST (quic_version_supported_v1)
 {
   ASSERT (QUIC_VERSION_IS_SUPPORTED (QUIC_VERSION_1));
@@ -167,11 +147,6 @@ TEST (quic_version_not_supported_unknown)
   ASSERT (!QUIC_VERSION_IS_SUPPORTED (0x12345678));
   ASSERT (!QUIC_VERSION_IS_SUPPORTED (0xffffffff));
 }
-
-/* ============================================================================
- * Real Version Detection Tests
- * ============================================================================
- */
 
 TEST (quic_version_real_v1)
 {
@@ -199,11 +174,6 @@ TEST (quic_version_real_unknown)
   /* Unknown versions are still "real" - they just aren't supported */
   ASSERT (QUIC_VERSION_IS_REAL (0x12345678));
 }
-
-/* ============================================================================
- * Version Validation Function Tests
- * ============================================================================
- */
 
 TEST (quic_version_valid_v1)
 {
@@ -233,11 +203,6 @@ TEST (quic_version_invalid_unknown)
   ASSERT (!SocketQUIC_version_is_valid (0xffffffff));
 }
 
-/* ============================================================================
- * Version Negotiation Need Tests
- * ============================================================================
- */
-
 TEST (quic_version_negotiation_not_needed_v1)
 {
   ASSERT (!SocketQUIC_version_needs_negotiation (QUIC_VERSION_1));
@@ -264,11 +229,6 @@ TEST (quic_version_negotiation_needed_grease)
 {
   ASSERT (SocketQUIC_version_needs_negotiation (0x0a0a0a0a));
 }
-
-/* ============================================================================
- * Version String Tests
- * ============================================================================
- */
 
 TEST (quic_version_string_negotiation)
 {
@@ -311,11 +271,6 @@ TEST (quic_version_string_not_null)
   ASSERT_NOT_NULL (SocketQUIC_version_string (0x12345678));
   ASSERT_NOT_NULL (SocketQUIC_version_string (0xffffffff));
 }
-
-/* ============================================================================
- * Supported Versions List Tests
- * ============================================================================
- */
 
 TEST (quic_supported_versions_count)
 {
@@ -360,11 +315,6 @@ TEST (quic_supported_versions_null_count)
   const uint32_t *versions = SocketQUIC_supported_versions (NULL);
   ASSERT_NOT_NULL (versions);
 }
-
-/* ============================================================================
- * Version Negotiation Packet Creation Tests (RFC 9000 Section 6)
- * ============================================================================
- */
 
 TEST (quic_version_neg_create_basic)
 {
@@ -540,11 +490,6 @@ TEST (quic_version_neg_create_max_safe_count)
   /* Expected to fail with buffer size error, proving overflow check passed */
   ASSERT (result < 0);
 }
-
-/* ============================================================================
- * Version Negotiation Packet Parsing Tests
- * ============================================================================
- */
 
 TEST (quic_version_neg_parse_basic)
 {
@@ -770,11 +715,6 @@ TEST (quic_version_neg_roundtrip)
   ASSERT_EQ (versions_parsed[0], versions_orig[0]);
   ASSERT_EQ (versions_parsed[1], versions_orig[1]);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

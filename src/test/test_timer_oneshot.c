@@ -52,8 +52,6 @@ setup_signals (void)
   signal (SIGPIPE, SIG_IGN);
 }
 
-/* ==================== Basic One-Shot Timer Tests ==================== */
-
 TEST (timer_add_zero_delay)
 {
   setup_signals ();
@@ -168,8 +166,6 @@ TEST (timer_add_1000ms_delay)
   END_TRY;
 }
 
-/* ==================== Multiple Timers Tests ==================== */
-
 TEST (timer_add_multiple_different_delays)
 {
   setup_signals ();
@@ -232,8 +228,6 @@ TEST (timer_add_multiple_different_delays)
   END_TRY;
 }
 
-/* ==================== Edge Cases and Error Handling ==================== */
-
 TEST (timer_add_max_delay)
 {
   setup_signals ();
@@ -247,8 +241,8 @@ TEST (timer_add_max_delay)
   TRY
   {
     /* Add timer with maximum allowed delay */
-    timer = SocketTimer_add (poll, SOCKET_MAX_TIMER_DELAY_MS, timer_callback,
-                             (void *)&ctx);
+    timer = SocketTimer_add (
+        poll, SOCKET_MAX_TIMER_DELAY_MS, timer_callback, (void *)&ctx);
     ASSERT_NOT_NULL (timer);
 
     /* Timer shouldn't fire in short time */
@@ -276,8 +270,8 @@ TEST (timer_add_exceeds_max_delay)
   TRY
   {
     /* Try to add timer exceeding max delay - should raise exception */
-    SocketTimer_add (poll, SOCKET_MAX_TIMER_DELAY_MS + 1, timer_callback,
-                     (void *)&ctx);
+    SocketTimer_add (
+        poll, SOCKET_MAX_TIMER_DELAY_MS + 1, timer_callback, (void *)&ctx);
     ASSERT (0); /* Should not reach here */
   }
   EXCEPT (SocketTimer_Failed)
@@ -321,8 +315,6 @@ TEST (timer_add_negative_delay)
   ASSERT_EQ (exception_caught, 1);
 }
 
-/* ==================== Timing Accuracy Tests ==================== */
-
 TEST (timer_accuracy_within_tolerance)
 {
   setup_signals ();
@@ -363,8 +355,6 @@ TEST (timer_accuracy_within_tolerance)
   SocketPoll_free (&poll);
 }
 
-/* ==================== Overflow Protection Tests ==================== */
-
 TEST (timer_add_overflow_clamping)
 {
   setup_signals ();
@@ -396,8 +386,6 @@ TEST (timer_add_overflow_clamping)
   }
   END_TRY;
 }
-
-/* ==================== Timer Cancellation Tests ==================== */
 
 TEST (timer_add_then_cancel)
 {
@@ -464,8 +452,6 @@ TEST (timer_add_cancel_after_fire)
   END_TRY;
 }
 
-/* ==================== Timer Remaining Tests ==================== */
-
 TEST (timer_add_check_remaining)
 {
   setup_signals ();
@@ -506,8 +492,6 @@ TEST (timer_add_check_remaining)
   }
   END_TRY;
 }
-
-/* ==================== SocketPoll Integration Tests ==================== */
 
 TEST (timer_integration_with_poll)
 {
@@ -584,8 +568,6 @@ TEST (timer_poll_respects_timer_deadline)
   END_TRY;
 }
 
-/* ==================== Stress Tests ==================== */
-
 TEST (timer_add_many_timers)
 {
   setup_signals ();
@@ -604,8 +586,8 @@ TEST (timer_add_many_timers)
     for (int i = 0; i < num_timers; i++)
       {
         int delay = (i + 1) * 10; /* 10ms, 20ms, 30ms, ... */
-        SocketTimer_T timer
-            = SocketTimer_add (poll, delay, timer_callback, (void *)&contexts[i]);
+        SocketTimer_T timer = SocketTimer_add (
+            poll, delay, timer_callback, (void *)&contexts[i]);
         ASSERT_NOT_NULL (timer);
       }
 

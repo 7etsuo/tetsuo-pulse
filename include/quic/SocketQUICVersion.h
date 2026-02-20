@@ -30,11 +30,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Version Constants (RFC 9000 Section 15)
- * ============================================================================
- */
-
 /**
  * @brief QUIC protocol version identifiers.
  *
@@ -62,11 +57,6 @@ typedef enum
   QUIC_VERSION_2 = 0x6b3343cf
 
 } SocketQUIC_Version;
-
-/* ============================================================================
- * GREASE Version Detection (RFC 9000 Section 15)
- * ============================================================================
- */
 
 /**
  * @brief Check if a version is a GREASE version.
@@ -96,11 +86,6 @@ typedef enum
    | (((uint32_t)(nibble) & 0x0f) << 20) | (((uint32_t)(nibble) & 0x0f) << 12) \
    | (((uint32_t)(nibble) & 0x0f) << 4))
 
-/* ============================================================================
- * IETF Reserved Version Detection (RFC 9000 Section 15)
- * ============================================================================
- */
-
 /**
  * @brief Check if a version is in the IETF reserved range.
  *
@@ -111,11 +96,6 @@ typedef enum
  * @return Non-zero if v is IETF reserved (0x0000????), zero otherwise.
  */
 #define QUIC_VERSION_IS_IETF_RESERVED(v) (((v) & 0xFFFF0000) == 0)
-
-/* ============================================================================
- * Version Support Checking
- * ============================================================================
- */
 
 /**
  * @brief Check if a version is supported by this implementation.
@@ -140,11 +120,6 @@ typedef enum
  */
 #define QUIC_VERSION_IS_REAL(v) \
   ((v) != QUIC_VERSION_NEGOTIATION && !QUIC_VERSION_IS_GREASE (v))
-
-/* ============================================================================
- * Version Validation Functions
- * ============================================================================
- */
 
 /**
  * @brief Validate a version for use in a connection.
@@ -193,11 +168,6 @@ SocketQUIC_version_needs_negotiation (uint32_t version)
 
   return 1;
 }
-
-/* ============================================================================
- * Version String Conversion
- * ============================================================================
- */
 
 /**
  * @brief Get human-readable string for a QUIC version.
@@ -248,11 +218,6 @@ SocketQUIC_supported_versions (size_t *count)
 
   return versions;
 }
-
-/* ============================================================================
- * Version Negotiation Packet (RFC 9000 Section 6)
- * ============================================================================
- */
 
 /* Forward declarations for ConnectionID type */
 struct SocketQUICConnectionID;

@@ -58,11 +58,6 @@ string_repeat (char c, size_t count)
   return buffer;
 }
 
-/* ============================================================================
- * Security Limits Query Tests
- * ============================================================================
- */
-
 TEST (security_limits_populated)
 {
   SocketSecurityLimits limits;
@@ -95,11 +90,6 @@ TEST (security_limits_reasonable)
   ASSERT (limits.http_max_headers <= 1000);             /* <= 1000 headers */
   ASSERT (limits.http2_max_concurrent_streams <= 1000); /* <= 1000 streams */
 }
-
-/* ============================================================================
- * Memory Limits Tests (populate_memory_limits coverage)
- * ============================================================================
- */
 
 TEST (security_memory_limits_max_allocation)
 {
@@ -284,11 +274,6 @@ TEST (security_hpack_limits_null_safe)
   ASSERT (1);
 }
 
-/* ============================================================================
- * WebSocket Limits Tests (populate_ws_limits)
- * ============================================================================
- */
-
 TEST (security_populate_ws_limits_basic)
 {
   /* Test that populate_ws_limits sets correct values via get_limits */
@@ -384,11 +369,6 @@ TEST (security_populate_ws_limits_not_corrupted)
   ASSERT_EQ (limits.ws_max_frame_size, ws_frame);
   ASSERT_EQ (limits.ws_max_message_size, ws_message);
 }
-
-/* ============================================================================
- * TLS Limits Population Tests (populate_tls_limits)
- * ============================================================================
- */
 
 TEST (security_tls_limits_populated_when_enabled)
 {
@@ -494,8 +474,7 @@ TEST (security_tls_limits_alpn_total_bytes)
 
 #if SOCKET_HAS_TLS
   /* Verify ALPN total bytes matches expected value */
-  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_TOTAL_BYTES,
-             limits.tls_max_alpn_total_bytes);
+  ASSERT_EQ (SOCKET_TLS_MAX_ALPN_TOTAL_BYTES, limits.tls_max_alpn_total_bytes);
   /* Verify it's reasonable (typical value is 1024) */
   ASSERT (limits.tls_max_alpn_total_bytes >= 256);
   ASSERT (limits.tls_max_alpn_total_bytes <= 65536);
@@ -545,11 +524,6 @@ TEST (security_tls_limits_zero_initialization)
   ASSERT_EQ (0, limits.tls_max_alpn_total_bytes);
 #endif
 }
-
-/* ============================================================================
- * Integer Overflow Protection Tests
- * ============================================================================
- */
 
 TEST (security_overflow_multiply_safe)
 {
@@ -668,11 +642,6 @@ TEST (security_validation_functions)
   ASSERT (!SocketSecurity_check_add (SIZE_MAX, 1, NULL));
 }
 
-/* ============================================================================
- * Arena Overflow Protection Tests
- * ============================================================================
- */
-
 TEST (security_arena_overflow_protection)
 {
   Arena_T arena = Arena_new ();
@@ -699,11 +668,6 @@ TEST (security_arena_overflow_protection)
   ASSERT (exception_raised);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Buffer Safety Tests
- * ============================================================================
- */
 
 TEST (security_buffer_bounds_checking)
 {
@@ -773,11 +737,6 @@ TEST (security_buffer_secure_clear)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * HTTP Security Tests - Request Smuggling Prevention
- * ============================================================================
- */
-
 TEST (security_http1_smuggling_cl_te_rejected)
 {
   Arena_T arena = Arena_new ();
@@ -827,11 +786,6 @@ TEST (security_http1_smuggling_te_cl_rejected)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * HTTP Security Tests - Header Injection Prevention
- * ============================================================================
- */
-
 TEST (security_http_header_name_injection_rejected)
 {
   Arena_T arena = Arena_new ();
@@ -880,11 +834,6 @@ TEST (security_http_header_name_invalid_chars_rejected)
   /* Headers freed when arena is disposed */
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * UTF-8 Security Tests
- * ============================================================================
- */
 
 TEST (security_utf8_overlong_rejected)
 {
@@ -941,11 +890,6 @@ TEST (security_utf8_invalid_continuation_rejected)
   const unsigned char missing[] = { 0xE0, 0xA0 }; /* Need one more byte */
   ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_validate (missing, sizeof (missing)));
 }
-
-/* ============================================================================
- * Cryptographic Security Tests
- * ============================================================================
- */
 
 TEST (security_secure_compare_constant_time)
 {
@@ -1011,11 +955,6 @@ TEST (security_random_bytes)
 }
 #endif
 
-/* ============================================================================
- * Size Limit Enforcement Tests
- * ============================================================================
- */
-
 TEST (security_http1_line_limit_enforced)
 {
   Arena_T arena = Arena_new ();
@@ -1078,11 +1017,6 @@ TEST (security_http1_header_limit_enforced)
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * HTTP Limits Population Tests
- * ============================================================================
- */
 
 TEST (security_populate_http_limits_fields)
 {
@@ -1222,11 +1156,6 @@ TEST (security_http2_limits_consistency)
   ASSERT (limits.http2_max_concurrent_streams <= 10000);
 }
 
-/* ============================================================================
- * Feature Detection Tests
- * ============================================================================
- */
-
 TEST (security_feature_detection)
 {
   /* TLS detection */
@@ -1243,11 +1172,6 @@ TEST (security_feature_detection)
   ASSERT (has_compression == 0 || has_compression == 1);
 }
 
-/* ============================================================================
- * Port Validation Tests
- * ============================================================================
- */
-
 TEST (security_port_validation)
 {
   /* Valid ports */
@@ -1263,11 +1187,6 @@ TEST (security_port_validation)
   ASSERT (!SOCKET_VALID_PORT (65536));
   ASSERT (!SOCKET_VALID_PORT (100000));
 }
-
-/* ============================================================================
- * Cookie Security Tests
- * ============================================================================
- */
 
 TEST (security_cookie_set_invalid_name_chars_rejected)
 {
@@ -1608,11 +1527,6 @@ TEST (security_cookie_file_load_large_rejected)
   unlink (temp_filename);
 }
 
-/* ============================================================================
- * Control Character Detection Tests
- * ============================================================================
- */
-
 TEST (security_control_chars_clean_string)
 {
   /* Test normal ASCII strings without control characters */
@@ -1741,11 +1655,6 @@ TEST (security_control_chars_high_ascii)
   ASSERT_EQ (0, SocketSecurity_has_control_chars ((const char *)high_ascii, 5));
 }
 
-/* ============================================================================
- * Size to Int Conversion Tests
- * ============================================================================
- */
-
 TEST (security_size_to_int_normal)
 {
   /* Normal sizes should be converted correctly */
@@ -1787,11 +1696,6 @@ TEST (security_size_to_int_openssl_pattern)
   int capped_len = SocketSecurity_size_to_int (huge_buf);
   ASSERT_EQ (INT_MAX, capped_len);
 }
-
-/* ============================================================================
- * populate_hpack_limits Tests
- * ============================================================================
- */
 
 TEST (security_populate_hpack_limits_sets_correct_value)
 {
@@ -1888,11 +1792,6 @@ TEST (security_populate_hpack_limits_not_corrupted)
   ASSERT_EQ (SOCKET_SECURITY_MAX_ALLOCATION, limits.max_allocation);
 }
 
-/* ============================================================================
- * TLS Utility Macro Tests
- * ============================================================================
- */
-
 #if SOCKET_HAS_TLS
 
 /*
@@ -1965,11 +1864,6 @@ TEST (security_ssl_unused_macro_in_callback_pattern)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

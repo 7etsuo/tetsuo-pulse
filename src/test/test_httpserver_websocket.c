@@ -48,11 +48,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 47000
 #define TEST_HOST "127.0.0.1"
 #define TEST_TIMEOUT_MS 5000
@@ -70,11 +65,6 @@ setup_signals (void)
 {
   signal (SIGPIPE, SIG_IGN);
 }
-
-/* ============================================================================
- * Callback Context for Testing
- * ============================================================================
- */
 
 typedef struct
 {
@@ -132,11 +122,6 @@ ws_test_callback (SocketHTTPServer_Request_T req,
 
   return 0; /* Continue */
 }
-
-/* ============================================================================
- * Server Fixture
- * ============================================================================
- */
 
 typedef struct
 {
@@ -277,11 +262,6 @@ ws_fixture_stop (WSServerFixture *fixture)
   SocketHTTPServer_free (&fixture->server);
   fixture->server = NULL;
 }
-
-/* ============================================================================
- * Client Helpers
- * ============================================================================
- */
 
 static unsigned
 ws_translate_revents (short revents)
@@ -440,11 +420,6 @@ ws_connect_and_upgrade (WSServerFixture *fixture, Socket_T *out_socket)
   return NULL;
 }
 
-/* ============================================================================
- * State Transition Tests
- * ============================================================================
- */
-
 TEST (httpserver_ws_upgrade_state_transition)
 {
   setup_signals ();
@@ -558,11 +533,6 @@ TEST (httpserver_ws_upgrade_invalid_request)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Callback Invocation Tests
- * ============================================================================
- */
 
 TEST (httpserver_ws_callback_text_message)
 {
@@ -751,11 +721,6 @@ TEST (httpserver_ws_callback_null_safe)
   END_TRY;
 }
 
-/* ============================================================================
- * Poll Integration Tests
- * ============================================================================
- */
-
 TEST (httpserver_ws_stays_in_poll)
 {
   setup_signals ();
@@ -804,11 +769,6 @@ TEST (httpserver_ws_stays_in_poll)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Cleanup Tests
- * ============================================================================
- */
 
 TEST (httpserver_ws_cleanup_on_close)
 {
@@ -944,11 +904,6 @@ TEST (httpserver_ws_server_stop_cleanup)
   END_TRY;
 }
 
-/* ============================================================================
- * Error Handling Tests
- * ============================================================================
- */
-
 TEST (httpserver_ws_handshake_failure)
 {
   setup_signals ();
@@ -1001,11 +956,6 @@ TEST (httpserver_ws_handshake_failure)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Concurrent Connection Tests
- * ============================================================================
- */
 
 TEST (httpserver_ws_multiple_connections)
 {
@@ -1112,11 +1062,6 @@ TEST (httpserver_ws_multiple_upgrades)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

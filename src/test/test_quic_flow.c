@@ -15,11 +15,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Connection-Level Flow Control Tests
- * ============================================================================
- */
-
 TEST (flow_new)
 {
   Arena_T arena;
@@ -265,11 +260,6 @@ TEST (flow_recv_window)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Stream-Level Flow Control Tests
- * ============================================================================
- */
-
 TEST (flow_stream_new)
 {
   Arena_T arena;
@@ -447,11 +437,6 @@ TEST (flow_stream_recv_window)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Stream Count Management Tests
- * ============================================================================
- */
-
 TEST (flow_update_max_streams_bidi)
 {
   Arena_T arena;
@@ -611,11 +596,6 @@ TEST (flow_close_stream_uni)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (flow_connection_and_stream)
 {

@@ -229,20 +229,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Direct fuzzed input parsing
-     * ==================================================================== */
     test_smuggling_detection (arena, (const char *)data, size, 0);
     test_smuggling_detection (arena, (const char *)data, size, 1);
 
-    /* ====================================================================
-     * Test 2: Byte-by-byte parsing for state corruption
-     * ==================================================================== */
     test_incremental_smuggling (arena, (const char *)data, size);
 
-    /* ====================================================================
-     * Test 3: CL.TE Attack Vectors
-     * ==================================================================== */
     {
       const char *cl_te_attacks[] = {
         /* Basic CL.TE */
@@ -288,9 +279,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: TE.CL Attack Vectors
-     * ==================================================================== */
     {
       const char *te_cl_attacks[] = {
         /* Basic TE.CL */
@@ -333,9 +321,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: TE.TE Obfuscation Attacks
-     * ==================================================================== */
     {
       const char *te_te_attacks[] = {
         /* Capitalization variants */
@@ -442,9 +427,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Duplicate Content-Length Attacks
-     * ==================================================================== */
     {
       const char *dup_cl_attacks[] = {
         /* Two different CL values */
@@ -508,9 +490,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Content-Length Edge Cases
-     * ==================================================================== */
     {
       const char *cl_edge_cases[] = {
         /* Negative CL */
@@ -603,9 +582,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 8: Malformed Chunk Sizes
-     * ==================================================================== */
     {
       const char *chunk_attacks[] = {
         /* Negative chunk size */
@@ -719,9 +695,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 9: HTTP/1.0 vs HTTP/1.1 Differences
-     * ==================================================================== */
     {
       const char *version_attacks[] = {
         /* HTTP/1.0 with TE (should ignore TE) */
@@ -763,9 +736,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 10: Header Injection Attacks
-     * ==================================================================== */
     {
       const char *injection_attacks[] = {
         /* CRLF in header value */
@@ -826,9 +796,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 11: Build smuggling request with fuzzed payload
-     * ==================================================================== */
     if (size > 50)
       {
         /* Use fuzz data to build potential smuggling request */

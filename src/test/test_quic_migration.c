@@ -69,11 +69,6 @@ make_ipv6_addr (struct sockaddr_storage *addr, const char *ip, uint16_t port)
   inet_pton (AF_INET6, ip, &addr6->sin6_addr);
 }
 
-/* ============================================================================
- * Basic Lifecycle Tests
- * ============================================================================
- */
-
 TEST (migration_new)
 {
   Arena_T arena = Arena_new ();
@@ -105,11 +100,6 @@ TEST (migration_init)
   ASSERT (migration.path_count == 0);
   ASSERT (migration.nat_rebinding_detected == 0);
 }
-
-/* ============================================================================
- * Path Management Tests
- * ============================================================================
- */
 
 TEST (init_path_basic)
 {
@@ -218,11 +208,6 @@ TEST (find_path_by_address)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Path Validation Tests
- * ============================================================================
- */
 
 TEST (probe_path_new)
 {
@@ -377,11 +362,6 @@ TEST (path_validation_timeout)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Migration Tests
- * ============================================================================
- */
-
 TEST (migration_can_migrate_client)
 {
   Arena_T arena = Arena_new ();
@@ -503,11 +483,6 @@ TEST (nat_rebinding_detection)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Congestion Control Tests
- * ============================================================================
- */
-
 TEST (reset_congestion_new_path)
 {
   SocketQUICPath_T old_path, new_path;
@@ -554,11 +529,6 @@ TEST (update_rtt)
   ASSERT (path.rtt_us == 56250);
 }
 
-/* ============================================================================
- * IPv6 Tests
- * ============================================================================
- */
-
 TEST (ipv6_path_validation)
 {
   Arena_T arena = Arena_new ();
@@ -593,11 +563,6 @@ TEST (ipv6_path_validation)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Utility Tests
- * ============================================================================
- */
 
 TEST (state_string)
 {
@@ -661,11 +626,6 @@ TEST (path_to_string)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

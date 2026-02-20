@@ -23,24 +23,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-/* ============================================================================
- * RESET_STREAM Frame Encoding (RFC 9000 Section 19.4)
- * ============================================================================
- *
- * Format:
- *   Type (i) = 0x04
- *   Stream ID (i)
- *   Application Protocol Error Code (i)
- *   Final Size (i)
- *
- * An endpoint uses a RESET_STREAM frame to abruptly terminate the sending
- * part of a stream. After sending the RESET_STREAM, an endpoint ceases
- * transmission and retransmission of STREAM frames on the identified stream.
- *
- * The Final Size field is the final size of the stream in bytes. This is the
- * sum of all bytes that were sent in STREAM frames for this stream.
- */
-
 size_t
 SocketQUICFrame_encode_reset_stream (uint64_t stream_id,
                                      uint64_t error_code,
@@ -87,32 +69,6 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id,
   return pos;
 }
 
-/* ============================================================================
- * STOP_SENDING Frame Encoding (RFC 9000 Section 19.5)
- * ============================================================================
- *
- * Format:
- *   Type (i) = 0x05
- *   Stream ID (i)
- *   Application Protocol Error Code (i)
- *
- * An endpoint uses a STOP_SENDING frame to communicate that incoming data is
- * being discarded on receipt per application request. STOP_SENDING requests
- * that a peer cease transmission on a stream.
- *
- * A STOP_SENDING frame can be sent for streams in the Recv or Size Known
- * states. Receiving a STOP_SENDING frame for a locally initiated stream that
- * has not yet been created MUST be treated as a connection error of type
- * STREAM_STATE_ERROR.
- *
- * An endpoint that receives a STOP_SENDING frame MUST send a RESET_STREAM frame
- * if the stream is in the Ready or Send state. If the stream is in the Data
- * Sent state, the endpoint MAY defer sending the RESET_STREAM frame until the
- * packets containing outstanding data are acknowledged or declared lost. If any
- * outstanding data is declared lost, the endpoint SHOULD send a RESET_STREAM
- * frame instead of retransmitting the data.
- */
-
 size_t
 SocketQUICFrame_encode_stop_sending (uint64_t stream_id,
                                      uint64_t error_code,
@@ -152,34 +108,6 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id,
 
   return pos;
 }
-
-/* ============================================================================
- * STREAM Frame Encoding (RFC 9000 Section 19.8)
- * ============================================================================
- *
- * Format:
- *   Type (i) = 0x08..0x0f
- *   Stream ID (i)
- *   [Offset (i)]
- *   [Length (i)]
- *   Stream Data (..)
- *
- * STREAM frames are the most complex frame type in QUIC. They use a variable
- * format with three flag bits encoded in the frame type:
- *
- * - Bit 0 (0x01): FIN - This is the final frame for the stream
- * - Bit 1 (0x02): LEN - Length field is present
- * - Bit 2 (0x04): OFF - Offset field is present
- *
- * The frame type ranges from 0x08 to 0x0f, representing all 8 combinations
- * of these three flags.
- *
- * Implementation Notes:
- * - When LEN bit is not set, stream data extends to the end of the packet
- * - For encoding, we always set the LEN bit for simplicity
- * - Zero-length data with FIN is valid (signals stream close)
- * - Offset defaults to 0 when OFF bit is not set
- */
 
 size_t
 SocketQUICFrame_encode_stream (uint64_t stream_id,
@@ -262,32 +190,6 @@ SocketQUICFrame_encode_stream (uint64_t stream_id,
 
   return pos;
 }
-
-/* ============================================================================
- * STREAM Frame Decoding (RFC 9000 Section 19.8)
- * ============================================================================
- *
- * Convenience wrapper around the existing SocketQUICFrame_parse() function
- * for decoding STREAM frames.
- *
- * The function extracts:
- * - Frame type and flags (FIN, LEN, OFF)
- * - Stream ID
- * - Offset (if OFF flag set, else 0)
- * - Length (if LEN flag set, else extends to end of data)
- * - Pointer to stream data (points into input buffer, not copied)
- *
- * @param data   Input buffer containing encoded STREAM frame
- * @param len    Length of input buffer
- * @param frame  Output: decoded stream frame structure
- *
- * @return Number of bytes consumed on success, or negative error code on
- * failure: -QUIC_FRAME_ERROR_NULL      (NULL pointer or zero length)
- *         -QUIC_FRAME_ERROR_TYPE      (not a STREAM frame)
- *         -QUIC_FRAME_ERROR_TRUNCATED (incomplete frame data)
- *         -QUIC_FRAME_ERROR_VARINT    (invalid varint encoding)
- *         -QUIC_FRAME_ERROR_INVALID   (other parse errors)
- */
 
 ssize_t
 SocketQUICFrame_decode_stream (const uint8_t *data,

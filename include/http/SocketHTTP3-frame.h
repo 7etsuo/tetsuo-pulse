@@ -76,11 +76,6 @@ typedef struct
  */
 #define HTTP3_SETTINGS_MAX_WRITE_SIZE 48
 
-/* ============================================================================
- * Frame Header Parse/Write
- * ============================================================================
- */
-
 /**
  * @brief Parse a frame header from buffer.
  *
@@ -114,11 +109,6 @@ int SocketHTTP3_Frame_write_header (uint64_t type,
                                     uint64_t length,
                                     uint8_t *buf,
                                     size_t buflen);
-
-/* ============================================================================
- * SETTINGS (RFC 9114 Section 7.2.4)
- * ============================================================================
- */
 
 /**
  * @brief Initialize settings to RFC defaults.
@@ -157,11 +147,6 @@ int SocketHTTP3_Settings_parse (const uint8_t *buf,
 int SocketHTTP3_Settings_write (const SocketHTTP3_Settings *settings,
                                 uint8_t *buf,
                                 size_t buflen);
-
-/* ============================================================================
- * Single-Varint Payload Frames
- * ============================================================================
- */
 
 /**
  * @brief Parse GOAWAY payload (RFC 9114 Section 7.2.6).
@@ -202,11 +187,6 @@ int SocketHTTP3_CancelPush_parse (const uint8_t *buf,
 int
 SocketHTTP3_CancelPush_write (uint64_t push_id, uint8_t *buf, size_t buflen);
 
-/* ============================================================================
- * PUSH_PROMISE (RFC 9114 Section 7.2.5)
- * ============================================================================
- */
-
 /**
  * @brief Extract push ID from PUSH_PROMISE payload.
  *
@@ -223,11 +203,6 @@ int SocketHTTP3_PushPromise_parse_id (const uint8_t *buf,
                                       size_t len,
                                       uint64_t *push_id,
                                       size_t *payload_offset);
-
-/* ============================================================================
- * Frame Validation
- * ============================================================================
- */
 
 /**
  * @brief Validate a frame type on a given stream context.

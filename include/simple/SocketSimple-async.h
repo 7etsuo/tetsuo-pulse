@@ -50,18 +50,10 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Types
-   *============================================================================*/
-
   /**
    * @brief Opaque async context handle.
    */
   typedef struct SocketSimple_Async *SocketSimple_Async_T;
-
-  /*============================================================================
-   * Callback Type
-   *============================================================================*/
 
   /**
    * @brief Async completion callback.
@@ -76,10 +68,6 @@ extern "C"
                                               int err,
                                               void *user_data);
 
-  /*============================================================================
-   * Flags
-   *============================================================================*/
-
   /**
    * @brief Async operation flags.
    */
@@ -88,10 +76,6 @@ extern "C"
     SOCKET_SIMPLE_ASYNC_NONE = 0x00,    /**< No special flags */
     SOCKET_SIMPLE_ASYNC_PRIORITY = 0x01 /**< High-priority operation */
   } SocketSimple_AsyncFlags;
-
-  /*============================================================================
-   * Async Lifecycle
-   *============================================================================*/
 
   /**
    * @brief Create a new async context.
@@ -111,10 +95,6 @@ extern "C"
    * @param async Pointer to async handle.
    */
   extern void Socket_simple_async_free (SocketSimple_Async_T *async);
-
-  /*============================================================================
-   * Async Send/Recv Operations
-   *============================================================================*/
 
   /**
    * @brief Submit async send operation.
@@ -204,10 +184,6 @@ extern "C"
                                     SocketSimple_AsyncFlags flags,
                                     int64_t timeout_ms);
 
-  /*============================================================================
-   * Completion Processing
-   *============================================================================*/
-
   /**
    * @brief Process pending async completions.
    *
@@ -219,10 +195,6 @@ extern "C"
    */
   extern int
   Socket_simple_async_process (SocketSimple_Async_T async, int timeout_ms);
-
-  /*============================================================================
-   * Request Management
-   *============================================================================*/
 
   /**
    * @brief Cancel a pending async request.
@@ -241,10 +213,6 @@ extern "C"
    * @return Number of requests cancelled.
    */
   extern int Socket_simple_async_cancel_all (SocketSimple_Async_T async);
-
-  /*============================================================================
-   * Progress and Continuation
-   *============================================================================*/
 
   /**
    * @brief Query progress of a pending request.
@@ -282,10 +250,6 @@ extern "C"
   extern unsigned Socket_simple_async_recv_continue (SocketSimple_Async_T async,
                                                      unsigned request_id);
 
-  /*============================================================================
-   * Timeout Configuration
-   *============================================================================*/
-
   /**
    * @brief Set global request timeout.
    *
@@ -312,10 +276,6 @@ extern "C"
    * @return Number of requests expired.
    */
   extern int Socket_simple_async_expire_stale (SocketSimple_Async_T async);
-
-  /*============================================================================
-   * Backend Information
-   *============================================================================*/
 
   /**
    * @brief Check if native async I/O is available.

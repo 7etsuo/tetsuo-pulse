@@ -28,11 +28,6 @@
 #include "http/qpack/SocketQPACK-private.h"
 #include "http/qpack/SocketQPACK.h"
 
-/* ============================================================================
- * RESULT STRING
- * ============================================================================
- */
-
 const char *
 SocketQPACK_result_string (SocketQPACK_Result result)
 {
@@ -59,11 +54,6 @@ SocketQPACK_result_string (SocketQPACK_Result result)
 
   return "Unknown error";
 }
-
-/* ============================================================================
- * HTTP/3 ERROR CODE MAPPING (RFC 9204 Section 6)
- * ============================================================================
- */
 
 uint64_t
 SocketQPACK_result_to_h3_error (SocketQPACK_Result result)
@@ -129,11 +119,6 @@ SocketQPACK_result_to_h3_error (SocketQPACK_Result result)
     }
 }
 
-/* ============================================================================
- * CAPACITY ESTIMATION
- * ============================================================================
- */
-
 size_t
 SocketQPACK_estimate_capacity (size_t max_size)
 {
@@ -150,17 +135,6 @@ SocketQPACK_estimate_capacity (size_t max_size)
   /* Round up to power of 2 for efficient ring buffer operations */
   return NEXT_POW2_64 (est_entries);
 }
-
-/* ============================================================================
- * ENCODER RELATIVE INDEXING (RFC 9204 Section 3.2.5)
- *
- * Encoder instructions use relative indexing where:
- * - Relative index 0 = most recently inserted entry (Insert Count - 1)
- * - Higher relative indices = older entries
- *
- * Formula: Absolute = Insert Count - Relative - 1
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_abs_to_relative_encoder (uint64_t insert_count,
@@ -210,17 +184,6 @@ SocketQPACK_relative_to_abs_encoder (uint64_t insert_count,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * FIELD SECTION RELATIVE INDEXING (RFC 9204 Section 3.2.5)
- *
- * Field sections use relative indexing from Base:
- * - Relative index 0 = entry at Base - 1
- * - Higher relative indices = older entries
- *
- * Formula: Absolute = Base - Relative - 1
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_abs_to_relative_field (uint64_t base,
                                    uint64_t abs_index,
@@ -269,19 +232,6 @@ SocketQPACK_relative_to_abs_field (uint64_t base,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * POST-BASE INDEXING (RFC 9204 Section 3.2.6)
- *
- * Post-base indexing allows field sections to reference entries inserted
- * during encoding (when abs_index >= base).
- *
- * - Post-base index 0 = entry at Base
- * - Higher post-base indices = more recently inserted entries
- *
- * Formula: Absolute = Base + Post-Base
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_abs_to_postbase (uint64_t base,
                              uint64_t abs_index,
@@ -328,15 +278,6 @@ SocketQPACK_postbase_to_abs (uint64_t base,
   *abs_out = base + pb_index;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * INDEX VALIDATION FUNCTIONS
- *
- * RFC 9204 Section 3.2: Decoders must validate index references to ensure:
- * 1. The entry exists (not a future reference)
- * 2. The entry has not been evicted
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_is_valid_relative_encoder (uint64_t insert_count,

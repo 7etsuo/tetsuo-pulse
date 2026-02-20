@@ -51,13 +51,6 @@
 
 #include <openssl/ssl.h>
 
-/* ============================================================================
- * DTLS Protocol Versions
- * ============================================================================
- * DTLS 1.2 minimum (RFC 6347) - equivalent security to TLS 1.2
- * DTLS 1.3 (RFC 9147) requires OpenSSL 3.2+ which is not yet widely deployed
- */
-
 /**
  * @brief Minimum supported DTLS protocol version.
  * @ingroup dtls_config
@@ -86,13 +79,6 @@
 #endif
 #endif
 
-/* ============================================================================
- * DTLS Ciphersuites
- * ============================================================================
- * Modern AEAD ciphers with forward secrecy (ECDHE key exchange)
- * Excludes legacy ciphers (CBC, RC4, 3DES, non-PFS)
- */
-
 /**
  * @brief Preferred DTLS ciphersuites string for secure configuration.
  * @ingroup dtls_config
@@ -112,16 +98,6 @@
   "ECDHE-ECDSA-AES128-GCM-SHA256:" \
   "ECDHE-RSA-AES128-GCM-SHA256"
 #endif
-
-/* ============================================================================
- * MTU and Buffer Sizes
- * ============================================================================
- * DTLS requires careful MTU management to avoid IP fragmentation
- * which can cause packet loss and performance degradation.
- *
- * Path MTU discovery is recommended but not always reliable over UDP.
- * Conservative defaults ensure interoperability.
- */
 
 /* Default MTU - conservative for IPv6 tunnels and VPNs */
 /**
@@ -209,16 +185,6 @@
   (SOCKET_DTLS_DEFAULT_MTU - SOCKET_DTLS_RECORD_OVERHEAD - 28)
 #endif
 
-/* ============================================================================
- * Cookie Protection (RFC 6347 Section 4.2.1)
- * ============================================================================
- * Stateless cookie exchange prevents memory exhaustion DoS attacks.
- * Server sends HelloVerifyRequest with cookie before allocating state.
- * Client must echo cookie to prove address ownership.
- *
- * Cookie = HMAC-SHA256(server_secret, client_addr || client_port || timestamp)
- */
-
 /* Cookie length - HMAC-SHA256 truncated output */
 /**
  * @brief Length of DTLS hello cookie in bytes.
@@ -246,14 +212,6 @@
 #ifndef SOCKET_DTLS_MAX_PENDING_COOKIES
 #define SOCKET_DTLS_MAX_PENDING_COOKIES 1000
 #endif
-
-/* ============================================================================
- * Handshake Timeouts and Retransmission
- * ============================================================================
- * DTLS handshake uses exponential backoff retransmission timer.
- * RFC 6347 recommends initial timeout of 1 second.
- * OpenSSL handles retransmission internally, but we expose for configuration.
- */
 
 /* Initial retransmission timeout in milliseconds */
 /**
@@ -306,13 +264,6 @@
 #define SOCKET_DTLS_MAX_RETRANSMITS 12
 #endif
 
-/* ============================================================================
- * Session Management
- * ============================================================================
- * Session resumption reduces handshake latency (1-RTT vs 2-RTT).
- * Similar to TLS session caching.
- */
-
 /* Maximum number of cached sessions */
 #ifndef SOCKET_DTLS_SESSION_CACHE_SIZE
 #define SOCKET_DTLS_SESSION_CACHE_SIZE 1000
@@ -322,11 +273,6 @@
 #ifndef SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT
 #define SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT 300L
 #endif
-
-/* ============================================================================
- * Error Buffer and Limits
- * ============================================================================
- */
 
 /* DTLS error buffer size for detailed error messages */
 #ifndef SOCKET_DTLS_ERROR_BUFSIZE
@@ -368,20 +314,11 @@
 #define SOCKET_DTLS_PEER_CACHE_TTL_MS 30000
 #endif
 
-/* ============================================================================
- * File Size Limits (DoS Protection)
- * ============================================================================
- */
 /* Maximum size for certificate/key/CA files (prevents memory exhaustion from
  * oversized inputs) */
 #ifndef SOCKET_DTLS_MAX_FILE_SIZE
 #define SOCKET_DTLS_MAX_FILE_SIZE ((size_t)(1ULL << 20)) /* 1MB */
 #endif
-
-/* ============================================================================
- * Validation Macros
- * ============================================================================
- */
 
 /**
  * @brief Validate if given MTU value is within acceptable range.

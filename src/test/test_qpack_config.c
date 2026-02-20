@@ -20,22 +20,12 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * SETTINGS CONSTANTS TESTS
- * ============================================================================
- */
-
 TEST (qpack_config_settings_constants)
 {
   /* RFC 9204 Section 5: Verify SETTINGS identifiers */
   ASSERT_EQ (SETTINGS_QPACK_MAX_TABLE_CAPACITY, 0x01);
   ASSERT_EQ (SETTINGS_QPACK_BLOCKED_STREAMS, 0x07);
 }
-
-/* ============================================================================
- * SETTINGS DEFAULTS TESTS
- * ============================================================================
- */
 
 TEST (qpack_config_settings_defaults_basic)
 {
@@ -57,11 +47,6 @@ TEST (qpack_config_settings_defaults_null)
 {
   ASSERT_EQ (SocketQPACK_settings_defaults (NULL), QPACK_ERR_NULL_PARAM);
 }
-
-/* ============================================================================
- * SETTINGS VALIDATION TESTS
- * ============================================================================
- */
 
 TEST (qpack_config_settings_validate_valid)
 {
@@ -87,11 +72,6 @@ TEST (qpack_config_settings_validate_null)
 {
   ASSERT_EQ (SocketQPACK_settings_validate (NULL), QPACK_ERR_NULL_PARAM);
 }
-
-/* ============================================================================
- * CONFIG CREATION TESTS
- * ============================================================================
- */
 
 TEST (qpack_config_new_basic)
 {
@@ -127,11 +107,6 @@ TEST (qpack_config_new_has_defaults)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * LOCAL SETTINGS TESTS
- * ============================================================================
- */
 
 TEST (qpack_config_set_get_local_roundtrip)
 {
@@ -187,11 +162,6 @@ TEST (qpack_config_get_local_null_settings)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * PEER SETTINGS TESTS
- * ============================================================================
- */
 
 TEST (qpack_config_apply_peer_basic)
 {
@@ -279,11 +249,6 @@ TEST (qpack_config_has_peer_null)
   ASSERT (!SocketQPACK_Config_has_peer_settings (NULL));
 }
 
-/* ============================================================================
- * 0-RTT SETTINGS TESTS (RFC 9204 Section 3.2.3)
- * ============================================================================
- */
-
 TEST (qpack_config_0rtt_store_get_roundtrip)
 {
   Arena_T arena = Arena_new ();
@@ -358,11 +323,6 @@ TEST (qpack_config_0rtt_get_null_settings)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * 0-RTT VALIDATION TESTS (RFC 9204 Section 3.2.3)
- * ============================================================================
- */
 
 TEST (qpack_config_0rtt_validate_no_stored)
 {
@@ -570,11 +530,6 @@ TEST (qpack_config_boundary_values)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * SETTINGS ID STRING TESTS
- * ============================================================================
- */
-
 TEST (qpack_config_settings_id_string_known)
 {
   ASSERT (strcmp (SocketQPACK_settings_id_string (
@@ -594,11 +549,6 @@ TEST (qpack_config_settings_id_string_unknown)
   ASSERT (strcmp (SocketQPACK_settings_id_string (0xFF), "UNKNOWN") == 0);
   ASSERT (strcmp (SocketQPACK_settings_id_string (UINT64_MAX), "UNKNOWN") == 0);
 }
-
-/* ============================================================================
- * INTEGRATION TESTS
- * ============================================================================
- */
 
 TEST (qpack_config_full_negotiation_flow)
 {
@@ -679,11 +629,6 @@ TEST (qpack_config_zero_settings_disables_features)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

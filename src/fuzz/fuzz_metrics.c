@@ -311,9 +311,9 @@ test_gauges (const uint8_t *data, size_t size)
     return;
 
   int gauge_idx = data[0] % SOCKET_GAUGE_METRIC_COUNT;
-  int64_t value = (int64_t) (((uint64_t)data[1] << 24)
-                             | ((uint64_t)data[2] << 16)
-                             | ((uint64_t)data[3] << 8) | data[4]);
+  int64_t value
+      = (int64_t)(((uint64_t)data[1] << 24) | ((uint64_t)data[2] << 16)
+                  | ((uint64_t)data[3] << 8) | data[4]);
 
   /* Test set */
   SocketMetrics_gauge_set ((SocketGaugeMetric)gauge_idx, value);
@@ -393,8 +393,7 @@ test_operation_sequence (const uint8_t *data, size_t size)
         case 0: /* Counter increment */
           {
             int counter_idx = idx % SOCKET_COUNTER_METRIC_COUNT;
-            uint64_t val
-                = ((uint64_t)data[offset] << 8) | data[offset + 1];
+            uint64_t val = ((uint64_t)data[offset] << 8) | data[offset + 1];
             offset += 2;
             SocketMetrics_counter_add ((SocketCounterMetric)counter_idx,
                                        val + 1);
@@ -451,8 +450,8 @@ test_operation_sequence (const uint8_t *data, size_t size)
         case 6: /* Get histogram name */
           {
             int hist_idx = idx % SOCKET_HISTOGRAM_METRIC_COUNT;
-            const char *name
-                = SocketMetrics_histogram_name ((SocketHistogramMetric)hist_idx);
+            const char *name = SocketMetrics_histogram_name (
+                (SocketHistogramMetric)hist_idx);
             (void)name;
             offset += 2;
           }
@@ -517,8 +516,8 @@ test_category_names (void)
     }
 
   /* Test out-of-bounds */
-  const char *name
-      = SocketMetrics_category_name ((SocketMetricCategory)SOCKET_METRIC_CAT_COUNT);
+  const char *name = SocketMetrics_category_name (
+      (SocketMetricCategory)SOCKET_METRIC_CAT_COUNT);
   (void)name;
 
   name = SocketMetrics_category_name ((SocketMetricCategory)-1);
@@ -545,7 +544,8 @@ test_help_texts (void)
 
   for (int i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     {
-      const char *help = SocketMetrics_histogram_help ((SocketHistogramMetric)i);
+      const char *help
+          = SocketMetrics_histogram_help ((SocketHistogramMetric)i);
       (void)help;
     }
 }
@@ -561,69 +561,30 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Counter increment with fuzzed values
-     * ==================================================================== */
     test_counter_increment (data, size);
 
-    /* ====================================================================
-     * Test 2: All valid metrics
-     * ==================================================================== */
     test_all_metrics ();
 
-    /* ====================================================================
-     * Test 3: Metric name retrieval
-     * ==================================================================== */
     test_metric_names ();
 
-    /* ====================================================================
-     * Test 4: Snapshot operations
-     * ==================================================================== */
     test_snapshots (data, size);
 
-    /* ====================================================================
-     * Test 5: Rapid increments
-     * ==================================================================== */
     test_rapid_increments (data, size);
 
-    /* ====================================================================
-     * Test 6: Overflow testing
-     * ==================================================================== */
     test_overflow (data, size);
 
-    /* ====================================================================
-     * Test 7: Gauge operations
-     * ==================================================================== */
     test_gauges (data, size);
 
-    /* ====================================================================
-     * Test 8: Histogram operations
-     * ==================================================================== */
     test_histograms (data, size);
 
-    /* ====================================================================
-     * Test 9: Operation sequences
-     * ==================================================================== */
     test_operation_sequence (data, size);
 
-    /* ====================================================================
-     * Test 10: Export functions
-     * ==================================================================== */
     test_exports ();
 
-    /* ====================================================================
-     * Test 11: Category names
-     * ==================================================================== */
     test_category_names ();
 
-    /* ====================================================================
-     * Test 12: Help texts
-     * ==================================================================== */
     test_help_texts ();
 
-    /* ====================================================================
-     * Test 13: Reset after all tests
-     * ==================================================================== */
     SocketMetrics_reset ();
   }
   EXCEPT (Arena_Failed)

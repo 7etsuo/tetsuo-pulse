@@ -32,11 +32,6 @@
 #include "core/SocketUtil.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Operation Callbacks
- * ============================================================================
- */
-
 /* Context for test operations */
 typedef struct
 {
@@ -98,11 +93,6 @@ should_retry_eagain_only (int error, int attempt, void *ctx)
   return error == EAGAIN;
 }
 
-/* ============================================================================
- * Policy Defaults Tests
- * ============================================================================
- */
-
 TEST (socketretry_policy_defaults)
 {
   SocketRetry_Policy policy;
@@ -116,11 +106,6 @@ TEST (socketretry_policy_defaults)
   ASSERT (policy.multiplier == SOCKET_RETRY_DEFAULT_MULTIPLIER);
   ASSERT (policy.jitter == SOCKET_RETRY_DEFAULT_JITTER);
 }
-
-/* ============================================================================
- * Context Creation Tests
- * ============================================================================
- */
 
 TEST (socketretry_new_default_policy)
 {
@@ -341,11 +326,6 @@ TEST (socketretry_free_null_safe)
   SocketRetry_free (NULL);   /* Should not crash */
 }
 
-/* ============================================================================
- * Execute Tests
- * ============================================================================
- */
-
 TEST (socketretry_execute_immediate_success)
 {
   SocketRetry_T retry = NULL;
@@ -469,11 +449,6 @@ TEST (socketretry_execute_simple)
   END_TRY;
 }
 
-/* ============================================================================
- * Should Retry Callback Tests
- * ============================================================================
- */
-
 TEST (socketretry_execute_with_should_retry_never)
 {
   SocketRetry_T retry = NULL;
@@ -531,11 +506,6 @@ TEST (socketretry_execute_with_should_retry_selective)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Statistics Tests
- * ============================================================================
- */
 
 TEST (socketretry_stats_initial_zero)
 {
@@ -599,11 +569,6 @@ TEST (socketretry_stats_after_execution)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Reset Tests
- * ============================================================================
- */
 
 TEST (socketretry_reset_clears_stats)
 {
@@ -692,11 +657,6 @@ TEST (socketretry_reset_allows_reuse)
   END_TRY;
 }
 
-/* ============================================================================
- * Set Policy Tests
- * ============================================================================
- */
-
 TEST (socketretry_set_policy)
 {
   SocketRetry_T retry = NULL;
@@ -759,11 +719,6 @@ TEST (socketretry_set_policy_invalid_raises)
 
   ASSERT_EQ (raised, 1);
 }
-
-/* ============================================================================
- * Calculate Delay Tests
- * ============================================================================
- */
 
 TEST (socketretry_calculate_delay_basic)
 {
@@ -848,11 +803,6 @@ TEST (socketretry_calculate_delay_invalid_params)
   ASSERT_EQ (delay_neg, 0);
 }
 
-/* ============================================================================
- * Edge Case Tests
- * ============================================================================
- */
-
 TEST (socketretry_single_attempt)
 {
   SocketRetry_T retry = NULL;
@@ -929,11 +879,6 @@ TEST (socketretry_no_jitter)
   ASSERT_EQ (delay1a, delay1b);
   ASSERT_EQ (delay1a, 100);
 }
-
-/* ============================================================================
- * Boundary Validation Tests
- * ============================================================================
- */
 
 TEST (socketretry_validate_max_delay_boundaries)
 {
@@ -1057,11 +1002,6 @@ TEST (socketretry_validate_multiplier_max_boundary)
   ASSERT_EQ (raised, 1);
 }
 
-/* ============================================================================
- * retry_power_double Edge Case Tests (CPU DoS & Overflow Prevention)
- * ============================================================================
- */
-
 TEST (socketretry_power_double_cpu_dos_prevention)
 {
   SocketRetry_Policy policy;
@@ -1086,7 +1026,7 @@ TEST (socketretry_power_double_base_greater_than_one_large_exp)
   policy.max_attempts = 2000; /* Allow large attempt numbers */
   policy.initial_delay_ms = 1;
   policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
-  policy.multiplier = 1.5; /* Base > 1.0 */
+  policy.multiplier = 1.5;       /* Base > 1.0 */
   policy.jitter = 0.0;
 
   /* With exponent > RETRY_MAX_EXPONENT (1000) and base > 1.0,
@@ -1110,8 +1050,9 @@ TEST (socketretry_power_double_base_less_than_one_large_exp)
   int delay = SocketRetry_calculate_delay (&policy, 1001);
   ASSERT_EQ (delay, 1000);
 
-  /* Note: Testing base < 1.0 would violate policy validation (multiplier >= 1.0)
-   * The issue description mentions it, but policy validation prevents it */
+  /* Note: Testing base < 1.0 would violate policy validation (multiplier
+   * >= 1.0) The issue description mentions it, but policy validation prevents
+   * it */
 }
 
 TEST (socketretry_power_double_overflow_detection)
@@ -1125,7 +1066,8 @@ TEST (socketretry_power_double_overflow_detection)
   policy.jitter = 0.0;
 
   /* Attempt with exponent that causes overflow within loop
-   * retry_power_double should detect result > DBL_MAX / base and return INFINITY */
+   * retry_power_double should detect result > DBL_MAX / base and return
+   * INFINITY */
   /* Attempt 1024: 2^1023 overflows double precision */
   int delay = SocketRetry_calculate_delay (&policy, 1024);
   ASSERT_EQ (delay, 3600000); /* INFINITY capped to max_delay_ms */
@@ -1138,7 +1080,7 @@ TEST (socketretry_power_double_large_multiplier_no_hang)
   policy.max_attempts = 1000; /* Allow large attempt numbers */
   policy.initial_delay_ms = 1;
   policy.max_delay_ms = 3600000; /* Maximum allowed: 1 hour */
-  policy.multiplier = 10.0; /* Large multiplier */
+  policy.multiplier = 10.0;      /* Large multiplier */
   policy.jitter = 0.0;
 
   /* Verify large multiplier doesn't cause infinite loop
@@ -1173,11 +1115,6 @@ TEST (socketretry_power_double_exp_exactly_at_limit)
   int delay1001 = SocketRetry_calculate_delay (&policy, 1001);
   ASSERT_EQ (delay1001, 3600000);
 }
-
-/* ============================================================================
- * retry_sleep_ms Tests (EINTR handling)
- * ============================================================================
- */
 
 /* Signal handler for EINTR tests - does nothing but interrupt nanosleep */
 static volatile sig_atomic_t signal_count = 0;
@@ -1279,11 +1216,11 @@ TEST (retry_sleep_ms_eintr_handling)
     {
       /* Child process: send SIGUSR1 signals to parent */
       pid_t parent = getppid ();
-      usleep (10000);  /* 10ms delay */
+      usleep (10000); /* 10ms delay */
       kill (parent, SIGUSR1);
-      usleep (10000);  /* 10ms delay */
+      usleep (10000); /* 10ms delay */
       kill (parent, SIGUSR1);
-      usleep (10000);  /* 10ms delay */
+      usleep (10000); /* 10ms delay */
       kill (parent, SIGUSR1);
       _exit (0);
     }
@@ -1365,11 +1302,6 @@ TEST (retry_sleep_ms_eintr_with_alarm)
   ASSERT (signal_count > 0);
   ASSERT (elapsed >= 180 && elapsed <= 300);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

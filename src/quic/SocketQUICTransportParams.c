@@ -19,11 +19,6 @@
 #include "quic/SocketQUICVarInt.h"
 #include "quic/SocketQUICConstants.h"
 
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
-
 static const char *result_strings[] = {
   [QUIC_TP_OK] = "OK",
   [QUIC_TP_ERROR_NULL] = "NULL pointer argument",
@@ -37,11 +32,6 @@ static const char *result_strings[] = {
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICTransportParams, QUIC_TP_ERROR_ENCODING)
-
-/* ============================================================================
- * Parameter ID Strings
- * ============================================================================
- */
 
 const char *
 SocketQUICTransportParams_id_string (SocketQUICTransportParamID id)
@@ -91,11 +81,6 @@ SocketQUICTransportParams_id_string (SocketQUICTransportParamID id)
     }
 }
 
-/* ============================================================================
- * Initialization Functions
- * ============================================================================
- */
-
 void
 SocketQUICTransportParams_init (SocketQUICTransportParams_T *params)
 {
@@ -134,11 +119,6 @@ SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
 
   (void)role; /* May be used for role-specific defaults in future */
 }
-
-/* ============================================================================
- * Encoding Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Calculate preferred address content size.
@@ -348,11 +328,6 @@ encode_preferred_address (uint8_t *buf,
   return pos;
 }
 
-/* ============================================================================
- * Size Calculation
- * ============================================================================
- */
-
 static size_t
 varint_param_size (uint64_t id, uint64_t value)
 {
@@ -393,11 +368,6 @@ preferred_address_size (const SocketQUICPreferredAddress_T *paddr)
   size_t len_size = SocketQUICVarInt_size (content_size);
   return id_size + len_size + content_size;
 }
-
-/* ============================================================================
- * Table-Driven Parameter Encoding
- * ============================================================================
- */
 
 /**
  * @brief Metadata for varint-type transport parameters.
@@ -524,11 +494,6 @@ SocketQUICTransportParams_encoded_size (
   return size;
 }
 
-/* ============================================================================
- * Encoding
- * ============================================================================
- */
-
 size_t
 SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
                                   SocketQUICRole role,
@@ -639,11 +604,6 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
   return pos;
 }
 
-/* ============================================================================
- * Decoding Helper Functions
- * ============================================================================
- */
-
 static SocketQUICTransportParams_Result
 decode_varint_value (const uint8_t *data,
                      size_t len,
@@ -753,11 +713,6 @@ decode_preferred_address (const uint8_t *data,
 
   return QUIC_TP_OK;
 }
-
-/* ============================================================================
- * Parameter Decode Handlers
- * ============================================================================
- */
 
 /**
  * @brief Handler function type for transport parameter decoding.
@@ -1164,11 +1119,6 @@ find_param_handler (uint64_t param_id)
   return NULL;
 }
 
-/* ============================================================================
- * Decoding
- * ============================================================================
- */
-
 /**
  * @brief Decode and validate a single transport parameter.
  *
@@ -1271,11 +1221,6 @@ SocketQUICTransportParams_decode (const uint8_t *data,
   return QUIC_TP_OK;
 }
 
-/* ============================================================================
- * Validation
- * ============================================================================
- */
-
 SocketQUICTransportParams_Result
 SocketQUICTransportParams_validate (const SocketQUICTransportParams_T *params,
                                     SocketQUICRole role)
@@ -1333,11 +1278,6 @@ SocketQUICTransportParams_validate_required (
 
   return QUIC_TP_OK;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 SocketQUICTransportParams_Result
 SocketQUICTransportParams_copy (SocketQUICTransportParams_T *dst,

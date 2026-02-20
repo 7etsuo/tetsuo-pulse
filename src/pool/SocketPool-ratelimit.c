@@ -41,11 +41,6 @@
  * - SOCKET_POOL_TOKENS_PER_ACCEPT
  */
 
-/* ============================================================================
- * Static Helper Functions - Rate Limit Checks
- * ============================================================================
- */
-
 /**
  * rate_limit_allows - Check if connection rate limit allows operation
  * @pool: Connection pool (mutex must be held)
@@ -82,11 +77,6 @@ ip_limit_allows (const T pool, const char *client_ip)
          < SocketIPTracker_getmax (pool->ip_tracker);
 }
 
-/* ============================================================================
- * Static Helper Functions - Component Management
- * ============================================================================
- */
-
 /**
  * pool_disable_component - Safely disable a pool component under lock.
  * @pool: The connection pool instance.
@@ -117,11 +107,6 @@ pool_disable_component (T pool, void **component)
   *component = NULL;
   POOL_UNLOCK (pool);
 }
-
-/* ============================================================================
- * Static Helper Functions - Generic IP Tracker Operations
- * ============================================================================
- */
 
 /**
  * locked_ip_op_void - Perform void operation on IP tracker under lock
@@ -184,11 +169,6 @@ locked_ip_op_int (T pool,
   return res;
 }
 
-/* ============================================================================
- * Static Helper Functions - Component Configuration
- * ============================================================================
- */
-
 /**
  * Generic macro for pool component configuration (create or reconfigure).
  * Eliminates code duplication between rate limiter and IP tracker setup.
@@ -219,11 +199,6 @@ locked_ip_op_int (T pool,
     }                                                   \
   while (0)
 
-/* ============================================================================
- * Static Helper Functions - Rate Limiter Management
- * ============================================================================
- */
-
 /**
  * configure_rate_limiter - Configure rate limiter (create or reconfigure)
  * @pool: Connection pool (must hold mutex)
@@ -243,11 +218,6 @@ configure_rate_limiter (T pool, size_t rate, size_t burst)
       SocketRateLimit_Failed);
 }
 
-/* ============================================================================
- * Static Helper Functions - IP Tracker Management
- * ============================================================================
- */
-
 /**
  * configure_ip_tracker - Configure IP tracker (create or reconfigure)
  * @pool: Connection pool (must hold mutex)
@@ -266,11 +236,6 @@ configure_ip_tracker (T pool, int max_conns)
       SocketIPTracker_Failed);
 }
 
-
-/* ============================================================================
- * Connection Rate Limiting - Public API
- * ============================================================================
- */
 
 /**
  * @brief Configure the global connection acceptance rate limit for the pool.
@@ -468,11 +433,6 @@ SocketPool_getconnrate (T pool)
   return rate;
 }
 
-/* ============================================================================
- * Per-IP Connection Limiting - Public API
- * ============================================================================
- */
-
 /**
  * @brief Configure the maximum number of concurrent connections per client IP
  * address.
@@ -647,11 +607,6 @@ SocketPool_getmaxperip (T pool)
 
   return max;
 }
-
-/* ============================================================================
- * Rate Limit Checking - Public API
- * ============================================================================
- */
 
 /**
  * @brief Non-consuming pre-check if a new connection acceptance would be
@@ -937,11 +892,6 @@ SocketPool_accept_limited (T pool, Socket_T server)
 
   return client;
 }
-
-/* ============================================================================
- * Manual IP Tracking - Public API
- * ============================================================================
- */
 
 /**
  * SocketPool_track_ip - Manually track IP for per-IP limiting

@@ -29,11 +29,6 @@
  * where assert() is compiled out */
 #define TEST_UNUSED(x) ((void)(x))
 
-/* ============================================================================
- * Test Counters
- * ============================================================================
- */
-
 static int tests_run = 0;
 static int tests_passed = 0;
 
@@ -61,11 +56,6 @@ static int tests_passed = 0;
     }                                \
   while (0)
 
-/* ============================================================================
- * Test: Configuration Defaults
- * ============================================================================
- */
-
 static void
 test_config_defaults (void)
 {
@@ -88,11 +78,6 @@ test_config_defaults (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Test: XOR Masking
- * ============================================================================
- */
 
 static void
 test_masking_simple (void)
@@ -175,11 +160,6 @@ test_masking_with_offset (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Test: Frame Header Building
- * ============================================================================
- */
-
 static void
 test_frame_header_small (void)
 {
@@ -260,11 +240,6 @@ test_frame_header_masked (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Test: Frame Header Parsing
- * ============================================================================
- */
 
 static void
 test_frame_parse_simple (void)
@@ -424,11 +399,6 @@ test_frame_parse_incremental (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Test: Protocol Validation
- * ============================================================================
- */
-
 static void
 test_frame_parse_invalid_opcode (void)
 {
@@ -488,11 +458,6 @@ test_frame_parse_control_too_large (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Test: Opcode Validation Helpers
- * ============================================================================
- */
-
 static void
 test_opcode_helpers (void)
 {
@@ -524,11 +489,6 @@ test_opcode_helpers (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Test: Close Code Validation
- * ============================================================================
- */
-
 static void
 test_close_code_validation (void)
 {
@@ -559,11 +519,6 @@ test_close_code_validation (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Test: Error Strings
- * ============================================================================
- */
-
 static void
 test_error_strings (void)
 {
@@ -583,11 +538,6 @@ test_error_strings (void)
 
   TEST_PASS ();
 }
-
-/* ============================================================================
- * Test: WebSocket Key Generation (using SocketCrypto)
- * ============================================================================
- */
 
 static void
 test_websocket_key_generation (void)
@@ -614,11 +564,6 @@ test_websocket_key_generation (void)
   TEST_PASS ();
 }
 
-/* ============================================================================
- * Test: WebSocket Accept Computation (using SocketCrypto)
- * ============================================================================
- */
-
 #if SOCKET_HAS_TLS
 static void
 test_websocket_accept_computation (void)
@@ -639,11 +584,6 @@ test_websocket_accept_computation (void)
   TEST_PASS ();
 }
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Tests: WebSocket Compression (permessage-deflate)
- * ============================================================================
- */
 
 #ifdef SOCKETWS_HAS_DEFLATE
 
@@ -746,11 +686,6 @@ test_ws_compression_errors (void)
 }
 
 #endif /* SOCKETWS_HAS_DEFLATE */
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

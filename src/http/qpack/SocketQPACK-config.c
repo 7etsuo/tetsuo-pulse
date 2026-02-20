@@ -18,11 +18,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * INTERNAL STRUCTURE
- * ============================================================================
- */
-
 /**
  * @brief QPACK configuration internal structure.
  */
@@ -35,11 +30,6 @@ struct SocketQPACK_Config
   bool peer_received;               /**< True if apply_peer has been called */
   bool has_0rtt;                    /**< True if 0-RTT settings stored */
 };
-
-/* ============================================================================
- * SETTINGS FUNCTIONS
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_settings_defaults (SocketQPACK_Settings *settings)
@@ -68,11 +58,6 @@ SocketQPACK_settings_validate (const SocketQPACK_Settings *settings)
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * CONFIGURATION FUNCTIONS
- * ============================================================================
- */
 
 SocketQPACK_Config_T
 SocketQPACK_Config_new (Arena_T arena)
@@ -173,11 +158,6 @@ SocketQPACK_Config_has_peer_settings (SocketQPACK_Config_T config)
   return config->peer_received;
 }
 
-/* ============================================================================
- * 0-RTT FUNCTIONS (RFC 9204 Section 3.2.3)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_Config_store_for_0rtt (SocketQPACK_Config_T config,
                                    const SocketQPACK_Settings *settings)
@@ -251,11 +231,6 @@ SocketQPACK_Config_validate_0rtt (SocketQPACK_Config_T config,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * UTILITY FUNCTIONS
- * ============================================================================
- */
 
 const char *
 SocketQPACK_settings_id_string (uint64_t setting_id)

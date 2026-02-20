@@ -393,14 +393,8 @@ test_setting_edge_cases (void)
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  /* ====================================================================
-   * Test 1: Direct fuzzed settings payload parsing
-   * ==================================================================== */
   parse_settings_payload (data, size);
 
-  /* ====================================================================
-   * Test 2: Fuzzed payload with various offsets/sizes
-   * ==================================================================== */
   for (size_t offset = 0; offset < size && offset < 20; offset++)
     {
       for (size_t len = 0; len <= size - offset && len <= 120; len += 6)
@@ -409,34 +403,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-  /* ====================================================================
-   * Test 3: All defined settings with various values
-   * ==================================================================== */
   test_all_settings ();
 
-  /* ====================================================================
-   * Test 4: SETTINGS ACK handling
-   * ==================================================================== */
   test_settings_ack ();
 
-  /* ====================================================================
-   * Test 5: Multiple settings in single frame
-   * ==================================================================== */
   test_multiple_settings ();
 
-  /* ====================================================================
-   * Test 6: Invalid payload sizes
-   * ==================================================================== */
   test_invalid_payload_sizes ();
 
-  /* ====================================================================
-   * Test 7: Setting edge cases
-   * ==================================================================== */
   test_setting_edge_cases ();
 
-  /* ====================================================================
-   * Test 8: Build frame from fuzzed data and parse
-   * ==================================================================== */
   if (size >= 6)
     {
       uint8_t buffer[256];
@@ -477,9 +453,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-  /* ====================================================================
-   * Test 9: Fuzzed setting validation
-   * ==================================================================== */
   if (size >= 6)
     {
       uint16_t id = ((uint16_t)data[0] << 8) | data[1];
@@ -489,9 +462,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       validate_setting (id, value);
     }
 
-  /* ====================================================================
-   * Test 10: Boundary values for all settings
-   * ==================================================================== */
   {
     uint32_t boundary_values[]
         = { 0,     1,     0x7FFFFFFF, 0x80000000, 0xFFFFFFFF,

@@ -40,11 +40,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * CONSTANTS
- * ============================================================================
- */
-
 /** Indexed Field Line with Post-Base Index pattern: 0001xxxx */
 #define QPACK_INDEXED_POSTBASE_PATTERN 0x10
 
@@ -53,11 +48,6 @@
 
 /** Prefix bits for post-base index (4 bits) */
 #define QPACK_INDEXED_POSTBASE_PREFIX 4
-
-/* ============================================================================
- * ENCODE INDEXED FIELD LINE WITH POST-BASE INDEX (RFC 9204 Section 4.5.3)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_indexed_postbase (uint64_t post_base_index,
@@ -102,11 +92,6 @@ SocketQPACK_encode_indexed_postbase (uint64_t post_base_index,
   *bytes_written = encoded_len;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE INDEXED FIELD LINE WITH POST-BASE INDEX (RFC 9204 Section 4.5.3)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_indexed_postbase (const unsigned char *input,
@@ -167,11 +152,6 @@ SocketQPACK_decode_indexed_postbase (const unsigned char *input,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * VALIDATE POST-BASE INDEX (RFC 9204 Section 4.5.3)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_validate_indexed_postbase (uint64_t base,
                                        uint64_t insert_count,
@@ -193,11 +173,6 @@ SocketQPACK_validate_indexed_postbase (uint64_t base,
   return SocketQPACK_is_valid_postbase (base, insert_count, post_base_index);
 }
 
-/* ============================================================================
- * CONVERT POST-BASE INDEX TO ABSOLUTE INDEX (RFC 9204 Section 4.5.3)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_indexed_postbase_to_absolute (uint64_t base,
                                           uint64_t post_base_index,
@@ -213,13 +188,6 @@ SocketQPACK_indexed_postbase_to_absolute (uint64_t base,
    */
   return SocketQPACK_postbase_to_abs (base, post_base_index, absolute_index);
 }
-
-/* ============================================================================
- * LOOKUP INDEXED FIELD LINE WITH POST-BASE INDEX (RFC 9204 Section 4.5.3)
- *
- * High-level function that validates, converts, and looks up the entry.
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_lookup_indexed_postbase (SocketQPACK_Table_T table,
@@ -260,11 +228,6 @@ SocketQPACK_lookup_indexed_postbase (SocketQPACK_Table_T table,
   return SocketQPACK_Table_get (
       table, absolute_index, name, name_len, value, value_len);
 }
-
-/* ============================================================================
- * IDENTIFY INDEXED FIELD LINE WITH POST-BASE PATTERN
- * ============================================================================
- */
 
 bool
 SocketQPACK_is_indexed_postbase (uint8_t first_byte)

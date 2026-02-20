@@ -19,10 +19,6 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Types
-   *============================================================================*/
-
   /**
    * @brief HTTP response structure.
    */
@@ -64,10 +60,6 @@ extern "C"
    * @param opts Options structure to initialize.
    */
   extern void Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts);
-
-  /*============================================================================
-   * One-liner HTTP Functions
-   *============================================================================*/
 
   /**
    * @brief Perform HTTP GET request.
@@ -184,10 +176,6 @@ extern "C"
   extern int Socket_simple_http_options (const char *url,
                                          SocketSimple_HTTPResponse *response);
 
-  /*============================================================================
-   * Extended Functions with Custom Headers
-   *============================================================================*/
-
   /**
    * @brief Perform HTTP POST with custom headers.
    *
@@ -280,10 +268,6 @@ extern "C"
                                  const char **headers,
                                  SocketSimple_HTTPResponse *response);
 
-  /*============================================================================
-   * Generic Request Function
-   *============================================================================*/
-
   /**
    * @brief HTTP method types for generic request.
    */
@@ -339,10 +323,6 @@ extern "C"
                                          const SocketSimple_HTTPOptions *opts,
                                          SocketSimple_HTTPResponse *response);
 
-  /*============================================================================
-   * JSON Convenience Functions
-   *============================================================================*/
-
   /**
    * @brief HTTP GET with JSON response.
    *
@@ -390,10 +370,6 @@ extern "C"
                                           char **json_out,
                                           size_t *json_len);
 
-  /*============================================================================
-   * File Operations
-   *============================================================================*/
-
   /**
    * @brief Download file from URL.
    *
@@ -415,10 +391,6 @@ extern "C"
   extern int Socket_simple_http_upload (const char *url,
                                         const char *filepath,
                                         const char *content_type);
-
-  /*============================================================================
-   * HTTP Client Handle (Connection Reuse)
-   *============================================================================*/
 
   /**
    * @brief Create reusable HTTP client.
@@ -463,10 +435,6 @@ extern "C"
    * @param client Pointer to client handle.
    */
   extern void Socket_simple_http_free (SocketSimple_HTTP_T *client);
-
-  /*============================================================================
-   * Cleanup
-   *============================================================================*/
 
   /**
    * @brief Free HTTP response resources.

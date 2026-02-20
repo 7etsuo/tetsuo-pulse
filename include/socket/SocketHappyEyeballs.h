@@ -101,11 +101,6 @@ typedef struct T *T;
  */
 extern const Except_T SocketHE_Failed;
 
-/* ============================================================================
- * Connection State
- * ============================================================================
- */
-
 /**
  * @brief State enumeration for Happy Eyeballs connection progress.
  * @ingroup async_io
@@ -128,11 +123,6 @@ typedef enum
   HE_STATE_FAILED,     /**< All attempts failed (call error()) */
   HE_STATE_CANCELLED   /**< Operation cancelled by user */
 } SocketHE_State;
-
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
 
 /**
  * @brief Happy Eyeballs configuration structure.
@@ -158,11 +148,6 @@ typedef struct SocketHE_Config
   int prefer_ipv6;    /**< 1 = IPv6 first (default), 0 = IPv4 first */
   int max_attempts;   /**< Maximum simultaneous attempts (2) */
 } SocketHE_Config_T;
-
-/* ============================================================================
- * Configuration Constants
- * ============================================================================
- */
 
 /**
  * @brief RFC 8305 recommended delay before starting fallback address family
@@ -229,11 +214,6 @@ typedef struct SocketHE_Config
  * @}
  */
 
-/* ============================================================================
- * Synchronous API (Simple Usage)
- * ============================================================================
- */
-
 /**
  * @brief Perform synchronous Happy Eyeballs connection to host (RFC 8305
  * compliant).
@@ -283,11 +263,6 @@ typedef struct SocketHE_Config
 extern Socket_T SocketHappyEyeballs_connect (const char *host,
                                              int port,
                                              const SocketHE_Config_T *config);
-
-/* ============================================================================
- * Asynchronous API (Event-Driven Usage)
- * ============================================================================
- */
 
 /**
  * @brief Start asynchronous Happy Eyeballs connection.
@@ -500,11 +475,6 @@ extern void SocketHappyEyeballs_cancel (T he);
  */
 extern void SocketHappyEyeballs_free (T *he);
 
-/* ============================================================================
- * State Query
- * ============================================================================
- */
-
 /**
  * @brief Get the current state of the Happy Eyeballs operation.
  * @ingroup async_io
@@ -530,11 +500,6 @@ extern SocketHE_State SocketHappyEyeballs_state (T he);
  * @see SocketHE_Failed for general exception.
  */
 extern const char *SocketHappyEyeballs_error (T he);
-
-/* ============================================================================
- * Configuration Helpers
- * ============================================================================
- */
 
 /**
  * @brief Initialize Happy Eyeballs configuration with default values.
@@ -578,11 +543,6 @@ extern const char *SocketHappyEyeballs_error (T he);
  * @see docs/ASYNC_IO.md for RFC 8305 details.
  */
 extern void SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config);
-
-/* ============================================================================
- * Timer Integration
- * ============================================================================
- */
 
 /**
  * @brief Process SocketPoll events for Happy Eyeballs progress and completion

@@ -48,10 +48,6 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Proxy Type Enum
-   *============================================================================*/
-
   /**
    * @brief Supported proxy types.
    */
@@ -65,10 +61,6 @@ extern "C"
     SOCKET_SIMPLE_PROXY_SOCKS5,  /**< SOCKS5 (full featured) */
     SOCKET_SIMPLE_PROXY_SOCKS5H  /**< SOCKS5 with remote DNS */
   } SocketSimple_ProxyType;
-
-  /*============================================================================
-   * Configuration Structure
-   *============================================================================*/
 
   /**
    * @brief Proxy configuration.
@@ -84,10 +76,6 @@ extern "C"
     int handshake_timeout_ms;    /**< Protocol handshake timeout (0=default) */
   } SocketSimple_ProxyConfig;
 
-  /*============================================================================
-   * Configuration Functions
-   *============================================================================*/
-
   /**
    * @brief Initialize proxy config with defaults.
    *
@@ -99,9 +87,9 @@ extern "C"
   /**
    * @brief Securely clear proxy configuration.
    *
-   * Securely wipes username and password fields using SocketCrypto_secure_clear()
-   * to prevent memory disclosure attacks. Should be called when the config is
-   * no longer needed.
+   * Securely wipes username and password fields using
+   * SocketCrypto_secure_clear() to prevent memory disclosure attacks. Should be
+   * called when the config is no longer needed.
    *
    * @param config Config struct to clear.
    */
@@ -132,10 +120,6 @@ extern "C"
    */
   extern const char *
   Socket_simple_proxy_type_name (SocketSimple_ProxyType type);
-
-  /*============================================================================
-   * Synchronous Connection
-   *============================================================================*/
 
   /**
    * @brief Connect to target through proxy.
@@ -183,10 +167,6 @@ extern "C"
   Socket_simple_proxy_connect_tls (const SocketSimple_ProxyConfig *config,
                                    const char *target_host,
                                    int target_port);
-
-  /*============================================================================
-   * Tunnel on Existing Socket
-   *============================================================================*/
 
   /**
    * @brief Perform proxy handshake on pre-connected socket.

@@ -17,29 +17,6 @@
 #include "quic/SocketQUICPacket.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * RFC 9001 Appendix A.4 Test Vector
- *
- * Original Destination Connection ID (client DCID):
- *   0x8394c8f03e515708
- *
- * Complete Retry packet (36 bytes):
- *   ff000000010008f067a5502a4262b5746f6b656e04a265ba2eff4d829058fb3f0f2496ba
- *
- * Breakdown:
- *   ff                 - First byte (Long header, Retry type)
- *   00000001           - Version (QUIC v1)
- *   00                 - DCID Length (0)
- *   08                 - SCID Length (8)
- *   f067a5502a4262b5   - SCID
- *   746f6b656e         - Retry Token ("token")
- *   04a265ba2eff4d829058fb3f0f2496ba - Integrity Tag (16 bytes)
- *
- * Packet without tag (20 bytes):
- *   ff000000010008f067a5502a4262b5746f6b656e
- * ============================================================================
- */
-
 /* Client's Original Destination Connection ID */
 static const uint8_t RFC_ODCID[]
     = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
@@ -98,11 +75,6 @@ static const uint8_t RFC_RETRY_PACKET_NO_TAG[] = {
   0x74, 0x6f, 0x6b, 0x65, 0x6e                    /* Retry Token: "token" */
 };
 
-/* ============================================================================
- * RFC Test Vector Tests
- * ============================================================================
- */
-
 TEST (quic_retry_tag_rfc_test_vector_compute)
 {
   SocketQUICConnectionID_T odcid;
@@ -141,11 +113,6 @@ TEST (quic_retry_tag_rfc_test_vector_verify)
 
   ASSERT_EQ (result, QUIC_PACKET_OK);
 }
-
-/* ============================================================================
- * Basic Functionality Tests
- * ============================================================================
- */
 
 TEST (quic_retry_tag_compute_basic)
 {
@@ -207,11 +174,6 @@ TEST (quic_retry_tag_verify_invalid)
       &odcid, corrupted_packet, sizeof (corrupted_packet));
   ASSERT_EQ (result, QUIC_PACKET_ERROR_INVALID);
 }
-
-/* ============================================================================
- * Edge Case Tests
- * ============================================================================
- */
 
 TEST (quic_retry_tag_null_params)
 {
@@ -391,11 +353,6 @@ TEST (quic_retry_tag_compute_then_verify)
       &odcid, full_packet, sizeof (full_packet));
   ASSERT_EQ (result, QUIC_PACKET_OK);
 }
-
-/* ============================================================================
- * Boundary Condition Tests
- * ============================================================================
- */
 
 TEST (quic_retry_tag_packet_at_max_size)
 {
@@ -613,11 +570,6 @@ TEST (quic_retry_tag_empty_packet)
   result = SocketQUICPacket_compute_retry_tag (&odcid, empty_packet, 0, tag);
   ASSERT_EQ (result, QUIC_PACKET_OK);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

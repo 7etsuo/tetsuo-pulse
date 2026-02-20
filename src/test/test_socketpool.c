@@ -51,8 +51,6 @@ setup_signals (void)
   /* No-op - SIGPIPE handled by Socket_ignore_sigpipe() in main() */
 }
 
-/* ==================== Basic Pool Tests ==================== */
-
 TEST (socketpool_new_creates_pool)
 {
   Arena_T arena = Arena_new ();
@@ -80,8 +78,6 @@ TEST (socketpool_new_large_pool)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Add/Get Tests ==================== */
 
 TEST (socketpool_add_socket)
 {
@@ -161,8 +157,6 @@ TEST (socketpool_add_multiple_sockets)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Remove Tests ==================== */
 
 TEST (socketpool_remove_socket)
 {
@@ -258,8 +252,6 @@ TEST (socketpool_remove_nonexistent)
   Arena_dispose (&arena);
 }
 
-/* ==================== Count Tests ==================== */
-
 TEST (socketpool_count_empty)
 {
   Arena_T arena = Arena_new ();
@@ -311,8 +303,6 @@ TEST (socketpool_count_after_remove)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Cleanup Tests ==================== */
 
 TEST (socketpool_cleanup_no_idle)
 {
@@ -373,8 +363,6 @@ TEST (socketpool_cleanup_multiple)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Connection Accessor Tests ==================== */
 
 TEST (socketpool_connection_socket)
 {
@@ -472,8 +460,6 @@ TEST (socketpool_connection_lastactivity)
   Arena_dispose (&arena);
 }
 
-/* ==================== Foreach Tests ==================== */
-
 static int foreach_count;
 static void
 count_connections (Connection_T conn, void *arg)
@@ -521,8 +507,6 @@ TEST (socketpool_foreach_counts_connections)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Pool Limits Tests ==================== */
 
 TEST (socketpool_full_pool_returns_null)
 {
@@ -573,8 +557,6 @@ TEST (socketpool_reuse_after_remove)
   Arena_dispose (&arena);
 }
 
-/* ==================== Buffer Integration Tests ==================== */
-
 #if 0 /* KNOWN_ISSUE: Exception handling segfault during buffer operations. \
        * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketpool_connection_buffer_operations)
@@ -611,8 +593,6 @@ TEST(socketpool_connection_buffer_operations)
     Arena_dispose(&arena);
 }
 #endif
-
-/* ==================== Stress Tests ==================== */
 
 TEST (socketpool_many_connections)
 {
@@ -661,8 +641,6 @@ TEST (socketpool_add_remove_cycle)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Thread Safety Tests ==================== */
 
 #if 0 /* KNOWN_ISSUE: realloc() invalid pointer during concurrent pool \
        * operations. See KNOWN_ISSUES.md for details and tracking. */
@@ -746,8 +724,6 @@ TEST (socketpool_concurrent_get)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Batch Accept Tests ==================== */
 
 TEST (socketpool_batch_accept_single)
 {
@@ -835,8 +811,6 @@ TEST (socketpool_batch_accept_pool_full)
   Arena_dispose (&arena);
 }
 
-/* ==================== Resize Tests ==================== */
-
 TEST (socketpool_resize_grow)
 {
   Arena_T arena = Arena_new ();
@@ -907,8 +881,6 @@ TEST (socketpool_resize_same_size)
   Arena_dispose (&arena);
 }
 
-/* ==================== Pre-warming Tests ==================== */
-
 TEST (socketpool_prewarm_default)
 {
   Arena_T arena = Arena_new ();
@@ -937,8 +909,6 @@ TEST (socketpool_prewarm_custom)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Buffer Size Tuning Tests ==================== */
 
 TEST (socketpool_set_bufsize)
 {
@@ -971,8 +941,6 @@ TEST (socketpool_set_bufsize_large)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Async Connect Tests ==================== */
 
 static volatile int async_callback_called = 0;
 static volatile int async_callback_error = -1;
@@ -1019,8 +987,6 @@ TEST (socketpool_connect_async_invalid_params)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Prepare Connection Tests ==================== */
 
 TEST (socketpool_prepare_connection_basic)
 {
@@ -1156,9 +1122,6 @@ TEST (socketpool_prepare_connection_invalid_params)
   Arena_dispose (&arena);
 }
 
-/* ==================== Resize with Active Connections Tests
- * ==================== */
-
 TEST (socketpool_resize_shrink_with_active)
 {
   setup_signals ();
@@ -1208,8 +1171,6 @@ TEST (socketpool_resize_shrink_with_active)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Reconnection Support Tests ==================== */
 
 TEST (socketpool_set_reconnect_policy)
 {
@@ -1299,8 +1260,6 @@ TEST (socketpool_connection_has_reconnect_disabled)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Hash Table Coverage Tests ==================== */
 
 TEST (socketpool_hash_collision_handling)
 {
@@ -1401,8 +1360,6 @@ TEST (socketpool_activity_time_updated)
   Arena_dispose (&arena);
 }
 
-/* ==================== Input Validation Tests ==================== */
-
 TEST (socketpool_new_null_arena_raises)
 {
   volatile int raised = 0;
@@ -1457,8 +1414,6 @@ TEST (socketpool_new_invalid_bufsize_raises)
   ASSERT_EQ (raised, 1);
   Arena_dispose (&arena);
 }
-
-/* ==================== Reconnection Feature Tests ==================== */
 
 TEST (socketpool_enable_reconnect_success)
 {
@@ -1803,8 +1758,6 @@ TEST (socketpool_reconnect_with_backoff_timeout)
   Arena_dispose (&arena);
 }
 
-/* ==================== Hash Chain Traversal Tests ==================== */
-
 TEST (socketpool_hash_chain_removal_middle)
 {
   setup_signals ();
@@ -1932,8 +1885,6 @@ TEST (socketpool_find_slot_chain_traversal)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Batch Accept Success Path Tests ==================== */
 
 /**
  * Helper to create a pending connection to a server socket.
@@ -2146,8 +2097,6 @@ TEST (socketpool_batch_accept_invalid_max_accepts)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Async Connect Tests ==================== */
 
 /* Async callback tracking for tests */
 static atomic_int async_test_callback_called = 0;
@@ -2401,8 +2350,6 @@ TEST (socketpool_connect_async_valid_params)
   Arena_dispose (&arena);
 }
 
-/* ==================== Resize Overflow Test ==================== */
-
 TEST (socketpool_resize_overflow_protection)
 {
   Arena_T arena = Arena_new ();
@@ -2424,8 +2371,6 @@ TEST (socketpool_resize_overflow_protection)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Error Path Tests ==================== */
 
 TEST (socketpool_prepare_connection_null_params)
 {
@@ -2632,8 +2577,6 @@ TEST (socketpool_accept_one_error_not_eagain)
   Arena_dispose (&arena);
 }
 
-/* ==================== Prewarm Edge Cases ==================== */
-
 TEST (socketpool_prewarm_zero_percent)
 {
   Arena_T arena = Arena_new ();
@@ -2673,8 +2616,6 @@ TEST (socketpool_prewarm_100_percent)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Async Pool Full Callback Test ==================== */
 
 /* Callback for pool full test - tracks error code */
 static atomic_int pool_full_callback_called = 0;
@@ -2766,9 +2707,6 @@ TEST (socketpool_connect_async_pool_full_callback)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Async Context List Traversal Test ====================
- */
 
 /* Counter and storage for multiple async callbacks */
 static volatile int multi_async_callback_count = 0;
@@ -2875,8 +2813,6 @@ TEST (socketpool_connect_async_multiple_pending)
   Arena_dispose (&arena);
 }
 
-/* ==================== Batch Accept Add Failure Test ==================== */
-
 TEST (socketpool_batch_accept_socket_add_fails)
 {
   setup_signals ();
@@ -2967,8 +2903,6 @@ TEST (socketpool_batch_accept_socket_add_fails)
   Arena_dispose (&arena);
 }
 
-/* ==================== Wrap FD Failure Test ==================== */
-
 TEST (socketpool_batch_accept_wrap_fd_fails)
 {
   setup_signals ();
@@ -3020,8 +2954,6 @@ TEST (socketpool_batch_accept_wrap_fd_fails)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Graceful Shutdown (Drain) Tests ==================== */
 
 TEST (socketpool_drain_initial_state_running)
 {

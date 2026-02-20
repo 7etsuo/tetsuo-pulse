@@ -24,10 +24,6 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * SYN Protection Types
-   *============================================================================*/
-
   /**
    * @brief Opaque SYN protection handle.
    */
@@ -103,10 +99,6 @@ extern "C"
     float score;                 /**< Reputation score (0.0-1.0) */
     int is_blocked;              /**< 1 if currently blocked */
   } SocketSimple_IPState;
-
-  /*============================================================================
-   * SYN Protection Functions
-   *============================================================================*/
 
   /**
    * @brief Initialize SYN protection config with defaults.
@@ -318,18 +310,10 @@ extern "C"
   extern const char *
   Socket_simple_syn_reputation_name (SocketSimple_Reputation rep);
 
-  /*============================================================================
-   * IP Tracker Types
-   *============================================================================*/
-
   /**
    * @brief Opaque IP tracker handle.
    */
   typedef struct SocketSimple_IPTracker *SocketSimple_IPTracker_T;
-
-  /*============================================================================
-   * IP Tracker Functions
-   *============================================================================*/
 
   /**
    * @brief Create a new IP connection tracker.

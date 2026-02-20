@@ -19,18 +19,8 @@
 #include <time.h>
 #include <unistd.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define NANOSECONDS_PER_SECOND 1000000000ULL
 #define NANOSECONDS_PER_MILLISECOND 1000000ULL
-
-/* ============================================================================
- * Internal Structure
- * ============================================================================
- */
 
 struct SocketSimple_RateLimit
 {
@@ -45,11 +35,6 @@ struct SocketSimple_RateLimit
   uint64_t total_rejected;
   uint64_t total_waited_ms;
 };
-
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
 
 static uint64_t
 get_monotonic_ns (void)
@@ -100,17 +85,18 @@ refill_tokens (SocketSimple_RateLimit_T limit)
     {
       /*
        * Use fixed-point arithmetic to avoid floating-point precision issues.
-       * Calculate: new_tokens = elapsed_ns * tokens_per_sec / NANOSECONDS_PER_SECOND
-       * To prevent overflow with large elapsed times, cap elapsed_ns.
+       * Calculate: new_tokens = elapsed_ns * tokens_per_sec /
+       * NANOSECONDS_PER_SECOND To prevent overflow with large elapsed times,
+       * cap elapsed_ns.
        */
-      uint64_t max_elapsed = NANOSECONDS_PER_SECOND * 60; /* Cap at 60 seconds */
+      uint64_t max_elapsed
+          = NANOSECONDS_PER_SECOND * 60; /* Cap at 60 seconds */
       if (elapsed_ns > max_elapsed)
         elapsed_ns = max_elapsed;
 
       /* Fixed-point calculation: (elapsed_ns * tokens_per_sec) / 1e9 */
-      uint64_t new_tokens_fixed
-          = (elapsed_ns * (uint64_t)limit->tokens_per_sec)
-            / NANOSECONDS_PER_SECOND;
+      uint64_t new_tokens_fixed = (elapsed_ns * (uint64_t)limit->tokens_per_sec)
+                                  / NANOSECONDS_PER_SECOND;
 
       limit->tokens += (double)new_tokens_fixed;
       if (limit->tokens > limit->bucket_size)
@@ -126,11 +112,6 @@ refill_tokens (SocketSimple_RateLimit_T limit)
       limit->last_refill_ns = now + jitter;
     }
 }
-
-/* ============================================================================
- * Rate Limiter Lifecycle
- * ============================================================================
- */
 
 SocketSimple_RateLimit_T
 Socket_simple_ratelimit_new (int tokens_per_sec, int burst)
@@ -180,11 +161,6 @@ Socket_simple_ratelimit_free (SocketSimple_RateLimit_T *limit)
   free (*limit);
   *limit = NULL;
 }
-
-/* ============================================================================
- * Token Operations
- * ============================================================================
- */
 
 int
 Socket_simple_ratelimit_try_acquire (SocketSimple_RateLimit_T limit, int tokens)
@@ -337,11 +313,6 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
   return 1;
 }
 
-/* ============================================================================
- * Rate Limiter State
- * ============================================================================
- */
-
 int
 Socket_simple_ratelimit_available (SocketSimple_RateLimit_T limit)
 {
@@ -402,11 +373,6 @@ Socket_simple_ratelimit_set_rate (SocketSimple_RateLimit_T limit,
 
   return 0;
 }
-
-/* ============================================================================
- * Statistics
- * ============================================================================
- */
 
 int
 Socket_simple_ratelimit_get_stats (SocketSimple_RateLimit_T limit,

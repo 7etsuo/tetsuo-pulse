@@ -40,11 +40,6 @@
     }                                                                        \
   while (0)
 
-/* ============================================================================
- * ENCODER RELATIVE INDEXING TESTS (RFC 9204 Section 3.2.5)
- * ============================================================================
- */
-
 /**
  * Test basic encoder relative index conversion.
  *
@@ -147,11 +142,6 @@ test_encoder_relative_boundaries (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * FIELD SECTION RELATIVE INDEXING TESTS (RFC 9204 Section 3.2.5)
- * ============================================================================
- */
-
 /**
  * Test basic field section relative index conversion.
  *
@@ -245,11 +235,6 @@ test_field_relative_boundaries (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * POST-BASE INDEXING TESTS (RFC 9204 Section 3.2.6)
- * ============================================================================
- */
 
 /**
  * Test basic post-base index conversion.
@@ -346,11 +331,6 @@ test_postbase_boundaries (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * VALIDATION TESTS
- * ============================================================================
- */
 
 /**
  * Test encoder relative validation with eviction.
@@ -489,11 +469,6 @@ test_validate_absolute (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * EDGE CASE TESTS
- * ============================================================================
- */
 
 /**
  * Test with max_entries = 1 (eviction edge case).
@@ -678,11 +653,6 @@ test_capacity_estimation (void)
   printf ("PASS\n");
 }
 
-/* ============================================================================
- * NULL PARAMETER TESTS (Hardening)
- * ============================================================================
- */
-
 /**
  * Test NULL parameter handling for conversion functions.
  *
@@ -698,19 +668,23 @@ test_null_parameters (void)
 
   /* Test abs_to_relative_encoder with NULL */
   result = SocketQPACK_abs_to_relative_encoder (10, 5, NULL);
-  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM, "abs_to_rel_enc NULL should fail");
+  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM,
+               "abs_to_rel_enc NULL should fail");
 
   /* Test relative_to_abs_encoder with NULL */
   result = SocketQPACK_relative_to_abs_encoder (10, 5, NULL);
-  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM, "rel_to_abs_enc NULL should fail");
+  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM,
+               "rel_to_abs_enc NULL should fail");
 
   /* Test abs_to_relative_field with NULL */
   result = SocketQPACK_abs_to_relative_field (10, 5, NULL);
-  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM, "abs_to_rel_field NULL should fail");
+  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM,
+               "abs_to_rel_field NULL should fail");
 
   /* Test relative_to_abs_field with NULL */
   result = SocketQPACK_relative_to_abs_field (10, 5, NULL);
-  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM, "rel_to_abs_field NULL should fail");
+  TEST_ASSERT (result == QPACK_ERR_NULL_PARAM,
+               "rel_to_abs_field NULL should fail");
 
   /* Test abs_to_postbase with NULL */
   result = SocketQPACK_abs_to_postbase (5, 10, NULL);
@@ -738,11 +712,13 @@ test_invalid_state_detection (void)
 
   /* Test is_valid_relative_encoder with invalid state */
   result = SocketQPACK_is_valid_relative_encoder (3, 5, 0);
-  TEST_ASSERT (result == QPACK_ERR_INTERNAL, "invalid state (dropped>insert) encoder");
+  TEST_ASSERT (result == QPACK_ERR_INTERNAL,
+               "invalid state (dropped>insert) encoder");
 
   /* Test is_valid_absolute with invalid state */
   result = SocketQPACK_is_valid_absolute (3, 5, 0);
-  TEST_ASSERT (result == QPACK_ERR_INTERNAL, "invalid state (dropped>insert) absolute");
+  TEST_ASSERT (result == QPACK_ERR_INTERNAL,
+               "invalid state (dropped>insert) absolute");
 
   printf ("PASS\n");
 }
@@ -762,11 +738,6 @@ test_null_param_result_string (void)
 
   printf ("PASS\n");
 }
-
-/* ============================================================================
- * TEST SUITE
- * ============================================================================
- */
 
 static void
 run_encoder_relative_tests (void)

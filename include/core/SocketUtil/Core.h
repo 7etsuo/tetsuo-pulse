@@ -23,11 +23,6 @@
 
 #include <stdint.h>
 
-/* ============================================================================
- * ARRAY UTILITIES
- * ============================================================================
- */
-
 /**
  * @brief ARRAY_LENGTH - Calculate number of elements in a static array
  * @param arr Array name (must be a static array, not a pointer)
@@ -50,11 +45,6 @@
  *   }
  */
 #define ARRAY_LENGTH(arr) (sizeof (arr) / sizeof ((arr)[0]))
-
-/* ============================================================================
- * BIT MANIPULATION MACROS
- * ============================================================================
- */
 
 /**
  * @brief BITMASK32 - Create a 32-bit mask with N lowest bits set
@@ -153,11 +143,6 @@
  */
 #define RINGBUF_WRAP(index, capacity) ((index) & ((capacity) - 1))
 
-/* ============================================================================
- * ASCII CASE CONVERSION
- * ============================================================================
- */
-
 /**
  * @brief ASCII_CASE_OFFSET - Offset between uppercase and lowercase ASCII
  * @ingroup foundation
@@ -181,11 +166,6 @@
  * 0 << 5 = 0, c unchanged. */
 /** @endcond */
 #define ASCII_TOLOWER(c) ((c) + (((unsigned)(c) - 'A' < 26U) << 5))
-
-/* ============================================================================
- * DJB2 HASH STEP MACROS
- * ============================================================================
- */
 
 /**
  * @brief DJB2_STEP - One step of DJB2 hash algorithm (addition variant)
@@ -229,11 +209,6 @@
  */
 #define HASH_PRIME_31 31
 
-/* ============================================================================
- * POWER-OF-2 UTILITIES
- * ============================================================================
- */
-
 /**
  * @brief IS_POWER_OF_2 - Check if value is a power of 2
  * @param x Value to check (must be unsigned integer type)
@@ -267,11 +242,6 @@
  * @warning align MUST be a power of 2, otherwise results are undefined
  */
 #define ALIGN_DOWN(x, align) ((x) & ~((align) - 1))
-
-/* ============================================================================
- * COMPILER INTRINSICS - BIT COUNTING
- * ============================================================================
- */
 
 #if defined(__GNUC__) || defined(__clang__)
 
@@ -359,11 +329,6 @@
 
 #endif /* __GNUC__ || __clang__ */
 
-/* ============================================================================
- * BIT ROTATION
- * ============================================================================
- */
-
 /**
  * @brief ROTL32 - Rotate 32-bit value left
  * @param x Value to rotate
@@ -410,11 +375,6 @@
 #define ROTR64(x, n) \
   ((uint64_t)(x) >> ((n) & 63) | (uint64_t)(x) << (64 - ((n) & 63)))
 
-/* ============================================================================
- * BYTE EXTRACTION
- * ============================================================================
- */
-
 /**
  * @brief BYTE0 - Extract byte 0 (least significant) from value
  * @param x Value to extract from
@@ -447,11 +407,6 @@
  */
 #define BYTE3(x) ((uint8_t)(((x) >> 24) & 0xFF))
 
-/* ============================================================================
- * SIGN EXTENSION
- * ============================================================================
- */
-
 /**
  * @brief SIGN_EXTEND - Sign-extend a value from N bits to 32 bits
  * @param x Value to sign-extend (N-bit signed value in low bits)
@@ -475,11 +430,6 @@
  */
 #define SIGN_EXTEND64(x, bits) \
   (((int64_t)((uint64_t)(x) << (64 - (bits)))) >> (64 - (bits)))
-
-/* ============================================================================
- * MIN/MAX UTILITIES
- * ============================================================================
- */
 
 /**
  * @brief MIN - Compute minimum of two values

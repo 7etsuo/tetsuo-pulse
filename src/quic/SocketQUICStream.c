@@ -17,11 +17,6 @@
 #include "quic/SocketQUICStream.h"
 #include "quic/SocketQUICConstants.h"
 
-/* ============================================================================
- * String Tables
- * ============================================================================
- */
-
 static const char *type_strings[]
     = { [QUIC_STREAM_BIDI_CLIENT] = "Client-Initiated Bidirectional",
         [QUIC_STREAM_BIDI_SERVER] = "Server-Initiated Bidirectional",
@@ -77,11 +72,6 @@ _Static_assert (
     sizeof (event_strings) / sizeof (event_strings[0])
         == QUIC_STREAM_EVENT_MAX + 1,
     "event_strings array size must match SocketQUICStreamEvent enum");
-
-/* ============================================================================
- * Stream ID Functions (RFC 9000 Section 2.1)
- * ============================================================================
- */
 
 int
 SocketQUICStream_is_client_initiated (uint64_t stream_id)
@@ -142,11 +132,6 @@ SocketQUICStream_sequence (uint64_t stream_id)
 {
   return stream_id >> QUIC_STREAM_TYPE_BITS;
 }
-
-/* ============================================================================
- * Stream Lifecycle Functions
- * ============================================================================
- */
 
 /**
  * stream_set_defaults - Initialize stream fields to default values
@@ -217,11 +202,6 @@ SocketQUICStream_reset (SocketQUICStream_T stream)
   return QUIC_STREAM_OK;
 }
 
-/* ============================================================================
- * Stream Access Functions
- * ============================================================================
- */
-
 uint64_t
 SocketQUICStream_get_id (const SocketQUICStream_T stream)
 {
@@ -253,11 +233,6 @@ SocketQUICStream_is_local (const SocketQUICStream_T stream)
     return 0;
   return stream->is_local;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 const char *
 SocketQUICStream_type_string (SocketQUICStreamType type)

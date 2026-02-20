@@ -18,11 +18,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * ENCODE NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_encode_null_output)
 {
   size_t written = 999;
@@ -47,11 +42,6 @@ TEST (qpack_indexed_field_encode_zero_buffer)
       = SocketQPACK_encode_indexed_field (buf, 0, 0, 1, &written);
   ASSERT_EQ (result, QPACK_ERR_TABLE_SIZE);
 }
-
-/* ============================================================================
- * ENCODE STATIC TABLE TESTS
- * ============================================================================
- */
 
 TEST (qpack_indexed_field_encode_static_index_0)
 {
@@ -172,11 +162,6 @@ TEST (qpack_indexed_field_encode_static_index_large_invalid)
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 }
 
-/* ============================================================================
- * ENCODE DYNAMIC TABLE TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_encode_dynamic_index_0)
 {
   unsigned char buf[16];
@@ -224,11 +209,6 @@ TEST (qpack_indexed_field_encode_dynamic_large_index)
   ASSERT_EQ (buf[1], 0x25); /* 37 = 0x25 */
 }
 
-/* ============================================================================
- * DECODE NULL PARAMETER TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_decode_null_index)
 {
   unsigned char buf[] = { 0xC0 };
@@ -269,11 +249,6 @@ TEST (qpack_indexed_field_decode_empty_input)
   ASSERT_EQ (result, QPACK_INCOMPLETE);
   ASSERT_EQ (consumed, 0);
 }
-
-/* ============================================================================
- * DECODE STATIC TABLE TESTS
- * ============================================================================
- */
 
 TEST (qpack_indexed_field_decode_static_index_0)
 {
@@ -384,11 +359,6 @@ TEST (qpack_indexed_field_decode_static_index_99_invalid)
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 }
 
-/* ============================================================================
- * DECODE DYNAMIC TABLE TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_decode_dynamic_index_0)
 {
   /* 0x80 = 10000000 -> T=0 (dynamic), index=0 */
@@ -437,11 +407,6 @@ TEST (qpack_indexed_field_decode_dynamic_large_index)
   ASSERT_EQ (index, 100);
 }
 
-/* ============================================================================
- * DECODE NOT INDEXED FIELD LINE TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_decode_not_indexed_pattern)
 {
   /* 0x00 = 00000000 -> bit 7 is 0, not an indexed field line */
@@ -467,11 +432,6 @@ TEST (qpack_indexed_field_decode_literal_pattern)
       buf, sizeof (buf), &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_ERR_INTERNAL);
 }
-
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
 
 TEST (qpack_indexed_field_roundtrip_static_0)
 {
@@ -561,11 +521,6 @@ TEST (qpack_indexed_field_roundtrip_dynamic_large)
   ASSERT_EQ (index, 500);
 }
 
-/* ============================================================================
- * RESOLVE TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_resolve_null_abs_index)
 {
   SocketQPACK_Result result
@@ -638,11 +593,6 @@ TEST (qpack_indexed_field_resolve_dynamic_out_of_range)
   ASSERT_EQ (result, QPACK_ERR_INVALID_INDEX);
 }
 
-/* ============================================================================
- * IS INDEXED FIELD LINE TESTS
- * ============================================================================
- */
-
 TEST (qpack_is_indexed_field_line_static)
 {
   /* 0xC0 = 11000000 -> indexed field line (static) */
@@ -673,11 +623,6 @@ TEST (qpack_is_indexed_field_line_false_0x7F)
   ASSERT (SocketQPACK_is_indexed_field_line (0x7F) == 0);
 }
 
-/* ============================================================================
- * INCOMPLETE INPUT TESTS
- * ============================================================================
- */
-
 TEST (qpack_indexed_field_decode_incomplete_multi_byte)
 {
   /* 0xFF needs continuation byte */
@@ -703,11 +648,6 @@ TEST (qpack_indexed_field_decode_incomplete_dynamic_multi_byte)
       buf, sizeof (buf), &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_INCOMPLETE);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

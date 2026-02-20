@@ -22,11 +22,6 @@
 #include <string.h>
 #include <time.h>
 
-/* ============================================================================
- * Test Counters
- * ============================================================================
- */
-
 static int tests_run = 0;
 static int tests_passed = 0;
 
@@ -44,11 +39,6 @@ static int tests_passed = 0;
         }                                                         \
     }                                                             \
   while (0)
-
-/* ============================================================================
- * HTTP Version Tests
- * ============================================================================
- */
 
 static void
 test_version_string (void)
@@ -90,11 +80,6 @@ test_version_parse (void)
   TEST_ASSERT (SocketHTTP_version_parse ("invalid", 0) == HTTP_VERSION_0_9,
                "Parse invalid returns default");
 }
-
-/* ============================================================================
- * HTTP Method Tests
- * ============================================================================
- */
 
 static void
 test_method_name (void)
@@ -194,11 +179,6 @@ test_method_valid (void)
   TEST_ASSERT (SocketHTTP_method_valid ("", 0) == 0, "Empty invalid");
 }
 
-/* ============================================================================
- * HTTP Status Code Tests
- * ============================================================================
- */
-
 static void
 test_status_reason (void)
 {
@@ -254,11 +234,6 @@ test_status_valid (void)
   TEST_ASSERT (SocketHTTP_status_valid (99) == 0, "99 is invalid");
   TEST_ASSERT (SocketHTTP_status_valid (600) == 0, "600 is invalid");
 }
-
-/* ============================================================================
- * HTTP Header Tests
- * ============================================================================
- */
 
 static void
 test_headers_basic (void)
@@ -502,11 +477,6 @@ test_header_dos_protection (void)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * URI Parsing Tests
- * ============================================================================
- */
 
 static void
 test_uri_basic (void)
@@ -849,11 +819,6 @@ test_uri_build (void)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Date Parsing Tests
- * ============================================================================
- */
-
 static void
 test_date_imf_fixdate (void)
 {
@@ -944,11 +909,6 @@ test_date_invalid (void)
                "Reject overly long date string");
 }
 
-/* ============================================================================
- * Media Type Parsing Tests
- * ============================================================================
- */
-
 static void
 test_media_type_basic (void)
 {
@@ -1004,11 +964,6 @@ test_media_type_matches (void)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Accept Header Parsing Tests
- * ============================================================================
- */
-
 static void
 test_accept_parsing (void)
 {
@@ -1033,11 +988,6 @@ test_accept_parsing (void)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Coding Tests
- * ============================================================================
- */
-
 static void
 test_coding (void)
 {
@@ -1060,11 +1010,6 @@ test_coding (void)
   TEST_ASSERT (SocketHTTP_coding_name (HTTP_CODING_UNKNOWN) == NULL,
                "Unknown returns NULL");
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

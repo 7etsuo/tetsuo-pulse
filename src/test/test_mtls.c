@@ -143,8 +143,6 @@ complete_handshake (Socket_T client, Socket_T server)
              : -1;
 }
 
-/* ==================== Verify Mode Tests ==================== */
-
 TEST (mtls_verify_peer_mode)
 {
   SocketTLSContext_T ctx = NULL;
@@ -196,8 +194,6 @@ TEST (mtls_verify_fail_if_no_peer_mode)
   }
   END_TRY;
 }
-
-/* ==================== Full mTLS Handshake Tests ==================== */
 
 TEST (mtls_successful_handshake)
 {
@@ -333,8 +329,6 @@ TEST (mtls_missing_client_cert_fails)
   END_TRY;
 }
 
-/* ==================== Certificate Info Tests ==================== */
-
 TEST (mtls_get_peer_cert_info)
 {
   const char *ca_cert = "test_mtls_info_ca.crt";
@@ -394,8 +388,6 @@ TEST (mtls_get_peer_cert_info)
   }
   END_TRY;
 }
-
-/* ==================== Verify Callback Tests ==================== */
 
 static int callback_call_count = 0;
 

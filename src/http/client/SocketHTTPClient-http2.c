@@ -33,14 +33,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #define PSEUDO_HEADER_STATUS ":status"
 #define PSEUDO_HEADER_STATUS_LEN 7
 
-/* --------------------------------------------------------------------------
- * Exception wrapper macros for safe HTTP/2 calls.
- *
- * H2_TLS_EXCEPTS is defined separately because #ifdef cannot appear inside
- * a macro body.  H2_SAFE_CALL composes the common TRY/EXCEPT boilerplate
- * used by the 6 wrappers that return int or ssize_t.
- * -------------------------------------------------------------------------- */
-
 #if SOCKET_HAS_TLS
 #define H2_TLS_EXCEPTS(fail_stmt)    \
   EXCEPT (SocketTLS_HandshakeFailed) \

@@ -20,16 +20,6 @@
 
 #include <stdint.h>
 
-/* ============================================================================
- * Hash Constants (FNV-1a)
- * ============================================================================
- *
- * FNV-1a is used for connection ID hashing and address pair hashing.
- * These constants provide good distribution for hash tables.
- *
- * @see http://www.isthe.com/chongo/tech/comp/fnv/
- */
-
 /**
  * @brief FNV-1a offset basis (32-bit).
  *
@@ -43,16 +33,6 @@
  * The prime used in each iteration of FNV-1a.
  */
 #define QUIC_HASH_FNV1A_PRIME 16777619u
-
-/* ============================================================================
- * Hash Constants (MurmurHash3)
- * ============================================================================
- *
- * MurmurHash3 is used for sequence number hashing in the connection ID pool.
- * Provides excellent avalanche characteristics for integer hashing.
- *
- * @see https://github.com/aappleby/smhasher
- */
 
 /**
  * @brief MurmurHash3 64-bit finalizer mixing constant.
@@ -75,11 +55,6 @@
  * @see Donald Knuth, The Art of Computer Programming, Volume 3, Section 6.4
  */
 #define QUIC_HASH_KNUTH_CONSTANT 2654435761ULL
-
-/* ============================================================================
- * HKDF Label Constants (RFC 8446)
- * ============================================================================
- */
 
 /**
  * @brief TLS 1.3 label prefix length.
@@ -104,11 +79,6 @@
  */
 #define QUIC_HKDF_LABEL_MAX_SIZE 520
 
-/* ============================================================================
- * Stream ID Constants (RFC 9000 Section 2.1)
- * ============================================================================
- */
-
 /**
  * @brief Stream ID increment value (RFC 9000 Section 2.1).
  *
@@ -123,11 +93,6 @@
  * stream IDs are of the same type.
  */
 #define QUIC_STREAM_ID_INCREMENT 4
-
-/* ============================================================================
- * Congestion Control Constants (RFC 9002)
- * ============================================================================
- */
 
 /**
  * @brief Maximum datagram size used for CWND calculations.
@@ -235,11 +200,6 @@
  */
 #define QUIC_RTT_VAR_DENOM 4
 
-/* ============================================================================
- * Loss Detection Constants (RFC 9002)
- * ============================================================================
- */
-
 /**
  * @brief Default hash table size for sent packet tracking.
  *
@@ -277,11 +237,6 @@
  */
 #define QUIC_CLOSING_TIMEOUT_PTO_MULT 3
 
-/* ============================================================================
- * Cryptographic Constants
- * ============================================================================
- */
-
 /**
  * @brief AEAD authentication tag length in bytes.
  *
@@ -306,11 +261,6 @@
  */
 #define QUIC_RETRY_INTEGRITY_TAG_LEN 16
 
-/* ============================================================================
- * Header Byte Constants (RFC 9000 §17)
- * ============================================================================
- */
-
 /**
  * @brief Header Form bit (RFC 9000 §17.2).
  *
@@ -325,11 +275,6 @@
  * Actual PN length = (first_byte & QUIC_PN_LENGTH_MASK) + 1.
  */
 #define QUIC_PN_LENGTH_MASK 0x03
-
-/* ============================================================================
- * Header Protection Constants
- * ============================================================================
- */
 
 /**
  * @brief Header protection sample offset from packet number.
@@ -352,11 +297,6 @@
  */
 #define QUIC_HP_SHORT_HEADER_MASK 0x1F
 
-/* ============================================================================
- * Address Validation Constants
- * ============================================================================
- */
-
 /**
  * @brief Address validation token size in bytes.
  *
@@ -375,11 +315,6 @@
  * 21 bytes minimum + 16-byte token + 1 byte unpredictable = 38 bytes minimum.
  */
 #define QUIC_STATELESS_RESET_MIN_SIZE 38
-
-/* ============================================================================
- * Preferred Address Field Sizes (RFC 9000 Section 18.2)
- * ============================================================================
- */
 
 /**
  * @brief IPv4 address length in bytes.
@@ -411,11 +346,6 @@
  */
 #define QUIC_PREFERRED_ADDR_MIN_SIZE 41
 
-/* ============================================================================
- * String Formatting Constants
- * ============================================================================
- */
-
 /**
  * @brief Maximum length for formatted socket address string.
  *
@@ -429,21 +359,6 @@
  * Total: 46 + 2 + 1 + 5 + 1 = 55 bytes minimum, rounded to 64 for alignment.
  */
 #define QUIC_SOCKADDR_STRING_MAX 64
-
-/* ============================================================================
- * Utility Macros
- * ============================================================================
- */
-
-/* ============================================================================
- * Transport Parameters: Typical/Recommended Defaults
- * ============================================================================
- *
- * These values represent sensible production defaults for transport parameters,
- * distinct from the RFC 9000 protocol defaults (which are mostly 0).
- * Used by SocketQUICTransportParams_set_defaults() to configure a typical
- * connection with reasonable limits.
- */
 
 /**
  * @brief Typical idle timeout in milliseconds (30 seconds).
@@ -501,11 +416,6 @@
  *   0x20: MAX_DATAGRAM_FRAME_SIZE (RFC 9221)
  */
 #define QUIC_TP_DUPLICATE_CHECK_MAX_ID 63
-
-/* ============================================================================
- * Utility Macros
- * ============================================================================
- */
 
 /**
  * @brief Compute FNV-1a hash step.

@@ -18,11 +18,6 @@
 #include "quic/SocketQUICWire.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * RFC 9000 Appendix A.2 Test Vectors (Encoding)
- * ============================================================================
- */
-
 TEST (quic_wire_pn_length_rfc_example1)
 {
   /* RFC Example: 0xabe8b3 acked, sending 0xac5c02 -> 29,519 unacked -> 2 bytes
@@ -108,11 +103,6 @@ TEST (quic_wire_pn_length_4byte)
   unsigned len = SocketQUICWire_pn_length (10000000, 1000000);
   ASSERT_EQ (len, 4);
 }
-
-/* ============================================================================
- * RFC 9000 Appendix A.3 Test Vectors (Decoding)
- * ============================================================================
- */
 
 TEST (quic_wire_pn_decode_rfc_example)
 {
@@ -234,11 +224,6 @@ TEST (quic_wire_pn_decode_null)
   ASSERT_EQ (res, QUIC_PN_ERROR_NULL);
 }
 
-/* ============================================================================
- * Encoding Tests
- * ============================================================================
- */
-
 TEST (quic_wire_pn_encode_1byte)
 {
   uint8_t buf[4];
@@ -314,11 +299,6 @@ TEST (quic_wire_pn_encode_overflow)
 
   ASSERT_EQ (len, 0);
 }
-
-/* ============================================================================
- * Read/Write Tests
- * ============================================================================
- */
 
 TEST (quic_wire_pn_read_1byte)
 {
@@ -466,11 +446,6 @@ TEST (quic_wire_pn_write_null)
   ASSERT_EQ (len, 0);
 }
 
-/* ============================================================================
- * Round-Trip Tests
- * ============================================================================
- */
-
 TEST (quic_wire_pn_roundtrip_simple)
 {
   uint64_t original = 12345;
@@ -570,11 +545,6 @@ TEST (quic_wire_pn_roundtrip_first_packet)
   ASSERT_EQ (decoded, original);
 }
 
-/* ============================================================================
- * Utility Tests
- * ============================================================================
- */
-
 TEST (quic_wire_pn_is_valid_zero)
 {
   ASSERT (SocketQUICWire_pn_is_valid (0));
@@ -607,11 +577,6 @@ TEST (quic_wire_result_string_all)
   ASSERT (SocketQUICWire_result_string (QUIC_PN_ERROR_BITS) != NULL);
 }
 
-/* ============================================================================
- * Edge Case Tests
- * ============================================================================
- */
-
 TEST (quic_wire_pn_decode_wrap_at_boundary)
 {
   /* Test wrap-around detection at 8-bit boundary */
@@ -638,11 +603,6 @@ TEST (quic_wire_pn_encode_max_valid)
   size_t len = SocketQUICWire_pn_encode (QUIC_PN_MAX, 0, buf, sizeof (buf));
   ASSERT_EQ (len, 4);
 }
-
-/* ============================================================================
- * Overflow Check Tests (Issue #1178)
- * ============================================================================
- */
 
 TEST (quic_wire_pn_length_overflow_check_max_plus_one)
 {

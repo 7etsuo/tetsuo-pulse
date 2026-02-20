@@ -43,11 +43,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * PATTERN VALIDATION (RFC 9204 Section 4.5.6)
- * ============================================================================
- */
-
 bool
 SocketQPACK_is_literal_field_literal_name (uint8_t first_byte)
 {
@@ -58,11 +53,6 @@ SocketQPACK_is_literal_field_literal_name (uint8_t first_byte)
   return (first_byte & QPACK_FIELD_LITERAL_LITERAL_MASK)
          == QPACK_FIELD_LITERAL_LITERAL_PATTERN;
 }
-
-/* ============================================================================
- * ENCODE LITERAL FIELD LINE WITH LITERAL NAME (RFC 9204 Section 4.5.6)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_literal_field_literal_name (unsigned char *output,
@@ -217,11 +207,6 @@ SocketQPACK_encode_literal_field_literal_name (unsigned char *output,
   *bytes_written = offset;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE LITERAL FIELD LINE WITH LITERAL NAME (RFC 9204 Section 4.5.6)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_literal_field_literal_name (const unsigned char *input,

@@ -39,8 +39,6 @@
 #include "tls/SocketTLSContext.h"
 #include <openssl/crypto.h>
 
-/* ==================== Test Helpers ==================== */
-
 /**
  * Helper to generate temporary self-signed certificate
  */
@@ -68,8 +66,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== kTLS Availability Tests ==================== */
-
 TEST (ktls_availability_detection)
 {
   /* SocketTLS_ktls_available() should return 0 or 1 without crashing */
@@ -88,8 +84,6 @@ TEST (ktls_availability_detection)
   ASSERT_EQ (available, 0);
 #endif
 }
-
-/* ==================== kTLS Enable/Disable Tests ==================== */
 
 TEST (ktls_enable_before_tls)
 {
@@ -179,8 +173,6 @@ TEST (ktls_enable_requires_tls)
   ASSERT_EQ (Socket_debug_live_count (), 0);
 }
 
-/* ==================== kTLS Status Query Tests ==================== */
-
 TEST (ktls_status_invalid_socket)
 {
   /* NULL socket should return -1 */
@@ -210,8 +202,6 @@ TEST (ktls_status_no_tls)
 
   ASSERT_EQ (Socket_debug_live_count (), 0);
 }
-
-/* ==================== kTLS Full Handshake Test ==================== */
 
 TEST (ktls_full_handshake)
 {
@@ -322,8 +312,6 @@ TEST (ktls_full_handshake)
 
   ASSERT_EQ (Socket_debug_live_count (), 0);
 }
-
-/* ==================== kTLS Sendfile Test ==================== */
 
 TEST (ktls_sendfile_basic)
 {

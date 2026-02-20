@@ -47,18 +47,10 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Types
-   *============================================================================*/
-
   /**
    * @brief Opaque rate limiter handle.
    */
   typedef struct SocketSimple_RateLimit *SocketSimple_RateLimit_T;
-
-  /*============================================================================
-   * Rate Limiter Lifecycle
-   *============================================================================*/
 
   /**
    * @brief Create a new rate limiter.
@@ -81,10 +73,6 @@ extern "C"
    * @param limit Pointer to limiter handle.
    */
   extern void Socket_simple_ratelimit_free (SocketSimple_RateLimit_T *limit);
-
-  /*============================================================================
-   * Token Operations
-   *============================================================================*/
 
   /**
    * @brief Try to acquire tokens (non-blocking).
@@ -136,10 +124,6 @@ extern "C"
                                            int tokens,
                                            int timeout_ms);
 
-  /*============================================================================
-   * Rate Limiter State
-   *============================================================================*/
-
   /**
    * @brief Get current available tokens.
    *
@@ -167,10 +151,6 @@ extern "C"
   extern int Socket_simple_ratelimit_set_rate (SocketSimple_RateLimit_T limit,
                                                int tokens_per_sec,
                                                int burst);
-
-  /*============================================================================
-   * Statistics
-   *============================================================================*/
 
   /**
    * @brief Rate limiter statistics.

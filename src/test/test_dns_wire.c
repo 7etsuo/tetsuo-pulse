@@ -476,8 +476,6 @@ TEST (dns_wire_flags_byte_layout)
   ASSERT ((buf[3] & 0x0F) == 0x0F);
 }
 
-/* ==================== Domain Name Tests ==================== */
-
 /* Test basic domain name encoding */
 TEST (dns_name_encode_basic)
 {
@@ -815,8 +813,6 @@ TEST (dns_name_decode_nested_pointers)
   ASSERT (strcmp (name, "www.example.com") == 0);
 }
 
-/* ==================== Question Section Tests ==================== */
-
 /* Test type constant values (RFC 1035, RFC 3596) */
 TEST (dns_question_type_constants)
 {
@@ -1081,8 +1077,6 @@ TEST (dns_question_decode_compressed)
   ASSERT (strcmp (q.qname, "www.example.com") == 0);
   ASSERT_EQ (q.qtype, DNS_TYPE_A);
 }
-
-/* ==================== Resource Record Tests ==================== */
 
 /* Test basic A record decoding */
 TEST (dns_rr_decode_a_record)
@@ -1448,8 +1442,6 @@ TEST (dns_rr_decode_invalid_offset)
   ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), 100, NULL), -1);
 }
 
-/* ==================== A/AAAA RDATA Parsing Tests ==================== */
-
 /* Test A record RDATA parsing */
 TEST (dns_rdata_parse_a_valid)
 {
@@ -1687,8 +1679,6 @@ TEST (dns_rdata_parse_aaaa_loopback)
   inet_ntop (AF_INET6, &addr, str, sizeof (str));
   ASSERT (strcmp (str, "::1") == 0);
 }
-
-/* ==================== CNAME RDATA Parsing Tests ==================== */
 
 /* Test valid CNAME record parsing */
 TEST (dns_rdata_parse_cname_valid)
@@ -3069,9 +3059,6 @@ TEST (dns_opt_extended_rcode_calc)
   ASSERT_EQ (rcode, 35); /* (2 << 4) | 3 = 32 + 3 */
 }
 
-/* ==================== EDNS Option Tests (RFC 6891 §6.1.2) ====================
- */
-
 /* Test encode/decode single option */
 TEST (dns_edns_option_encode_decode)
 {
@@ -4003,10 +3990,6 @@ TEST (dns_payload_reset_preserves_timestamps)
   ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_4096);
   ASSERT_EQ (tracker.last_working_size, 0);
 }
-
-/* ========================================================================== */
-/* OPT Record Validation Tests (RFC 6891 Section 6.1.1) */
-/* ========================================================================== */
 
 /* Test SocketDNS_opt_is_valid_name */
 TEST (dns_opt_is_valid_name)

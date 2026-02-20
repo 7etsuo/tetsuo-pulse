@@ -39,11 +39,6 @@
 #include "tls/SocketTLSContext.h"
 #endif
 
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 /* Create a connected socket pair for testing I/O */
 static int
 create_socket_pair (Socket_T *client, Socket_T *server_accepted)
@@ -95,11 +90,6 @@ cleanup_socket_pair (Socket_T *client, Socket_T *server)
   if (server && *server)
     Socket_free (server);
 }
-
-/* ============================================================================
- * Error Helper Function Tests
- * ============================================================================
- */
 
 TEST (socketio_is_wouldblock_eagain)
 {
@@ -160,11 +150,6 @@ TEST (socketio_is_connection_closed_recv_other)
   errno = EAGAIN;
   ASSERT_EQ (socketio_is_connection_closed_recv (), 0);
 }
-
-/* ============================================================================
- * TLS State Checks
- * ============================================================================
- */
 
 TEST (socketio_is_tls_enabled_no_tls)
 {
@@ -234,11 +219,6 @@ TEST (socketio_tls_want_write_no_tls)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Internal Send/Recv Tests
- * ============================================================================
- */
 
 TEST (socketio_send_recv_internal_basic)
 {
@@ -369,11 +349,6 @@ TEST (socketio_recv_internal_updates_stats)
   END_TRY;
 }
 
-/* ============================================================================
- * Scatter/Gather I/O Tests
- * ============================================================================
- */
-
 TEST (socketio_sendv_recvv_internal_basic)
 {
   Socket_T client = NULL;
@@ -477,11 +452,6 @@ TEST (socketio_sendv_single_buffer)
   END_TRY;
 }
 
-/* ============================================================================
- * Non-blocking I/O Tests
- * ============================================================================
- */
-
 TEST (socketio_nonblocking_recv_wouldblock)
 {
   Socket_T client = NULL;
@@ -516,11 +486,6 @@ TEST (socketio_nonblocking_recv_wouldblock)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Connection Closed Detection Tests
- * ============================================================================
- */
 
 TEST (socketio_recv_detects_close)
 {
@@ -557,11 +522,6 @@ TEST (socketio_recv_detects_close)
 
   ASSERT_EQ (closed_raised, 1);
 }
-
-/* ============================================================================
- * Large Data Transfer Tests
- * ============================================================================
- */
 
 TEST (socketio_send_recv_large_data)
 {
@@ -641,11 +601,6 @@ TEST (socketio_send_recv_large_data)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * TLS Tests (conditional)
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 
@@ -797,11 +752,6 @@ TEST (socketio_tls_want_read_write)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

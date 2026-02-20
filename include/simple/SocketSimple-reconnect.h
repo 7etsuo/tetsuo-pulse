@@ -51,18 +51,10 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Type
-   *============================================================================*/
-
   /**
    * @brief Opaque reconnecting connection handle.
    */
   typedef struct SocketSimple_Reconnect *SocketSimple_Reconnect_T;
-
-  /*============================================================================
-   * Connection States
-   *============================================================================*/
 
   /**
    * @brief Reconnection state machine states.
@@ -75,10 +67,6 @@ extern "C"
     SIMPLE_RECONNECT_BACKOFF,          /**< Waiting before retry */
     SIMPLE_RECONNECT_CIRCUIT_OPEN      /**< Circuit breaker open */
   } SocketSimple_Reconnect_State;
-
-  /*============================================================================
-   * Policy Configuration
-   *============================================================================*/
 
   /**
    * @brief Reconnection policy configuration.
@@ -100,10 +88,6 @@ extern "C"
     int health_interval_ms; /**< Health check interval (default: 30000) */
     int health_timeout_ms;  /**< Health check timeout (default: 5000) */
   } SocketSimple_Reconnect_Policy;
-
-  /*============================================================================
-   * Callbacks
-   *============================================================================*/
 
   /**
    * @brief State change callback.
@@ -134,10 +118,6 @@ extern "C"
       int timeout_ms,
       void *userdata);
 
-  /*============================================================================
-   * Lifecycle Functions
-   *============================================================================*/
-
   /**
    * @brief Create a reconnecting connection.
    *
@@ -166,10 +146,6 @@ extern "C"
   extern void Socket_simple_reconnect_policy_defaults (
       SocketSimple_Reconnect_Policy *policy);
 
-  /*============================================================================
-   * Connection Control
-   *============================================================================*/
-
   /**
    * @brief Start connection (or queue retry if in backoff).
    *
@@ -193,10 +169,6 @@ extern "C"
    * @return 0 on success, -1 on error.
    */
   extern int Socket_simple_reconnect_reset (SocketSimple_Reconnect_T conn);
-
-  /*============================================================================
-   * State Query
-   *============================================================================*/
 
   /**
    * @brief Get current connection state.
@@ -241,10 +213,6 @@ extern "C"
    */
   extern int Socket_simple_reconnect_failures (SocketSimple_Reconnect_T conn);
 
-  /*============================================================================
-   * Event Loop Integration
-   *============================================================================*/
-
   /**
    * @brief Get file descriptor for polling.
    *
@@ -284,10 +252,6 @@ extern "C"
    */
   extern int Socket_simple_reconnect_process (SocketSimple_Reconnect_T conn);
 
-  /*============================================================================
-   * Passthrough I/O (Auto-reconnect on error)
-   *============================================================================*/
-
   /**
    * @brief Send data with auto-reconnect on error.
    *
@@ -312,10 +276,6 @@ extern "C"
                                                void *buf,
                                                size_t len);
 
-  /*============================================================================
-   * Configuration
-   *============================================================================*/
-
   /**
    * @brief Set state change callback.
    *
@@ -338,10 +298,6 @@ extern "C"
    */
   extern int Socket_simple_reconnect_set_health_check (
       SocketSimple_Reconnect_T conn, SocketSimple_Reconnect_HealthCheck check);
-
-  /*============================================================================
-   * Underlying Socket Access
-   *============================================================================*/
 
   /**
    * @brief Get underlying socket when connected.

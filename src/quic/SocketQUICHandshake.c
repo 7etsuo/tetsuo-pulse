@@ -26,17 +26,7 @@
 #include <openssl/ssl.h>
 #endif
 
-/* ============================================================================
- * Exceptions
- * ============================================================================
- */
-
 const Except_T SocketQUICHandshake_Failed = { NULL, "QUIC handshake failed" };
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 static void
 crypto_stream_init (SocketQUICCryptoStream_T *stream)
@@ -297,11 +287,6 @@ send_initial_prepare_crypto_stream (SocketQUICHandshake_T hs)
   stream->send_offset = 0; /* Will be updated when actual data is sent */
 }
 
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
-
 SocketQUICHandshake_T
 SocketQUICHandshake_new (Arena_T arena,
                          SocketQUICConnection_T conn,
@@ -414,11 +399,6 @@ SocketQUICHandshake_free (SocketQUICHandshake_T *handshake)
   *handshake = NULL;
 }
 
-/* ============================================================================
- * Initialization Functions
- * ============================================================================
- */
-
 SocketQUICHandshake_Result
 SocketQUICHandshake_init (SocketQUICConnection_T conn,
                           SocketQUICConnection_Role role
@@ -500,11 +480,6 @@ SocketQUICHandshake_set_transport_params (
 
   return QUIC_HANDSHAKE_OK;
 }
-
-/* ============================================================================
- * Handshake Operations
- * ============================================================================
- */
 
 /**
  * @brief Send Initial packet to start QUIC handshake.
@@ -726,11 +701,6 @@ SocketQUICHandshake_process (SocketQUICHandshake_T handshake)
   return QUIC_HANDSHAKE_OK;
 }
 
-/* ============================================================================
- * Key Management Functions
- * ============================================================================
- */
-
 int
 SocketQUICHandshake_has_keys (SocketQUICHandshake_T handshake,
                               SocketQUICCryptoLevel level)
@@ -771,11 +741,6 @@ SocketQUICHandshake_discard_keys (SocketQUICHandshake_T handshake,
       handshake->keys_available[level] = 0;
     }
 }
-
-/* ============================================================================
- * Key Discard Triggers (RFC 9001 Section 4.9)
- * ============================================================================
- */
 
 void
 SocketQUICHandshake_on_handshake_packet_sent (SocketQUICHandshake_T handshake)
@@ -870,11 +835,6 @@ SocketQUICHandshake_on_1rtt_packet_received (SocketQUICHandshake_T handshake)
   handshake->zero_rtt_keys_discarded = 1;
 }
 
-/* ============================================================================
- * Key Availability Checks (RFC 9001 Section 4.9)
- * ============================================================================
- */
-
 int
 SocketQUICHandshake_can_send_initial (SocketQUICHandshake_T handshake)
 {
@@ -960,11 +920,6 @@ SocketQUICHandshake_can_receive_0rtt (SocketQUICHandshake_T handshake)
 
   return handshake->keys_available[QUIC_CRYPTO_LEVEL_0RTT];
 }
-
-/* ============================================================================
- * 0-RTT Early Data Functions (RFC 9001 Section 4.6)
- * ============================================================================
- */
 
 void
 SocketQUICHandshake_0rtt_init (SocketQUICHandshake_T handshake)
@@ -1128,11 +1083,6 @@ SocketQUICHandshake_on_hello_retry_request (SocketQUICHandshake_T handshake)
     }
 }
 
-/* ============================================================================
- * State Query Functions
- * ============================================================================
- */
-
 SocketQUICHandshakeState
 SocketQUICHandshake_get_state (SocketQUICHandshake_T handshake)
 {
@@ -1172,11 +1122,6 @@ SocketQUICHandshake_get_peer_params (SocketQUICHandshake_T handshake)
     }
   return &handshake->peer_params;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 const char *
 SocketQUICHandshake_crypto_level_string (SocketQUICCryptoLevel level)

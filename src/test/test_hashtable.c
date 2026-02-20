@@ -22,22 +22,12 @@
 #include "core/SocketUtil.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Entry Type
- * ============================================================================
- */
-
 typedef struct TestEntry
 {
   char key[64];
   int value;
   struct TestEntry *next;
 } TestEntry;
-
-/* ============================================================================
- * Hash Table Callbacks
- * ============================================================================
- */
 
 static unsigned
 test_hash (const void *key, unsigned seed, unsigned table_size)
@@ -105,11 +95,6 @@ make_entry (const char *key, int value)
   return entry;
 }
 
-/* ============================================================================
- * Basic Lifecycle Tests
- * ============================================================================
- */
-
 TEST (hashtable_new_creates_table)
 {
   HashTable_Config config = make_config (16);
@@ -145,11 +130,6 @@ TEST (hashtable_free_null_safe)
   HashTable_free (&table); /* Should not crash */
   HashTable_free (NULL);   /* Should not crash */
 }
-
-/* ============================================================================
- * Insert and Find Tests
- * ============================================================================
- */
 
 TEST (hashtable_insert_and_find)
 {
@@ -212,11 +192,6 @@ TEST (hashtable_multiple_entries)
     free (entries[i]);
 }
 
-/* ============================================================================
- * Collision Handling Tests
- * ============================================================================
- */
-
 TEST (hashtable_collision_handling)
 {
   /* Use small bucket count to force collisions */
@@ -263,11 +238,6 @@ TEST (hashtable_out_of_range_hash_is_clamped)
   HashTable_free (&table);
   free (entry);
 }
-
-/* ============================================================================
- * Remove Tests
- * ============================================================================
- */
 
 TEST (hashtable_remove_head)
 {
@@ -353,11 +323,6 @@ TEST (hashtable_remove_middle)
   free (e3);
 }
 
-/* ============================================================================
- * Iteration Tests
- * ============================================================================
- */
-
 struct IterContext
 {
   int count;
@@ -434,11 +399,6 @@ TEST (hashtable_foreach_early_exit)
     free (entries[i]);
 }
 
-/* ============================================================================
- * Clear Test
- * ============================================================================
- */
-
 TEST (hashtable_clear)
 {
   HashTable_Config config = make_config (16);
@@ -469,11 +429,6 @@ TEST (hashtable_clear)
   for (int i = 0; i < 3; i++)
     free (entries[i]);
 }
-
-/* ============================================================================
- * Exception Tests
- * ============================================================================
- */
 
 TEST (hashtable_null_config_raises)
 {
@@ -526,7 +481,8 @@ TEST (hashtable_table_allocation_failure_arena)
     size_t current_used = SocketConfig_get_memory_used ();
     SocketConfig_set_max_memory (current_used);
 
-    /* This should fail when trying to allocate the table struct in a new chunk */
+    /* This should fail when trying to allocate the table struct in a new chunk
+     */
     HashTable_new (arena, &config);
   }
   EXCEPT (HashTable_Failed)
@@ -682,11 +638,6 @@ TEST (hashtable_null_next_ptr_raises)
   END_TRY;
   ASSERT_EQ (raised, 1);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

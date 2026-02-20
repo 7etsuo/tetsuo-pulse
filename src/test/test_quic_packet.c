@@ -19,11 +19,6 @@
 #include "quic/SocketQUICVersion.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 static void
 setup_test_cid (SocketQUICConnectionID_T *cid, uint8_t len)
 {
@@ -32,11 +27,6 @@ setup_test_cid (SocketQUICConnectionID_T *cid, uint8_t len)
   for (uint8_t i = 0; i < len; i++)
     cid->data[i] = (uint8_t)(0x10 + i);
 }
-
-/* ============================================================================
- * Long Header - Initial Packet Tests (RFC 9000 Section 17.2.2)
- * ============================================================================
- */
 
 TEST (quic_packet_parse_initial_basic)
 {
@@ -104,11 +94,6 @@ TEST (quic_packet_parse_initial_with_token)
   ASSERT_EQ (header.length, 32);
 }
 
-/* ============================================================================
- * Long Header - Handshake Packet Tests (RFC 9000 Section 17.2.4)
- * ============================================================================
- */
-
 TEST (quic_packet_parse_handshake)
 {
   /* Handshake packet: Long header, type 0x02 */
@@ -137,11 +122,6 @@ TEST (quic_packet_parse_handshake)
   ASSERT_EQ (header.length, 100);
 }
 
-/* ============================================================================
- * Long Header - 0-RTT Packet Tests (RFC 9000 Section 17.2.3)
- * ============================================================================
- */
-
 TEST (quic_packet_parse_0rtt)
 {
   /* 0-RTT packet: Long header, type 0x01 */
@@ -168,11 +148,6 @@ TEST (quic_packet_parse_0rtt)
   ASSERT_EQ (header.packet_number, 0x00010203);
   ASSERT_EQ (header.length, 1024);
 }
-
-/* ============================================================================
- * Long Header - Retry Packet Tests (RFC 9000 Section 17.2.5)
- * ============================================================================
- */
 
 TEST (quic_packet_parse_retry)
 {
@@ -235,11 +210,6 @@ TEST (quic_packet_parse_retry)
   ASSERT_EQ (header.retry_integrity_tag[0], 0x00);
   ASSERT_EQ (header.retry_integrity_tag[15], 0x0F);
 }
-
-/* ============================================================================
- * Short Header - 1-RTT Packet Tests (RFC 9000 Section 17.3)
- * ============================================================================
- */
 
 TEST (quic_packet_parse_short_header)
 {
@@ -318,11 +288,6 @@ TEST (quic_packet_parse_short_header_zero_length_dcid)
   ASSERT_EQ (header.pn_length, 2);
   ASSERT_EQ (header.packet_number, 256);
 }
-
-/* ============================================================================
- * Serialization Tests - Long Headers
- * ============================================================================
- */
 
 TEST (quic_packet_serialize_initial)
 {
@@ -421,11 +386,6 @@ TEST (quic_packet_serialize_0rtt)
   ASSERT_EQ (parsed.packet_number, 0x12345678);
 }
 
-/* ============================================================================
- * Serialization Tests - Short Headers
- * ============================================================================
- */
-
 TEST (quic_packet_serialize_short)
 {
   SocketQUICPacketHeader_T header;
@@ -486,11 +446,6 @@ TEST (quic_packet_serialize_short_zero_dcid)
   ASSERT_EQ (parsed.dcid.len, 0);
 }
 
-/* ============================================================================
- * Header Size Calculation Tests
- * ============================================================================
- */
-
 TEST (quic_packet_size_initial)
 {
   SocketQUICPacketHeader_T header;
@@ -525,11 +480,6 @@ TEST (quic_packet_size_short)
   /* Expected: 1 (flags) + 8 (dcid) + 1 (pn) = 10 */
   ASSERT_EQ (size, 10);
 }
-
-/* ============================================================================
- * Error Condition Tests
- * ============================================================================
- */
 
 TEST (quic_packet_parse_null_data)
 {
@@ -658,11 +608,6 @@ TEST (quic_packet_serialize_buffer_too_small)
   ASSERT_EQ (written, 0);
 }
 
-/* ============================================================================
- * Packet Number Encoding/Decoding Tests (RFC 9000 Appendix A)
- * ============================================================================
- */
-
 TEST (quic_packet_pn_length_calculation)
 {
   /* When pn == largest_ack + 1, we need 1 byte */
@@ -737,11 +682,6 @@ TEST (quic_packet_decode_pn_overflow_protection)
   ASSERT_EQ (result, 0);
 }
 
-/* ============================================================================
- * Utility Function Tests
- * ============================================================================
- */
-
 TEST (quic_packet_is_long_header)
 {
   ASSERT_EQ (SocketQUICPacket_is_long_header (0xC0), 1); /* Initial */
@@ -805,11 +745,6 @@ TEST (quic_packet_header_init)
   SocketQUICPacketHeader_init (NULL);
 }
 
-/* ============================================================================
- * Version Negotiation Edge Case
- * ============================================================================
- */
-
 TEST (quic_packet_parse_version_negotiation)
 {
   /* Version Negotiation uses version 0 */
@@ -844,11 +779,6 @@ TEST (quic_packet_parse_version_negotiation)
   ASSERT_EQ (res, QUIC_PACKET_OK);
   ASSERT_EQ (header.version, QUIC_VERSION_NEGOTIATION);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

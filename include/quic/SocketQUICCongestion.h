@@ -33,11 +33,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Types
- * ============================================================================
- */
-
 /**
  * @brief Congestion control phase.
  */
@@ -52,11 +47,6 @@ typedef enum
  * @brief Opaque congestion controller handle.
  */
 typedef struct SocketQUICCongestion *SocketQUICCongestion_T;
-
-/* ============================================================================
- * Lifecycle
- * ============================================================================
- */
 
 /**
  * @brief Create a new congestion controller.
@@ -76,11 +66,6 @@ SocketQUICCongestion_new (Arena_T arena, size_t max_datagram_size);
  */
 extern void SocketQUICCongestion_reset (SocketQUICCongestion_T cc);
 
-/* ============================================================================
- * Sending Gate
- * ============================================================================
- */
-
 /**
  * @brief Check whether a packet can be sent under the congestion window.
  *
@@ -93,11 +78,6 @@ extern void SocketQUICCongestion_reset (SocketQUICCongestion_T cc);
 extern int SocketQUICCongestion_can_send (const SocketQUICCongestion_T cc,
                                           size_t bytes_in_flight,
                                           size_t packet_size);
-
-/* ============================================================================
- * Event Notifications
- * ============================================================================
- */
 
 /**
  * @brief Notify controller of acknowledged packets.
@@ -141,11 +121,6 @@ extern void SocketQUICCongestion_on_ecn_ce (SocketQUICCongestion_T cc,
 extern void
 SocketQUICCongestion_on_persistent_congestion (SocketQUICCongestion_T cc);
 
-/* ============================================================================
- * Query
- * ============================================================================
- */
-
 /**
  * @brief Get current congestion window.
  */
@@ -162,11 +137,6 @@ extern size_t SocketQUICCongestion_ssthresh (const SocketQUICCongestion_T cc);
 extern SocketQUICCongestion_Phase
 SocketQUICCongestion_phase (const SocketQUICCongestion_T cc);
 
-/* ============================================================================
- * Persistent Congestion Helper
- * ============================================================================
- */
-
 /**
  * @brief Compute the persistent congestion duration (RFC 9002 Section 7.6.1).
  *
@@ -181,11 +151,6 @@ SocketQUICCongestion_phase (const SocketQUICCongestion_T cc);
 extern uint64_t
 SocketQUICCongestion_persistent_duration (const SocketQUICLossRTT_T *rtt,
                                           uint64_t max_ack_delay_us);
-
-/* ============================================================================
- * Utilities
- * ============================================================================
- */
 
 /**
  * @brief Get human-readable name for a congestion control phase.

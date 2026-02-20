@@ -17,10 +17,6 @@
 #include "tls/SocketDTLS.h"
 #include "tls/SocketDTLSContext.h"
 
-/*============================================================================
- * Constants
- *============================================================================*/
-
 /**
  * @brief Default timeout for DTLS handshakes (30 seconds).
  */
@@ -71,10 +67,6 @@
         }                                                                    \
     }                                                                        \
   while (0)
-
-/*============================================================================
- * Options Helpers
- *============================================================================*/
 
 void
 Socket_simple_dtls_options_defaults (SocketSimple_DTLSOptions *opts)
@@ -127,10 +119,6 @@ copy_dtls_options (const SocketSimple_DTLSOptions *opts,
   *alpn = opts->alpn;
   *alpn_count = opts->alpn_count;
 }
-
-/*============================================================================
- * DTLS Client Helpers
- *============================================================================*/
 
 /**
  * @brief Create and configure a DTLS client context with all options.
@@ -198,10 +186,6 @@ perform_dtls_handshake (SocketDgram_T dgram, int timeout_ms)
   return 0;
 }
 
-/*============================================================================
- * DTLS Client Helpers
- *============================================================================*/
-
 /**
  * @brief Validate connection parameters (host and port).
  *
@@ -251,10 +235,6 @@ create_dtls_client_handle (SocketDgram_T dgram)
   return handle;
 }
 
-
-/*============================================================================
- * DTLS Client Functions
- *============================================================================*/
 
 SocketSimple_Socket_T
 Socket_simple_dtls_connect (const char *host, int port)
@@ -454,10 +434,6 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock,
   return exception_occurred ? -1 : 0;
 }
 
-/*============================================================================
- * DTLS Server Functions
- *============================================================================*/
-
 /**
  * @brief Create and configure a DTLS server context.
  *
@@ -625,9 +601,10 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
   }
   END_TRY;
 
-  /* Create a new client session handle that shares the dgram but doesn't own it.
-   * This prevents use-after-free when the caller closes the "client" connection:
-   * closing the client handle will NOT close the underlying server socket. */
+  /* Create a new client session handle that shares the dgram but doesn't own
+   * it. This prevents use-after-free when the caller closes the "client"
+   * connection: closing the client handle will NOT close the underlying server
+   * socket. */
   SocketSimple_Socket_T client_handle = calloc (1, sizeof (*client_handle));
   if (!client_handle)
     {
@@ -639,16 +616,12 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
   client_handle->dgram = server_sock->dgram; /* Share the dgram */
   client_handle->is_tls = 1;
   client_handle->is_connected = 1;
-  client_handle->is_server = 0;  /* This is a client session, not a server */
+  client_handle->is_server = 0; /* This is a client session, not a server */
   client_handle->is_udp = 1;
   client_handle->owns_dgram = 0; /* Does NOT own the dgram - server does */
 
   return client_handle;
 }
-
-/*============================================================================
- * DTLS I/O Functions
- *============================================================================*/
 
 ssize_t
 Socket_simple_dtls_send (SocketSimple_Socket_T sock,
@@ -810,10 +783,6 @@ Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock,
   return received;
 }
 
-/*============================================================================
- * DTLS Control Functions
- *============================================================================*/
-
 int
 Socket_simple_dtls_handshake (SocketSimple_Socket_T sock, int timeout_ms)
 {
@@ -925,10 +894,6 @@ Socket_simple_dtls_set_mtu (SocketSimple_Socket_T sock, size_t mtu)
 
   return 0;
 }
-
-/*============================================================================
- * DTLS Info Functions
- *============================================================================*/
 
 int
 Socket_simple_is_dtls (SocketSimple_Socket_T sock)

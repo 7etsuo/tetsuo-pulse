@@ -93,8 +93,6 @@ setup_signals (void)
   signal (SIGPIPE, SIG_IGN);
 }
 
-/* ==================== TCP Server Integration Tests ==================== */
-
 TEST (integration_simple_tcp_server)
 {
   setup_signals ();
@@ -376,8 +374,6 @@ TEST (integration_tcp_multiple_clients)
   END_TRY;
 }
 
-/* ==================== UDP Integration Tests ==================== */
-
 TEST (integration_udp_echo_server)
 {
   setup_signals ();
@@ -416,9 +412,6 @@ TEST (integration_udp_echo_server)
   SocketPoll_free (&poll);
   END_TRY;
 }
-
-/* ==================== Convenience Functions Integration Tests
- * ==================== */
 
 TEST (integration_convenience_tcp_server)
 {
@@ -620,9 +613,6 @@ TEST (integration_convenience_unix_domain)
   assert_no_socket_leaks ();
 }
 
-/* ==================== Socket Statistics Integration Tests ====================
- */
-
 TEST (integration_socket_stats_tcp_communication)
 {
   setup_signals ();
@@ -770,8 +760,6 @@ TEST (integration_socket_stats_udp_communication)
   SocketDgram_free (&server);
   assert_no_socket_leaks ();
 }
-
-/* ==================== Pool Integration Tests ==================== */
 
 TEST (integration_pool_with_buffers)
 {
@@ -1020,8 +1008,6 @@ TEST (integration_pool_hit_rate_tracking)
   END_TRY;
 }
 
-/* ==================== DNS Cache Integration Tests ==================== */
-
 TEST (integration_dns_cache_operations)
 {
   SocketDNS_T dns = SocketDNS_new ();
@@ -1129,9 +1115,6 @@ TEST (integration_dns_cache_with_resolution)
 
   SocketDNS_free (&dns);
 }
-
-/* ==================== Connection Health Integration Tests ====================
- */
 
 TEST (integration_connection_probe_and_readiness)
 {
@@ -1320,7 +1303,7 @@ TEST (integration_connection_nonblocking_error_states)
   TRY
       /* Error state should be 0 (no error) or EINPROGRESS for non-blocking
          connect */
-          error
+      error
       = Socket_get_error (socket);
   ASSERT (error == 0 || error == EINPROGRESS);
   EXCEPT (Socket_Failed)
@@ -1388,9 +1371,6 @@ TEST (integration_connection_nonblocking_error_states)
   assert_no_tracked_sockets ();
   assert_no_socket_leaks ();
 }
-
-/* ==================== I/O Enhancements Integration Tests ====================
- */
 
 TEST (integration_io_timeout_variants)
 {
@@ -1778,9 +1758,6 @@ TEST (integration_io_splice)
   END_TRY;
 }
 
-/* ==================== Buffer Enhancements Integration Tests
- * ==================== */
-
 TEST (integration_buffer_compact_and_ensure)
 {
   Arena_T arena = Arena_new ();
@@ -2018,9 +1995,6 @@ TEST (integration_buffer_complex_operations)
   SocketBuf_release (&buf);
   Arena_dispose (&arena);
 }
-
-/* ==================== Event System Enhancements Integration Tests
- * ==================== */
 
 TEST (integration_event_poll_backend_and_sockets)
 {
@@ -2274,8 +2248,6 @@ TEST (integration_event_poll_event_mask_modification)
   assert_no_socket_leaks ();
 }
 
-/* ==================== Full Stack Integration Tests ==================== */
-
 TEST (integration_full_stack_tcp_server)
 {
   setup_signals ();
@@ -2377,8 +2349,6 @@ TEST (integration_full_stack_tcp_server)
   END_TRY;
 }
 
-/* ==================== Multi-threaded Server Test ==================== */
-
 #if 0 /* KNOWN_ISSUE: Disabled on macOS - threading issues with exception \
        * stack. See KNOWN_ISSUES.md for details and tracking. */
 
@@ -2475,8 +2445,6 @@ TEST(integration_multithreaded_server)
 
 #endif
 
-/* ==================== Arena Integration Tests ==================== */
-
 TEST (integration_arena_lifecycle)
 {
   Arena_T arena = Arena_new ();
@@ -2510,8 +2478,6 @@ TEST (integration_arena_lifecycle)
   assert_no_tracked_sockets ();
   assert_no_socket_leaks ();
 }
-
-/* ==================== Connection Lifecycle Tests ==================== */
 
 TEST (integration_connection_full_lifecycle)
 {
@@ -2579,8 +2545,6 @@ TEST (integration_connection_full_lifecycle)
   assert_no_socket_leaks ();
   END_TRY;
 }
-
-/* ==================== Stress Integration Tests ==================== */
 
 TEST (integration_rapid_connect_disconnect)
 {
@@ -2662,8 +2626,6 @@ TEST (integration_rapid_connect_disconnect)
   assert_no_socket_leaks ();
   END_TRY;
 }
-
-/* ==================== Async I/O Integration Tests ==================== */
 
 #if 0 /* KNOWN_ISSUE: Async I/O backend not implemented for macOS. \
        * See KNOWN_ISSUES.md for details and tracking. */

@@ -20,11 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ============================================================================
- * Request Parsing Tests
- * ============================================================================
- */
-
 TEST (http1_simple_get_request)
 {
   const char *request = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
@@ -237,11 +232,6 @@ TEST (http1_upgrade_websocket)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Response Parsing Tests
- * ============================================================================
- */
-
 TEST (http1_simple_response)
 {
   const char *response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n";
@@ -333,11 +323,6 @@ TEST (http1_chunked_response)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Security Tests - Request Smuggling Prevention
- * ============================================================================
- */
-
 TEST (http1_smuggling_cl_te)
 {
   /* Both Content-Length and Transfer-Encoding present */
@@ -406,11 +391,6 @@ TEST (http1_negative_content_length)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Header Parsing Tests
- * ============================================================================
- */
-
 TEST (http1_multiple_headers)
 {
   const char *request = "GET / HTTP/1.1\r\n"
@@ -474,11 +454,6 @@ TEST (http1_header_case_insensitive)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Incremental Parsing Tests
- * ============================================================================
- */
-
 TEST (http1_incremental_parsing)
 {
   const char *part1 = "GET / HTTP/1.1\r\n";
@@ -509,11 +484,6 @@ TEST (http1_incremental_parsing)
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Body Reading Tests
- * ============================================================================
- */
 
 TEST (http1_read_body_content_length)
 {
@@ -642,11 +612,6 @@ TEST (http1_read_body_chunked)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Serialization Tests
- * ============================================================================
- */
-
 TEST (http1_serialize_request)
 {
   SocketHTTP_Request req = { 0 };
@@ -705,11 +670,6 @@ TEST (http1_serialize_response)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Chunk Encoding Tests
- * ============================================================================
- */
-
 TEST (http1_chunk_encode)
 {
   const char *data = "Hello";
@@ -732,11 +692,6 @@ TEST (http1_chunk_final)
   ASSERT_EQ (5, len);
   ASSERT (memcmp (output, expected, (size_t)len) == 0);
 }
-
-/* ============================================================================
- * Error Cases
- * ============================================================================
- */
 
 TEST (http1_invalid_method)
 {
@@ -767,11 +722,6 @@ TEST (http1_result_strings)
                   "Request smuggling attempt detected")
           == 0);
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

@@ -233,11 +233,6 @@
  */
 typedef struct T *T;
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
-
 /**
  * @brief General socket operation failure exception.
  * @ingroup core_io
@@ -332,11 +327,6 @@ extern const Except_T Socket_Closed;
  */
 extern const Except_T SocketUnix_Failed;
 
-/* ============================================================================
- * Error Retryability Helpers
- * ============================================================================
- */
-
 /**
  * @brief Check if an errno indicates a retryable error.
  * @ingroup core_io
@@ -377,11 +367,6 @@ extern const Except_T SocketUnix_Failed;
  *   END_TRY;
  */
 extern int Socket_error_is_retryable (int err);
-
-/* ============================================================================
- * Socket Creation and Lifecycle
- * ============================================================================
- */
 
 /**
  * @brief Create a new socket with specified domain, type, and protocol.
@@ -628,11 +613,6 @@ extern T Socket_new_from_fd (int fd);
  */
 extern int Socket_debug_live_count (void);
 
-/* ============================================================================
- * Per-Socket Statistics
- * ============================================================================
- */
-
 /**
  * @brief Per-socket I/O statistics structure.
  * @ingroup core_io
@@ -764,11 +744,6 @@ extern void Socket_getstats (const T socket, SocketStats_T *stats);
  * @see SocketStats_T for field descriptions
  */
 extern void Socket_resetstats (T socket);
-
-/* ============================================================================
- * Connection Health & Probing
- * ============================================================================
- */
 
 /**
  * @brief Probe if a connection is still alive.
@@ -1112,11 +1087,6 @@ extern int32_t Socket_get_rtt (const T socket);
  */
 extern int32_t Socket_get_cwnd (const T socket);
 
-/* ============================================================================
- * Connection Operations
- * ============================================================================
- */
-
 /**
  * @brief Bind a socket to a local IP address and port.
  * @ingroup core_io
@@ -1331,11 +1301,6 @@ extern T Socket_accept (T socket);
  */
 extern void Socket_connect (T socket, const char *host, int port);
 
-/* ============================================================================
- * Basic I/O Operations
- * ============================================================================
- */
-
 /**
  * @brief Send data.
  * @ingroup core_io
@@ -1389,11 +1354,6 @@ extern ssize_t Socket_sendall (T socket, const void *buf, size_t len);
  * @see Socket_sendall() for sending all data.
  */
 extern ssize_t Socket_recvall (T socket, void *buf, size_t len);
-
-/* ============================================================================
- * Scatter/Gather I/O Operations
- * ============================================================================
- */
 
 /**
  * @brief Scatter/gather send (writev wrapper).
@@ -1449,11 +1409,6 @@ extern ssize_t Socket_sendvall (T socket, const struct iovec *iov, int iovcnt);
  */
 extern ssize_t Socket_recvvall (T socket, struct iovec *iov, int iovcnt);
 
-/* ============================================================================
- * @brief Zero-Copy and Advanced I/O
- * ============================================================================
- */
-
 /**
  * @brief Zero-copy file-to-socket transfer.
  * @ingroup core_io
@@ -1483,11 +1438,6 @@ Socket_sendfile (T socket, int file_fd, off_t *offset, size_t count);
  */
 extern ssize_t
 Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count);
-
-/* ============================================================================
- * I/O Operations with Timeout
- * ============================================================================
- */
 
 /**
  * @brief Send all data with timeout.
@@ -1616,11 +1566,6 @@ extern ssize_t Socket_sendv_timeout (T socket,
  */
 extern ssize_t
 Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt, int timeout_ms);
-
-/* ============================================================================
- * Advanced I/O Operations
- * ============================================================================
- */
 
 /**
  * @brief Zero-copy socket-to-socket transfer (Linux splice).
@@ -1752,11 +1697,6 @@ extern int Socket_cork (T socket, int enable);
  */
 extern ssize_t Socket_peek (T socket, void *buf, size_t len);
 
-/* ============================================================================
- * Socket Duplication
- * ============================================================================
- */
-
 /**
  * @brief Duplicate a socket (creates new Socket_T sharing same fd).
  * @ingroup core_io
@@ -1864,11 +1804,6 @@ extern ssize_t Socket_sendmsg (T socket, const struct msghdr *msg, int flags);
  */
 extern ssize_t Socket_recvmsg (T socket, struct msghdr *msg, int flags);
 
-/* ============================================================================
- * Socket State Query Functions
- * ============================================================================
- */
-
 /**
  * @brief Check if socket is connected.
  * @ingroup core_io
@@ -1952,11 +1887,6 @@ extern const char *Socket_getlocaladdr (const T socket);
  * @see Socket_bind() for binding to ports.
  */
 extern int Socket_getlocalport (const T socket);
-
-/* ============================================================================
- * Socket Options Configuration
- * ============================================================================
- */
 
 /**
  * @brief Enable non-blocking mode.
@@ -2175,11 +2105,6 @@ extern void Socket_shutdown (T socket, int how);
  */
 extern void Socket_setcloexec (T socket, int enable);
 
-/* ============================================================================
- * SYN Flood Protection Socket Options
- * ============================================================================
- */
-
 /**
  * @brief Enable TCP_DEFER_ACCEPT.
  * @ingroup core_io
@@ -2211,11 +2136,6 @@ extern void Socket_setdeferaccept (T socket, int timeout_sec);
  * @see Socket_setdeferaccept() for setting defer accept.
  */
 extern int Socket_getdeferaccept (T socket);
-
-/* ============================================================================
- * Timeout Configuration
- * ============================================================================
- */
 
 /**
  * @brief Retrieve per-socket timeout configuration.
@@ -2290,11 +2210,6 @@ Socket_timeouts_set_extended (T socket,
  */
 extern void Socket_timeouts_get_extended (const T socket,
                                           SocketTimeouts_Extended_T *extended);
-
-/* ============================================================================
- * Bandwidth Limiting
- * ============================================================================
- */
 
 /**
  * @brief Set bandwidth limit for socket.
@@ -2375,11 +2290,6 @@ extern ssize_t Socket_recv_limited (T socket, void *buf, size_t len);
  */
 extern int64_t Socket_bandwidth_wait_ms (T socket, size_t bytes);
 
-/* ============================================================================
- * Unix Domain Socket Operations
- * ============================================================================
- */
-
 /**
  * @brief Bind to Unix domain socket path.
  * @ingroup core_io
@@ -2432,11 +2342,6 @@ extern int Socket_getpeeruid (const T socket);
  * @see Socket_getpeeruid() for peer user ID.
  */
 extern int Socket_getpeergid (const T socket);
-
-/* ============================================================================
- * File Descriptor Passing (SCM_RIGHTS)
- * ============================================================================
- */
 
 /**
  * @brief Send a file descriptor over Unix domain socket.
@@ -2611,11 +2516,6 @@ SocketUnix_connect (SocketBase_T base, const char *path, Except_T exc_type);
  */
 extern int SocketUnix_validate_unix_path (const char *path, size_t path_len);
 
-/* ============================================================================
- * Async DNS Operations
- * ============================================================================
- */
-
 /**
  * @brief Start async DNS resolution for bind.
  * @ingroup core_io
@@ -2686,11 +2586,6 @@ extern void Socket_bind_with_addrinfo (T socket, struct addrinfo *res);
  */
 extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
 
-/* ============================================================================
- * Signal Handling Utilities
- * ============================================================================
- */
-
 /**
  * @brief Globally ignore SIGPIPE signal.
  * @ingroup core_io
@@ -2717,11 +2612,6 @@ extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
  * @see Socket_send() for SIGPIPE-safe sending operations.
  */
 extern int Socket_ignore_sigpipe (void);
-
-/* ============================================================================
- * Convenience Functions - One-Call Socket Setup
- * ============================================================================
- */
 
 /**
  * @brief Create a listening TCP server socket in one call.

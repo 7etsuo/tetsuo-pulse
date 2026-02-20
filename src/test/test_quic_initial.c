@@ -22,14 +22,6 @@
 #include "quic/SocketQUICConnectionID.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * RFC 9001 Appendix A Test Vectors
- *
- * Initial client DCID: 0x8394c8f03e515708
- * QUIC Version: 1 (0x00000001)
- * ============================================================================
- */
-
 /* Client DCID from RFC 9001 Appendix A.1 */
 static const uint8_t rfc_test_dcid[]
     = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
@@ -64,11 +56,6 @@ static const uint8_t expected_server_hp[]
     = { 0xc2, 0x06, 0xb8, 0xd9, 0xb9, 0xf0, 0xf3, 0x76,
         0x44, 0x43, 0x0b, 0x49, 0x0e, 0xea, 0xa3, 0x14 };
 
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 static void
 setup_rfc_test_dcid (SocketQUICConnectionID_T *dcid)
 {
@@ -87,11 +74,6 @@ compare_bytes (const uint8_t *a, const uint8_t *b, size_t len)
     }
   return 1;
 }
-
-/* ============================================================================
- * Key Initialization Tests
- * ============================================================================
- */
 
 TEST (quic_initial_keys_init)
 {
@@ -131,11 +113,6 @@ TEST (quic_initial_keys_clear)
   /* NULL should be safe */
   SocketQUICInitialKeys_clear (NULL);
 }
-
-/* ============================================================================
- * Salt Lookup Tests
- * ============================================================================
- */
 
 TEST (quic_initial_get_salt_v1)
 {
@@ -194,11 +171,6 @@ TEST (quic_initial_get_salt_null)
   ASSERT_EQ (SocketQUICInitial_get_salt (QUIC_VERSION_1, &salt, NULL),
              QUIC_INITIAL_ERROR_NULL);
 }
-
-/* ============================================================================
- * Key Derivation Tests (RFC 9001 Appendix A)
- * ============================================================================
- */
 
 TEST (quic_initial_derive_keys_rfc_test_vector)
 {
@@ -276,11 +248,6 @@ TEST (quic_initial_derive_keys_empty_dcid)
   SocketQUICInitialKeys_clear (&keys);
 }
 
-/* ============================================================================
- * Validation Tests
- * ============================================================================
- */
-
 TEST (quic_initial_validate_client_minimum_size)
 {
   SocketQUICPacketHeader_T header;
@@ -334,11 +301,6 @@ TEST (quic_initial_validate_null)
              QUIC_INITIAL_ERROR_NULL);
 }
 
-/* ============================================================================
- * Padding Calculation Tests
- * ============================================================================
- */
-
 TEST (quic_initial_padding_needed)
 {
   /* Below minimum needs padding */
@@ -351,11 +313,6 @@ TEST (quic_initial_padding_needed)
   ASSERT_EQ (SocketQUICInitial_padding_needed (1500), 0);
   ASSERT_EQ (SocketQUICInitial_padding_needed (0), 1200);
 }
-
-/* ============================================================================
- * Protection Tests
- * ============================================================================
- */
 
 TEST (quic_initial_protect_null)
 {
@@ -419,11 +376,6 @@ TEST (quic_initial_protect_unprotect_roundtrip)
   ASSERT_EQ (keys.initialized, 0);
 }
 
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
-
 TEST (quic_initial_result_string)
 {
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_OK));
@@ -443,11 +395,6 @@ TEST (quic_initial_result_string)
       SocketQUICInitial_result_string ((SocketQUICInitial_Result)99));
 }
 
-/* ============================================================================
- * Constants Tests
- * ============================================================================
- */
-
 TEST (quic_initial_constants)
 {
   /* Verify constants match RFC specifications */
@@ -459,11 +406,6 @@ TEST (quic_initial_constants)
   ASSERT_EQ (QUIC_INITIAL_TAG_LEN, 16);
   ASSERT_EQ (QUIC_HP_SAMPLE_LEN, 16);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

@@ -44,11 +44,6 @@
 /* Embedded test certificates */
 #include "../fuzz/fuzz_test_certs.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 48000
 #define TEST_TIMEOUT_MS 5000
 
@@ -59,11 +54,6 @@ get_push_test_port (void)
 {
   return TEST_PORT_BASE + (push_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Certificate File Helpers
- * ============================================================================
- */
 
 static char cert_file[64];
 static char key_file[64];
@@ -102,11 +92,6 @@ cleanup_temp_cert_files (void)
   unlink (cert_file);
   unlink (key_file);
 }
-
-/* ============================================================================
- * HTTP/2 Push Server Thread
- * ============================================================================
- */
 
 typedef struct
 {
@@ -371,11 +356,6 @@ push_server_stop (PushTestServer *server)
     SocketTLSContext_free (&server->tls_ctx);
 }
 
-/* ============================================================================
- * Unit Tests - PUSH_PROMISE Frame Structure
- * ============================================================================
- */
-
 TEST (http2_push_promise_frame_type)
 {
   /* Verify PUSH_PROMISE frame type constant (RFC 9113 Section 6.6) */
@@ -430,11 +410,6 @@ TEST (http2_config_client_disables_push)
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_CLIENT);
   ASSERT_EQ (config.enable_push, 0);
 }
-
-/* ============================================================================
- * Integration Test - Client Receives PUSH_PROMISE
- * ============================================================================
- */
 
 TEST (http2_push_promise_client_reception)
 {
@@ -594,11 +569,6 @@ TEST (http2_push_promise_client_reception)
   END_TRY;
 }
 
-/* ============================================================================
- * Unit Tests - Stream ID Validation (RFC 9113 Section 8.4)
- * ============================================================================
- */
-
 TEST (http2_push_promise_stream_id_must_be_even)
 {
   /*
@@ -679,11 +649,6 @@ TEST (http2_push_no_tls)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

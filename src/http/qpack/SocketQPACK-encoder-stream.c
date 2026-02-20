@@ -30,11 +30,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Maximum integer encoding buffer size (1 prefix + 10 continuation bytes) */
 #define QPACK_INT_ENCODE_BUF_SIZE 16
 
@@ -46,11 +41,6 @@
 
 /** Minimum Huffman decode buffer size in bytes */
 #define QPACK_MIN_DECODE_BUFFER_SIZE 64
-
-/* ============================================================================
- * INTERNAL STRUCTURE
- * ============================================================================
- */
 
 /**
  * @brief QPACK encoder stream internal structure.
@@ -65,11 +55,6 @@ struct SocketQPACK_EncoderStream
   size_t buffer_cap;     /**< Buffer capacity */
   int initialized;       /**< Has stream been initialized? */
 };
-
-/* ============================================================================
- * RESULT STRINGS
- * ============================================================================
- */
 
 static const char *const stream_result_strings[] = {
   [QPACK_STREAM_OK] = "OK",
@@ -94,11 +79,6 @@ SocketQPACKStream_result_string (SocketQPACKStream_Result result)
     }
   return "Unknown error";
 }
-
-/* ============================================================================
- * HTTP/3 ERROR CODE MAPPING (RFC 9204 Section 4.2 & 6)
- * ============================================================================
- */
 
 uint64_t
 SocketQPACKStream_result_to_h3_error (SocketQPACKStream_Result result)
@@ -150,11 +130,6 @@ SocketQPACKStream_result_to_h3_error (SocketQPACKStream_Result result)
       return QPACK_ENCODER_STREAM_ERROR;
     }
 }
-
-/* ============================================================================
- * BUFFER MANAGEMENT (INTERNAL)
- * ============================================================================
- */
 
 /**
  * @brief Ensure buffer has at least required_space additional bytes.
@@ -244,14 +219,6 @@ append_to_buffer (SocketQPACK_EncoderStream_T stream,
   return QPACK_STREAM_OK;
 }
 
-/* ============================================================================
- * INTEGER ENCODING (INTERNAL)
- *
- * Uses HPACK integer encoding (RFC 7541 Section 5.1) which is the same
- * encoding used by QPACK primitives (RFC 9204 Section 4.1.1).
- * ============================================================================
- */
-
 /**
  * @brief Encode an integer with prefix and append to buffer.
  *
@@ -282,13 +249,6 @@ encode_and_append_int (SocketQPACK_EncoderStream_T stream,
 
   return append_to_buffer (stream, int_buf, int_len);
 }
-
-/* ============================================================================
- * STRING ENCODING (INTERNAL)
- *
- * Uses HPACK string literal encoding (RFC 7541 Section 5.2).
- * ============================================================================
- */
 
 /**
  * @brief Encode a Huffman-compressed string to buffer.
@@ -409,11 +369,6 @@ encode_and_append_string (SocketQPACK_EncoderStream_T stream,
   return append_to_buffer (stream, temp_buf, encoded_len);
 }
 
-/* ============================================================================
- * LIFECYCLE FUNCTIONS
- * ============================================================================
- */
-
 SocketQPACK_EncoderStream_T
 SocketQPACK_EncoderStream_new (Arena_T arena,
                                uint64_t stream_id,
@@ -482,11 +437,6 @@ SocketQPACK_EncoderStream_get_id (SocketQPACK_EncoderStream_T stream)
 
   return stream->stream_id;
 }
-
-/* ============================================================================
- * ENCODER INSTRUCTIONS (RFC 9204 Section 4.3)
- * ============================================================================
- */
 
 SocketQPACKStream_Result
 SocketQPACK_EncoderStream_write_capacity (SocketQPACK_EncoderStream_T stream,
@@ -723,11 +673,6 @@ SocketQPACK_EncoderStream_write_duplicate (SocketQPACK_EncoderStream_T stream,
                                 QPACK_INSTR_DUPLICATE_MASK);
 }
 
-/* ============================================================================
- * BUFFER MANAGEMENT
- * ============================================================================
- */
-
 const unsigned char *
 SocketQPACK_EncoderStream_get_buffer (SocketQPACK_EncoderStream_T stream,
                                       size_t *len)
@@ -765,11 +710,6 @@ SocketQPACK_EncoderStream_buffer_size (SocketQPACK_EncoderStream_T stream)
 
   return stream->buffer_len;
 }
-
-/* ============================================================================
- * INSERT WITH NAME REFERENCE PRIMITIVES (RFC 9204 Section 4.3.2)
- * ============================================================================
- */
 
 SocketQPACKStream_Result
 SocketQPACK_encode_insert_nameref (unsigned char *output,

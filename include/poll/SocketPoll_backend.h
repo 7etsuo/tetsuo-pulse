@@ -287,8 +287,6 @@ typedef struct PollBackend_T *PollBackend_T;
   while (0)
 #endif
 
-/* ==================== Common Backend Macros ==================== */
-
 /**
  * @brief Convert milliseconds to timespec for kqueue/poll backends.
  * @ingroup event_system_backend

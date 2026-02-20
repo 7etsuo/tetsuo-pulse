@@ -398,8 +398,6 @@ typedef enum
   ASYNC_FLAG_FIXED_BUFFER = 1 << 3
 } SocketAsync_Flags;
 
-/* ==================== Advanced io_uring Configuration ==================== */
-
 /**
  * @brief Configuration options for advanced io_uring features.
  * @ingroup async_io
@@ -1392,8 +1390,6 @@ extern int SocketAsync_backend_available (SocketAsync_Backend backend);
  */
 extern int SocketAsync_set_backend (SocketAsync_Backend backend);
 
-/* ==================== Progress and Continuation API ==================== */
-
 /**
  * @brief Query progress of a pending async request.
  * @ingroup async_io
@@ -1469,8 +1465,6 @@ extern unsigned SocketAsync_send_continue (T async, unsigned request_id);
  */
 extern unsigned SocketAsync_recv_continue (T async, unsigned request_id);
 
-/* ==================== Timeout Configuration API ==================== */
-
 /**
  * @brief Set the global request timeout for an async context.
  * @ingroup async_io
@@ -1528,8 +1522,6 @@ extern int64_t SocketAsync_get_timeout (T async);
  * @see SocketAsync_send_timeout() for per-request timeouts.
  */
 extern int SocketAsync_expire_stale (T async);
-
-/* ==================== Timeout-Aware Send/Recv API ==================== */
 
 /**
  * @brief Submit async send with per-request timeout.
@@ -1601,8 +1593,6 @@ extern unsigned SocketAsync_recv_timeout (T async,
                                           void *user_data,
                                           SocketAsync_Flags flags,
                                           int64_t timeout_ms);
-
-/* ==================== Registered Buffers API ==================== */
 
 /**
  * @brief Register a buffer pool for fixed buffer I/O operations.
@@ -1740,8 +1730,6 @@ extern unsigned SocketAsync_recv_fixed (T async,
                                         void *user_data,
                                         SocketAsync_Flags flags);
 
-/* ==================== Fixed Files API ==================== */
-
 /**
  * @brief Register file descriptors for faster kernel lookup.
  * @ingroup async_io
@@ -1826,8 +1814,6 @@ extern int SocketAsync_get_fixed_fd_index (const T async, int fd);
  * @threadsafe Yes.
  */
 extern unsigned SocketAsync_registered_file_count (const T async);
-
-/* ==================== io_uring Availability API ==================== */
 
 /**
  * @brief io_uring kernel version information.

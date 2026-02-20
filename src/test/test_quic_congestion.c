@@ -17,11 +17,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Initialization Tests
- * ============================================================================
- */
-
 TEST (cc_init)
 {
   Arena_T arena = Arena_new ();
@@ -47,11 +42,6 @@ TEST (cc_init_null)
   ASSERT_EQ (0, SocketQUICCongestion_ssthresh (NULL));
   ASSERT_EQ (QUIC_CC_SLOW_START, SocketQUICCongestion_phase (NULL));
 }
-
-/* ============================================================================
- * Sending Gate Tests
- * ============================================================================
- */
 
 TEST (cc_can_send_under_cwnd)
 {
@@ -84,11 +74,6 @@ TEST (cc_can_send_blocked)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Slow Start Tests
- * ============================================================================
- */
-
 TEST (cc_slow_start_growth)
 {
   Arena_T arena = Arena_new ();
@@ -110,11 +95,6 @@ TEST (cc_slow_start_growth)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Loss / Recovery Tests
- * ============================================================================
- */
 
 TEST (cc_slow_start_exit_on_loss)
 {
@@ -189,11 +169,6 @@ TEST (cc_recovery_exit)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Congestion Avoidance Tests
- * ============================================================================
- */
-
 TEST (cc_congestion_avoidance_linear)
 {
   Arena_T arena = Arena_new ();
@@ -219,11 +194,6 @@ TEST (cc_congestion_avoidance_linear)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * ECN Tests
- * ============================================================================
- */
-
 TEST (cc_ecn_triggers_recovery)
 {
   Arena_T arena = Arena_new ();
@@ -242,11 +212,6 @@ TEST (cc_ecn_triggers_recovery)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Persistent Congestion Tests
- * ============================================================================
- */
 
 TEST (cc_persistent_congestion)
 {
@@ -291,11 +256,6 @@ TEST (cc_min_cwnd)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Persistent Duration Calculation Tests
- * ============================================================================
- */
-
 TEST (cc_persistent_duration)
 {
   SocketQUICLossRTT_T rtt;
@@ -325,11 +285,6 @@ TEST (cc_persistent_duration)
   ASSERT_EQ (0, SocketQUICCongestion_persistent_duration (NULL, 25000));
 }
 
-/* ============================================================================
- * Reset Tests
- * ============================================================================
- */
-
 TEST (cc_reset)
 {
   Arena_T arena = Arena_new ();
@@ -353,11 +308,6 @@ TEST (cc_reset)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Phase Name Tests
- * ============================================================================
- */
-
 TEST (cc_phase_name)
 {
   ASSERT_EQ (0,
@@ -372,11 +322,6 @@ TEST (cc_phase_name)
               SocketQUICCongestion_phase_name (QUIC_CC_CONGESTION_AVOID)));
   ASSERT_EQ (0, strcmp ("UNKNOWN", SocketQUICCongestion_phase_name (99)));
 }
-
-/* ============================================================================
- * Integration Test: Loss + Congestion Wired Together
- * ============================================================================
- */
 
 static size_t integration_acked_bytes;
 static uint64_t integration_latest_acked_time;
@@ -514,11 +459,6 @@ TEST (cc_integration_send_ack_cycle)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

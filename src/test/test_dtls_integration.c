@@ -73,8 +73,6 @@ remove_dtls_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== SocketDTLSContext Tests ==================== */
-
 TEST (dtls_context_creation_client)
 {
 #if SOCKET_HAS_TLS
@@ -298,8 +296,6 @@ TEST (dtls_context_free_null_safe)
 #endif
 }
 
-/* ==================== SocketDTLS Enable Tests ==================== */
-
 TEST (dtls_enable_on_dgram_socket)
 {
 #if SOCKET_HAS_TLS
@@ -403,8 +399,6 @@ TEST (dtls_mtu_configuration)
 #endif
 }
 
-/* ==================== DTLS Connection Info Tests ==================== */
-
 TEST (dtls_connection_info_before_handshake)
 {
 #if SOCKET_HAS_TLS
@@ -441,8 +435,6 @@ TEST (dtls_connection_info_before_handshake)
   (void)0;
 #endif
 }
-
-/* ==================== Error Path Tests ==================== */
 
 TEST (dtls_double_enable_error)
 {
@@ -653,8 +645,6 @@ TEST (dtls_invalid_mtu_error)
 #endif
 }
 
-/* ==================== Shutdown Tests ==================== */
-
 TEST (dtls_shutdown_before_handshake)
 {
 #if SOCKET_HAS_TLS
@@ -691,8 +681,6 @@ TEST (dtls_shutdown_before_handshake)
   (void)0;
 #endif
 }
-
-/* ==================== Config Constants Tests ==================== */
 
 TEST (dtls_config_constants)
 {
@@ -736,8 +724,6 @@ TEST (dtls_validation_macros)
   (void)0;
 #endif
 }
-
-/* ==================== Handshake State Machine Tests ==================== */
 
 TEST (dtls_handshake_state_enum_values)
 {
@@ -995,8 +981,6 @@ TEST (dtls_handshake_metrics)
   (void)0;
 #endif
 }
-
-/* ==================== Edge Case Tests ==================== */
 
 TEST (dtls_cookie_lifetime_constant)
 {
@@ -1343,8 +1327,6 @@ TEST (dtls_cookie_rotation_multiple)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ==================== Main ==================== */
 
 int
 main (void)

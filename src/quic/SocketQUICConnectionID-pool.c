@@ -26,11 +26,6 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-CID"
 
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
-
 static const char *result_strings[] = {
   [QUIC_CONNID_POOL_OK] = "OK",
   [QUIC_CONNID_POOL_ERROR_NULL] = "NULL pointer argument",
@@ -44,11 +39,6 @@ static const char *result_strings[] = {
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICConnectionIDPool,
                            QUIC_CONNID_POOL_NOT_FOUND)
-
-/* ============================================================================
- * Internal Hash Functions
- * ============================================================================
- */
 
 static unsigned
 hash_cid_bytes (const uint8_t *id, size_t len, uint32_t seed)
@@ -88,11 +78,6 @@ hash_sequence (uint64_t sequence, uint32_t seed)
 
   return (unsigned)(hash & (QUIC_CONNID_POOL_HASH_SIZE - 1));
 }
-
-/* ============================================================================
- * Pool Lifecycle Functions
- * ============================================================================
- */
 
 SocketQUICConnectionIDPool_T
 SocketQUICConnectionIDPool_new (Arena_T arena, size_t peer_limit)
@@ -155,11 +140,6 @@ SocketQUICConnectionIDPool_can_add (const SocketQUICConnectionIDPool_T pool)
   return pool->active_count < pool->peer_limit;
 }
 
-/* ============================================================================
- * Internal List Operations
- * ============================================================================
- */
-
 static void
 list_remove (SocketQUICConnectionIDPool_T pool,
              SocketQUICConnectionIDEntry_T *entry)
@@ -177,11 +157,6 @@ list_remove (SocketQUICConnectionIDPool_T pool,
   entry->list_prev = NULL;
   entry->list_next = NULL;
 }
-
-/* ============================================================================
- * Internal Hash Table Operations
- * ============================================================================
- */
 
 static void
 hash_remove (SocketQUICConnectionIDPool_T pool,
@@ -204,11 +179,6 @@ hash_remove (SocketQUICConnectionIDPool_T pool,
     }
 }
 
-/* ============================================================================
- * Sequence Hash Table Operations (O(1) sequence lookup)
- * ============================================================================
- */
-
 static void
 sequence_hash_remove (SocketQUICConnectionIDPool_T pool,
                       SocketQUICConnectionIDEntry_T *entry)
@@ -228,11 +198,6 @@ sequence_hash_remove (SocketQUICConnectionIDPool_T pool,
       prev = &(*prev)->seq_hash_next;
     }
 }
-
-/* ============================================================================
- * Connection ID Management
- * ============================================================================
- */
 
 /**
  * @brief Check for duplicate CID in hash chain.
@@ -484,11 +449,6 @@ SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
   return QUIC_CONNID_POOL_OK;
 }
 
-/* ============================================================================
- * Retirement Functions (RFC 9000 Section 5.1.2)
- * ============================================================================
- */
-
 SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_retire_prior_to (SocketQUICConnectionIDPool_T pool,
                                             uint64_t retire_prior_to,
@@ -614,11 +574,6 @@ SocketQUICConnectionIDPool_get_retire_prior_to (
   return pool->retire_prior_to;
 }
 
-/* ============================================================================
- * Iteration Functions
- * ============================================================================
- */
-
 int
 SocketQUICConnectionIDPool_foreach (
     SocketQUICConnectionIDPool_T pool,
@@ -668,11 +623,6 @@ SocketQUICConnectionIDPool_get_available (SocketQUICConnectionIDPool_T pool)
 
   return NULL;
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 int
 SocketQUICConnectionIDPool_needs_more (const SocketQUICConnectionIDPool_T pool,

@@ -25,36 +25,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-/* ============================================================================
- * CRYPTO Frame Encoding (RFC 9000 Section 19.6)
- * ============================================================================
- *
- * Format:
- *   Type (i) = 0x06
- *   Offset (i)
- *   Length (i)
- *   Crypto Data (..)
- *
- * A CRYPTO frame is used to transmit cryptographic handshake messages.
- * It can be sent in Initial, Handshake, and 1-RTT packets, but NOT in
- * 0-RTT packets.
- *
- * The CRYPTO frame offers the same cryptographic protection as STREAM frames.
- * Offset and Length fields are variable-length integers specifying the
- * byte offset and length of the crypto data respectively.
- *
- * All CRYPTO frames sent at a given encryption level are logically part of
- * a single stream, with data from different frames being reassembled in
- * order by offset before being passed to the TLS stack.
- *
- * Implementation Notes:
- * - Each encryption level has its own offset space
- * - Out-of-order frames must be buffered and reassembled
- * - Unlike STREAM frames, there is no FIN flag (TLS signals completion)
- * - The total length of crypto data in a connection is limited only by
- *   the maximum value of the offset field (2^62-1 bytes)
- */
-
 size_t
 SocketQUICFrame_encode_crypto (uint64_t offset,
                                const uint8_t *data,
@@ -111,30 +81,6 @@ SocketQUICFrame_encode_crypto (uint64_t offset,
 
   return pos;
 }
-
-/* ============================================================================
- * CRYPTO Frame Decoding (RFC 9000 Section 19.6)
- * ============================================================================
- *
- * Convenience wrapper around the existing SocketQUICFrame_parse() function
- * for decoding CRYPTO frames.
- *
- * The function extracts:
- * - Offset - byte offset in the crypto stream
- * - Length - length of crypto data
- * - Pointer to crypto data (points into input buffer, not copied)
- *
- * @param data   Input buffer containing encoded CRYPTO frame
- * @param len    Length of input buffer
- * @param frame  Output: decoded crypto frame structure
- *
- * @return Number of bytes consumed on success, or negative error code on
- * failure: -QUIC_FRAME_ERROR_NULL      (NULL pointer or zero length)
- *         -QUIC_FRAME_ERROR_TYPE      (not a CRYPTO frame)
- *         -QUIC_FRAME_ERROR_TRUNCATED (incomplete frame data)
- *         -QUIC_FRAME_ERROR_VARINT    (invalid varint encoding)
- *         -QUIC_FRAME_ERROR_INVALID   (other parse errors)
- */
 
 ssize_t
 SocketQUICFrame_decode_crypto (const uint8_t *data,

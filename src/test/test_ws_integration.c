@@ -47,11 +47,6 @@
 #include "socket/SocketWS.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 46000
 #define TEST_TIMEOUT_MS 5000
 
@@ -62,11 +57,6 @@ get_ws_test_port (void)
 {
   return TEST_PORT_BASE + (ws_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * WebSocket Server Infrastructure
- * ============================================================================
- */
 
 typedef struct
 {
@@ -341,11 +331,6 @@ ws_server_stop (WSTestServer *server)
   if (server->arena)
     Arena_dispose (&server->arena);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (ws_integration_handshake)
 {
@@ -799,11 +784,6 @@ TEST (ws_integration_state_transitions)
   ws_server_stop (&server);
   END_TRY;
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

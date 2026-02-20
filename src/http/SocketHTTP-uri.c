@@ -28,11 +28,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 #pragma GCC diagnostic pop
 #endif
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define URI_MAX_USERINFO_LEN 128
 #define URI_MAX_HOST_LEN 255
 #define URI_MAX_PATH_LEN 4096
@@ -52,11 +47,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 #define QUALITY_MIN 0.0f           /* RFC 7231 §5.3.1 minimum qvalue */
 #define QUALITY_MAX 1.0f           /* RFC 7231 §5.3.1 maximum qvalue */
 
-/* ============================================================================
- * Validation Forward Declarations
- * ============================================================================
- */
-
 static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
 static SocketHTTP_URIResult
 validate_userinfo (const char *userinfo, size_t len);
@@ -65,11 +55,6 @@ validate_host (const char *host, size_t len, int *out_is_ipv6);
 static SocketHTTP_URIResult
 validate_path_query (const char *s, size_t len, int is_path);
 static SocketHTTP_URIResult validate_fragment (const char *s, size_t len);
-
-/* ============================================================================
- * Character Classification
- * ============================================================================
- */
 
 static inline int
 is_scheme_char (char c, int first)
@@ -104,11 +89,6 @@ is_control_char (char c)
   return uc < 0x20 || uc == 0x7F;
 }
 
-/* ============================================================================
- * Arena String Allocation
- * ============================================================================
- */
-
 static void
 scheme_to_lower (char *scheme, size_t len)
 {
@@ -138,11 +118,6 @@ uri_alloc_component (Arena_T arena,
   *out_len = len;
   return URI_PARSE_OK;
 }
-
-/* ============================================================================
- * URI Parser State Machine
- * ============================================================================
- */
 
 typedef struct
 {
@@ -725,11 +700,6 @@ uri_alloc_all_components (const URIParseContext *ctx,
   return r;
 }
 
-/* ============================================================================
- * Public API
- * ============================================================================
- */
-
 const char *
 SocketHTTP_URI_result_string (SocketHTTP_URIResult result)
 {
@@ -980,7 +950,8 @@ uri_build_authority (const SocketHTTP_URI *uri,
   /* Userinfo (optional) */
   if (uri->userinfo && uri->userinfo_len > 0)
     {
-      URI_APPEND_STR (output, *pos, output_size, uri->userinfo, uri->userinfo_len);
+      URI_APPEND_STR (
+          output, *pos, output_size, uri->userinfo, uri->userinfo_len);
       URI_APPEND_CHAR (output, *pos, output_size, '@');
     }
 
@@ -1046,11 +1017,6 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri,
 
 #undef URI_APPEND_STR
 #undef URI_APPEND_CHAR
-
-/* ============================================================================
- * Validation Helpers
- * ============================================================================
- */
 
 static inline int
 is_unreserved (unsigned char c)
@@ -1304,11 +1270,6 @@ validate_fragment (const char *s, size_t len)
   return validate_path_query (s, len, 0);
 }
 
-/* ============================================================================
- * Media Type Parsing
- * ============================================================================
- */
-
 static const char *
 find_token_end (const char *p, const char *end, const char *delims)
 {
@@ -1541,11 +1502,6 @@ SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
 
   return 1;
 }
-
-/* ============================================================================
- * Accept Header Parsing
- * ============================================================================
- */
 
 static int
 qvalue_compare (const void *a, const void *b)

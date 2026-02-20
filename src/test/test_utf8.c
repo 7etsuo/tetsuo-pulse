@@ -26,11 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ============================================================================
- * ASCII Tests
- * ============================================================================
- */
-
 TEST (utf8_ascii_empty)
 {
   /* Empty input is valid */
@@ -70,11 +65,6 @@ TEST (utf8_ascii_null_str)
   ASSERT_EQ (UTF8_VALID, SocketUTF8_validate_str (NULL));
 }
 
-/* ============================================================================
- * 2-Byte Sequence Tests
- * ============================================================================
- */
-
 TEST (utf8_2byte_first)
 {
   /* First valid 2-byte code point: U+0080 */
@@ -102,11 +92,6 @@ TEST (utf8_2byte_incomplete)
   const unsigned char data[] = { 0xC2 };
   ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_validate (data, 1));
 }
-
-/* ============================================================================
- * 3-Byte Sequence Tests
- * ============================================================================
- */
 
 TEST (utf8_3byte_first)
 {
@@ -150,11 +135,6 @@ TEST (utf8_3byte_incomplete_2)
   ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_validate (data, 2));
 }
 
-/* ============================================================================
- * 4-Byte Sequence Tests
- * ============================================================================
- */
-
 TEST (utf8_4byte_first)
 {
   /* First valid 4-byte code point: U+10000 */
@@ -182,11 +162,6 @@ TEST (utf8_4byte_incomplete)
   const unsigned char data[] = { 0xF0, 0x90, 0x80 };
   ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_validate (data, 3));
 }
-
-/* ============================================================================
- * Overlong Encoding Rejection (Security Critical)
- * ============================================================================
- */
 
 TEST (utf8_overlong_2byte_nul)
 {
@@ -237,11 +212,6 @@ TEST (utf8_overlong_4byte_boundary)
   ASSERT_EQ (UTF8_OVERLONG, SocketUTF8_validate (data, 4));
 }
 
-/* ============================================================================
- * Surrogate Rejection (UTF-16 surrogates invalid in UTF-8)
- * ============================================================================
- */
-
 TEST (utf8_surrogate_first)
 {
   /* First surrogate: U+D800 (ED A0 80) */
@@ -275,11 +245,6 @@ TEST (utf8_valid_around_surrogates)
   ASSERT_EQ (UTF8_VALID, SocketUTF8_validate (after, 3));
 }
 
-/* ============================================================================
- * Code Point > U+10FFFF Rejection
- * ============================================================================
- */
-
 TEST (utf8_too_large_f4_90)
 {
   /* U+110000 (F4 90 80 80) - first invalid */
@@ -308,11 +273,6 @@ TEST (utf8_invalid_ff)
   ASSERT_EQ (UTF8_INVALID, SocketUTF8_validate (data, 1));
 }
 
-/* ============================================================================
- * Invalid Continuation Bytes
- * ============================================================================
- */
-
 TEST (utf8_isolated_continuation)
 {
   /* 80-BF without start byte */
@@ -333,11 +293,6 @@ TEST (utf8_unexpected_start)
   const unsigned char data[] = { 0xE0, 0xC0 }; /* Another start byte */
   ASSERT_EQ (UTF8_INVALID, SocketUTF8_validate (data, 2));
 }
-
-/* ============================================================================
- * Incremental Validation Tests
- * ============================================================================
- */
 
 TEST (utf8_incremental_ascii)
 {
@@ -436,11 +391,6 @@ TEST (utf8_incremental_reset)
              SocketUTF8_update (&state, (const unsigned char *)"OK", 2));
   ASSERT_EQ (UTF8_VALID, SocketUTF8_finish (&state));
 }
-
-/* ============================================================================
- * Utility Function Tests
- * ============================================================================
- */
 
 TEST (utf8_sequence_len)
 {
@@ -648,11 +598,6 @@ TEST (utf8_result_string)
   ASSERT_NOT_NULL (SocketUTF8_result_string ((SocketUTF8_Result)99));
 }
 
-/* ============================================================================
- * Encode/Decode Round-Trip Tests
- * ============================================================================
- */
-
 TEST (utf8_roundtrip_ascii)
 {
   for (uint32_t cp = 0; cp <= 0x7F; cp++)
@@ -704,11 +649,6 @@ TEST (utf8_roundtrip_sample)
     }
 }
 
-/* ============================================================================
- * Mixed Content Tests
- * ============================================================================
- */
-
 TEST (utf8_mixed_content)
 {
   /* Mix of ASCII, 2-byte, 3-byte, 4-byte */
@@ -733,11 +673,6 @@ TEST (utf8_long_valid)
 
   ASSERT_EQ (UTF8_VALID, SocketUTF8_validate_str (str));
 }
-
-/* ============================================================================
- * Boundary and Stress Tests
- * ============================================================================
- */
 
 TEST (utf8_stress_large_ascii)
 {
@@ -1042,19 +977,19 @@ TEST (utf8_boundary_all_ranges)
     uint32_t expected_cp;
   } tests[] = {
     /* 1-byte boundaries */
-    { (const unsigned char *)"\x00", 1, 0x00 },     /* Min 1-byte */
-    { (const unsigned char *)"\x7F", 1, 0x7F },     /* Max 1-byte */
+    { (const unsigned char *)"\x00", 1, 0x00 }, /* Min 1-byte */
+    { (const unsigned char *)"\x7F", 1, 0x7F }, /* Max 1-byte */
 
     /* 2-byte boundaries */
-    { (const unsigned char *)"\xC2\x80", 2, 0x80 }, /* Min 2-byte */
+    { (const unsigned char *)"\xC2\x80", 2, 0x80 },  /* Min 2-byte */
     { (const unsigned char *)"\xDF\xBF", 2, 0x7FF }, /* Max 2-byte */
 
     /* 3-byte boundaries */
-    { (const unsigned char *)"\xE0\xA0\x80", 3, 0x800 }, /* Min 3-byte */
+    { (const unsigned char *)"\xE0\xA0\x80", 3, 0x800 },  /* Min 3-byte */
     { (const unsigned char *)"\xEF\xBF\xBF", 3, 0xFFFF }, /* Max 3-byte */
 
     /* 4-byte boundaries */
-    { (const unsigned char *)"\xF0\x90\x80\x80", 4, 0x10000 }, /* Min 4-byte
+    { (const unsigned char *)"\xF0\x90\x80\x80", 4, 0x10000 },  /* Min 4-byte
                                                                  */
     { (const unsigned char *)"\xF4\x8F\xBF\xBF", 4, 0x10FFFF }, /* Max
                                                                    codepoint */
@@ -1064,17 +999,13 @@ TEST (utf8_boundary_all_ranges)
     {
       uint32_t cp;
       size_t consumed;
-      ASSERT_EQ (UTF8_VALID,
-                 SocketUTF8_decode (tests[i].data, tests[i].len, &cp, &consumed));
+      ASSERT_EQ (
+          UTF8_VALID,
+          SocketUTF8_decode (tests[i].data, tests[i].len, &cp, &consumed));
       ASSERT_EQ (tests[i].expected_cp, cp);
       ASSERT_EQ (tests[i].len, consumed);
     }
 }
-
-/* ============================================================================
- * NULL Pointer Validation Tests
- * ============================================================================
- */
 
 TEST (utf8_validate_null_data)
 {
@@ -1245,11 +1176,6 @@ TEST (utf8_decode_null_data)
 
   ASSERT_EQ (1, caught);
 }
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

@@ -90,9 +90,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         return 0;
       }
 
-    /* ====================================================================
-     * Test 1: Encode headers built from fuzz data
-     * ==================================================================== */
     {
       SocketHPACK_Header headers[MAX_TEST_HEADERS];
       size_t header_count = 0;
@@ -158,9 +155,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 2: Encode standard HTTP/2 pseudo-headers
-     * ==================================================================== */
     {
       SocketHPACK_Header pseudo_headers[] = {
         { ":method", 7, "GET", 3, 0 },
@@ -188,9 +182,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Encode with varying table sizes
-     * ==================================================================== */
     {
       /* Test table size changes during encoding */
       uint32_t table_sizes[] = { 0, 64, 256, 1024, 4096, 16384 };
@@ -210,9 +201,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: Encode known headers that should use static table
-     * ==================================================================== */
     {
       /* Headers that match static table entries */
       SocketHPACK_Header static_headers[] = {
@@ -239,9 +227,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Encode headers with special characters
-     * ==================================================================== */
     {
       /* Headers with various character patterns */
       SocketHPACK_Header special_headers[] = {
@@ -267,9 +252,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Encode fuzzed pseudo-headers (common attack vector)
-     * ==================================================================== */
     if (size > 10)
       {
         /* Build pseudo-headers with fuzzed values */
@@ -328,9 +310,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
 
-    /* ====================================================================
-     * Test 7: Encode with minimal buffer (edge cases)
-     * ==================================================================== */
     {
       SocketHPACK_Header small_header = { "x", 1, "y", 1, 0 };
 
@@ -344,9 +323,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 8: Multiple encodes to exercise dynamic table
-     * ==================================================================== */
     {
       /* Reset table for clean test */
       SocketHPACK_Encoder_set_table_size (encoder, 0);
@@ -370,9 +346,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       (void)len3;
     }
 
-    /* ====================================================================
-     * Test 9: Get encoder table state
-     * ==================================================================== */
     {
       SocketHPACK_Table_T table = SocketHPACK_Encoder_get_table (encoder);
       (void)table;

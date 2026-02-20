@@ -15,11 +15,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * RTT Tests
- * ============================================================================
- */
-
 TEST (loss_init_rtt)
 {
   SocketQUICLossRTT_T rtt;
@@ -100,11 +95,6 @@ TEST (loss_update_rtt_min_update)
   ASSERT_EQ (80000, rtt.min_rtt); /* Still 80000 */
 }
 
-/* ============================================================================
- * PTO Calculation Tests
- * ============================================================================
- */
-
 TEST (loss_get_pto_initial)
 {
   SocketQUICLossRTT_T rtt;
@@ -161,11 +151,6 @@ TEST (loss_get_pto_max_backoff)
   /* Should cap at max */
   ASSERT_EQ (pto_max, pto_over);
 }
-
-/* ============================================================================
- * Lifecycle Tests
- * ============================================================================
- */
 
 TEST (loss_new)
 {
@@ -228,11 +213,6 @@ TEST (loss_reset)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Packet Sent Tests
- * ============================================================================
- */
 
 TEST (loss_on_packet_sent)
 {
@@ -314,11 +294,6 @@ TEST (loss_on_packet_sent_not_in_flight)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * ACK Processing Tests
- * ============================================================================
- */
 
 static int lost_callback_count;
 static uint64_t last_lost_pn;
@@ -403,15 +378,8 @@ TEST (loss_on_ack_received_invalid_largest_ack)
   ack.ack_delay = 0;
   ack.first_range = 0;
 
-  res = SocketQUICLoss_on_ack_received (state,
-                                       &rtt,
-                                       &ack,
-                                       1100000,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       &acked_count,
-                                       &lost_count);
+  res = SocketQUICLoss_on_ack_received (
+      state, &rtt, &ack, 1100000, NULL, NULL, NULL, &acked_count, &lost_count);
   ASSERT_EQ (QUIC_LOSS_OK, res);
   ASSERT_EQ (0, acked_count);
   ASSERT_EQ (0, lost_count);
@@ -463,11 +431,6 @@ TEST (loss_on_ack_packet_threshold)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Query Tests
- * ============================================================================
- */
-
 TEST (loss_bytes_in_flight)
 {
   Arena_T arena;
@@ -513,11 +476,6 @@ TEST (loss_has_in_flight_null)
   ASSERT_EQ (0, SocketQUICLoss_has_in_flight (NULL));
 }
 
-/* ============================================================================
- * Loss Time Tests
- * ============================================================================
- */
-
 TEST (loss_get_loss_time_no_packets)
 {
   Arena_T arena;
@@ -556,11 +514,6 @@ TEST (loss_get_loss_time_with_packets)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Loss Timeout Tests
- * ============================================================================
- */
 
 TEST (loss_on_timeout_null)
 {
@@ -604,11 +557,6 @@ TEST (loss_on_timeout_time_based)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Result String Test
- * ============================================================================
- */
-
 TEST (loss_result_string)
 {
   ASSERT (strcmp ("OK", SocketQUICLoss_result_string (QUIC_LOSS_OK)) == 0);
@@ -617,11 +565,6 @@ TEST (loss_result_string)
           == 0);
   ASSERT (strcmp ("Unknown error", SocketQUICLoss_result_string (-1)) == 0);
 }
-
-/* ============================================================================
- * Test Runner
- * ============================================================================
- */
 
 int
 main (void)

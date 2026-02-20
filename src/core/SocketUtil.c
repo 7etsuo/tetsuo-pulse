@@ -15,11 +15,6 @@
 #include "core/SocketLog.h"
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * TIME UTILITIES
- * ============================================================================
- */
-
 /* Flag for one-time CLOCK_MONOTONIC fallback warning */
 static volatile int monotonic_fallback_warned = 0;
 static _Atomic int64_t monotonic_fallback_last_ms = 0;

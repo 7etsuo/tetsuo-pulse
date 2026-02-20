@@ -19,11 +19,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief Buffer size for JSON error response formatting.
  *
@@ -32,11 +27,6 @@
  * while preventing overflow from overly long input.
  */
 #define SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE 512
-
-/* ============================================================================
- * Internal Structures
- * ============================================================================
- */
 
 struct SocketSimple_HTTPServer
 {
@@ -51,11 +41,6 @@ struct SocketSimple_HTTPServer
 
 /* Note: struct SocketSimple_HTTPServerRequest is defined in
  * SocketSimple-internal.h for cross-module access by WebSocket upgrade */
-
-/* ============================================================================
- * Internal Callback Wrappers
- * ============================================================================
- */
 
 static void
 internal_handler_wrapper (SocketHTTPServer_Request_T core_req, void *userdata)
@@ -111,11 +96,6 @@ internal_drain_callback_wrapper (SocketHTTPServer_T core_server,
     }
 }
 
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
-
 void
 Socket_simple_http_server_config_init (SocketSimple_HTTPServerConfig *config)
 {
@@ -136,11 +116,6 @@ Socket_simple_http_server_config_init (SocketSimple_HTTPServerConfig *config)
   config->tls_cert_file = NULL;
   config->tls_key_file = NULL;
 }
-
-/* ============================================================================
- * Server Lifecycle
- * ============================================================================
- */
 
 SocketSimple_HTTPServer_T
 Socket_simple_http_server_new (const char *host, int port)
@@ -318,11 +293,6 @@ Socket_simple_http_server_stop (SocketSimple_HTTPServer_T server)
   SocketHTTPServer_stop (server->server);
 }
 
-/* ============================================================================
- * Handler Registration
- * ============================================================================
- */
-
 void
 Socket_simple_http_server_set_handler (SocketSimple_HTTPServer_T server,
                                        SocketSimple_HTTPServerHandler handler,
@@ -357,11 +327,6 @@ Socket_simple_http_server_set_validator (
       SocketHTTPServer_set_validator (server->server, NULL, NULL);
     }
 }
-
-/* ============================================================================
- * Event Loop
- * ============================================================================
- */
 
 int
 Socket_simple_http_server_poll (SocketSimple_HTTPServer_T server,
@@ -399,11 +364,6 @@ Socket_simple_http_server_fd (SocketSimple_HTTPServer_T server)
 
   return SocketHTTPServer_fd (server->server);
 }
-
-/* ============================================================================
- * Request Accessors
- * ============================================================================
- */
 
 const char *
 Socket_simple_http_server_request_method (SocketSimple_HTTPServerRequest_T req)
@@ -488,11 +448,6 @@ Socket_simple_http_server_request_is_http2 (
   return SocketHTTPServer_Request_is_http2 (req->core_req);
 }
 
-/* ============================================================================
- * Response Building
- * ============================================================================
- */
-
 void
 Socket_simple_http_server_response_status (SocketSimple_HTTPServerRequest_T req,
                                            int code)
@@ -543,11 +498,6 @@ Socket_simple_http_server_response_finish (SocketSimple_HTTPServerRequest_T req)
 
   SocketHTTPServer_Request_finish (req->core_req);
 }
-
-/* ============================================================================
- * JSON Convenience
- * ============================================================================
- */
 
 /**
  * json_escape_string - Escape a string for safe JSON insertion
@@ -705,11 +655,6 @@ Socket_simple_http_server_response_error (SocketSimple_HTTPServerRequest_T req,
   Socket_simple_http_server_response_json (req, status, json);
 }
 
-/* ============================================================================
- * Streaming Responses
- * ============================================================================
- */
-
 int
 Socket_simple_http_server_response_begin_stream (
     SocketSimple_HTTPServerRequest_T req)
@@ -751,11 +696,6 @@ Socket_simple_http_server_response_end_stream (
 
   return SocketHTTPServer_Request_end_stream (req->core_req);
 }
-
-/* ============================================================================
- * Graceful Shutdown
- * ============================================================================
- */
 
 int
 Socket_simple_http_server_drain (SocketSimple_HTTPServer_T server,
@@ -841,11 +781,6 @@ Socket_simple_http_server_state (SocketSimple_HTTPServer_T server)
       return SOCKET_SIMPLE_SERVER_STOPPED;
     }
 }
-
-/* ============================================================================
- * Statistics
- * ============================================================================
- */
 
 int
 Socket_simple_http_server_get_stats (SocketSimple_HTTPServer_T server,

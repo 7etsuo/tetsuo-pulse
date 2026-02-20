@@ -205,9 +205,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Default configuration parsing
-     * ==================================================================== */
     {
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
       if (parser)
@@ -247,9 +244,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 2: Strict mode configuration
-     * ==================================================================== */
     {
       SocketHTTP1_Config strict_cfg;
       SocketHTTP1_config_defaults (&strict_cfg);
@@ -265,9 +259,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Lenient mode with larger limits
-     * ==================================================================== */
     {
       SocketHTTP1_Config lenient_cfg;
       SocketHTTP1_config_defaults (&lenient_cfg);
@@ -286,9 +277,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: Restrictive limits for DoS protection testing
-     * ==================================================================== */
     {
       SocketHTTP1_Config restrictive_cfg;
       SocketHTTP1_config_defaults (&restrictive_cfg);
@@ -306,9 +294,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Incremental parsing with various chunk sizes
-     * ==================================================================== */
     {
       size_t chunk_sizes[] = { 1, 2, 7, 13, 64, 256, 1024 };
 
@@ -326,9 +311,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Known valid requests with fuzzed modifications
-     * ==================================================================== */
     {
       const char *valid_requests[] = {
         "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n",
@@ -363,9 +345,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Malformed requests (security edge cases)
-     * ==================================================================== */
     {
       const char *malformed_requests[] = {
         /* No CRLF */
@@ -444,9 +423,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 8: Build request with fuzzed components and parse
-     * ==================================================================== */
     if (size > 20)
       {
         /* Use fuzz data to construct a request */
@@ -497,9 +473,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
 
-    /* ====================================================================
-     * Test 9: Result string function coverage
-     * ==================================================================== */
     {
       SocketHTTP1_Result results[] = { HTTP1_OK,
                                        HTTP1_INCOMPLETE,
@@ -535,9 +508,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 10: Expect: 100-continue handling
-     * ==================================================================== */
     {
       const char *continue_requests[] = {
         "POST / HTTP/1.1\r\nHost: test.com\r\nContent-Length: "
@@ -566,9 +536,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 11: Upgrade handling (WebSocket, HTTP/2)
-     * ==================================================================== */
     {
       const char *upgrade_requests[] = {
         "GET /ws HTTP/1.1\r\nHost: test.com\r\nUpgrade: "

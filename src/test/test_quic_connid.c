@@ -17,11 +17,6 @@
 #include "quic/SocketQUICConnectionID.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Constant Value Tests
- * ============================================================================
- */
-
 TEST (quic_connid_max_len)
 {
   ASSERT_EQ (QUIC_CONNID_MAX_LEN, 20);
@@ -51,11 +46,6 @@ TEST (quic_connid_default_limit)
 {
   ASSERT_EQ (QUIC_CONNID_DEFAULT_LIMIT, 2);
 }
-
-/* ============================================================================
- * Initialization Tests
- * ============================================================================
- */
 
 TEST (quic_connid_init)
 {
@@ -143,11 +133,6 @@ TEST (quic_connid_set_null_data_nonzero_len)
   ASSERT_EQ (res, QUIC_CONNID_ERROR_NULL);
 }
 
-/* ============================================================================
- * Generation Tests
- * ============================================================================
- */
-
 TEST (quic_connid_generate_basic)
 {
   SocketQUICConnectionID_T cid;
@@ -228,11 +213,6 @@ TEST (quic_connid_generate_reset_token_null)
 
   ASSERT_EQ (res, QUIC_CONNID_ERROR_NULL);
 }
-
-/* ============================================================================
- * Comparison Tests
- * ============================================================================
- */
 
 TEST (quic_connid_equal_same)
 {
@@ -336,11 +316,6 @@ TEST (quic_connid_copy_null)
   ASSERT_EQ (SocketQUICConnectionID_copy (NULL, &cid), QUIC_CONNID_ERROR_NULL);
   ASSERT_EQ (SocketQUICConnectionID_copy (&cid, NULL), QUIC_CONNID_ERROR_NULL);
 }
-
-/* ============================================================================
- * Wire Format Tests
- * ============================================================================
- */
 
 TEST (quic_connid_encode_length)
 {
@@ -517,11 +492,6 @@ TEST (quic_connid_decode_fixed_incomplete)
   ASSERT_EQ (res, QUIC_CONNID_ERROR_INCOMPLETE);
 }
 
-/* ============================================================================
- * Utility Tests
- * ============================================================================
- */
-
 TEST (quic_connid_hash)
 {
   SocketQUICConnectionID_T cid1, cid2;
@@ -637,11 +607,6 @@ TEST (quic_connid_result_string)
       != NULL);
 }
 
-/* ============================================================================
- * Round-Trip Tests
- * ============================================================================
- */
-
 TEST (quic_connid_encode_decode_roundtrip)
 {
   SocketQUICConnectionID_T original, decoded;
@@ -682,11 +647,6 @@ TEST (quic_connid_roundtrip_all_lengths)
       ASSERT (SocketQUICConnectionID_equal (&original, &decoded));
     }
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

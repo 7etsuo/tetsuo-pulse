@@ -41,11 +41,6 @@
 /* Forward declarations for internal functions used by helpers */
 static int consume_rate_and_track_ip (T pool, const char *client_ip);
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
 /**
  * handle_syn_consume_failure - Handle rate/IP consumption failure for SYN
  * @protect: SYN protection instance
@@ -95,11 +90,6 @@ try_consume_and_report (T pool,
 
   return 1;
 }
-
-/* ============================================================================
- * Pool Resize Operations
- * ============================================================================
- */
 
 /**
  * collect_excess_connections - Collect excess active connections for closing
@@ -509,11 +499,6 @@ SocketPool_resize (T pool, size_t new_maxconns)
   invoke_post_resize_cb (pool, cb, cb_data, old_maxconns, new_maxconns);
 }
 
-/* ============================================================================
- * Pool Tuning Operations
- * ============================================================================
- */
-
 /**
  * SocketPool_prewarm - Pre-allocate buffers for percentage of free slots
  * @pool: Pool instance
@@ -734,11 +719,6 @@ SocketPool_filter (T pool,
   return found;
 }
 
-/* ============================================================================
- * Batch Accept Operations
- * ============================================================================
- */
-
 /**
  * accept_connection_direct - Accept connection directly using accept4/accept
  * @server_fd: Server socket file descriptor
@@ -957,11 +937,6 @@ SocketPool_accept_batch (T pool,
   return count;
 }
 
-/* ============================================================================
- * Async Connection Preparation
- * ============================================================================
- */
-
 /**
  * validate_prepare_params - Validate parameters for prepare_connection
  * @pool: Pool instance
@@ -1090,11 +1065,6 @@ SocketPool_prepare_connection (T pool,
 
   return 0;
 }
-
-/* ============================================================================
- * Async Connect with Callback
- * ============================================================================
- */
 
 /* AsyncConnectContext structure is defined in SocketPool-private.h */
 
@@ -1449,11 +1419,11 @@ SocketPool_connect_async (T pool,
                           int port,
                           SocketPool_ConnectCallback callback,
                           void *data)
-  {
-    SocketDNS_T dns;
-    volatile Socket_T socket = NULL;
-    volatile AsyncConnectContext_T ctx = NULL;
-    volatile Request_T req = NULL;
+{
+  SocketDNS_T dns;
+  volatile Socket_T socket = NULL;
+  volatile AsyncConnectContext_T ctx = NULL;
+  volatile Request_T req = NULL;
 
   validate_connect_async_params (pool, host, port, callback);
 
@@ -1469,8 +1439,8 @@ SocketPool_connect_async (T pool,
   ELSE
   {
     /* Cleanup on any exception (Socket_Failed or SocketPool_Failed) */
-    cleanup_failed_async_context (pool, (AsyncConnectContext_T)ctx,
-                                  (Socket_T *)&socket);
+    cleanup_failed_async_context (
+        pool, (AsyncConnectContext_T)ctx, (Socket_T *)&socket);
     POOL_UNLOCK (pool);
     RERAISE;
   }
@@ -1484,8 +1454,7 @@ SocketPool_connect_async (T pool,
 
   TRY
   {
-    req = initiate_dns_resolution (dns, host, port,
-                                   (AsyncConnectContext_T)ctx);
+    req = initiate_dns_resolution (dns, host, port, (AsyncConnectContext_T)ctx);
   }
   EXCEPT (SocketPool_Failed)
   {
@@ -1502,11 +1471,6 @@ SocketPool_connect_async (T pool,
   ((AsyncConnectContext_T)ctx)->req = req;
   return req;
 }
-
-/* ============================================================================
- * SYN Flood Protection
- * ============================================================================
- */
 
 /**
  * SocketPool_set_syn_protection - Enable SYN flood protection for pool

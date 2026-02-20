@@ -34,11 +34,6 @@
 /* Embedded test certificates */
 #include "../fuzz/fuzz_test_certs.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define H3_INTEG_PORT_BASE 52000
 #define H3_INTEG_TIMEOUT_MS 5000
 #define H3_INTEG_POLL_MS 100
@@ -51,11 +46,6 @@ get_h3_integ_port (void)
 {
   return H3_INTEG_PORT_BASE + (h3_integ_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Certificate File Helpers
- * ============================================================================
- */
 
 static char h3_cert_file[64];
 static char h3_key_file[64];
@@ -97,11 +87,6 @@ h3_cleanup_temp_cert_files (void)
   unlink (h3_key_file);
 }
 
-/* ============================================================================
- * Server Infrastructure
- * ============================================================================
- */
-
 typedef struct
 {
   SocketHTTP3_Server_T server;
@@ -130,11 +115,6 @@ h3_server_thread (void *arg)
 
   return NULL;
 }
-
-/* ============================================================================
- * Request Handler — Path-Based Dispatch
- * ============================================================================
- */
 
 typedef void (*H3RouteHandler) (SocketHTTP3_Request_T req,
                                 const SocketHTTP_Headers_T headers,
@@ -286,11 +266,6 @@ h3_request_handler (SocketHTTP3_Request_T req,
   handle_not_found (req, headers, arena);
 }
 
-/* ============================================================================
- * Server Setup / Teardown
- * ============================================================================
- */
-
 static int
 h3_server_setup (H3TestServer *ts)
 {
@@ -352,11 +327,6 @@ h3_server_teardown (H3TestServer *ts)
   Arena_dispose (&ts->arena);
 }
 
-/* ============================================================================
- * Client Helper
- * ============================================================================
- */
-
 static SocketHTTP3_Client_T
 h3_make_client (Arena_T arena, int port)
 {
@@ -378,11 +348,6 @@ h3_make_client (Arena_T arena, int port)
 
   return client;
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (h3_integ_get_200)
 {
@@ -1013,11 +978,6 @@ TEST (h3_integ_not_found)
   h3_server_teardown (&ts);
   h3_cleanup_temp_cert_files ();
 }
-
-/* ============================================================================
- * Entry Point
- * ============================================================================
- */
 
 int
 main (void)

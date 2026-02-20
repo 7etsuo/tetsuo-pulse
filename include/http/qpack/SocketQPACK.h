@@ -36,11 +36,6 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 
-/* ============================================================================
- * COMPILER ATTRIBUTES
- * ============================================================================
- */
-
 #if defined(__GNUC__) || defined(__clang__)
 #define QPACK_WARN_UNUSED __attribute__ ((warn_unused_result))
 #else
@@ -68,11 +63,6 @@
 #else
 #define QPACK_NONNULL(...)
 #endif
-
-/* ============================================================================
- * CONFIGURATION CONSTANTS
- * ============================================================================
- */
 
 #ifndef SOCKETQPACK_DEFAULT_TABLE_SIZE
 #define SOCKETQPACK_DEFAULT_TABLE_SIZE 4096
@@ -102,11 +92,6 @@
 
 /** RFC 9204 Appendix A: Static table has 99 entries */
 #define SOCKETQPACK_STATIC_TABLE_SIZE 99
-
-/* ============================================================================
- * HTTP/3 SETTINGS IDENTIFIERS (RFC 9204 Section 5)
- * ============================================================================
- */
 
 /**
  * @brief SETTINGS_QPACK_MAX_TABLE_CAPACITY identifier (0x01).
@@ -144,11 +129,6 @@ typedef struct
  */
 typedef struct SocketQPACK_Config *SocketQPACK_Config_T;
 
-/* ============================================================================
- * ERROR CODES
- * ============================================================================
- */
-
 /**
  * @brief QPACK operation result codes.
  *
@@ -180,11 +160,6 @@ typedef enum
  */
 #define QPACK_RESULT_COUNT (QPACK_ERR_0RTT_MISMATCH + 1)
 
-/* ============================================================================
- * HTTP/3 & QPACK ERROR CODES
- * ============================================================================
- */
-
 /* HTTP/3 error codes (RFC 9114 §8.1) — full set in SocketHTTP3-constants.h */
 #include "http/SocketHTTP3-constants.h"
 
@@ -209,22 +184,12 @@ typedef enum
  */
 #define QPACK_DECODER_STREAM_ERROR 0x0202
 
-/* ============================================================================
- * OPAQUE TYPES
- * ============================================================================
- */
-
 /**
  * @brief Opaque type for QPACK dynamic table.
  *
  * Manages entries with absolute indexing as per RFC 9204 Section 3.2.1-3.2.3.
  */
 typedef struct SocketQPACK_Table *SocketQPACK_Table_T;
-
-/* ============================================================================
- * INDEX CONVERSION FUNCTIONS (RFC 9204 Sections 3.2.4-3.2.6)
- * ============================================================================
- */
 
 /**
  * @brief Convert absolute index to encoder-relative index.
@@ -354,11 +319,6 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_abs_to_postbase (
 extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_postbase_to_abs (
     uint64_t base, uint64_t pb_index, uint64_t *abs_out);
 
-/* ============================================================================
- * INDEX VALIDATION FUNCTIONS
- * ============================================================================
- */
-
 /**
  * @brief Validate encoder-relative index against eviction bounds.
  *
@@ -429,11 +389,6 @@ extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_postbase (
  */
 extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_is_valid_absolute (
     uint64_t insert_count, uint64_t dropped_count, uint64_t abs_index);
-
-/* ============================================================================
- * SET DYNAMIC TABLE CAPACITY (RFC 9204 Section 4.3.1)
- * ============================================================================
- */
 
 /**
  * @brief Encode Set Dynamic Table Capacity instruction.
@@ -529,11 +484,6 @@ extern bool SocketQPACK_can_reduce_capacity (SocketQPACK_Table_T table,
  */
 extern QPACK_WARN_UNUSED SocketQPACK_Result SocketQPACK_apply_set_capacity (
     SocketQPACK_Table_T table, uint64_t capacity, uint64_t max_capacity);
-
-/* ============================================================================
- * DYNAMIC TABLE MANAGEMENT (RFC 9204 Section 3.2)
- * ============================================================================
- */
 
 /**
  * @brief Create a new QPACK dynamic table.
@@ -686,11 +636,6 @@ SocketQPACK_Table_record_stream_ref (SocketQPACK_Table_T table,
 extern void SocketQPACK_Table_release_stream_refs (SocketQPACK_Table_T table,
                                                    uint64_t stream_id);
 
-/* ============================================================================
- * INSERT WITH LITERAL NAME (RFC 9204 Section 4.3.3)
- * ============================================================================
- */
-
 /**
  * @brief Encode Insert With Literal Name instruction.
  *
@@ -752,11 +697,6 @@ SocketQPACK_decode_insert_literal_name (const unsigned char *buf,
                                         size_t value_out_size,
                                         size_t *value_len_out,
                                         size_t *bytes_consumed);
-
-/* ============================================================================
- * FIELD SECTION PREFIX (RFC 9204 Section 4.5.1)
- * ============================================================================
- */
 
 /**
  * @brief Decoded Field Section Prefix.
@@ -882,11 +822,6 @@ extern uint64_t SocketQPACK_compute_max_entries (uint64_t max_table_capacity);
  */
 extern uint64_t SocketQPACK_max_entries (uint64_t max_table_capacity);
 
-/* ============================================================================
- * STATIC TABLE ACCESS (RFC 9204 Appendix A)
- * ============================================================================
- */
-
 /**
  * @brief Look up an entry in the QPACK static table.
  *
@@ -908,11 +843,6 @@ SocketQPACK_static_table_get (uint64_t index,
                               size_t *name_len,
                               const char **value,
                               size_t *value_len);
-
-/* ============================================================================
- * REQUIRED INSERT COUNT ENCODING (RFC 9204 Section 4.5.1.1)
- * ============================================================================
- */
 
 /**
  * @brief Encode Required Insert Count for Field Section Prefix.
@@ -984,11 +914,6 @@ SocketQPACK_decode_required_insert_count (uint64_t encoded_ric,
                                           uint64_t max_entries,
                                           uint64_t total_insert_count,
                                           uint64_t *required_insert_count);
-
-/* ============================================================================
- * BASE ENCODING (RFC 9204 Section 4.5.1.2)
- * ============================================================================
- */
 
 /**
  * @brief Calculate Base from Sign bit, Required Insert Count, and Delta Base.
@@ -1066,11 +991,6 @@ SocketQPACK_encode_base (uint64_t req_insert_count,
                          uint64_t base,
                          int *sign_out,
                          uint64_t *delta_out);
-
-/* ============================================================================
- * INDEXED FIELD LINE (RFC 9204 Section 4.5.2)
- * ============================================================================
- */
 
 /**
  * @brief Encode an Indexed Field Line.
@@ -1169,11 +1089,6 @@ SocketQPACK_resolve_indexed_field (uint64_t index,
  * @since 1.0.0
  */
 extern int SocketQPACK_is_indexed_field_line (unsigned char byte);
-
-/* ============================================================================
- * INDEXED FIELD LINE WITH POST-BASE INDEX (RFC 9204 Section 4.5.3)
- * ============================================================================
- */
 
 /**
  * @brief Encode Indexed Field Line with Post-Base Index.
@@ -1318,11 +1233,6 @@ SocketQPACK_lookup_indexed_postbase (SocketQPACK_Table_T table,
  * @since 1.0.0
  */
 extern bool SocketQPACK_is_indexed_postbase (uint8_t first_byte);
-
-/* ============================================================================
- * LITERAL FIELD LINE WITH NAME REFERENCE (RFC 9204 Section 4.5.4)
- * ============================================================================
- */
 
 /**
  * @brief Decoded Literal Field Line with Name Reference.
@@ -1491,11 +1401,6 @@ SocketQPACK_resolve_literal_name_ref (bool is_static,
                                       const char **name,
                                       size_t *name_len);
 
-/* ============================================================================
- * LITERAL FIELD LINE WITH LITERAL NAME (RFC 9204 Section 4.5.6)
- * ============================================================================
- */
-
 /**
  * @brief Decoded Literal Field Line with Literal Name.
  *
@@ -1617,11 +1522,6 @@ SocketQPACK_decode_literal_field_literal_name (const unsigned char *input,
  */
 extern bool SocketQPACK_is_literal_field_literal_name (uint8_t first_byte);
 
-/* ============================================================================
- * UTILITY FUNCTIONS
- * ============================================================================
- */
-
 /**
  * @brief Get human-readable string for QPACK result code.
  *
@@ -1644,11 +1544,6 @@ extern const char *SocketQPACK_result_string (SocketQPACK_Result result);
  * @since 1.0.0
  */
 extern size_t SocketQPACK_estimate_capacity (size_t max_size);
-
-/* ============================================================================
- * LITERAL FIELD LINE WITH POST-BASE NAME REFERENCE (RFC 9204 Section 4.5.5)
- * ============================================================================
- */
 
 /**
  * @brief Decoded Literal Field Line with Post-Base Name Reference.
@@ -1797,11 +1692,6 @@ SocketQPACK_resolve_postbase_name (SocketQPACK_Table_T table,
                                    uint64_t post_base_idx,
                                    const char **name,
                                    size_t *name_len);
-
-/* ============================================================================
- * BLOCKED STREAM MANAGEMENT (RFC 9204 Sections 2.1.2, 2.2.1)
- * ============================================================================
- */
 
 /**
  * @brief Opaque type for blocked stream manager.
@@ -2046,14 +1936,6 @@ SocketQPACK_get_min_blocked_ric (SocketQPACK_BlockedManager_T manager);
 extern const char *
 SocketQPACK_blocked_result_string (SocketQPACK_BlockedResult result);
 
-/* ============================================================================
- * QPACK ENCODER (RFC 9204 Section 2.1.4)
- *
- * Encoder state management with Known Received Count tracking. The encoder
- * tracks which dynamic table entries have been acknowledged by the decoder.
- * ============================================================================
- */
-
 /**
  * @brief Opaque type for QPACK encoder state.
  *
@@ -2210,11 +2092,6 @@ SocketQPACK_Encoder_get_table (SocketQPACK_Encoder_T encoder);
  */
 extern uint64_t
 SocketQPACK_Encoder_insert_count (SocketQPACK_Encoder_T encoder);
-
-/* ============================================================================
- * QPACK CONFIGURATION (RFC 9204 Section 5)
- * ============================================================================
- */
 
 /**
  * @brief Initialize settings to RFC 9204 defaults.
@@ -2393,11 +2270,6 @@ SocketQPACK_Config_validate_0rtt (SocketQPACK_Config_T config,
  * @since 1.0.0
  */
 extern const char *SocketQPACK_settings_id_string (uint64_t setting_id);
-
-/* ============================================================================
- * ERROR CODE MAPPING FUNCTIONS (RFC 9204 Section 6)
- * ============================================================================
- */
 
 /**
  * @brief Get human-readable string for result code.

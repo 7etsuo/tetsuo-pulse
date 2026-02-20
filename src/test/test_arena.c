@@ -291,8 +291,6 @@ TEST (arena_mixed_allocation_sizes)
   Arena_dispose (&arena);
 }
 
-/* ==================== Error Condition Tests ==================== */
-
 /* Test dispose with NULL pointer */
 TEST (arena_dispose_null_pointer)
 {
@@ -460,8 +458,6 @@ TEST (arena_calloc_large_count)
 
   Arena_dispose (&arena);
 }
-
-/* ==================== Arena_reset Tests ==================== */
 
 /* Test basic reset with single chunk allocation */
 TEST (arena_reset_basic)
@@ -814,8 +810,6 @@ TEST (arena_reset_followed_by_calloc)
   Arena_dispose (&arena);
 }
 
-/* ==================== Arena_new_unlocked() Tests ==================== */
-
 /* Test basic unlocked arena creation */
 TEST (arena_new_unlocked_creates_arena)
 {
@@ -1133,8 +1127,6 @@ TEST (arena_unlocked_multiple_disposals)
   Arena_dispose (&arena);
   ASSERT_NULL (arena);
 }
-
-/* ==================== SocketConfig Memory Limit Tests ==================== */
 
 /* Test set/get roundtrip */
 TEST (socketconfig_set_get_max_memory_roundtrip)

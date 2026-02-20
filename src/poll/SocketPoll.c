@@ -65,8 +65,6 @@ const Except_T SocketPoll_Failed
  */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketPoll);
 
-/* ==================== Thread-Safe Accessor Macros ==================== */
-
 /**
  * LOCKED_INT_GETTER - Thread-safe getter for int field
  * @poll: Poll instance
@@ -84,11 +82,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketPoll);
     _value;                                \
   })
 
-/* ==================== Forward Declarations ==================== */
-
 static void cleanup_poll_partial (T poll);
-
-/* ==================== Allocation Helpers ==================== */
 
 /**
  * ALLOCATE_HASH_ENTRY - Generic macro for allocating hash table entries
@@ -128,8 +122,6 @@ poll_fd_hash (const T poll, int fd)
   unsigned key = (unsigned)fd ^ poll->hash_seed;
   return socket_util_hash_uint (key, SOCKET_DATA_HASH_SIZE);
 }
-
-/* ==================== Hash Table Insertion ==================== */
 
 /**
  * HASH_TABLE_INSERT - Generic macro for hash table insertion
@@ -177,8 +169,6 @@ insert_fd_socket_entry (T poll, unsigned fd_hash, FdSocketEntry *entry)
 {
   HASH_TABLE_INSERT (poll->fd_to_socket_map, fd_hash, entry, next);
 }
-
-/* ==================== Hash Table Lookup ==================== */
 
 /**
  * find_socket_data_entry - Find socket data entry in hash table
@@ -237,8 +227,6 @@ socket_data_lookup_unlocked (const T poll, const Socket_T socket)
   return entry ? entry->data : NULL;
 }
 
-/* ==================== Hash Table Removal ==================== */
-
 /**
  * remove_socket_data_entry - Remove socket data entry from hash table
  * @poll: Poll instance
@@ -270,8 +258,6 @@ remove_fd_socket_entry (T poll, unsigned fd_hash, int fd)
   HASH_CHAIN_REMOVE (
       &poll->fd_to_socket_map[fd_hash], FdSocketEntry, fd, fd, next);
 }
-
-/* ==================== Unlocked Hash Table Operations ==================== */
 
 /**
  * socket_data_add_unlocked - Add socket data mapping (caller holds lock)
@@ -325,8 +311,6 @@ socket_data_remove_unlocked (T poll, Socket_T socket)
   remove_socket_data_entry (poll, hash, socket);
   remove_fd_socket_entry (poll, hash, fd);
 }
-
-/* ==================== Initialization Helpers ==================== */
 
 /**
  * INIT_FAIL - Cleanup and raise exception during init
@@ -538,8 +522,6 @@ initialize_poll_hash_seed (T poll)
   poll->hash_seed = (unsigned)Socket_get_monotonic_ms () ^ (unsigned)getpid ();
 }
 
-/* ==================== Combined FD Lookup (Optimized) ==================== */
-
 /**
  * lookup_socket_and_data_by_fd - Find socket and user data by FD in one pass
  * @poll: Poll instance
@@ -600,8 +582,6 @@ lookup_socket_and_data_by_fd (const T poll,
   *socket_out = socket;
   *data_out = NULL;
 }
-
-/* ==================== Event Translation ==================== */
 
 /**
  * translate_backend_events_to_socket_events - Convert backend events
@@ -665,8 +645,6 @@ translate_backend_events_to_socket_events (T poll, int nfds)
 
   return translated_count;
 }
-
-/* ==================== TLS Event Handling ==================== */
 
 #if SOCKET_HAS_TLS
 
@@ -745,8 +723,6 @@ socketpoll_process_tls_handshakes (T poll, int nfds)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ==================== Constructor ==================== */
-
 T
 SocketPoll_new (int maxevents)
 {
@@ -784,8 +760,6 @@ SocketPoll_new (int maxevents)
   return (T)poll;
 }
 
-/* ==================== Destructor ==================== */
-
 void
 SocketPoll_free (T *poll)
 {
@@ -809,8 +783,6 @@ SocketPoll_free (T *poll)
   free (*poll);
   *poll = NULL;
 }
-
-/* ==================== Add Socket Helpers ==================== */
 
 /**
  * validate_socket_fd_for_add - Validate socket FD is usable
@@ -937,8 +909,6 @@ add_socket_to_data_map_with_rollback (T poll,
   END_TRY;
 }
 
-/* ==================== Add Socket to Poll ==================== */
-
 void
 SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 {
@@ -968,8 +938,6 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
   pthread_mutex_unlock (&poll->mutex);
   END_TRY;
 }
-
-/* ==================== Modify Socket Events ==================== */
 
 void
 SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
@@ -1011,8 +979,6 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
   pthread_mutex_unlock (&poll->mutex);
   END_TRY;
 }
-
-/* ==================== Remove Socket from Poll ==================== */
 
 /**
  * SocketPoll_del - Remove socket from poll set
@@ -1063,8 +1029,6 @@ SocketPoll_del (T poll, Socket_T socket)
     }
 }
 
-/* ==================== Timeout Accessors ==================== */
-
 int
 SocketPoll_getdefaulttimeout (T poll)
 {
@@ -1084,8 +1048,6 @@ SocketPoll_setdefaulttimeout (T poll, int timeout)
   poll->default_timeout_ms = timeout;
   pthread_mutex_unlock (&poll->mutex);
 }
-
-/* ==================== Wait Helper Functions ==================== */
 
 /**
  * compute_wait_timeout - Compute final timeout for wait operation
@@ -1197,8 +1159,6 @@ emit_event_metrics (const int nfds, const int timeout)
   SocketEvent_emit_poll_wakeup (nfds, timeout);
 }
 
-/* ==================== Wait for Events ==================== */
-
 int
 SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
 {
@@ -1239,8 +1199,6 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
   return nfds;
 }
 
-/* ==================== Accessors ==================== */
-
 SocketAsync_T
 SocketPoll_get_async (T poll)
 {
@@ -1259,8 +1217,6 @@ socketpoll_get_timer_heap (T poll)
   assert (poll);
   return poll->timer_heap;
 }
-
-/* ==================== Registration Limit Accessors ==================== */
 
 int
 SocketPoll_getmaxregistered (T poll)
@@ -1300,8 +1256,6 @@ SocketPoll_getregisteredcount (T poll)
   assert (poll);
   return LOCKED_INT_GETTER (poll, registered_count);
 }
-
-/* ==================== New Accessors ==================== */
 
 const char *
 SocketPoll_get_backend_name (T poll)

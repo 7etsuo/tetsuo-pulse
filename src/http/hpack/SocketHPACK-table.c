@@ -24,11 +24,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHPACK);
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HPACK"
 
-/* ============================================================================
- * Static Table (RFC 7541 Appendix A)
- * ============================================================================
- */
-
 /* clang-format off */
 const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
   /* Index 1: :authority */
@@ -155,11 +150,6 @@ const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
   { "www-authenticate", "", 16, 0 },
 };
 /* clang-format on */
-
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
 
 static int
 hpack_validate_table (const SocketHPACK_Table_T table, const char *func)
@@ -402,11 +392,6 @@ hpack_table_prepare_insertion (SocketHPACK_Table_T table, size_t entry_size)
   hpack_table_evict (table, entry_size);
 }
 
-/* ============================================================================
- * Dynamic Table Eviction
- * ============================================================================
- */
-
 size_t
 hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
 {
@@ -437,11 +422,6 @@ hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
 
   return evicted;
 }
-
-/* ============================================================================
- * Static Table Lookup
- * ============================================================================
- */
 
 SocketHPACK_Result
 SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
@@ -505,13 +485,6 @@ SocketHPACK_static_find (const char *name,
 
   return name_match;
 }
-
-/* ============================================================================
- * Dynamic Table Implementation
- *
- * Circular buffer: Index 1 = most recent (tail-1), higher = older toward head
- * ============================================================================
- */
 
 SocketHPACK_Table_T
 SocketHPACK_Table_new (size_t max_size, Arena_T arena)

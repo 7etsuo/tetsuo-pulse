@@ -16,11 +16,6 @@
 #include "quic/SocketQUICVarInt.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Frame Header Round-Trip Tests
- * ============================================================================
- */
-
 TEST (h3_frame_header_roundtrip_data)
 {
   uint8_t buf[16];
@@ -132,11 +127,6 @@ TEST (h3_frame_header_roundtrip_push_promise)
   ASSERT_EQ (1024ULL, header.length);
 }
 
-/* ============================================================================
- * Boundary Varint Tests
- * ============================================================================
- */
-
 TEST (h3_frame_header_boundary_1byte)
 {
   /* Type 0 (1-byte varint), length 63 (1-byte varint max) */
@@ -200,11 +190,6 @@ TEST (h3_frame_header_boundary_8byte)
   ASSERT_EQ (big_val, header.length);
 }
 
-/* ============================================================================
- * Incomplete Buffer Tests
- * ============================================================================
- */
-
 TEST (h3_frame_header_incomplete_empty)
 {
   SocketHTTP3_FrameHeader header;
@@ -224,11 +209,6 @@ TEST (h3_frame_header_incomplete_type_only)
       = SocketHTTP3_Frame_parse_header (buf, 1, &header, &consumed);
   ASSERT_EQ (HTTP3_PARSE_INCOMPLETE, res);
 }
-
-/* ============================================================================
- * Settings Tests
- * ============================================================================
- */
 
 TEST (h3_settings_init_defaults)
 {
@@ -400,11 +380,6 @@ TEST (h3_settings_write_defaults_empty)
   ASSERT_EQ (0, written);
 }
 
-/* ============================================================================
- * Single-Varint Frame Round-Trip Tests
- * ============================================================================
- */
-
 TEST (h3_goaway_roundtrip)
 {
   uint8_t buf[8];
@@ -454,11 +429,6 @@ TEST (h3_cancel_push_roundtrip)
   ASSERT_EQ (99ULL, push_id);
 }
 
-/* ============================================================================
- * PUSH_PROMISE Tests
- * ============================================================================
- */
-
 TEST (h3_push_promise_parse_id)
 {
   /* Simulate: push_id=5, followed by 10 bytes of encoded field section */
@@ -488,11 +458,6 @@ TEST (h3_push_promise_parse_id_incomplete)
       = SocketHTTP3_PushPromise_parse_id (NULL, 0, &push_id, &payload_offset);
   ASSERT_EQ (1, ret);
 }
-
-/* ============================================================================
- * Frame Validation Tests
- * ============================================================================
- */
 
 TEST (h3_validate_data_on_request)
 {
@@ -606,11 +571,6 @@ TEST (h3_validate_push_promise_on_push)
                  HTTP3_FRAME_PUSH_PROMISE, HTTP3_STREAM_PUSH, 0));
 }
 
-/* ============================================================================
- * Reserved HTTP/2 Frame Validation
- * ============================================================================
- */
-
 TEST (h3_validate_reserved_h2_frames)
 {
   uint64_t reserved[] = { 0x02, 0x06, 0x08, 0x09 };
@@ -628,11 +588,6 @@ TEST (h3_validate_reserved_h2_frames)
     }
 }
 
-/* ============================================================================
- * GREASE Frame Validation
- * ============================================================================
- */
-
 TEST (h3_validate_grease_frames_allowed)
 {
   /* GREASE values: 0x21, 0x40, 0x5f */
@@ -640,11 +595,6 @@ TEST (h3_validate_grease_frames_allowed)
   ASSERT_EQ (0ULL, SocketHTTP3_Frame_validate (0x40, HTTP3_STREAM_CONTROL, 0));
   ASSERT_EQ (0ULL, SocketHTTP3_Frame_validate (0x5f, HTTP3_STREAM_PUSH, 0));
 }
-
-/* ============================================================================
- * Zero-Length DATA Frame
- * ============================================================================
- */
 
 TEST (h3_zero_length_data_valid)
 {
@@ -661,11 +611,6 @@ TEST (h3_zero_length_data_valid)
   ASSERT_EQ (HTTP3_FRAME_DATA, header.type);
   ASSERT_EQ (0ULL, header.length);
 }
-
-/* ============================================================================
- * First Frame Must Be SETTINGS on Control Stream
- * ============================================================================
- */
 
 TEST (h3_validate_first_frame_settings_ok)
 {
@@ -690,11 +635,6 @@ TEST (h3_validate_first_frame_goaway_missing_settings)
       H3_MISSING_SETTINGS,
       SocketHTTP3_Frame_validate (HTTP3_FRAME_GOAWAY, HTTP3_STREAM_CONTROL, 1));
 }
-
-/* ============================================================================
- * Write Buffer Too Small
- * ============================================================================
- */
 
 TEST (h3_write_header_buffer_too_small)
 {
@@ -722,11 +662,6 @@ TEST (h3_settings_write_buffer_too_small)
   ASSERT_EQ (-1, written);
 }
 
-/* ============================================================================
- * Single-Varint Incomplete Parse
- * ============================================================================
- */
-
 TEST (h3_goaway_parse_incomplete)
 {
   uint64_t id;
@@ -748,11 +683,6 @@ TEST (h3_cancel_push_parse_incomplete)
   ASSERT_EQ (1, ret);
 }
 
-/* ============================================================================
- * Settings Parse Empty Payload
- * ============================================================================
- */
-
 TEST (h3_settings_parse_empty)
 {
   SocketHTTP3_Settings settings;
@@ -764,11 +694,6 @@ TEST (h3_settings_parse_empty)
   ASSERT_EQ (0ULL, settings.qpack_max_table_capacity);
   ASSERT_EQ (0ULL, settings.qpack_blocked_streams);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

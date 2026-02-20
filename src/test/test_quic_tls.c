@@ -25,11 +25,6 @@
 #include <openssl/ssl.h>
 #endif
 
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
-
 TEST (tls_result_string_ok)
 {
   const char *str = SocketQUICTLS_result_string (QUIC_TLS_OK);
@@ -135,11 +130,6 @@ TEST (tls_result_string_unknown)
   ASSERT (strstr (str, "Unknown") != NULL);
 }
 
-/* ============================================================================
- * Alert to Error Conversion Tests (RFC 9001 §4.8)
- * ============================================================================
- */
-
 TEST (tls_alert_to_error_zero)
 {
   /* TLS close_notify (0) -> 0x0100 */
@@ -181,11 +171,6 @@ TEST (tls_alert_to_error_max)
   uint64_t error = SocketQUICTLS_alert_to_error (255);
   ASSERT_EQ (error, 0x01FF);
 }
-
-/* ============================================================================
- * NULL Argument Tests
- * ============================================================================
- */
 
 TEST (tls_init_context_null)
 {
@@ -299,21 +284,11 @@ TEST (tls_get_alpn_null_handshake)
   ASSERT_EQ (result, QUIC_TLS_ERROR_NULL);
 }
 
-/* ============================================================================
- * Invalid Level Tests
- * ============================================================================
- */
-
 TEST (tls_has_keys_invalid_level)
 {
   int has = SocketQUICTLS_has_keys (NULL, QUIC_CRYPTO_LEVEL_COUNT);
   ASSERT_EQ (has, 0);
 }
-
-/* ============================================================================
- * Integration Tests with Real Handshake Contexts
- * ============================================================================
- */
 
 #include "quic/SocketQUICConnection.h"
 
@@ -594,11 +569,6 @@ TEST (tls_free_with_handshake)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Transport Parameters Extension Tests (RFC 9001 §8.2)
- * ============================================================================
- */
-
 TEST (tls_transport_params_ext_type)
 {
   /* Verify extension type constant matches RFC 9001 §8.2 */
@@ -852,11 +822,6 @@ TEST (tls_params_received_flag_not_set_on_error)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Level Boundary Tests
- * ============================================================================
- */
-
 TEST (tls_all_crypto_levels_valid)
 {
   /* Verify all valid levels don't crash has_keys */
@@ -870,11 +835,6 @@ TEST (tls_all_crypto_levels_valid)
   has = SocketQUICTLS_has_keys (NULL, QUIC_CRYPTO_LEVEL_APPLICATION);
   ASSERT_EQ (has, 0);
 }
-
-/* ============================================================================
- * QUIC-Specific TLS Adjustments Tests (RFC 9001 §8.1, §8.4)
- * ============================================================================
- */
 
 /**
  * RFC 9001 §8.1: Verify NO_APPLICATION_PROTOCOL error code value.
@@ -1058,11 +1018,6 @@ TEST (tls_get_alpn_no_ssl)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Integration Tests - Full QUIC-TLS Handshake
- * ============================================================================
- */
-
 #include <unistd.h>
 
 /**
@@ -1171,7 +1126,8 @@ TEST (tls_integration_alpn_success)
   server_config.alpn = "h3";
 
   /* Initialize TLS contexts */
-  SocketQUICTLS_Result res = SocketQUICTLS_init_context (client_hs, &client_config);
+  SocketQUICTLS_Result res
+      = SocketQUICTLS_init_context (client_hs, &client_config);
   if (res == QUIC_TLS_ERROR_NO_TLS)
     goto cleanup; /* Skip on systems without QUIC TLS */
 
@@ -1440,7 +1396,8 @@ TEST (tls_middlebox_compat_disabled)
     }
   ASSERT_EQ (res, QUIC_TLS_OK);
 
-#if SOCKET_HAS_TLS && defined(HAVE_OPENSSL_QUIC) && defined(SSL_OP_ENABLE_MIDDLEBOX_COMPAT)
+#if SOCKET_HAS_TLS && defined(HAVE_OPENSSL_QUIC) \
+    && defined(SSL_OP_ENABLE_MIDDLEBOX_COMPAT)
   /*
    * Verify middlebox compat is NOT set.
    * SSL_CTX_get_options returns the options bitmask.
@@ -1461,11 +1418,6 @@ TEST (tls_middlebox_compat_disabled)
   SocketQUICHandshake_free (&hs);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test Runner
- * ============================================================================
- */
 
 int
 main (void)

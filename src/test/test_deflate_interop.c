@@ -94,7 +94,7 @@ generate_random_data (uint8_t *buf, size_t len, uint32_t seed)
  * Helper: Decompress data with our native inflater
  *
  * Note: The output buffer should be slightly larger than expected output
- * to allow the inflater to process the end-of-block marker without 
+ * to allow the inflater to process the end-of-block marker without
  * returning OUTPUT_FULL.
  */
 static int
@@ -120,13 +120,16 @@ native_decompress (const uint8_t *input,
   /* Decompress in a loop in case of partial results */
   while (!SocketDeflate_Inflater_finished (inf) && iterations < max_iterations)
     {
-      size_t out_space = (*output_len > total_written) 
-                         ? (*output_len - total_written) 
-                         : 0;
-      
-      result = SocketDeflate_Inflater_inflate (
-          inf, input + total_consumed, input_len - total_consumed, &consumed,
-          output + total_written, out_space, &written);
+      size_t out_space
+          = (*output_len > total_written) ? (*output_len - total_written) : 0;
+
+      result = SocketDeflate_Inflater_inflate (inf,
+                                               input + total_consumed,
+                                               input_len - total_consumed,
+                                               &consumed,
+                                               output + total_written,
+                                               out_space,
+                                               &written);
 
       total_consumed += consumed;
       total_written += written;
@@ -137,7 +140,8 @@ native_decompress (const uint8_t *input,
       if (result == DEFLATE_OUTPUT_FULL)
         {
           /* Output full but not finished - need more output space */
-          /* If we've written what was expected, try one more pass with 0 space */
+          /* If we've written what was expected, try one more pass with 0 space
+           */
           /* to let the inflater process remaining bits */
           if (total_written >= *output_len && consumed > 0)
             continue;
@@ -304,23 +308,18 @@ zlib_decompress_gzip (const uint8_t *input,
   return 0;
 }
 
-/* ========================================================================
- * Section 1: CRC-32 verification tests
- * ======================================================================== */
-
 TEST (interop_crc32_matches_zlib)
 {
   /* Verify our CRC32 matches zlib's implementation */
-  const char *test_strings[] = {
-    "",
-    "a",
-    "abc",
-    "message digest",
-    "abcdefghijklmnopqrstuvwxyz",
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-    "The quick brown fox jumps over the lazy dog",
-    NULL
-  };
+  const char *test_strings[]
+      = { "",
+          "a",
+          "abc",
+          "message digest",
+          "abcdefghijklmnopqrstuvwxyz",
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+          "The quick brown fox jumps over the lazy dog",
+          NULL };
 
   for (int i = 0; test_strings[i] != NULL; i++)
     {
@@ -394,10 +393,6 @@ TEST (interop_crc32_binary_data)
   ASSERT_EQ (native_crc, (uint32_t)zlib_crc);
 }
 
-/* ========================================================================
- * Section 2: gzip format tests
- * ======================================================================== */
-
 TEST (interop_gzip_header_parse)
 {
   const char *data = "Test data for gzip header parsing";
@@ -407,13 +402,14 @@ TEST (interop_gzip_header_parse)
   int ret;
 
   /* Compress with zlib in gzip format */
-  ret = zlib_compress_gzip ((const uint8_t *)data, data_len, gzip_data, &gzip_len, 6);
+  ret = zlib_compress_gzip (
+      (const uint8_t *)data, data_len, gzip_data, &gzip_len, 6);
   ASSERT_EQ (ret, 0);
 
   /* Parse the gzip header with our native parser */
   SocketDeflate_GzipHeader header;
-  SocketDeflate_Result result = SocketDeflate_gzip_parse_header (
-      gzip_data, gzip_len, &header);
+  SocketDeflate_Result result
+      = SocketDeflate_gzip_parse_header (gzip_data, gzip_len, &header);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Verify header fields */
@@ -424,20 +420,22 @@ TEST (interop_gzip_header_parse)
 
 TEST (interop_gzip_native_inflate_zlib_data)
 {
-  const char *data = "Hello, gzip world! This tests our inflate with zlib gzip.";
+  const char *data
+      = "Hello, gzip world! This tests our inflate with zlib gzip.";
   size_t data_len = strlen (data);
   uint8_t gzip_data[512];
   size_t gzip_len = sizeof (gzip_data);
   int ret;
 
   /* Compress with zlib in gzip format */
-  ret = zlib_compress_gzip ((const uint8_t *)data, data_len, gzip_data, &gzip_len, 6);
+  ret = zlib_compress_gzip (
+      (const uint8_t *)data, data_len, gzip_data, &gzip_len, 6);
   ASSERT_EQ (ret, 0);
 
   /* Parse the gzip header */
   SocketDeflate_GzipHeader header;
-  SocketDeflate_Result result = SocketDeflate_gzip_parse_header (
-      gzip_data, gzip_len, &header);
+  SocketDeflate_Result result
+      = SocketDeflate_gzip_parse_header (gzip_data, gzip_len, &header);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decompress the DEFLATE data after the header */
@@ -446,7 +444,8 @@ TEST (interop_gzip_native_inflate_zlib_data)
   const uint8_t *deflate_data = gzip_data + header.header_size;
   size_t deflate_len = gzip_len - header.header_size - GZIP_TRAILER_SIZE;
 
-  ret = native_decompress (deflate_data, deflate_len, decompressed, &decomp_len);
+  ret = native_decompress (
+      deflate_data, deflate_len, decompressed, &decomp_len);
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (decomp_len, data_len);
   ASSERT (memcmp (decompressed, data, data_len) == 0);
@@ -454,7 +453,8 @@ TEST (interop_gzip_native_inflate_zlib_data)
   /* Verify CRC32 and size in trailer */
   uint32_t computed_crc = SocketDeflate_crc32 (0, decompressed, decomp_len);
   const uint8_t *trailer = gzip_data + gzip_len - GZIP_TRAILER_SIZE;
-  result = SocketDeflate_gzip_verify_trailer (trailer, computed_crc, (uint32_t)decomp_len);
+  result = SocketDeflate_gzip_verify_trailer (
+      trailer, computed_crc, (uint32_t)decomp_len);
   ASSERT_EQ (result, DEFLATE_OK);
 }
 
@@ -475,8 +475,8 @@ TEST (interop_gzip_trailer_verification)
 
   /* Parse header */
   SocketDeflate_GzipHeader header;
-  SocketDeflate_Result result = SocketDeflate_gzip_parse_header (
-      gzip_data, gzip_len, &header);
+  SocketDeflate_Result result
+      = SocketDeflate_gzip_parse_header (gzip_data, gzip_len, &header);
   ASSERT_EQ (result, DEFLATE_OK);
 
   /* Decompress */
@@ -484,14 +484,16 @@ TEST (interop_gzip_trailer_verification)
   size_t deflate_len = gzip_len - header.header_size - GZIP_TRAILER_SIZE;
   size_t decomp_len = sizeof (decompressed);
 
-  ret = native_decompress (deflate_data, deflate_len, decompressed, &decomp_len);
+  ret = native_decompress (
+      deflate_data, deflate_len, decompressed, &decomp_len);
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (decomp_len, sizeof (data));
 
   /* Verify trailer */
   uint32_t computed_crc = SocketDeflate_crc32 (0, decompressed, decomp_len);
   const uint8_t *trailer = gzip_data + gzip_len - GZIP_TRAILER_SIZE;
-  result = SocketDeflate_gzip_verify_trailer (trailer, computed_crc, (uint32_t)decomp_len);
+  result = SocketDeflate_gzip_verify_trailer (
+      trailer, computed_crc, (uint32_t)decomp_len);
   ASSERT_EQ (result, DEFLATE_OK);
 }
 
@@ -501,17 +503,13 @@ TEST (interop_gzip_os_codes)
   ASSERT_EQ (SocketDeflate_gzip_is_valid_os (GZIP_OS_UNIX), 1);
   ASSERT_EQ (SocketDeflate_gzip_is_valid_os (GZIP_OS_UNKNOWN), 1);
   ASSERT_EQ (SocketDeflate_gzip_is_valid_os (GZIP_OS_FAT), 1);
-  ASSERT_EQ (SocketDeflate_gzip_is_valid_os (14), 0); /* Reserved */
+  ASSERT_EQ (SocketDeflate_gzip_is_valid_os (14), 0);  /* Reserved */
   ASSERT_EQ (SocketDeflate_gzip_is_valid_os (254), 0); /* Reserved */
 
   /* Verify OS strings exist */
   ASSERT (SocketDeflate_gzip_os_string (GZIP_OS_UNIX) != NULL);
   ASSERT (SocketDeflate_gzip_os_string (GZIP_OS_UNKNOWN) != NULL);
 }
-
-/* ========================================================================
- * Section 3: Known test vectors
- * ======================================================================== */
 
 TEST (interop_vector_empty_stored_block)
 {
@@ -523,13 +521,15 @@ TEST (interop_vector_empty_stored_block)
 
   /* Decompress with zlib */
   output_len = sizeof (output);
-  ret = zlib_decompress_raw (empty_stored, sizeof (empty_stored), output, &output_len);
+  ret = zlib_decompress_raw (
+      empty_stored, sizeof (empty_stored), output, &output_len);
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (output_len, 0);
 
   /* Decompress with native */
   output_len = sizeof (output);
-  ret = native_decompress (empty_stored, sizeof (empty_stored), output, &output_len);
+  ret = native_decompress (
+      empty_stored, sizeof (empty_stored), output, &output_len);
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (output_len, 0);
 }
@@ -594,7 +594,8 @@ TEST (interop_vector_repeated_alphabet)
 
   /* zlib → native */
   comp_len = sizeof (compressed);
-  ret = zlib_compress_raw ((const uint8_t *)data, data_len, compressed, &comp_len, 6);
+  ret = zlib_compress_raw (
+      (const uint8_t *)data, data_len, compressed, &comp_len, 6);
   ASSERT_EQ (ret, 0);
 
   decomp_len = sizeof (decompressed);
@@ -603,10 +604,6 @@ TEST (interop_vector_repeated_alphabet)
   ASSERT_EQ (decomp_len, data_len);
   ASSERT (memcmp (decompressed, data, data_len) == 0);
 }
-
-/* ========================================================================
- * Section 4: Large data tests (zlib → native inflate)
- * ======================================================================== */
 
 TEST (interop_large_16kb_repeated)
 {
@@ -686,10 +683,6 @@ TEST (interop_large_64kb_random)
   free (decompressed);
 }
 
-/* ========================================================================
- * Section 5: All zlib compression levels
- * ======================================================================== */
-
 TEST (interop_zlib_levels_to_native_inflate)
 {
   const char *data = "Test string for all compression levels verification.";
@@ -701,8 +694,8 @@ TEST (interop_zlib_levels_to_native_inflate)
   for (int level = 0; level <= 9; level++)
     {
       size_t comp_len = sizeof (compressed);
-      int ret = zlib_compress_raw ((const uint8_t *)data, data_len, 
-                                   compressed, &comp_len, level);
+      int ret = zlib_compress_raw (
+          (const uint8_t *)data, data_len, compressed, &comp_len, level);
       ASSERT_EQ (ret, 0);
 
       size_t decomp_len = sizeof (decompressed);
@@ -725,7 +718,8 @@ TEST (interop_zlib_levels_various_patterns)
   for (int level = 1; level <= 9; level += 2)
     {
       size_t comp_len = sizeof (compressed);
-      int ret = zlib_compress_raw (data, sizeof (data), compressed, &comp_len, level);
+      int ret = zlib_compress_raw (
+          data, sizeof (data), compressed, &comp_len, level);
       ASSERT_EQ (ret, 0);
 
       size_t decomp_len = sizeof (decompressed);
@@ -740,7 +734,8 @@ TEST (interop_zlib_levels_various_patterns)
   for (int level = 1; level <= 9; level += 2)
     {
       size_t comp_len = sizeof (compressed);
-      int ret = zlib_compress_raw (data, sizeof (data), compressed, &comp_len, level);
+      int ret = zlib_compress_raw (
+          data, sizeof (data), compressed, &comp_len, level);
       ASSERT_EQ (ret, 0);
 
       size_t decomp_len = sizeof (decompressed);
@@ -750,10 +745,6 @@ TEST (interop_zlib_levels_various_patterns)
       ASSERT (memcmp (decompressed, data, sizeof (data)) == 0);
     }
 }
-
-/* ========================================================================
- * Section 6: Edge cases
- * ======================================================================== */
 
 TEST (interop_edge_tiny_sizes)
 {

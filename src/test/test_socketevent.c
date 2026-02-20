@@ -299,11 +299,6 @@ TEST (socketevent_userdata_combinations)
   ASSERT_EQ (result, 0);
 }
 
-/* ============================================================================
- * POLL WAKEUP EVENT TESTS
- * ============================================================================
- */
-
 /* Test context for poll wakeup event verification */
 typedef struct
 {
@@ -616,11 +611,6 @@ TEST (socketevent_emit_poll_wakeup_multiple_emits)
   result = SocketEvent_unregister (poll_wakeup_callback, &ctx);
   ASSERT_EQ (result, 0);
 }
-
-/* ============================================================================
- * SocketEvent_emit_accept Tests
- * ============================================================================
- */
 
 /* Test context for verifying emit_accept event data */
 typedef struct
@@ -946,11 +936,6 @@ TEST (socketevent_emit_accept_empty_addrs)
   ASSERT_EQ (result, 0);
 }
 
-/* ============================================================================
- * EMIT_CONNECT TESTS
- * ============================================================================
- */
-
 /* Event capture structure for testing */
 typedef struct
 {
@@ -1000,8 +985,8 @@ TEST (socketevent_emit_connect_single_handler)
   ASSERT (strcmp (capture.captured.data.connection.peer_addr, "192.168.1.1")
           == 0);
   ASSERT_EQ (capture.captured.data.connection.peer_port, 8080);
-  ASSERT (
-      strcmp (capture.captured.data.connection.local_addr, "10.0.0.1") == 0);
+  ASSERT (strcmp (capture.captured.data.connection.local_addr, "10.0.0.1")
+          == 0);
   ASSERT_EQ (capture.captured.data.connection.local_port, 12345);
 
   /* Clean up */
@@ -1066,8 +1051,8 @@ TEST (socketevent_emit_connect_null_peer_addr)
   ASSERT_EQ (capture.invoked, 1);
   ASSERT_NULL (capture.captured.data.connection.peer_addr);
   ASSERT_EQ (capture.captured.data.connection.peer_port, 80);
-  ASSERT (
-      strcmp (capture.captured.data.connection.local_addr, "127.0.0.1") == 0);
+  ASSERT (strcmp (capture.captured.data.connection.local_addr, "127.0.0.1")
+          == 0);
   ASSERT_EQ (capture.captured.data.connection.local_port, 8000);
 
   result = SocketEvent_unregister (capture_callback, &capture);
@@ -1170,8 +1155,7 @@ TEST (socketevent_emit_connect_high_ports)
   ASSERT_EQ (capture.captured.data.connection.peer_port, 65535);
   ASSERT_EQ (capture.captured.data.connection.local_port, 65534);
   ASSERT (strcmp (capture.captured.data.connection.peer_addr, "::1") == 0);
-  ASSERT (strcmp (capture.captured.data.connection.local_addr, "fe80::1")
-          == 0);
+  ASSERT (strcmp (capture.captured.data.connection.local_addr, "fe80::1") == 0);
 
   result = SocketEvent_unregister (capture_callback, &capture);
   ASSERT_EQ (result, 0);

@@ -69,8 +69,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== Protocol Version Security ==================== */
-
 TEST (security_tls13_minimum_enforced)
 {
   SocketTLSContext_T ctx = NULL;
@@ -93,8 +91,6 @@ TEST (security_tls13_minimum_enforced)
   }
   END_TRY;
 }
-
-/* ==================== Weak Cipher Rejection ==================== */
 
 TEST (security_reject_weak_ciphers)
 {
@@ -131,8 +127,6 @@ TEST (security_reject_weak_ciphers)
   /* Test passed if either caught exception or didn't crash */
   (void)caught;
 }
-
-/* ==================== Path Traversal Prevention ==================== */
 
 TEST (security_path_traversal_in_cert_path)
 {
@@ -194,8 +188,6 @@ TEST (security_path_traversal_in_ca_path)
   END_TRY;
 }
 
-/* ==================== Null Byte Injection ==================== */
-
 TEST (security_null_byte_in_hostname)
 {
   Socket_T socket = NULL;
@@ -230,8 +222,6 @@ TEST (security_null_byte_in_hostname)
   }
   END_TRY;
 }
-
-/* ==================== Certificate Pinning Security ==================== */
 
 TEST (security_pin_wrong_hash_rejected)
 {
@@ -321,8 +311,6 @@ TEST (security_pin_wrong_hash_rejected)
   END_TRY;
 }
 
-/* ==================== Renegotiation Control ==================== */
-
 TEST (security_disable_renegotiation)
 {
   Socket_T socket = NULL;
@@ -378,8 +366,6 @@ TEST (security_renegotiation_count)
   END_TRY;
 }
 
-/* ==================== Certificate Expiry ==================== */
-
 TEST (security_check_cert_expiry)
 {
   Socket_T socket = NULL;
@@ -404,8 +390,6 @@ TEST (security_check_cert_expiry)
   }
   END_TRY;
 }
-
-/* ==================== Session Ticket Key Security ==================== */
 
 TEST (security_ticket_key_length_validation)
 {
@@ -441,8 +425,6 @@ TEST (security_ticket_key_length_validation)
   END_TRY;
 }
 
-/* ==================== Control Character Rejection ==================== */
-
 TEST (security_control_chars_in_path)
 {
   SocketTLSContext_T ctx = NULL;
@@ -473,8 +455,6 @@ TEST (security_control_chars_in_path)
   }
   END_TRY;
 }
-
-/* ==================== SNI Validation ==================== */
 
 TEST (security_sni_length_limit)
 {
@@ -511,8 +491,6 @@ TEST (security_sni_length_limit)
   }
   END_TRY;
 }
-
-/* ==================== Certificate Chain Depth Limit ==================== */
 
 static int
 generate_cert_chain (const char *chain_file,

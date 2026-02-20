@@ -31,11 +31,6 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-/* =============================================================================
- * Test Helpers
- * =============================================================================
- */
-
 /* Volatile flag for signal handler - only use sig_atomic_t */
 static volatile sig_atomic_t g_signal_received = 0;
 static volatile sig_atomic_t g_alarm_count = 0;
@@ -112,11 +107,6 @@ drain_test_pipe (void)
   return count;
 }
 
-/* =============================================================================
- * Socket_ignore_sigpipe Tests
- * =============================================================================
- */
-
 TEST (signal_ignore_sigpipe_succeeds)
 {
   /* Test that Socket_ignore_sigpipe() returns success */
@@ -160,11 +150,6 @@ TEST (signal_sigpipe_ignored_after_call)
 
   close (sv[0]);
 }
-
-/* =============================================================================
- * Self-Pipe Pattern Tests
- * =============================================================================
- */
 
 TEST (signal_self_pipe_receives_signal)
 {
@@ -216,11 +201,6 @@ TEST (signal_self_pipe_nonblocking_write)
   signal (SIGUSR1, SIG_DFL);
   cleanup_test_pipe ();
 }
-
-/* =============================================================================
- * EINTR Handling Tests
- * =============================================================================
- */
 
 TEST (signal_poll_handles_eintr)
 {
@@ -281,11 +261,6 @@ TEST (signal_poll_wait_can_timeout_normally)
   SocketPoll_free (&poll);
 }
 
-/* =============================================================================
- * Signal Handler Installation Tests
- * =============================================================================
- */
-
 TEST (signal_sigaction_installs_handler)
 {
   /* Test that sigaction() works correctly */
@@ -343,11 +318,6 @@ TEST (signal_multiple_handlers_can_coexist)
   sigaction (SIGALRM, &old_alrm, NULL);
 }
 
-/* =============================================================================
- * Library Signal Safety Tests
- * =============================================================================
- */
-
 TEST (signal_library_has_no_handlers_by_default)
 {
   /* Verify that creating library objects doesn't install signal handlers */
@@ -387,11 +357,6 @@ TEST (signal_msg_nosignal_used_for_send)
   ASSERT (SOCKET_MSG_NOSIGNAL >= 0);
 }
 
-/* =============================================================================
- * Signal Mask Tests
- * =============================================================================
- */
-
 TEST (signal_pthread_sigmask_works)
 {
   /* Test that pthread_sigmask can block/unblock signals */
@@ -409,11 +374,6 @@ TEST (signal_pthread_sigmask_works)
   ASSERT_EQ (0, result);
 }
 
-/* =============================================================================
- * Volatile sig_atomic_t Tests
- * =============================================================================
- */
-
 TEST (signal_sig_atomic_t_is_safe)
 {
   /* Test that sig_atomic_t can be safely written from handler */
@@ -427,11 +387,6 @@ TEST (signal_sig_atomic_t_is_safe)
   test_flag = 0;
   ASSERT_EQ (0, test_flag);
 }
-
-/* =============================================================================
- * Integration Tests
- * =============================================================================
- */
 
 TEST (signal_self_pipe_with_select_integration)
 {
@@ -522,11 +477,6 @@ TEST (signal_graceful_shutdown_pattern)
   sigaction (SIGTERM, &old_sa, NULL);
   cleanup_test_pipe ();
 }
-
-/* =============================================================================
- * Test Main
- * =============================================================================
- */
 
 int
 main (void)

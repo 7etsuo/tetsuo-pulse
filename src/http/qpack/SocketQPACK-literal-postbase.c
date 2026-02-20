@@ -40,11 +40,6 @@
 #include "core/SocketSecurity.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * INTERNAL CONSTANTS
- * ============================================================================
- */
-
 /** Bit pattern for Literal Field Line with Post-Base Name Reference */
 #define QPACK_LITERAL_POSTBASE_PATTERN 0x00
 
@@ -62,11 +57,6 @@
 
 /** Value length prefix bits (7-bit integer) */
 #define QPACK_VALUE_LENGTH_PREFIX 7
-
-/* ============================================================================
- * ENCODE LITERAL FIELD LINE WITH POST-BASE NAME REFERENCE
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_literal_postbase_name (unsigned char *output,
@@ -186,11 +176,6 @@ SocketQPACK_encode_literal_postbase_name (unsigned char *output,
   *bytes_written = offset;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE LITERAL FIELD LINE WITH POST-BASE NAME REFERENCE
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_literal_postbase_name (
@@ -327,11 +312,6 @@ SocketQPACK_decode_literal_postbase_name (
   return QPACK_OK;
 }
 
-/* ============================================================================
- * VALIDATE POST-BASE NAME INDEX
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_validate_literal_postbase_index (uint64_t base,
                                              uint64_t insert_count,
@@ -360,11 +340,6 @@ SocketQPACK_validate_literal_postbase_index (uint64_t base,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * RESOLVE POST-BASE NAME REFERENCE
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_resolve_postbase_name (SocketQPACK_Table_T table,

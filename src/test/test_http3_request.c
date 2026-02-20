@@ -22,11 +22,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 static int
 add_pseudo (SocketHTTP_Headers_T h, const char *name, const char *value)
 {
@@ -185,11 +180,6 @@ build_data_frame (uint8_t *buf,
   return pos;
 }
 
-/* ============================================================================
- * Test 1: Send GET request (headers only, end_stream=1)
- * ============================================================================
- */
-
 TEST (h3_req_send_get)
 {
   Arena_T arena = Arena_new ();
@@ -210,11 +200,6 @@ TEST (h3_req_send_get)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 2: Send POST request (headers + data + end_stream)
- * ============================================================================
- */
 
 TEST (h3_req_send_post)
 {
@@ -237,11 +222,6 @@ TEST (h3_req_send_post)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 3: Send request with trailers
- * ============================================================================
- */
 
 TEST (h3_req_send_trailers)
 {
@@ -267,11 +247,6 @@ TEST (h3_req_send_trailers)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 4: Receive 200 response with body
- * ============================================================================
- */
 
 TEST (h3_req_recv_200_with_body)
 {
@@ -378,11 +353,6 @@ TEST (h3_req_recv_duplicate_content_length_mismatch_rejected)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 5: Receive interim 100 response followed by 200
- * ============================================================================
- */
-
 TEST (h3_req_recv_100_then_200)
 {
   Arena_T arena = Arena_new ();
@@ -422,11 +392,6 @@ TEST (h3_req_recv_100_then_200)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 6: Request cancellation
- * ============================================================================
- */
-
 TEST (h3_req_cancel)
 {
   Arena_T arena = Arena_new ();
@@ -448,11 +413,6 @@ TEST (h3_req_cancel)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 7: Malformed request — missing :method
- * ============================================================================
- */
-
 TEST (h3_req_validate_missing_method)
 {
   Arena_T arena = Arena_new ();
@@ -466,11 +426,6 @@ TEST (h3_req_validate_missing_method)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 8: Malformed request — uppercase header name
- * ============================================================================
- */
 
 TEST (h3_req_validate_uppercase)
 {
@@ -488,11 +443,6 @@ TEST (h3_req_validate_uppercase)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 9: Malformed request — Connection header present
- * ============================================================================
- */
-
 TEST (h3_req_validate_connection_header)
 {
   Arena_T arena = Arena_new ();
@@ -509,11 +459,6 @@ TEST (h3_req_validate_connection_header)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 10: Malformed response — missing :status
- * ============================================================================
- */
-
 TEST (h3_req_validate_resp_missing_status)
 {
   Arena_T arena = Arena_new ();
@@ -526,11 +471,6 @@ TEST (h3_req_validate_resp_missing_status)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 11: Pseudo-header after regular header
- * ============================================================================
- */
 
 TEST (h3_req_validate_pseudo_after_regular)
 {
@@ -546,11 +486,6 @@ TEST (h3_req_validate_pseudo_after_regular)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 12: Content-Length mismatch
- * ============================================================================
- */
 
 TEST (h3_req_content_length_mismatch)
 {
@@ -580,11 +515,6 @@ TEST (h3_req_content_length_mismatch)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 13: CONNECT method (only :method and :authority)
- * ============================================================================
- */
-
 TEST (h3_req_validate_connect)
 {
   Arena_T arena = Arena_new ();
@@ -607,11 +537,6 @@ TEST (h3_req_validate_connect)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 14: DATA before HEADERS on receive
- * ============================================================================
- */
-
 TEST (h3_req_data_before_headers)
 {
   Arena_T arena = Arena_new ();
@@ -630,11 +555,6 @@ TEST (h3_req_data_before_headers)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 15: Cookie header concatenation
- * ============================================================================
- */
 
 TEST (h3_req_cookie_concatenation)
 {
@@ -670,11 +590,6 @@ TEST (h3_req_cookie_concatenation)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 16: Multiple requests on same connection
- * ============================================================================
- */
-
 TEST (h3_req_multiple_requests)
 {
   Arena_T arena = Arena_new ();
@@ -695,11 +610,6 @@ TEST (h3_req_multiple_requests)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 17: NULL parameter handling
- * ============================================================================
- */
-
 TEST (h3_req_null_params)
 {
   ASSERT_NULL (SocketHTTP3_Request_new (NULL));
@@ -718,11 +628,6 @@ TEST (h3_req_null_params)
              SocketHTTP3_validate_response_headers (NULL));
 }
 
-/* ============================================================================
- * Test 18: State machine violations — double send_headers
- * ============================================================================
- */
-
 TEST (h3_req_double_send_headers)
 {
   Arena_T arena = Arena_new ();
@@ -740,11 +645,6 @@ TEST (h3_req_double_send_headers)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 19: DATA after end_stream
- * ============================================================================
- */
-
 TEST (h3_req_data_after_end_stream)
 {
   Arena_T arena = Arena_new ();
@@ -761,11 +661,6 @@ TEST (h3_req_data_after_end_stream)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 20: Status 101 rejection (§4.5)
- * ============================================================================
- */
-
 TEST (h3_req_status_101_rejected)
 {
   Arena_T arena = Arena_new ();
@@ -778,11 +673,6 @@ TEST (h3_req_status_101_rejected)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 21: FIN before HEADERS
- * ============================================================================
- */
 
 TEST (h3_req_fin_before_headers)
 {
@@ -801,11 +691,6 @@ TEST (h3_req_fin_before_headers)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test 22: Valid request headers pass validation
- * ============================================================================
- */
-
 TEST (h3_req_validate_valid_request)
 {
   Arena_T arena = Arena_new ();
@@ -816,11 +701,6 @@ TEST (h3_req_validate_valid_request)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 23: Valid response headers pass validation
- * ============================================================================
- */
 
 TEST (h3_req_validate_valid_response)
 {
@@ -835,11 +715,6 @@ TEST (h3_req_validate_valid_response)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 24: TE header with "trailers" value is allowed
- * ============================================================================
- */
 
 TEST (h3_req_validate_te_trailers)
 {
@@ -866,11 +741,6 @@ TEST (h3_req_validate_te_trailers)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test 25: QPACK static table get accessor
- * ============================================================================
- */
 
 TEST (h3_qpack_static_table_get)
 {
@@ -901,11 +771,6 @@ TEST (h3_qpack_static_table_get)
   res = SocketQPACK_static_table_get (1, NULL, NULL, NULL, NULL);
   ASSERT_EQ (QPACK_OK, res);
 }
-
-/* ============================================================================
- * Entry Point
- * ============================================================================
- */
 
 int
 main (void)

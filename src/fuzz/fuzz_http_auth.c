@@ -259,14 +259,6 @@ parse_www_authenticate (const char *auth_header, Arena_T arena)
     }
 }
 
-/* ============================================================================
- * HTTP Client Private API Fuzzing (SocketHTTPClient-auth.c)
- * ============================================================================
- *
- * These functions directly test the private auth parsing API that uses
- * stack-allocated buffers for parameter names and values.
- */
-
 /* Test credentials - safe dummy values for fuzzing */
 #define FUZZ_USERNAME "testuser"
 #define FUZZ_PASSWORD "testpass"

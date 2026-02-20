@@ -115,11 +115,6 @@
 #include "tls/SocketTLSContext.h"
 #endif
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
 /**
  * @brief Maximum buffer capacity for internal error message strings.
  * @internal
@@ -168,11 +163,6 @@
 #ifndef SOCKET_RECONNECT_MAX_HOST_LEN
 #define SOCKET_RECONNECT_MAX_HOST_LEN 255
 #endif
-
-/* ============================================================================
- * Circuit Breaker State
- * ============================================================================
- */
 
 /**
  * @brief Internal circuit breaker states for reconnection resilience.
@@ -229,11 +219,6 @@ typedef enum
   CIRCUIT_HALF_OPEN /**< Probe allowed: single connection attempt to test
                        recovery */
 } SocketReconnect_CircuitState;
-
-/* ============================================================================
- * Main Context Structure
- * ============================================================================
- */
 
 /**
  * @brief Opaque internal context for reconnecting socket management.
@@ -425,11 +410,6 @@ struct SocketReconnect_T
   size_t tls_session_data_len;
 #endif /* SOCKET_HAS_TLS */
 };
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Retrieve current monotonic time in milliseconds for internal timing.

@@ -337,8 +337,6 @@ TEST (iptracker_null_arena)
   SocketIPTracker_free (&tracker);
 }
 
-/* ==================== setmax/getmax Tests ==================== */
-
 /* Test basic setmax/getmax functionality */
 TEST (iptracker_setmax_getmax_basic)
 {

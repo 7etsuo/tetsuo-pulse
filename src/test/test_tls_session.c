@@ -96,8 +96,6 @@ complete_handshake (Socket_T client, Socket_T server)
              : -1;
 }
 
-/* ==================== Session Cache Configuration ==================== */
-
 TEST (session_cache_enable)
 {
   SocketTLSContext_T ctx = NULL;
@@ -171,8 +169,6 @@ TEST (session_cache_stats)
   END_TRY;
 }
 
-/* ==================== Session ID Context ==================== */
-
 TEST (session_id_context_set)
 {
   const char *cert_file = "test_session_id.crt";
@@ -227,8 +223,6 @@ TEST (session_id_context_max_length)
   }
   END_TRY;
 }
-
-/* ==================== Session Tickets ==================== */
 
 TEST (session_tickets_enable)
 {
@@ -333,8 +327,6 @@ TEST (session_ticket_key_rotation)
   END_TRY;
 }
 
-/* ==================== Session Save/Restore ==================== */
-
 TEST (session_save_restore_basic)
 {
   const char *cert_file = "test_sess_save.crt";
@@ -390,8 +382,6 @@ TEST (session_save_restore_basic)
   END_TRY;
 }
 
-/* ==================== Session Resumption ==================== */
-
 TEST (session_reuse_check)
 {
   const char *cert_file = "test_sess_reuse.crt";
@@ -435,8 +425,6 @@ TEST (session_reuse_check)
   }
   END_TRY;
 }
-
-/* ==================== Error Handling ==================== */
 
 TEST (session_ticket_wrong_key_size)
 {
@@ -511,8 +499,6 @@ TEST (session_id_context_too_long)
   }
   END_TRY;
 }
-
-/* ==================== Session Restore Bounds Checking ==================== */
 
 TEST (session_restore_invalid_length)
 {

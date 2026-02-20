@@ -61,10 +61,6 @@ struct SocketHTTP1_Parser;
 /* Header count limits */
 #define CURL_MAX_HEADER_COUNT_SMALL 64
 
-/* ============================================================================
- * Shared Constants (consolidated from multiple .c files)
- * ============================================================================ */
-
 /* HTTP default ports */
 #define CURL_HTTP_DEFAULT_PORT 80
 #define CURL_HTTPS_DEFAULT_PORT 443
@@ -90,7 +86,7 @@ struct SocketHTTP1_Parser;
 /* Default configuration values */
 #define CURL_DEFAULT_CONNECT_TIMEOUT_MS 30000
 #define CURL_DEFAULT_DNS_TIMEOUT_MS 5000
-#define CURL_DEFAULT_REQUEST_TIMEOUT_MS 0  /* No limit */
+#define CURL_DEFAULT_REQUEST_TIMEOUT_MS 0 /* No limit */
 #define CURL_DEFAULT_MAX_REDIRECTS 50
 #define CURL_DEFAULT_MAX_RETRIES 3
 
@@ -108,22 +104,22 @@ typedef struct CurlConnection
   SocketHTTP_Version http_version; /**< Negotiated HTTP version */
 
 #if SOCKET_HAS_TLS
-  SocketTLSContext_T tls_context;  /**< TLS context (owned if auto-created) */
-  int owns_tls_context;            /**< 1 if we created the context */
+  SocketTLSContext_T tls_context; /**< TLS context (owned if auto-created) */
+  int owns_tls_context;           /**< 1 if we created the context */
 #endif
 
   /* HTTP/2 state (if applicable) */
-  struct SocketHTTP2_Conn *h2_conn;    /**< HTTP/2 connection */
-  struct SocketHTTP2_Stream *h2_stream;/**< Current HTTP/2 stream */
+  struct SocketHTTP2_Conn *h2_conn;     /**< HTTP/2 connection */
+  struct SocketHTTP2_Stream *h2_stream; /**< Current HTTP/2 stream */
 
   /* HTTP/1.1 state */
   struct SocketHTTP1_Parser *h1_parser; /**< HTTP/1.1 response parser */
 
   /* Connection tracking */
-  char *host;                      /**< Connected host (for reuse) */
-  int port;                        /**< Connected port */
-  int reusable;                    /**< Can be reused for next request */
-  int connected;                   /**< Connection is established */
+  char *host;    /**< Connected host (for reuse) */
+  int port;      /**< Connected port */
+  int reusable;  /**< Can be reused for next request */
+  int connected; /**< Connection is established */
 } CurlConnection;
 
 /**
@@ -131,14 +127,14 @@ typedef struct CurlConnection
  */
 typedef struct CurlCookie
 {
-  char *domain;                    /**< Cookie domain */
-  char *path;                      /**< Cookie path */
-  char *name;                      /**< Cookie name */
-  char *value;                     /**< Cookie value */
-  time_t expires;                  /**< Expiration time (0 = session) */
-  int secure;                      /**< Secure flag */
-  int http_only;                   /**< HttpOnly flag */
-  struct CurlCookie *next;         /**< Next cookie in list */
+  char *domain;            /**< Cookie domain */
+  char *path;              /**< Cookie path */
+  char *name;              /**< Cookie name */
+  char *value;             /**< Cookie value */
+  time_t expires;          /**< Expiration time (0 = session) */
+  int secure;              /**< Secure flag */
+  int http_only;           /**< HttpOnly flag */
+  struct CurlCookie *next; /**< Next cookie in list */
 } CurlCookie;
 
 /**
@@ -146,10 +142,10 @@ typedef struct CurlCookie
  */
 typedef struct CurlCookieJar
 {
-  CurlCookie *cookies;             /**< Linked list of cookies */
-  char *filename;                  /**< Persistence file */
-  int dirty;                       /**< Needs saving */
-  Arena_T arena;                   /**< Memory arena */
+  CurlCookie *cookies; /**< Linked list of cookies */
+  char *filename;      /**< Persistence file */
+  int dirty;           /**< Needs saving */
+  Arena_T arena;       /**< Memory arena */
 } CurlCookieJar;
 
 /**
@@ -157,9 +153,9 @@ typedef struct CurlCookieJar
  */
 typedef struct CurlCustomHeader
 {
-  char *name;                      /**< Header name */
-  char *value;                     /**< Header value */
-  struct CurlCustomHeader *next;   /**< Next header */
+  char *name;                    /**< Header name */
+  char *value;                   /**< Header value */
+  struct CurlCustomHeader *next; /**< Next header */
 } CurlCustomHeader;
 
 /**
@@ -171,16 +167,16 @@ struct CurlSession
   CurlOptions options;
 
   /* Memory management */
-  Arena_T arena;                   /**< Session arena */
-  Arena_T request_arena;           /**< Per-request arena (reset each request) */
+  Arena_T arena;         /**< Session arena */
+  Arena_T request_arena; /**< Per-request arena (reset each request) */
 
   /* State machine */
   CurlState state;
   CurlError last_error;
 
   /* Current request */
-  CurlParsedURL current_url;       /**< Parsed URL of current request */
-  SocketHTTP_Method request_method;/**< Current request method */
+  CurlParsedURL current_url;            /**< Parsed URL of current request */
+  SocketHTTP_Method request_method;     /**< Current request method */
   SocketHTTP_Headers_T request_headers; /**< Current request headers */
 
   /* Response */
@@ -197,16 +193,16 @@ struct CurlSession
 
   /* Authentication state */
   CurlAuth auth;
-  char *auth_header;               /**< Pre-computed auth header */
+  char *auth_header; /**< Pre-computed auth header */
 
   /* Transfer state */
-  int64_t upload_total;            /**< Total bytes to upload */
-  int64_t upload_sent;             /**< Bytes uploaded so far */
-  int64_t download_total;          /**< Total bytes to download */
-  int64_t download_received;       /**< Bytes downloaded so far */
+  int64_t upload_total;      /**< Total bytes to upload */
+  int64_t upload_sent;       /**< Bytes uploaded so far */
+  int64_t download_total;    /**< Total bytes to download */
+  int64_t download_received; /**< Bytes downloaded so far */
 
   /* Retry state */
-  int retry_count;                 /**< Current retry attempt */
+  int retry_count; /**< Current retry attempt */
 };
 
 /**
@@ -243,9 +239,10 @@ extern int curl_wait_readable (CurlConnection *conn, int timeout_ms);
  * @param arena Memory arena
  * @return CURL_OK or CURL_ERROR_INVALID_URL
  */
-extern CurlError curl_internal_parse_url (const char *url, size_t len,
-                                           CurlParsedURL *result,
-                                           Arena_T arena);
+extern CurlError curl_internal_parse_url (const char *url,
+                                          size_t len,
+                                          CurlParsedURL *result,
+                                          Arena_T arena);
 
 /**
  * @brief Check if two URLs have the same origin.
@@ -256,8 +253,8 @@ extern CurlError curl_internal_parse_url (const char *url, size_t len,
  * @param b Second parsed URL
  * @return 1 if same origin, 0 otherwise
  */
-extern int curl_urls_same_origin (const CurlParsedURL *a,
-                                   const CurlParsedURL *b);
+extern int
+curl_urls_same_origin (const CurlParsedURL *a, const CurlParsedURL *b);
 
 /**
  * @brief Copy a parsed URL.
@@ -266,8 +263,8 @@ extern int curl_urls_same_origin (const CurlParsedURL *a,
  * @param src Source
  * @param arena Arena for string allocations
  */
-extern void curl_url_copy (CurlParsedURL *dst, const CurlParsedURL *src,
-                            Arena_T arena);
+extern void
+curl_url_copy (CurlParsedURL *dst, const CurlParsedURL *src, Arena_T arena);
 
 
 /**
@@ -286,8 +283,8 @@ extern void curl_url_copy (CurlParsedURL *dst, const CurlParsedURL *src,
  * @throws Curl_Timeout on connection timeout
  */
 extern CurlConnection *curl_connect (const CurlParsedURL *url,
-                                      const CurlOptions *options,
-                                      Arena_T arena);
+                                     const CurlOptions *options,
+                                     Arena_T arena);
 
 /**
  * @brief Close a connection and release resources.
@@ -306,8 +303,8 @@ extern void curl_connection_close (CurlConnection *conn);
  * @param url Target URL
  * @return 1 if reusable, 0 otherwise
  */
-extern int curl_connection_reusable (const CurlConnection *conn,
-                                      const CurlParsedURL *url);
+extern int
+curl_connection_reusable (const CurlConnection *conn, const CurlParsedURL *url);
 
 /**
  * @brief Get the negotiated ALPN protocol.
@@ -338,9 +335,11 @@ extern int curl_connection_is_http2 (const CurlConnection *conn);
  * @return Bytes written, or -1 on error
  */
 extern ssize_t curl_build_http1_request (CurlSession_T session,
-                                          SocketHTTP_Method method,
-                                          const void *body, size_t body_len,
-                                          char *output, size_t output_size);
+                                         SocketHTTP_Method method,
+                                         const void *body,
+                                         size_t body_len,
+                                         char *output,
+                                         size_t output_size);
 
 /**
  * @brief Send HTTP/1.1 request with optional body.
@@ -352,8 +351,9 @@ extern ssize_t curl_build_http1_request (CurlSession_T session,
  * @return CURL_OK on success, error code on failure
  */
 extern CurlError curl_send_http1_request (CurlSession_T session,
-                                           SocketHTTP_Method method,
-                                           const void *body, size_t body_len);
+                                          SocketHTTP_Method method,
+                                          const void *body,
+                                          size_t body_len);
 
 /**
  * @brief Send chunked body using read callback.
@@ -373,8 +373,9 @@ extern CurlError curl_send_chunked_body (CurlSession_T session);
  * @return CURL_OK on success, error code on failure
  */
 extern CurlError curl_send_http2_request (CurlSession_T session,
-                                           SocketHTTP_Method method,
-                                           const void *body, size_t body_len);
+                                          SocketHTTP_Method method,
+                                          const void *body,
+                                          size_t body_len);
 
 /**
  * @brief Send DATA frame(s) for HTTP/2.
@@ -385,8 +386,10 @@ extern CurlError curl_send_http2_request (CurlSession_T session,
  * @param end_stream End stream flag
  * @return CURL_OK on success, error code on failure
  */
-extern CurlError curl_send_h2_data (CurlSession_T session, const void *data,
-                                     size_t len, int end_stream);
+extern CurlError curl_send_h2_data (CurlSession_T session,
+                                    const void *data,
+                                    size_t len,
+                                    int end_stream);
 
 /**
  * @brief Send streaming body for HTTP/2 using read callback.
@@ -408,8 +411,9 @@ extern CurlError curl_send_h2_streaming_body (CurlSession_T session);
  * @return CURL_OK on success, error code on failure
  */
 extern CurlError curl_send_request (CurlSession_T session,
-                                     SocketHTTP_Method method, const void *body,
-                                     size_t body_len);
+                                    SocketHTTP_Method method,
+                                    const void *body,
+                                    size_t body_len);
 
 /**
  * @brief Build request headers for a session.
@@ -421,9 +425,9 @@ extern CurlError curl_send_request (CurlSession_T session,
  * @return 0 on success, -1 on error
  */
 extern int curl_build_request_headers (CurlSession_T session,
-                                        SocketHTTP_Method method,
-                                        const char *content_type,
-                                        size_t body_len);
+                                       SocketHTTP_Method method,
+                                       const char *content_type,
+                                       size_t body_len);
 
 
 /**
@@ -435,8 +439,10 @@ extern int curl_build_request_headers (CurlSession_T session,
  * @param output_size Output buffer size
  * @return Header value length, or -1 on error
  */
-extern ssize_t curl_auth_basic (const char *username, const char *password,
-                                 char *output, size_t output_size);
+extern ssize_t curl_auth_basic (const char *username,
+                                const char *password,
+                                char *output,
+                                size_t output_size);
 
 /**
  * @brief Build Bearer token authentication header value.
@@ -446,8 +452,8 @@ extern ssize_t curl_auth_basic (const char *username, const char *password,
  * @param output_size Output buffer size
  * @return Header value length, or -1 on error
  */
-extern ssize_t curl_auth_bearer (const char *token, char *output,
-                                  size_t output_size);
+extern ssize_t
+curl_auth_bearer (const char *token, char *output, size_t output_size);
 
 /**
  * @brief Parse WWW-Authenticate header for Digest parameters.
@@ -463,11 +469,15 @@ extern ssize_t curl_auth_bearer (const char *token, char *output,
  * @param qop_size Qop buffer size
  * @return 0 on success, -1 on error
  */
-extern int curl_auth_parse_digest_challenge (const char *header, char *realm,
-                                              size_t realm_size, char *nonce,
-                                              size_t nonce_size, char *opaque,
-                                              size_t opaque_size, char *qop,
-                                              size_t qop_size);
+extern int curl_auth_parse_digest_challenge (const char *header,
+                                             char *realm,
+                                             size_t realm_size,
+                                             char *nonce,
+                                             size_t nonce_size,
+                                             char *opaque,
+                                             size_t opaque_size,
+                                             char *qop,
+                                             size_t qop_size);
 
 /**
  * @brief Digest authentication parameters.
@@ -477,26 +487,26 @@ extern int curl_auth_parse_digest_challenge (const char *header, char *realm,
 typedef struct CurlDigestParams
 {
   /* Credentials */
-  const char *username;            /**< Username */
-  const char *password;            /**< Password */
+  const char *username; /**< Username */
+  const char *password; /**< Password */
 
   /* Challenge parameters */
-  const char *realm;               /**< Realm from server challenge */
-  const char *nonce;               /**< Nonce from server challenge */
-  const char *opaque;              /**< Opaque from challenge (may be NULL) */
-  const char *qop;                 /**< Quality of Protection (may be NULL) */
+  const char *realm;  /**< Realm from server challenge */
+  const char *nonce;  /**< Nonce from server challenge */
+  const char *opaque; /**< Opaque from challenge (may be NULL) */
+  const char *qop;    /**< Quality of Protection (may be NULL) */
 
   /* Request parameters */
-  const char *uri;                 /**< Request URI */
-  const char *method;              /**< HTTP method */
+  const char *uri;    /**< Request URI */
+  const char *method; /**< HTTP method */
 
   /* Client parameters */
-  const char *nc;                  /**< Nonce count (hex string) */
-  const char *cnonce;              /**< Client nonce */
+  const char *nc;     /**< Nonce count (hex string) */
+  const char *cnonce; /**< Client nonce */
 
   /* Output buffer */
-  char *output;                    /**< Output buffer */
-  size_t output_size;              /**< Output buffer size */
+  char *output;       /**< Output buffer */
+  size_t output_size; /**< Output buffer size */
 } CurlDigestParams;
 
 /**
@@ -505,8 +515,7 @@ typedef struct CurlDigestParams
  * @param params Digest authentication parameters
  * @return Header value length, or -1 on error
  */
-extern ssize_t
-curl_auth_digest (const CurlDigestParams *params);
+extern ssize_t curl_auth_digest (const CurlDigestParams *params);
 
 /**
  * @brief Set up authentication header for session.
@@ -526,8 +535,9 @@ extern int curl_auth_setup (CurlSession_T session);
  * @return 0 on success, -1 on error
  */
 extern int curl_auth_handle_challenge (CurlSession_T session,
-                                        const char *www_auth,
-                                        const char *method, const char *uri);
+                                       const char *www_auth,
+                                       const char *method,
+                                       const char *uri);
 
 
 /**
@@ -646,8 +656,8 @@ typedef struct CurlDecompressor CurlDecompressor;
  * @param arena Memory arena
  * @return New decompressor, or NULL on error
  */
-extern CurlDecompressor *curl_decompressor_new (const char *encoding,
-                                                  Arena_T arena);
+extern CurlDecompressor *
+curl_decompressor_new (const char *encoding, Arena_T arena);
 
 /**
  * @brief Decompress data.
@@ -661,11 +671,11 @@ extern CurlDecompressor *curl_decompressor_new (const char *encoding,
  * @return 0 on success, -1 on error
  */
 extern int curl_decompressor_decompress (CurlDecompressor *decomp,
-                                           const unsigned char *input,
-                                           size_t input_len,
-                                           unsigned char *output,
-                                           size_t output_len,
-                                           size_t *bytes_written);
+                                         const unsigned char *input,
+                                         size_t input_len,
+                                         unsigned char *output,
+                                         size_t output_len,
+                                         size_t *bytes_written);
 
 /**
  * @brief Finish decompression and get remaining data.
@@ -677,9 +687,9 @@ extern int curl_decompressor_decompress (CurlDecompressor *decomp,
  * @return 0 on success, -1 on error
  */
 extern int curl_decompressor_finish (CurlDecompressor *decomp,
-                                       unsigned char *output,
-                                       size_t output_len,
-                                       size_t *bytes_written);
+                                     unsigned char *output,
+                                     size_t output_len,
+                                     size_t *bytes_written);
 
 /**
  * @brief Free decompressor resources.
@@ -710,8 +720,8 @@ extern const char *curl_decompressor_coding_name (CurlDecompressor *decomp);
  * @param session Session
  * @return New decompressor, or NULL if not needed/error
  */
-extern CurlDecompressor *curl_session_create_decompressor (
-    CurlSession_T session);
+extern CurlDecompressor *
+curl_session_create_decompressor (CurlSession_T session);
 
 /**
  * @brief Decompress body data with session's decompressor.
@@ -726,10 +736,12 @@ extern CurlDecompressor *curl_session_create_decompressor (
  * @return 0 on success, -1 on error
  */
 extern int curl_session_decompress (CurlSession_T session,
-                                      CurlDecompressor *decomp,
-                                      const unsigned char *input,
-                                      size_t input_len, unsigned char *output,
-                                      size_t output_len, size_t *bytes_written);
+                                    CurlDecompressor *decomp,
+                                    const unsigned char *input,
+                                    size_t input_len,
+                                    unsigned char *output,
+                                    size_t output_len,
+                                    size_t *bytes_written);
 
 /**
  * @brief Check if Content-Encoding indicates compression.
@@ -808,8 +820,8 @@ extern int curl_redirect_preserves_body (CurlSession_T session);
  * @param location Location URL
  * @return 1 if cross-origin, 0 if same origin
  */
-extern int curl_redirect_is_cross_origin (CurlSession_T session,
-                                           const char *location);
+extern int
+curl_redirect_is_cross_origin (CurlSession_T session, const char *location);
 
 /**
  * @brief Resolve redirect URL relative to current URL.
@@ -821,8 +833,9 @@ extern int curl_redirect_is_cross_origin (CurlSession_T session,
  * @return Bytes written, or -1 on error
  */
 extern ssize_t curl_resolve_redirect_url (CurlSession_T session,
-                                           const char *location,
-                                           char *output, size_t output_size);
+                                          const char *location,
+                                          char *output,
+                                          size_t output_size);
 
 /**
  * @brief Parse redirect URL into CurlParsedURL.
@@ -833,8 +846,8 @@ extern ssize_t curl_resolve_redirect_url (CurlSession_T session,
  * @return 0 on success, -1 on error
  */
 extern int curl_parse_redirect_url (CurlSession_T session,
-                                     const char *location,
-                                     CurlParsedURL *result);
+                                    const char *location,
+                                    CurlParsedURL *result);
 
 /**
  * @brief Check if redirect should be followed.
@@ -882,8 +895,8 @@ extern int curl_get_redirect_count (CurlSession_T session);
  * @param location Location URL
  * @return 1 if downgrade, 0 otherwise
  */
-extern int curl_redirect_is_secure_downgrade (CurlSession_T session,
-                                               const char *location);
+extern int
+curl_redirect_is_secure_downgrade (CurlSession_T session, const char *location);
 
 /**
  * @brief Check if redirect is to the same host.
@@ -892,8 +905,8 @@ extern int curl_redirect_is_secure_downgrade (CurlSession_T session,
  * @param location Location URL
  * @return 1 if same host, 0 otherwise
  */
-extern int curl_redirect_is_same_host (CurlSession_T session,
-                                        const char *location);
+extern int
+curl_redirect_is_same_host (CurlSession_T session, const char *location);
 
 /**
  * @brief Reset redirect count.
@@ -929,9 +942,10 @@ extern void curl_cookiejar_free (CurlCookieJar **jar);
  * @return Parsed cookie, or NULL on error
  */
 extern CurlCookie *curl_cookie_parse (const char *set_cookie,
-                                       const char *request_host,
-                                       const char *request_path,
-                                       int request_secure, Arena_T arena);
+                                      const char *request_host,
+                                      const char *request_path,
+                                      int request_secure,
+                                      Arena_T arena);
 
 /**
  * @brief Check if cookie domain matches request host.
@@ -940,8 +954,8 @@ extern CurlCookie *curl_cookie_parse (const char *set_cookie,
  * @param request_host Request host
  * @return 1 if matches, 0 otherwise
  */
-extern int curl_cookie_domain_match (const char *cookie_domain,
-                                      const char *request_host);
+extern int
+curl_cookie_domain_match (const char *cookie_domain, const char *request_host);
 
 /**
  * @brief Check if cookie path matches request path.
@@ -950,8 +964,8 @@ extern int curl_cookie_domain_match (const char *cookie_domain,
  * @param request_path Request path
  * @return 1 if matches, 0 otherwise
  */
-extern int curl_cookie_path_match (const char *cookie_path,
-                                    const char *request_path);
+extern int
+curl_cookie_path_match (const char *cookie_path, const char *request_path);
 
 /**
  * @brief Check if cookie matches request.
@@ -964,8 +978,10 @@ extern int curl_cookie_path_match (const char *cookie_path,
  * @param is_secure 1 if HTTPS, 0 if HTTP
  * @return 1 if matches, 0 otherwise
  */
-extern int curl_cookie_matches (const CurlCookie *cookie, const char *host,
-                                 const char *path, int is_secure);
+extern int curl_cookie_matches (const CurlCookie *cookie,
+                                const char *host,
+                                const char *path,
+                                int is_secure);
 
 /**
  * @brief Check if cookie has expired.
@@ -995,8 +1011,10 @@ extern int curl_cookiejar_add (CurlCookieJar *jar, CurlCookie *cookie);
  * @param path Cookie path (NULL for any)
  * @return 1 if removed, 0 if not found, -1 on error
  */
-extern int curl_cookiejar_remove (CurlCookieJar *jar, const char *name,
-                                   const char *domain, const char *path);
+extern int curl_cookiejar_remove (CurlCookieJar *jar,
+                                  const char *name,
+                                  const char *domain,
+                                  const char *path);
 
 /**
  * @brief Clear all cookies from jar.
@@ -1032,9 +1050,11 @@ extern int curl_cookiejar_count (const CurlCookieJar *jar);
  * @return Bytes written, or -1 on error
  */
 extern ssize_t curl_cookiejar_get_header (const CurlCookieJar *jar,
-                                           const char *host, const char *path,
-                                           int is_secure, char *output,
-                                           size_t output_size);
+                                          const char *host,
+                                          const char *path,
+                                          int is_secure,
+                                          char *output,
+                                          size_t output_size);
 
 /**
  * @brief Process Set-Cookie headers from response.
@@ -1048,9 +1068,11 @@ extern ssize_t curl_cookiejar_get_header (const CurlCookieJar *jar,
  * @return Number of cookies processed
  */
 extern int curl_cookiejar_process_response (CurlCookieJar *jar,
-                                             SocketHTTP_Headers_T headers,
-                                             const char *host, const char *path,
-                                             int is_secure, Arena_T arena);
+                                            SocketHTTP_Headers_T headers,
+                                            const char *host,
+                                            const char *path,
+                                            int is_secure,
+                                            Arena_T arena);
 
 /**
  * @brief Load cookies from Netscape format file.
@@ -1093,8 +1115,8 @@ extern int curl_session_process_cookies (CurlSession_T session);
  * @param cookie_file Cookie file path (NULL for no persistence)
  * @return 0 on success, -1 on error
  */
-extern int curl_session_init_cookies (CurlSession_T session,
-                                       const char *cookie_file);
+extern int
+curl_session_init_cookies (CurlSession_T session, const char *cookie_file);
 
 /**
  * @brief Save session cookies if dirty.

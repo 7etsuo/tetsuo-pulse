@@ -89,15 +89,6 @@ reconnect_set_tls_error (T conn, const char *operation)
 }
 #endif
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- *
- * Note: socketreconnect_now_ms(), socketreconnect_elapsed_ms(), and
- * reconnect_jitter() are defined in SocketReconnect-private.h as static
- * inline functions for use across split files if needed.
- */
-
 void
 SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy)
 {

@@ -68,8 +68,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== Cookie Exchange Enable Tests ==================== */
-
 TEST (dtls_cookie_enable_on_server)
 {
   const char *cert_file = "test_dtls_cookie_srv.crt";
@@ -130,8 +128,6 @@ TEST (dtls_cookie_enable_on_client_fails)
   }
   END_TRY;
 }
-
-/* ==================== Cookie Secret Tests ==================== */
 
 TEST (dtls_cookie_set_secret)
 {
@@ -204,8 +200,6 @@ TEST (dtls_cookie_secret_wrong_length_fails)
   END_TRY;
 }
 
-/* ==================== Cookie Rotation Tests ==================== */
-
 TEST (dtls_cookie_rotate_secret)
 {
   const char *cert_file = "test_dtls_cookie_rot.crt";
@@ -271,8 +265,6 @@ TEST (dtls_cookie_multiple_rotations)
   END_TRY;
 }
 
-/* ==================== Cookie Query Tests ==================== */
-
 TEST (dtls_cookie_has_exchange_initially_false)
 {
   const char *cert_file = "test_dtls_cookie_query.crt";
@@ -319,8 +311,6 @@ TEST (dtls_cookie_has_exchange_client_false)
   END_TRY;
 }
 
-/* ==================== Cookie Secret Null Tests ==================== */
-
 TEST (dtls_cookie_secret_null_fails)
 {
   const char *cert_file = "test_dtls_cookie_null.crt";
@@ -357,9 +347,6 @@ TEST (dtls_cookie_secret_null_fails)
   }
   END_TRY;
 }
-
-/* ==================== Server Listening with Cookie Tests ====================
- */
 
 TEST (dtls_listen_with_cookie)
 {

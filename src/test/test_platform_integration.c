@@ -37,11 +37,6 @@
 #include <sys/sendfile.h>
 #endif
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_TIMEOUT_MS 5000
 #define TEST_SOCKET_PATH "/tmp/test_unix_socket"
 #define TEST_DATA_SIZE (64 * 1024) /* 64KB for performance tests */
@@ -59,11 +54,6 @@ get_test_socket_path (void)
             platform_test_counter++);
   return path;
 }
-
-/* ============================================================================
- * Unix Domain Socket Performance Server
- * ============================================================================
- */
 
 typedef struct
 {
@@ -177,11 +167,6 @@ unix_socket_server_stop (UnixSocketServer *server)
 
   Arena_dispose (&server->arena);
 }
-
-/* ============================================================================
- * Integration Tests
- * ============================================================================
- */
 
 TEST (integration_platform_unix_socket_performance)
 {

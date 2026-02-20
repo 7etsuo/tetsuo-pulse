@@ -15,7 +15,8 @@
  */
 
 #include "core/SocketSYNProtect-private.h"
-#undef T  /* Undefine T from SocketSYNProtect-private.h before including Test.h */
+#undef T /* Undefine T from SocketSYNProtect-private.h before including Test.h \
+          */
 #include "test/Test.h"
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -43,11 +44,6 @@ static int tests_passed = 0;
     }                                           \
   while (0)
 
-/* ============================================================================
- * Valid IPv6 Address Tests
- * ============================================================================
- */
-
 /**
  * test_ipv6_full_format - Test full IPv6 address format
  */
@@ -55,9 +51,8 @@ static int
 test_ipv6_full_format (void)
 {
   uint8_t addr_bytes[16];
-  int result
-      = parse_ipv6_address ("2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-                            addr_bytes);
+  int result = parse_ipv6_address ("2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                                   addr_bytes);
 
   if (result != 1)
     return 0;
@@ -178,13 +173,9 @@ test_ipv6_multicast (void)
     return 0;
 
   /* Verify multicast prefix ff02:: */
-  return addr_bytes[0] == 0xff && addr_bytes[1] == 0x02 && addr_bytes[15] == 0x01;
+  return addr_bytes[0] == 0xff && addr_bytes[1] == 0x02
+         && addr_bytes[15] == 0x01;
 }
-
-/* ============================================================================
- * Invalid Input Tests
- * ============================================================================
- */
 
 /**
  * test_ipv6_null_ip - Test NULL pointer for ip parameter
@@ -256,8 +247,7 @@ static int
 test_ipv6_too_many_groups (void)
 {
   uint8_t addr_bytes[16];
-  int result
-      = parse_ipv6_address ("2001:db8:85a3:1:2:3:4:5:6", addr_bytes);
+  int result = parse_ipv6_address ("2001:db8:85a3:1:2:3:4:5:6", addr_bytes);
 
   /* IPv6 has max 8 groups */
   return result == 0;
@@ -275,11 +265,6 @@ test_ipv6_group_too_long (void)
   /* Group should be max 4 hex digits */
   return result == 0;
 }
-
-/* ============================================================================
- * Edge Case Tests
- * ============================================================================
- */
 
 /**
  * test_ipv6_empty_string - Test empty string
@@ -388,9 +373,8 @@ static int
 test_ipv6_no_compression (void)
 {
   uint8_t addr_bytes[16];
-  int result
-      = parse_ipv6_address ("2001:0db8:0000:0000:0000:0000:0000:0001",
-                            addr_bytes);
+  int result = parse_ipv6_address ("2001:0db8:0000:0000:0000:0000:0000:0001",
+                                   addr_bytes);
 
   if (result != 1)
     return 0;
@@ -402,11 +386,6 @@ test_ipv6_no_compression (void)
   return memcmp (addr_bytes, expected, 16) == 0;
 }
 
-/* ============================================================================
- * Boundary Tests
- * ============================================================================
- */
-
 /**
  * test_ipv6_all_f - Test all F's address
  */
@@ -414,9 +393,8 @@ static int
 test_ipv6_all_f (void)
 {
   uint8_t addr_bytes[16];
-  int result
-      = parse_ipv6_address ("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
-                            addr_bytes);
+  int result = parse_ipv6_address ("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                                   addr_bytes);
 
   if (result != 1)
     return 0;
@@ -461,14 +439,9 @@ test_ipv6_partial_compression_end (void)
     return 0;
 
   /* Verify leading bytes */
-  return addr_bytes[0] == 0x12 && addr_bytes[1] == 0x34
-         && addr_bytes[2] == 0x56 && addr_bytes[3] == 0x78;
+  return addr_bytes[0] == 0x12 && addr_bytes[1] == 0x34 && addr_bytes[2] == 0x56
+         && addr_bytes[3] == 0x78;
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)
@@ -508,8 +481,7 @@ main (void)
   RUN_TEST (test_ipv6_partial_compression_start);
   RUN_TEST (test_ipv6_partial_compression_end);
 
-  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed,
-          tests_run);
+  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }

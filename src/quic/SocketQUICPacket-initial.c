@@ -34,11 +34,6 @@
 #include <openssl/evp.h>
 #endif
 
-/* ============================================================================
- * Constants - RFC 9001 Section 5.2
- * ============================================================================
- */
-
 /**
  * @brief QUIC v1 Initial salt (RFC 9001 Section 5.2).
  *
@@ -57,11 +52,6 @@ static const uint8_t quic_v2_initial_salt[QUIC_V1_INITIAL_SALT_LEN]
     = { 0x0d, 0xed, 0xe3, 0xde, 0xf7, 0x00, 0xa6, 0xdb, 0x81, 0x93,
         0x81, 0xbe, 0x6e, 0x26, 0x9d, 0xcb, 0xf9, 0xbd, 0x2e, 0xd9 };
 
-/* ============================================================================
- * Result String Table
- * ============================================================================
- */
-
 static const char *result_strings[]
     = { [QUIC_INITIAL_OK] = "OK",
         [QUIC_INITIAL_ERROR_NULL] = "NULL pointer argument",
@@ -75,11 +65,6 @@ static const char *result_strings[]
         [QUIC_INITIAL_ERROR_VERSION] = "Unsupported QUIC version" };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICInitial, QUIC_INITIAL_ERROR_VERSION)
-
-/* ============================================================================
- * Key Structure Functions
- * ============================================================================
- */
 
 void
 SocketQUICInitialKeys_init (SocketQUICInitialKeys_T *keys)
@@ -96,11 +81,6 @@ SocketQUICInitialKeys_clear (SocketQUICInitialKeys_T *keys)
     return;
   SocketCrypto_secure_clear (keys, sizeof (*keys));
 }
-
-/* ============================================================================
- * Salt Lookup
- * ============================================================================
- */
 
 SocketQUICInitial_Result
 SocketQUICInitial_get_salt (uint32_t version,
@@ -128,11 +108,6 @@ SocketQUICInitial_get_salt (uint32_t version,
       return QUIC_INITIAL_ERROR_VERSION;
     }
 }
-
-/* ============================================================================
- * Validation Functions
- * ============================================================================
- */
 
 SocketQUICInitial_Result
 SocketQUICInitial_validate (const SocketQUICPacketHeader_T *header,
@@ -165,11 +140,6 @@ SocketQUICInitial_padding_needed (size_t current_len)
   return QUIC_INITIAL_MIN_SIZE - current_len;
 }
 
-/* ============================================================================
- * Key Derivation - Delegates to SocketQUICCrypto module
- * ============================================================================
- */
-
 SocketQUICInitial_Result
 SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
                                uint32_t version,
@@ -193,11 +163,6 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
       return QUIC_INITIAL_ERROR_CRYPTO;
     }
 }
-
-/* ============================================================================
- * Packet Protection (RFC 9001 Section 5.4)
- * ============================================================================
- */
 
 #ifdef SOCKET_HAS_TLS
 

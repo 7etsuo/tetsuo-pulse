@@ -94,8 +94,6 @@ complete_handshake (Socket_T client, Socket_T server)
              : -1;
 }
 
-/* ==================== ALPN Configuration Tests ==================== */
-
 TEST (alpn_set_h2_protocol)
 {
   SocketTLSContext_T ctx = NULL;
@@ -136,8 +134,6 @@ TEST (alpn_set_multiple_protocols)
   }
   END_TRY;
 }
-
-/* ==================== ALPN Negotiation Tests ==================== */
 
 TEST (alpn_negotiation_h2)
 {
@@ -300,8 +296,6 @@ TEST (alpn_no_common_protocol)
   }
   END_TRY;
 }
-
-/* ==================== ALPN Edge Cases ==================== */
 
 TEST (alpn_empty_list)
 {

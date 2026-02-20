@@ -506,11 +506,6 @@ destroy_context_mutexes (T ctx)
   pthread_mutex_destroy (&ctx->crl_mutex);
 }
 
-/* ============================================================================
- * Context Lookup Functions
- * ============================================================================
- */
-
 SocketTLSContext_T
 tls_context_get_from_ssl_ctx (SSL_CTX *ssl_ctx)
 {

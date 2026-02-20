@@ -31,8 +31,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ==================== Helper Functions ==================== */
-
 /**
  * @brief Create a basic pool for testing health checks.
  */
@@ -52,8 +50,6 @@ sleep_ms (int ms)
   ts = socket_util_ms_to_timespec ((unsigned long)ms);
   nanosleep (&ts, NULL);
 }
-
-/* ==================== Default Config Tests ==================== */
 
 TEST (health_config_defaults_initializes_properly)
 {
@@ -80,8 +76,6 @@ TEST (health_config_defaults_has_reasonable_values)
   ASSERT (config.probe_interval_ms >= 1000); /* At least 1 second */
   ASSERT (config.half_open_max_probes >= 1);
 }
-
-/* ==================== Enable/Disable Tests ==================== */
 
 TEST (health_enable_creates_health_subsystem)
 {
@@ -175,8 +169,6 @@ TEST (health_disable_stops_background_thread)
   Arena_dispose (&arena);
 }
 
-/* ==================== Circuit State Tests ==================== */
-
 TEST (circuit_state_defaults_to_closed)
 {
   Arena_T arena = Arena_new ();
@@ -237,8 +229,6 @@ TEST (circuit_allows_when_closed)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Failure Threshold Tests ==================== */
 
 TEST (circuit_opens_after_threshold_failures)
 {
@@ -328,8 +318,6 @@ TEST (circuit_stays_closed_below_threshold)
   Arena_dispose (&arena);
 }
 
-/* ==================== Success Reporting Tests ==================== */
-
 TEST (success_resets_failure_counter)
 {
   Arena_T arena = Arena_new ();
@@ -378,8 +366,6 @@ TEST (success_resets_failure_counter)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Half-Open State Tests ==================== */
 
 TEST (circuit_transitions_to_half_open_after_timeout)
 {
@@ -597,8 +583,6 @@ TEST (half_open_failure_reopens_circuit)
   Arena_dispose (&arena);
 }
 
-/* ==================== Manual Reset Tests ==================== */
-
 TEST (circuit_reset_closes_open_circuit)
 {
   Arena_T arena = Arena_new ();
@@ -681,8 +665,6 @@ TEST (circuit_reset_unknown_host_returns_error)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Multiple Hosts Tests ==================== */
 
 TEST (circuit_tracks_multiple_hosts_independently)
 {
@@ -785,8 +767,6 @@ TEST (circuit_tracks_same_host_different_ports)
   Arena_dispose (&arena);
 }
 
-/* ==================== Health Statistics Tests ==================== */
-
 TEST (health_stats_track_circuit_opens)
 {
   Arena_T arena = Arena_new ();
@@ -864,8 +844,6 @@ TEST (health_stats_accepts_null_parameters)
   Arena_dispose (&arena);
 }
 
-/* ==================== Edge Cases ==================== */
-
 TEST (health_checks_without_enable_are_noop)
 {
   Arena_T arena = Arena_new ();
@@ -924,8 +902,6 @@ TEST (circuit_handles_null_host_gracefully)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Thread Safety Test ==================== */
 
 /* Helper for concurrent circuit operations */
 static void *
@@ -990,8 +966,6 @@ TEST (circuit_operations_are_thread_safe)
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
-
-/* ==================== Main Test Entry Point ==================== */
 
 int
 main (void)

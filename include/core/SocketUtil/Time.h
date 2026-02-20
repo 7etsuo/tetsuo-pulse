@@ -23,11 +23,6 @@
 
 #include "core/SocketConfig.h"
 
-/* ============================================================================
- * MONOTONIC TIME
- * ============================================================================
- */
-
 /**
  * @brief Socket_get_monotonic_ms - Get current monotonic time in milliseconds
  * @ingroup foundation
@@ -43,11 +38,6 @@
  * - Elapsed time measurements
  */
 int64_t Socket_get_monotonic_ms (void);
-
-/* ============================================================================
- * TIME CONVERSION UTILITIES
- * ============================================================================
- */
 
 /**
  * @brief Convert milliseconds to timespec structure.

@@ -35,11 +35,6 @@
 #include "core/SocketCrypto.h"
 #include "quic/SocketQUICHandshake.h"
 
-/* ============================================================================
- * Transport Parameters Extension Constants (RFC 9001 §8.2)
- * ============================================================================
- */
-
 /**
  * @brief TLS extension type for QUIC transport parameters (RFC 9001 §8.2).
  *
@@ -60,11 +55,6 @@
  * @brief QUIC transport parameter error code (RFC 9000 §20).
  */
 #define QUIC_ERROR_TRANSPORT_PARAMETER 0x08
-
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
 
 /**
  * @brief Result codes for QUIC-TLS operations.
@@ -87,11 +77,6 @@ typedef enum
   QUIC_TLS_ERROR_LEVEL       /**< Invalid encryption level */
 } SocketQUICTLS_Result;
 
-/* ============================================================================
- * TLS Configuration
- * ============================================================================
- */
-
 /**
  * @brief Configuration for QUIC-TLS context.
  *
@@ -106,11 +91,6 @@ typedef struct SocketQUICTLSConfig
   int verify_peer;       /**< Verify peer certificate (1=yes) */
   int enable_0rtt;       /**< Enable 0-RTT early data (1=yes) */
 } SocketQUICTLSConfig_T;
-
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
 
 /**
  * @brief Initialize TLS context for QUIC.
@@ -147,11 +127,6 @@ SocketQUICTLS_create_ssl (SocketQUICHandshake_T handshake);
  * @param handshake Handshake context.
  */
 extern void SocketQUICTLS_free (SocketQUICHandshake_T handshake);
-
-/* ============================================================================
- * Handshake Operations
- * ============================================================================
- */
 
 /**
  * @brief Advance TLS handshake state machine.
@@ -230,11 +205,6 @@ SocketQUICTLS_consume_data (SocketQUICHandshake_T handshake,
  */
 extern int SocketQUICTLS_is_complete (SocketQUICHandshake_T handshake);
 
-/* ============================================================================
- * Key Management
- * ============================================================================
- */
-
 /**
  * @brief Check if keys are available for encryption level.
  *
@@ -282,11 +252,6 @@ SocketQUICTLS_get_traffic_secrets (SocketQUICHandshake_T handshake,
                                    uint8_t *read_secret,
                                    size_t *secret_len);
 
-/* ============================================================================
- * Alert Handling
- * ============================================================================
- */
-
 /**
  * @brief Convert TLS alert to QUIC CRYPTO_ERROR code.
  *
@@ -316,11 +281,6 @@ extern uint64_t SocketQUICTLS_get_error_code (SocketQUICHandshake_T handshake);
  */
 extern const char *
 SocketQUICTLS_get_error_string (SocketQUICHandshake_T handshake);
-
-/* ============================================================================
- * Transport Parameters
- * ============================================================================
- */
 
 /**
  * @brief Set local transport parameters for TLS extension.
@@ -399,11 +359,6 @@ SocketQUICTLS_has_peer_transport_params (SocketQUICHandshake_T handshake);
 extern SocketQUICTLS_Result
 SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake);
 
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
-
 /**
  * @brief Get string representation of result code.
  *
@@ -412,11 +367,6 @@ SocketQUICTLS_get_peer_params (SocketQUICHandshake_T handshake);
  * @return Human-readable string.
  */
 extern const char *SocketQUICTLS_result_string (SocketQUICTLS_Result result);
-
-/* ============================================================================
- * ALPN Functions (RFC 9001 Section 8.1)
- * ============================================================================
- */
 
 /**
  * @brief Check if ALPN negotiation succeeded (RFC 9001 §8.1).
@@ -452,11 +402,6 @@ extern SocketQUICTLS_Result
 SocketQUICTLS_get_alpn (SocketQUICHandshake_T handshake,
                         const char **alpn,
                         size_t *len);
-
-/* ============================================================================
- * 0-RTT Session Ticket Functions (RFC 9001 Section 4.6)
- * ============================================================================
- */
 
 /**
  * @brief Enable session ticket issuance for 0-RTT (RFC 9001 §4.6.1).

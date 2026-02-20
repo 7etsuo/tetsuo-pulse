@@ -87,11 +87,6 @@
 #include <openssl/ssl.h>
 #endif
 
-/* ============================================================================
- * Logging Configuration
- * ============================================================================
- */
-
 /**
  * @brief Default log component for all SocketPool implementation files.
  * @ingroup connection_mgmt
@@ -103,11 +98,6 @@
 #undef SOCKET_LOG_COMPONENT
 #endif
 #define SOCKET_LOG_COMPONENT "SocketPool"
-
-/* ============================================================================
- * Mutex Convenience Macros
- * ============================================================================
- */
 
 /**
  * @brief Acquire pool mutex with error handling.
@@ -144,11 +134,6 @@
  */
 #define POOL_UNLOCK(p) SOCKET_MUTEX_UNLOCK (&(p)->mutex)
 
-/* ============================================================================
- * Hash Table Configuration
- * ============================================================================
- */
-
 /**
  * @brief Alias for the library's central hash table size configuration.
  * @ingroup connection_mgmt
@@ -172,28 +157,6 @@
  * @see HASH_GOLDEN_RATIO constant in SocketUtil.h for hash multiplier.
  */
 #define SOCKET_HASH_SIZE SOCKET_HASH_TABLE_SIZE
-
-/* ============================================================================
- * Exception Handling
- * ============================================================================
- *
- * @brief Thread-local exception for detailed error messages.
- * @ingroup connection_mgmt
- *
- * Thread-local exception for detailed error messages across all SocketPool
- * implementation files. Uses the centralized error buffer (socket_error_buf)
- * from SocketUtil.h for consistent error formatting.
- *
- * Benefits:
- * - Single thread-local error buffer (socket_error_buf) for all modules
- * - Consistent error formatting with SOCKET_ERROR_FMT/MSG macros
- * - Thread-safe exception raising
- * - Automatic logging integration via SocketLog_emit
- *
- * NOTE: For multi-file modules like SocketPool, we use an extern declaration
- * here and the actual definition in SocketPool-core.c. This allows all
- * implementation files to share the same thread-local exception variable.
- */
 
 /**
  * @brief Thread-local exception for detailed error messages.
@@ -268,11 +231,6 @@ extern __thread Except_T SocketPool_DetailedException;
       RAISE_POOL_ERROR (exception);          \
     }                                        \
   while (0)
-
-/* ============================================================================
- * Connection Structure
- * ============================================================================
- */
 
 /**
  * @brief Internal structure representing a pooled connection slot.
@@ -370,11 +328,6 @@ struct Connection
  */
 typedef struct Connection *Connection_T;
 
-/* ============================================================================
- * Async Connect Context Structure
- * ============================================================================
- */
-
 /**
  * @brief Internal context structure for tracking asynchronous connect
  * operations.
@@ -441,11 +394,6 @@ struct AsyncConnectContext
  * @see SocketPool-private.h for internal async connect details.
  */
 typedef struct AsyncConnectContext *AsyncConnectContext_T;
-
-/* ============================================================================
- * Pool Structure
- * ============================================================================
- */
 
 /**
  * @brief Core internal structure defining the complete SocketPool state.
@@ -1121,11 +1069,6 @@ extern void validate_saved_session (Connection_T conn, time_t now);
  */
 extern unsigned socketpool_hash (const Socket_T socket);
 
-/* ============================================================================
- * Socket Close Helpers (Shared)
- * ============================================================================
- */
-
 /**
  * @brief Safely close and remove socket from pool with error suppression.
  * @ingroup connection_mgmt
@@ -1199,11 +1142,6 @@ socketpool_close_socket_safe (SocketPool_T pool,
   END_TRY;
 }
 
-/* ============================================================================
- * Core Functions (from SocketPool-core.c)
- * ============================================================================
- */
-
 /**
  * @brief Get current time with error handling.
  * @ingroup connection_mgmt
@@ -1218,11 +1156,6 @@ socketpool_close_socket_safe (SocketPool_T pool,
  * @see Connection_created_at() for creation timestamps.
  */
 extern time_t safe_time (void);
-
-/* ============================================================================
- * Shared Range Enforcement (inline to avoid duplicate definitions)
- * ============================================================================
- */
 
 /**
  * @brief Clamp value to min/max bounds.
@@ -1278,11 +1211,6 @@ socketpool_enforce_buffer_size (size_t bufsize)
   return socketpool_enforce_range (
       bufsize, SOCKET_MIN_BUFFER_SIZE, SOCKET_MAX_BUFFER_SIZE);
 }
-
-/* ============================================================================
- * Shared Inline Helpers
- * ============================================================================
- */
 
 /**
  * @brief Overflow-safe millisecond addition with saturation.

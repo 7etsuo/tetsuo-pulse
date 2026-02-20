@@ -58,8 +58,6 @@ async_test_callback (Socket_T socket, ssize_t bytes, int err, void *user_data)
   /* Callback should never be invoked in fallback mode tests */
 }
 
-/* ==================== Context Lifecycle Tests ==================== */
-
 TEST (async_new_free)
 {
   setup_signals ();
@@ -94,8 +92,6 @@ TEST (async_free_null)
   /* Should not crash */
   ASSERT (1);
 }
-
-/* ==================== Backend Query Tests ==================== */
 
 TEST (async_backend_name)
 {
@@ -163,8 +159,6 @@ TEST (async_is_available_null)
   int available = SocketAsync_is_available (NULL);
   ASSERT_EQ (0, available);
 }
-
-/* ==================== Cancel Tests ==================== */
 
 TEST (async_cancel_valid_request)
 {
@@ -285,8 +279,6 @@ TEST (async_cancel_invalid)
   SocketAsync_free (&async);
   Arena_dispose (&arena);
 }
-
-/* ==================== Fallback Mode Tests ==================== */
 
 TEST (async_send_fallback_mode)
 {
@@ -423,8 +415,6 @@ TEST (async_recv_fallback_mode)
   Arena_dispose (&arena);
 }
 
-/* ==================== Process Completions Tests ==================== */
-
 TEST (async_process_completions_no_pending)
 {
   setup_signals ();
@@ -450,8 +440,6 @@ TEST (async_process_completions_no_pending)
   SocketAsync_free (&async);
   Arena_dispose (&arena);
 }
-
-/* ==================== Batch Operations Tests ==================== */
 
 TEST (async_submit_batch)
 {
@@ -543,8 +531,6 @@ TEST (async_submit_batch_empty)
   SocketAsync_free (&async);
   Arena_dispose (&arena);
 }
-
-/* ==================== Cancel All Tests ==================== */
 
 TEST (async_cancel_all)
 {
@@ -657,8 +643,6 @@ TEST (async_cancel_all_empty)
   Arena_dispose (&arena);
 }
 
-/* ==================== Backend Selection Tests ==================== */
-
 TEST (async_backend_available_auto)
 {
   setup_signals ();
@@ -717,8 +701,6 @@ TEST (async_set_backend_unavailable)
       ASSERT (1);
     }
 }
-
-/* ==================== Progress Query Tests ==================== */
 
 TEST (async_get_progress_null)
 {
@@ -826,8 +808,6 @@ TEST (async_get_progress_pending)
   Arena_dispose (&arena);
 }
 
-/* ==================== Continuation Tests ==================== */
-
 TEST (async_send_continue_invalid)
 {
   setup_signals ();
@@ -889,8 +869,6 @@ TEST (async_recv_continue_invalid)
   SocketAsync_free (&async);
   Arena_dispose (&arena);
 }
-
-/* ==================== Timeout Configuration Tests ==================== */
 
 TEST (async_timeout_default)
 {
@@ -963,8 +941,6 @@ TEST (async_timeout_null)
   ASSERT_EQ (0LL, timeout);
 }
 
-/* ==================== Stale Request Expiration Tests ==================== */
-
 TEST (async_expire_stale_empty)
 {
   setup_signals ();
@@ -998,8 +974,6 @@ TEST (async_expire_stale_null)
   int expired = SocketAsync_expire_stale (NULL);
   ASSERT_EQ (0, expired);
 }
-
-/* ==================== Timeout-Aware Send/Recv Tests ==================== */
 
 TEST (async_send_timeout_basic)
 {
@@ -1128,8 +1102,6 @@ TEST (async_recv_timeout_basic)
   SocketAsync_free (&async);
   Arena_dispose (&arena);
 }
-
-/* ==================== io_uring-Specific Tests ==================== */
 
 TEST (async_iouring_available_api)
 {
@@ -1420,8 +1392,6 @@ TEST (async_iouring_high_concurrency)
 #undef HIGH_CONCURRENCY_COUNT
 }
 
-/* ==================== Timer Integration Tests ==================== */
-
 /* Callback context for tracking timer invocations */
 typedef struct
 {
@@ -1644,8 +1614,6 @@ TEST (async_timer_multiple)
 
   SocketPoll_free (&poll);
 }
-
-/* ==================== Fixed Buffer Security Tests ==================== */
 
 #if SOCKET_HAS_IO_URING
 
@@ -2198,8 +2166,6 @@ TEST (async_send_fixed_one_past_end)
 }
 
 #endif /* SOCKET_HAS_IO_URING */
-
-/* ==================== Main ==================== */
 
 int
 main (void)

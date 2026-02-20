@@ -37,11 +37,6 @@
 #include <string.h>
 #include <unistd.h>
 
-/* ============================================================================
- * Health Check Helpers (used by multiple tests)
- * ============================================================================
- */
-
 /* Counter for limited health check failures */
 static volatile int health_fail_limit = 3;
 static volatile int health_fail_calls = 0;
@@ -93,11 +88,6 @@ reset_health_check_counters (void)
   health_check_should_fail = 1;
 }
 
-/* ============================================================================
- * Policy Configuration Tests
- * ============================================================================
- */
-
 TEST (rc_policy_defaults)
 {
   SocketReconnect_Policy_T policy;
@@ -148,11 +138,6 @@ TEST (rc_policy_custom)
   ASSERT_EQ (3000, policy.health_check_timeout_ms);
 }
 
-/* ============================================================================
- * State Name Tests
- * ============================================================================
- */
-
 TEST (rc_state_names)
 {
   ASSERT (strcmp (SocketReconnect_state_name (RECONNECT_DISCONNECTED),
@@ -172,11 +157,6 @@ TEST (rc_state_names)
       strcmp (SocketReconnect_state_name ((SocketReconnect_State)99), "UNKNOWN")
       == 0);
 }
-
-/* ============================================================================
- * Context Creation Tests
- * ============================================================================
- */
 
 TEST (rc_create_basic)
 {
@@ -232,11 +212,6 @@ TEST (rc_create_with_policy)
 
   SocketReconnect_free (&conn);
 }
-
-/* ============================================================================
- * Callback Tests
- * ============================================================================
- */
 
 static int callback_count = 0;
 static SocketReconnect_State last_old_state = RECONNECT_DISCONNECTED;
@@ -307,11 +282,6 @@ TEST (rc_callback_invoked)
   SocketReconnect_free (&conn);
 }
 
-/* ============================================================================
- * Connection State Tests
- * ============================================================================
- */
-
 TEST (rc_connect_to_server)
 {
   Socket_T server = NULL;
@@ -377,11 +347,6 @@ TEST (rc_connect_to_server)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Backoff Tests
- * ============================================================================
- */
 
 TEST (rc_backoff_state)
 {
@@ -477,11 +442,6 @@ TEST (rc_backoff_timeout)
   SocketReconnect_free (&conn);
 }
 
-/* ============================================================================
- * Reset Tests
- * ============================================================================
- */
-
 TEST (rc_reset)
 {
   SocketReconnect_T conn = NULL;
@@ -521,11 +481,6 @@ TEST (rc_reset)
 
   SocketReconnect_free (&conn);
 }
-
-/* ============================================================================
- * Edge Cases
- * ============================================================================
- */
 
 TEST (rc_free_null)
 {
@@ -613,11 +568,6 @@ TEST (rc_multiple_connect_calls)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * I/O Passthrough Tests
- * ============================================================================
- */
-
 TEST (rc_send_not_connected)
 {
   SocketReconnect_T conn = NULL;
@@ -667,11 +617,6 @@ TEST (rc_recv_not_connected)
 
   SocketReconnect_free (&conn);
 }
-
-/* ============================================================================
- * Circuit Breaker Tests - Use health check to trigger failures
- * ============================================================================
- */
 
 TEST (rc_circuit_breaker_opens)
 {
@@ -807,11 +752,6 @@ TEST (rc_circuit_breaker_half_open)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Health Check Tests
- * ============================================================================
- */
 
 static int health_check_call_count = 0;
 static int health_check_return_value = 1;
@@ -985,11 +925,6 @@ TEST (rc_health_check_failure)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Max Attempts Tests
- * ============================================================================
- */
-
 TEST (rc_max_attempts_reached)
 {
   SocketReconnect_T conn = NULL;
@@ -1033,11 +968,6 @@ TEST (rc_max_attempts_reached)
 
   SocketReconnect_free (&conn);
 }
-
-/* ============================================================================
- * I/O Passthrough with Connected Socket Tests
- * ============================================================================
- */
 
 TEST (rc_send_recv_connected)
 {
@@ -1142,11 +1072,6 @@ TEST (rc_send_recv_connected)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Timeout Query Tests
- * ============================================================================
- */
-
 TEST (rc_next_timeout_disconnected)
 {
   SocketReconnect_T conn = NULL;
@@ -1235,11 +1160,6 @@ TEST (rc_next_timeout_connected)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Circuit Breaker Recovery Tests
- * ============================================================================
- */
 
 TEST (rc_circuit_breaker_recovery)
 {
@@ -1551,11 +1471,6 @@ TEST (rc_no_health_check_interval)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Backoff Edge Case Tests - Use health check failures to trigger backoff
- * ============================================================================
- */
-
 TEST (rc_backoff_hits_max_delay)
 {
   Socket_T server = NULL;
@@ -1689,11 +1604,6 @@ TEST (rc_backoff_very_small_delay)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Circuit Breaker Full Cycle Tests - Use health check to trigger failures
- * ============================================================================
- */
 
 TEST (rc_circuit_breaker_full_cycle)
 {
@@ -1832,11 +1742,6 @@ TEST (rc_circuit_half_open_probe_fail)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Default Health Check Tests
- * ============================================================================
- */
 
 TEST (rc_default_health_check_used)
 {
@@ -2008,11 +1913,6 @@ TEST (rc_default_health_check_eof)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Hostname Validation Tests
- * ============================================================================
- */
-
 TEST (rc_hostname_too_long)
 {
   volatile SocketReconnect_T conn = NULL;
@@ -2044,11 +1944,6 @@ TEST (rc_hostname_too_long)
       SocketReconnect_free (&temp);
     }
 }
-
-/* ============================================================================
- * Max Attempts Tests - Use health check to trigger failures
- * ============================================================================
- */
 
 TEST (rc_max_attempts_stops_retries)
 {
@@ -2122,11 +2017,6 @@ TEST (rc_max_attempts_stops_retries)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Tick and Timeout Tests - Use health check to reliably enter states
- * ============================================================================
- */
 
 TEST (rc_tick_backoff_retry)
 {
@@ -2286,11 +2176,6 @@ TEST (rc_timeout_circuit_open)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Connected I/O Tests
- * ============================================================================
- */
 
 TEST (rc_pollfd_connected)
 {
@@ -2672,11 +2557,6 @@ TEST (rc_recv_eof_triggers_reconnect)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Process with Connect In Progress Test
- * ============================================================================
- */
-
 TEST (rc_process_connecting)
 {
   Socket_T server = NULL;
@@ -2733,12 +2613,6 @@ TEST (rc_process_connecting)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Async Connect Tests
- * Tests check_connect_completion() and EINPROGRESS paths
- * ============================================================================
- */
 
 TEST (rc_async_connect_connection_refused)
 {
@@ -2839,11 +2713,6 @@ TEST (rc_async_connect_poll_error_handling)
   SocketReconnect_free (&conn);
 }
 
-/* ============================================================================
- * Backoff Timeout Query Tests
- * ============================================================================
- */
-
 TEST (rc_next_timeout_in_backoff_state)
 {
   SocketReconnect_T conn = NULL;
@@ -2908,11 +2777,6 @@ TEST (rc_next_timeout_in_backoff_state)
   SocketReconnect_free (&conn);
 }
 
-/* ============================================================================
- * Minimum Backoff Delay Test
- * ============================================================================
- */
-
 TEST (rc_backoff_minimum_delay)
 {
   SocketReconnect_T conn = NULL;
@@ -2972,11 +2836,6 @@ TEST (rc_backoff_minimum_delay)
 
   SocketReconnect_free (&conn);
 }
-
-/* ============================================================================
- * Circuit Breaker Detailed Tests
- * ============================================================================
- */
 
 TEST (rc_circuit_open_blocks_attempts)
 {
@@ -3167,11 +3026,6 @@ TEST (rc_circuit_closes_on_success)
   SocketReconnect_free (&conn);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * I/O Exception Path Tests
- * ============================================================================
- */
 
 TEST (rc_send_with_broken_pipe)
 {
@@ -3367,11 +3221,6 @@ TEST (rc_recv_peer_closed)
     Socket_free (&accepted);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Health Check Edge Case Tests
- * ============================================================================
- */
 
 TEST (rc_default_health_check_with_pending_data)
 {
@@ -3592,11 +3441,6 @@ TEST (rc_health_check_poll_error_path)
     Socket_free (&accepted);
   Socket_free (&server);
 }
-
-/* ============================================================================
- * Coverage Gap Tests - Circuit Breaker via Connection Failures
- * ============================================================================
- */
 
 TEST (rc_circuit_opens_via_failures)
 {
@@ -4368,11 +4212,6 @@ TEST (rc_health_check_with_data)
   Socket_free (&server);
 }
 
-/* ============================================================================
- * Jitter=0 Backoff Test
- * ============================================================================
- */
-
 TEST (rc_backoff_no_jitter)
 {
   SocketReconnect_T conn = NULL;
@@ -4422,11 +4261,6 @@ TEST (rc_backoff_no_jitter)
 
   SocketReconnect_free (&conn);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

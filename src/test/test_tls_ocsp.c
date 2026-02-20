@@ -68,8 +68,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== OCSP Stapling Enable Tests ==================== */
-
 TEST (ocsp_enable_stapling_client)
 {
   SocketTLSContext_T ctx = NULL;
@@ -114,8 +112,6 @@ TEST (ocsp_stapling_disabled_by_default)
   }
   END_TRY;
 }
-
-/* ==================== OCSP Response Tests (Server) ==================== */
 
 TEST (ocsp_set_response_server)
 {
@@ -193,8 +189,6 @@ TEST (ocsp_set_response_null_clears)
   ASSERT_EQ (null_exception, 1);
 }
 
-/* ==================== OCSP Status Query Tests ==================== */
-
 TEST (ocsp_status_before_handshake)
 {
   Socket_T socket = NULL;
@@ -255,8 +249,6 @@ TEST (ocsp_next_update_before_handshake)
   }
   END_TRY;
 }
-
-/* ==================== OCSP Generation Callback Tests ==================== */
 
 /* Test callback for OCSP response generation */
 static OCSP_RESPONSE *
@@ -329,9 +321,6 @@ TEST (ocsp_gen_callback_null_clears)
   }
   END_TRY;
 }
-
-/* ==================== OCSP Must-Staple Tests (RFC 7633) ====================
- */
 
 TEST (ocsp_must_staple_disabled_by_default)
 {
@@ -483,8 +472,6 @@ TEST (ocsp_must_staple_mode_transitions)
   }
   END_TRY;
 }
-
-/* ==================== Edge Cases ==================== */
 
 TEST (ocsp_response_empty)
 {

@@ -62,11 +62,6 @@ extern "C"
 {
 #endif
 
-  /* ==========================================================================
-   * Types
-   * ==========================================================================
-   */
-
   /**
    * @brief Opaque HTTP server handle.
    */
@@ -132,11 +127,6 @@ extern "C"
     int64_t max_request_time_us; /**< Max request time (us) */
   } SocketSimple_HTTPServerStats;
 
-  /* ==========================================================================
-   * Callback Types
-   * ==========================================================================
-   */
-
   /**
    * @brief Request handler callback.
    *
@@ -176,11 +166,6 @@ extern "C"
   typedef void (*SocketSimple_HTTPServerDrainCallback) (
       SocketSimple_HTTPServer_T server, int timed_out, void *userdata);
 
-  /* ==========================================================================
-   * Configuration
-   * ==========================================================================
-   */
-
   /**
    * @brief Initialize server config with defaults.
    *
@@ -188,11 +173,6 @@ extern "C"
    */
   extern void
   Socket_simple_http_server_config_init (SocketSimple_HTTPServerConfig *config);
-
-  /* ==========================================================================
-   * Server Lifecycle
-   * ==========================================================================
-   */
 
   /**
    * @brief Create a new HTTP server with simple configuration.
@@ -238,11 +218,6 @@ extern "C"
    */
   extern void Socket_simple_http_server_stop (SocketSimple_HTTPServer_T server);
 
-  /* ==========================================================================
-   * Handler Registration
-   * ==========================================================================
-   */
-
   /**
    * @brief Set the request handler callback.
    *
@@ -267,11 +242,6 @@ extern "C"
       SocketSimple_HTTPServerValidator validator,
       void *userdata);
 
-  /* ==========================================================================
-   * Event Loop
-   * ==========================================================================
-   */
-
   /**
    * @brief Process server events (accept, read, write).
    *
@@ -293,11 +263,6 @@ extern "C"
    * @return File descriptor, or -1 if not listening.
    */
   extern int Socket_simple_http_server_fd (SocketSimple_HTTPServer_T server);
-
-  /* ==========================================================================
-   * Request Accessors
-   * ==========================================================================
-   */
 
   /**
    * @brief Get HTTP method string (e.g., "GET", "POST").
@@ -365,11 +330,6 @@ extern "C"
   extern int Socket_simple_http_server_request_is_http2 (
       SocketSimple_HTTPServerRequest_T req);
 
-  /* ==========================================================================
-   * Response Building
-   * ==========================================================================
-   */
-
   /**
    * @brief Set response HTTP status code.
    *
@@ -422,11 +382,6 @@ extern "C"
   extern void Socket_simple_http_server_response_finish (
       SocketSimple_HTTPServerRequest_T req);
 
-  /* ==========================================================================
-   * JSON Convenience
-   * ==========================================================================
-   */
-
   /**
    * @brief Send JSON response.
    *
@@ -450,11 +405,6 @@ extern "C"
    */
   extern void Socket_simple_http_server_response_error (
       SocketSimple_HTTPServerRequest_T req, int status, const char *message);
-
-  /* ==========================================================================
-   * Streaming Responses
-   * ==========================================================================
-   */
 
   /**
    * @brief Begin streaming response.
@@ -486,11 +436,6 @@ extern "C"
    */
   extern int Socket_simple_http_server_response_end_stream (
       SocketSimple_HTTPServerRequest_T req);
-
-  /* ==========================================================================
-   * Graceful Shutdown
-   * ==========================================================================
-   */
 
   /**
    * @brief Initiate graceful shutdown.
@@ -542,11 +487,6 @@ extern "C"
    */
   extern SocketSimple_HTTPServerState
   Socket_simple_http_server_state (SocketSimple_HTTPServer_T server);
-
-  /* ==========================================================================
-   * Statistics
-   * ==========================================================================
-   */
 
   /**
    * @brief Get server statistics.

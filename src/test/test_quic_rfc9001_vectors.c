@@ -22,14 +22,6 @@
 #include "quic/SocketQUICVersion.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * RFC 9001 Appendix A.1 - Initial Secrets Test Vectors
- * ============================================================================
- *
- * Client Destination Connection ID: 0x8394c8f03e515708
- * Using QUIC v1 salt: 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a
- */
-
 static const uint8_t RFC_DCID[]
     = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
 
@@ -81,16 +73,6 @@ static const uint8_t RFC_A1_SERVER_HP[]
     = { 0xc2, 0x06, 0xb8, 0xd9, 0xb9, 0xf0, 0xf3, 0x76,
         0x44, 0x43, 0x0b, 0x49, 0x0e, 0xea, 0xa3, 0x14 };
 
-/* ============================================================================
- * RFC 9001 Appendix A.2 - Client Initial Packet Test Vectors
- * ============================================================================
- *
- * Unprotected header: c300000001088394c8f03e5157080000449e00000002
- * Protected header:   c000000001088394c8f03e5157080000449e7b9aec34
- * sample: d1b1c98dd7689fb8ec11d242b123dc9b
- * mask: 437b9aec36
- */
-
 /* Unprotected header (22 bytes) - packet number 2, 4-byte encoding */
 static const uint8_t RFC_A2_UNPROTECTED_HEADER[]
     = { 0xc3, 0x00, 0x00, 0x00, 0x01, 0x08, 0x83, 0x94, 0xc8, 0xf0, 0x3e,
@@ -141,16 +123,6 @@ static const uint8_t RFC_A2_PROTECTED_PACKET_START[]
         0x92, 0xec, 0x35, 0x6c, 0x0b, 0xab, 0x7d, 0xf5, 0x97, 0x6d, 0x27,
         0xcd, 0x44, 0x9f, 0x63, 0x30, 0x00, 0x99, 0xf3, 0x99 };
 
-/* ============================================================================
- * RFC 9001 Appendix A.3 - Server Initial Packet Test Vectors
- * ============================================================================
- *
- * Unprotected header: c1000000010008f067a5502a4262b50040750001
- * Protected header:   cf000000010008f067a5502a4262b5004075c0d9
- * sample: 2cd0991cd25b0aac406a5816b6394100
- * mask: 2ec0d8356a
- */
-
 /* Unprotected header (20 bytes) - packet number 1, 2-byte encoding */
 static const uint8_t RFC_A3_UNPROTECTED_HEADER[]
     = { 0xc1, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0xf0, 0x67, 0xa5,
@@ -195,14 +167,6 @@ static const uint8_t RFC_A3_PROTECTED_PACKET[]
         0xbb, 0x7a, 0xaf, 0x2f, 0x58, 0x89, 0x18, 0x50, 0xab, 0xbd, 0xca, 0x3d,
         0x20, 0x39, 0x8c, 0x27, 0x64, 0x56, 0xcb, 0xc4, 0x21, 0x58, 0x40, 0x7d,
         0xd0, 0x74, 0xee };
-
-/* ============================================================================
- * RFC 9001 Appendix A.4 - Retry Packet Test Vectors
- * ============================================================================
- *
- * Original Destination Connection ID: 0x8394c8f03e515708
- * Complete packet with integrity tag
- */
 
 /* Complete Retry packet (36 bytes) */
 static const uint8_t RFC_A4_RETRY_PACKET[] = { 0xff,
@@ -252,21 +216,6 @@ static const uint8_t RFC_A4_INTEGRITY_TAG[]
 static const uint8_t RFC_A4_RETRY_NO_TAG[]
     = { 0xff, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0xf0, 0x67, 0xa5,
         0x50, 0x2a, 0x42, 0x62, 0xb5, 0x74, 0x6f, 0x6b, 0x65, 0x6e };
-
-/* ============================================================================
- * RFC 9001 Appendix A.5 - ChaCha20-Poly1305 Short Header Test Vectors
- * ============================================================================
- *
- * secret = 9ac312a7f877468ebe69422748ad00a15443f18203a07d6060f688f30f21632b
- * key    = c6d98ff3441c3fe1b2182094f69caa2ed4b716b65488960a7a984979fb23e1c8
- * iv     = e0459b3474bdd0e44a41c144
- * hp     = 25a282b9e82f06f21f488917a4fc8f1b73573685608597d0efcb076b0ab7a7a4
- * ku     = 1223504755036d556342ee9361d253421a826c9ecdf3c7148684b36b714881f9
- *
- * packet number: 654360564 (decimal)
- * unprotected header: 4200bff4
- * protected packet: 4cfe4189655e5cd55c41f69080575d7999c25a5bfb
- */
 
 /* Secret for ChaCha20-Poly1305 (32 bytes) */
 static const uint8_t RFC_A5_SECRET[]
@@ -329,11 +278,6 @@ static const uint8_t RFC_A5_MASK[] = { 0xae, 0xfe, 0xfe, 0x7d, 0x03 };
 static const uint8_t RFC_A5_PROTECTED_PACKET[]
     = { 0x4c, 0xfe, 0x41, 0x89, 0x65, 0x5e, 0x5c, 0xd5, 0x5c, 0x41, 0xf6,
         0x90, 0x80, 0x57, 0x5d, 0x79, 0x99, 0xc2, 0x5a, 0x5b, 0xfb };
-
-/* ============================================================================
- * A.1 - Initial Secrets Tests
- * ============================================================================
- */
 
 #ifdef SOCKET_HAS_TLS
 
@@ -576,11 +520,6 @@ TEST (rfc9001_a1_server_hp)
   SocketQUICInitialKeys_clear (&keys);
 }
 
-/* ============================================================================
- * A.2 - Client Initial Packet Tests
- * ============================================================================
- */
-
 TEST (rfc9001_a2_client_initial_header_protect)
 {
   uint8_t header[sizeof (RFC_A2_UNPROTECTED_HEADER)];
@@ -782,11 +721,6 @@ TEST (rfc9001_a2_client_initial_full_packet_start)
   SocketQUICPacketKeys_clear (&pkt_keys);
 }
 
-/* ============================================================================
- * A.3 - Server Initial Packet Tests
- * ============================================================================
- */
-
 TEST (rfc9001_a3_server_initial_header_protect)
 {
   uint8_t packet[128];
@@ -970,11 +904,6 @@ TEST (rfc9001_a3_server_initial_decrypt)
   SocketQUICPacketKeys_clear (&pkt_keys);
 }
 
-/* ============================================================================
- * A.4 - Retry Packet Tests
- * ============================================================================
- */
-
 TEST (rfc9001_a4_retry_tag_compute)
 {
   SocketQUICConnectionID_T odcid;
@@ -1030,11 +959,6 @@ TEST (rfc9001_a4_retry_full_packet)
   ASSERT (memcmp (packet, RFC_A4_RETRY_PACKET, sizeof (RFC_A4_RETRY_PACKET))
           == 0);
 }
-
-/* ============================================================================
- * A.5 - ChaCha20-Poly1305 Short Header Tests
- * ============================================================================
- */
 
 TEST (rfc9001_a5_chacha20_key_derivation)
 {
@@ -1279,11 +1203,6 @@ TEST (rfc9001_a5_chacha20_decrypt)
   SocketQUICPacketKeys_clear (&keys);
 }
 
-/* ============================================================================
- * Key Update Secret Test (A.5 ku value)
- * ============================================================================
- */
-
 TEST (rfc9001_a5_chacha20_key_update_secret)
 {
   uint8_t next_secret[32];
@@ -1299,11 +1218,6 @@ TEST (rfc9001_a5_chacha20_key_update_secret)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

@@ -113,10 +113,6 @@ typedef struct
   void *client; /* Client handle (library-specific) */
 } BenchHTTPThreadArg;
 
-/*---------------------------------------------------------------------------
- * High-precision timing utilities
- *---------------------------------------------------------------------------*/
-
 /**
  * @brief Get current time in nanoseconds (monotonic clock).
  */
@@ -145,10 +141,6 @@ bench_ns_to_ms (uint64_t ns)
 {
   return (double)ns / 1000000.0;
 }
-
-/*---------------------------------------------------------------------------
- * Thread result management
- *---------------------------------------------------------------------------*/
 
 /**
  * @brief Initialize thread result with preallocated latency buffer.
@@ -188,10 +180,6 @@ bench_record_latency (BenchHTTPThreadResult *result, uint64_t latency_ns)
       result->latencies_ns[result->latency_count++] = latency_ns;
     }
 }
-
-/*---------------------------------------------------------------------------
- * Percentile calculation
- *---------------------------------------------------------------------------*/
 
 /**
  * @brief Comparison function for qsort (uint64_t).
@@ -293,10 +281,6 @@ bench_compute_stats (BenchHTTPThreadResult *results,
 
   free (all_latencies);
 }
-
-/*---------------------------------------------------------------------------
- * Output formatting
- *---------------------------------------------------------------------------*/
 
 /**
  * @brief Print results to console.

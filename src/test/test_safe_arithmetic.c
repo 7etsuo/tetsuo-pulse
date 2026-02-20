@@ -19,11 +19,6 @@
 #include "core/SocketUtil.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * socket_util_safe_add_u64() Tests
- * ============================================================================
- */
-
 /* Test basic addition without overflow */
 TEST (safe_add_u64_no_overflow)
 {
@@ -142,11 +137,6 @@ TEST (safe_add_u64_quic_offset)
   ret = socket_util_safe_add_u64 (offset, length, &result);
   ASSERT_EQ (ret, 0);
 }
-
-/* ============================================================================
- * socket_util_safe_mul_size() Tests
- * ============================================================================
- */
 
 /* Test basic multiplication without overflow */
 TEST (safe_mul_size_no_overflow)
@@ -307,11 +297,6 @@ TEST (safe_mul_size_struct_allocation)
   ret = socket_util_safe_mul_size (10000, sizeof (struct large), &result);
   ASSERT_EQ (ret, 1);
 }
-
-/* ============================================================================
- * socket_util_timespec_add() Tests
- * ============================================================================
- */
 
 /* Test basic addition without overflow */
 TEST (timespec_add_no_overflow)

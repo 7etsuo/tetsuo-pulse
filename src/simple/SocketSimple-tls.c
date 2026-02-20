@@ -13,11 +13,6 @@
 
 #include "socket/SocketCommon.h"
 
-/* ============================================================================
- * TLS Options Init
- * ============================================================================
- */
-
 void
 Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts)
 {
@@ -29,11 +24,6 @@ Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts)
 }
 
 #ifdef SOCKET_HAS_TLS
-
-/* ============================================================================
- * TLS Client Functions
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_connect_tls (const char *host, int port)
@@ -240,11 +230,6 @@ Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock,
   return 0;
 }
 
-/* ============================================================================
- * TLS Information
- * ============================================================================
- */
-
 int
 Socket_simple_is_tls (SocketSimple_Socket_T sock)
 {
@@ -322,11 +307,6 @@ Socket_simple_get_cert_cn (SocketSimple_Socket_T sock, char *buf, size_t len)
   return -1;
 }
 
-/* ============================================================================
- * TLS Cipher Information
- * ============================================================================
- */
-
 const char *
 Socket_simple_get_cipher (SocketSimple_Socket_T sock)
 {
@@ -336,11 +316,6 @@ Socket_simple_get_cipher (SocketSimple_Socket_T sock)
     }
   return SocketTLS_get_cipher (sock->socket);
 }
-
-/* ============================================================================
- * TLS Session Resumption
- * ============================================================================
- */
 
 int
 Socket_simple_is_session_reused (SocketSimple_Socket_T sock)
@@ -420,11 +395,6 @@ Socket_simple_session_restore (SocketSimple_Socket_T sock,
     }
   return ret;
 }
-
-/* ============================================================================
- * TLS Server Functions
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_listen_tls (const char *host,
@@ -599,11 +569,6 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
 }
 
 #else /* !SOCKET_HAS_TLS */
-
-/* ============================================================================
- * TLS Stubs (when TLS disabled)
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 Socket_simple_connect_tls (const char *host, int port)

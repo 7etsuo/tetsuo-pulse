@@ -31,11 +31,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Constants (RFC 9000 Section 5.1)
- * ============================================================================
- */
-
 /**
  * @brief Maximum length of a QUIC Connection ID in bytes.
  *
@@ -81,11 +76,6 @@
  */
 #define QUIC_CONNID_DEFAULT_LIMIT 2
 
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
-
 /**
  * @brief QUIC Connection ID structure.
  *
@@ -119,11 +109,6 @@ typedef enum
   QUIC_CONNID_ERROR_RANDOM      /**< Random generation failed */
 } SocketQUICConnectionID_Result;
 
-/* ============================================================================
- * Initialization Functions
- * ============================================================================
- */
-
 /**
  * @brief Initialize a Connection ID structure.
  *
@@ -148,11 +133,6 @@ extern SocketQUICConnectionID_Result
 SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid,
                             const uint8_t *data,
                             size_t len);
-
-/* ============================================================================
- * Generation Functions
- * ============================================================================
- */
 
 /**
  * @brief Generate a random Connection ID.
@@ -182,11 +162,6 @@ SocketQUICConnectionID_generate (SocketQUICConnectionID_T *cid, size_t len);
  */
 extern SocketQUICConnectionID_Result
 SocketQUICConnectionID_generate_reset_token (SocketQUICConnectionID_T *cid);
-
-/* ============================================================================
- * Comparison Functions
- * ============================================================================
- */
 
 /**
  * @brief Compare two Connection IDs for equality.
@@ -228,11 +203,6 @@ SocketQUICConnectionID_equal_raw (const SocketQUICConnectionID_T *cid,
 extern SocketQUICConnectionID_Result
 SocketQUICConnectionID_copy (SocketQUICConnectionID_T *dst,
                              const SocketQUICConnectionID_T *src);
-
-/* ============================================================================
- * Wire Format Functions
- * ============================================================================
- */
 
 /**
  * @brief Encode Connection ID length for long header packets.
@@ -317,11 +287,6 @@ SocketQUICConnectionID_decode_fixed (const uint8_t *data,
                                      size_t len,
                                      SocketQUICConnectionID_T *cid,
                                      size_t cid_len);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Compute hash of Connection ID for hash tables.

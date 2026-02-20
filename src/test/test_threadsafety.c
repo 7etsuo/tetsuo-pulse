@@ -49,8 +49,6 @@ setup_signals (void)
   signal (SIGPIPE, SIG_IGN);
 }
 
-/* ==================== Arena Thread Safety Tests ==================== */
-
 static void *
 thread_arena_operations (void *arg)
 {
@@ -129,8 +127,6 @@ TEST (threadsafety_arena_concurrent_clear)
   Arena_dispose (&arena);
 }
 
-/* ==================== Exception Thread Safety Tests ==================== */
-
 static const Except_T ThreadTest_Exception
     = { &ThreadTest_Exception, "Thread test exception" };
 
@@ -167,8 +163,6 @@ TEST (threadsafety_exception_concurrent_raising)
   for (int i = 0; i < NUM_THREADS; i++)
     pthread_join (threads[i], NULL);
 }
-
-/* ==================== Socket Thread Safety Tests ==================== */
 
 static void *
 thread_socket_operations (void *arg)
@@ -211,8 +205,6 @@ TEST (threadsafety_socket_concurrent_operations)
   for (int i = 0; i < NUM_THREADS; i++)
     pthread_join (threads[i], NULL);
 }
-
-/* ==================== SocketBuf Thread Safety Tests ==================== */
 
 typedef struct
 {
@@ -281,8 +273,6 @@ TEST (threadsafety_socketbuf_concurrent_read_write)
   Arena_dispose (&arena);
 }
 
-/* ==================== SocketPoll Thread Safety Tests ==================== */
-
 static void *
 thread_poll_add_remove (void *arg)
 {
@@ -331,8 +321,6 @@ TEST (threadsafety_socketpoll_concurrent_add_remove)
 
   SocketPoll_free (&poll);
 }
-
-/* ==================== SocketPool Thread Safety Tests ==================== */
 
 static void *
 thread_pool_add_remove (void *arg)
@@ -475,8 +463,6 @@ TEST (threadsafety_socketpool_concurrent_count)
   Arena_dispose (&arena);
 }
 
-/* ==================== SocketDNS Thread Safety Tests ==================== */
-
 static void *
 thread_dns_resolve (void *arg)
 {
@@ -592,9 +578,6 @@ TEST (threadsafety_socketdns_concurrent_check)
   SocketDNS_free (&dns);
 }
 
-/* ==================== Mixed Operations Thread Safety Tests
- * ==================== */
-
 typedef struct
 {
   SocketPoll_T poll;
@@ -670,8 +653,6 @@ TEST (threadsafety_mixed_poll_pool_operations)
   Arena_dispose (&arena);
 }
 
-/* ==================== Stress Tests with Exceptions ==================== */
-
 static void *
 thread_exception_stress (void *arg)
 {
@@ -732,8 +713,6 @@ TEST (threadsafety_exception_with_cleanup)
   Arena_dispose (&arena);
 }
 
-/* ==================== UDP Thread Safety Tests ==================== */
-
 static void *
 thread_udp_operations (void *arg)
 {
@@ -775,8 +754,6 @@ TEST (threadsafety_socketdgram_concurrent_operations)
   for (int i = 0; i < NUM_THREADS; i++)
     pthread_join (threads[i], NULL);
 }
-
-/* ==================== High Load Stress Tests ==================== */
 
 TEST (threadsafety_high_load_server_simulation)
 {
@@ -887,8 +864,6 @@ TEST (threadsafety_high_load_server_simulation)
   END_TRY;
 }
 
-/* ==================== Memory Stress Tests ==================== */
-
 TEST (threadsafety_memory_intensive_operations)
 {
   Arena_T arenas[10];
@@ -917,8 +892,6 @@ TEST (threadsafety_memory_intensive_operations)
   for (int i = 0; i < 10; i++)
     Arena_dispose (&arenas[i]);
 }
-
-/* ==================== SocketError Thread Safety Tests ==================== */
 
 /* Thread argument structure for Socket_safe_strerror testing */
 typedef struct
@@ -957,8 +930,9 @@ TEST (threadsafety_socket_safe_strerror_isolation)
   ErrorThreadArg args[NUM_ERROR_THREADS];
 
   /* Different errno for each thread */
-  const int errnos[NUM_ERROR_THREADS]
-      = { EINVAL, ECONNREFUSED, ETIMEDOUT, ENOMEM, EAGAIN, EPIPE, ECONNRESET, 0 };
+  const int errnos[NUM_ERROR_THREADS] = {
+    EINVAL, ECONNREFUSED, ETIMEDOUT, ENOMEM, EAGAIN, EPIPE, ECONNRESET, 0
+  };
 
   /* Create threads */
   for (int i = 0; i < NUM_ERROR_THREADS; i++)
@@ -968,7 +942,8 @@ TEST (threadsafety_socket_safe_strerror_isolation)
       args[i].thread_id = i;
       args[i].valid = 0;
 
-      int ret = pthread_create (&threads[i], NULL, thread_safe_strerror_worker, &args[i]);
+      int ret = pthread_create (
+          &threads[i], NULL, thread_safe_strerror_worker, &args[i]);
       ASSERT_EQ (ret, 0);
     }
 
@@ -987,7 +962,8 @@ TEST (threadsafety_socket_safe_strerror_isolation)
       ASSERT (strlen (args[i].result) > 0);
     }
 
-  /* Verify main thread can still get correct error messages after concurrent use */
+  /* Verify main thread can still get correct error messages after concurrent
+   * use */
   for (int i = 0; i < NUM_ERROR_THREADS; i++)
     {
       /* Re-call Socket_safe_strerror from main thread to verify integrity */

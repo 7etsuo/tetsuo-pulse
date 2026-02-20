@@ -37,11 +37,6 @@
 #include <errno.h>
 #include <string.h>
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
 /**
  * proxy_socks5_check_version - Validate SOCKS5 protocol version byte
  * @conn: Proxy connection context for error reporting
@@ -168,26 +163,6 @@ validate_credential_utf8 (struct SocketProxy_Conn_T *conn,
     }
   return 0;
 }
-/* ============================================================================
- * SOCKS5 Greeting (RFC 1928 Section 3)
- * ============================================================================
- *
- * Client greeting format:
- * +----+----------+----------+
- * |VER | NMETHODS | METHODS  |
- * +----+----------+----------+
- * | 1  |    1     | 1 to 255 |
- * +----+----------+----------+
- *
- * VER: Protocol version (0x05)
- * NMETHODS: Number of authentication methods supported
- * METHODS: List of method identifiers
- *
- * We support:
- * - 0x00: No authentication
- * - 0x02: Username/password (if credentials provided)
- */
-
 int
 proxy_socks5_send_greeting (struct SocketProxy_Conn_T *conn)
 {
@@ -218,20 +193,6 @@ proxy_socks5_send_greeting (struct SocketProxy_Conn_T *conn)
 
   return 0;
 }
-
-/* ============================================================================
- * SOCKS5 Method Selection (RFC 1928 Section 3)
- * ============================================================================
- *
- * Server response format:
- * +----+--------+
- * |VER | METHOD |
- * +----+--------+
- * | 1  |   1    |
- * +----+--------+
- *
- * METHOD: Selected authentication method, or 0xFF if none acceptable
- */
 
 SocketProxy_Result
 proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
@@ -300,24 +261,6 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
                          buf[1]);
   return PROXY_ERROR_UNSUPPORTED;
 }
-
-/* ============================================================================
- * SOCKS5 Username/Password Authentication (RFC 1929)
- * ============================================================================
- *
- * Client request format:
- * +----+------+----------+------+----------+
- * |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
- * +----+------+----------+------+----------+
- * | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
- * +----+------+----------+------+----------+
- *
- * VER: Auth sub-negotiation version (0x01)
- * ULEN: Username length
- * UNAME: Username
- * PLEN: Password length
- * PASSWD: Password
- */
 
 /**
  * validate_socks5_auth_credentials - Validate username/password credentials
@@ -396,21 +339,6 @@ proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/* ============================================================================
- * SOCKS5 Auth Response (RFC 1929)
- * ============================================================================
- *
- * Server response format:
- * +----+--------+
- * |VER | STATUS |
- * +----+--------+
- * | 1  |   1    |
- * +----+--------+
- *
- * VER: Auth sub-negotiation version (0x01)
- * STATUS: 0x00 = success, other = failure
- */
-
 SocketProxy_Result
 proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
 {
@@ -454,30 +382,6 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
 
   return PROXY_OK;
 }
-
-/* ============================================================================
- * SOCKS5 Connect Request (RFC 1928 Section 4)
- * ============================================================================
- *
- * Client request format:
- * +----+-----+-------+------+----------+----------+
- * |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
- * +----+-----+-------+------+----------+----------+
- * | 1  |  1  | X'00' |  1   | Variable |    2     |
- * +----+-----+-------+------+----------+----------+
- *
- * VER: Protocol version (0x05)
- * CMD: Command (0x01 = CONNECT)
- * RSV: Reserved (0x00)
- * ATYP: Address type
- * DST.ADDR: Destination address
- * DST.PORT: Destination port (network byte order)
- *
- * Address types:
- * - 0x01: IPv4 (4 bytes)
- * - 0x03: Domain (1 byte length + name)
- * - 0x04: IPv6 (16 bytes)
- */
 
 /**
  * encode_ipv4_address - Encode IPv4 address in SOCKS5 format
@@ -658,29 +562,6 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/* ============================================================================
- * SOCKS5 Connect Response (RFC 1928 Section 6)
- * ============================================================================
- *
- * Server response format:
- * +----+-----+-------+------+----------+----------+
- * |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
- * +----+-----+-------+------+----------+----------+
- * | 1  |  1  | X'00' |  1   | Variable |    2     |
- * +----+-----+-------+------+----------+----------+
- *
- * REP field values:
- * 0x00: succeeded
- * 0x01: general SOCKS server failure
- * 0x02: connection not allowed by ruleset
- * 0x03: Network unreachable
- * 0x04: Host unreachable
- * 0x05: Connection refused
- * 0x06: TTL expired
- * 0x07: Command not supported
- * 0x08: Address type not supported
- */
-
 SocketProxy_Result
 proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
 {
@@ -728,11 +609,6 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
   conn->proto_state = PROTO_STATE_SOCKS5_CONNECT_RECEIVED;
   return PROXY_OK;
 }
-
-/* ============================================================================
- * SOCKS5 Reply Code Mapping
- * ============================================================================
- */
 
 SocketProxy_Result
 proxy_socks5_reply_to_result (int reply)

@@ -16,10 +16,6 @@
 #include "core/SocketTimer.h"
 #include "poll/SocketPoll.h"
 
-/*============================================================================
- * Internal Structure
- *============================================================================*/
-
 struct SocketSimple_Timer
 {
   SocketTimer_T core_timer;
@@ -28,16 +24,8 @@ struct SocketSimple_Timer
   int is_valid;
 };
 
-/*============================================================================
- * Forward declaration: Access internal poll structure
- *============================================================================*/
-
 /* Need access to SocketPoll_T from the Simple poll handle */
 extern SocketPoll_T simple_poll_get_core (SocketSimple_Poll_T poll);
-
-/*============================================================================
- * Timer Callback Wrapper
- *============================================================================*/
 
 static void
 timer_callback_wrapper (void *data)
@@ -48,10 +36,6 @@ timer_callback_wrapper (void *data)
       timer->callback (timer->userdata);
     }
 }
-
-/*============================================================================
- * Timer Creation
- *============================================================================*/
 
 /**
  * @brief Function pointer type for core timer creation functions.
@@ -180,10 +164,6 @@ Socket_simple_timer_add_repeating (SocketSimple_Poll_T poll,
                            "Failed to add repeating timer");
 }
 
-/*============================================================================
- * Timer Control
- *============================================================================*/
-
 /**
  * @brief Validate timer operation parameters and return core poll handle.
  *
@@ -296,10 +276,6 @@ Socket_simple_timer_resume (SocketSimple_Poll_T poll,
   return 0;
 }
 
-/*============================================================================
- * Timer Query
- *============================================================================*/
-
 int64_t
 Socket_simple_timer_remaining (SocketSimple_Poll_T poll,
                                SocketSimple_Timer_T timer)
@@ -332,10 +308,6 @@ Socket_simple_timer_is_pending (SocketSimple_Poll_T poll,
   return (remaining >= 0) ? 1 : 0;
 }
 
-/*============================================================================
- * Timer Processing
- *============================================================================*/
-
 int
 Socket_simple_timer_next_timeout (SocketSimple_Poll_T poll
                                   __attribute__ ((unused)))
@@ -365,10 +337,6 @@ Socket_simple_timer_cancel_all (SocketSimple_Poll_T poll
                     "Cancel all timers not supported");
   return -1;
 }
-
-/*============================================================================
- * Timer Statistics
- *============================================================================*/
 
 int
 Socket_simple_timer_count (SocketSimple_Poll_T poll __attribute__ ((unused)))

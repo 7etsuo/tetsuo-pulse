@@ -36,11 +36,6 @@
 /* Forward declarations for cross-module access */
 #include "http/SocketHTTPServer.h"
 
-/* ============================================================================
- * Internal Handle Structures
- * ============================================================================
- */
-
 /**
  * @brief Internal HTTP server request wrapper.
  *
@@ -74,11 +69,6 @@ struct SocketSimple_WS
   SocketWS_T ws;
 };
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief Default backlog for listen() calls when user doesn't specify one.
  *
@@ -103,11 +93,6 @@ struct SocketSimple_WS
  */
 #define SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE (64 * 1024 * 1024)
 
-/* ============================================================================
- * Thread-Local Error State
- * ============================================================================
- */
-
 typedef struct
 {
   SocketSimple_ErrorCode code;
@@ -117,28 +102,13 @@ typedef struct
 
 extern __thread SimpleError simple_error;
 
-/* ============================================================================
- * Error Helper Functions
- * ============================================================================
- */
-
 void simple_set_error (SocketSimple_ErrorCode code, const char *msg);
 void simple_set_error_errno (SocketSimple_ErrorCode code, const char *prefix);
-
-/* ============================================================================
- * Handle Helper Functions
- * ============================================================================
- */
 
 SocketSimple_Socket_T
 simple_create_handle (Socket_T sock, int is_server, int is_tls);
 
 SocketSimple_Socket_T simple_create_udp_handle (SocketDgram_T dgram);
-
-/* ============================================================================
- * Cleanup Macros
- * ============================================================================
- */
 
 #define SIMPLE_CLEANUP_SOCKET(sock_ptr)       \
   do                                          \
@@ -176,11 +146,6 @@ SocketSimple_Socket_T simple_create_udp_handle (SocketDgram_T dgram);
     }                                             \
   while (0)
 #endif
-
-/* ============================================================================
- * Constants
- * ============================================================================
- */
 
 /**
  * @brief Default timeout for Socket_simple_connect (milliseconds).

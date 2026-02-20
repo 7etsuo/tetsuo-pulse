@@ -17,11 +17,6 @@
 #include "http/SocketHTTPServer-private.h"
 #include "simple/SocketSimple-http-server.h"
 
-/* ============================================================================
- * WebSocket Exception Handling Helpers
- * ============================================================================
- */
-
 /**
  * @brief Execute a WebSocket operation with standard exception handling.
  *
@@ -72,11 +67,6 @@
     }                                                                       \
   while (0)
 
-/* ============================================================================
- * WebSocket Options
- * ============================================================================
- */
-
 void
 Socket_simple_ws_options_init (SocketSimple_WSOptions *opts)
 {
@@ -85,11 +75,6 @@ Socket_simple_ws_options_init (SocketSimple_WSOptions *opts)
   memset (opts, 0, sizeof (*opts));
   opts->connect_timeout_ms = SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS;
 }
-
-/* ============================================================================
- * Connection Functions
- * ============================================================================
- */
 
 SocketSimple_WS_T
 Socket_simple_ws_connect (const char *url)
@@ -150,11 +135,6 @@ Socket_simple_ws_connect_ex (const char *url,
   handle->ws = ws;
   return handle;
 }
-
-/* ============================================================================
- * Send Functions
- * ============================================================================
- */
 
 /**
  * @brief Common exception handling wrapper for WebSocket send operations.
@@ -249,11 +229,6 @@ Socket_simple_ws_ping (SocketSimple_WS_T ws)
                    SocketWS_ping (ws->ws, NULL, 0),
                    "ping");
 }
-
-/* ============================================================================
- * Receive Functions
- * ============================================================================
- */
 
 static SocketSimple_WSMessageType
 map_opcode_to_simple_type (SocketWS_Opcode opcode)
@@ -410,11 +385,6 @@ Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws,
   return Socket_simple_ws_recv (ws, msg);
 }
 
-/* ============================================================================
- * Close Functions
- * ============================================================================
- */
-
 int
 Socket_simple_ws_close (SocketSimple_WS_T ws, int code, const char *reason)
 {
@@ -484,11 +454,6 @@ Socket_simple_ws_message_free (SocketSimple_WSMessage *msg)
   memset (msg, 0, sizeof (*msg));
 }
 
-/* ============================================================================
- * Status Functions
- * ============================================================================
- */
-
 int
 Socket_simple_ws_is_open (SocketSimple_WS_T ws)
 {
@@ -512,11 +477,6 @@ Socket_simple_ws_fd (SocketSimple_WS_T ws)
     return -1;
   return SocketWS_pollfd (ws->ws);
 }
-
-/* ============================================================================
- * Server Functions
- * ============================================================================
- */
 
 void
 Socket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config)

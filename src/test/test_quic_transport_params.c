@@ -18,11 +18,6 @@
 #include "quic/SocketQUICTransportParams.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Initialization Tests
- * ============================================================================
- */
-
 TEST (quic_tp_init_defaults)
 {
   SocketQUICTransportParams_T params;
@@ -81,11 +76,6 @@ TEST (quic_tp_set_defaults_server)
   ASSERT (params.initial_max_data > 0);
   ASSERT (params.initial_max_streams_bidi > 0);
 }
-
-/* ============================================================================
- * Encoding/Decoding Round-Trip Tests
- * ============================================================================
- */
 
 TEST (quic_tp_roundtrip_minimal_client)
 {
@@ -323,11 +313,6 @@ TEST (quic_tp_roundtrip_preferred_address)
                                     &original.preferred_address.connection_id));
 }
 
-/* ============================================================================
- * Validation Tests
- * ============================================================================
- */
-
 TEST (quic_tp_validate_valid_params)
 {
   SocketQUICTransportParams_T params;
@@ -452,11 +437,6 @@ TEST (quic_tp_validate_required_server)
   ASSERT_EQ (res, QUIC_TP_OK);
 }
 
-/* ============================================================================
- * Decoding Error Tests
- * ============================================================================
- */
-
 TEST (quic_tp_decode_truncated)
 {
   /* Parameter ID without length */
@@ -535,11 +515,6 @@ TEST (quic_tp_decode_disable_migration_nonzero_length)
   ASSERT_EQ (res, QUIC_TP_ERROR_INVALID_VALUE);
 }
 
-/* ============================================================================
- * Unknown Parameter Test
- * ============================================================================
- */
-
 TEST (quic_tp_decode_unknown_param_ignored)
 {
   /* Unknown parameter ID (0xFF) should be ignored */
@@ -556,11 +531,6 @@ TEST (quic_tp_decode_unknown_param_ignored)
   ASSERT_EQ (res, QUIC_TP_OK);
   ASSERT_EQ (params.max_idle_timeout, 10);
 }
-
-/* ============================================================================
- * Size Calculation Tests
- * ============================================================================
- */
 
 TEST (quic_tp_encoded_size_matches_encode)
 {
@@ -581,11 +551,6 @@ TEST (quic_tp_encoded_size_matches_encode)
 
   ASSERT_EQ (actual_size, expected_size);
 }
-
-/* ============================================================================
- * Utility Function Tests
- * ============================================================================
- */
 
 TEST (quic_tp_copy)
 {
@@ -698,11 +663,6 @@ TEST (quic_tp_id_string)
   ASSERT_NOT_NULL (
       SocketQUICTransportParams_id_string ((SocketQUICTransportParamID)999));
 }
-
-/* ============================================================================
- * NULL Pointer Tests
- * ============================================================================
- */
 
 TEST (quic_tp_null_init)
 {

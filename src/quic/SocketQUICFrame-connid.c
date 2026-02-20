@@ -31,11 +31,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * NEW_CONNECTION_ID Frame Encoding (RFC 9000 §19.15)
- * ============================================================================
- */
-
 /**
  * @brief Encode a NEW_CONNECTION_ID frame.
  *
@@ -118,11 +113,6 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
 
   return pos;
 }
-
-/* ============================================================================
- * RETIRE_CONNECTION_ID Frame Encoding (RFC 9000 §19.16)
- * ============================================================================
- */
 
 /**
  * @brief Encode a RETIRE_CONNECTION_ID frame.

@@ -20,11 +20,6 @@
 #include <stdint.h>
 #include <time.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define HEADER_ENTRY_NULL_OVERHEAD 2
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
 
@@ -35,11 +30,6 @@
         return (retval);                             \
     }                                                \
   while (0)
-
-/* ============================================================================
- * Hash Table Implementation
- * ============================================================================
- */
 
 /* Random hash seed for DoS protection - initialized once at startup */
 static uint32_t header_hash_seed = 0;
@@ -165,11 +155,6 @@ remove_from_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
     }
 }
 
-/* ============================================================================
- * List Operations
- * ============================================================================
- */
-
 static void
 add_to_list (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
@@ -233,11 +218,6 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
   return 1;
 }
 
-/* ============================================================================
- * Token Matching
- * ============================================================================
- */
-
 #define skip_token_delimiters sockethttp_skip_delimiters
 
 static size_t
@@ -249,11 +229,6 @@ extract_token_bounds (const char *start, const char **end)
   *end = p;
   return (size_t)(p - start);
 }
-
-/* ============================================================================
- * Header Entry Allocation
- * ============================================================================
- */
 
 static int
 validate_header_limits (SocketHTTP_Headers_T headers, size_t entry_size)
@@ -298,11 +273,6 @@ allocate_entry_value (Arena_T arena,
   return 0;
 }
 
-/* ============================================================================
- * Header Collection Lifecycle
- * ============================================================================
- */
-
 SocketHTTP_Headers_T
 SocketHTTP_Headers_new (Arena_T arena)
 {
@@ -332,11 +302,6 @@ SocketHTTP_Headers_clear (SocketHTTP_Headers_T headers)
   headers->total_size = 0;
   headers->dos_chain_warnings = 0;
 }
-
-/* ============================================================================
- * Adding Headers
- * ============================================================================
- */
 
 /**
  * @brief Common entry creation and insertion after validation is done.
@@ -530,11 +495,6 @@ SocketHTTP_Headers_set (SocketHTTP_Headers_T headers,
   return SocketHTTP_Headers_add (headers, name, value);
 }
 
-/* ============================================================================
- * Retrieving Headers
- * ============================================================================
- */
-
 const char *
 SocketHTTP_Headers_get_n (SocketHTTP_Headers_T headers,
                           const char *name,
@@ -649,11 +609,6 @@ SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers,
       headers, name, strlen (name), values, max_values);
 }
 
-/* ============================================================================
- * Checking Headers
- * ============================================================================
- */
-
 int
 SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers,
                           const char *name,
@@ -716,11 +671,6 @@ SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers,
       headers, name, strlen (name), token, strlen (token));
 }
 
-/* ============================================================================
- * Removing Headers
- * ============================================================================
- */
-
 int
 SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers, const char *name)
 {
@@ -742,11 +692,6 @@ SocketHTTP_Headers_remove_all (SocketHTTP_Headers_T headers, const char *name)
 
   return removed;
 }
-
-/* ============================================================================
- * Iteration
- * ============================================================================
- */
 
 size_t
 SocketHTTP_Headers_count (SocketHTTP_Headers_T headers)

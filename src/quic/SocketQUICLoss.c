@@ -19,11 +19,6 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-LOSS"
 
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
-
 static const char *result_strings[] = {
   [QUIC_LOSS_OK] = "OK",
   [QUIC_LOSS_ERROR_NULL] = "NULL pointer argument",
@@ -34,11 +29,6 @@ static const char *result_strings[] = {
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICLoss, QUIC_LOSS_ERROR_INVALID)
-
-/* ============================================================================
- * Internal Hash Functions
- * ============================================================================
- */
 
 static unsigned
 hash_pn (uint64_t pn)
@@ -128,11 +118,6 @@ alloc_sent_packet (SocketQUICLossState_T state)
   return p;
 }
 
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
-
 SocketQUICLossState_T
 SocketQUICLoss_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay)
 {
@@ -194,11 +179,6 @@ SocketQUICLoss_reset (SocketQUICLossState_T state)
   state->loss_time = 0;
   state->bytes_in_flight = 0;
 }
-
-/* ============================================================================
- * RTT Functions
- * ============================================================================
- */
 
 void
 SocketQUICLoss_init_rtt (SocketQUICLossRTT_T *rtt)
@@ -298,11 +278,6 @@ SocketQUICLoss_get_pto (const SocketQUICLossRTT_T *rtt,
   return pto;
 }
 
-/* ============================================================================
- * Sent Packet Tracking
- * ============================================================================
- */
-
 SocketQUICLoss_Result
 SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
                                uint64_t packet_number,
@@ -354,11 +329,6 @@ SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
 
   return QUIC_LOSS_OK;
 }
-
-/* ============================================================================
- * Internal Loss Detection
- * ============================================================================
- */
 
 static uint64_t
 get_loss_time_threshold (const SocketQUICLossRTT_T *rtt)
@@ -502,11 +472,6 @@ detect_lost_packets (SocketQUICLossState_T state,
     *lost_count = count;
 }
 
-/* ============================================================================
- * ACK Processing
- * ============================================================================
- */
-
 /**
  * Acknowledge a single packet: invoke callback, adjust bytes_in_flight, remove.
  */
@@ -570,9 +535,9 @@ ack_frame_contains (const SocketQUICFrameAck_T *ack, uint64_t pn)
       cursor -= (ack->ranges[i].gap + 2);
 
       uint64_t range_hi = cursor;
-      uint64_t range_lo
-          = (cursor >= ack->ranges[i].length) ? cursor - ack->ranges[i].length
-                                              : 0;
+      uint64_t range_lo = (cursor >= ack->ranges[i].length)
+                              ? cursor - ack->ranges[i].length
+                              : 0;
 
       if (pn >= range_lo && pn <= range_hi)
         return 1;
@@ -695,11 +660,6 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
   return QUIC_LOSS_OK;
 }
 
-/* ============================================================================
- * Loss Detection Timers
- * ============================================================================
- */
-
 uint64_t
 SocketQUICLoss_get_loss_time (const SocketQUICLossState_T state,
                               const SocketQUICLossRTT_T *rtt,
@@ -758,11 +718,6 @@ SocketQUICLoss_on_loss_timeout (SocketQUICLossState_T state,
 
   return QUIC_LOSS_OK;
 }
-
-/* ============================================================================
- * Query Functions
- * ============================================================================
- */
 
 size_t
 SocketQUICLoss_bytes_in_flight (const SocketQUICLossState_T state)

@@ -35,11 +35,6 @@
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
 
-/* ============================================================================
- * Test Setup and Helpers
- * ============================================================================
- */
-
 /* Reuse test certificates if available, otherwise create dummy tests */
 static int
 check_test_certs_available (void)
@@ -59,11 +54,6 @@ check_test_certs_available (void)
     }
   return 0;
 }
-
-/* ============================================================================
- * TCP Optimization Tests
- * ============================================================================
- */
 
 /**
  * Test TCP optimization function with non-TLS socket (should fail gracefully)
@@ -118,11 +108,6 @@ TEST (tcp_restore_defaults)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * TLS Buffer Pool Tests
- * ============================================================================
- */
 
 /**
  * Test buffer pool creation and destruction
@@ -273,11 +258,6 @@ TEST (buffer_pool_concurrent)
   printf ("    Buffer pool concurrent test passed\n");
 }
 
-/* ============================================================================
- * Early Data Status Tests
- * ============================================================================
- */
-
 /**
  * Test early data status function with non-TLS socket
  */
@@ -294,11 +274,6 @@ TEST (early_data_status_non_tls)
   printf (
       "    Early data status correctly returns NOT_SENT for non-TLS socket\n");
 }
-
-/* ============================================================================
- * Session Cache Sharding Tests
- * ============================================================================
- */
 
 /**
  * Test sharded cache creation (basic functionality)
@@ -347,11 +322,6 @@ TEST (sharded_cache_creation)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Context Early Data Configuration Tests
- * ============================================================================
- */
 
 /**
  * Test enabling/disabling early data on context
@@ -404,11 +374,6 @@ TEST (context_early_data_config)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * TLS 1.3 KeyUpdate Tests
- * ============================================================================
- */
 
 /**
  * Test KeyUpdate on non-TLS socket (should fail gracefully)
@@ -523,11 +488,6 @@ TEST (key_update_before_handshake)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

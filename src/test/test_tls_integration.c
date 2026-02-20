@@ -98,8 +98,6 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
-/* ==================== SocketTLSContext Tests ==================== */
-
 TEST (tls_context_creation)
 {
   const char *cert_file = "test_server.crt";
@@ -149,8 +147,6 @@ TEST (tls_context_creation)
   }
   END_TRY;
 }
-
-/* ==================== TLS Handshake & I/O Tests ==================== */
 
 TEST (tls_handshake_and_io)
 {
@@ -297,8 +293,6 @@ TEST (tls_handshake_and_io)
   }
   END_TRY;
 }
-
-/* ==================== TLS Context Management Tests (Section 2.1-2.3) ====== */
 
 /**
  * Test: Certificate/Key Mismatch Detection
@@ -564,8 +558,6 @@ TEST (tls_context_ca_accumulation)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ==================== Existing Tests (Preserved) ==================== */
-
 TEST (socketpool_tls_integration_structure)
 {
 #if SOCKET_HAS_TLS
@@ -746,8 +738,6 @@ TEST (tls_verify_callback_integration)
   (void)0;
 #endif
 }
-
-/* ==================== TLS I/O Edge Cases Tests ==================== */
 
 TEST (tls_send_recv_large_data)
 {
@@ -953,8 +943,6 @@ TEST (tls_bidirectional_io)
 #endif
 }
 
-/* ==================== Session Reuse Test ==================== */
-
 TEST (tls_session_reuse_check)
 {
 #if SOCKET_HAS_TLS
@@ -1033,8 +1021,6 @@ TEST (tls_session_reuse_check)
 #endif
 }
 
-/* ==================== ALPN Negotiation Test ==================== */
-
 TEST (tls_alpn_negotiation_full)
 {
 #if SOCKET_HAS_TLS
@@ -1112,8 +1098,6 @@ TEST (tls_alpn_negotiation_full)
   (void)0;
 #endif
 }
-
-/* ==================== TLS Shutdown Test ==================== */
 
 TEST (tls_graceful_shutdown)
 {
@@ -1198,8 +1182,6 @@ TEST (tls_graceful_shutdown)
 #endif
 }
 
-/* ==================== SNI Server Selection Test ==================== */
-
 TEST (tls_sni_server_selection)
 {
 #if SOCKET_HAS_TLS
@@ -1267,8 +1249,6 @@ TEST (tls_sni_server_selection)
   (void)0;
 #endif
 }
-
-/* ==================== TLS Connection Info Test ==================== */
 
 TEST (tls_connection_info_complete)
 {
@@ -1359,8 +1339,6 @@ TEST (tls_connection_info_complete)
 #endif
 }
 
-/* ==================== TLS Context Free Edge Cases ==================== */
-
 TEST (tls_context_free_null_safe)
 {
 #if SOCKET_HAS_TLS
@@ -1380,8 +1358,6 @@ TEST (tls_context_free_null_safe)
   (void)0;
 #endif
 }
-
-/* ==================== SocketIO TLS Coverage Tests ==================== */
 
 TEST (socketio_tls_enabled_check)
 {
@@ -1685,8 +1661,6 @@ TEST (socketio_raw_scatter_gather)
   }
   END_TRY;
 }
-
-/* ==================== SocketIO Coverage Tests ==================== */
 
 /**
  * Test Socket_send/Socket_recv on TLS-enabled sockets.
@@ -2442,9 +2416,6 @@ TEST (socketio_tls_io_after_shutdown)
 #endif
 }
 
-/* ==================== Session Resumption Verification (5.8)
- * ==================== */
-
 TEST (tls_session_resumption_verification)
 {
 #if SOCKET_HAS_TLS
@@ -2514,8 +2485,6 @@ TEST (tls_session_resumption_verification)
   (void)0;
 #endif
 }
-
-/* ==================== Cipher Suite Negotiation (5.9) ==================== */
 
 TEST (tls_cipher_suite_negotiation)
 {
@@ -2589,8 +2558,6 @@ TEST (tls_cipher_suite_negotiation)
   (void)0;
 #endif
 }
-
-/* ==================== Mutual TLS (5.10) ==================== */
 
 /* Generate client certificate with proper extensions for mTLS
  * Uses config file approach for LibreSSL/macOS compatibility */
@@ -2673,8 +2640,6 @@ TEST (tls_mutual_tls_client_cert)
 #endif
 }
 
-/* ==================== TLS Shutdown Tests ==================== */
-
 TEST (tls_shutdown_send_halfclose)
 {
 #if SOCKET_HAS_TLS
@@ -2745,8 +2710,6 @@ TEST (tls_shutdown_send_halfclose)
   END_TRY;
 #endif
 }
-
-/* ==================== TLS Session Management Tests ==================== */
 
 TEST (tls_session_save_buffer_sizing)
 {
@@ -2986,10 +2949,6 @@ TEST (tls_is_session_reused_states)
   END_TRY;
 #endif
 }
-
-/* ==================== Connection Info Query Tests (Section 1.9)
- * ====================
- */
 
 /**
  * Test SocketTLS_get_cipher() for TLS 1.3 cipher suites.
@@ -3588,8 +3547,6 @@ TEST (tls_get_verify_error_string_buffer)
   (void)0;
 #endif
 }
-
-/* ==================== kTLS Integration Test ==================== */
 
 /**
  * Test kTLS offload with full handshake and I/O operations.

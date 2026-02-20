@@ -98,9 +98,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         return 0;
       }
 
-    /* ====================================================================
-     * Test 1: Add headers with fuzzed names and values
-     * ==================================================================== */
     {
       size_t offset = 0;
 
@@ -148,9 +145,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 2: Header retrieval operations
-     * ==================================================================== */
     {
       /* Get count */
       size_t count = SocketHTTP_Headers_count (headers);
@@ -199,9 +193,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Header iteration
-     * ==================================================================== */
     {
       /* Iterate all headers */
       size_t callback_count = 0;
@@ -237,9 +228,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       (void)invalid;
     }
 
-    /* ====================================================================
-     * Test 4: Header set (replace) operations
-     * ==================================================================== */
     {
       /* Set headers with fuzzed data */
       char name[64];
@@ -269,9 +257,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Header removal operations
-     * ==================================================================== */
     {
       /* Remove with fuzzed name */
       char remove_name[64];
@@ -289,9 +274,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       (void)removed_count;
     }
 
-    /* ====================================================================
-     * Test 6: Add known headers with fuzzed values
-     * ==================================================================== */
     {
       const char *known_headers[]
           = { "Content-Type",    "Content-Length", "Accept",
@@ -314,9 +296,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Integer header parsing
-     * ==================================================================== */
     {
       /* Add Content-Length with various fuzzed values */
       char int_value[32];
@@ -344,9 +323,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 8: Token contains search
-     * ==================================================================== */
     {
       /* Add Connection header with tokens */
       SocketHTTP_Headers_set (headers, "Connection", "keep-alive, upgrade");
@@ -377,9 +353,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 9: Clear and reuse
-     * ==================================================================== */
     {
       /* Get count before clear */
       size_t before = SocketHTTP_Headers_count (headers);
@@ -401,9 +374,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       (void) final;
     }
 
-    /* ====================================================================
-     * Test 10: Duplicate headers
-     * ==================================================================== */
     {
       /* Clear and add duplicate headers */
       SocketHTTP_Headers_clear (headers);

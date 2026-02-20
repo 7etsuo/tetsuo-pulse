@@ -22,11 +22,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/* ============================================================================
- * Validation Macros
- * ============================================================================
- */
-
 /**
  * @brief Validate frame encoding parameters.
  *
@@ -43,11 +38,6 @@
         return 0;                       \
     }                                   \
   while (0)
-
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Validate frame output buffer has sufficient size.
@@ -67,11 +57,6 @@ validate_frame_buffer (const uint8_t *out, size_t out_len, size_t min_size)
 {
   return out != NULL && out_len >= min_size;
 }
-
-/* ============================================================================
- * Error Classification (RFC 9000 Section 11)
- * ============================================================================
- */
 
 int
 SocketQUIC_error_is_connection_fatal (uint64_t code)
@@ -94,11 +79,6 @@ SocketQUIC_error_is_connection_fatal (uint64_t code)
   /* Unknown error codes in reserved range (0x11-0xff) */
   return 0;
 }
-
-/* ============================================================================
- * Connection Close Helper Functions
- * ============================================================================
- */
 
 /**
  * @brief Validate CONNECTION_CLOSE parameters and clamp reason length.
@@ -240,11 +220,6 @@ encode_reason_phrase (const char *reason,
   return 1;
 }
 
-/* ============================================================================
- * Connection Close (RFC 9000 Section 19.19)
- * ============================================================================
- */
-
 size_t
 SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
                                   uint64_t code,
@@ -290,11 +265,6 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
   return offset;
 }
 
-/* ============================================================================
- * Stream Reset (RFC 9000 Section 19.4)
- * ============================================================================
- */
-
 size_t
 SocketQUIC_send_stream_reset (SocketQUICStream_T stream,
                               uint64_t code,
@@ -338,11 +308,6 @@ SocketQUIC_send_stream_reset (SocketQUICStream_T stream,
 
   return offset;
 }
-
-/* ============================================================================
- * Stop Sending (RFC 9000 Section 19.5)
- * ============================================================================
- */
 
 size_t
 SocketQUIC_send_stop_sending (SocketQUICStream_T stream,

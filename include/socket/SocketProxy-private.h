@@ -370,11 +370,6 @@
 #define SOCKS5_CONNECT_IPV6_RESPONSE_SIZE \
   (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV6_ADDR_SIZE + SOCKS5_PORT_SIZE)
 
-/* ============================================================================
- * Internal Protocol State
- * ============================================================================
- */
-
 /**
  * @brief Protocol-specific sub-state for proxy handshakes.
  * @ingroup core_io
@@ -438,9 +433,9 @@ typedef enum
   PROTO_STATE_SOCKS4_CONNECT_SENT,     /**< @brief SOCKS4 CONNECT request sent
                                         * (IPv4 only or 4a extension).     VN=4,
                                         * CMD=1,     DSTPORT, DSTIP (0.0.0.x for 4a
-                                        * domain),     USERID="socket", null-term domain
-                                        * (4a).     Awaiting 8-byte reply (null VN,
-                                        * CD=90     granted or error). */
+                                        * domain),     USERID="socket", null-term
+                                        * domain     (4a).     Awaiting 8-byte reply
+                                        * (null VN,     CD=90     granted or error). */
   PROTO_STATE_SOCKS4_CONNECT_RECEIVED, /**< @brief SOCKS4 reply received and
                                         * checked. CD=90 success; 91-93 errors
                                         * mapped via
@@ -568,11 +563,6 @@ typedef enum
  */
 #define RAISE_PROXY_ERROR(e) SOCKET_RAISE_MODULE_ERROR (Proxy, e)
 
-/* ============================================================================
- * Main Context Structure
- * ============================================================================
- */
-
 /**
  * @brief Opaque proxy connection context for managing tunneling negotiation.
  * @ingroup core_io
@@ -684,11 +674,6 @@ struct SocketProxy_Conn_T
   int transferred; /**< 1 if socket transferred to caller */
 };
 
-/* ============================================================================
- * Internal Helper Functions - Time
- * ============================================================================
- */
-
 /**
  * @brief Get current monotonic time in milliseconds.
  * @ingroup core_io
@@ -739,11 +724,6 @@ socketproxy_elapsed_ms (int64_t start_ms)
   return (elapsed < 0) ? 0 : elapsed;
 }
 
-/* ============================================================================
- * Protocol Handler Function Types
- * ============================================================================
- */
-
 /**
  * @brief Function type for protocol-specific request building.
  * @ingroup core_io
@@ -792,11 +772,6 @@ typedef int (*ProxySendFunc) (struct SocketProxy_Conn_T *conn);
  * @see SocketProxy_Result for return mapping.
  */
 typedef SocketProxy_Result (*ProxyRecvFunc) (struct SocketProxy_Conn_T *conn);
-
-/* ============================================================================
- * Internal Protocol Functions - SOCKS5 (RFC 1928/1929)
- * ============================================================================
- */
 
 /**
  * @brief Builds SOCKS5 greeting message for initial protocol negotiation (RFC

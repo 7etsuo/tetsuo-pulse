@@ -42,11 +42,6 @@
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConnectionID.h"
 
-/* ============================================================================
- * Constants (RFC 9000 Section 9)
- * ============================================================================
- */
-
 /**
  * @brief Size of PATH_CHALLENGE/PATH_RESPONSE data in bytes.
  *
@@ -83,11 +78,6 @@
  * it's likely NAT rebinding rather than true migration.
  */
 #define QUIC_NAT_REBIND_WINDOW_MS 500
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief Path validation state.
@@ -198,11 +188,6 @@ typedef enum
 /** @brief Exception raised on migration failures. */
 extern const Except_T SocketQUICMigration_Failed;
 
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
-
 /**
  * @brief Create a new migration manager.
  *
@@ -241,11 +226,6 @@ extern void SocketQUICMigration_init (SocketQUICMigration_T *migration,
  * @param migration Migration manager to free (pointer-to-pointer).
  */
 extern void SocketQUICMigration_free (SocketQUICMigration_T **migration);
-
-/* ============================================================================
- * Path Management Functions
- * ============================================================================
- */
 
 /**
  * @brief Initialize the initial path.
@@ -291,11 +271,6 @@ SocketQUICMigration_get_active_path (const SocketQUICMigration_T *migration);
 extern SocketQUICPath_T *
 SocketQUICMigration_find_path (SocketQUICMigration_T *migration,
                                const struct sockaddr_storage *peer_addr);
-
-/* ============================================================================
- * Path Validation Functions (RFC 9000 Section 8.2)
- * ============================================================================
- */
 
 /**
  * @brief Initiate path validation.
@@ -391,11 +366,6 @@ SocketQUICMigration_handle_path_challenge (SocketQUICMigration_T *migration,
 extern int SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
                                                uint64_t current_time_ms);
 
-/* ============================================================================
- * Migration Functions (RFC 9000 Section 9)
- * ============================================================================
- */
-
 /**
  * @brief Initiate connection migration to a new path.
  *
@@ -440,11 +410,6 @@ SocketQUICMigration_handle_peer_address_change (
     const struct sockaddr_storage *peer_addr,
     uint64_t current_time_ms);
 
-/* ============================================================================
- * Congestion Control Functions (RFC 9000 Section 9.4)
- * ============================================================================
- */
-
 /**
  * @brief Reset congestion control for new path.
  *
@@ -478,11 +443,6 @@ SocketQUICMigration_reset_congestion (SocketQUICPath_T *new_path,
  */
 extern void
 SocketQUICMigration_update_rtt (SocketQUICPath_T *path, uint64_t rtt_us);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Check if migration is allowed.

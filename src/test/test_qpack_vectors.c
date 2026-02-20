@@ -30,11 +30,6 @@
 #include "http/qpack/SocketQPACKEncoderStream.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * HELPER FUNCTIONS
- * ============================================================================
- */
-
 /**
  * @brief Hex string to byte array conversion helper.
  *
@@ -74,23 +69,6 @@ compare_hex (const unsigned char *data, size_t data_len, const char *hex)
   return memcmp (data, expected, data_len);
 }
 
-/* ============================================================================
- * B.1: LITERAL FIELD LINE WITH NAME REFERENCE (RFC 9204 Appendix B.1)
- *
- * The encoder sends an encoded field section containing a literal
- * representation of a field with a static name reference.
- *
- * Header: :path: /index.html
- *
- * Stream Data: 0000 510b 2f69 6e64 65782e 68746d 6c
- *   - 00: Required Insert Count = 0
- *   - 00: Delta Base = 0 (Base = 0)
- *   - 51: Literal with Name Reference (static, index 1 = :path)
- *   - 0b: Value length = 11
- *   - 2f69...6c: "/index.html"
- * ============================================================================
- */
-
 TEST (qpack_vector_b1_decode_prefix)
 {
   /* RFC 9204 Appendix B.1: Field section prefix with RIC=0, Base=0 */
@@ -102,10 +80,12 @@ TEST (qpack_vector_b1_decode_prefix)
   uint64_t max_entries = 0;
   uint64_t total_insert_count = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_prefix (prefix_data, sizeof (prefix_data),
-                                   max_entries, total_insert_count,
-                                   &prefix, &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_prefix (prefix_data,
+                                                         sizeof (prefix_data),
+                                                         max_entries,
+                                                         total_insert_count,
+                                                         &prefix,
+                                                         &consumed);
 
   /* With max_entries=0, RIC=0 is valid (no dynamic table references) */
   ASSERT_EQ (result, QPACK_OK);
@@ -130,9 +110,8 @@ TEST (qpack_vector_b1_decode_literal_name_ref)
   SocketQPACK_LiteralNameRef decoded;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_literal_name_ref (data, sizeof (data),
-                                              &decoded, &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_literal_name_ref (
+      data, sizeof (data), &decoded, &consumed);
 
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, sizeof (data));
@@ -153,13 +132,15 @@ TEST (qpack_vector_b1_encode_literal_name_ref)
   const unsigned char value[] = "/index.html";
 
   SocketQPACK_Result result
-      = SocketQPACK_encode_literal_name_ref (buf, sizeof (buf),
-                                              true,        /* static */
-                                              1,           /* :path index */
-                                              false,       /* never_indexed */
-                                              value, 11,
-                                              false,       /* no huffman */
-                                              &written);
+      = SocketQPACK_encode_literal_name_ref (buf,
+                                             sizeof (buf),
+                                             true,  /* static */
+                                             1,     /* :path index */
+                                             false, /* never_indexed */
+                                             value,
+                                             11,
+                                             false, /* no huffman */
+                                             &written);
 
   ASSERT_EQ (result, QPACK_OK);
 
@@ -179,7 +160,8 @@ TEST (qpack_vector_b1_complete)
    */
   const char *expected_hex = "0000510b2f696e6465782e68746d6c";
   unsigned char expected[32];
-  size_t expected_len = hex_to_bytes (expected_hex, expected, sizeof (expected));
+  size_t expected_len
+      = hex_to_bytes (expected_hex, expected, sizeof (expected));
 
   /* Build the field section */
   unsigned char buf[64];
@@ -187,19 +169,22 @@ TEST (qpack_vector_b1_complete)
   size_t written = 0;
 
   /* Encode prefix: RIC=0, Base=0 */
-  SocketQPACK_Result result
-      = SocketQPACK_encode_prefix (0, 0, 0, buf + offset, sizeof (buf) - offset,
-                                    &written);
+  SocketQPACK_Result result = SocketQPACK_encode_prefix (
+      0, 0, 0, buf + offset, sizeof (buf) - offset, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* Encode literal field line with name reference */
   const unsigned char value[] = "/index.html";
   result = SocketQPACK_encode_literal_name_ref (buf + offset,
-                                                 sizeof (buf) - offset,
-                                                 true, 1, false,
-                                                 value, 11, false,
-                                                 &written);
+                                                sizeof (buf) - offset,
+                                                true,
+                                                1,
+                                                false,
+                                                value,
+                                                11,
+                                                false,
+                                                &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
@@ -207,28 +192,6 @@ TEST (qpack_vector_b1_complete)
   ASSERT_EQ (offset, expected_len);
   ASSERT (memcmp (buf, expected, expected_len) == 0);
 }
-
-/* ============================================================================
- * B.2: DYNAMIC TABLE (RFC 9204 Appendix B.2)
- *
- * The encoder sets dynamic table capacity, inserts headers, and sends
- * a field section using post-base references.
- *
- * Encoder Stream:
- *   3fbd01: Set Dynamic Table Capacity = 220 (3f = 0x20 | 0x1f, bd01 = 189)
- *   c00f777...636f6d: Insert :authority = www.example.com
- *   c10c2f73...70617468: Insert :path = /sample/path
- *
- * Stream 4 Data: 0381 10 11
- *   - 03: Encoded Required Insert Count (2)
- *   - 81: Delta Base with sign bit (Base = RIC = 2)
- *   - 10: Indexed Field Line with Post-Base Index 0 (:authority)
- *   - 11: Indexed Field Line with Post-Base Index 1 (:path)
- *
- * Decoder Stream: 84
- *   - Section Acknowledgment for stream 4
- * ============================================================================
- */
 
 TEST (qpack_vector_b2_set_capacity)
 {
@@ -275,9 +238,8 @@ TEST (qpack_vector_b2_insert_authority)
   ASSERT (table != NULL);
 
   /* Test decoding the instruction */
-  const unsigned char wire[]
-      = { 0xc0, 0x0f, 'w', 'w', 'w', '.', 'e', 'x', 'a', 'm',
-          'p',  'l',  'e', '.', 'c', 'o', 'm' };
+  const unsigned char wire[] = { 0xc0, 0x0f, 'w', 'w', 'w', '.', 'e', 'x', 'a',
+                                 'm',  'p',  'l', 'e', '.', 'c', 'o', 'm' };
 
   /* Decode Insert with Name Reference (static index 0 = :authority) */
   SocketQPACK_InsertNameRef decoded;
@@ -295,8 +257,7 @@ TEST (qpack_vector_b2_insert_authority)
 
   /* Insert into table - name from static table index 0 (:authority) */
   SocketQPACK_Result result = SocketQPACK_Table_insert_literal (
-      table, ":authority", 10,
-      (const char *)decoded.value, decoded.value_len);
+      table, ":authority", 10, (const char *)decoded.value, decoded.value_len);
   ASSERT_EQ (result, QPACK_OK);
 
   /* Verify entry was inserted */
@@ -309,8 +270,8 @@ TEST (qpack_vector_b2_insert_authority)
   size_t name_out_len = 0;
   size_t value_out_len = 0;
 
-  result = SocketQPACK_Table_get (table, 0, &name, &name_out_len,
-                                   &value, &value_out_len);
+  result = SocketQPACK_Table_get (
+      table, 0, &name, &name_out_len, &value, &value_out_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_out_len, 10); /* ":authority" */
   ASSERT (memcmp (name, ":authority", 10) == 0);
@@ -335,9 +296,8 @@ TEST (qpack_vector_b2_insert_path)
   ASSERT (table != NULL);
 
   /* Test decoding the instruction */
-  const unsigned char wire[]
-      = { 0xc1, 0x0c, '/', 's', 'a', 'm', 'p', 'l',
-          'e',  '/',  'p', 'a', 't', 'h' };
+  const unsigned char wire[] = { 0xc1, 0x0c, '/', 's', 'a', 'm', 'p',
+                                 'l',  'e',  '/', 'p', 'a', 't', 'h' };
 
   /* Decode Insert with Name Reference (static index 1 = :path) */
   SocketQPACK_InsertNameRef decoded;
@@ -389,10 +349,12 @@ TEST (qpack_vector_b2_prefix)
   SocketQPACK_FieldSectionPrefix prefix;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_prefix (prefix_data, sizeof (prefix_data),
-                                   max_entries, total_insert_count,
-                                   &prefix, &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_prefix (prefix_data,
+                                                         sizeof (prefix_data),
+                                                         max_entries,
+                                                         total_insert_count,
+                                                         &prefix,
+                                                         &consumed);
 
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, 2);
@@ -467,33 +429,14 @@ TEST (qpack_vector_b2_decoder_section_ack)
 
   /* Get and verify buffer */
   size_t len = 0;
-  const unsigned char *buf = SocketQPACK_DecoderStream_get_buffer (stream, &len);
+  const unsigned char *buf
+      = SocketQPACK_DecoderStream_get_buffer (stream, &len);
   ASSERT (buf != NULL);
   ASSERT_EQ (len, 1);
   ASSERT_EQ (buf[0], 0x84); /* Stream 4 acknowledgment */
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * B.3: SPECULATIVE INSERT (RFC 9204 Appendix B.3)
- *
- * The encoder inserts a header with literal name into the dynamic table.
- * The decoder acknowledges with Insert Count Increment.
- *
- * Encoder Stream: 4a63757374...76616c7565
- *   4a: Insert with Literal Name (01001010)
- *       01 = pattern
- *       0 = no Huffman on name
- *       01010 = name length 10 ("custom-key")
- *   63757374...6579: "custom-key"
- *   0c: value length 12
- *   63757374...7565: "custom-value"
- *
- * Decoder Stream: 01
- *   Insert Count Increment of 1
- * ============================================================================
- */
 
 TEST (qpack_vector_b3_insert_literal_name)
 {
@@ -509,9 +452,9 @@ TEST (qpack_vector_b3_insert_literal_name)
   /* Build the wire format manually for verification:
    * 4a = 0100 1010 (Insert Literal Name, no Huffman, length 10)
    */
-  const unsigned char wire[] = { 0x4a, 'c', 'u', 's', 't', 'o', 'm', '-', 'k',
-                                  'e',  'y', 0x0c, 'c', 'u', 's', 't', 'o', 'm',
-                                  '-',  'v', 'a',  'l', 'u', 'e' };
+  const unsigned char wire[]
+      = { 0x4a, 'c', 'u', 's', 't', 'o', 'm', '-', 'k', 'e', 'y', 0x0c,
+          'c',  'u', 's', 't', 'o', 'm', '-', 'v', 'a', 'l', 'u', 'e' };
 
   unsigned char name_buf[64];
   size_t name_len = 0;
@@ -520,9 +463,17 @@ TEST (qpack_vector_b3_insert_literal_name)
   size_t consumed = 0;
 
   /* Decode the instruction */
-  SocketQPACK_Result result = SocketQPACK_decode_insert_literal_name (
-      wire, sizeof (wire), table, name_buf, sizeof (name_buf), &name_len,
-      value_buf, sizeof (value_buf), &value_len, &consumed);
+  SocketQPACK_Result result
+      = SocketQPACK_decode_insert_literal_name (wire,
+                                                sizeof (wire),
+                                                table,
+                                                name_buf,
+                                                sizeof (name_buf),
+                                                &name_len,
+                                                value_buf,
+                                                sizeof (value_buf),
+                                                &value_len,
+                                                &consumed);
 
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, sizeof (wire));
@@ -547,8 +498,7 @@ TEST (qpack_vector_b3_decoder_insert_count_inc)
    */
   Arena_T arena = Arena_new ();
 
-  SocketQPACK_DecoderStream_T stream
-      = SocketQPACK_DecoderStream_new (arena, 3);
+  SocketQPACK_DecoderStream_T stream = SocketQPACK_DecoderStream_new (arena, 3);
   ASSERT (stream != NULL);
 
   SocketQPACKStream_Result sresult = SocketQPACK_DecoderStream_init (stream);
@@ -560,24 +510,14 @@ TEST (qpack_vector_b3_decoder_insert_count_inc)
 
   /* Verify */
   size_t len = 0;
-  const unsigned char *buf = SocketQPACK_DecoderStream_get_buffer (stream, &len);
+  const unsigned char *buf
+      = SocketQPACK_DecoderStream_get_buffer (stream, &len);
   ASSERT (buf != NULL);
   ASSERT_EQ (len, 1);
   ASSERT_EQ (buf[0], 0x01);
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * B.4: DUPLICATE INSTRUCTION (RFC 9204 Appendix B.4)
- *
- * Note: This test requires the Duplicate encoder instruction (Section 4.3.4)
- * to be implemented. Skip if not available.
- *
- * The encoder duplicates an existing dynamic table entry.
- * Wire format: 02 = Duplicate instruction with index 2
- * ============================================================================
- */
 
 TEST (qpack_vector_b4_stream_cancellation)
 {
@@ -588,8 +528,7 @@ TEST (qpack_vector_b4_stream_cancellation)
    */
   Arena_T arena = Arena_new ();
 
-  SocketQPACK_DecoderStream_T stream
-      = SocketQPACK_DecoderStream_new (arena, 3);
+  SocketQPACK_DecoderStream_T stream = SocketQPACK_DecoderStream_new (arena, 3);
   ASSERT (stream != NULL);
 
   SocketQPACKStream_Result sresult = SocketQPACK_DecoderStream_init (stream);
@@ -601,7 +540,8 @@ TEST (qpack_vector_b4_stream_cancellation)
 
   /* Verify */
   size_t len = 0;
-  const unsigned char *buf = SocketQPACK_DecoderStream_get_buffer (stream, &len);
+  const unsigned char *buf
+      = SocketQPACK_DecoderStream_get_buffer (stream, &len);
   ASSERT (buf != NULL);
   ASSERT_EQ (len, 1);
   ASSERT_EQ (buf[0], 0x48);
@@ -635,7 +575,8 @@ TEST (qpack_vector_b4_duplicate)
 
   /* Verify wire format */
   size_t len = 0;
-  const unsigned char *buf = SocketQPACK_EncoderStream_get_buffer (stream, &len);
+  const unsigned char *buf
+      = SocketQPACK_EncoderStream_get_buffer (stream, &len);
   ASSERT (buf != NULL);
   ASSERT_EQ (len, 1);
   ASSERT_EQ (buf[0], 0x02); /* 000 00010 = duplicate rel index 2 */
@@ -668,8 +609,8 @@ TEST (qpack_vector_b4_indexed_static)
   int is_static = 0;
   size_t consumed = 0;
 
-  result = SocketQPACK_decode_indexed_field (buf, written, &index, &is_static,
-                                              &consumed);
+  result = SocketQPACK_decode_indexed_field (
+      buf, written, &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, 1);
   ASSERT_EQ (index, 1);
@@ -712,16 +653,16 @@ TEST (qpack_vector_b4_indexed_dynamic)
   size_t consumed = 0;
   const unsigned char dyn0[] = { 0x80 };
 
-  result = SocketQPACK_decode_indexed_field (dyn0, 1, &index, &is_static,
-                                              &consumed);
+  result = SocketQPACK_decode_indexed_field (
+      dyn0, 1, &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (index, 0);
   ASSERT_EQ (is_static, 0);
 
   /* Decode verification for 0x81 */
   const unsigned char dyn1[] = { 0x81 };
-  result = SocketQPACK_decode_indexed_field (dyn1, 1, &index, &is_static,
-                                              &consumed);
+  result = SocketQPACK_decode_indexed_field (
+      dyn1, 1, &index, &is_static, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (index, 1);
   ASSERT_EQ (is_static, 0);
@@ -746,10 +687,12 @@ TEST (qpack_vector_b4_field_section_prefix)
   SocketQPACK_FieldSectionPrefix prefix;
   size_t consumed = 0;
 
-  SocketQPACK_Result result
-      = SocketQPACK_decode_prefix (prefix_data, sizeof (prefix_data),
-                                   max_entries, total_insert_count,
-                                   &prefix, &consumed);
+  SocketQPACK_Result result = SocketQPACK_decode_prefix (prefix_data,
+                                                         sizeof (prefix_data),
+                                                         max_entries,
+                                                         total_insert_count,
+                                                         &prefix,
+                                                         &consumed);
 
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, 2);
@@ -774,7 +717,8 @@ TEST (qpack_vector_b4_complete_field_section)
    */
   const char *expected_hex = "050080c181";
   unsigned char expected[8];
-  size_t expected_len = hex_to_bytes (expected_hex, expected, sizeof (expected));
+  size_t expected_len
+      = hex_to_bytes (expected_hex, expected, sizeof (expected));
 
   /* Build field section */
   unsigned char buf[16];
@@ -783,27 +727,26 @@ TEST (qpack_vector_b4_complete_field_section)
 
   /* Encode prefix: RIC=4, Base=4 */
   uint64_t max_entries = 220 / 32;
-  SocketQPACK_Result result
-      = SocketQPACK_encode_prefix (4, 4, max_entries, buf + offset,
-                                    sizeof (buf) - offset, &written);
+  SocketQPACK_Result result = SocketQPACK_encode_prefix (
+      4, 4, max_entries, buf + offset, sizeof (buf) - offset, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* Encode dynamic indexed field line (relative index 0) */
-  result = SocketQPACK_encode_indexed_field (buf + offset, sizeof (buf) - offset,
-                                              0, 0, &written);
+  result = SocketQPACK_encode_indexed_field (
+      buf + offset, sizeof (buf) - offset, 0, 0, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* Encode static indexed field line (index 1) */
-  result = SocketQPACK_encode_indexed_field (buf + offset, sizeof (buf) - offset,
-                                              1, 1, &written);
+  result = SocketQPACK_encode_indexed_field (
+      buf + offset, sizeof (buf) - offset, 1, 1, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* Encode dynamic indexed field line (relative index 1) */
-  result = SocketQPACK_encode_indexed_field (buf + offset, sizeof (buf) - offset,
-                                              1, 0, &written);
+  result = SocketQPACK_encode_indexed_field (
+      buf + offset, sizeof (buf) - offset, 1, 0, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
@@ -811,22 +754,6 @@ TEST (qpack_vector_b4_complete_field_section)
   ASSERT_EQ (offset, expected_len);
   ASSERT (memcmp (buf, expected, expected_len) == 0);
 }
-
-/* ============================================================================
- * B.5: DYNAMIC TABLE INSERT, EVICTING (RFC 9204 Appendix B.5)
- *
- * The encoder inserts a new entry which causes eviction of the oldest entry.
- *
- * Prerequisites:
- * - Table capacity = 220 bytes
- * - Table contains entries from B.2 and B.3
- *
- * New insert: custom-key: custom-value2 (using name reference to existing
- * custom-key entry)
- *
- * This should evict :authority: www.example.com (first entry)
- * ============================================================================
- */
 
 TEST (qpack_vector_b5_eviction)
 {
@@ -889,11 +816,13 @@ TEST (qpack_vector_b5_eviction)
   const char *value = NULL;
   size_t value_len = 0;
 
-  result = SocketQPACK_Table_get (table, 0, &name, &name_len, &value, &value_len);
+  result
+      = SocketQPACK_Table_get (table, 0, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_ERR_EVICTED_INDEX);
 
   /* Verify second entry (absolute index 1) is still valid */
-  result = SocketQPACK_Table_get (table, 1, &name, &name_len, &value, &value_len);
+  result
+      = SocketQPACK_Table_get (table, 1, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 5);
   ASSERT (memcmp (name, ":path", 5) == 0);
@@ -916,9 +845,8 @@ TEST (qpack_vector_b5_insert_nameref_wire)
   Arena_T arena = Arena_new ();
 
   /* Build the exact RFC wire format */
-  const unsigned char wire[]
-      = { 0x81, 0x0d, 'c', 'u', 's', 't', 'o', 'm', '-',
-          'v',  'a',  'l', 'u', 'e', '2' };
+  const unsigned char wire[] = { 0x81, 0x0d, 'c', 'u', 's', 't', 'o', 'm',
+                                 '-',  'v',  'a', 'l', 'u', 'e', '2' };
 
   /* Decode the instruction */
   SocketQPACK_InsertNameRef decoded;
@@ -929,8 +857,8 @@ TEST (qpack_vector_b5_insert_nameref_wire)
 
   ASSERT_EQ (sresult, QPACK_STREAM_OK);
   ASSERT_EQ (consumed, sizeof (wire));
-  ASSERT_EQ (decoded.is_static, false);      /* dynamic table reference */
-  ASSERT_EQ (decoded.name_index, 1);         /* relative index 1 */
+  ASSERT_EQ (decoded.is_static, false); /* dynamic table reference */
+  ASSERT_EQ (decoded.name_index, 1);    /* relative index 1 */
   ASSERT_EQ (decoded.value_len, 13);
   ASSERT (memcmp (decoded.value, "custom-value2", 13) == 0);
 
@@ -938,21 +866,21 @@ TEST (qpack_vector_b5_insert_nameref_wire)
   unsigned char encoded[32];
   size_t written = 0;
 
-  sresult = SocketQPACK_encode_insert_nameref (encoded, sizeof (encoded),
-                                                false, 1,
-                                                (const unsigned char *)"custom-value2", 13,
-                                                false, &written);
+  sresult = SocketQPACK_encode_insert_nameref (
+      encoded,
+      sizeof (encoded),
+      false,
+      1,
+      (const unsigned char *)"custom-value2",
+      13,
+      false,
+      &written);
   ASSERT_EQ (sresult, QPACK_STREAM_OK);
   ASSERT_EQ (written, sizeof (wire));
   ASSERT (memcmp (encoded, wire, sizeof (wire)) == 0);
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * ROUND-TRIP TESTS
- * ============================================================================
- */
 
 TEST (qpack_vector_roundtrip_literal_name_ref)
 {
@@ -972,9 +900,14 @@ TEST (qpack_vector_roundtrip_literal_name_ref)
   /* Encode :path: /test/path */
   const unsigned char value[] = "/test/path";
   result = SocketQPACK_encode_literal_name_ref (buf + total,
-                                                 sizeof (buf) - total,
-                                                 true, 1, false,
-                                                 value, 10, false, &written);
+                                                sizeof (buf) - total,
+                                                true,
+                                                1,
+                                                false,
+                                                value,
+                                                10,
+                                                false,
+                                                &written);
   ASSERT_EQ (result, QPACK_OK);
   total += written;
 
@@ -987,9 +920,8 @@ TEST (qpack_vector_roundtrip_literal_name_ref)
 
   /* Decode field line */
   SocketQPACK_LiteralNameRef decoded;
-  result = SocketQPACK_decode_literal_name_ref (buf + consumed,
-                                                 total - consumed,
-                                                 &decoded, &consumed);
+  result = SocketQPACK_decode_literal_name_ref (
+      buf + consumed, total - consumed, &decoded, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (decoded.is_static, true);
   ASSERT_EQ (decoded.name_index, 1);
@@ -1019,14 +951,14 @@ TEST (qpack_vector_roundtrip_dynamic_table)
 
   /* Prefix: RIC=1, Base=0 (entries inserted after Base=0 are post-base) */
   uint64_t max_entries = 4096 / 32;
-  result = SocketQPACK_encode_prefix (1, 0, max_entries, buf, sizeof (buf),
-                                       &written);
+  result = SocketQPACK_encode_prefix (
+      1, 0, max_entries, buf, sizeof (buf), &written);
   ASSERT_EQ (result, QPACK_OK);
   total += written;
 
   /* Indexed Field Line with Post-Base Index 0 */
-  result = SocketQPACK_encode_indexed_postbase (0, buf + total,
-                                                 sizeof (buf) - total, &written);
+  result = SocketQPACK_encode_indexed_postbase (
+      0, buf + total, sizeof (buf) - total, &written);
   ASSERT_EQ (result, QPACK_OK);
   total += written;
 
@@ -1034,15 +966,14 @@ TEST (qpack_vector_roundtrip_dynamic_table)
   SocketQPACK_FieldSectionPrefix prefix;
   size_t consumed = 0;
 
-  result = SocketQPACK_decode_prefix (buf, total, max_entries, 1,
-                                       &prefix, &consumed);
+  result = SocketQPACK_decode_prefix (
+      buf, total, max_entries, 1, &prefix, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (prefix.required_insert_count, 1);
 
   uint64_t pb_index = 0;
-  result = SocketQPACK_decode_indexed_postbase (buf + consumed,
-                                                 total - consumed,
-                                                 &pb_index, &consumed);
+  result = SocketQPACK_decode_indexed_postbase (
+      buf + consumed, total - consumed, &pb_index, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (pb_index, 0);
 
@@ -1052,9 +983,8 @@ TEST (qpack_vector_roundtrip_dynamic_table)
   const char *value = NULL;
   size_t value_len = 0;
 
-  result = SocketQPACK_lookup_indexed_postbase (table, 0, pb_index,
-                                                 &name, &name_len,
-                                                 &value, &value_len);
+  result = SocketQPACK_lookup_indexed_postbase (
+      table, 0, pb_index, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 11);
   ASSERT (memcmp (name, "test-header", 11) == 0);
@@ -1063,14 +993,6 @@ TEST (qpack_vector_roundtrip_dynamic_table)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * SEQUENTIAL INTEGRATION TEST (RFC 9204 Appendix B.1-B.5)
- *
- * This test runs through the complete sequence from RFC 9204 Appendix B,
- * maintaining state across all sections to verify the full protocol flow.
- * ============================================================================
- */
 
 TEST (qpack_vector_sequential_b1_to_b5)
 {
@@ -1091,12 +1013,10 @@ TEST (qpack_vector_sequential_b1_to_b5)
   ASSERT (table != NULL);
   uint64_t max_entries = 220 / 32; /* = 6 */
 
-  /* ---------- B.1: Literal field line (no dynamic table) ---------- */
   /* Nothing to insert, just verify we can encode/decode with empty table */
   ASSERT_EQ (SocketQPACK_Table_count (table), 0);
   ASSERT_EQ (SocketQPACK_Table_insert_count (table), 0);
 
-  /* ---------- B.2: Insert :authority and :path ---------- */
   /* Insert :authority = www.example.com (entry size: 10 + 15 + 32 = 57) */
   SocketQPACK_Result result = SocketQPACK_Table_insert_literal (
       table, ":authority", 10, "www.example.com", 15);
@@ -1116,13 +1036,12 @@ TEST (qpack_vector_sequential_b1_to_b5)
   /* Verify prefix encoding for B.2 field section */
   unsigned char prefix_buf[8];
   size_t prefix_written = 0;
-  result = SocketQPACK_encode_prefix (2, 0, max_entries, prefix_buf,
-                                       sizeof (prefix_buf), &prefix_written);
+  result = SocketQPACK_encode_prefix (
+      2, 0, max_entries, prefix_buf, sizeof (prefix_buf), &prefix_written);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (prefix_buf[0], 0x03); /* Encoded RIC */
   ASSERT_EQ (prefix_buf[1], 0x81); /* S=1, delta_base=1 => Base=0 */
 
-  /* ---------- B.3: Insert custom-key: custom-value ---------- */
   /* Entry size: 10 + 12 + 32 = 54 */
   result = SocketQPACK_Table_insert_literal (
       table, "custom-key", 10, "custom-value", 12);
@@ -1133,7 +1052,6 @@ TEST (qpack_vector_sequential_b1_to_b5)
   ASSERT_EQ (SocketQPACK_Table_count (table), 3);
   ASSERT_EQ (SocketQPACK_Table_size (table), 160); /* 57 + 49 + 54 */
 
-  /* ---------- B.4: Duplicate :authority entry ---------- */
   /* In RFC example, entry at encoder-relative index 2 is duplicated.
    * With insert_count=3, relative index 2 refers to absolute index 0
    * (:authority entry).
@@ -1154,13 +1072,12 @@ TEST (qpack_vector_sequential_b1_to_b5)
   ASSERT_EQ (SocketQPACK_Table_size (table), 217); /* 57 + 49 + 54 + 57 */
 
   /* Verify B.4 prefix encoding (RIC=4, Base=4) */
-  result = SocketQPACK_encode_prefix (4, 4, max_entries, prefix_buf,
-                                       sizeof (prefix_buf), &prefix_written);
+  result = SocketQPACK_encode_prefix (
+      4, 4, max_entries, prefix_buf, sizeof (prefix_buf), &prefix_written);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (prefix_buf[0], 0x05); /* Encoded RIC */
   ASSERT_EQ (prefix_buf[1], 0x00); /* S=0, delta_base=0 => Base=RIC=4 */
 
-  /* ---------- B.5: Insert causing eviction ---------- */
   /* Insert custom-key: custom-value2 (entry size: 10 + 13 + 32 = 55)
    * Total would be 217 + 55 = 272 > 220
    * First entry (57 bytes) must be evicted
@@ -1172,7 +1089,7 @@ TEST (qpack_vector_sequential_b1_to_b5)
   ASSERT_EQ (SocketQPACK_Table_dropped_count (table), 1);
 
   /* Verify table state after B.5 */
-  ASSERT_EQ (SocketQPACK_Table_count (table), 4); /* One evicted */
+  ASSERT_EQ (SocketQPACK_Table_count (table), 4);  /* One evicted */
   ASSERT_EQ (SocketQPACK_Table_size (table), 215); /* 217 - 57 + 55 */
 
   /* Verify absolute index 0 (:authority) is now evicted */
@@ -1181,11 +1098,13 @@ TEST (qpack_vector_sequential_b1_to_b5)
   const char *value = NULL;
   size_t value_len = 0;
 
-  result = SocketQPACK_Table_get (table, 0, &name, &name_len, &value, &value_len);
+  result
+      = SocketQPACK_Table_get (table, 0, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_ERR_EVICTED_INDEX);
 
   /* Verify absolute index 1 (:path=/sample/path) is still valid */
-  result = SocketQPACK_Table_get (table, 1, &name, &name_len, &value, &value_len);
+  result
+      = SocketQPACK_Table_get (table, 1, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 5);
   ASSERT (memcmp (name, ":path", 5) == 0);
@@ -1193,7 +1112,8 @@ TEST (qpack_vector_sequential_b1_to_b5)
   ASSERT (memcmp (value, "/sample/path", 12) == 0);
 
   /* Verify absolute index 4 (custom-key: custom-value2) is valid */
-  result = SocketQPACK_Table_get (table, 4, &name, &name_len, &value, &value_len);
+  result
+      = SocketQPACK_Table_get (table, 4, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 10);
   ASSERT (memcmp (name, "custom-key", 10) == 0);
@@ -1202,11 +1122,6 @@ TEST (qpack_vector_sequential_b1_to_b5)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

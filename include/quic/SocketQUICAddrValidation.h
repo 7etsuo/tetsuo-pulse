@@ -23,11 +23,6 @@
 #include "core/Except.h"
 #include "quic/SocketQUICConnection.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /** @brief Maximum token size in bytes (RFC 9000 allows variable) */
 #define QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE 256
 
@@ -57,20 +52,10 @@
 /** @brief HMAC input size: 8 bytes timestamp + 16 bytes address hash */
 #define QUIC_TOKEN_HMAC_INPUT_SIZE 24
 
-/* ============================================================================
- * Exception Types
- * ============================================================================
- */
-
 /**
  * @brief Exception for address validation failures.
  */
 extern const Except_T SocketQUICAddrValidation_Failed;
-
-/* ============================================================================
- * Type Definitions
- * ============================================================================
- */
 
 /**
  * @brief Result codes for address validation operations.
@@ -109,11 +94,6 @@ typedef struct SocketQUICPathChallenge
   uint16_t peer_port;                     /**< Port where sent */
   int is_ipv6;                            /**< 1 if IPv6, 0 if IPv4 */
 } SocketQUICPathChallenge_T;
-
-/* ============================================================================
- * Amplification Limit Functions
- * ============================================================================
- */
 
 /**
  * @brief Check if sending would violate amplification limit.
@@ -158,11 +138,6 @@ extern void SocketQUICAddrValidation_update_counters (
  */
 extern void SocketQUICAddrValidation_mark_validated (
     SocketQUICAddrValidation_State_T *state, uint64_t timestamp);
-
-/* ============================================================================
- * Token Functions (Retry/NEW_TOKEN)
- * ============================================================================
- */
 
 /**
  * @brief Generate address validation token.
@@ -213,11 +188,6 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
                                          size_t token_len,
                                          const struct sockaddr *addr,
                                          const uint8_t *secret);
-
-/* ============================================================================
- * Path Validation Functions (PATH_CHALLENGE/PATH_RESPONSE)
- * ============================================================================
- */
 
 /**
  * @brief Initialize path challenge structure.
@@ -290,11 +260,6 @@ SocketQUICPathChallenge_complete (SocketQUICPathChallenge_T *challenge);
  */
 extern int
 SocketQUICPathChallenge_is_pending (const SocketQUICPathChallenge_T *challenge);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of result code.

@@ -68,20 +68,14 @@ struct T
 };
 #undef T
 
-/* ==================== Safe Allocation Helpers ==================== */
-
 /* Inlined into callers to reduce redundancy; uses SocketSecurity_check_multiply
  * directly */
 
 /* safe_realloc_array inlined into callers using SocketSecurity_check_multiply
  */
 
-/* ==================== Integer Safe Arithmetic Helpers ==================== */
-
 /* safe_int_add and safe_int_double inlined into callers using
  * SocketSecurity_check_add/multiply directly */
-
-/* ==================== Initialization Helpers ==================== */
 
 /**
  * init_fd_mapping_range - Initialize fd_to_index entries to invalid
@@ -283,8 +277,6 @@ backend_free (PollBackend_T backend)
     free (backend->ready_events);
 }
 
-/* ==================== FD Lookup Helpers ==================== */
-
 /**
  * find_fd_index - Find index of fd in pollfd array
  * @backend: Backend instance
@@ -354,8 +346,6 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
   return 0;
 }
 
-/* ==================== Capacity Management ==================== */
-
 /**
  * ensure_capacity - Ensure pollfd array has capacity for one more FD
  * @backend: Backend instance
@@ -397,8 +387,6 @@ ensure_capacity (PollBackend_T backend)
   backend->capacity = new_capacity;
   return 0;
 }
-
-/* ==================== Event Translation ==================== */
 
 /**
  * translate_to_poll_events - Convert SocketPoll events to poll(2) events
@@ -445,8 +433,6 @@ translate_from_poll_events (const short revents)
 
   return events;
 }
-
-/* ==================== Backend Interface Implementation ==================== */
 
 /**
  * add_fd_to_array - Add FD to pollfd array
@@ -581,8 +567,6 @@ backend_del (PollBackend_T backend, const int fd)
 
   return 0;
 }
-
-/* ==================== Wait Implementation ==================== */
 
 /**
  * reset_backend_wait_state - Reset backend state after wait completes

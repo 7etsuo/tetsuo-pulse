@@ -27,11 +27,6 @@
 #include "quic/SocketQUICHandshake.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 /**
  * @brief Create a test handshake context with mock keys.
  */
@@ -59,11 +54,6 @@ create_test_handshake (Arena_T arena,
 
   return hs;
 }
-
-/* ============================================================================
- * §4.9.1: Initial Key Discard Tests
- * ============================================================================
- */
 
 /* Test: Client discards Initial keys when sending Handshake */
 TEST (key_discard_client_initial_on_handshake_sent)
@@ -181,11 +171,6 @@ TEST (key_discard_server_ignores_handshake_sent)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * §4.9.2: Handshake Key Discard Tests
- * ============================================================================
- */
-
 /* Test: Client discards Handshake keys on confirmation */
 TEST (key_discard_client_handshake_on_confirmed)
 {
@@ -251,11 +236,6 @@ TEST (key_discard_server_handshake_on_confirmed)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * §4.9.3: 0-RTT Key Discard Tests
- * ============================================================================
- */
 
 /* Test: Client discards 0-RTT keys when 1-RTT installed */
 TEST (key_discard_client_0rtt_on_1rtt_installed)
@@ -363,11 +343,6 @@ TEST (key_discard_server_ignores_1rtt_installed)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Idempotency Tests
- * ============================================================================
- */
-
 /* Test: Multiple handshake_packet_sent calls are idempotent */
 TEST (key_discard_handshake_sent_idempotent)
 {
@@ -457,11 +432,6 @@ TEST (key_discard_1rtt_installed_idempotent)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * NULL Pointer Safety Tests
- * ============================================================================
- */
-
 /* Test: All trigger functions handle NULL safely */
 TEST (key_discard_null_safety)
 {
@@ -480,11 +450,6 @@ TEST (key_discard_null_safety)
   ASSERT_EQ (SocketQUICHandshake_can_send_0rtt (NULL), 0);
   ASSERT_EQ (SocketQUICHandshake_can_receive_0rtt (NULL), 0);
 }
-
-/* ============================================================================
- * 0-RTT Availability Check Tests
- * ============================================================================
- */
 
 /* Test: Client can send 0-RTT when keys available */
 TEST (key_discard_client_can_send_0rtt)
@@ -583,11 +548,6 @@ TEST (key_discard_server_0rtt_availability_after_discard)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Secure Memory Clearing Tests
- * ============================================================================
- */
 
 /* Test: Verify key memory is zeroed after discard */
 TEST (key_discard_secure_clear_verification)
@@ -723,11 +683,6 @@ TEST (key_discard_secure_clear_0rtt)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * General Availability Check Tests
- * ============================================================================
- */
-
 /* Test: Availability checks return 0 when keys not available */
 TEST (key_discard_availability_no_keys)
 {
@@ -806,11 +761,6 @@ TEST (key_discard_availability_after_discard)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Complete Handshake Flow Test
- * ============================================================================
- */
 
 /* Test: Full client handshake key lifecycle */
 TEST (key_discard_full_client_flow)
@@ -894,11 +844,6 @@ TEST (key_discard_full_server_flow)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Direct discard_keys Tests
- * ============================================================================
- */
-
 /* Test: Direct discard_keys handles NULL safely */
 TEST (key_discard_direct_null_safety)
 {
@@ -953,11 +898,6 @@ TEST (key_discard_direct_already_null)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
 
 int
 main (void)

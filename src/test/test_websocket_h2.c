@@ -41,11 +41,6 @@
 /* Embedded test certificates */
 #include "../fuzz/fuzz_test_certs.h"
 
-/* ============================================================================
- * Test Configuration
- * ============================================================================
- */
-
 #define TEST_PORT_BASE 49000
 #define TEST_TIMEOUT_MS 5000
 
@@ -56,11 +51,6 @@ get_wsh2_test_port (void)
 {
   return TEST_PORT_BASE + (wsh2_test_port_counter++ % 1000);
 }
-
-/* ============================================================================
- * Certificate File Helpers
- * ============================================================================
- */
 
 static char cert_file[64];
 static char key_file[64];
@@ -99,11 +89,6 @@ cleanup_temp_cert_files (void)
   unlink (cert_file);
   unlink (key_file);
 }
-
-/* ============================================================================
- * Unit Tests - Transport Abstraction Layer
- * ============================================================================
- */
 
 TEST (wsh2_transport_type_enum_values)
 {
@@ -222,11 +207,6 @@ TEST (wsh2_transport_get_fd_socket)
   END_TRY;
 }
 
-/* ============================================================================
- * Unit Tests - HTTP/2 Extended CONNECT Settings
- * ============================================================================
- */
-
 TEST (wsh2_settings_enable_connect_protocol)
 {
   /* Verify SETTINGS_ENABLE_CONNECT_PROTOCOL ID matches RFC 8441 */
@@ -244,11 +224,6 @@ TEST (wsh2_config_defaults_connect_protocol)
   ASSERT (config.enable_connect_protocol == 0
           || config.enable_connect_protocol == 1);
 }
-
-/* ============================================================================
- * Unit Tests - WebSocket State for HTTP/2
- * ============================================================================
- */
 
 TEST (wsh2_websocket_state_open)
 {
@@ -274,11 +249,6 @@ TEST (wsh2_websocket_close_codes)
   ASSERT_EQ (WS_CLOSE_PROTOCOL_ERROR, 1002);
 }
 
-/* ============================================================================
- * Unit Tests - WebSocket Config
- * ============================================================================
- */
-
 TEST (wsh2_config_defaults)
 {
   SocketWS_Config config;
@@ -289,11 +259,6 @@ TEST (wsh2_config_defaults)
   ASSERT (config.max_message_size >= config.max_frame_size);
   ASSERT (config.max_fragments > 0);
 }
-
-/* ============================================================================
- * HTTP/2 Connection Tests (Prerequisites for WebSocket-over-H2)
- * ============================================================================
- */
 
 typedef struct
 {
@@ -643,11 +608,6 @@ TEST (wsh2_no_tls)
 }
 
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Main Entry Point
- * ============================================================================
- */
 
 int
 main (void)

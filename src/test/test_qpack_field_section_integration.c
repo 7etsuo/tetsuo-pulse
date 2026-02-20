@@ -18,11 +18,6 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * HELPER: Build and decode a complete field section
- * ============================================================================
- */
-
 /**
  * @brief Header field structure for test verification.
  */
@@ -33,11 +28,6 @@ typedef struct
   const char *value;
   size_t value_len;
 } TestHeader;
-
-/* ============================================================================
- * INDEXED FIELD LINE ROUND-TRIP (RFC 9204 Section 4.5.2)
- * ============================================================================
- */
 
 TEST (qpack_integration_indexed_static_authority)
 {
@@ -97,13 +87,12 @@ TEST (qpack_integration_indexed_dynamic)
   SocketQPACK_Table_T table = SocketQPACK_Table_new (arena, 4096);
   ASSERT (table != NULL);
 
-  SocketQPACK_Result result = SocketQPACK_Table_insert_literal (
-      table, "x-custom", 8, "value123", 8);
+  SocketQPACK_Result result
+      = SocketQPACK_Table_insert_literal (table, "x-custom", 8, "value123", 8);
   ASSERT_EQ (result, QPACK_OK);
 
   /* Encode dynamic index 0 (field-relative, references Base-1) */
-  result
-      = SocketQPACK_encode_indexed_field (buf, sizeof (buf), 0, 0, &written);
+  result = SocketQPACK_encode_indexed_field (buf, sizeof (buf), 0, 0, &written);
   ASSERT_EQ (result, QPACK_OK);
 
   /* Decode */
@@ -115,8 +104,8 @@ TEST (qpack_integration_indexed_dynamic)
 
   /* Resolve to absolute index with Base=1 (Insert Count) */
   uint64_t abs_index = 0;
-  result = SocketQPACK_resolve_indexed_field (index, is_static, 1, 0,
-                                               &abs_index);
+  result
+      = SocketQPACK_resolve_indexed_field (index, is_static, 1, 0, &abs_index);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (abs_index, 0); /* Base - relative - 1 = 1 - 0 - 1 = 0 */
 
@@ -125,9 +114,8 @@ TEST (qpack_integration_indexed_dynamic)
   size_t name_len = 0;
   const char *value = NULL;
   size_t value_len = 0;
-  result
-      = SocketQPACK_Table_get (table, abs_index, &name, &name_len, &value,
-                               &value_len);
+  result = SocketQPACK_Table_get (
+      table, abs_index, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 8);
   ASSERT (memcmp (name, "x-custom", 8) == 0);
@@ -136,11 +124,6 @@ TEST (qpack_integration_indexed_dynamic)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * INDEXED FIELD LINE WITH POST-BASE INDEX (RFC 9204 Section 4.5.3)
- * ============================================================================
- */
 
 TEST (qpack_integration_indexed_postbase)
 {
@@ -160,13 +143,12 @@ TEST (qpack_integration_indexed_postbase)
   ASSERT_EQ (result, QPACK_OK);
 
   /* Encode post-base index 0 (references entry at Base) */
-  result = SocketQPACK_encode_indexed_postbase (0, buf, sizeof (buf),
-                                                 &written);
+  result = SocketQPACK_encode_indexed_postbase (0, buf, sizeof (buf), &written);
   ASSERT_EQ (result, QPACK_OK);
 
   /* Decode */
-  result = SocketQPACK_decode_indexed_postbase (buf, written, &post_base_index,
-                                                 &consumed);
+  result = SocketQPACK_decode_indexed_postbase (
+      buf, written, &post_base_index, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (post_base_index, 0);
   ASSERT_EQ (consumed, written);
@@ -176,9 +158,8 @@ TEST (qpack_integration_indexed_postbase)
   size_t name_len = 0;
   const char *value = NULL;
   size_t value_len = 0;
-  result = SocketQPACK_lookup_indexed_postbase (table, 0, post_base_index,
-                                                 &name, &name_len, &value,
-                                                 &value_len);
+  result = SocketQPACK_lookup_indexed_postbase (
+      table, 0, post_base_index, &name, &name_len, &value, &value_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 8);
   ASSERT (memcmp (name, "x-header", 8) == 0);
@@ -232,11 +213,6 @@ TEST (qpack_integration_indexed_postbase_multiple)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * LITERAL FIELD LINE WITH NAME REFERENCE (RFC 9204 Section 4.5.4)
- * ============================================================================
- */
-
 TEST (qpack_integration_literal_name_ref_static)
 {
   /* Round-trip literal field with name from static table */
@@ -253,8 +229,8 @@ TEST (qpack_integration_literal_name_ref_static)
       buf, sizeof (buf), true, 1, false, value, value_len, false, &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_name_ref (buf, written, &decoded,
-                                                 &consumed);
+  result
+      = SocketQPACK_decode_literal_name_ref (buf, written, &decoded, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, written);
   ASSERT_EQ (decoded.is_static, true);
@@ -318,8 +294,8 @@ TEST (qpack_integration_literal_name_ref_dynamic)
       buf, sizeof (buf), false, 0, false, value, value_len, false, &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_name_ref (buf, written, &decoded,
-                                                 &consumed);
+  result
+      = SocketQPACK_decode_literal_name_ref (buf, written, &decoded, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (decoded.is_static, false);
   ASSERT_EQ (decoded.name_index, 0);
@@ -329,8 +305,8 @@ TEST (qpack_integration_literal_name_ref_dynamic)
   /* Resolve name from table (Base=1, relative index 0) */
   const char *name = NULL;
   size_t name_len = 0;
-  result = SocketQPACK_resolve_literal_name_ref (false, decoded.name_index, 1,
-                                                  table, &name, &name_len);
+  result = SocketQPACK_resolve_literal_name_ref (
+      false, decoded.name_index, 1, table, &name, &name_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 12);
   ASSERT (memcmp (name, "x-request-id", 12) == 0);
@@ -350,23 +326,25 @@ TEST (qpack_integration_literal_name_ref_never_indexed)
   const unsigned char *value = (const unsigned char *)"Bearer token123";
   size_t value_len = 15;
 
-  SocketQPACK_Result result = SocketQPACK_encode_literal_name_ref (
-      buf, sizeof (buf), true, 75, true, /* never_indexed = true */
-      value, value_len, false, &written);
+  SocketQPACK_Result result
+      = SocketQPACK_encode_literal_name_ref (buf,
+                                             sizeof (buf),
+                                             true,
+                                             75,
+                                             true, /* never_indexed = true */
+                                             value,
+                                             value_len,
+                                             false,
+                                             &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_name_ref (buf, written, &decoded,
-                                                 &consumed);
+  result
+      = SocketQPACK_decode_literal_name_ref (buf, written, &decoded, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (decoded.never_indexed, true);
   ASSERT_EQ (decoded.is_static, true);
   ASSERT_EQ (decoded.name_index, 75);
 }
-
-/* ============================================================================
- * LITERAL FIELD LINE WITH POST-BASE NAME REFERENCE (RFC 9204 Section 4.5.5)
- * ============================================================================
- */
 
 TEST (qpack_integration_literal_postbase_name)
 {
@@ -389,15 +367,18 @@ TEST (qpack_integration_literal_postbase_name)
   const unsigned char *value = (const unsigned char *)"different-value";
   size_t value_len = 15;
 
-  result = SocketQPACK_encode_literal_postbase_name (
-      buf, sizeof (buf), 0, /* post-base index 0 */
-      0,                    /* never_index = 0 */
-      value, value_len, 0,  /* use_huffman = 0 */
-      &written);
+  result = SocketQPACK_encode_literal_postbase_name (buf,
+                                                     sizeof (buf),
+                                                     0, /* post-base index 0 */
+                                                     0, /* never_index = 0 */
+                                                     value,
+                                                     value_len,
+                                                     0, /* use_huffman = 0 */
+                                                     &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_postbase_name (buf, written, arena,
-                                                      &decoded, &consumed);
+  result = SocketQPACK_decode_literal_postbase_name (
+      buf, written, arena, &decoded, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, written);
   ASSERT_EQ (decoded.name_index, 0);
@@ -408,8 +389,8 @@ TEST (qpack_integration_literal_postbase_name)
   /* Resolve name from post-base reference (Base=0) */
   const char *name = NULL;
   size_t name_len = 0;
-  result = SocketQPACK_resolve_postbase_name (table, 0, decoded.name_index,
-                                               &name, &name_len);
+  result = SocketQPACK_resolve_postbase_name (
+      table, 0, decoded.name_index, &name, &name_len);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 12);
   ASSERT (memcmp (name, "x-new-header", 12) == 0);
@@ -437,24 +418,24 @@ TEST (qpack_integration_literal_postbase_name_huffman)
       = (const unsigned char *)"this value compresses well";
   size_t value_len = 26;
 
-  result = SocketQPACK_encode_literal_postbase_name (
-      buf, sizeof (buf), 0, 0, value, value_len, 1, /* use_huffman = 1 */
-      &written);
+  result = SocketQPACK_encode_literal_postbase_name (buf,
+                                                     sizeof (buf),
+                                                     0,
+                                                     0,
+                                                     value,
+                                                     value_len,
+                                                     1, /* use_huffman = 1 */
+                                                     &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_postbase_name (buf, written, arena,
-                                                      &decoded, &consumed);
+  result = SocketQPACK_decode_literal_postbase_name (
+      buf, written, arena, &decoded, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (decoded.value_len, value_len);
   ASSERT (memcmp (decoded.value, value, value_len) == 0);
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * LITERAL FIELD LINE WITH LITERAL NAME (RFC 9204 Section 4.5.6)
- * ============================================================================
- */
 
 TEST (qpack_integration_literal_literal_basic)
 {
@@ -475,9 +456,16 @@ TEST (qpack_integration_literal_literal_basic)
       buf, sizeof (buf), name, 15, false, value, 16, false, false, &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf, written, name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  result = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                          written,
+                                                          name_out,
+                                                          sizeof (name_out),
+                                                          &name_len,
+                                                          value_out,
+                                                          sizeof (value_out),
+                                                          &value_len,
+                                                          &never_indexed,
+                                                          &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (consumed, written);
   ASSERT_EQ (name_len, 15);
@@ -502,15 +490,29 @@ TEST (qpack_integration_literal_literal_huffman_both)
   const unsigned char *name = (const unsigned char *)"content-encoding";
   const unsigned char *value = (const unsigned char *)"gzip";
 
-  SocketQPACK_Result result = SocketQPACK_encode_literal_field_literal_name (
-      buf, sizeof (buf), name, 16, true, /* name_huffman */
-      value, 4, true,                    /* value_huffman */
-      false, &written);
+  SocketQPACK_Result result
+      = SocketQPACK_encode_literal_field_literal_name (buf,
+                                                       sizeof (buf),
+                                                       name,
+                                                       16,
+                                                       true, /* name_huffman */
+                                                       value,
+                                                       4,
+                                                       true, /* value_huffman */
+                                                       false,
+                                                       &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf, written, name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  result = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                          written,
+                                                          name_out,
+                                                          sizeof (name_out),
+                                                          &name_len,
+                                                          value_out,
+                                                          sizeof (value_out),
+                                                          &value_len,
+                                                          &never_indexed,
+                                                          &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 16);
   ASSERT_EQ (value_len, 4);
@@ -533,15 +535,29 @@ TEST (qpack_integration_literal_literal_never_indexed)
   const unsigned char *name = (const unsigned char *)"set-cookie";
   const unsigned char *value = (const unsigned char *)"session=secret123";
 
-  SocketQPACK_Result result = SocketQPACK_encode_literal_field_literal_name (
-      buf, sizeof (buf), name, 10, false, value, 17, false,
-      true, /* never_indexed */
-      &written);
+  SocketQPACK_Result result
+      = SocketQPACK_encode_literal_field_literal_name (buf,
+                                                       sizeof (buf),
+                                                       name,
+                                                       10,
+                                                       false,
+                                                       value,
+                                                       17,
+                                                       false,
+                                                       true, /* never_indexed */
+                                                       &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf, written, name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  result = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                          written,
+                                                          name_out,
+                                                          sizeof (name_out),
+                                                          &name_len,
+                                                          value_out,
+                                                          sizeof (value_out),
+                                                          &value_len,
+                                                          &never_indexed,
+                                                          &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (never_indexed, true);
   ASSERT_EQ (name_len, 10);
@@ -562,24 +578,34 @@ TEST (qpack_integration_literal_literal_empty_value)
 
   const unsigned char *name = (const unsigned char *)"x-empty";
 
-  SocketQPACK_Result result = SocketQPACK_encode_literal_field_literal_name (
-      buf, sizeof (buf), name, 7, false, NULL, 0, /* empty value */
-      false, false, &written);
+  SocketQPACK_Result result
+      = SocketQPACK_encode_literal_field_literal_name (buf,
+                                                       sizeof (buf),
+                                                       name,
+                                                       7,
+                                                       false,
+                                                       NULL,
+                                                       0, /* empty value */
+                                                       false,
+                                                       false,
+                                                       &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf, written, name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  result = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                          written,
+                                                          name_out,
+                                                          sizeof (name_out),
+                                                          &name_len,
+                                                          value_out,
+                                                          sizeof (value_out),
+                                                          &value_len,
+                                                          &never_indexed,
+                                                          &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 7);
   ASSERT_EQ (value_len, 0);
   ASSERT (memcmp (name_out, name, 7) == 0);
 }
-
-/* ============================================================================
- * FIELD SECTION PREFIX INTEGRATION (RFC 9204 Section 4.5.1)
- * ============================================================================
- */
 
 TEST (qpack_integration_prefix_static_only)
 {
@@ -641,11 +667,6 @@ TEST (qpack_integration_prefix_post_base)
   ASSERT (prefix.delta_base < 0);
 }
 
-/* ============================================================================
- * MIXED REPRESENTATION FIELD SECTION
- * ============================================================================
- */
-
 TEST (qpack_integration_mixed_representations)
 {
   /* Encode a field section with multiple representation types */
@@ -658,12 +679,12 @@ TEST (qpack_integration_mixed_representations)
   ASSERT (table != NULL);
 
   /* Insert some entries into dynamic table */
-  ASSERT_EQ (SocketQPACK_Table_insert_literal (table, "x-custom-a", 10,
-                                               "value-a", 7),
-             QPACK_OK);
-  ASSERT_EQ (SocketQPACK_Table_insert_literal (table, "x-custom-b", 10,
-                                               "value-b", 7),
-             QPACK_OK);
+  ASSERT_EQ (
+      SocketQPACK_Table_insert_literal (table, "x-custom-a", 10, "value-a", 7),
+      QPACK_OK);
+  ASSERT_EQ (
+      SocketQPACK_Table_insert_literal (table, "x-custom-b", 10, "value-b", 7),
+      QPACK_OK);
 
   /* 1. Encode prefix (RIC=2, Base=2) */
   SocketQPACK_Result result = SocketQPACK_encode_prefix (
@@ -672,31 +693,42 @@ TEST (qpack_integration_mixed_representations)
   offset += written;
 
   /* 2. Indexed Field Line - static (:method GET, index 17) */
-  result = SocketQPACK_encode_indexed_field (buf + offset,
-                                              sizeof (buf) - offset, 17, 1,
-                                              &written);
+  result = SocketQPACK_encode_indexed_field (
+      buf + offset, sizeof (buf) - offset, 17, 1, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* 3. Indexed Field Line - dynamic (relative index 0 -> abs 1) */
-  result = SocketQPACK_encode_indexed_field (buf + offset,
-                                              sizeof (buf) - offset, 0, 0,
-                                              &written);
+  result = SocketQPACK_encode_indexed_field (
+      buf + offset, sizeof (buf) - offset, 0, 0, &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* 4. Literal with Name Reference - static (index 1 = :path) */
-  result = SocketQPACK_encode_literal_name_ref (
-      buf + offset, sizeof (buf) - offset, true, 1, false,
-      (const unsigned char *)"/api", 4, false, &written);
+  result = SocketQPACK_encode_literal_name_ref (buf + offset,
+                                                sizeof (buf) - offset,
+                                                true,
+                                                1,
+                                                false,
+                                                (const unsigned char *)"/api",
+                                                4,
+                                                false,
+                                                &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
   /* 5. Literal with Literal Name */
   result = SocketQPACK_encode_literal_field_literal_name (
-      buf + offset, sizeof (buf) - offset,
-      (const unsigned char *)"x-trace-id", 10, false,
-      (const unsigned char *)"abc123", 6, false, false, &written);
+      buf + offset,
+      sizeof (buf) - offset,
+      (const unsigned char *)"x-trace-id",
+      10,
+      false,
+      (const unsigned char *)"abc123",
+      6,
+      false,
+      false,
+      &written);
   ASSERT_EQ (result, QPACK_OK);
   offset += written;
 
@@ -719,8 +751,10 @@ TEST (qpack_integration_mixed_representations)
   uint64_t index = 0;
   int is_static = 0;
   result = SocketQPACK_decode_indexed_field (buf + decode_offset,
-                                              offset - decode_offset, &index,
-                                              &is_static, &consumed);
+                                             offset - decode_offset,
+                                             &index,
+                                             &is_static,
+                                             &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (is_static, 1);
   ASSERT_EQ (index, 17);
@@ -728,8 +762,10 @@ TEST (qpack_integration_mixed_representations)
 
   /* Decode second indexed field (dynamic) */
   result = SocketQPACK_decode_indexed_field (buf + decode_offset,
-                                              offset - decode_offset, &index,
-                                              &is_static, &consumed);
+                                             offset - decode_offset,
+                                             &index,
+                                             &is_static,
+                                             &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (is_static, 0);
   ASSERT_EQ (index, 0);
@@ -737,9 +773,8 @@ TEST (qpack_integration_mixed_representations)
 
   /* Decode literal with name reference */
   SocketQPACK_LiteralNameRef name_ref;
-  result = SocketQPACK_decode_literal_name_ref (buf + decode_offset,
-                                                 offset - decode_offset,
-                                                 &name_ref, &consumed);
+  result = SocketQPACK_decode_literal_name_ref (
+      buf + decode_offset, offset - decode_offset, &name_ref, &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_ref.is_static, true);
   ASSERT_EQ (name_ref.name_index, 1);
@@ -753,10 +788,17 @@ TEST (qpack_integration_mixed_representations)
   size_t name_len = 0;
   size_t value_len = 0;
   bool never_indexed = false;
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf + decode_offset, offset - decode_offset, name_out, sizeof (name_out),
-      &name_len, value_out, sizeof (value_out), &value_len, &never_indexed,
-      &consumed);
+  result
+      = SocketQPACK_decode_literal_field_literal_name (buf + decode_offset,
+                                                       offset - decode_offset,
+                                                       name_out,
+                                                       sizeof (name_out),
+                                                       &name_len,
+                                                       value_out,
+                                                       sizeof (value_out),
+                                                       &value_len,
+                                                       &never_indexed,
+                                                       &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 10);
   ASSERT_EQ (value_len, 6);
@@ -769,11 +811,6 @@ TEST (qpack_integration_mixed_representations)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * PATTERN DETECTION
- * ============================================================================
- */
 
 TEST (qpack_integration_pattern_detection)
 {
@@ -797,11 +834,6 @@ TEST (qpack_integration_pattern_detection)
   ASSERT (SocketQPACK_is_literal_field_literal_name (0x40) == false);
 }
 
-/* ============================================================================
- * LARGE VALUE TESTS
- * ============================================================================
- */
-
 TEST (qpack_integration_large_value)
 {
   /* Test encoding/decoding of large header values */
@@ -820,24 +852,34 @@ TEST (qpack_integration_large_value)
     large_value[i] = (unsigned char)('a' + (i % 26));
 
   SocketQPACK_Result result = SocketQPACK_encode_literal_field_literal_name (
-      buf, sizeof (buf), (const unsigned char *)"x-large-header", 14, false,
-      large_value, sizeof (large_value), false, false, &written);
+      buf,
+      sizeof (buf),
+      (const unsigned char *)"x-large-header",
+      14,
+      false,
+      large_value,
+      sizeof (large_value),
+      false,
+      false,
+      &written);
   ASSERT_EQ (result, QPACK_OK);
 
-  result = SocketQPACK_decode_literal_field_literal_name (
-      buf, written, name_out, sizeof (name_out), &name_len, value_out,
-      sizeof (value_out), &value_len, &never_indexed, &consumed);
+  result = SocketQPACK_decode_literal_field_literal_name (buf,
+                                                          written,
+                                                          name_out,
+                                                          sizeof (name_out),
+                                                          &name_len,
+                                                          value_out,
+                                                          sizeof (value_out),
+                                                          &value_len,
+                                                          &never_indexed,
+                                                          &consumed);
   ASSERT_EQ (result, QPACK_OK);
   ASSERT_EQ (name_len, 14);
   ASSERT_EQ (value_len, sizeof (large_value));
   ASSERT (memcmp (name_out, "x-large-header", 14) == 0);
   ASSERT (memcmp (value_out, large_value, sizeof (large_value)) == 0);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

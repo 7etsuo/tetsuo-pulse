@@ -42,8 +42,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ==================== Context MTU Tests ==================== */
-
 TEST (dtls_mtu_context_default)
 {
   SocketDTLSContext_T ctx = NULL;
@@ -196,8 +194,6 @@ TEST (dtls_mtu_context_too_large_fails)
   END_TRY;
 }
 
-/* ==================== Socket MTU Tests ==================== */
-
 TEST (dtls_mtu_socket_default)
 {
   SocketDgram_T socket = NULL;
@@ -280,8 +276,6 @@ TEST (dtls_mtu_socket_inherits_context)
   END_TRY;
 }
 
-/* ==================== Validation Macro Tests ==================== */
-
 TEST (dtls_mtu_valid_macro)
 {
   /* Test SOCKET_DTLS_VALID_MTU macro */
@@ -293,8 +287,6 @@ TEST (dtls_mtu_valid_macro)
   ASSERT_EQ (SOCKET_DTLS_VALID_MTU (100000), 0);
   ASSERT_EQ (SOCKET_DTLS_VALID_MTU (0), 0);
 }
-
-/* ==================== Configuration Constants Tests ==================== */
 
 TEST (dtls_mtu_config_constants)
 {
@@ -311,8 +303,6 @@ TEST (dtls_mtu_config_constants)
   ASSERT_EQ (SOCKET_DTLS_VALID_MTU (1500), 1); /* Ethernet */
   ASSERT_EQ (SOCKET_DTLS_VALID_MTU (9000), 1); /* Jumbo frames */
 }
-
-/* ==================== Edge Cases ==================== */
 
 TEST (dtls_mtu_socket_before_enable)
 {

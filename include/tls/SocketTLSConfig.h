@@ -291,87 +291,11 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-/* ============================================================================
- * Certificate Transparency (CT) Support Detection
- * ============================================================================
- *
- * CT support requires OpenSSL 1.1.0+ and CT compiled in (not OPENSSL_NO_CT).
- * This macro is used throughout the TLS modules to conditionally compile
- * CT functionality.
- *
- * Usage in application code:
- *   #if SOCKET_HAS_CT_SUPPORT
- *       SocketTLSContext_enable_ct(ctx, CT_VALIDATION_STRICT);
- *   #endif
- *
- * @see SocketTLSContext_enable_ct() for CT configuration
- * @see RFC 6962 Certificate Transparency specification
- */
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(OPENSSL_NO_CT)
 #define SOCKET_HAS_CT_SUPPORT 1
 #else
 #define SOCKET_HAS_CT_SUPPORT 0
 #endif
-
-/* ============================================================================
- * TLS Protocol Versions
- * ============================================================================
- *
- * DEFAULT: TLS 1.2 minimum, TLS 1.3 maximum for broad compatibility with
- * modern security.
- *
- * This configuration balances security with real-world compatibility:
- * - TLS 1.3 is preferred when both endpoints support it
- * - TLS 1.2 fallback enables compatibility with older clients/servers
- * - Both versions use ECDHE key exchange for Perfect Forward Secrecy (PFS)
- * - Both versions use AEAD ciphers only (AES-GCM, ChaCha20-Poly1305)
- *
- * ## TLS Version Security Summary
- *
- * | Version    | Security Status | Notes                           |
- * |------------|-----------------|----------------------------------|
- * | TLS 1.3    | RECOMMENDED     | Mandatory PFS, simplified handshake, 0-RTT |
- * | TLS 1.2    | SECURE*         | Secure with ECDHE+AEAD ciphers  |
- * | TLS 1.1    | DEPRECATED      | Not supported                   |
- * | TLS 1.0    | DEPRECATED      | Not supported                   |
- * | SSL 3.0    | BROKEN          | Not supported                   |
- * | SSL 2.0    | BROKEN          | Not supported                   |
- *
- * *TLS 1.2 security depends on cipher configuration. This library enforces
- *  ECDHE+AEAD ciphers, mitigating CBC vulnerabilities (Lucky13, BEAST).
- *
- * ## Override for TLS 1.3-Only (Maximum Security)
- *
- * @code{.c}
- * // COMPILE-TIME: TLS 1.3 only (no TLS 1.2 fallback)
- * #define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
- * #include "tls/SocketTLSConfig.h"
- *
- * // RUNTIME: Restrict specific context to TLS 1.3 only
- * SocketTLSConfig_T config;
- * SocketTLS_config_defaults(&config);
- * config.min_version = TLS1_3_VERSION;  // Disable TLS 1.2
- * SocketTLSContext_T ctx = SocketTLSContext_new(&config);
- *
- * // PER-CONTEXT: Upgrade after creation
- * SocketTLSContext_set_min_protocol(ctx, TLS1_3_VERSION);
- * @endcode
- *
- * ## Why TLS 1.2 is Still Supported
- *
- * - Many enterprise systems, load balancers, and legacy clients require TLS 1.2
- * - With ECDHE+AEAD cipher enforcement, TLS 1.2 provides strong security
- * - Allows gradual migration without breaking existing deployments
- * - TLS 1.3 is automatically preferred when available
- *
- * ## Cipher Suite Enforcement
- *
- * Regardless of TLS version, this library enforces:
- * - ECDHE key exchange (Perfect Forward Secrecy)
- * - AEAD ciphers only (AES-GCM, ChaCha20-Poly1305)
- * - No CBC modes (eliminates Lucky13, BEAST vulnerabilities)
- * - No weak algorithms (RC4, 3DES, MD5, SHA1 for MAC)
- */
 
 /**
  * @brief Minimum TLS protocol version - TLS 1.2 for compatibility
@@ -458,11 +382,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
 #endif
 
-/* ============================================================================
- * TLS Cipher Suites
- * ============================================================================
- */
-
 /**
  * @brief TLS 1.3 Modern Cipher Suites (ECDHE-PFS only, AEAD ciphers)
  * @ingroup tls_config
@@ -539,17 +458,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS13_CIPHERSUITES                                        \
   "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_" \
   "SHA256"
-
-/* ============================================================================
- * TLS Timeout Configuration
- * ============================================================================
- *
- * Timeout values are carefully chosen to balance security against DoS attacks
- * (slowloris, connection exhaustion) while accommodating real-world network
- * conditions (high latency, packet loss, OCSP/CRL validation time).
- *
- * All timeouts can be overridden by defining them before including this header.
- */
 
 /**
  * @brief Default TLS handshake timeout in milliseconds
@@ -678,17 +586,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #ifndef SOCKET_TLS_POLL_INTERVAL_MS
 #define SOCKET_TLS_POLL_INTERVAL_MS 100 /* 100ms polling interval */
 #endif
-
-/* ============================================================================
- * Buffer and Size Limits
- * ============================================================================
- *
- * These limits are carefully chosen to:
- * 1. Comply with TLS protocol specifications (RFC 8446)
- * 2. Prevent memory exhaustion and DoS attacks
- * 3. Support common deployment scenarios
- * 4. Maintain compatibility with major TLS implementations
- */
 
 /**
  * @brief TLS read/write buffer size
@@ -864,15 +761,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE 256
 #endif
 
-/* ============================================================================
- * Security Limits
- * ============================================================================
- *
- * These security limits prevent resource exhaustion, memory attacks, and DoS
- * while supporting legitimate enterprise deployments. All limits are enforced
- * at runtime with appropriate error handling.
- */
-
 /**
  * @brief Maximum number of SNI certificates per context
  * @ingroup tls_config
@@ -1042,11 +930,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_MAX_LABEL_LEN 63
 #endif
 
-/* ============================================================================
- * Certificate Pinning Limits
- * ============================================================================
- */
-
 /**
  * @brief Maximum number of certificate pins per context
  * @ingroup tls_config
@@ -1098,21 +981,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #ifndef SOCKET_TLS_PIN_INITIAL_CAPACITY
 #define SOCKET_TLS_PIN_INITIAL_CAPACITY 4
 #endif
-
-/* ============================================================================
- * Kernel TLS (kTLS) Configuration
- * ============================================================================
- *
- * kTLS offloads TLS record encryption/decryption to the Linux kernel,
- * improving performance for high-throughput applications. These constants
- * control kTLS behavior and detection.
- *
- * Requirements:
- * - OpenSSL 3.0+ compiled with `enable-ktls` (not OPENSSL_NO_KTLS)
- * - Linux 4.13+ for TX offload, 4.17+ for RX offload
- * - Kernel CONFIG_TLS=y or CONFIG_TLS=m (tls module loaded)
- * - Supported cipher: AES-GCM-128/256 or ChaCha20-Poly1305 (5.11+)
- */
 
 /**
  * @brief Default kTLS enablement policy
@@ -1210,11 +1078,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #ifndef SOCKET_TLS_KTLS_SENDFILE_BUFSIZE
 #define SOCKET_TLS_KTLS_SENDFILE_BUFSIZE (64 * 1024)
 #endif
-
-/* ============================================================================
- * CRL Auto-Refresh Limits
- * ============================================================================
- */
 
 /**
  * @brief Minimum CRL refresh interval in seconds
@@ -1314,11 +1177,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_CRL_MAX_PATH_LEN 4096
 #endif
 
-/* ============================================================================
- * TLS 1.3 Early Data (0-RTT) Configuration
- * ============================================================================
- */
-
 /**
  * @brief Default early data buffer size for TLS 1.3 0-RTT
  * @ingroup tls_config
@@ -1341,11 +1199,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #ifndef SOCKET_TLS_DEFAULT_EARLY_DATA_SIZE
 #define SOCKET_TLS_DEFAULT_EARLY_DATA_SIZE 16384
 #endif
-
-/* ============================================================================
- * TLS Renegotiation Protection
- * ============================================================================
- */
 
 /**
  * @brief Maximum renegotiations allowed per connection for DoS protection
@@ -1371,11 +1224,6 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #ifndef SOCKET_TLS_MAX_RENEGOTIATIONS
 #define SOCKET_TLS_MAX_RENEGOTIATIONS 3
 #endif
-
-/* ============================================================================
- * OCSP Stapling Configuration
- * ============================================================================
- */
 
 /**
  * @brief Maximum age tolerance for OCSP responses in seconds

@@ -34,42 +34,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/* ============================================================================
- * NEW_TOKEN Frame Encoding (RFC 9000 Section 19.7)
- * ============================================================================
- *
- * Format:
- *   Type (i) = 0x07
- *   Token Length (i)
- *   Token (..)
- *
- * A server sends a NEW_TOKEN frame to provide the client with an address
- * validation token that can be used on a future connection to the server.
- *
- * The token is an opaque blob that the client includes in the Token field
- * of an Initial packet (RFC 9000 Section 17.2.2). The server can use this
- * token to validate the client's address without requiring a Retry packet.
- *
- * NEW_TOKEN frames MUST NOT be sent by a client, and MUST NOT be sent in
- * Initial or Handshake packets. They are only sent in 1-RTT packets.
- *
- * The token MUST NOT be empty (zero-length tokens are invalid).
- *
- * @param token      Opaque token data (server-generated)
- * @param token_len  Length of token in bytes (MUST be > 0)
- * @param out        Output buffer for encoded frame
- * @param out_len    Size of output buffer
- *
- * @return Number of bytes written on success, 0 on error
- *
- * Error conditions:
- * - NULL output buffer
- * - NULL token with non-zero length
- * - Zero-length token (invalid per RFC 9000)
- * - Token length exceeds varint maximum
- * - Insufficient output buffer space
- */
-
 size_t
 SocketQUICFrame_encode_new_token (const uint8_t *token,
                                   size_t token_len,
@@ -126,37 +90,6 @@ SocketQUICFrame_encode_new_token (const uint8_t *token,
 
   return pos;
 }
-
-/* ============================================================================
- * NEW_TOKEN Frame Decoding (RFC 9000 Section 19.7)
- * ============================================================================
- *
- * Decodes a NEW_TOKEN frame from wire format.
- *
- * Note: The main frame parsing logic in SocketQUICFrame.c already handles
- * NEW_TOKEN decoding as part of SocketQUICFrame_parse(). This function
- * provides a convenience wrapper for standalone NEW_TOKEN decoding.
- *
- * The decoded token pointer will reference the input data buffer directly
- * (no copy is made), so the input buffer must remain valid for the lifetime
- * of the token usage.
- *
- * @param data       Input buffer containing encoded NEW_TOKEN frame
- * @param len        Length of input buffer
- * @param token_out  Output buffer for token data
- * @param token_len  Input: size of token_out buffer
- *                   Output: actual token length
- *
- * @return 0 on success, -1 on error
- *
- * Error conditions:
- * - NULL input buffer or token_out or token_len
- * - Empty input buffer
- * - Frame type is not NEW_TOKEN (0x07)
- * - Truncated frame data
- * - Empty token (invalid per RFC 9000)
- * - Token too large for output buffer
- */
 
 int
 SocketQUICFrame_decode_new_token (const uint8_t *data,

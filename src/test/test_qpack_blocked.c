@@ -23,23 +23,14 @@
 #include "http/qpack/SocketQPACK.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * HELPER MACROS
- * ============================================================================
- */
-
 /**
  * @brief Compute the blocked byte cost for a section.
  *
  * The blocked manager tracks data_len + sizeof(SocketQPACK_BlockedSection)
  * per section to account for metadata overhead (fixes #3470).
  */
-#define BLOCKED_COST(data_len) ((data_len) + sizeof (SocketQPACK_BlockedSection))
-
-/* ============================================================================
- * HELPER STRUCTURES
- * ============================================================================
- */
+#define BLOCKED_COST(data_len) \
+  ((data_len) + sizeof (SocketQPACK_BlockedSection))
 
 /**
  * @brief Context for unblock callback testing.
@@ -82,11 +73,6 @@ test_unblock_callback (uint64_t stream_id,
   return 0;
 }
 
-/* ============================================================================
- * MANAGER CREATION TESTS
- * ============================================================================
- */
-
 TEST (qpack_blocked_manager_new_null_arena)
 {
   SocketQPACK_BlockedManager_T manager
@@ -123,11 +109,6 @@ TEST (qpack_blocked_manager_new_custom_config)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * WOULD_BLOCK TESTS
- * ============================================================================
- */
-
 TEST (qpack_would_block_false_equal)
 {
   /* RIC == Insert Count - should NOT block */
@@ -152,11 +133,6 @@ TEST (qpack_would_block_zero)
   ASSERT (!SocketQPACK_would_block (0, 0));
   ASSERT (!SocketQPACK_would_block (0, 5));
 }
-
-/* ============================================================================
- * QUEUE BLOCKED TESTS
- * ============================================================================
- */
 
 TEST (qpack_queue_blocked_null_manager)
 {
@@ -363,11 +339,6 @@ TEST (qpack_queue_blocked_limit_sections_per_stream)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * MINIMUM RIC TESTS
- * ============================================================================
- */
-
 TEST (qpack_get_min_blocked_ric_empty)
 {
   Arena_T arena = Arena_new ();
@@ -412,11 +383,6 @@ TEST (qpack_get_min_blocked_ric_multiple)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * PROCESS UNBLOCKED TESTS
- * ============================================================================
- */
 
 TEST (qpack_process_unblocked_null_manager)
 {
@@ -629,11 +595,6 @@ TEST (qpack_process_unblocked_statistics)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * CANCEL BLOCKED STREAM TESTS
- * ============================================================================
- */
-
 TEST (qpack_cancel_blocked_stream_null_manager)
 {
   SocketQPACK_BlockedResult result
@@ -710,11 +671,6 @@ TEST (qpack_cancel_blocked_stream_multiple)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * RESULT STRING TESTS
- * ============================================================================
- */
-
 TEST (qpack_blocked_result_string_all_values)
 {
   ASSERT (SocketQPACK_blocked_result_string (QPACK_BLOCKED_OK) != NULL);
@@ -739,11 +695,6 @@ TEST (qpack_blocked_result_string_all_values)
           != NULL);
 }
 
-/* ============================================================================
- * NULL MANAGER TESTS FOR GETTERS
- * ============================================================================
- */
-
 TEST (qpack_blocked_getters_null_manager)
 {
   ASSERT_EQ (SocketQPACK_get_blocked_stream_count (NULL), 0);
@@ -753,11 +704,6 @@ TEST (qpack_blocked_getters_null_manager)
   ASSERT_EQ (SocketQPACK_get_min_blocked_ric (NULL), 0);
   ASSERT (!SocketQPACK_is_stream_blocked (NULL, 1));
 }
-
-/* ============================================================================
- * INTEGRATION TESTS
- * ============================================================================
- */
 
 TEST (qpack_blocked_integration_typical_scenario)
 {
@@ -815,11 +761,6 @@ TEST (qpack_blocked_integration_typical_scenario)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * MAIN
- * ============================================================================
- */
 
 int
 main (void)

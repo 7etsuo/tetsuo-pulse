@@ -464,9 +464,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   SocketHTTP2_FrameHeader header;
   unsigned char output[HTTP2_FRAME_HEADER_SIZE];
 
-  /* ====================================================================
-   * Test 1: Direct fuzzed header parsing
-   * ==================================================================== */
   if (size >= HTTP2_FRAME_HEADER_SIZE)
     {
       int result = SocketHTTP2_frame_header_parse (data, size, &header);
@@ -481,14 +478,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-  /* ====================================================================
-   * Test 2: Partial header parsing (should fail)
-   * ==================================================================== */
   test_partial_frame_headers (data, size);
 
-  /* ====================================================================
-   * Test 3: Edge cases with extreme values
-   * ==================================================================== */
   {
     /* Maximum frame size */
     header.length = SOCKETHTTP2_MAX_MAX_FRAME_SIZE;
@@ -513,45 +504,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     SocketHTTP2_frame_header_parse (output, HTTP2_FRAME_HEADER_SIZE, &verify);
   }
 
-  /* ====================================================================
-   * Test 4: String functions for all codes and types
-   * ==================================================================== */
   test_error_strings (data, size);
   test_frame_type_strings (data, size);
   test_stream_state_strings (data, size);
 
-  /* ====================================================================
-   * Test 5: Frame construction with fuzzed data
-   * ==================================================================== */
   test_frame_construction (data, size);
 
-  /* ====================================================================
-   * Test 6: All frame type/flag/stream combinations
-   * ==================================================================== */
   test_all_frame_types ();
 
-  /* ====================================================================
-   * Test 7: Frame payload size constraints
-   * ==================================================================== */
   test_frame_payload_sizes ();
 
-  /* ====================================================================
-   * Test 8: Stream ID constraints per frame type
-   * ==================================================================== */
   test_stream_id_constraints ();
 
-  /* ====================================================================
-   * Test 9: Short input handling
-   * ==================================================================== */
   if (size > 0 && size < HTTP2_FRAME_HEADER_SIZE)
     {
       /* Should return error for too-short input */
       SocketHTTP2_frame_header_parse (data, size, &header);
     }
 
-  /* ====================================================================
-   * Test 10: Fuzzed frame construction from data
-   * ==================================================================== */
   if (size >= 9)
     {
       /* Use fuzz data to construct frame header */

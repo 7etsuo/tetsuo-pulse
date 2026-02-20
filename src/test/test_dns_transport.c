@@ -443,8 +443,6 @@ TEST (dns_transport_free_cancels_queries)
   Arena_dispose (&arena);
 }
 
-/* ============== TCP Transport Tests ============== */
-
 /* Test TCP query without nameserver returns NULL and calls callback */
 TEST (dns_transport_tcp_query_no_nameserver)
 {

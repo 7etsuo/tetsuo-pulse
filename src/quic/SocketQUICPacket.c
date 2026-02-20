@@ -24,15 +24,6 @@
 #include <openssl/crypto.h>
 #endif
 
-/* ============================================================================
- * RFC 9001 §5.8 - Retry Packet Integrity Constants
- *
- * Fixed key and nonce for computing Retry packet integrity tags.
- * Derived from HKDF-Expand-Label with secret:
- *   0xd9c9943e6101fd200021506bcc02814c73030f25c79d71ce876eca876e6fca8e
- * ============================================================================
- */
-
 #ifdef SOCKET_HAS_TLS
 static const uint8_t RETRY_KEY[16]
     = { 0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a,
@@ -41,11 +32,6 @@ static const uint8_t RETRY_KEY[16]
 static const uint8_t RETRY_NONCE[12] = { 0x46, 0x15, 0x99, 0xd3, 0x5d, 0x63,
                                          0x2b, 0xf2, 0x23, 0x98, 0x25, 0xbb };
 #endif /* SOCKET_HAS_TLS */
-
-/* ============================================================================
- * Result String Table
- * ============================================================================
- */
 
 static const char *result_strings[] = {
   [QUIC_PACKET_OK] = "OK",
@@ -78,11 +64,6 @@ SocketQUICPacket_type_string (SocketQUICPacket_Type type)
   return type_strings[type];
 }
 
-/* ============================================================================
- * Initialization
- * ============================================================================
- */
-
 void
 SocketQUICPacketHeader_init (SocketQUICPacketHeader_T *header)
 {
@@ -91,11 +72,6 @@ SocketQUICPacketHeader_init (SocketQUICPacketHeader_T *header)
 
   memset (header, 0, sizeof (*header));
 }
-
-/* ============================================================================
- * Helper Functions - Big-Endian Encoding
- * ============================================================================
- */
 
 /* Big-endian pack/unpack helpers - using shared utilities from SocketUtil.h */
 #define unpack_be32(data) socket_util_unpack_be32 (data)
@@ -119,11 +95,6 @@ pack_pn (uint8_t *data, uint32_t pn, uint8_t pn_length)
   for (uint8_t i = 0; i < pn_length; i++)
     data[i] = (uint8_t)((pn >> (8 * (pn_length - 1 - i))) & 0xFF);
 }
-
-/* ============================================================================
- * Forward Declarations
- * ============================================================================
- */
 
 static SocketQUICPacket_Result
 parse_initial_header (const uint8_t *data,
@@ -161,11 +132,6 @@ static size_t serialize_retry_fields (const SocketQUICPacketHeader_T *header,
                                       uint8_t *output,
                                       size_t output_size,
                                       size_t offset);
-
-/* ============================================================================
- * Long Header Parsing (RFC 9000 Section 17.2)
- * ============================================================================
- */
 
 static SocketQUICPacket_Result
 parse_long_header (const uint8_t *data,
@@ -322,11 +288,6 @@ parse_retry_header (const uint8_t *data,
   return QUIC_PACKET_OK;
 }
 
-/* ============================================================================
- * Short Header Parsing (RFC 9000 Section 17.3)
- * ============================================================================
- */
-
 static SocketQUICPacket_Result
 parse_short_header (const uint8_t *data,
                     size_t len,
@@ -372,11 +333,6 @@ parse_short_header (const uint8_t *data,
   return QUIC_PACKET_OK;
 }
 
-/* ============================================================================
- * Main Parse Function
- * ============================================================================
- */
-
 SocketQUICPacket_Result
 SocketQUICPacketHeader_parse (const uint8_t *data,
                               size_t len,
@@ -409,11 +365,6 @@ SocketQUICPacketHeader_parse (const uint8_t *data,
       return parse_short_header (data, len, header, consumed);
     }
 }
-
-/* ============================================================================
- * Serialization - Size Calculation
- * ============================================================================
- */
 
 size_t
 SocketQUICPacketHeader_size (const SocketQUICPacketHeader_T *header)
@@ -462,11 +413,6 @@ SocketQUICPacketHeader_size (const SocketQUICPacketHeader_T *header)
 
   return size;
 }
-
-/* ============================================================================
- * Serialization - Long Header Type-Specific Helpers
- * ============================================================================
- */
 
 static size_t
 serialize_initial_fields (const SocketQUICPacketHeader_T *header,
@@ -546,11 +492,6 @@ serialize_retry_fields (const SocketQUICPacketHeader_T *header,
   return offset;
 }
 
-/* ============================================================================
- * Serialization - Long Header
- * ============================================================================
- */
-
 static size_t
 serialize_long_header (const SocketQUICPacketHeader_T *header,
                        uint8_t *output,
@@ -606,11 +547,6 @@ serialize_long_header (const SocketQUICPacketHeader_T *header,
     }
 }
 
-/* ============================================================================
- * Serialization - Short Header
- * ============================================================================
- */
-
 static size_t
 serialize_short_header (const SocketQUICPacketHeader_T *header,
                         uint8_t *output,
@@ -647,11 +583,6 @@ serialize_short_header (const SocketQUICPacketHeader_T *header,
   return offset;
 }
 
-/* ============================================================================
- * Main Serialize Function
- * ============================================================================
- */
-
 size_t
 SocketQUICPacketHeader_serialize (const SocketQUICPacketHeader_T *header,
                                   uint8_t *output,
@@ -665,11 +596,6 @@ SocketQUICPacketHeader_serialize (const SocketQUICPacketHeader_T *header,
   else
     return serialize_short_header (header, output, output_size);
 }
-
-/* ============================================================================
- * Builder Functions
- * ============================================================================
- */
 
 static SocketQUICPacket_Result
 validate_pn_length (uint8_t pn_length)
@@ -818,11 +744,6 @@ SocketQUICPacketHeader_build_short (SocketQUICPacketHeader_T *header,
   return QUIC_PACKET_OK;
 }
 
-/* ============================================================================
- * Packet Number Functions (RFC 9000 Appendix A)
- * ============================================================================
- */
-
 uint8_t
 SocketQUICPacket_pn_length (uint64_t pn, uint64_t largest_ack)
 {
@@ -898,11 +819,6 @@ SocketQUICPacket_decode_pn (uint32_t truncated_pn,
 
   return candidate_pn;
 }
-
-/* ============================================================================
- * Retry Packet Integrity (RFC 9001 §5.8)
- * ============================================================================
- */
 
 #ifdef SOCKET_HAS_TLS
 

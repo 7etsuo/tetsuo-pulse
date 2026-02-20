@@ -40,11 +40,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief Default hash table size for connection ID lookup.
  *
@@ -58,11 +53,6 @@
  * Protects against hash collision DoS attacks.
  */
 #define QUIC_CONNID_POOL_MAX_CHAIN_LEN 16
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief Entry in the connection ID pool.
@@ -128,11 +118,6 @@ typedef enum
   QUIC_CONNID_POOL_NOT_FOUND    /**< Connection ID not in pool */
 } SocketQUICConnectionIDPool_Result;
 
-/* ============================================================================
- * Pool Lifecycle Functions
- * ============================================================================
- */
-
 /**
  * @brief Create a new connection ID pool.
  *
@@ -173,11 +158,6 @@ extern size_t SocketQUICConnectionIDPool_total_count (
  */
 extern int
 SocketQUICConnectionIDPool_can_add (const SocketQUICConnectionIDPool_T pool);
-
-/* ============================================================================
- * Connection ID Management
- * ============================================================================
- */
 
 /**
  * @brief Add a new connection ID to the pool.
@@ -256,11 +236,6 @@ SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
                                    const uint8_t *id,
                                    size_t len);
 
-/* ============================================================================
- * Retirement Functions (RFC 9000 §5.1.2)
- * ============================================================================
- */
-
 /**
  * @brief Process Retire Prior To value from NEW_CONNECTION_ID frame.
  *
@@ -320,11 +295,6 @@ SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
 extern uint64_t SocketQUICConnectionIDPool_get_retire_prior_to (
     const SocketQUICConnectionIDPool_T pool);
 
-/* ============================================================================
- * Iteration Functions
- * ============================================================================
- */
-
 /**
  * @brief Callback type for iterating over connection IDs.
  *
@@ -362,11 +332,6 @@ extern int SocketQUICConnectionIDPool_foreach (
  */
 extern SocketQUICConnectionIDEntry_T *
 SocketQUICConnectionIDPool_get_available (SocketQUICConnectionIDPool_T pool);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of pool result code.

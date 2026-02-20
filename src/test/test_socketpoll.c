@@ -39,8 +39,6 @@ setup_signals (void)
   signal (SIGPIPE, SIG_IGN);
 }
 
-/* ==================== Basic Poll Tests ==================== */
-
 TEST (socketpoll_new_creates_poll)
 {
   SocketPoll_T poll = SocketPoll_new (100);
@@ -62,8 +60,6 @@ TEST (socketpoll_new_large_maxevents)
   ASSERT_NOT_NULL (poll);
   SocketPoll_free (&poll);
 }
-
-/* ==================== Add/Remove Tests ==================== */
 
 TEST (socketpoll_add_socket)
 {
@@ -176,8 +172,6 @@ TEST (socketpoll_remove_multiple_sockets)
   Socket_free (&sock1);
 }
 
-/* ==================== Modify Tests ==================== */
-
 TEST (socketpoll_mod_events)
 {
   setup_signals ();
@@ -221,8 +215,6 @@ TEST (socketpoll_mod_user_data)
   SocketPoll_free (&poll);
   Socket_free (&socket);
 }
-
-/* ==================== Wait Tests ==================== */
 
 TEST (socketpoll_wait_timeout)
 {
@@ -413,8 +405,6 @@ TEST (socketpoll_wait_with_user_data)
   END_TRY;
 }
 
-/* ==================== Edge Case Tests ==================== */
-
 TEST (socketpoll_wait_empty_poll)
 {
   SocketPoll_T poll = SocketPoll_new (100);
@@ -519,8 +509,6 @@ TEST (socketpoll_mod_after_add)
   SocketPoll_free (&poll);
   Socket_free (&socket);
 }
-
-/* ==================== Integration Tests ==================== */
 
 TEST (socketpoll_accept_via_poll)
 {
@@ -672,8 +660,6 @@ TEST(socketpoll_multiple_ready_sockets)
 }
 #endif
 
-/* ==================== Event Loop Simulation Tests ==================== */
-
 #if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in    \
        * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. \
        */
@@ -711,8 +697,6 @@ TEST(socketpoll_event_loop_simulation)
 }
 
 #endif
-
-/* ==================== Stress Tests ==================== */
 
 TEST (socketpoll_many_sockets)
 {
@@ -793,8 +777,6 @@ TEST (socketpoll_rapid_add_remove)
   Socket_free (&socket);
 }
 
-/* ==================== Thread Safety Tests ==================== */
-
 #if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp thread safety \
        * issues. See KNOWN_ISSUES.md for details. Works on Linux. */
 
@@ -852,8 +834,6 @@ TEST(socketpoll_concurrent_wait)
 }
 
 #endif
-
-/* ==================== Error Condition Tests ==================== */
 
 TEST (socketpoll_mod_nonexistent_socket)
 {
@@ -1090,8 +1070,6 @@ TEST (socketpoll_free_null_pointer)
   SocketPoll_free (&poll);
   ASSERT_NULL (poll);
 }
-
-/* ==================== Timer Tests ==================== */
 
 static volatile int timer_callback_count = 0;
 static volatile void *timer_callback_userdata = NULL;

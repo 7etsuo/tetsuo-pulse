@@ -302,11 +302,6 @@
 
 /* SocketWS_Config is defined in public header (SocketWS.h) */
 
-/* ============================================================================
- * Frame Parsing State
- * ============================================================================
- */
-
 /**
  * @internal
  * @ingroup websocket
@@ -375,11 +370,6 @@ typedef struct
 
 } SocketWS_FrameParse;
 
-/* ============================================================================
- * Message Reassembly State
- * ============================================================================
- */
-
 /**
  * @internal
  * @ingroup websocket
@@ -417,11 +407,6 @@ typedef struct
   int utf8_initialized;        /**< Whether UTF-8 validation started */
 
 } SocketWS_MessageAssembly;
-
-/* ============================================================================
- * Handshake State
- * ============================================================================
- */
 
 /**
  * @internal
@@ -503,11 +488,6 @@ typedef struct
 
 } SocketWS_Handshake;
 
-/* ============================================================================
- * Compression State (RFC 7692)
- * ============================================================================
- */
-
 #ifdef SOCKETWS_HAS_DEFLATE
 /**
  * @internal
@@ -568,11 +548,6 @@ typedef struct
 } SocketWS_Compression;
 #endif /* SOCKETWS_HAS_NATIVE_DEFLATE */
 #endif /* SOCKETWS_HAS_DEFLATE */
-
-/* ============================================================================
- * Main WebSocket Context Structure
- * ============================================================================
- */
 
 /**
  * @internal
@@ -827,11 +802,6 @@ typedef struct SocketWS *SocketWS_T;
  */
 char *ws_copy_string (Arena_T arena, const char *str);
 
-/* ============================================================================
- * Internal Helper Functions - Transport
- * ============================================================================
- */
-
 /**
  * @brief Check if WebSocket frames require client masking.
  * @internal
@@ -848,11 +818,6 @@ char *ws_copy_string (Arena_T arena, const char *str);
  * @return 1 if masking required, 0 otherwise
  */
 int ws_requires_masking (SocketWS_T ws);
-
-/* ============================================================================
- * Internal Helper Functions - Frame Sending
- * ============================================================================
- */
 
 /**
  * @brief Sends WebSocket control frame: PING, PONG, or CLOSE.
@@ -967,11 +932,6 @@ int ws_send_data_frame (SocketWS_T ws,
                         const unsigned char *data,
                         size_t len,
                         int fin);
-
-/* ============================================================================
- * Internal Helper Functions - Frame Processing
- * ============================================================================
- */
 
 /**
  * @brief Reset frame parser to initial state for new incoming frame.
@@ -1118,11 +1078,6 @@ size_t ws_mask_payload_offset (unsigned char *data,
                                const unsigned char mask[4],
                                size_t offset);
 
-/* ============================================================================
- * Internal Helper Functions - Handshake
- * ============================================================================
- */
-
 /**
  * @brief Initializes the client-side WebSocket handshake.
  * @internal
@@ -1195,11 +1150,6 @@ int ws_handshake_server_process (SocketWS_T ws);
  */
 int ws_handshake_validate_accept (SocketWS_T ws, const char *accept);
 
-/* ============================================================================
- * Internal Helper Functions - Compression
- * ============================================================================
- */
-
 #ifdef SOCKETWS_HAS_DEFLATE
 /**
  * @brief Initializes zlib streams for permessage-deflate compression.
@@ -1271,11 +1221,6 @@ int ws_decompress_message (SocketWS_T ws,
                            size_t *output_len);
 #endif
 
-/* ============================================================================
- * Internal Helper Functions - Control Frames
- * ============================================================================
- */
-
 /**
  * @brief Sends a WebSocket CLOSE control frame to initiate graceful shutdown.
  * @internal
@@ -1344,11 +1289,6 @@ int ws_handle_control_frame (SocketWS_T ws,
                              const unsigned char *payload,
                              size_t len);
 
-/* ============================================================================
- * Internal Helper Functions - Message Handling
- * ============================================================================
- */
-
 /**
  * @brief Resets the message reassembly state for a new message.
  * @internal
@@ -1397,11 +1337,6 @@ int ws_message_append (SocketWS_T ws,
  */
 int ws_message_finalize (SocketWS_T ws);
 
-/* ============================================================================
- * Internal Helper Functions - Auto-Ping
- * ============================================================================
- */
-
 /**
  * @brief Starts the automatic PING timer for keepalive.
  * @internal
@@ -1440,11 +1375,6 @@ void ws_auto_ping_stop (SocketWS_T ws);
  * @see ws_send_ping() for sending.
  */
 void ws_auto_ping_callback (void *userdata);
-
-/* ============================================================================
- * Internal Helper Functions - I/O
- * ============================================================================
- */
 
 /**
  * @brief Flushes pending data from send buffer to underlying socket.
@@ -1486,11 +1416,6 @@ ssize_t ws_fill_recv_buffer (SocketWS_T ws);
  * @see SocketWS_get_last_error() public accessor.
  */
 void ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...);
-
-/* ============================================================================
- * Validation Helpers
- * ============================================================================
- */
 
 /**
  * @brief Check if opcode represents a control frame.

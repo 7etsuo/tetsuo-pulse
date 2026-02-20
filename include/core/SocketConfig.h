@@ -106,11 +106,6 @@
  */
 extern const char *Socket_safe_strerror (int errnum);
 
-/* ============================================================================
- * Library Version
- * ============================================================================
- */
-
 /**
  * @brief Major version number.
  */
@@ -140,37 +135,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_VERSION                                           \
   ((SOCKET_VERSION_MAJOR * 10000) + (SOCKET_VERSION_MINOR * 100) \
    + SOCKET_VERSION_PATCH)
-
-/* ============================================================================
- * Size Limits and Capacity Configuration
- * ============================================================================
- *
- * CONFIGURABLE LIMITS SUMMARY
- *
- * All limits can be overridden at compile time with -D flags.
- *
- * CONNECTION LIMITS:
- *   SOCKET_MAX_CONNECTIONS - 10000 - Maximum connections in pool
- *   SOCKET_MAX_POLL_EVENTS - 1024 - Max events per poll iteration
- *
- * BUFFER LIMITS:
- *   SOCKET_MAX_BUFFER_SIZE - 1MB - Maximum buffer per connection
- *   SOCKET_MIN_BUFFER_SIZE - 512B - Minimum buffer size
- *
- * ARENA (MEMORY) LIMITS:
- *   ARENA_CHUNK_SIZE - 4KB - Default arena chunk size
- *   ARENA_MAX_ALLOC_SIZE - 100MB - Maximum single allocation
- *   ARENA_MAX_FREE_CHUNKS - 10 - Maximum cached free chunks
- *
- * RUNTIME GLOBAL MEMORY LIMIT:
- *   Use SocketConfig_set_max_memory() to set a global memory limit.
- *   Arena allocations will fail when the limit is exceeded.
- *   Query with SocketConfig_get_memory_used() / SocketConfig_get_max_memory().
- *
- * ENFORCEMENT:
- *   - All limits enforced at runtime with graceful failure
- *   - SOCKET_CTR_LIMIT_MEMORY_EXCEEDED incremented when global limit exceeded
- */
 
 /**
  * @brief Maximum number of connections in pool.
@@ -386,11 +350,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_MAX_HASH_CHAIN_LENGTH 16
 #endif
 
-/* ============================================================================
- * Arena Memory Configuration
- * ============================================================================
- */
-
 /**
  * @brief Default arena chunk size.
  *
@@ -430,11 +389,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define ARENA_ERROR_BUFSIZE 256
 #endif
 
-/* ============================================================================
- * Buffer Configuration
- * ============================================================================
- */
-
 /**
  * @brief Minimum capacity for circular buffers.
  *
@@ -470,11 +424,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_BUFFER_SIZE_16KB
 #define SOCKET_BUFFER_SIZE_16KB (16 * 1024)
 #endif
-
-/* ============================================================================
- * QUIC Configuration
- * ============================================================================
- */
 
 /**
  * @brief Maximum CRYPTO frame data buffer size.
@@ -519,11 +468,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef QUIC_MAX_KEY_MATERIAL_SIZE
 #define QUIC_MAX_KEY_MATERIAL_SIZE 128
 #endif
-
-/* ============================================================================
- * DNS Configuration
- * ============================================================================
- */
 
 /**
  * @brief Number of DNS worker threads.
@@ -665,11 +609,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_DNS_MAX_HOSTNAME_LEN 255
 #endif
 
-/* ============================================================================
- * Poll Backend Configuration
- * ============================================================================
- */
-
 /**
  * @brief Initial file descriptor capacity for poll backend.
  *
@@ -708,11 +647,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_POLL_MAX_REGISTERED
 #define SOCKET_POLL_MAX_REGISTERED 0
 #endif
-
-/* ============================================================================
- * Timer Subsystem Configuration
- * ============================================================================
- */
 
 /**
  * @brief Maximum timer timeout to prevent indefinite blocking.
@@ -797,11 +731,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_TIMER_INITIAL_ID 1ULL
 #endif
 
-/* ============================================================================
- * Event Subsystem Configuration
- * ============================================================================
- */
-
 /**
  * @brief Maximum number of event handlers that can be registered.
  *
@@ -809,11 +738,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_EVENT_MAX_HANDLERS
 #define SOCKET_EVENT_MAX_HANDLERS 8
 #endif
-
-/* ============================================================================
- * Rate Limiting Configuration
- * ============================================================================
- */
 
 /**
  * @brief Default connection rate limit.
@@ -872,11 +796,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_IP_MAX_LEN
 #define SOCKET_IP_MAX_LEN 64
 #endif
-
-/* ============================================================================
- * SYN Flood Protection Configuration
- * ============================================================================
- */
 
 /**
  * @brief Sliding window duration for rate measurement.
@@ -1151,11 +1070,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_SYN_FALLBACK_SEED 0x5bd1e995U
 #endif
 
-/* ============================================================================
- * Pool Health Check Configuration
- * ============================================================================
- */
-
 /**
  * @brief Hash table size for per-host circuit breaker entries.
  *
@@ -1254,11 +1168,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_HEALTH_WORKER_STACK_SIZE (128 * 1024)
 #endif
 
-/* ============================================================================
- * Logging Configuration
- * ============================================================================
- */
-
 /**
  * @brief Buffer size for formatted log messages.
  *
@@ -1307,11 +1216,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_LOG_TRUNCATION_SUFFIX_LEN \
   (sizeof (SOCKET_LOG_TRUNCATION_SUFFIX) - 1)
 #endif
-
-/* ============================================================================
- * Error Handling Configuration
- * ============================================================================
- */
 
 /**
  * @brief Error buffer size.
@@ -1388,11 +1292,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_POLL_TIMEOUT_MAX (INT_MAX / 2)
 #endif
 
-/* ============================================================================
- * Platform Detection
- * ============================================================================
- */
-
 /**
  * @brief Platform detection flag for macOS/Apple systems.
  *
@@ -1410,13 +1309,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_PLATFORM_MACOS 0
 #endif
 
-/* ============================================================================
- * Feature Flags
- * ============================================================================
- *
- * Compile-time flags for optional features. Set to 0 to disable.
- * Can be overridden via CMake or compiler defines.
- */
 /**
  * @brief HTTP protocol support flag.
  *
@@ -1509,11 +1401,6 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 #define SOCKET_HAS_RECVMSG 1
 
-/* ============================================================================
- * Timeout Configuration
- * ============================================================================
- */
-
 /**
  * @brief Default connect timeout.
  *
@@ -1521,11 +1408,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
 #define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000 /* 30 seconds */
 #endif
-
-/* ============================================================================
- * Happy Eyeballs (RFC 8305) Configuration
- * ============================================================================
- */
 
 /**
  * @brief SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for
@@ -1701,11 +1583,6 @@ typedef struct SocketTimeouts_Extended
   60000 /**< 60 seconds for request cycle */
 #endif
 
-/* ============================================================================
- * Pool Configuration
- * ============================================================================
- */
-
 /**
  * @brief Default connection pool size.
  *
@@ -1841,11 +1718,6 @@ typedef struct SocketTimeouts_Extended
 #define SOCKETHTTP_MAX_DOS_WARNINGS 3
 #endif
 
-/* ============================================================================
- * Hash and Algorithm Constants
- * ============================================================================
- */
-
 /**
  * @brief Golden ratio constant for multiplicative hashing.
  *
@@ -1856,11 +1728,6 @@ typedef struct SocketTimeouts_Extended
 #ifndef HASH_GOLDEN_RATIO
 #define HASH_GOLDEN_RATIO 2654435761u
 #endif
-
-/* ============================================================================
- * Arena Memory Alignment
- * ============================================================================
- */
 
 /**
  * @brief Alignment union for arena memory management.
@@ -1964,11 +1831,6 @@ union align
 #define ARENA_ENOMEM "Out of memory"
 #endif
 
-/* ============================================================================
- * Time Conversion Constants
- * ============================================================================
- */
-
 /**
  * @brief Milliseconds per second.
  *
@@ -1987,11 +1849,6 @@ union align
  */
 #define SOCKET_NS_PER_SECOND 1000000000LL
 
-/* ============================================================================
- * Async I/O Configuration
- * ============================================================================
- */
-
 /**
  * @brief Default number of io_uring entries.
  *
@@ -2003,11 +1860,6 @@ union align
  *
  */
 #define SOCKET_MAX_EVENT_BATCH 100
-
-/* ============================================================================
- * String Conversion Macros
- * ============================================================================
- */
 
 /**
  * @brief Stringify macro for compile-time string conversion.
@@ -2060,11 +1912,6 @@ union align
  *
  */
 #define SOCKET_IPV6_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV6_MAX_PREFIX)
-
-/* ============================================================================
- * Socket Type and Family Constants
- * ============================================================================
- */
 
 /**
  * @brief TCP stream socket type.
@@ -2125,11 +1972,6 @@ union align
  *
  */
 #define SOCKET_IPPROTO_IPV6 IPPROTO_IPV6
-
-/* ============================================================================
- * Socket Options
- * ============================================================================
- */
 
 /**
  * @brief Socket options level.
@@ -2240,11 +2082,6 @@ union align
  */
 #define SOCKET_SO_PEERCRED SO_PEERCRED
 
-/* ============================================================================
- * TCP Options
- * ============================================================================
- */
-
 /**
  * @brief Disable Nagle's algorithm.
  *
@@ -2332,11 +2169,6 @@ union align
 #define SOCKET_HAS_SO_ACCEPTFILTER 0
 #endif
 
-/* ============================================================================
- * IPv6 Options
- * ============================================================================
- */
-
 /**
  * @brief IPv6 only flag.
  *
@@ -2375,11 +2207,6 @@ union align
  */
 #define SOCKET_IPV6_UNICAST_HOPS IPV6_UNICAST_HOPS
 
-/* ============================================================================
- * IP Options
- * ============================================================================
- */
-
 /**
  * @brief IP time to live.
  *
@@ -2397,11 +2224,6 @@ union align
  *
  */
 #define SOCKET_IP_DROP_MEMBERSHIP IP_DROP_MEMBERSHIP
-
-/* ============================================================================
- * Address and Name Info Flags
- * ============================================================================
- */
 
 /**
  * @brief Passive socket flag for getaddrinfo().
@@ -2444,11 +2266,6 @@ union align
  *
  */
 #define SOCKET_NI_MAXSERV NI_MAXSERV
-
-/* ============================================================================
- * Shutdown and Message Flags
- * ============================================================================
- */
 
 /**
  * @brief Shutdown read direction.
@@ -2500,11 +2317,6 @@ union align
 #else
 #define SOCKET_HAS_SO_NOSIGPIPE 0
 #endif
-
-/* ============================================================================
- * Default Parameters
- * ============================================================================
- */
 
 /**
  * @brief Default TCP keep-alive idle time (seconds).
@@ -2599,17 +2411,6 @@ union align
  *
  */
 #define SOCKET_MULTICAST_DEFAULT_INTERFACE 0
-
-/* ============================================================================
- * Global Memory Limit Configuration
- * ============================================================================
- *
- * These functions control the global memory limit for Arena allocations.
- * When a limit is set, Arena_alloc will return NULL if the allocation
- * would exceed the configured limit.
- *
- * Thread-safe: Yes (uses atomic operations)
- */
 
 /**
  * @brief Sets the global memory limit enforced by all Arena allocators.

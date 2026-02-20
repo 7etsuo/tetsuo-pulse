@@ -26,11 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ============================================================================
- * Normal URL Parsing Tests
- * ============================================================================
- */
-
 TEST (simple_proxy_parse_url_basic)
 {
   SocketSimple_ProxyConfig config;
@@ -76,11 +71,6 @@ TEST (simple_proxy_parse_url_username_only)
   ASSERT (config.password[0] == '\0');
 }
 
-/* ============================================================================
- * URL Decoding Tests
- * ============================================================================
- */
-
 TEST (simple_proxy_parse_url_percent_encoded_username)
 {
   SocketSimple_ProxyConfig config;
@@ -122,11 +112,6 @@ TEST (simple_proxy_parse_url_both_percent_encoded)
   ASSERT (strcmp (config.username, "us er") == 0);
   ASSERT (strcmp (config.password, "pa ss") == 0);
 }
-
-/* ============================================================================
- * Truncation Detection Tests (Security Issue #2320)
- * ============================================================================
- */
 
 TEST (simple_proxy_parse_url_username_too_long)
 {
@@ -203,11 +188,6 @@ TEST (simple_proxy_parse_url_username_only_too_long)
   ASSERT_EQ (-1, result);
 }
 
-/* ============================================================================
- * Edge Case Tests - Near Boundary
- * ============================================================================
- */
-
 TEST (simple_proxy_parse_url_username_max_valid_length)
 {
   SocketSimple_ProxyConfig config;
@@ -256,11 +236,6 @@ TEST (simple_proxy_parse_url_password_max_valid_length)
   ASSERT (strcmp (config.password, password_100) == 0);
 }
 
-/* ============================================================================
- * URL Decoding with Truncation
- * ============================================================================
- */
-
 TEST (simple_proxy_parse_url_percent_encoded_causes_truncation)
 {
   SocketSimple_ProxyConfig config;
@@ -292,11 +267,6 @@ TEST (simple_proxy_parse_url_percent_encoded_causes_truncation)
   /* Should fail */
   ASSERT_EQ (-1, result);
 }
-
-/* ============================================================================
- * Multiple Proxy Types with Long Credentials
- * ============================================================================
- */
 
 TEST (simple_proxy_parse_url_http_username_too_long)
 {

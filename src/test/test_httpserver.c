@@ -44,11 +44,6 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 static void
 setup_signals (void)
 {
@@ -124,11 +119,6 @@ reject_all_validator (SocketHTTPServer_Request_T req,
   return 0; /* Reject */
 }
 
-/* ============================================================================
- * Configuration Tests
- * ============================================================================
- */
-
 TEST (httpserver_config_defaults)
 {
   setup_signals ();
@@ -190,11 +180,6 @@ TEST (httpserver_config_timeouts)
   ASSERT_EQ (15000, config.request_read_timeout_ms);
   ASSERT_EQ (30000, config.response_write_timeout_ms);
 }
-
-/* ============================================================================
- * Server Lifecycle Tests
- * ============================================================================
- */
 
 TEST (httpserver_new_default_config)
 {
@@ -361,11 +346,6 @@ TEST (httpserver_fd)
   END_TRY;
 }
 
-/* ============================================================================
- * Handler Registration Tests
- * ============================================================================
- */
-
 TEST (httpserver_set_handler)
 {
   setup_signals ();
@@ -468,11 +448,6 @@ TEST (httpserver_set_validator_reject)
   END_TRY;
 }
 
-/* ============================================================================
- * Graceful Shutdown Tests
- * ============================================================================
- */
-
 TEST (httpserver_drain)
 {
   setup_signals ();
@@ -569,11 +544,6 @@ TEST (httpserver_state_query)
   END_TRY;
 }
 
-/* ============================================================================
- * Process Tests
- * ============================================================================
- */
-
 TEST (httpserver_process_no_connections)
 {
   setup_signals ();
@@ -635,11 +605,6 @@ TEST (httpserver_multiple_start_stop)
   END_TRY;
 }
 
-/* ============================================================================
- * Default Config Tests
- * ============================================================================
- */
-
 TEST (httpserver_new_null_config_uses_defaults)
 {
   setup_signals ();
@@ -658,11 +623,6 @@ TEST (httpserver_new_null_config_uses_defaults)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Body Streaming Callback Tests
- * ============================================================================
- */
 
 /* Context for body streaming callback tests */
 typedef struct
@@ -1014,15 +974,6 @@ TEST (httpserver_body_streaming_final_flag)
   ASSERT_EQ (2, stream_ctx.chunk_count);
 }
 
-/* ============================================================================
- * Dynamic Chunked Body Allocation Tests
- *
- * Tests for the dynamic buffer growth feature where chunked bodies start with
- * small initial buffer (HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE = 8KB) and grow
- * dynamically instead of pre-allocating full max_body_size.
- * ============================================================================
- */
-
 /* Handler that verifies body was received correctly */
 static size_t chunked_body_received_len = 0;
 static int chunked_body_handler_called = 0;
@@ -1141,11 +1092,6 @@ TEST (httpserver_dynamic_chunked_body_small_limit)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * Main - Run all HTTP server tests
- * ============================================================================
- */
 
 int
 main (void)

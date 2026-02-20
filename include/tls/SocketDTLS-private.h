@@ -44,11 +44,6 @@
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 
-/* ============================================================================
- * Thread-Local Error Handling for SocketDTLS
- * ============================================================================
- */
-
 /**
  * @brief Raise a SocketDTLS module exception with automatically populated
  * error details.
@@ -497,11 +492,6 @@
     ssl_conn;                                           \
   })
 
-/* ============================================================================
- * SSL Object Access
- * ============================================================================
- */
-
 /**
  * @brief Retrieve the SSL object pointer associated with a DTLS-enabled
  * socket.
@@ -569,11 +559,6 @@ dtls_socket_get_ssl (SocketDgram_T socket)
     return NULL;
   return (SSL *)socket->dtls_ssl;
 }
-
-/* ============================================================================
- * SSL Error Handling
- * ============================================================================
- */
 
 /**
  * @brief Map OpenSSL error codes to DTLS handshake states for non-blocking
@@ -714,11 +699,6 @@ dtls_format_openssl_error (const char *context)
       context, socket_error_buf, SOCKET_ERROR_BUFSIZE);
 }
 
-/* ============================================================================
- * Input Validation
- * ============================================================================
- */
-
 /**
  * @brief Validate file path for certificates, keys, or CAs against security
  * threats.
@@ -736,11 +716,6 @@ dtls_validate_file_path (const char *path)
 {
   return ssl_validate_file_path (path, SOCKET_DTLS_MAX_PATH_LEN);
 }
-
-/* ============================================================================
- * SocketDTLSContext_T Structure Definition
- * ============================================================================
- */
 
 #define T SocketDTLSContext_T
 
@@ -847,11 +822,6 @@ struct T
 #define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...) \
   SOCKET_RAISE_FMT (SocketDTLSContext, exception, fmt, ##__VA_ARGS__)
 
-/* ============================================================================
- * Utility Macros
- * ============================================================================
- */
-
 /**
  * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
@@ -886,11 +856,6 @@ struct T
     ssl_conn;                                                         \
   })
 
-/* ============================================================================
- * Cookie Exchange Internal Functions
- * ============================================================================
- */
-
 /**
  * @brief OpenSSL callback for generating DTLS anti-DoS cookies during server
  * handshake.
@@ -902,13 +867,13 @@ struct T
  * mitigating resource exhaustion DoS attacks. Cookies force clients to
  * demonstrate reachability before server allocates full handshake state.
  *
-   * Cookie computation (SOCKET_DTLS_COOKIE_LEN bytes):
-   *   cookie = timestamp_u32_be || HMAC-SHA256(server_secret,
-   *                                          peer_addr || peer_port || timestamp)
-   *   cookie_tag = first (SOCKET_DTLS_COOKIE_LEN - 4) bytes of HMAC output
-   *
-   * The timestamp is monotonic seconds at generation time (big-endian). The
-   * HMAC binds the cookie to the peer address and timestamp.
+ * Cookie computation (SOCKET_DTLS_COOKIE_LEN bytes):
+ *   cookie = timestamp_u32_be || HMAC-SHA256(server_secret,
+ *                                          peer_addr || peer_port || timestamp)
+ *   cookie_tag = first (SOCKET_DTLS_COOKIE_LEN - 4) bytes of HMAC output
+ *
+ * The timestamp is monotonic seconds at generation time (big-endian). The
+ * HMAC binds the cookie to the peer address and timestamp.
  * Secret rotated periodically via context for forward secrecy and replay
  * resistance. Timestamp ensures expiration.
  *
@@ -956,8 +921,8 @@ struct T
  * - **Stateless**: No per-client memory; scales to millions of SYNs
  * - **Unforgeable**: HMAC binds to secret unknown to attacker
  * - **Address-bound**: Proves client IP/port ownership via round-trip
-   * - **Time-limited**: Timestamp expiration (configurable window)
-   * - **Replay-resistant**: Short lifetime + secret rotation
+ * - **Time-limited**: Timestamp expiration (configurable window)
+ * - **Replay-resistant**: Short lifetime + secret rotation
  *
  * | Attack | Mitigated? | Mechanism |
  * |--------|------------|-----------|
@@ -1070,14 +1035,14 @@ struct T
  * @param out_cookie Output buffer for cookie (SOCKET_DTLS_COOKIE_LEN bytes)
  * @return 0 on success, -1 on failure
  *
-   * Creates a cryptographically secure cookie:
-   *   cookie = timestamp_u32_be || truncated_hmac_tag
-   *
-   * Where truncated_hmac_tag is the first (SOCKET_DTLS_COOKIE_LEN - 4) bytes of
-   * HMAC-SHA256(secret, peer_addr || peer_port || timestamp).
-   *
-   * The timestamp is monotonic seconds at generation time (big-endian).
-   * The cookie proves client address ownership and limits replay via lifetime.
+ * Creates a cryptographically secure cookie:
+ *   cookie = timestamp_u32_be || truncated_hmac_tag
+ *
+ * Where truncated_hmac_tag is the first (SOCKET_DTLS_COOKIE_LEN - 4) bytes of
+ * HMAC-SHA256(secret, peer_addr || peer_port || timestamp).
+ *
+ * The timestamp is monotonic seconds at generation time (big-endian).
+ * The cookie proves client address ownership and limits replay via lifetime.
  *
  * Used internally by dtls_cookie_generate_cb() and exposed for testing.
  * @see RFC 6347 Section 4.2.1 for cookie exchange specification

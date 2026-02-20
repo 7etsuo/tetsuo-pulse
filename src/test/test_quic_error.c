@@ -22,11 +22,6 @@
 #include "quic/SocketQUICVarInt.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Transport Error Code Value Tests
- * ============================================================================
- */
-
 TEST (quic_error_no_error_value)
 {
   ASSERT_EQ (QUIC_NO_ERROR, 0x00);
@@ -112,11 +107,6 @@ TEST (quic_error_no_viable_path_value)
   ASSERT_EQ (QUIC_NO_VIABLE_PATH, 0x10);
 }
 
-/* ============================================================================
- * Crypto Error Macro Tests
- * ============================================================================
- */
-
 TEST (quic_error_crypto_base_value)
 {
   ASSERT_EQ (QUIC_CRYPTO_ERROR_BASE, 0x0100);
@@ -161,11 +151,6 @@ TEST (quic_error_crypto_alert_macro)
   ASSERT_EQ (QUIC_CRYPTO_ALERT (0x01ff), 255);
 }
 
-/* ============================================================================
- * Error Category Tests
- * ============================================================================
- */
-
 TEST (quic_error_category_transport)
 {
   ASSERT_EQ (SocketQUIC_error_category (QUIC_NO_ERROR),
@@ -198,11 +183,6 @@ TEST (quic_error_category_unknown)
   ASSERT_EQ (SocketQUIC_error_category (0xff), QUIC_ERROR_CATEGORY_UNKNOWN);
 }
 
-/* ============================================================================
- * Error Validation Tests
- * ============================================================================
- */
-
 TEST (quic_error_is_valid_true)
 {
   ASSERT (SocketQUIC_error_is_valid (0));
@@ -225,11 +205,6 @@ TEST (quic_error_is_transport_error)
   ASSERT (!SocketQUIC_is_transport_error (0x11));
   ASSERT (!SocketQUIC_is_transport_error (0x0100));
 }
-
-/* ============================================================================
- * Error String Tests
- * ============================================================================
- */
 
 TEST (quic_error_string_transport_errors)
 {
@@ -307,11 +282,6 @@ TEST (quic_error_string_not_null)
   ASSERT_NOT_NULL (SocketQUIC_error_string (UINT64_MAX));
 }
 
-/* ============================================================================
- * Category String Tests
- * ============================================================================
- */
-
 TEST (quic_error_category_string)
 {
   ASSERT (
@@ -337,11 +307,6 @@ TEST (quic_error_category_string_invalid)
   const char *str = SocketQUIC_error_category_string (99);
   ASSERT (strcmp (str, "UNKNOWN") == 0);
 }
-
-/* ============================================================================
- * Error Handling Tests (RFC 9000 Section 11)
- * ============================================================================
- */
 
 TEST (quic_error_is_connection_fatal_transport)
 {
@@ -643,11 +608,6 @@ TEST (quic_error_send_stream_reset_null)
   END_TRY;
 }
 
-/* ============================================================================
- * Reason String Security Tests (Issue #948)
- * ============================================================================
- */
-
 TEST (quic_error_send_connection_close_non_null_terminated)
 {
   volatile Arena_T arena = NULL;
@@ -833,11 +793,6 @@ TEST (quic_error_send_connection_close_overflow_protection)
   END_TRY;
 }
 
-/* ============================================================================
- * Integer Overflow Security Tests (Issue #2001)
- * ============================================================================
- */
-
 TEST (quic_error_send_connection_close_integer_overflow_protection)
 {
   volatile Arena_T arena = NULL;
@@ -904,11 +859,6 @@ TEST (quic_error_send_connection_close_boundary_check)
   }
   END_TRY;
 }
-
-/* ============================================================================
- * TLS Alert String Tests (RFC 9001 §4.8)
- * ============================================================================
- */
 
 TEST (quic_tls_alert_string_close_notify)
 {
@@ -1017,11 +967,6 @@ TEST (quic_no_application_protocol_alert)
   ASSERT_EQ (code, 0x0178);
   ASSERT (QUIC_IS_CRYPTO_ERROR (code));
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

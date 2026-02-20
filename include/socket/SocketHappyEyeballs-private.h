@@ -37,11 +37,6 @@
 #include <stdint.h>
 #include <time.h>
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
 /**
  * @brief Maximum number of simultaneous connection attempts allowed.
  * @ingroup async_io
@@ -74,11 +69,6 @@
 #ifndef SOCKET_HE_CONNECT_ERROR_BUFSIZE
 #define SOCKET_HE_CONNECT_ERROR_BUFSIZE 512
 #endif
-
-/* ============================================================================
- * Connection Attempt State
- * ============================================================================
- */
 
 /**
  * @brief State enumeration for individual Happy Eyeballs connection attempts.
@@ -131,11 +121,6 @@ typedef enum SocketHE_AttemptState
   HE_ATTEMPT_CONNECTED,  /**< Connection successfully established. */
   HE_ATTEMPT_FAILED      /**< Connection attempt failed (error or timeout). */
 } SocketHE_AttemptState;
-
-/* ============================================================================
- * Connection Attempt Structure
- * ============================================================================
- */
 
 /**
  * @brief Single connection attempt structure in Happy Eyeballs racing.
@@ -219,11 +204,6 @@ typedef struct SocketHE_Attempt
   struct SocketHE_Attempt *next; /**< Next attempt in singly-linked list. */
 } SocketHE_Attempt_T;
 
-/* ============================================================================
- * Sorted Address List
- * ============================================================================
- */
-
 /**
  * @brief Wrapper structure for resolved addresses in Happy Eyeballs address
  * preference ordering.
@@ -270,11 +250,6 @@ typedef struct SocketHE_Attempt
  * @see struct addrinfo for wrapped address details.
  * @see SocketHE_Config_T::prefer_ipv6 for preference configuration.
  * @see docs/ASYNC_IO.md#address-selection for RFC 8305 details.
- */
-
-/* ============================================================================
- * Main Context Structure
- * ============================================================================
  */
 
 /**
@@ -491,11 +466,6 @@ struct SocketHE_T
  */
 #define HE_FOREACH_ATTEMPT(he, iter) \
   for (SocketHE_Attempt_T *iter = (he)->attempts; iter; iter = iter->next)
-
-/* ============================================================================
- * Implementation Notes
- * ============================================================================
- */
 
 /**
  * @note Timing and Monotonic Clocks

@@ -19,11 +19,6 @@
 
 #include <string.h>
 
-/* ============================================================================
- * Test Helpers
- * ============================================================================
- */
-
 /**
  * @brief Build a SETTINGS frame with default (empty) settings payload.
  *
@@ -190,11 +185,6 @@ make_server_conn_with_peer_control (Arena_T arena)
   return conn;
 }
 
-/* ============================================================================
- * Creation & Config Tests
- * ============================================================================
- */
-
 TEST (h3_conn_config_defaults)
 {
   SocketHTTP3_ConnConfig config;
@@ -240,11 +230,6 @@ TEST (h3_conn_new_null_arena)
   SocketHTTP3_Conn_T conn = SocketHTTP3_Conn_new (NULL, NULL, &config);
   ASSERT_NULL (conn);
 }
-
-/* ============================================================================
- * Initialization Tests
- * ============================================================================
- */
 
 TEST (h3_conn_init_transitions_to_open)
 {
@@ -364,11 +349,6 @@ TEST (h3_conn_init_decoder_stream_type_byte)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Settings Exchange Tests
- * ============================================================================
- */
-
 TEST (h3_conn_settings_parse_ok)
 {
   Arena_T arena = Arena_new ();
@@ -473,11 +453,6 @@ TEST (h3_conn_settings_reserved_h2_id)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * GOAWAY Tests
- * ============================================================================
- */
 
 TEST (h3_conn_goaway_send)
 {
@@ -616,11 +591,6 @@ TEST (h3_conn_graceful_shutdown)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * MAX_PUSH_ID Tests
- * ============================================================================
- */
-
 TEST (h3_conn_max_push_id_from_client_ok)
 {
   Arena_T arena = Arena_new ();
@@ -662,11 +632,6 @@ TEST (h3_conn_max_push_id_from_server_rejected)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Control Stream Validation Tests
- * ============================================================================
- */
 
 TEST (h3_conn_reserved_h2_frame_rejected)
 {
@@ -715,11 +680,6 @@ TEST (h3_conn_data_on_control_rejected)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Unidirectional Stream Type Detection Tests
- * ============================================================================
- */
-
 TEST (h3_conn_unidi_stream_type_detection)
 {
   Arena_T arena = Arena_new ();
@@ -746,11 +706,6 @@ TEST (h3_conn_unidi_stream_type_detection)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * State Tests
- * ============================================================================
- */
 
 TEST (h3_conn_state_names)
 {
@@ -793,11 +748,6 @@ TEST (h3_conn_drain_output)
 
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

@@ -42,11 +42,6 @@ const Except_T SocketHTTP_InvalidURI
 const Except_T SocketHTTP_InvalidHeader
     = { &SocketHTTP_Failed, "Invalid HTTP header" };
 
-/* ============================================================================
- * Character Classification Tables (RFC 9110 / RFC 3986)
- * ============================================================================
- */
-
 // clang-format off
 /* Token characters: tchar = "!" / "#" / "$" / ... / DIGIT / ALPHA */
 const unsigned char sockethttp_tchar_table[256] = {
@@ -159,11 +154,6 @@ sockethttp_parse_enum (const char *str,
 }
 
 
-/* ============================================================================
- * HTTP Version
- * ============================================================================
- */
-
 static const char *version_strings[] = {
   [HTTP_VERSION_0_9] = "HTTP/0.9", [HTTP_VERSION_1_0] = "HTTP/1.0",
   [HTTP_VERSION_1_1] = "HTTP/1.1", [HTTP_VERSION_2] = "HTTP/2",
@@ -199,11 +189,6 @@ SocketHTTP_version_parse (const char *str, size_t len)
       sizeof (version_table) / sizeof (version_table[0]),
       HTTP_VERSION_0_9);
 }
-
-/* ============================================================================
- * HTTP Methods
- * ============================================================================
- */
 
 static const char *method_names[] = {
   [HTTP_METHOD_GET] = "GET",         [HTTP_METHOD_HEAD] = "HEAD",
@@ -284,11 +269,6 @@ SocketHTTP_method_valid (const char *str, size_t len)
     return 0;
   return sockethttp_is_token_valid (str, len);
 }
-
-/* ============================================================================
- * HTTP Status Codes
- * ============================================================================
- */
 
 static const char
     *status_reasons[HTTP_STATUS_CODE_MAX - HTTP_STATUS_CODE_MIN + 1]
@@ -415,11 +395,6 @@ SocketHTTP_status_valid (int code)
   return code >= HTTP_STATUS_CODE_MIN && code <= HTTP_STATUS_CODE_MAX;
 }
 
-/* ============================================================================
- * Header Validation
- * ============================================================================
- */
-
 int
 SocketHTTP_header_name_valid (const char *name, size_t len)
 {
@@ -449,11 +424,6 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
     }
   return 1;
 }
-
-/* ============================================================================
- * Transfer-Encoding / Content-Encoding
- * ============================================================================
- */
 
 static const struct ParseEntry coding_table[] = {
   { SOCKETHTTP_CODING_LEN_BR, "br", HTTP_CODING_BR, true },

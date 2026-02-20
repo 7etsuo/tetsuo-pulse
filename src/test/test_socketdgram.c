@@ -39,8 +39,6 @@ setup_signals (void)
   signal (SIGPIPE, SIG_IGN);
 }
 
-/* ==================== Basic Socket Tests ==================== */
-
 TEST (socketdgram_new_creates_ipv4_socket)
 {
   setup_signals ();
@@ -68,8 +66,6 @@ TEST (socketdgram_fd_access)
   ASSERT_NE (fd, -1);
   SocketDgram_free (&socket);
 }
-
-/* ==================== Bind Tests ==================== */
 
 TEST (socketdgram_bind_localhost)
 {
@@ -152,8 +148,6 @@ TEST (socketdgram_bind_ipv6_any)
   END_TRY;
   SocketDgram_free (&socket);
 }
-
-/* ==================== Sendto/Recvfrom Tests ==================== */
 
 TEST (socketdgram_sendto_recvfrom_localhost)
 {
@@ -265,8 +259,6 @@ TEST (socketdgram_multiple_datagrams)
   END_TRY;
 }
 
-/* ==================== Connected Mode Tests ==================== */
-
 TEST (socketdgram_connect_send_recv)
 {
   setup_signals ();
@@ -330,8 +322,6 @@ TEST (socketdgram_connected_bidirectional)
   END_TRY;
 }
 
-/* ==================== Socket Options Tests ==================== */
-
 TEST (socketdgram_setnonblocking)
 {
   setup_signals ();
@@ -381,8 +371,6 @@ TEST (socketdgram_settimeout)
   END_TRY;
   SocketDgram_free (&socket);
 }
-
-/* ==================== Close-on-Exec Tests ==================== */
 
 TEST (socketdgram_new_sets_cloexec_by_default)
 {
@@ -445,8 +433,6 @@ TEST (socketdgram_setttl_min_max)
   END_TRY;
   SocketDgram_free (&socket);
 }
-
-/* ==================== Socket Option Getter Tests ==================== */
 
 TEST (socketdgram_gettimeout_returns_set_value)
 {
@@ -555,8 +541,6 @@ TEST (socketdgram_getsndbuf_returns_positive_value)
   SocketDgram_free (&socket);
 }
 
-/* ==================== Connection State Query Tests ==================== */
-
 TEST (socketdgram_isbound_returns_false_for_new_socket)
 {
   setup_signals ();
@@ -621,8 +605,6 @@ TEST (socketdgram_isbound_after_connect)
   SocketDgram_free (&socket);
 }
 
-/* ==================== Multicast Tests ==================== */
-
 TEST (socketdgram_joinmulticast_ipv4)
 {
   setup_signals ();
@@ -677,8 +659,6 @@ TEST (socketdgram_multicast_send_receive)
   END_TRY;
 }
 
-/* ==================== IPv6 Tests ==================== */
-
 TEST (socketdgram_ipv6_sendto_recvfrom)
 {
   setup_signals ();
@@ -718,8 +698,6 @@ TEST (socketdgram_ipv6_setttl)
   SocketDgram_free (&socket);
 }
 
-/* ==================== Nonblocking Tests ==================== */
-
 TEST (socketdgram_recvfrom_nonblocking_returns_zero)
 {
   setup_signals ();
@@ -755,8 +733,6 @@ TEST (socketdgram_recv_nonblocking_returns_zero)
 
   SocketDgram_free (&socket);
 }
-
-/* ==================== Stress Tests ==================== */
 
 TEST (socketdgram_many_sequential_datagrams)
 {
@@ -795,8 +771,6 @@ TEST (socketdgram_rapid_open_close)
       ASSERT_NULL (socket);
     }
 }
-
-/* ==================== Thread Safety Tests ==================== */
 
 static void *
 thread_create_dgram_sockets (void *arg)
@@ -892,8 +866,6 @@ TEST (socketdgram_concurrent_sendto)
   SocketDgram_free (&receiver);
 }
 
-/* ==================== Partial I/O Helper Tests ==================== */
-
 TEST (socketdgram_sendall_sends_all_data)
 {
   setup_signals ();
@@ -963,8 +935,6 @@ TEST (socketdgram_recvall_receives_all_data)
   SocketDgram_free (&sender);
   SocketDgram_free (&receiver);
 }
-
-/* ==================== Scatter/Gather I/O Tests ==================== */
 
 TEST (socketdgram_sendv_sends_from_multiple_buffers)
 {
@@ -1125,8 +1095,6 @@ TEST (socketdgram_sendvall_sends_all_from_multiple_buffers)
   SocketDgram_free (&receiver);
 }
 
-/* ==================== recvvall Test ==================== */
-
 TEST (socketdgram_recvv_wouldblock_returns_zero)
 {
   setup_signals ();
@@ -1257,8 +1225,6 @@ TEST (socketdgram_recvvall_receives_all_into_multiple_buffers)
   SocketDgram_free (&receiver);
 }
 
-/* ==================== Invalid Port Tests ==================== */
-
 TEST (socketdgram_bind_invalid_port_negative)
 {
   setup_signals ();
@@ -1318,8 +1284,6 @@ TEST (socketdgram_connect_invalid_port_too_large)
   ASSERT_EQ (1, raised);
   SocketDgram_free (&socket);
 }
-
-/* ==================== Oversized Datagram Tests ==================== */
 
 TEST (socketdgram_sendto_oversized_rejected)
 {
@@ -1394,8 +1358,6 @@ TEST (socketdgram_sendv_oversized_rejected)
   SocketDgram_free (&receiver);
 }
 
-/* ==================== Invalid Hostname Test ==================== */
-
 TEST (socketdgram_sendto_invalid_hostname)
 {
   setup_signals ();
@@ -1418,8 +1380,6 @@ TEST (socketdgram_sendto_invalid_hostname)
   ASSERT_EQ (1, raised);
   SocketDgram_free (&socket);
 }
-
-/* ==================== IPv6 TTL Getter Test ==================== */
 
 TEST (socketdgram_ipv6_getttl_returns_set_value)
 {
@@ -1446,8 +1406,6 @@ TEST (socketdgram_ipv6_getttl_returns_set_value)
   SocketDgram_free (&socket);
 }
 
-/* ==================== setreuseport Test ==================== */
-
 TEST (socketdgram_setreuseport)
 {
   setup_signals ();
@@ -1462,8 +1420,6 @@ TEST (socketdgram_setreuseport)
 
   SocketDgram_free (&socket);
 }
-
-/* ==================== Invalid TTL Tests ==================== */
 
 TEST (socketdgram_setttl_invalid_zero)
 {
@@ -1494,8 +1450,6 @@ TEST (socketdgram_setttl_invalid_over_255)
   ASSERT_EQ (1, raised);
   SocketDgram_free (&socket);
 }
-
-/* ==================== Bind Error Test ==================== */
 
 TEST (socketdgram_bind_already_bound_port)
 {
@@ -1529,8 +1483,6 @@ TEST (socketdgram_bind_already_bound_port)
   SocketDgram_free (&socket2);
 }
 
-/* ==================== Connect Error Test ==================== */
-
 TEST (socketdgram_connect_invalid_address)
 {
   setup_signals ();
@@ -1550,8 +1502,6 @@ TEST (socketdgram_connect_invalid_address)
   ASSERT_EQ (1, raised);
   SocketDgram_free (&socket);
 }
-
-/* ==================== Local Address Accessor Test ==================== */
 
 TEST (socketdgram_getlocaladdr_returns_unknown_before_bind)
 {
@@ -1605,8 +1555,6 @@ TEST (socketdgram_getlocalport_returns_zero_before_bind)
   SocketDgram_free (&socket);
 }
 
-/* ==================== Debug Live Count Tests ==================== */
-
 TEST (socketdgram_debug_live_count_tracks_sockets)
 {
   setup_signals ();
@@ -1654,8 +1602,6 @@ TEST (socketdgram_debug_live_count_zero_on_cleanup)
   ASSERT_NULL (socket);
   ASSERT_EQ (initial_count, SocketDgram_debug_live_count ());
 }
-
-/* ==================== IPv6 Convenience Function Tests ==================== */
 
 TEST (socketdgram_bind_udp4_creates_ipv4_socket)
 {
@@ -1875,9 +1821,6 @@ TEST (socketdgram_bind_udp_ipv4_ipv6_both_work)
   }
   END_TRY;
 }
-
-/* ==================== Port Parsing Validation Tests (Issue #1361) ========
- */
 
 TEST (socketdgram_recvfrom_validates_port_correctly)
 {

@@ -44,11 +44,6 @@ typedef struct T *T;
  */
 extern const Except_T SocketReconnect_Failed;
 
-/* ============================================================================
- * Reconnection State
- * ============================================================================
- */
-
 /**
  * @brief Reconnection state machine states.
  * @ingroup connection_mgmt
@@ -61,11 +56,6 @@ typedef enum
   RECONNECT_BACKOFF,          /**< Waiting before retry */
   RECONNECT_CIRCUIT_OPEN      /**< Circuit breaker open */
 } SocketReconnect_State;
-
-/* ============================================================================
- * Backoff Policy Configuration
- * ============================================================================
- */
 
 /**
  * @brief Backoff policy and circuit breaker configuration.
@@ -138,11 +128,6 @@ typedef struct SocketReconnect_Policy
 #define SOCKET_RECONNECT_MIN_HEALTH_TIMEOUT_MS 100
 #endif
 
-/* ============================================================================
- * Event Callbacks
- * ============================================================================
- */
-
 /**
  * @brief State transition callback.
  * @ingroup connection_mgmt
@@ -172,11 +157,6 @@ typedef int (*SocketReconnect_HealthCheck) (T conn,
                                             int timeout_ms,
                                             void *userdata);
 
-/* ============================================================================
- * Context Creation and Destruction
- * ============================================================================
- */
-
 /**
  * @brief Create reconnection context for a host:port endpoint.
  * @ingroup connection_mgmt
@@ -200,11 +180,6 @@ extern T SocketReconnect_new (const char *host,
  * @param conn Pointer to handle (set to NULL after cleanup)
  */
 extern void SocketReconnect_free (T *conn);
-
-/* ============================================================================
- * Connection Control
- * ============================================================================
- */
 
 /**
  * @brief Initiate connection attempt.
@@ -230,11 +205,6 @@ extern void SocketReconnect_disconnect (T conn);
  */
 extern void SocketReconnect_reset (T conn);
 
-/* ============================================================================
- * Socket Access
- * ============================================================================
- */
-
 /**
  * @brief Get underlying socket when connected.
  * @ingroup connection_mgmt
@@ -243,11 +213,6 @@ extern void SocketReconnect_reset (T conn);
  * @warning Do not close or free the returned socket directly.
  */
 extern Socket_T SocketReconnect_socket (T conn);
-
-/* ============================================================================
- * State Query
- * ============================================================================
- */
 
 /**
  * @brief Get current state.
@@ -280,11 +245,6 @@ extern int SocketReconnect_attempts (T conn);
  * @return Number of consecutive failures
  */
 extern int SocketReconnect_failures (T conn);
-
-/* ============================================================================
- * Event Loop Integration
- * ============================================================================
- */
 
 /**
  * @brief Get file descriptor for polling.
@@ -321,11 +281,6 @@ extern int SocketReconnect_next_timeout_ms (T conn);
  */
 extern void SocketReconnect_tick (T conn);
 
-/* ============================================================================
- * Health Check Configuration
- * ============================================================================
- */
-
 /**
  * @brief Register custom health check callback.
  * @ingroup connection_mgmt
@@ -335,22 +290,12 @@ extern void SocketReconnect_tick (T conn);
 extern void
 SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check);
 
-/* ============================================================================
- * Policy Helpers
- * ============================================================================
- */
-
 /**
  * @brief Initialize policy with production-safe defaults.
  * @ingroup connection_mgmt
  * @param policy Policy structure to initialize
  */
 extern void SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy);
-
-/* ============================================================================
- * I/O Passthrough (Auto-Reconnect on Error)
- * ============================================================================
- */
 
 /**
  * @brief Send data with automatic reconnect on error.
@@ -372,11 +317,6 @@ extern ssize_t SocketReconnect_send (T conn, const void *buf, size_t len);
  */
 extern ssize_t SocketReconnect_recv (T conn, void *buf, size_t len);
 
-/* ============================================================================
- * State Names (for logging/debugging)
- * ============================================================================
- */
-
 /**
  * @brief Get human-readable state name.
  * @ingroup connection_mgmt
@@ -384,11 +324,6 @@ extern ssize_t SocketReconnect_recv (T conn, void *buf, size_t len);
  * @return Static string
  */
 extern const char *SocketReconnect_state_name (SocketReconnect_State state);
-
-/* ============================================================================
- * TLS Integration (Conditional)
- * ============================================================================
- */
 
 #if SOCKET_HAS_TLS
 #undef T

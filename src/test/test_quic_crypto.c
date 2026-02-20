@@ -17,14 +17,6 @@
 #include "quic/SocketQUICVersion.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * RFC 9001 Appendix A.1 Test Vectors
- * ============================================================================
- *
- * Client Destination Connection ID: 0x8394c8f03e515708
- * Using QUIC v1 salt: 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a
- */
-
 /* DCID from RFC test vector */
 static const uint8_t rfc_dcid_data[]
     = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
@@ -74,11 +66,6 @@ static const uint8_t rfc_server_iv[] = { 0x0a, 0xc1, 0x49, 0x3c, 0xa1, 0x90,
 static const uint8_t rfc_server_hp[]
     = { 0xc2, 0x06, 0xb8, 0xd9, 0xb9, 0xf0, 0xf3, 0x76,
         0x44, 0x43, 0x0b, 0x49, 0x0e, 0xea, 0xa3, 0x14 };
-
-/* ============================================================================
- * Salt Lookup Tests
- * ============================================================================
- */
 
 TEST (quic_crypto_get_salt_v1)
 {
@@ -138,11 +125,6 @@ TEST (quic_crypto_get_salt_null_params)
   ASSERT_EQ (QUIC_CRYPTO_ERROR_NULL,
              SocketQUICCrypto_get_initial_salt (QUIC_VERSION_1, &salt, NULL));
 }
-
-/* ============================================================================
- * RFC 9001 Appendix A.1 Test Vector Validation
- * ============================================================================
- */
 
 #ifdef SOCKET_HAS_TLS
 
@@ -292,11 +274,6 @@ TEST (quic_crypto_derive_full_rfc)
   SocketQUICInitialKeys_clear (&keys);
 }
 
-/* ============================================================================
- * Edge Cases
- * ============================================================================
- */
-
 TEST (quic_crypto_derive_empty_dcid)
 {
   SocketQUICConnectionID_T dcid;
@@ -354,11 +331,6 @@ TEST (quic_crypto_derive_various_dcid_lengths)
       SocketQUICInitialKeys_clear (&keys);
     }
 }
-
-/* ============================================================================
- * QUIC v2 Tests (RFC 9369)
- * ============================================================================
- */
 
 TEST (quic_crypto_derive_v2_succeeds)
 {
@@ -446,11 +418,6 @@ TEST (quic_crypto_derive_v2_secrets_differ)
   SocketQUICInitialKeys_clear (&keys);
 }
 
-/* ============================================================================
- * Error Handling
- * ============================================================================
- */
-
 TEST (quic_crypto_derive_null_dcid)
 {
   SocketQUICInitialKeys_T keys;
@@ -501,11 +468,6 @@ TEST (quic_crypto_derive_invalid_version)
 
   ASSERT_EQ (QUIC_CRYPTO_ERROR_VERSION, result);
 }
-
-/* ============================================================================
- * Security Tests
- * ============================================================================
- */
 
 TEST (quic_crypto_secrets_clear)
 {
@@ -592,11 +554,6 @@ TEST (quic_crypto_keys_clear)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * AEAD Algorithm Tests
- * ============================================================================
- */
-
 TEST (quic_crypto_aead_sizes_aes128)
 {
   size_t key_len, iv_len, hp_len;
@@ -665,11 +622,6 @@ TEST (quic_crypto_aead_sizes_negative)
 
   ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
 }
-
-/* ============================================================================
- * AEAD Secret Length Tests
- * ============================================================================
- */
 
 TEST (quic_crypto_aead_secret_len_aes128)
 {
@@ -744,11 +696,6 @@ TEST (quic_crypto_aead_string)
           == 0);
   ASSERT (strcmp (SocketQUIC_AEAD_string (99), "UNKNOWN") == 0);
 }
-
-/* ============================================================================
- * Packet Protection Keys Tests (RFC 9001 Section 5.1)
- * ============================================================================
- */
 
 TEST (quic_crypto_packet_keys_init)
 {
@@ -1056,11 +1003,6 @@ TEST (quic_crypto_packet_keys_different_secrets)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * AEAD Payload Encryption/Decryption Tests (RFC 9001 Section 5.3)
- * ============================================================================
- */
-
 #ifdef SOCKET_HAS_TLS
 
 /* Sample plaintext for AEAD tests */
@@ -1073,11 +1015,6 @@ static const uint8_t test_plaintext[] = { 0x06, 0x00, 0x40, 0xf1, 0x01, 0x00,
 static const uint8_t test_header[]
     = { 0xc0, 0x00, 0x00, 0x01, 0x08, 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51,
         0x57, 0x08, 0x00, 0x00, 0x44, 0x9e, 0x00, 0x00, 0x00, 0x02 };
-
-/* ============================================================================
- * AEAD Parameter Validation Tests
- * ============================================================================
- */
 
 TEST (quic_crypto_encrypt_null_keys)
 {
@@ -1319,11 +1256,6 @@ TEST (quic_crypto_decrypt_invalid_aead)
   ASSERT_EQ (QUIC_CRYPTO_ERROR_AEAD, result);
 }
 
-/* ============================================================================
- * AEAD Round-Trip Tests
- * ============================================================================
- */
-
 TEST (quic_crypto_aead_roundtrip_aes128)
 {
   SocketQUICPacketKeys_T keys;
@@ -1454,11 +1386,6 @@ TEST (quic_crypto_aead_roundtrip_chacha20)
   SocketQUICPacketKeys_clear (&keys);
 }
 
-/* ============================================================================
- * AEAD Nonce Formation Tests (RFC 9001 §5.3)
- * ============================================================================
- */
-
 TEST (quic_crypto_aead_packet_number_zero)
 {
   SocketQUICPacketKeys_T keys;
@@ -1579,11 +1506,6 @@ TEST (quic_crypto_aead_different_packet_numbers_produce_different_ciphertext)
 
   SocketQUICPacketKeys_clear (&keys);
 }
-
-/* ============================================================================
- * AEAD Security Tests
- * ============================================================================
- */
 
 TEST (quic_crypto_aead_modified_ciphertext_fails)
 {
@@ -1799,11 +1721,6 @@ TEST (quic_crypto_aead_wrong_key_fails)
   SocketQUICPacketKeys_clear (&keys2);
 }
 
-/* ============================================================================
- * AEAD Edge Case Tests
- * ============================================================================
- */
-
 TEST (quic_crypto_aead_empty_plaintext)
 {
   SocketQUICPacketKeys_T keys;
@@ -1926,11 +1843,6 @@ TEST (quic_crypto_aead_tag_only_input)
   SocketQUICPacketKeys_clear (&keys);
 }
 
-/* ============================================================================
- * AEAD Consistency Tests
- * ============================================================================
- */
-
 TEST (quic_crypto_aead_same_input_same_output)
 {
   SocketQUICPacketKeys_T keys;
@@ -1972,13 +1884,6 @@ TEST (quic_crypto_aead_same_input_same_output)
 
   SocketQUICPacketKeys_clear (&keys);
 }
-
-/* ============================================================================
- * Header Protection (RFC 9001 Section 5.4) Tests
- * ============================================================================
- *
- * RFC 9001 Appendix A test vectors for header protection.
- */
 
 /* RFC 9001 Appendix A.2 - Client Initial AES-128 */
 static const uint8_t hp_client_initial_key[16]
@@ -2674,11 +2579,6 @@ TEST (quic_hp_pn_exceeds_packet)
 
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * Result String Tests
- * ============================================================================
- */
-
 TEST (quic_crypto_result_string)
 {
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_OK));
@@ -2694,11 +2594,6 @@ TEST (quic_crypto_result_string)
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (QUIC_CRYPTO_ERROR_INPUT));
   ASSERT_NOT_NULL (SocketQUICCrypto_result_string (99)); /* Unknown */
 }
-
-/* ============================================================================
- * Main
- * ============================================================================
- */
 
 int
 main (void)

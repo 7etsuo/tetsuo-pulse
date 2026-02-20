@@ -26,17 +26,7 @@
 #include "http/SocketHTTP3-private.h"
 #include "quic/SocketQUICTransport.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define H3_CLIENT_RESP_BUF_INIT 4096
-
-/* ============================================================================
- * Internal structure
- * ============================================================================
- */
 
 struct SocketHTTP3_Client
 {
@@ -55,11 +45,6 @@ struct SocketHTTP3_Client
   int connected;
 };
 
-/* ============================================================================
- * Time helpers
- * ============================================================================
- */
-
 static uint64_t
 now_us (void)
 {
@@ -67,11 +52,6 @@ now_us (void)
   clock_gettime (CLOCK_MONOTONIC, &ts);
   return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
 }
-
-/* ============================================================================
- * Flush H3 output queue through transport
- * ============================================================================
- */
 
 static int
 flush_h3_output (SocketHTTP3_Client_T client)
@@ -95,11 +75,6 @@ flush_h3_output (SocketHTTP3_Client_T client)
   return 0;
 }
 
-/* ============================================================================
- * Stream callback: receives QUIC stream data, feeds to H3
- * ============================================================================
- */
-
 static void
 h3_stream_callback (uint64_t stream_id,
                     const uint8_t *data,
@@ -114,11 +89,6 @@ h3_stream_callback (uint64_t stream_id,
   SocketHTTP3_Conn_feed_stream (client->h3_conn, stream_id, data, len, fin);
   flush_h3_output (client);
 }
-
-/* ============================================================================
- * Config defaults
- * ============================================================================
- */
 
 void
 SocketHTTP3_ClientConfig_defaults (SocketHTTP3_ClientConfig *config)
@@ -135,11 +105,6 @@ SocketHTTP3_ClientConfig_defaults (SocketHTTP3_ClientConfig *config)
   config->connect_timeout_ms = 5000;
   config->request_timeout_ms = 30000;
 }
-
-/* ============================================================================
- * New
- * ============================================================================
- */
 
 SocketHTTP3_Client_T
 SocketHTTP3_Client_new (Arena_T arena, const SocketHTTP3_ClientConfig *config)
@@ -188,11 +153,6 @@ SocketHTTP3_Client_new (Arena_T arena, const SocketHTTP3_ClientConfig *config)
   return client;
 }
 
-/* ============================================================================
- * Connect
- * ============================================================================
- */
-
 int
 SocketHTTP3_Client_connect (SocketHTTP3_Client_T client,
                             const char *host,
@@ -224,11 +184,6 @@ SocketHTTP3_Client_connect (SocketHTTP3_Client_T client,
   return 0;
 }
 
-/* ============================================================================
- * Close
- * ============================================================================
- */
-
 int
 SocketHTTP3_Client_close (SocketHTTP3_Client_T client)
 {
@@ -249,11 +204,6 @@ SocketHTTP3_Client_close (SocketHTTP3_Client_T client)
   client->connected = 0;
   return 0;
 }
-
-/* ============================================================================
- * Synchronous request/response
- * ============================================================================
- */
 
 int
 SocketHTTP3_Client_request (SocketHTTP3_Client_T client,
@@ -406,11 +356,6 @@ SocketHTTP3_Client_request (SocketHTTP3_Client_T client,
   return 0;
 }
 
-/* ============================================================================
- * Streaming API
- * ============================================================================
- */
-
 SocketHTTP3_Request_T
 SocketHTTP3_Client_new_request (SocketHTTP3_Client_T client)
 {
@@ -435,11 +380,6 @@ SocketHTTP3_Client_poll (SocketHTTP3_Client_T client, int timeout_ms)
   return SocketQUICTransport_poll (client->transport, timeout_ms);
 }
 
-/* ============================================================================
- * Accessors
- * ============================================================================
- */
-
 SocketHTTP3_Conn_T
 SocketHTTP3_Client_conn (SocketHTTP3_Client_T client)
 {
@@ -453,11 +393,6 @@ SocketHTTP3_Client_is_connected (SocketHTTP3_Client_T client)
 {
   return client && client->connected;
 }
-
-/* ============================================================================
- * Alt-Svc parsing (RFC 7838)
- * ============================================================================
- */
 
 uint16_t
 SocketHTTP3_parse_alt_svc (const char *alt_svc_value,

@@ -21,11 +21,6 @@
 #include "core/Arena.h"
 #include "test/Test.h"
 
-/* ============================================================================
- * Test: Initial Packet Padding
- * ============================================================================
- */
-
 TEST (quic_pmtu_pad_initial_small_packet)
 {
   uint8_t packet[2048];
@@ -83,11 +78,6 @@ TEST (quic_pmtu_pad_initial_null_args)
   ASSERT_EQ (result, QUIC_PMTU_ERROR_NULL);
 }
 
-/* ============================================================================
- * Test: Initial Packet Validation
- * ============================================================================
- */
-
 TEST (quic_pmtu_validate_initial_size_valid)
 {
   SocketQUICPMTU_Result result;
@@ -109,11 +99,6 @@ TEST (quic_pmtu_validate_initial_size_too_small)
   result = SocketQUICPMTU_validate_initial_size (500);
   ASSERT_EQ (result, QUIC_PMTU_ERROR_SIZE);
 }
-
-/* ============================================================================
- * Test: PMTU Context Creation
- * ============================================================================
- */
 
 TEST (quic_pmtu_new_default)
 {
@@ -157,11 +142,6 @@ TEST (quic_pmtu_new_invalid_bounds)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test: PMTU Discovery State Machine
- * ============================================================================
- */
-
 TEST (quic_pmtu_start_discovery)
 {
   Arena_T arena = Arena_new ();
@@ -197,11 +177,6 @@ TEST (quic_pmtu_get_next_probe_size)
   SocketQUICPMTU_free (&pmtu);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test: Probe Acknowledgment
- * ============================================================================
- */
 
 TEST (quic_pmtu_probe_acked_success)
 {
@@ -261,11 +236,6 @@ TEST (quic_pmtu_probe_lost)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test: ICMP Processing
- * ============================================================================
- */
-
 TEST (quic_pmtu_process_icmp_valid)
 {
   Arena_T arena = Arena_new ();
@@ -323,11 +293,6 @@ TEST (quic_pmtu_process_icmp_larger)
   SocketQUICPMTU_free (&pmtu);
   Arena_dispose (&arena);
 }
-
-/* ============================================================================
- * Test: Timeout Handling
- * ============================================================================
- */
 
 TEST (quic_pmtu_check_timeouts)
 {
@@ -436,11 +401,6 @@ TEST (quic_pmtu_timeout_completes_when_no_increment)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test: Probe Limit
- * ============================================================================
- */
-
 TEST (quic_pmtu_probe_limit)
 {
   Arena_T arena = Arena_new ();
@@ -467,11 +427,6 @@ TEST (quic_pmtu_probe_limit)
   Arena_dispose (&arena);
 }
 
-/* ============================================================================
- * Test: Result Strings
- * ============================================================================
- */
-
 TEST (quic_pmtu_result_strings)
 {
   const char *str;
@@ -488,11 +443,6 @@ TEST (quic_pmtu_result_strings)
   str = SocketQUICPMTU_result_string (999);
   ASSERT_NE (str, NULL);
 }
-
-/* ============================================================================
- * Test: Probe Size Validation (Issue #1173)
- * ============================================================================
- */
 
 TEST (quic_pmtu_send_probe_size_underflow_protection)
 {

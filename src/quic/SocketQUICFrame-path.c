@@ -13,15 +13,6 @@
 #include "quic/SocketQUICFrame.h"
 #include <string.h>
 
-/* ============================================================================
- * Internal helper functions
- * ============================================================================
- *
- * These helpers eliminate code duplication between PATH_CHALLENGE and
- * PATH_RESPONSE frame encode/decode operations, which differ only in the
- * frame type constant used.
- */
-
 /**
  * Internal helper for encoding PATH frames.
  *
@@ -81,18 +72,6 @@ decode_path_frame (uint8_t expected_type,
   return QUIC_PATH_FRAME_SIZE;
 }
 
-/* ============================================================================
- * Encode PATH_CHALLENGE frames (RFC 9000 §19.17)
- * ============================================================================
- *
- * PATH_CHALLENGE Frame {
- *   Type (i) = 0x1a,
- *   Data (64),
- * }
- *
- * The Data field contains arbitrary data (typically random).
- */
-
 size_t
 SocketQUICFrame_encode_path_challenge (const uint8_t data[QUIC_PATH_DATA_SIZE],
                                        uint8_t *out,
@@ -100,19 +79,6 @@ SocketQUICFrame_encode_path_challenge (const uint8_t data[QUIC_PATH_DATA_SIZE],
 {
   return encode_path_frame (QUIC_FRAME_PATH_CHALLENGE, data, out, out_size);
 }
-
-/* ============================================================================
- * Encode PATH_RESPONSE frames (RFC 9000 §19.18)
- * ============================================================================
- *
- * PATH_RESPONSE Frame {
- *   Type (i) = 0x1b,
- *   Data (64),
- * }
- *
- * The Data field contains the data from the PATH_CHALLENGE frame being
- * responded to.
- */
 
 size_t
 SocketQUICFrame_encode_path_response (const uint8_t data[QUIC_PATH_DATA_SIZE],
@@ -122,14 +88,6 @@ SocketQUICFrame_encode_path_response (const uint8_t data[QUIC_PATH_DATA_SIZE],
   return encode_path_frame (QUIC_FRAME_PATH_RESPONSE, data, out, out_size);
 }
 
-/* ============================================================================
- * Decode PATH_CHALLENGE frames (RFC 9000 §19.17)
- * ============================================================================
- *
- * Convenience function for decoding PATH_CHALLENGE frames.
- * Returns the number of bytes consumed on success, or -1 on error.
- */
-
 int
 SocketQUICFrame_decode_path_challenge (const uint8_t *in,
                                        size_t len,
@@ -137,14 +95,6 @@ SocketQUICFrame_decode_path_challenge (const uint8_t *in,
 {
   return decode_path_frame (QUIC_FRAME_PATH_CHALLENGE, in, len, data);
 }
-
-/* ============================================================================
- * Decode PATH_RESPONSE frames (RFC 9000 §19.18)
- * ============================================================================
- *
- * Convenience function for decoding PATH_RESPONSE frames.
- * Returns the number of bytes consumed on success, or -1 on error.
- */
 
 int
 SocketQUICFrame_decode_path_response (const uint8_t *in,

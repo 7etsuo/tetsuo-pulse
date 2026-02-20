@@ -31,11 +31,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief Maximum packet number value (2^62 - 1).
  *
@@ -63,11 +58,6 @@
  */
 #define QUIC_PN_NONE UINT64_MAX
 
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
-
 /**
  * @brief Result codes for packet number operations.
  */
@@ -79,11 +69,6 @@ typedef enum
   QUIC_PN_ERROR_OVERFLOW, /**< Packet number exceeds maximum */
   QUIC_PN_ERROR_BITS      /**< Invalid bit count (must be 8, 16, 24, or 32) */
 } SocketQUICWire_Result;
-
-/* ============================================================================
- * Encoding Functions (RFC 9000 Appendix A.2)
- * ============================================================================
- */
 
 /**
  * @brief Calculate minimum bytes needed to encode a packet number.
@@ -139,11 +124,6 @@ extern size_t SocketQUICWire_pn_encode (uint64_t full_pn,
                                         uint64_t largest_acked,
                                         uint8_t *output,
                                         size_t output_size);
-
-/* ============================================================================
- * Decoding Functions (RFC 9000 Appendix A.3)
- * ============================================================================
- */
 
 /**
  * @brief Decode a truncated packet number.
@@ -215,11 +195,6 @@ extern size_t SocketQUICWire_pn_write (uint64_t value,
                                        unsigned pn_len,
                                        uint8_t *output,
                                        size_t output_size);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Check if a packet number is valid.

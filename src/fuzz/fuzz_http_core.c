@@ -57,9 +57,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     memcpy (fuzz_str, data, size);
     fuzz_str[size] = '\0';
 
-    /* ====================================================================
-     * Test 1: HTTP Method Parsing and Validation
-     * ==================================================================== */
     {
       /* Parse method from fuzzed string */
       SocketHTTP_Method method = SocketHTTP_method_parse (fuzz_str, size);
@@ -100,9 +97,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 2: HTTP Version Parsing
-     * ==================================================================== */
     {
       /* Parse version from fuzzed string */
       SocketHTTP_Version version = SocketHTTP_version_parse (fuzz_str, size);
@@ -134,9 +128,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 3: Header Name Validation
-     * ==================================================================== */
     {
       /* Validate fuzzed data as header name */
       int valid = SocketHTTP_header_name_valid (fuzz_str, size);
@@ -169,9 +160,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 4: Header Value Validation
-     * ==================================================================== */
     {
       /* Validate fuzzed data as header value */
       int valid = SocketHTTP_header_value_valid (fuzz_str, size);
@@ -196,9 +184,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 5: Content Coding Parsing
-     * ==================================================================== */
     {
       /* Parse coding from fuzzed string */
       SocketHTTP_Coding coding = SocketHTTP_coding_parse (fuzz_str, size);
@@ -234,9 +219,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 6: Accept Header Quality Value Parsing
-     * ==================================================================== */
     {
       SocketHTTP_QualityValue results[32];
 
@@ -297,9 +279,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 7: Media Type Parsing
-     * ==================================================================== */
     {
       SocketHTTP_MediaType media_type;
 
@@ -362,9 +341,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 8: Media Type Matching
-     * ==================================================================== */
     {
       SocketHTTP_MediaType media_type;
 
@@ -394,9 +370,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         }
     }
 
-    /* ====================================================================
-     * Test 9: Status Code Utilities
-     * ==================================================================== */
     {
       /* Test with fuzzed bytes as status codes */
       for (size_t i = 0; i < size && i < 100; i++)

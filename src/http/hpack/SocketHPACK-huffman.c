@@ -17,11 +17,6 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 #define HUFFMAN_MIN_CODE_BITS 5 /* Shortest code (common chars) */
 #define HUFFMAN_MAX_PAD_BITS 7  /* Max EOS padding (RFC 7541 §5.2) */
 /*
@@ -38,11 +33,6 @@
 #define DECODE_NO_MATCH 0
 #define DECODE_SYMBOL 1
 #define DECODE_EOS 2
-
-/* ============================================================================
- * Decode State Structures
- * ============================================================================
- */
 
 /* Bit accumulator state - used by decode functions */
 typedef struct
@@ -74,11 +64,6 @@ typedef struct
   uint64_t bits;              /* Bit accumulator */
   int bits_avail;             /* Bits pending in accumulator */
 } HuffmanEncodeState;
-
-/* ============================================================================
- * Huffman Encode Table (RFC 7541 Appendix B)
- * ============================================================================
- */
 
 /* clang-format off */
 const HPACK_HuffmanSymbol hpack_huffman_encode[HPACK_HUFFMAN_SYMBOLS] = {
@@ -365,14 +350,6 @@ _Static_assert (ARRAY_SIZE (hpack_huffman_encode) == 257,
 _Static_assert (HPACK_HUFFMAN_SYMBOLS == 257,
                 "HPACK_HUFFMAN_SYMBOLS must be 257 for unsigned char safety");
 
-/* ============================================================================
- * Decode Tables
- *
- * Symbols sorted by code length for fast lookup. Short codes (5-8 bits)
- * cover ~74 of 257 symbols (common HTTP header characters).
- * ============================================================================
- */
-
 static const uint16_t hpack_decode_symbols[] = {
   /* 5-bit codes (10 symbols): '0' '1' '2' 'a' 'c' 'e' 'i' 'o' 's' 't' */
   '0',
@@ -522,11 +499,6 @@ static const HuffmanDecodeConfig hpack_decode_configs[]
 
 #define NUM_DECODE_CONFIGS ARRAY_SIZE (hpack_decode_configs)
 
-/* ============================================================================
- * Validation Helpers
- * ============================================================================
- */
-
 static inline int
 validate_buffer (const void *buf, size_t len)
 {
@@ -556,16 +528,6 @@ is_valid_termination (uint64_t bits, int bits_avail)
   return bits_avail <= HUFFMAN_MAX_PAD_BITS
          && is_valid_eos_padding (bits, bits_avail);
 }
-
-/* ============================================================================
- * Encoding Helpers
- * ============================================================================
- */
-
-/* ============================================================================
- * Long Code Hash Table for O(1) Lookup
- * ============================================================================
- */
 
 /* Hash table for O(1) long code lookup (9-30 bits) */
 #define LONG_CODE_HASH_SIZE 512
@@ -714,11 +676,6 @@ static const LongCodeHashEntry long_code_hash[LONG_CODE_HASH_SIZE] = {
 /* Verify hash table size */
 _Static_assert (ARRAY_SIZE (long_code_hash) == LONG_CODE_HASH_SIZE,
                 "Long code hash table size mismatch");
-
-/* ============================================================================
- * Decoding Helpers
- * ============================================================================
- */
 
 static inline uint64_t
 extract_code_bits (uint64_t bits, int bits_avail, int code_len)
@@ -1059,12 +1016,6 @@ process_huffman_symbols (HuffmanDecodeState *state)
     }
   return 0;
 }
-
-
-/* ============================================================================
- * Public API
- * ============================================================================
- */
 
 
 size_t

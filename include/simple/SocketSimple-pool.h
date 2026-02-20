@@ -49,10 +49,6 @@ extern "C"
 {
 #endif
 
-  /*============================================================================
-   * Opaque Handle Types
-   *============================================================================*/
-
   /**
    * @brief Opaque connection pool handle.
    */
@@ -63,10 +59,6 @@ extern "C"
    */
   typedef struct SocketSimple_Conn *SocketSimple_Conn_T;
 
-  /*============================================================================
-   * Pool State Enum
-   *============================================================================*/
-
   /**
    * @brief Pool lifecycle states.
    */
@@ -76,10 +68,6 @@ extern "C"
     SOCKET_SIMPLE_POOL_DRAINING, /**< Graceful shutdown in progress */
     SOCKET_SIMPLE_POOL_STOPPED   /**< Shutdown complete */
   } SocketSimple_PoolState;
-
-  /*============================================================================
-   * Configuration Structures
-   *============================================================================*/
 
   /**
    * @brief Pool configuration options.
@@ -107,10 +95,6 @@ extern "C"
     uint64_t bytes_in;      /**< Total bytes received */
     uint64_t bytes_out;     /**< Total bytes sent */
   } SocketSimple_PoolStats;
-
-  /*============================================================================
-   * Pool Lifecycle
-   *============================================================================*/
 
   /**
    * @brief Initialize pool options with defaults.
@@ -144,10 +128,6 @@ extern "C"
    * @param pool Pointer to pool handle.
    */
   extern void Socket_simple_pool_free (SocketSimple_Pool_T *pool);
-
-  /*============================================================================
-   * Connection Management
-   *============================================================================*/
 
   /**
    * @brief Add an existing socket to the pool.
@@ -195,10 +175,6 @@ extern "C"
   extern int
   Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms);
 
-  /*============================================================================
-   * Accept with Rate Limiting
-   *============================================================================*/
-
   /**
    * @brief Accept a connection and add to pool.
    *
@@ -224,10 +200,6 @@ extern "C"
   Socket_simple_pool_accept_limited (SocketSimple_Pool_T pool,
                                      SocketSimple_Socket_T listener);
 
-  /*============================================================================
-   * Rate Limiting Configuration
-   *============================================================================*/
-
   /**
    * @brief Set maximum connection rate.
    *
@@ -247,10 +219,6 @@ extern "C"
    */
   extern int
   Socket_simple_pool_set_max_per_ip (SocketSimple_Pool_T pool, int max);
-
-  /*============================================================================
-   * Graceful Shutdown (Drain)
-   *============================================================================*/
 
   /**
    * @brief Initiate graceful shutdown.
@@ -292,10 +260,6 @@ extern "C"
   extern SocketSimple_PoolState
   Socket_simple_pool_state (SocketSimple_Pool_T pool);
 
-  /*============================================================================
-   * Statistics
-   *============================================================================*/
-
   /**
    * @brief Get pool statistics snapshot.
    *
@@ -321,10 +285,6 @@ extern "C"
    * @return 0 on success, -1 on error.
    */
   extern int Socket_simple_pool_reset_stats (SocketSimple_Pool_T pool);
-
-  /*============================================================================
-   * Connection Accessors
-   *============================================================================*/
 
   /**
    * @brief Get socket from connection handle.

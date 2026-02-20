@@ -47,11 +47,6 @@ typedef struct SocketHTTP2_Stream *SocketHTTP2_Stream_T;
 struct SocketHTTP2_Conn;
 typedef struct SocketHTTP2_Conn *SocketHTTP2_Conn_T;
 
-/* ============================================================================
- * Transport Type
- * ============================================================================
- */
-
 /**
  * @brief Opaque handle for a WebSocket transport.
  * @ingroup websocket
@@ -67,11 +62,6 @@ typedef enum
   SOCKETWS_TRANSPORT_SOCKET,  /**< TCP/TLS socket transport (RFC 6455) */
   SOCKETWS_TRANSPORT_H2STREAM /**< HTTP/2 stream transport (RFC 8441) */
 } SocketWS_TransportType;
-
-/* ============================================================================
- * Transport Operations Interface
- * ============================================================================
- */
 
 /**
  * @brief Function pointer type for transport send operation.
@@ -163,11 +153,6 @@ typedef struct
   SocketWS_TransportFree free;    /**< Release transport resources */
 } SocketWS_TransportOps;
 
-/* ============================================================================
- * Transport Structure (Internal)
- * ============================================================================
- */
-
 /**
  * @brief Internal structure for WebSocket transport.
  * @ingroup websocket
@@ -185,11 +170,6 @@ struct SocketWS_Transport
   int requires_masking; /**< 1 if client masking required (RFC 6455),
                              0 for HTTP/2 (RFC 8441) */
 };
-
-/* ============================================================================
- * Factory Functions
- * ============================================================================
- */
 
 /**
  * @brief Create a socket-based transport (RFC 6455).
@@ -226,11 +206,6 @@ SocketWS_Transport_socket (Arena_T arena, Socket_T socket, int is_client);
  */
 extern SocketWS_Transport_T
 SocketWS_Transport_h2stream (Arena_T arena, SocketHTTP2_Stream_T stream);
-
-/* ============================================================================
- * Transport Access Functions
- * ============================================================================
- */
 
 /**
  * @brief Get the transport type.

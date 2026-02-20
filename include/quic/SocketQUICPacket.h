@@ -39,11 +39,6 @@
 #include "quic/SocketQUICConnectionID.h"
 #include "quic/SocketQUICVersion.h"
 
-/* ============================================================================
- * Constants (RFC 9000 Section 17)
- * ============================================================================
- */
-
 /**
  * @brief Maximum packet header size (worst case: long header with max CIDs).
  *
@@ -82,11 +77,6 @@
  * RFC 9000 does not specify a maximum, but we use a reasonable limit.
  */
 #define QUIC_PACKET_TOKEN_MAX_LEN 1024
-
-/* ============================================================================
- * First Byte Bit Masks (RFC 9000 Section 17.2, 17.3)
- * ============================================================================
- */
 
 /**
  * @brief Header form bit (bit 7): 1 = Long Header, 0 = Short Header.
@@ -138,11 +128,6 @@
  */
 #define QUIC_PACKET_SHORT_PNLEN_MASK 0x03
 
-/* ============================================================================
- * Packet Types (RFC 9000 Section 17.2)
- * ============================================================================
- */
-
 /**
  * @brief QUIC packet types.
  */
@@ -184,11 +169,6 @@ typedef enum
 
 } SocketQUICPacket_Type;
 
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
-
 /**
  * @brief Result codes for packet header operations.
  */
@@ -205,11 +185,6 @@ typedef enum
   QUIC_PACKET_ERROR_TOKEN,     /**< Token too long */
   QUIC_PACKET_ERROR_PNLEN      /**< Invalid packet number length */
 } SocketQUICPacket_Result;
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief QUIC packet header (unified structure for all types).
@@ -253,11 +228,6 @@ typedef struct SocketQUICPacketHeader
   size_t header_length; /**< Total parsed header length in bytes */
 
 } SocketQUICPacketHeader_T;
-
-/* ============================================================================
- * Parsing Functions
- * ============================================================================
- */
 
 /**
  * @brief Determine if a packet has a long or short header.
@@ -338,11 +308,6 @@ SocketQUICPacket_parse_long_type (uint8_t first_byte)
                                  >> QUIC_PACKET_LONG_TYPE_SHIFT);
 }
 
-/* ============================================================================
- * Serialization Functions
- * ============================================================================
- */
-
 /**
  * @brief Calculate the serialized size of a packet header.
  *
@@ -372,11 +337,6 @@ extern size_t
 SocketQUICPacketHeader_serialize (const SocketQUICPacketHeader_T *header,
                                   uint8_t *output,
                                   size_t output_size);
-
-/* ============================================================================
- * Builder Functions
- * ============================================================================
- */
 
 /**
  * @brief Build an Initial packet header.
@@ -462,11 +422,6 @@ SocketQUICPacketHeader_build_short (SocketQUICPacketHeader_T *header,
                                     uint8_t pn_length,
                                     uint32_t pn);
 
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
-
 /**
  * @brief Get string representation of packet type.
  *
@@ -527,11 +482,6 @@ extern uint64_t SocketQUICPacket_decode_pn (uint32_t truncated_pn,
                                             uint8_t pn_length,
                                             uint64_t largest_pn);
 
-/* ============================================================================
- * Initial Packet Constants (RFC 9000 Section 17.2.2, RFC 9001)
- * ============================================================================
- */
-
 /**
  * @brief Minimum size for client Initial packets (RFC 9000 Section 14.1).
  *
@@ -580,11 +530,6 @@ extern uint64_t SocketQUICPacket_decode_pn (uint32_t truncated_pn,
  */
 #define QUIC_RETRY_INTEGRITY_TAG_LEN 16
 
-/* ============================================================================
- * Initial Packet Key Structure (RFC 9001 Section 5)
- * ============================================================================
- */
-
 /**
  * @brief Keys for Initial packet encryption/decryption.
  *
@@ -611,11 +556,6 @@ typedef struct SocketQUICInitialKeys
 
 } SocketQUICInitialKeys_T;
 
-/* ============================================================================
- * Initial Packet Result Codes
- * ============================================================================
- */
-
 /**
  * @brief Result codes for Initial packet operations.
  */
@@ -632,11 +572,6 @@ typedef enum
   QUIC_INITIAL_ERROR_TOKEN,     /**< Server Initial has non-zero token */
   QUIC_INITIAL_ERROR_VERSION    /**< Unsupported QUIC version */
 } SocketQUICInitial_Result;
-
-/* ============================================================================
- * Initial Key Derivation (RFC 9001 Section 5.2)
- * ============================================================================
- */
 
 /**
  * @brief Initialize Initial keys structure.
@@ -676,11 +611,6 @@ extern SocketQUICInitial_Result
 SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
                                uint32_t version,
                                SocketQUICInitialKeys_T *keys);
-
-/* ============================================================================
- * Initial Packet Protection (RFC 9001 Section 5.4)
- * ============================================================================
- */
 
 /**
  * @brief Apply header and payload protection to Initial packet.
@@ -727,11 +657,6 @@ SocketQUICInitial_unprotect (uint8_t *packet,
                              int is_client,
                              uint8_t *pn_length);
 
-/* ============================================================================
- * Initial Packet Validation (RFC 9000 Section 17.2.2)
- * ============================================================================
- */
-
 /**
  * @brief Validate Initial packet constraints.
  *
@@ -763,11 +688,6 @@ SocketQUICInitial_validate (const SocketQUICPacketHeader_T *header,
  */
 extern size_t SocketQUICInitial_padding_needed (size_t current_len);
 
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
-
 /**
  * @brief Get string representation of Initial result code.
  *
@@ -793,11 +713,6 @@ extern SocketQUICInitial_Result
 SocketQUICInitial_get_salt (uint32_t version,
                             const uint8_t **salt,
                             size_t *salt_len);
-
-/* ============================================================================
- * Retry Packet Integrity (RFC 9001 §5.8)
- * ============================================================================
- */
 
 /**
  * @brief Compute Retry packet integrity tag (RFC 9001 §5.8).
@@ -849,11 +764,6 @@ SocketQUICPacket_verify_retry_tag (const SocketQUICConnectionID_T *odcid,
                                    const uint8_t *retry_packet,
                                    size_t retry_packet_len);
 
-/* ============================================================================
- * Packet Number Spaces (RFC 9000 Section 12.3)
- * ============================================================================
- */
-
 /**
  * @brief QUIC packet number spaces.
  *
@@ -869,11 +779,6 @@ typedef enum
   QUIC_PN_SPACE_APPLICATION, /**< Application data (0-RTT/1-RTT) PN space */
   QUIC_PN_SPACE_COUNT        /**< Number of packet number spaces */
 } SocketQUIC_PNSpace;
-
-/* ============================================================================
- * Packet Reception (RFC 9001 Section 5.5)
- * ============================================================================
- */
 
 /**
  * @brief Per-space receive state for packet number tracking.

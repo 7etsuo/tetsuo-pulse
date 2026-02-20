@@ -40,11 +40,6 @@
 
 #include "core/Arena.h"
 
-/* ============================================================================
- * Constants (RFC 9000 Section 14)
- * ============================================================================
- */
-
 /**
  * @brief Minimum QUIC datagram size (RFC 9000 Section 14).
  *
@@ -100,11 +95,6 @@
  */
 #define QUIC_PMTU_PROBE_INCREMENT 100
 
-/* ============================================================================
- * DPLPMTUD States (RFC 8899 Section 5.2)
- * ============================================================================
- */
-
 /**
  * @brief DPLPMTUD state machine states.
  */
@@ -131,11 +121,6 @@ typedef enum
   QUIC_PMTU_STATE_ERROR = 3
 } SocketQUICPMTU_State;
 
-/* ============================================================================
- * Result Codes
- * ============================================================================
- */
-
 /**
  * @brief Result codes for PMTU operations.
  */
@@ -149,11 +134,6 @@ typedef enum
   QUIC_PMTU_ERROR_PROBE_LIMIT = 5, /**< Too many probes in flight */
   QUIC_PMTU_ERROR_ARENA = 6        /**< Arena allocation failed */
 } SocketQUICPMTU_Result;
-
-/* ============================================================================
- * PMTU Probe Structure
- * ============================================================================
- */
 
 /**
  * @brief PMTU probe tracking structure.
@@ -182,11 +162,6 @@ typedef struct SocketQUICPMTU_Probe
    */
   struct SocketQUICPMTU_Probe *next;
 } SocketQUICPMTU_Probe_T;
-
-/* ============================================================================
- * PMTU Discovery Context
- * ============================================================================
- */
 
 /**
  * @brief PMTU discovery context (opaque handle).
@@ -234,11 +209,6 @@ struct T
    */
   SocketQUICPMTU_Probe_T *probes;
 };
-
-/* ============================================================================
- * Public API
- * ============================================================================
- */
 
 /**
  * @brief Create a new PMTU discovery context.

@@ -29,11 +29,6 @@
 
 #include <stdint.h>
 
-/* ============================================================================
- * CALCULATE BASE (RFC 9204 Section 4.5.1.2)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_calculate_base (int sign,
                             uint64_t req_insert_count,
@@ -77,11 +72,6 @@ SocketQPACK_calculate_base (int sign,
   return QPACK_OK;
 }
 
-/* ============================================================================
- * VALIDATE BASE (RFC 9204 Section 4.5.1.2)
- * ============================================================================
- */
-
 SocketQPACK_Result
 SocketQPACK_validate_base (int sign,
                            uint64_t req_insert_count,
@@ -108,11 +98,6 @@ SocketQPACK_validate_base (int sign,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * ENCODE BASE (RFC 9204 Section 4.5.1.2)
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_base (uint64_t req_insert_count,

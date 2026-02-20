@@ -33,10 +33,6 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
-/* ============================================================================
- * Server Lifecycle
- * ========================================================================= */
-
 void
 SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
 {
@@ -351,10 +347,6 @@ SocketHTTPServer_stop (SocketHTTPServer_T server)
   server->running = 0;
 }
 
-/* ============================================================================
- * Handler & Configuration Registration
- * ========================================================================= */
-
 void
 SocketHTTPServer_set_handler (SocketHTTPServer_T server,
                               SocketHTTPServer_Handler handler,
@@ -474,10 +466,6 @@ SocketHTTPServer_set_error_handler (SocketHTTPServer_T server,
                         handler != NULL ? "registered" : "cleared");
 }
 
-/* ============================================================================
- * Event Loop
- * ========================================================================= */
-
 /* Accept new client connections up to max limit */
 static void
 server_accept_clients (SocketHTTPServer_T server)
@@ -591,10 +579,6 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
 
   return requests_processed;
 }
-
-/* ============================================================================
- * Drain / Graceful Shutdown
- * ========================================================================= */
 
 int
 SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms)

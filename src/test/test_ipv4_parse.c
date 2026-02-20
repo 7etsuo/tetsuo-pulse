@@ -56,11 +56,6 @@ bytes_are_zero (const uint8_t *bytes, size_t start, size_t end)
   return 1;
 }
 
-/* ============================================================================
- * Valid IPv4 Address Tests
- * ============================================================================
- */
-
 /**
  * test_parse_standard_ipv4 - Test parsing standard format IPv4 addresses
  */
@@ -187,11 +182,6 @@ test_parse_localhost_ipv4 (void)
 
   return 1;
 }
-
-/* ============================================================================
- * Invalid Input Tests
- * ============================================================================
- */
 
 /**
  * test_parse_null_ip - Test with NULL ip parameter
@@ -467,11 +457,6 @@ test_parse_negative_octet (void)
   return 1;
 }
 
-/* ============================================================================
- * Main Test Runner
- * ============================================================================
- */
-
 int
 main (void)
 {
@@ -498,8 +483,7 @@ main (void)
   RUN_TEST (test_parse_trailing_dot);
   RUN_TEST (test_parse_negative_octet);
 
-  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed,
-          tests_run);
+  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }

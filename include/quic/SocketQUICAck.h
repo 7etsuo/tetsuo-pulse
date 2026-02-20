@@ -36,11 +36,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /**
  * @brief ECN codepoint types (RFC 3168).
  *
@@ -98,11 +93,6 @@ typedef enum
  * @see RFC 9000 Section 18.2 (Transport Parameters)
  */
 #define QUIC_ACK_DELAY_EXPONENT_DEFAULT 3
-
-/* ============================================================================
- * Data Structures
- * ============================================================================
- */
 
 /**
  * @brief A range of consecutively received packet numbers.
@@ -177,11 +167,6 @@ typedef enum
   QUIC_ACK_ERROR_BUFFER     /**< Output buffer too small */
 } SocketQUICAck_Result;
 
-/* ============================================================================
- * Lifecycle Functions
- * ============================================================================
- */
-
 /**
  * @brief Create a new ACK state for a packet number space.
  *
@@ -202,11 +187,6 @@ SocketQUICAck_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay_us);
  * @param state ACK state to reset.
  */
 extern void SocketQUICAck_reset (SocketQUICAckState_T state);
-
-/* ============================================================================
- * Packet Recording
- * ============================================================================
- */
 
 /**
  * @brief Record receipt of a packet.
@@ -234,11 +214,6 @@ SocketQUICAck_record_packet (SocketQUICAckState_T state,
  * @param ecn_type ECN codepoint (SocketQUICECN_Type).
  */
 extern void SocketQUICAck_record_ecn (SocketQUICAckState_T state, int ecn_type);
-
-/* ============================================================================
- * ACK Generation
- * ============================================================================
- */
 
 /**
  * @brief Check if an ACK should be sent now.
@@ -285,11 +260,6 @@ extern SocketQUICAck_Result SocketQUICAck_encode (SocketQUICAckState_T state,
 extern void
 SocketQUICAck_mark_sent (SocketQUICAckState_T state, uint64_t current_time);
 
-/* ============================================================================
- * Query Functions
- * ============================================================================
- */
-
 /**
  * @brief Get the largest received packet number.
  *
@@ -318,11 +288,6 @@ extern int SocketQUICAck_contains (const SocketQUICAckState_T state,
  * @return Number of non-contiguous ranges.
  */
 extern size_t SocketQUICAck_range_count (const SocketQUICAckState_T state);
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
 
 /**
  * @brief Get string representation of ACK result code.

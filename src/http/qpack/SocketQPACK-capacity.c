@@ -31,11 +31,6 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 
-/* ============================================================================
- * CONSTANTS
- * ============================================================================
- */
-
 /** Set Dynamic Table Capacity instruction mask (bits 7-5 = 001) */
 #define SET_CAPACITY_MASK 0x20
 
@@ -44,11 +39,6 @@
 
 /** Set Dynamic Table Capacity prefix bits (5-bit integer) */
 #define SET_CAPACITY_PREFIX 5
-
-/* ============================================================================
- * ENCODE SET CAPACITY
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_encode_set_capacity (uint64_t capacity,
@@ -83,11 +73,6 @@ SocketQPACK_encode_set_capacity (uint64_t capacity,
   *written = encoded_len;
   return QPACK_OK;
 }
-
-/* ============================================================================
- * DECODE SET CAPACITY
- * ============================================================================
- */
 
 SocketQPACK_Result
 SocketQPACK_decode_set_capacity (const unsigned char *input,
@@ -135,11 +120,6 @@ SocketQPACK_decode_set_capacity (const unsigned char *input,
 
   return QPACK_OK;
 }
-
-/* ============================================================================
- * APPLY SET CAPACITY
- * ============================================================================
- */
 
 /**
  * @brief Evict oldest entry from the dynamic table.
@@ -270,7 +250,8 @@ SocketQPACK_apply_set_capacity (SocketQPACK_Table_T table,
     {
       QPACK_DynamicEntry *oldest = &table->entries[table->head];
 
-      /* Cannot evict entries still referenced by unacknowledged field sections */
+      /* Cannot evict entries still referenced by unacknowledged field sections
+       */
       if (oldest->meta.ref_count > 0)
         return QPACK_ERR_TABLE_SIZE;
 
