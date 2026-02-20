@@ -20,9 +20,9 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 #include "core/Arena.h"
+#include "core/SocketUtil.h"
 #include "http/SocketHTTP3-private.h"
 #include "quic/SocketQUICTransport.h"
 
@@ -45,13 +45,6 @@ struct SocketHTTP3_Client
   int connected;
 };
 
-static uint64_t
-now_us (void)
-{
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
-}
 
 static int
 flush_h3_output (SocketHTTP3_Client_T client)
@@ -96,14 +89,14 @@ SocketHTTP3_ClientConfig_defaults (SocketHTTP3_ClientConfig *config)
   if (!config)
     return;
   memset (config, 0, sizeof (*config));
-  config->idle_timeout_ms = 30000;
-  config->max_stream_data = 262144;
-  config->initial_max_streams_bidi = 100;
+  config->idle_timeout_ms = SOCKET_DEFAULT_IDLE_TIMEOUT_MS;
+  config->max_stream_data = SOCKET_QUIC_DEFAULT_MAX_STREAM_DATA;
+  config->initial_max_streams_bidi = SOCKET_QUIC_DEFAULT_MAX_STREAMS_BIDI;
   SocketHTTP3_Settings_init (&config->h3_settings);
   config->ca_file = NULL;
   config->verify_peer = 1;
-  config->connect_timeout_ms = 5000;
-  config->request_timeout_ms = 30000;
+  config->connect_timeout_ms = SOCKET_HTTP3_CLIENT_DEFAULT_CONNECT_TIMEOUT_MS;
+  config->request_timeout_ms = SOCKET_HTTP3_CLIENT_DEFAULT_REQUEST_TIMEOUT_MS;
 }
 
 SocketHTTP3_Client_T
@@ -239,7 +232,7 @@ SocketHTTP3_Client_request (SocketHTTP3_Client_T client,
 
   /* Build :authority from connected host and port */
   char authority[256];
-  if (client->connected_port == 443)
+  if (client->connected_port == SOCKET_DEFAULT_HTTPS_PORT)
     snprintf (authority, sizeof (authority), "%s", client->connected_host);
   else
     snprintf (authority,
@@ -280,12 +273,12 @@ SocketHTTP3_Client_request (SocketHTTP3_Client_T client,
     }
 
   /* Poll for response */
-  uint64_t deadline_us
-      = now_us () + (uint64_t)client->config.request_timeout_ms * 1000;
+  uint64_t deadline_us = Socket_get_monotonic_us ()
+                         + (uint64_t)client->config.request_timeout_ms * 1000;
 
   while (SocketHTTP3_Request_recv_state (req) != H3_REQ_RECV_COMPLETE)
     {
-      uint64_t current = now_us ();
+      uint64_t current = Socket_get_monotonic_us ();
       if (current >= deadline_us)
         return -1;
 

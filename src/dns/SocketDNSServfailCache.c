@@ -10,6 +10,7 @@
  */
 
 #include "dns/SocketDNSServfailCache.h"
+#include "dns/SocketDNSCache-private.h"
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
@@ -73,51 +74,11 @@ struct T
  * SocketUtil.h */
 
 /**
- * @brief Compute hash for cache key 4-tuple with seed.
- *
- * Includes name, qtype, qclass, and nameserver in hash calculation.
- * Uses a random seed to protect against hash collision DoS attacks.
- *
- * Implementation follows the DJB2 XOR pattern from
- * socket_util_hash_djb2_seeded_ci() but extends it to incorporate all four
- * tuple components in a single hash chain. This avoids the overhead of calling
- * the utility function and then continuing the hash, while maintaining
- * consistency with the project's hash utilities.
- */
-static unsigned
-compute_hash_with_seed (const char *name,
-                        uint16_t qtype,
-                        uint16_t qclass,
-                        const char *nameserver,
-                        uint32_t seed)
-{
-  unsigned hash = SOCKET_UTIL_DJB2_SEED;
-
-  /* Mix in random seed for DoS protection (pattern from SocketUtil.h) */
-  hash = ((hash << 5) + hash) ^ seed;
-
-  /* Hash name (case-insensitive, matching socket_util_hash_djb2_seeded_ci) */
-  for (const char *p = name; *p; p++)
-    {
-      unsigned char c = (unsigned char)*p;
-      if (c >= 'A' && c <= 'Z')
-        c += 32; /* Convert to lowercase using ASCII offset */
-      hash = ((hash << 5) + hash) ^ c;
-    }
-
-  /* Mix in qtype and qclass */
-  hash = ((hash << 5) + hash) ^ qtype;
-  hash = ((hash << 5) + hash) ^ qclass;
-
-  /* Mix in nameserver (case-sensitive) */
-  for (const char *p = nameserver; *p; p++)
-    hash = ((hash << 5) + hash) ^ (unsigned char)*p;
-
-  return hash % SERVFAIL_HASH_SIZE;
-}
-
-/**
  * @brief Compute hash for cache key 4-tuple (wrapper for cache instance).
+ *
+ * Delegates the (name, qtype, qclass) portion to dns_cache_hash_tuple_raw()
+ * from SocketDNSCache-private.h, then extends with the nameserver string
+ * (case-sensitive) before applying modulo reduction.
  */
 static unsigned
 compute_hash (T cache,
@@ -126,8 +87,14 @@ compute_hash (T cache,
               uint16_t qclass,
               const char *nameserver)
 {
-  return compute_hash_with_seed (
-      name, qtype, qclass, nameserver, cache->hash_seed);
+  unsigned hash
+      = dns_cache_hash_tuple_raw (name, qtype, qclass, cache->hash_seed);
+
+  /* Extend with nameserver (case-sensitive) */
+  for (const char *p = nameserver; *p; p++)
+    hash = DJB2_STEP_XOR (hash, (unsigned char)*p);
+
+  return hash % SERVFAIL_HASH_SIZE;
 }
 
 /* entry_expired() replaced by socket_util_ttl_expired() from SocketUtil.h */
@@ -135,55 +102,14 @@ compute_hash (T cache,
 /* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from
  * SocketUtil.h */
 
-/**
- * @brief Remove entry from LRU list.
- */
-static void
-lru_remove (T cache, struct ServfailCacheEntry *entry)
-{
-  if (entry->lru_prev)
-    entry->lru_prev->lru_next = entry->lru_next;
-  else
-    cache->lru_head = entry->lru_next;
-
-  if (entry->lru_next)
-    entry->lru_next->lru_prev = entry->lru_prev;
-  else
-    cache->lru_tail = entry->lru_prev;
-
-  entry->lru_prev = NULL;
-  entry->lru_next = NULL;
-}
-
-/**
- * @brief Add entry to LRU head (most recently used).
- */
-static void
-lru_add_head (T cache, struct ServfailCacheEntry *entry)
-{
-  entry->lru_prev = NULL;
-  entry->lru_next = cache->lru_head;
-
-  if (cache->lru_head)
-    cache->lru_head->lru_prev = entry;
-  else
-    cache->lru_tail = entry;
-
-  cache->lru_head = entry;
-}
-
-/**
- * @brief Move entry to LRU head (accessed).
- */
-static void
-lru_touch (T cache, struct ServfailCacheEntry *entry)
-{
-  if (entry != cache->lru_head)
-    {
-      lru_remove (cache, entry);
-      lru_add_head (cache, entry);
-    }
-}
+/* LRU operations use shared macros from SocketDNSCache-private.h:
+ * DNS_LRU_REMOVE, DNS_LRU_INSERT_HEAD, DNS_LRU_TOUCH */
+#define lru_remove(cache, entry) \
+  DNS_LRU_REMOVE ((cache)->lru_head, (cache)->lru_tail, (entry))
+#define lru_add_head(cache, entry) \
+  DNS_LRU_INSERT_HEAD ((cache)->lru_head, (cache)->lru_tail, (entry))
+#define lru_touch(cache, entry) \
+  DNS_LRU_TOUCH ((cache)->lru_head, (cache)->lru_tail, (entry))
 
 /**
  * @brief Remove entry from hash table.

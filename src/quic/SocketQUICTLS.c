@@ -207,7 +207,8 @@ crypto_buffer_ensure (Arena_T arena, CryptoBuffer_T *buf, size_t needed)
   if (buf->capacity >= needed)
     return 1;
 
-  size_t new_cap = buf->capacity == 0 ? 4096 : buf->capacity * 2;
+  size_t new_cap
+      = buf->capacity == 0 ? SOCKETBUF_INITIAL_CAPACITY : buf->capacity * 2;
   while (new_cap < needed)
     new_cap *= 2;
 

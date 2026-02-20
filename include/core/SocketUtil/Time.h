@@ -40,6 +40,35 @@
 int64_t Socket_get_monotonic_ms (void);
 
 /**
+ * @brief Socket_get_monotonic_us - Get current monotonic time in microseconds
+ * @ingroup foundation
+ * @return Current monotonic time in microseconds since arbitrary epoch
+ * @threadsafe Yes (no shared state)
+ *
+ * Uses CLOCK_MONOTONIC for microsecond-precision timing. Returns 0 on failure.
+ *
+ * Use for:
+ * - QUIC congestion control timestamps (RFC 9002)
+ * - RTT measurement with sub-millisecond precision
+ * - High-resolution elapsed time measurements
+ */
+uint64_t Socket_get_monotonic_us (void);
+
+/**
+ * @brief Socket_get_monotonic_ns - Get current monotonic time in nanoseconds
+ * @ingroup foundation
+ * @return Current monotonic time in nanoseconds since arbitrary epoch
+ * @threadsafe Yes (no shared state)
+ *
+ * Uses CLOCK_MONOTONIC for nanosecond-precision timing. Returns 0 on failure.
+ *
+ * Use for:
+ * - Token bucket rate limiters requiring sub-microsecond precision
+ * - High-resolution benchmarking
+ */
+uint64_t Socket_get_monotonic_ns (void);
+
+/**
  * @brief Convert milliseconds to timespec structure.
  * @ingroup foundation
  * @param ms Milliseconds value to convert

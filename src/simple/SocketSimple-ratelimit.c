@@ -19,9 +19,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#define NANOSECONDS_PER_SECOND 1000000000ULL
-#define NANOSECONDS_PER_MILLISECOND 1000000ULL
-
 struct SocketSimple_RateLimit
 {
   pthread_mutex_t mutex;
@@ -36,20 +33,6 @@ struct SocketSimple_RateLimit
   uint64_t total_waited_ms;
 };
 
-static uint64_t
-get_monotonic_ns (void)
-{
-  struct timespec ts;
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) != 0)
-    {
-      /* CLOCK_MONOTONIC should never fail on properly configured systems,
-         but handle it defensively to avoid using uninitialized values.
-         Returning 0 is safe for rate limiting - it will just cause
-         a single-time delay calculation issue which will self-correct. */
-      return 0;
-    }
-  return (uint64_t)ts.tv_sec * NANOSECONDS_PER_SECOND + (uint64_t)ts.tv_nsec;
-}
 
 /**
  * @brief Get random jitter to add unpredictability to refill timing.
@@ -72,13 +55,13 @@ get_random_jitter_ns (void)
         return 0;
     }
   /* Return jitter in 0-1ms range to prevent timing attacks */
-  return (uint64_t)(rand_val % NANOSECONDS_PER_MILLISECOND);
+  return (uint64_t)(rand_val % SOCKET_NS_PER_MS);
 }
 
 static void
 refill_tokens (SocketSimple_RateLimit_T limit)
 {
-  uint64_t now = get_monotonic_ns ();
+  uint64_t now = Socket_get_monotonic_ns ();
   uint64_t elapsed_ns = now - limit->last_refill_ns;
 
   if (elapsed_ns > 0)
@@ -86,17 +69,16 @@ refill_tokens (SocketSimple_RateLimit_T limit)
       /*
        * Use fixed-point arithmetic to avoid floating-point precision issues.
        * Calculate: new_tokens = elapsed_ns * tokens_per_sec /
-       * NANOSECONDS_PER_SECOND To prevent overflow with large elapsed times,
+       * SOCKET_NS_PER_SECOND To prevent overflow with large elapsed times,
        * cap elapsed_ns.
        */
-      uint64_t max_elapsed
-          = NANOSECONDS_PER_SECOND * 60; /* Cap at 60 seconds */
+      uint64_t max_elapsed = SOCKET_NS_PER_SECOND * 60; /* Cap at 60 seconds */
       if (elapsed_ns > max_elapsed)
         elapsed_ns = max_elapsed;
 
       /* Fixed-point calculation: (elapsed_ns * tokens_per_sec) / 1e9 */
       uint64_t new_tokens_fixed = (elapsed_ns * (uint64_t)limit->tokens_per_sec)
-                                  / NANOSECONDS_PER_SECOND;
+                                  / SOCKET_NS_PER_SECOND;
 
       limit->tokens += (double)new_tokens_fixed;
       if (limit->tokens > limit->bucket_size)
@@ -143,7 +125,7 @@ Socket_simple_ratelimit_new (int tokens_per_sec, int burst)
   limit->tokens_per_sec = tokens_per_sec;
   limit->bucket_size = burst;
   limit->tokens = burst; /* Start full */
-  limit->last_refill_ns = get_monotonic_ns ();
+  limit->last_refill_ns = Socket_get_monotonic_ns ();
   limit->total_acquired = 0;
   limit->total_rejected = 0;
   limit->total_waited_ms = 0;
@@ -241,7 +223,7 @@ Socket_simple_ratelimit_acquire (SocketSimple_RateLimit_T limit, int tokens)
         {
           struct timespec ts;
           ts.tv_sec = wait_ms / 1000;
-          ts.tv_nsec = (wait_ms % 1000) * NANOSECONDS_PER_MILLISECOND;
+          ts.tv_nsec = (wait_ms % 1000) * SOCKET_NS_PER_MS;
           nanosleep (&ts, NULL);
           pthread_mutex_lock (&limit->mutex);
           limit->total_waited_ms += wait_ms;
@@ -274,20 +256,19 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
       return -1;
     }
 
-  uint64_t start = get_monotonic_ns ();
-  uint64_t deadline
-      = start + (uint64_t)timeout_ms * NANOSECONDS_PER_MILLISECOND;
+  uint64_t start = Socket_get_monotonic_ns ();
+  uint64_t deadline = start + (uint64_t)timeout_ms * SOCKET_NS_PER_MS;
 
   while (!Socket_simple_ratelimit_try_acquire (limit, tokens))
     {
-      uint64_t now = get_monotonic_ns ();
+      uint64_t now = Socket_get_monotonic_ns ();
       if (now >= deadline)
         {
           return 0; /* Timeout */
         }
 
       int wait_ms = Socket_simple_ratelimit_wait_ms (limit, tokens);
-      int64_t remaining = (deadline - now) / NANOSECONDS_PER_MILLISECOND;
+      int64_t remaining = (deadline - now) / SOCKET_NS_PER_MS;
       /* Clamp to INT_MAX to prevent truncation */
       if (remaining > INT_MAX)
         {
@@ -302,7 +283,7 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
         {
           struct timespec ts;
           ts.tv_sec = wait_ms / 1000;
-          ts.tv_nsec = (wait_ms % 1000) * NANOSECONDS_PER_MILLISECOND;
+          ts.tv_nsec = (wait_ms % 1000) * SOCKET_NS_PER_MS;
           nanosleep (&ts, NULL);
           pthread_mutex_lock (&limit->mutex);
           limit->total_waited_ms += wait_ms;
@@ -338,7 +319,7 @@ Socket_simple_ratelimit_reset (SocketSimple_RateLimit_T limit)
 
   pthread_mutex_lock (&limit->mutex);
   limit->tokens = limit->bucket_size;
-  limit->last_refill_ns = get_monotonic_ns ();
+  limit->last_refill_ns = Socket_get_monotonic_ns ();
   pthread_mutex_unlock (&limit->mutex);
 
   return 0;

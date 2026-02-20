@@ -103,15 +103,17 @@ Socket_simple_http_server_config_init (SocketSimple_HTTPServerConfig *config)
     return;
 
   memset (config, 0, sizeof (*config));
-  config->port = 8080;
+  config->port = SOCKET_DEFAULT_HTTP_ALT_PORT;
   config->bind_address = NULL;
-  config->backlog = 128;
-  config->max_header_size = 64 * 1024;
-  config->max_body_size = 10 * 1024 * 1024;
-  config->request_timeout_ms = 30000;
-  config->keepalive_timeout_ms = 60000;
-  config->max_connections = 1000;
-  config->max_connections_per_client = 100;
+  config->backlog = SOCKET_SIMPLE_HTTP_DEFAULT_BACKLOG;
+  config->max_header_size = SOCKET_SIMPLE_HTTP_DEFAULT_MAX_HEADER_SIZE;
+  config->max_body_size = SOCKET_SIMPLE_HTTP_DEFAULT_MAX_BODY_SIZE;
+  config->request_timeout_ms = SOCKET_SIMPLE_HTTP_DEFAULT_REQUEST_TIMEOUT_MS;
+  config->keepalive_timeout_ms
+      = SOCKET_SIMPLE_HTTP_DEFAULT_KEEPALIVE_TIMEOUT_MS;
+  config->max_connections = SOCKET_SIMPLE_HTTP_DEFAULT_MAX_CONNECTIONS;
+  config->max_connections_per_client
+      = SOCKET_SIMPLE_HTTP_DEFAULT_MAX_CONNECTIONS_PER_CLIENT;
   config->enable_tls = 0;
   config->tls_cert_file = NULL;
   config->tls_key_file = NULL;

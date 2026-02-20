@@ -23,6 +23,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "core/SocketConfig.h"
+
 /* Benchmark configuration defaults
  * Note: Keep total requests low until issue #119 (HTTP client memory
  * corruption) is fixed. With high request counts (>2000 total), the HTTP client
@@ -121,7 +123,7 @@ bench_now_ns (void)
 {
   struct timespec ts;
   clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+  return (uint64_t)ts.tv_sec * SOCKET_NS_PER_SECOND + (uint64_t)ts.tv_nsec;
 }
 
 /**

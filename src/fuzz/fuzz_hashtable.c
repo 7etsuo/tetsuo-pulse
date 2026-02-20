@@ -30,6 +30,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/HashTable.h"
+#include "core/SocketUtil/Hash.h"
 
 /* Maximum entries to avoid OOM in fuzzer */
 #define FUZZ_MAX_ENTRIES 1024
@@ -59,20 +60,11 @@ enum FuzzOp
   OP_MAX
 };
 
-/* Hash function: DJB2 with seed */
+/* Hash function: seeded DJB2 from SocketUtil */
 static unsigned
 fuzz_hash (const void *key, unsigned seed, unsigned table_size)
 {
-  const char *str = (const char *)key;
-  unsigned hash = seed ^ 5381;
-
-  while (*str)
-    {
-      hash = ((hash << 5) + hash) + (unsigned char)*str;
-      str++;
-    }
-
-  return hash % table_size;
+  return socket_util_hash_djb2_seeded ((const char *)key, table_size, seed);
 }
 
 /* Compare function */
@@ -201,11 +193,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           while (offset < payload_size && entry_count < FUZZ_MAX_ENTRIES)
             {
               FuzzEntry *e = &entries[entry_count];
-              size_t consumed
-                  = extract_key (payload + offset,
-                                 payload_size - offset,
-                                 e->key,
-                                 sizeof (e->key));
+              size_t consumed = extract_key (payload + offset,
+                                             payload_size - offset,
+                                             e->key,
+                                             sizeof (e->key));
               offset += consumed;
 
               if (e->key[0] != '\0')
@@ -290,11 +281,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           while (offset < payload_size && entry_count < FUZZ_MAX_ENTRIES / 2)
             {
               FuzzEntry *e = &entries[entry_count];
-              size_t consumed
-                  = extract_key (payload + offset,
-                                 payload_size - offset,
-                                 e->key,
-                                 sizeof (e->key));
+              size_t consumed = extract_key (payload + offset,
+                                             payload_size - offset,
+                                             e->key,
+                                             sizeof (e->key));
               offset += consumed;
 
               if (e->key[0] != '\0')
@@ -347,11 +337,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           while (offset < payload_size && entry_count < FUZZ_MAX_ENTRIES)
             {
               FuzzEntry *e = &entries[entry_count];
-              size_t consumed
-                  = extract_key (payload + offset,
-                                 payload_size - offset,
-                                 e->key,
-                                 sizeof (e->key));
+              size_t consumed = extract_key (payload + offset,
+                                             payload_size - offset,
+                                             e->key,
+                                             sizeof (e->key));
               offset += consumed;
 
               if (e->key[0] != '\0')
@@ -392,11 +381,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               /* Limit to 100 for collision test */
               FuzzEntry *e = &entries[entry_count];
-              size_t consumed
-                  = extract_key (payload + offset,
-                                 payload_size - offset,
-                                 e->key,
-                                 sizeof (e->key));
+              size_t consumed = extract_key (payload + offset,
+                                             payload_size - offset,
+                                             e->key,
+                                             sizeof (e->key));
               offset += consumed;
 
               if (e->key[0] != '\0')
@@ -439,11 +427,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                      && entry_count < FUZZ_MAX_ENTRIES)
                 {
                   FuzzEntry *e = &entries[entry_count];
-                  size_t consumed
-                      = extract_key (payload + offset,
-                                     payload_size - offset,
-                                     e->key,
-                                     sizeof (e->key));
+                  size_t consumed = extract_key (payload + offset,
+                                                 payload_size - offset,
+                                                 e->key,
+                                                 sizeof (e->key));
                   offset += consumed;
 
                   if (e->key[0] != '\0')
@@ -500,11 +487,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     if (entry_count < FUZZ_MAX_ENTRIES)
                       {
                         FuzzEntry *e = &entries[entry_count];
-                        size_t consumed
-                            = extract_key (payload + offset,
-                                           payload_size - offset,
-                                           e->key,
-                                           sizeof (e->key));
+                        size_t consumed = extract_key (payload + offset,
+                                                       payload_size - offset,
+                                                       e->key,
+                                                       sizeof (e->key));
                         offset += consumed;
 
                         if (e->key[0] != '\0')

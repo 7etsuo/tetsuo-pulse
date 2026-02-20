@@ -153,6 +153,45 @@ SocketQUICCongestion_persistent_duration (const SocketQUICLossRTT_T *rtt,
                                           uint64_t max_ack_delay_us);
 
 /**
+ * @brief ACK context for congestion control updates.
+ *
+ * Populated by acked/lost callbacks during ACK processing, then passed
+ * to SocketQUICCongestion_process_ack to update congestion state.
+ */
+typedef struct
+{
+  size_t acked_bytes;
+  uint64_t latest_acked_sent_time;
+  size_t lost_bytes;
+  uint64_t latest_lost_sent_time;
+} SocketQUICCongestion_AckCtx;
+
+/**
+ * @brief Process ACK congestion signals in one call.
+ *
+ * Combines acked/lost/ECN-CE/persistent-congestion handling that was
+ * previously duplicated in SocketQUICTransport and SocketQUICServer.
+ *
+ * @param cc                Congestion controller (may be NULL — no-op).
+ * @param actx              ACK context with byte counts and timestamps.
+ * @param rtt               RTT estimation state.
+ * @param loss              Loss state for the packet number space.
+ * @param ecn_ce_count      ECN-CE count from ACK_ECN frame (0 for plain ACK).
+ * @param is_ecn            Whether the frame is ACK_ECN.
+ * @param lost_count        Number of packets declared lost.
+ * @param prev_ecn_ce_count Pointer to stored ECN-CE count (updated in-place).
+ */
+extern void
+SocketQUICCongestion_process_ack (SocketQUICCongestion_T cc,
+                                  const SocketQUICCongestion_AckCtx *actx,
+                                  const SocketQUICLossRTT_T *rtt,
+                                  SocketQUICLossState_T loss,
+                                  uint64_t ecn_ce_count,
+                                  int is_ecn,
+                                  size_t lost_count,
+                                  uint64_t *prev_ecn_ce_count);
+
+/**
  * @brief Get human-readable name for a congestion control phase.
  */
 extern const char *

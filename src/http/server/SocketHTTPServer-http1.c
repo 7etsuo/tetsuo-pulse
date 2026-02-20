@@ -27,8 +27,6 @@
 
 #define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG (fmt, ##__VA_ARGS__)
 
-/* STRLEN_LIT macro for compile-time string length */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* Buffer sizes - HTTPSERVER_RECV_BUFFER_SIZE defined in SocketHTTPServer.h */
 #define HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE 8192

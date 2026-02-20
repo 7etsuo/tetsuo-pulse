@@ -60,10 +60,10 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
   config->enable_connect_protocol = 0; /* RFC 8441: disabled by default */
 
   /* Security defaults for rate limiting */
-  config->max_stream_open_rate = 100; /* streams/sec */
-  config->max_stream_open_burst = 10;
-  config->max_stream_close_rate = 200; /* closes/sec, higher as natural */
-  config->max_stream_close_burst = 20;
+  config->max_stream_open_rate = SOCKETHTTP2_DEFAULT_MAX_STREAM_OPEN_RATE;
+  config->max_stream_open_burst = SOCKETHTTP2_DEFAULT_MAX_STREAM_OPEN_BURST;
+  config->max_stream_close_rate = SOCKETHTTP2_DEFAULT_MAX_STREAM_CLOSE_RATE;
+  config->max_stream_close_burst = SOCKETHTTP2_DEFAULT_MAX_STREAM_CLOSE_BURST;
 
   /* Sliding window stream rate limiting (CVE-2023-44487 protection) */
   config->stream_window_size_ms = SOCKETHTTP2_STREAM_WINDOW_SIZE_MS;

@@ -32,6 +32,7 @@
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 #include "core/HashTable.h"
+#include "socket/Socket.h"
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
 
@@ -196,33 +197,6 @@ tls_allow_early_data_cb (SSL *ssl, void *arg)
 #define SOCKET_HAS_QUICKACK 0
 #endif
 
-/**
- * set_tcp_nodelay - Enable TCP_NODELAY on a socket
- * @fd: File descriptor to configure
- *
- * Disables Nagle's algorithm for reduced latency. Critical for TLS handshakes
- * which involve multiple small messages.
- */
-static void
-set_tcp_nodelay (int fd)
-{
-  int optval = 1;
-
-  if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof (optval)) < 0)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "TCP_NODELAY failed for fd=%d (errno=%d, may be non-TCP socket)",
-          fd,
-          errno);
-    }
-  else
-    {
-      SOCKET_LOG_DEBUG_MSG ("TCP_NODELAY enabled for handshake optimization on "
-                            "fd=%d",
-                            fd);
-    }
-}
-
 #if SOCKET_HAS_QUICKACK
 /**
  * set_tcp_quickack - Enable TCP_QUICKACK on a socket (Linux only)
@@ -288,7 +262,17 @@ SocketTLS_optimize_handshake (Socket_T socket)
       return -1;
     }
 
-  set_tcp_nodelay (fd);
+  /* Best-effort: suppress exception if socket is non-TCP */
+  TRY
+  {
+    Socket_setnodelay (socket, 1);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    SOCKET_LOG_DEBUG_MSG (
+        "TCP_NODELAY failed for fd=%d (may be non-TCP socket)", fd);
+  }
+  END_TRY;
 #if SOCKET_HAS_QUICKACK
   set_tcp_quickack (fd);
 #endif
@@ -379,8 +363,10 @@ SocketTLSContext_enable_early_data (SocketTLSContext_T ctx,
       /* Secure by default: require replay protection callback for 0-RTT */
       ctx->early_data_replay_required = 1;
 
-      /* Enforce replay decision at the TLS layer (called when early data arrives). */
-      SSL_CTX_set_allow_early_data_cb (ctx->ssl_ctx, tls_allow_early_data_cb, ctx);
+      /* Enforce replay decision at the TLS layer (called when early data
+       * arrives). */
+      SSL_CTX_set_allow_early_data_cb (
+          ctx->ssl_ctx, tls_allow_early_data_cb, ctx);
 
       SOCKET_LOG_DEBUG_MSG ("Enabled 0-RTT early data on server context "
                             "(max=%u bytes, replay protection REQUIRED)",

@@ -606,7 +606,7 @@ extern const char *Socket_safe_strerror (int errnum);
  * DNS hostnames are limited to 255 characters total.
  */
 #ifndef SOCKET_DNS_MAX_HOSTNAME_LEN
-#define SOCKET_DNS_MAX_HOSTNAME_LEN 255
+#define SOCKET_DNS_MAX_HOSTNAME_LEN SOCKET_MAX_HOSTNAME_LEN
 #endif
 
 /**
@@ -703,6 +703,14 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 #ifndef SOCKET_MAX_TIMERS_PER_HEAP
 #define SOCKET_MAX_TIMERS_PER_HEAP 100000
+#endif
+
+#ifndef SOCKET_TIMER_EVICTION_INITIAL_LOG_COUNT
+#define SOCKET_TIMER_EVICTION_INITIAL_LOG_COUNT 5
+#endif
+
+#ifndef SOCKET_TIMER_EVICTION_LOG_INTERVAL
+#define SOCKET_TIMER_EVICTION_LOG_INTERVAL 1000
 #endif
 
 /**
@@ -1584,6 +1592,116 @@ typedef struct SocketTimeouts_Extended
 #endif
 
 /**
+ * @brief Default idle timeout in milliseconds.
+ *
+ * Used for QUIC and HTTP/3 connection idle timeouts.
+ */
+#ifndef SOCKET_DEFAULT_IDLE_TIMEOUT_MS
+#define SOCKET_DEFAULT_IDLE_TIMEOUT_MS 30000 /* 30 seconds */
+#endif
+
+/**
+ * @brief Well-known HTTP port (RFC 9110).
+ */
+#ifndef SOCKET_DEFAULT_HTTP_PORT
+#define SOCKET_DEFAULT_HTTP_PORT 80
+#endif
+
+/**
+ * @brief Well-known HTTPS port (RFC 9110).
+ */
+#ifndef SOCKET_DEFAULT_HTTPS_PORT
+#define SOCKET_DEFAULT_HTTPS_PORT 443
+#endif
+
+/**
+ * @brief Alternative HTTP port.
+ */
+#ifndef SOCKET_DEFAULT_HTTP_ALT_PORT
+#define SOCKET_DEFAULT_HTTP_ALT_PORT 8080
+#endif
+
+/**
+ * @brief Default initial buffer capacity.
+ *
+ * Used as a general-purpose initial allocation size for I/O buffers
+ * across QUIC, HTTP/3, DNS, and other modules.
+ */
+#ifndef SOCKET_DEFAULT_BUFFER_SIZE
+#define SOCKET_DEFAULT_BUFFER_SIZE 4096
+#endif
+
+/**
+ * @brief Maximum path length for file operations.
+ */
+#ifndef SOCKET_MAX_PATH_LEN
+#define SOCKET_MAX_PATH_LEN 4096
+#endif
+
+/**
+ * @brief Maximum DNS message size per RFC 1035.
+ *
+ * Used by both DNS-over-TLS (RFC 7858) and DNS-over-HTTPS (RFC 8484).
+ */
+#ifndef SOCKET_DNS_MAX_MESSAGE_SIZE
+#define SOCKET_DNS_MAX_MESSAGE_SIZE 65535
+#endif
+
+/**
+ * @brief Default maximum QUIC connections per server.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_MAX_CONNECTIONS
+#define SOCKET_QUIC_DEFAULT_MAX_CONNECTIONS 256
+#endif
+
+/**
+ * @brief Default QUIC receive buffer size.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_RECV_BUF_SIZE
+#define SOCKET_QUIC_DEFAULT_RECV_BUF_SIZE 65536
+#endif
+
+/**
+ * @brief Default maximum QUIC streams per connection.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_MAX_STREAMS
+#define SOCKET_QUIC_DEFAULT_MAX_STREAMS 256
+#endif
+
+/**
+ * @brief Default maximum QUIC stream segments.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_MAX_STREAM_SEGMENTS
+#define SOCKET_QUIC_DEFAULT_MAX_STREAM_SEGMENTS 256
+#endif
+
+/**
+ * @brief Default maximum QUIC stream data (per-stream flow control).
+ *
+ * 256 KB initial per-stream flow control window.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_MAX_STREAM_DATA
+#define SOCKET_QUIC_DEFAULT_MAX_STREAM_DATA 262144
+#endif
+
+/**
+ * @brief Default initial maximum QUIC connection data (connection-level flow
+ * control).
+ *
+ * 1 MB initial connection-level flow control window.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_INITIAL_MAX_DATA
+#define SOCKET_QUIC_DEFAULT_INITIAL_MAX_DATA 1048576
+#endif
+
+/**
+ * @brief Default maximum bidirectional QUIC streams.
+ */
+#ifndef SOCKET_QUIC_DEFAULT_MAX_STREAMS_BIDI
+#define SOCKET_QUIC_DEFAULT_MAX_STREAMS_BIDI 100
+#endif
+
+/**
  * @brief Default connection pool size.
  *
  */
@@ -1716,6 +1834,120 @@ typedef struct SocketTimeouts_Extended
 
 #ifndef SOCKETHTTP_MAX_DOS_WARNINGS
 #define SOCKETHTTP_MAX_DOS_WARNINGS 3
+#endif
+
+/* --- HTTP/2 rate-limiting defaults (CVE-2023-44487 protection) --- */
+
+#ifndef SOCKETHTTP2_DEFAULT_MAX_STREAM_OPEN_RATE
+#define SOCKETHTTP2_DEFAULT_MAX_STREAM_OPEN_RATE 100
+#endif
+
+#ifndef SOCKETHTTP2_DEFAULT_MAX_STREAM_OPEN_BURST
+#define SOCKETHTTP2_DEFAULT_MAX_STREAM_OPEN_BURST 10
+#endif
+
+#ifndef SOCKETHTTP2_DEFAULT_MAX_STREAM_CLOSE_RATE
+#define SOCKETHTTP2_DEFAULT_MAX_STREAM_CLOSE_RATE 200
+#endif
+
+#ifndef SOCKETHTTP2_DEFAULT_MAX_STREAM_CLOSE_BURST
+#define SOCKETHTTP2_DEFAULT_MAX_STREAM_CLOSE_BURST 20
+#endif
+
+/* --- HTTP/3 server/client defaults --- */
+
+#ifndef SOCKET_HTTP3_SERVER_DEFAULT_MAX_CONNECTIONS
+#define SOCKET_HTTP3_SERVER_DEFAULT_MAX_CONNECTIONS 256
+#endif
+
+#ifndef SOCKET_HTTP3_SERVER_DEFAULT_MAX_HEADER_SIZE
+#define SOCKET_HTTP3_SERVER_DEFAULT_MAX_HEADER_SIZE 65536
+#endif
+
+#ifndef SOCKET_HTTP3_CLIENT_DEFAULT_CONNECT_TIMEOUT_MS
+#define SOCKET_HTTP3_CLIENT_DEFAULT_CONNECT_TIMEOUT_MS 5000
+#endif
+
+#ifndef SOCKET_HTTP3_CLIENT_DEFAULT_REQUEST_TIMEOUT_MS
+#define SOCKET_HTTP3_CLIENT_DEFAULT_REQUEST_TIMEOUT_MS 30000
+#endif
+
+/* --- QUIC transport defaults --- */
+
+#ifndef SOCKET_QUIC_DEFAULT_CONNECT_TIMEOUT_MS
+#define SOCKET_QUIC_DEFAULT_CONNECT_TIMEOUT_MS 5000
+#endif
+
+/* --- Simple HTTP server defaults --- */
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_BACKLOG
+#define SOCKET_SIMPLE_HTTP_DEFAULT_BACKLOG 128
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_MAX_HEADER_SIZE
+#define SOCKET_SIMPLE_HTTP_DEFAULT_MAX_HEADER_SIZE (64 * 1024)
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_MAX_BODY_SIZE
+#define SOCKET_SIMPLE_HTTP_DEFAULT_MAX_BODY_SIZE (10 * 1024 * 1024)
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_REQUEST_TIMEOUT_MS
+#define SOCKET_SIMPLE_HTTP_DEFAULT_REQUEST_TIMEOUT_MS 30000
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_KEEPALIVE_TIMEOUT_MS
+#define SOCKET_SIMPLE_HTTP_DEFAULT_KEEPALIVE_TIMEOUT_MS 60000
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_MAX_CONNECTIONS
+#define SOCKET_SIMPLE_HTTP_DEFAULT_MAX_CONNECTIONS 1000
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_DEFAULT_MAX_CONNECTIONS_PER_CLIENT
+#define SOCKET_SIMPLE_HTTP_DEFAULT_MAX_CONNECTIONS_PER_CLIENT 100
+#endif
+
+/* --- Simple HTTP client global defaults --- */
+
+#ifndef SOCKET_SIMPLE_HTTP_GLOBAL_CONNECT_TIMEOUT_MS
+#define SOCKET_SIMPLE_HTTP_GLOBAL_CONNECT_TIMEOUT_MS 5000
+#endif
+
+#ifndef SOCKET_SIMPLE_HTTP_GLOBAL_REQUEST_TIMEOUT_MS
+#define SOCKET_SIMPLE_HTTP_GLOBAL_REQUEST_TIMEOUT_MS 15000
+#endif
+
+/* --- TLS tuning constants --- */
+
+#ifndef SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS
+#define SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS 1000
+#endif
+
+#ifndef SOCKET_TLS_SHUTDOWN_POLL_INTERVAL_MS
+#define SOCKET_TLS_SHUTDOWN_POLL_INTERVAL_MS 100
+#endif
+
+/* --- HTTP client pool hash limit --- */
+
+#ifndef SOCKET_HTTPCLIENT_POOL_HASH_SIZE_MAX
+#define SOCKET_HTTPCLIENT_POOL_HASH_SIZE_MAX 65536
+#endif
+
+/* --- DoT session cache tuning --- */
+
+#ifndef SOCKET_DOT_SESSION_CACHE_MAX
+#define SOCKET_DOT_SESSION_CACHE_MAX 10
+#endif
+
+#ifndef SOCKET_DOT_SESSION_CACHE_TTL
+#define SOCKET_DOT_SESSION_CACHE_TTL 300
+#endif
+
+/* --- WebSocket TLS handshake timeout --- */
+
+#ifndef SOCKET_WS_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS
+#define SOCKET_WS_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS 10000
 #endif
 
 /**

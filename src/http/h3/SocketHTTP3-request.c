@@ -18,14 +18,13 @@
 #include "http/SocketHTTP3-frame.h"
 #include "http/SocketHTTP3-request.h"
 #include "http/qpack/SocketQPACK.h"
+#include "core/SocketUtil.h"
 #include "quic/SocketQUICVarInt.h"
 
 #include <stdint.h>
 #include <string.h>
 #include <strings.h>
 
-/* Compile-time string literal length (avoids strlen at runtime) */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 #define H3_REQ_RECV_BUF_INIT_CAP 1024
 #define H3_REQ_DATA_BUF_INIT_CAP 4096

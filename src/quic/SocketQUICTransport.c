@@ -16,11 +16,11 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 #include "core/SocketUtil/Arithmetic.h"
 #include "quic/SocketQUICAck.h"
 #include "quic/SocketQUICConnection.h"
@@ -40,9 +40,9 @@
 #include "socket/SocketDgram.h"
 
 #define TRANSPORT_SEND_BUF_SIZE 1500
-#define TRANSPORT_RECV_BUF_SIZE 65536
-#define TRANSPORT_MAX_STREAMS 256
-#define TRANSPORT_MAX_STREAM_SEGMENTS 256
+#define TRANSPORT_RECV_BUF_SIZE SOCKET_QUIC_DEFAULT_RECV_BUF_SIZE
+#define TRANSPORT_MAX_STREAMS SOCKET_QUIC_DEFAULT_MAX_STREAMS
+#define TRANSPORT_MAX_STREAM_SEGMENTS SOCKET_QUIC_DEFAULT_MAX_STREAM_SEGMENTS
 #define TRANSPORT_MAX_0RTT_BUFFER_BYTES (64 * 1024)
 #define TRANSPORT_MAX_0RTT_BUFFER_ITEMS 256
 #define TRANSPORT_MAX_SESSION_TICKET_SIZE (16 * 1024)
@@ -173,13 +173,6 @@ struct SocketQUICTransport
   int zero_rtt_flow_base_set;
 };
 
-static uint64_t
-now_us (void)
-{
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
-}
 
 static void transport_close_with_error (SocketQUICTransport_T t,
                                         uint64_t error_code,
@@ -763,7 +756,7 @@ build_and_send_app_packet (SocketQUICTransport_T t,
   if (transport_send_packet (t, t->send_buf, pkt_len) < 0)
     return -1;
 
-  uint64_t sent_time = now_us ();
+  uint64_t sent_time = Socket_get_monotonic_us ();
   if (SocketQUICLoss_on_packet_sent (t->loss[QUIC_PN_SPACE_APPLICATION],
                                      pn,
                                      sent_time,
@@ -850,18 +843,10 @@ send_ack_if_needed (SocketQUICTransport_T t,
   return rc;
 }
 
-typedef struct
-{
-  size_t acked_bytes;
-  uint64_t latest_acked_sent_time;
-  size_t lost_bytes;
-  uint64_t latest_lost_sent_time;
-} TransportAckContext;
-
 static void
 transport_acked_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
 {
-  TransportAckContext *c = ctx;
+  SocketQUICCongestion_AckCtx *c = ctx;
   if (pkt->in_flight)
     c->acked_bytes += pkt->sent_bytes;
   if (pkt->sent_time_us > c->latest_acked_sent_time)
@@ -871,7 +856,7 @@ transport_acked_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
 static void
 transport_lost_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
 {
-  TransportAckContext *c = ctx;
+  SocketQUICCongestion_AckCtx *c = ctx;
   if (pkt->in_flight)
     c->lost_bytes += pkt->sent_bytes;
   if (pkt->sent_time_us > c->latest_lost_sent_time)
@@ -926,7 +911,7 @@ process_frames (SocketQUICTransport_T t,
         case QUIC_FRAME_ACK_ECN:
           if (t->loss[space])
             {
-              TransportAckContext actx = { 0 };
+              SocketQUICCongestion_AckCtx actx = { 0 };
               size_t acked_count = 0, lost_count = 0;
 
               SocketQUICLoss_on_ack_received (t->loss[space],
@@ -939,42 +924,16 @@ process_frames (SocketQUICTransport_T t,
                                               &acked_count,
                                               &lost_count);
 
-              if (space == QUIC_PN_SPACE_APPLICATION && t->congestion)
-                {
-                  if (actx.acked_bytes > 0)
-                    SocketQUICCongestion_on_packets_acked (
-                        t->congestion,
-                        actx.acked_bytes,
-                        actx.latest_acked_sent_time);
-
-                  if (actx.lost_bytes > 0)
-                    SocketQUICCongestion_on_packets_lost (
-                        t->congestion,
-                        actx.lost_bytes,
-                        actx.latest_lost_sent_time);
-
-                  if (frame.type == QUIC_FRAME_ACK_ECN
-                      && frame.data.ack.ecn_ce_count > t->prev_ecn_ce_count)
-                    {
-                      SocketQUICCongestion_on_ecn_ce (
-                          t->congestion, actx.latest_acked_sent_time);
-                      t->prev_ecn_ce_count = frame.data.ack.ecn_ce_count;
-                    }
-
-                  /* Check persistent congestion */
-                  if (lost_count > 0 && t->rtt.first_rtt_sample_time > 0)
-                    {
-                      uint64_t pc_dur
-                          = SocketQUICCongestion_persistent_duration (
-                              &t->rtt, t->loss[space]->max_ack_delay_us);
-                      if (pc_dur > 0
-                          && actx.latest_lost_sent_time
-                                     - t->rtt.first_rtt_sample_time
-                                 > pc_dur)
-                        SocketQUICCongestion_on_persistent_congestion (
-                            t->congestion);
-                    }
-                }
+              if (space == QUIC_PN_SPACE_APPLICATION)
+                SocketQUICCongestion_process_ack (t->congestion,
+                                                  &actx,
+                                                  &t->rtt,
+                                                  t->loss[space],
+                                                  frame.data.ack.ecn_ce_count,
+                                                  frame.type
+                                                      == QUIC_FRAME_ACK_ECN,
+                                                  lost_count,
+                                                  &t->prev_ecn_ce_count);
             }
           break;
 
@@ -1345,11 +1304,11 @@ SocketQUICTransportConfig_defaults (SocketQUICTransportConfig *config)
   if (!config)
     return;
   memset (config, 0, sizeof (*config));
-  config->idle_timeout_ms = 30000;
-  config->max_stream_data = 262144;
-  config->initial_max_data = 1048576;
-  config->initial_max_streams_bidi = 100;
-  config->connect_timeout_ms = 5000;
+  config->idle_timeout_ms = SOCKET_DEFAULT_IDLE_TIMEOUT_MS;
+  config->max_stream_data = SOCKET_QUIC_DEFAULT_MAX_STREAM_DATA;
+  config->initial_max_data = SOCKET_QUIC_DEFAULT_INITIAL_MAX_DATA;
+  config->initial_max_streams_bidi = SOCKET_QUIC_DEFAULT_MAX_STREAMS_BIDI;
+  config->connect_timeout_ms = SOCKET_QUIC_DEFAULT_CONNECT_TIMEOUT_MS;
   config->alpn = "h3";
   config->ca_file = NULL;
   config->verify_peer = 1;
@@ -1589,12 +1548,12 @@ SocketQUICTransport_connect (SocketQUICTransport_T t,
   if (SocketQUICTransport_connect_start (t, host, port) < 0)
     return -1;
 
-  uint64_t deadline_us
-      = now_us () + (uint64_t)t->config.connect_timeout_ms * 1000;
+  uint64_t deadline_us = Socket_get_monotonic_us ()
+                         + (uint64_t)t->config.connect_timeout_ms * 1000;
 
   while (!t->connected && !t->closed)
     {
-      uint64_t current = now_us ();
+      uint64_t current = Socket_get_monotonic_us ();
       if (current >= deadline_us)
         return -1;
 
@@ -1935,6 +1894,33 @@ complete_handshake_if_ready (SocketQUICTransport_T t)
   return 0;
 }
 
+static int
+drive_client_handshake (SocketQUICTransport_T t,
+                        const SocketQUICReceiveResult_T *result)
+{
+  if (!t->connecting || t->connected)
+    return 0;
+
+  /* RFC 9000 §7.2: adopt server's SCID as our DCID upon receiving
+   * the first Initial or Handshake packet from the server. */
+  if (result->scid.len > 0
+      && (result->type == QUIC_PACKET_TYPE_INITIAL
+          || result->type == QUIC_PACKET_TYPE_HANDSHAKE))
+    {
+      t->dcid = result->scid;
+      SocketQUICConnection_update_dcid (t->handshake->conn, &result->scid);
+    }
+
+  check_and_derive_keys (t);
+
+  SocketQUICTLS_Result tls_rc = SocketQUICTLS_do_handshake (t->handshake);
+  if (tls_rc == QUIC_TLS_ERROR_HANDSHAKE || tls_rc == QUIC_TLS_ERROR_ALERT)
+    return -1;
+
+  check_and_derive_keys (t);
+  return flush_tls_output (t);
+}
+
 int
 SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
 {
@@ -1972,7 +1958,7 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
       if (recv_rc != QUIC_RECEIVE_OK)
         break;
 
-      uint64_t current = now_us ();
+      uint64_t current = Socket_get_monotonic_us ();
 
       /* Record received PN */
       if (t->ack[result.pn_space])
@@ -1993,32 +1979,8 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
       if (t->closed)
         return -1;
 
-      if (t->connecting && !t->connected)
-        {
-          /* RFC 9000 §7.2: adopt server's SCID as our DCID upon receiving
-           * the first Initial or Handshake packet from the server. */
-          if (result.scid.len > 0
-              && (result.type == QUIC_PACKET_TYPE_INITIAL
-                  || result.type == QUIC_PACKET_TYPE_HANDSHAKE))
-            {
-              t->dcid = result.scid;
-              SocketQUICConnection_update_dcid (t->handshake->conn,
-                                                &result.scid);
-            }
-
-          /* Drive TLS handshake forward after each packet. */
-          check_and_derive_keys (t);
-
-          SocketQUICTLS_Result tls_rc
-              = SocketQUICTLS_do_handshake (t->handshake);
-          if (tls_rc == QUIC_TLS_ERROR_HANDSHAKE
-              || tls_rc == QUIC_TLS_ERROR_ALERT)
-            return -1;
-
-          check_and_derive_keys (t);
-          if (flush_tls_output (t) < 0)
-            return -1;
-        }
+      if (drive_client_handshake (t, &result) < 0)
+        return -1;
 
       /* Advance past this packet in the datagram */
       size_t consumed = result.consumed > 0 ? result.consumed : remaining;
@@ -2031,7 +1993,7 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
     return -1;
 
   /* Send ACK if needed */
-  uint64_t current = now_us ();
+  uint64_t current = Socket_get_monotonic_us ();
   for (int space = 0; space < QUIC_PN_SPACE_COUNT; space++)
     send_ack_if_needed (t, (SocketQUIC_PNSpace)space, current);
 

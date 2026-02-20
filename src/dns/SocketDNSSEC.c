@@ -55,6 +55,9 @@
 /** Maximum label count in domain name comparison. */
 #define DNSSEC_MAX_LABELS 128
 
+/** Maximum public key size for DNSKEY RDATA buffers. */
+#define DNSSEC_MAX_PUBKEY_BYTES 2048
+
 /** DNSSEC protocol field value (RFC 4034 Section 2.1.2). */
 #define DNSSEC_PROTOCOL_VALUE 3
 
@@ -1673,7 +1676,7 @@ parse_bind_dnskey (const char *zone,
     return -1;
 
   /* Build DNSKEY RDATA for key tag calculation */
-  unsigned char rdata[4 + 2048];
+  unsigned char rdata[4 + DNSSEC_MAX_PUBKEY_BYTES];
   if (pubkey_len + 4 > sizeof (rdata))
     return -1;
 
@@ -1849,7 +1852,7 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
       SocketDNSSEC_TrustAnchor anchor;
       memset (&anchor, 0, sizeof (anchor));
 
-      unsigned char data_buffer[2048];
+      unsigned char data_buffer[DNSSEC_MAX_PUBKEY_BYTES];
 
       if (strcasecmp (rrtype, "DNSKEY") == 0)
         {

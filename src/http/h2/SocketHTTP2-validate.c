@@ -13,6 +13,7 @@
 #include <string.h>
 #include <strings.h>
 
+#include "core/SocketUtil.h"
 #include "http/SocketHPACK.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP2-private.h"
@@ -23,15 +24,13 @@
 #include <openssl/ssl.h>
 #endif
 
-/* String literal length at compile time */
-#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* HTTP/2 header validation constants */
-#define HTTP2_TE_HEADER_LEN     2
-#define HTTP2_STATUS_CODE_LEN   3
-#define HTTP2_TRAILERS_LEN      STRLEN_LIT ("trailers")
+#define HTTP2_TE_HEADER_LEN 2
+#define HTTP2_STATUS_CODE_LEN 3
+#define HTTP2_TRAILERS_LEN STRLEN_LIT ("trailers")
 #define HTTP2_CONNECT_METHOD_LEN STRLEN_LIT ("CONNECT")
-#define DECIMAL_BASE            10
+#define DECIMAL_BASE 10
 
 /*
  * RFC 9113 §8.2.2: Connection-Specific Header Fields
@@ -563,11 +562,9 @@ http2_validate_scheme_header (const SocketHPACK_Header *h,
    * RFC 9113: For HTTP/2, restrict to http/https to prevent protocol confusion.
    * Case-insensitive comparison per RFC 3986 §3.1.
    */
-  if (h->value_len == 4
-      && strncasecmp (h->value, "http", 4) == 0)
+  if (h->value_len == 4 && strncasecmp (h->value, "http", 4) == 0)
     return 0;
-  if (h->value_len == 5
-      && strncasecmp (h->value, "https", 5) == 0)
+  if (h->value_len == 5 && strncasecmp (h->value, "https", 5) == 0)
     return 0;
 
   /* Reject other schemes to prevent SSRF and protocol confusion attacks */
@@ -662,8 +659,9 @@ http2_validate_path_header (const SocketHPACK_Header *h,
   /*
    * RFC 9113 §8.2.1: Validate path contains no prohibited characters.
    * Control characters 0x00-0x1F (except HTAB in query strings) and DEL (0x7F)
-   * are prohibited. NUL, CR, LF already checked by http2_field_has_prohibited_chars
-   * in the general header validation, but we add extra safety here.
+   * are prohibited. NUL, CR, LF already checked by
+   * http2_field_has_prohibited_chars in the general header validation, but we
+   * add extra safety here.
    */
   for (size_t i = 0; i < h->value_len; i++)
     {

@@ -31,6 +31,7 @@
 #include "core/SocketMetrics.h"
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNSCache-private.h"
 #include "dns/SocketDNSResolver.h"
 #include "socket/SocketCommon-private.h"
 
@@ -1396,17 +1397,10 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
 static void
 compute_deadline (int timeout_ms, struct timespec *deadline)
 {
-  struct timespec timeout;
-  clock_gettime (CLOCK_MONOTONIC, deadline);
-  timeout = socket_util_ms_to_timespec ((unsigned long)timeout_ms);
-  deadline->tv_sec += timeout.tv_sec;
-  deadline->tv_nsec += timeout.tv_nsec;
-
-  if (deadline->tv_nsec >= SOCKET_NS_PER_SECOND)
-    {
-      deadline->tv_sec++;
-      deadline->tv_nsec -= SOCKET_NS_PER_SECOND;
-    }
+  struct timespec now;
+  clock_gettime (CLOCK_MONOTONIC, &now);
+  *deadline = socket_util_timespec_add (
+      now, socket_util_ms_to_timespec ((unsigned long)timeout_ms));
 }
 
 static int
@@ -1656,37 +1650,11 @@ cache_entry_expired (const struct SocketDNS_T *dns,
   return age_ms >= (int64_t)dns->cache_ttl_seconds * SOCKET_MS_PER_SECOND;
 }
 
-static void
-cache_lru_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
-{
-  if (entry->lru_prev)
-    entry->lru_prev->lru_next = entry->lru_next;
-  else
-    dns->cache_lru_head = entry->lru_next;
-
-  if (entry->lru_next)
-    entry->lru_next->lru_prev = entry->lru_prev;
-  else
-    dns->cache_lru_tail = entry->lru_prev;
-
-  entry->lru_prev = NULL;
-  entry->lru_next = NULL;
-}
-
-static void
-cache_lru_insert_front (struct SocketDNS_T *dns,
-                        struct SocketDNS_CacheEntry *entry)
-{
-  entry->lru_prev = NULL;
-  entry->lru_next = dns->cache_lru_head;
-
-  if (dns->cache_lru_head)
-    dns->cache_lru_head->lru_prev = entry;
-  else
-    dns->cache_lru_tail = entry;
-
-  dns->cache_lru_head = entry;
-}
+/* LRU operations use shared macros from SocketDNSCache-private.h */
+#define cache_lru_remove(dns, entry) \
+  DNS_LRU_REMOVE ((dns)->cache_lru_head, (dns)->cache_lru_tail, (entry))
+#define cache_lru_insert_front(dns, entry) \
+  DNS_LRU_INSERT_HEAD ((dns)->cache_lru_head, (dns)->cache_lru_tail, (entry))
 
 static void
 cache_entry_free (struct SocketDNS_CacheEntry *entry)

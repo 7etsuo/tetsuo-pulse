@@ -10,6 +10,7 @@
  */
 
 #include "dns/SocketDNSResolver.h"
+#include "dns/SocketDNSCache-private.h"
 #include "dns/SocketDNSConfig.h"
 #include "dns/SocketDNSTransport.h"
 #include "dns/SocketDNSWire.h"
@@ -497,36 +498,13 @@ cache_entry_free (struct CacheEntry *entry)
   (void)entry;
 }
 
-static void
-cache_lru_remove (T resolver, struct CacheEntry *entry)
-{
-  if (entry->lru_prev)
-    entry->lru_prev->lru_next = entry->lru_next;
-  else
-    resolver->cache_lru_head = entry->lru_next;
-
-  if (entry->lru_next)
-    entry->lru_next->lru_prev = entry->lru_prev;
-  else
-    resolver->cache_lru_tail = entry->lru_prev;
-
-  entry->lru_prev = NULL;
-  entry->lru_next = NULL;
-}
-
-static void
-cache_lru_insert_front (T resolver, struct CacheEntry *entry)
-{
-  entry->lru_prev = NULL;
-  entry->lru_next = resolver->cache_lru_head;
-
-  if (resolver->cache_lru_head)
-    resolver->cache_lru_head->lru_prev = entry;
-  else
-    resolver->cache_lru_tail = entry;
-
-  resolver->cache_lru_head = entry;
-}
+/* LRU operations use shared macros from SocketDNSCache-private.h */
+#define cache_lru_remove(container, entry) \
+  DNS_LRU_REMOVE (                         \
+      (container)->cache_lru_head, (container)->cache_lru_tail, (entry))
+#define cache_lru_insert_front(container, entry) \
+  DNS_LRU_INSERT_HEAD (                          \
+      (container)->cache_lru_head, (container)->cache_lru_tail, (entry))
 
 static void
 cache_hash_remove (T resolver, struct CacheEntry *entry)

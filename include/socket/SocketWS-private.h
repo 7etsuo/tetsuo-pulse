@@ -112,10 +112,10 @@
 #define SOCKETWS_CONNECTION_VALUE "Upgrade"
 
 /** Default HTTP port (used to omit port from Host header) */
-#define SOCKETWS_DEFAULT_HTTP_PORT 80
+#define SOCKETWS_DEFAULT_HTTP_PORT SOCKET_DEFAULT_HTTP_PORT
 
 /** Default HTTPS port (used to omit port from Host header) */
-#define SOCKETWS_DEFAULT_HTTPS_PORT 443
+#define SOCKETWS_DEFAULT_HTTPS_PORT SOCKET_DEFAULT_HTTPS_PORT
 
 /** Expected length of Base64-encoded Sec-WebSocket-Key */
 #define SOCKETWS_KEY_BASE64_LENGTH 24

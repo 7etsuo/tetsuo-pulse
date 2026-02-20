@@ -18,7 +18,6 @@
 #include "core/SocketUtil.h"
 
 #include <string.h>
-#include <time.h>
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-CC"
@@ -33,13 +32,6 @@ struct SocketQUICCongestion
   uint64_t recovery_start_time_us; /**< 0 when not in recovery */
 };
 
-static uint64_t
-now_us (void)
-{
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
-}
 
 /**
  * Check if sent_time falls within the current recovery period.
@@ -66,7 +58,7 @@ enter_recovery (SocketQUICCongestion_T cc)
 
   cc->ssthresh = new_ssthresh;
   cc->cwnd = new_ssthresh;
-  cc->recovery_start_time_us = now_us ();
+  cc->recovery_start_time_us = Socket_get_monotonic_us ();
   cc->phase = QUIC_CC_RECOVERY;
 }
 
@@ -268,6 +260,43 @@ SocketQUICCongestion_phase_name (SocketQUICCongestion_Phase phase)
   if (phase > QUIC_CC_CONGESTION_AVOID)
     return "UNKNOWN";
   return phase_names[phase];
+}
+
+void
+SocketQUICCongestion_process_ack (SocketQUICCongestion_T cc,
+                                  const SocketQUICCongestion_AckCtx *actx,
+                                  const SocketQUICLossRTT_T *rtt,
+                                  SocketQUICLossState_T loss,
+                                  uint64_t ecn_ce_count,
+                                  int is_ecn,
+                                  size_t lost_count,
+                                  uint64_t *prev_ecn_ce_count)
+{
+  if (!cc || !actx)
+    return;
+
+  if (actx->acked_bytes > 0)
+    SocketQUICCongestion_on_packets_acked (
+        cc, actx->acked_bytes, actx->latest_acked_sent_time);
+
+  if (actx->lost_bytes > 0)
+    SocketQUICCongestion_on_packets_lost (
+        cc, actx->lost_bytes, actx->latest_lost_sent_time);
+
+  if (is_ecn && prev_ecn_ce_count && ecn_ce_count > *prev_ecn_ce_count)
+    {
+      SocketQUICCongestion_on_ecn_ce (cc, actx->latest_acked_sent_time);
+      *prev_ecn_ce_count = ecn_ce_count;
+    }
+
+  if (lost_count > 0 && rtt && rtt->first_rtt_sample_time > 0 && loss)
+    {
+      uint64_t pc_dur = SocketQUICCongestion_persistent_duration (
+          rtt, loss->max_ack_delay_us);
+      if (pc_dur > 0
+          && actx->latest_lost_sent_time - rtt->first_rtt_sample_time > pc_dur)
+        SocketQUICCongestion_on_persistent_congestion (cc);
+    }
 }
 
 #endif /* SOCKET_HAS_TLS */
