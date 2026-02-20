@@ -222,8 +222,8 @@ Socket_simple_ratelimit_acquire (SocketSimple_RateLimit_T limit, int tokens)
       if (wait_ms > 0)
         {
           struct timespec ts;
-          ts.tv_sec = wait_ms / 1000;
-          ts.tv_nsec = (wait_ms % 1000) * SOCKET_NS_PER_MS;
+          ts.tv_sec = wait_ms / SOCKET_MS_PER_SECOND;
+          ts.tv_nsec = (wait_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
           nanosleep (&ts, NULL);
           pthread_mutex_lock (&limit->mutex);
           limit->total_waited_ms += wait_ms;
@@ -282,8 +282,8 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
       if (wait_ms > 0)
         {
           struct timespec ts;
-          ts.tv_sec = wait_ms / 1000;
-          ts.tv_nsec = (wait_ms % 1000) * SOCKET_NS_PER_MS;
+          ts.tv_sec = wait_ms / SOCKET_MS_PER_SECOND;
+          ts.tv_nsec = (wait_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
           nanosleep (&ts, NULL);
           pthread_mutex_lock (&limit->mutex);
           limit->total_waited_ms += wait_ms;

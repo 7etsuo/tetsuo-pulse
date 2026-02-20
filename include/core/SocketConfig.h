@@ -1622,6 +1622,13 @@ typedef struct SocketTimeouts_Extended
 #endif
 
 /**
+ * @brief Default SOCKS proxy port (RFC 1928).
+ */
+#ifndef SOCKET_DEFAULT_SOCKS_PORT
+#define SOCKET_DEFAULT_SOCKS_PORT 1080
+#endif
+
+/**
  * @brief Default initial buffer capacity.
  *
  * Used as a general-purpose initial allocation size for I/O buffers
