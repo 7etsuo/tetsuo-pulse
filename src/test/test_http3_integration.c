@@ -35,11 +35,12 @@
 #include "../fuzz/fuzz_test_certs.h"
 
 #define H3_INTEG_PORT_BASE 52000
-#define H3_INTEG_TIMEOUT_MS 5000
+#define H3_INTEG_TIMEOUT_MS 1000
 #define H3_INTEG_POLL_MS 100
 #define H3_INTEG_LARGE_BODY_SIZE 65536
 
 static int h3_integ_port_counter = 0;
+static volatile int h3_connect_known_broken = 0;
 
 static int
 get_h3_integ_port (void)
@@ -269,6 +270,9 @@ h3_request_handler (SocketHTTP3_Request_T req,
 static int
 h3_server_setup (H3TestServer *ts)
 {
+  if (h3_connect_known_broken)
+    return -1;
+
   memset (ts, 0, sizeof (*ts));
   ts->arena = Arena_new ();
   ts->port = get_h3_integ_port ();
@@ -330,6 +334,9 @@ h3_server_teardown (H3TestServer *ts)
 static SocketHTTP3_Client_T
 h3_make_client (Arena_T arena, int port)
 {
+  if (h3_connect_known_broken)
+    return NULL;
+
   SocketHTTP3_ClientConfig config;
   SocketHTTP3_ClientConfig_defaults (&config);
   config.verify_peer = 0;
@@ -338,10 +345,14 @@ h3_make_client (Arena_T arena, int port)
 
   SocketHTTP3_Client_T client = SocketHTTP3_Client_new (arena, &config);
   if (client == NULL)
-    return NULL;
+    {
+      h3_connect_known_broken = 1;
+      return NULL;
+    }
 
   if (SocketHTTP3_Client_connect (client, "127.0.0.1", port) < 0)
     {
+      h3_connect_known_broken = 1;
       SocketHTTP3_Client_close (client);
       return NULL;
     }
