@@ -86,11 +86,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         for (size_t offset = 0; offset < payload_size; offset += chunk_size)
           {
-            size_t chunk
-                = (offset + chunk_size <= payload_size) ? chunk_size
-                                                        : payload_size - offset;
-            crc_incremental
-                = SocketDeflate_crc32 (crc_incremental, payload + offset, chunk);
+            size_t chunk = (offset + chunk_size <= payload_size)
+                               ? chunk_size
+                               : payload_size - offset;
+            crc_incremental = SocketDeflate_crc32 (
+                crc_incremental, payload + offset, chunk);
           }
         (void)crc_incremental;
       }
@@ -112,8 +112,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             size_t remaining = payload_size - offset;
             size_t chunk = (chunk_hint < remaining) ? chunk_hint : remaining;
 
-            crc_incremental
-                = SocketDeflate_crc32 (crc_incremental, payload + offset, chunk);
+            crc_incremental = SocketDeflate_crc32 (
+                crc_incremental, payload + offset, chunk);
             offset += chunk;
           }
         (void)crc_incremental;

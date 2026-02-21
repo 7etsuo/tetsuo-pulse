@@ -19,7 +19,8 @@
  * - Zero increment error handling
  * - Roundtrip verification
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_qpack_decoder_stream
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_qpack_decoder_stream
  * ./fuzz_qpack_decoder_stream -fork=16 -max_len=512
  */
 
@@ -84,8 +85,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         if (size > 9)
           {
-            res = SocketQPACK_decode_section_ack (data + 9, size - 9,
-                                                  &stream_id, &consumed);
+            res = SocketQPACK_decode_section_ack (
+                data + 9, size - 9, &stream_id, &consumed);
             (void)res;
             (void)stream_id;
           }
@@ -96,8 +97,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         if (size > 9)
           {
-            res = SocketQPACK_decode_stream_cancel (data + 9, size - 9,
-                                                    &stream_id, &consumed);
+            res = SocketQPACK_decode_stream_cancel (
+                data + 9, size - 9, &stream_id, &consumed);
             (void)res;
             (void)stream_id;
           }
@@ -108,8 +109,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         if (size > 9)
           {
-            res = SocketQPACK_decode_insert_count_inc (data + 9, size - 9,
-                                                       &increment, &consumed);
+            res = SocketQPACK_decode_insert_count_inc (
+                data + 9, size - 9, &increment, &consumed);
             (void)res;
             (void)increment;
           }
@@ -133,8 +134,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (size > 9)
           {
             SocketQPACK_DecoderInstruction instr = { 0 };
-            res = SocketQPACK_decode_decoder_instruction (data + 9, size - 9,
-                                                          &instr, &consumed);
+            res = SocketQPACK_decode_decoder_instruction (
+                data + 9, size - 9, &instr, &consumed);
             (void)res;
             (void)instr.type;
             (void)instr.value;
@@ -148,18 +149,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint64_t insert_count = known_received + (data[0] % 1000) + 1;
         uint64_t inc = (data[8] % 100) + 1; /* Valid increment (non-zero) */
 
-        res = SocketQPACK_validate_insert_count_inc (known_received,
-                                                     insert_count, inc);
+        res = SocketQPACK_validate_insert_count_inc (
+            known_received, insert_count, inc);
         (void)res;
 
         /* Test zero increment (should fail) */
-        res = SocketQPACK_validate_insert_count_inc (known_received,
-                                                     insert_count, 0);
+        res = SocketQPACK_validate_insert_count_inc (
+            known_received, insert_count, 0);
         (void)res;
 
         /* Test overflow */
-        res = SocketQPACK_validate_insert_count_inc (known_received,
-                                                     insert_count, UINT64_MAX);
+        res = SocketQPACK_validate_insert_count_inc (
+            known_received, insert_count, UINT64_MAX);
         (void)res;
       }
       break;
@@ -182,14 +183,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     case OP_ENCODE_INSERT_COUNT_INC:
       {
         uint64_t inc = (val1 % 1000) + 1; /* Non-zero */
-        res = SocketQPACK_encode_insert_count_inc (output, sizeof (output), inc,
-                                                   &bytes_written);
+        res = SocketQPACK_encode_insert_count_inc (
+            output, sizeof (output), inc, &bytes_written);
         (void)res;
         (void)bytes_written;
 
         /* Test zero increment (should fail) */
-        res = SocketQPACK_encode_insert_count_inc (output, sizeof (output), 0,
-                                                   &bytes_written);
+        res = SocketQPACK_encode_insert_count_inc (
+            output, sizeof (output), 0, &bytes_written);
         (void)res;
       }
       break;
@@ -200,8 +201,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint64_t insert_count = known_received + (data[0] % 1000) + 1;
         uint64_t inc = (data[8] % 100) + 1;
 
-        res = SocketQPACK_apply_insert_count_inc (&known_received, insert_count,
-                                                  inc);
+        res = SocketQPACK_apply_insert_count_inc (
+            &known_received, insert_count, inc);
         (void)res;
         (void)known_received;
       }
@@ -216,8 +217,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         if (test_stream_id < 127)
           {
-            res = SocketQPACK_decode_section_ack (buf, 1, &stream_id,
-                                                  &consumed);
+            res = SocketQPACK_decode_section_ack (
+                buf, 1, &stream_id, &consumed);
             (void)res;
           }
       }
@@ -232,8 +233,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         if (test_stream_id < 63)
           {
-            res = SocketQPACK_decode_stream_cancel (buf, 1, &stream_id,
-                                                    &consumed);
+            res = SocketQPACK_decode_stream_cancel (
+                buf, 1, &stream_id, &consumed);
             (void)res;
           }
       }
@@ -243,13 +244,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Encode then decode Insert Count Increment */
         uint64_t inc = (val1 % 100) + 1;
-        res = SocketQPACK_encode_insert_count_inc (output, sizeof (output), inc,
-                                                   &bytes_written);
+        res = SocketQPACK_encode_insert_count_inc (
+            output, sizeof (output), inc, &bytes_written);
         if (res == QPACK_STREAM_OK && bytes_written > 0)
           {
             uint64_t decoded_inc = 0;
-            res = SocketQPACK_decode_insert_count_inc (output, bytes_written,
-                                                       &decoded_inc, &consumed);
+            res = SocketQPACK_decode_insert_count_inc (
+                output, bytes_written, &decoded_inc, &consumed);
             (void)decoded_inc;
           }
         (void)res;
@@ -264,8 +265,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (size > 9)
     {
       SocketQPACK_DecoderInstruction instr = { 0 };
-      res = SocketQPACK_decode_decoder_instruction (data + 9, size - 9, &instr,
-                                                    &consumed);
+      res = SocketQPACK_decode_decoder_instruction (
+          data + 9, size - 9, &instr, &consumed);
       (void)res;
     }
 
@@ -277,8 +278,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     res = SocketQPACK_decode_section_ack (data + 1, size - 1, &stream_id, NULL);
     (void)res;
 
-    res = SocketQPACK_decode_decoder_instruction (data + 1, size - 1, NULL,
-                                                  &consumed);
+    res = SocketQPACK_decode_decoder_instruction (
+        data + 1, size - 1, NULL, &consumed);
     (void)res;
 
     res = SocketQPACK_apply_insert_count_inc (NULL, 100, 10);
@@ -287,8 +288,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     res = SocketQPACK_encode_insert_count_inc (NULL, 0, 10, &bytes_written);
     (void)res;
 
-    res = SocketQPACK_encode_insert_count_inc (output, sizeof (output), 10,
-                                               NULL);
+    res = SocketQPACK_encode_insert_count_inc (
+        output, sizeof (output), 10, NULL);
     (void)res;
   }
 

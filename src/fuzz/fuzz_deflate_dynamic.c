@@ -5,7 +5,8 @@
  */
 
 /**
- * fuzz_deflate_dynamic.c - libFuzzer harness for DEFLATE dynamic Huffman decoder
+ * fuzz_deflate_dynamic.c - libFuzzer harness for DEFLATE dynamic Huffman
+ * decoder
  *
  * Part of the Socket Library Fuzzing Suite
  *
@@ -363,9 +364,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         /* Add valid codelen table */
-        size_t codelen_size = build_valid_codelen_table (
-            fuzz_data + 1, fuzz_size > 1 ? fuzz_size - 1 : 0,
-            input_buf + pos, 4096 - pos, hclen);
+        size_t codelen_size
+            = build_valid_codelen_table (fuzz_data + 1,
+                                         fuzz_size > 1 ? fuzz_size - 1 : 0,
+                                         input_buf + pos,
+                                         4096 - pos,
+                                         hclen);
         pos += codelen_size;
 
         /* Append remaining fuzz data for literal lengths and compressed data */

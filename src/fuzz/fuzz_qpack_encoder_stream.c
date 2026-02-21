@@ -20,7 +20,8 @@
  * - Huffman encoding/decoding
  * - Roundtrip verification
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_qpack_encoder_stream
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_qpack_encoder_stream
  * ./fuzz_qpack_encoder_stream -fork=16 -max_len=4096
  */
 
@@ -104,16 +105,26 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
       case OP_ENCODE_INSERT_NAMEREF:
         {
-          res = SocketQPACK_encode_insert_nameref (
-              output, sizeof (output), is_static, name_index, value_data,
-              value_len, use_huffman, &bytes_written);
+          res = SocketQPACK_encode_insert_nameref (output,
+                                                   sizeof (output),
+                                                   is_static,
+                                                   name_index,
+                                                   value_data,
+                                                   value_len,
+                                                   use_huffman,
+                                                   &bytes_written);
           (void)res;
           (void)bytes_written;
 
           /* Also test with empty value */
-          res = SocketQPACK_encode_insert_nameref (output, sizeof (output),
-                                                   is_static, name_index, NULL,
-                                                   0, false, &bytes_written);
+          res = SocketQPACK_encode_insert_nameref (output,
+                                                   sizeof (output),
+                                                   is_static,
+                                                   name_index,
+                                                   NULL,
+                                                   0,
+                                                   false,
+                                                   &bytes_written);
           (void)res;
         }
         break;
@@ -123,9 +134,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQPACK_InsertNameRef result = { 0 };
-              res = SocketQPACK_decode_insert_nameref (
-                  value_data, size - 17, arena_instance, &result,
-                  &bytes_consumed);
+              res = SocketQPACK_decode_insert_nameref (value_data,
+                                                       size - 17,
+                                                       arena_instance,
+                                                       &result,
+                                                       &bytes_consumed);
               (void)res;
               if (res == QPACK_STREAM_OK)
                 {
@@ -145,8 +158,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)res;
 
           /* Test dynamic table index validation */
-          res = SocketQPACK_validate_nameref_index (false, name_index,
-                                                    insert_count, dropped_count);
+          res = SocketQPACK_validate_nameref_index (
+              false, name_index, insert_count, dropped_count);
           (void)res;
 
           /* Test edge cases */
@@ -170,16 +183,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           size_t val_len = value_len - name_len;
 
           /* This tests the stream write function directly */
-          SocketQPACK_EncoderStream_T stream = SocketQPACK_EncoderStream_new (
-              arena_instance, 2, /* stream_id */
-              SOCKETQPACK_MAX_TABLE_SIZE);
+          SocketQPACK_EncoderStream_T stream
+              = SocketQPACK_EncoderStream_new (arena_instance,
+                                               2, /* stream_id */
+                                               SOCKETQPACK_MAX_TABLE_SIZE);
           if (stream)
             {
               res = SocketQPACK_EncoderStream_init (stream);
               if (res == QPACK_STREAM_OK)
                 {
                   res = SocketQPACK_EncoderStream_write_insert_literal (
-                      stream, name_data, name_len, use_huffman, val, val_len,
+                      stream,
+                      name_data,
+                      name_len,
+                      use_huffman,
+                      val,
+                      val_len,
                       use_huffman);
                   (void)res;
 
@@ -229,7 +248,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (res == QPACK_STREAM_OK)
                 {
                   res = SocketQPACK_EncoderStream_write_insert_nameref (
-                      stream, is_static, name_index, value_data, value_len,
+                      stream,
+                      is_static,
+                      name_index,
+                      value_data,
+                      value_len,
                       use_huffman);
                   (void)res;
 
@@ -252,8 +275,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 {
                   size_t name_len = value_len / 2;
                   res = SocketQPACK_EncoderStream_write_insert_literal (
-                      stream, value_data, name_len, use_huffman,
-                      value_data + name_len, value_len - name_len, use_huffman);
+                      stream,
+                      value_data,
+                      name_len,
+                      use_huffman,
+                      value_data + name_len,
+                      value_len - name_len,
+                      use_huffman);
                   (void)res;
                 }
             }
@@ -286,16 +314,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Encode then decode */
           res = SocketQPACK_encode_insert_nameref (
-              output, sizeof (output), is_static, name_index, value_data,
-              value_len % 64, false, /* No Huffman for simpler roundtrip */
+              output,
+              sizeof (output),
+              is_static,
+              name_index,
+              value_data,
+              value_len % 64,
+              false, /* No Huffman for simpler roundtrip */
               &bytes_written);
 
           if (res == QPACK_STREAM_OK && bytes_written > 0)
             {
               SocketQPACK_InsertNameRef decoded = { 0 };
-              res = SocketQPACK_decode_insert_nameref (
-                  output, bytes_written, arena_instance, &decoded,
-                  &bytes_consumed);
+              res = SocketQPACK_decode_insert_nameref (output,
+                                                       bytes_written,
+                                                       arena_instance,
+                                                       &decoded,
+                                                       &bytes_consumed);
               (void)decoded.name_index;
               (void)decoded.is_static;
             }
@@ -353,8 +388,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (first_byte & QPACK_INSTR_INSERT_NAMEREF_MASK)
           {
             SocketQPACK_InsertNameRef result = { 0 };
-            res = SocketQPACK_decode_insert_nameref (
-                value_data, size - 17, arena_instance, &result, &bytes_consumed);
+            res = SocketQPACK_decode_insert_nameref (value_data,
+                                                     size - 17,
+                                                     arena_instance,
+                                                     &result,
+                                                     &bytes_consumed);
             (void)res;
           }
       }
@@ -381,12 +419,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   /* NULL pointer tests */
   {
-    res = SocketQPACK_encode_insert_nameref (NULL, 0, false, 0, NULL, 0, false,
-                                             &bytes_written);
+    res = SocketQPACK_encode_insert_nameref (
+        NULL, 0, false, 0, NULL, 0, false, &bytes_written);
     (void)res;
 
-    res = SocketQPACK_encode_insert_nameref (output, sizeof (output), false, 0,
-                                             NULL, 0, false, NULL);
+    res = SocketQPACK_encode_insert_nameref (
+        output, sizeof (output), false, 0, NULL, 0, false, NULL);
     (void)res;
 
     bool is_open = SocketQPACK_EncoderStream_is_open (NULL);

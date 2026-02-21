@@ -1381,35 +1381,12 @@ grpc_retry_sleep_ms (int64_t delay_ms)
 }
 
 static int
-grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
-                                   const uint8_t *request_payload,
-                                   size_t request_payload_len,
-                                   Arena_T arena,
-                                   uint8_t **response_payload,
-                                   size_t *response_payload_len)
+grpc_h3_unary_validate_preconditions (SocketGRPC_Call_T call,
+                                      size_t request_payload_len,
+                                      char *host,
+                                      size_t host_cap,
+                                      int *port)
 {
-  SocketHTTP3_ClientConfig cfg;
-  SocketHTTP3_Client_T client = NULL;
-  SocketHTTP3_Request_T req = NULL;
-  SocketHTTP_Headers_T headers = NULL;
-  SocketHTTP_Headers_T response_headers = NULL;
-  SocketHTTP_Headers_T response_trailers = NULL;
-  Arena_T transport_arena = NULL;
-  unsigned char *framed = NULL;
-  size_t framed_cap;
-  size_t framed_len = 0;
-  unsigned char *raw_response = NULL;
-  size_t raw_response_len = 0;
-  size_t raw_response_cap = 0;
-  char host[GRPC_MAX_HOST_LEN];
-  int port;
-  int status_code = -1;
-  int64_t deadline_ms = 0;
-
-  if (call == NULL || request_payload == NULL || arena == NULL
-      || response_payload == NULL || response_payload_len == NULL)
-    return -1;
-
   if (call->h2_stream_ctx != NULL || call->h3_stream_ctx != NULL)
     {
       grpc_call_status_set (call,
@@ -1438,25 +1415,27 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
       return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
     }
 
-  if (grpc_h3_parse_target (call->channel->target, host, sizeof (host), &port)
-      != 0)
+  if (grpc_h3_parse_target (call->channel->target, host, host_cap, port) != 0)
     {
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_INVALID_ARGUMENT, "Invalid channel target");
       return SOCKET_GRPC_STATUS_INVALID_ARGUMENT;
     }
 
-  *response_payload = NULL;
-  *response_payload_len = 0;
-  SocketGRPC_Trailers_clear (call->response_trailers);
-  deadline_ms = SocketTimeout_deadline_ms (call->config.deadline_ms);
+  return 0;
+}
 
-  transport_arena = Arena_new ();
-  if (transport_arena == NULL)
-    {
-      grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
-      return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
-    }
+static int
+grpc_h3_unary_setup_transport (SocketGRPC_Call_T call,
+                               Arena_T transport_arena,
+                               const char *host,
+                               int port,
+                               SocketHTTP3_Client_T *client_out,
+                               SocketHTTP3_Request_T *req_out)
+{
+  SocketHTTP3_ClientConfig cfg;
+  SocketHTTP3_Client_T client;
+  SocketHTTP3_Request_T req;
 
   SocketHTTP3_ClientConfig_defaults (&cfg);
   cfg.request_timeout_ms
@@ -1469,16 +1448,15 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
     {
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_INTERNAL, "HTTP/3 client allocation failed");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
 
   if (SocketHTTP3_Client_connect (client, host, port) != 0)
     {
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_UNAVAILABLE, "Connection failed");
-      status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-      goto cleanup;
+      *client_out = client;
+      return SOCKET_GRPC_STATUS_UNAVAILABLE;
     }
 
   req = SocketHTTP3_Client_new_request (client);
@@ -1486,9 +1464,30 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
     {
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_INTERNAL, "Request initialization failed");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      *client_out = client;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
+
+  *client_out = client;
+  *req_out = req;
+  return 0;
+}
+
+static int
+grpc_h3_unary_send_request (SocketGRPC_Call_T call,
+                            Arena_T transport_arena,
+                            SocketHTTP3_Client_T client,
+                            SocketHTTP3_Request_T req,
+                            const char *host,
+                            int port,
+                            const uint8_t *request_payload,
+                            size_t request_payload_len,
+                            unsigned char **framed_out)
+{
+  SocketHTTP_Headers_T headers = NULL;
+  unsigned char *framed;
+  size_t framed_cap;
+  size_t framed_len = 0;
 
   if (grpc_h3_build_request_headers (
           call, transport_arena, host, port, &headers)
@@ -1496,8 +1495,7 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
     {
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to set request headers");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
 
   if (SocketHTTP3_Request_send_headers (req, headers, 0) != 0)
@@ -1505,8 +1503,7 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
       grpc_call_status_set (call,
                             SOCKET_GRPC_STATUS_UNAVAILABLE,
                             "Failed to send request headers");
-      status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_UNAVAILABLE;
     }
 
   framed_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + request_payload_len;
@@ -1514,8 +1511,7 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
   if (framed == NULL)
     {
       grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
-      status_code = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
     }
 
   if (SocketGRPC_Frame_encode (0,
@@ -1526,21 +1522,31 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
                                &framed_len)
       != SOCKET_GRPC_WIRE_OK)
     {
+      free (framed);
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to frame request payload");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
+
+  *framed_out = framed;
 
   if (SocketHTTP3_Request_send_data (req, framed, framed_len, 1) != 0
       || SocketHTTP3_Client_flush (client) != 0)
     {
       grpc_call_status_set (
           call, SOCKET_GRPC_STATUS_UNAVAILABLE, "Failed to send request body");
-      status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_UNAVAILABLE;
     }
 
+  return 0;
+}
+
+static int
+grpc_h3_unary_await_response (SocketGRPC_Call_T call,
+                              SocketHTTP3_Client_T client,
+                              SocketHTTP3_Request_T req,
+                              int64_t deadline_ms)
+{
   for (;;)
     {
       if (SocketHTTP3_Request_recv_state (req) == H3_REQ_RECV_COMPLETE)
@@ -1549,28 +1555,36 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
         {
           grpc_call_status_set (
               call, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED, "Deadline exceeded");
-          status_code = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
-          goto cleanup;
+          return SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
         }
       if (grpc_h3_poll_until_data (client, deadline_ms) != 0)
         {
           grpc_call_status_set (call,
                                 SOCKET_GRPC_STATUS_UNAVAILABLE,
                                 "Failed to receive response");
-          status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-          goto cleanup;
+          return SOCKET_GRPC_STATUS_UNAVAILABLE;
         }
     }
+  return 0;
+}
 
-  if (SocketHTTP3_Request_recv_headers (req, &response_headers, &status_code)
+static int
+grpc_h3_unary_validate_response_headers (SocketGRPC_Call_T call,
+                                         SocketHTTP3_Request_T req,
+                                         SocketHTTP_Headers_T *headers_out,
+                                         int *status_code)
+{
+  SocketHTTP_Headers_T response_headers = NULL;
+  SocketGRPC_Compression comp;
+
+  if (SocketHTTP3_Request_recv_headers (req, &response_headers, status_code)
           != 0
       || response_headers == NULL)
     {
       grpc_call_status_set (call,
                             SOCKET_GRPC_STATUS_UNAVAILABLE,
                             "Failed to receive response headers");
-      status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_UNAVAILABLE;
     }
 
   if (grpc_ingest_response_headers (call, response_headers, 1) != 0)
@@ -1578,30 +1592,40 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
       grpc_call_status_set (call,
                             SOCKET_GRPC_STATUS_INTERNAL,
                             "Invalid response header metadata");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
 
-  if (grpc_response_compression_from_headers (response_headers)
-      == GRPC_COMPRESSION_UNSUPPORTED)
+  comp = grpc_response_compression_from_headers (response_headers);
+
+  if (comp == GRPC_COMPRESSION_UNSUPPORTED)
     {
       grpc_call_status_set (call,
                             SOCKET_GRPC_STATUS_INTERNAL,
                             "Unsupported response compression encoding");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
 
-  if (grpc_response_compression_from_headers (response_headers)
-      == GRPC_COMPRESSION_GZIP)
+  if (comp == GRPC_COMPRESSION_GZIP)
     {
       grpc_call_status_set (call,
                             SOCKET_GRPC_STATUS_INTERNAL,
                             "Compressed responses unsupported over HTTP/3");
-      status_code = SOCKET_GRPC_STATUS_INTERNAL;
-      goto cleanup;
+      return SOCKET_GRPC_STATUS_INTERNAL;
     }
 
+  *headers_out = response_headers;
+  return 0;
+}
+
+static int
+grpc_h3_unary_recv_body (SocketGRPC_Call_T call,
+                         SocketHTTP3_Client_T client,
+                         SocketHTTP3_Request_T req,
+                         int64_t deadline_ms,
+                         unsigned char **raw_response,
+                         size_t *raw_response_len,
+                         size_t *raw_response_cap)
+{
   for (;;)
     {
       unsigned char chunk[GRPC_RESPONSE_CHUNK];
@@ -1613,15 +1637,14 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
           grpc_call_status_set (call,
                                 SOCKET_GRPC_STATUS_UNAVAILABLE,
                                 "Failed to receive response body");
-          status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-          goto cleanup;
+          return SOCKET_GRPC_STATUS_UNAVAILABLE;
         }
 
       if (n > 0
           && grpc_h3_buffer_append (
-                 &raw_response,
-                 &raw_response_len,
-                 &raw_response_cap,
+                 raw_response,
+                 raw_response_len,
+                 raw_response_cap,
                  chunk,
                  (size_t)n,
                  call->channel->config.max_cumulative_inflight_bytes)
@@ -1630,8 +1653,7 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
           grpc_call_status_set (call,
                                 SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED,
                                 "Response exceeds configured inflight limit");
-          status_code = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
-          goto cleanup;
+          return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
         }
 
       if (end_stream)
@@ -1641,10 +1663,18 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
           grpc_call_status_set (call,
                                 SOCKET_GRPC_STATUS_UNAVAILABLE,
                                 "Failed to advance response stream");
-          status_code = SOCKET_GRPC_STATUS_UNAVAILABLE;
-          goto cleanup;
+          return SOCKET_GRPC_STATUS_UNAVAILABLE;
         }
     }
+  return 0;
+}
+
+static int
+grpc_h3_unary_process_trailers (SocketGRPC_Call_T call,
+                                SocketHTTP3_Request_T req,
+                                int status_code)
+{
+  SocketHTTP_Headers_T response_trailers = NULL;
 
   if (SocketHTTP3_Request_recv_trailers (req, &response_trailers) == 0
       && response_trailers != NULL)
@@ -1653,8 +1683,7 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
         {
           grpc_call_status_set (
               call, SOCKET_GRPC_STATUS_INTERNAL, "Invalid response trailers");
-          status_code = SOCKET_GRPC_STATUS_INTERNAL;
-          goto cleanup;
+          return SOCKET_GRPC_STATUS_INTERNAL;
         }
     }
 
@@ -1670,76 +1699,180 @@ grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
                         (SocketGRPC_StatusCode)status_code,
                         SocketGRPC_Trailers_message (call->response_trailers));
 
+  return status_code;
+}
+
+static int
+grpc_h3_unary_decode_response_frame (SocketGRPC_Call_T call,
+                                     Arena_T arena,
+                                     const unsigned char *raw_response,
+                                     size_t raw_response_len,
+                                     uint8_t **response_payload,
+                                     size_t *response_payload_len)
+{
+  SocketGRPC_FrameView frame;
+  size_t consumed = 0;
+  size_t max_frame_payload
+      = call->channel->config.max_cumulative_inflight_bytes;
+  const char *decode_message = NULL;
+  SocketGRPC_WireResult parse_rc;
+  int status_code;
+
+  if (max_frame_payload == 0)
+    max_frame_payload = call->channel->config.max_inbound_message_bytes;
+
+  parse_rc = SocketGRPC_Frame_parse (
+      raw_response, raw_response_len, max_frame_payload, &frame, &consumed);
+  if (parse_rc != SOCKET_GRPC_WIRE_OK || consumed != raw_response_len)
+    {
+      decode_message = parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED
+                           ? "Response exceeds configured inflight limit"
+                           : "Malformed gRPC response frame";
+      status_code = parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED
+                        ? SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED
+                        : SOCKET_GRPC_STATUS_INTERNAL;
+      grpc_call_status_set (call, status_code, decode_message);
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                            status_code);
+      (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                             decode_message);
+      return status_code;
+    }
+
+  if (frame.compressed != 0)
+    {
+      status_code = SOCKET_GRPC_STATUS_INTERNAL;
+      decode_message = "Compressed responses unsupported over HTTP/3";
+      grpc_call_status_set (call, status_code, decode_message);
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                            status_code);
+      (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                             decode_message);
+      return status_code;
+    }
+
+  if (frame.payload_len > call->channel->config.max_inbound_message_bytes)
+    {
+      status_code = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
+      decode_message = "Response message exceeds configured limit";
+      grpc_call_status_set (call, status_code, decode_message);
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                            status_code);
+      (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                             decode_message);
+      return status_code;
+    }
+
+  if (frame.payload_len > 0)
+    {
+      uint8_t *copy = (uint8_t *)ALLOC (arena, frame.payload_len);
+      if (copy == NULL)
+        {
+          status_code = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
+          grpc_call_status_set (call, status_code, NULL);
+          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                                status_code);
+          return status_code;
+        }
+      memcpy (copy, frame.payload, frame.payload_len);
+      *response_payload = copy;
+      *response_payload_len = frame.payload_len;
+    }
+
+  return SOCKET_GRPC_STATUS_OK;
+}
+
+static int
+grpc_call_unary_h3_single_attempt (SocketGRPC_Call_T call,
+                                   const uint8_t *request_payload,
+                                   size_t request_payload_len,
+                                   Arena_T arena,
+                                   uint8_t **response_payload,
+                                   size_t *response_payload_len)
+{
+  SocketHTTP3_Client_T client = NULL;
+  SocketHTTP3_Request_T req = NULL;
+  SocketHTTP_Headers_T response_headers = NULL;
+  Arena_T transport_arena = NULL;
+  unsigned char *framed = NULL;
+  unsigned char *raw_response = NULL;
+  size_t raw_response_len = 0;
+  size_t raw_response_cap = 0;
+  char host[GRPC_MAX_HOST_LEN];
+  int port;
+  int status_code = -1;
+  int http_status = 0;
+  int64_t deadline_ms = 0;
+  int rc;
+
+  if (call == NULL || request_payload == NULL || arena == NULL
+      || response_payload == NULL || response_payload_len == NULL)
+    return -1;
+
+  rc = grpc_h3_unary_validate_preconditions (
+      call, request_payload_len, host, sizeof (host), &port);
+  if (rc != 0)
+    return rc;
+
+  *response_payload = NULL;
+  *response_payload_len = 0;
+  SocketGRPC_Trailers_clear (call->response_trailers);
+  deadline_ms = SocketTimeout_deadline_ms (call->config.deadline_ms);
+
+  transport_arena = Arena_new ();
+  if (transport_arena == NULL)
+    {
+      grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
+      return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
+    }
+
+  status_code = grpc_h3_unary_setup_transport (
+      call, transport_arena, host, port, &client, &req);
+  if (status_code != 0)
+    goto cleanup;
+
+  status_code = grpc_h3_unary_send_request (call,
+                                            transport_arena,
+                                            client,
+                                            req,
+                                            host,
+                                            port,
+                                            request_payload,
+                                            request_payload_len,
+                                            &framed);
+  if (status_code != 0)
+    goto cleanup;
+
+  status_code = grpc_h3_unary_await_response (call, client, req, deadline_ms);
+  if (status_code != 0)
+    goto cleanup;
+
+  status_code = grpc_h3_unary_validate_response_headers (
+      call, req, &response_headers, &http_status);
+  if (status_code != 0)
+    goto cleanup;
+
+  status_code = grpc_h3_unary_recv_body (call,
+                                         client,
+                                         req,
+                                         deadline_ms,
+                                         &raw_response,
+                                         &raw_response_len,
+                                         &raw_response_cap);
+  if (status_code != 0)
+    goto cleanup;
+
+  status_code = grpc_h3_unary_process_trailers (call, req, http_status);
+
   if (status_code == SOCKET_GRPC_STATUS_OK && raw_response != NULL
       && raw_response_len > 0)
     {
-      SocketGRPC_FrameView frame;
-      size_t consumed = 0;
-      size_t max_frame_payload
-          = call->channel->config.max_cumulative_inflight_bytes;
-      const char *decode_message = NULL;
-      SocketGRPC_WireResult parse_rc;
-
-      if (max_frame_payload == 0)
-        max_frame_payload = call->channel->config.max_inbound_message_bytes;
-
-      parse_rc = SocketGRPC_Frame_parse (
-          raw_response, raw_response_len, max_frame_payload, &frame, &consumed);
-      if (parse_rc != SOCKET_GRPC_WIRE_OK || consumed != raw_response_len)
-        {
-          decode_message = parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED
-                               ? "Response exceeds configured inflight limit"
-                               : "Malformed gRPC response frame";
-          status_code = parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED
-                            ? SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED
-                            : SOCKET_GRPC_STATUS_INTERNAL;
-          grpc_call_status_set (call, status_code, decode_message);
-          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                status_code);
-          (void)SocketGRPC_Trailers_set_message (call->response_trailers,
-                                                 decode_message);
-          goto cleanup;
-        }
-
-      if (frame.compressed != 0)
-        {
-          status_code = SOCKET_GRPC_STATUS_INTERNAL;
-          decode_message = "Compressed responses unsupported over HTTP/3";
-          grpc_call_status_set (call, status_code, decode_message);
-          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                status_code);
-          (void)SocketGRPC_Trailers_set_message (call->response_trailers,
-                                                 decode_message);
-          goto cleanup;
-        }
-
-      if (frame.payload_len > call->channel->config.max_inbound_message_bytes)
-        {
-          status_code = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
-          decode_message = "Response message exceeds configured limit";
-          grpc_call_status_set (call, status_code, decode_message);
-          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                status_code);
-          (void)SocketGRPC_Trailers_set_message (call->response_trailers,
-                                                 decode_message);
-          goto cleanup;
-        }
-
-      if (frame.payload_len > 0)
-        {
-          uint8_t *copy = (uint8_t *)ALLOC (arena, frame.payload_len);
-          if (copy == NULL)
-            {
-              status_code = SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
-              grpc_call_status_set (call, status_code, NULL);
-              (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                    status_code);
-              goto cleanup;
-            }
-          memcpy (copy, frame.payload, frame.payload_len);
-          *response_payload = copy;
-          *response_payload_len = frame.payload_len;
-        }
+      status_code = grpc_h3_unary_decode_response_frame (call,
+                                                         arena,
+                                                         raw_response,
+                                                         raw_response_len,
+                                                         response_payload,
+                                                         response_payload_len);
     }
   else
     {

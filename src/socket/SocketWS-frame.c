@@ -769,7 +769,8 @@ ws_recv_data_payload (SocketWS_T ws, size_t to_read)
     {
       if (ws->message.fragment_count == 0)
         {
-          ws_set_error (ws, WS_ERROR_PROTOCOL,
+          ws_set_error (ws,
+                        WS_ERROR_PROTOCOL,
                         "Orphan CONTINUATION frame (no preceding data frame)");
           ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Orphan continuation");
           return -1;
@@ -779,7 +780,8 @@ ws_recv_data_payload (SocketWS_T ws, size_t to_read)
     {
       if (ws->message.fragment_count > 0)
         {
-          ws_set_error (ws, WS_ERROR_PROTOCOL,
+          ws_set_error (ws,
+                        WS_ERROR_PROTOCOL,
                         "New data frame interrupts fragmented message");
           ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Interleaved message");
           return -1;

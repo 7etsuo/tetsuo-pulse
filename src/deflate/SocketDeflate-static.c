@@ -22,8 +22,8 @@
 #include "deflate/SocketDeflate.h"
 
 /* Exception for DEFLATE errors */
-const Except_T SocketDeflate_Failed = { &SocketDeflate_Failed,
-                                        "DEFLATE operation failed" };
+const Except_T SocketDeflate_Failed
+    = { &SocketDeflate_Failed, "DEFLATE operation failed" };
 
 /*
  * Length Code Table (RFC 1951 Section 3.2.5)
@@ -104,53 +104,52 @@ const SocketDeflate_CodeEntry deflate_length_table[DEFLATE_LENGTH_CODES] = {
  *      8   3  17-24   18   8    513-768   28   13 16385-24576
  *      9   3  25-32   19   8   769-1024   29   13 24577-32768
  */
-const SocketDeflate_CodeEntry deflate_distance_table[DEFLATE_DISTANCE_CODES]
-    = {
-        /* Code 0-3: 0 extra bits, distances 1-4 */
-        { 1, 0 },
-        { 2, 0 },
-        { 3, 0 },
-        { 4, 0 },
-        /* Code 4-5: 1 extra bit */
-        { 5, 1 },
-        { 7, 1 },
-        /* Code 6-7: 2 extra bits */
-        { 9, 2 },
-        { 13, 2 },
-        /* Code 8-9: 3 extra bits */
-        { 17, 3 },
-        { 25, 3 },
-        /* Code 10-11: 4 extra bits */
-        { 33, 4 },
-        { 49, 4 },
-        /* Code 12-13: 5 extra bits */
-        { 65, 5 },
-        { 97, 5 },
-        /* Code 14-15: 6 extra bits */
-        { 129, 6 },
-        { 193, 6 },
-        /* Code 16-17: 7 extra bits */
-        { 257, 7 },
-        { 385, 7 },
-        /* Code 18-19: 8 extra bits */
-        { 513, 8 },
-        { 769, 8 },
-        /* Code 20-21: 9 extra bits */
-        { 1025, 9 },
-        { 1537, 9 },
-        /* Code 22-23: 10 extra bits */
-        { 2049, 10 },
-        { 3073, 10 },
-        /* Code 24-25: 11 extra bits */
-        { 4097, 11 },
-        { 6145, 11 },
-        /* Code 26-27: 12 extra bits */
-        { 8193, 12 },
-        { 12289, 12 },
-        /* Code 28-29: 13 extra bits */
-        { 16385, 13 },
-        { 24577, 13 }
-      };
+const SocketDeflate_CodeEntry deflate_distance_table[DEFLATE_DISTANCE_CODES] = {
+  /* Code 0-3: 0 extra bits, distances 1-4 */
+  { 1, 0 },
+  { 2, 0 },
+  { 3, 0 },
+  { 4, 0 },
+  /* Code 4-5: 1 extra bit */
+  { 5, 1 },
+  { 7, 1 },
+  /* Code 6-7: 2 extra bits */
+  { 9, 2 },
+  { 13, 2 },
+  /* Code 8-9: 3 extra bits */
+  { 17, 3 },
+  { 25, 3 },
+  /* Code 10-11: 4 extra bits */
+  { 33, 4 },
+  { 49, 4 },
+  /* Code 12-13: 5 extra bits */
+  { 65, 5 },
+  { 97, 5 },
+  /* Code 14-15: 6 extra bits */
+  { 129, 6 },
+  { 193, 6 },
+  /* Code 16-17: 7 extra bits */
+  { 257, 7 },
+  { 385, 7 },
+  /* Code 18-19: 8 extra bits */
+  { 513, 8 },
+  { 769, 8 },
+  /* Code 20-21: 9 extra bits */
+  { 1025, 9 },
+  { 1537, 9 },
+  /* Code 22-23: 10 extra bits */
+  { 2049, 10 },
+  { 3073, 10 },
+  /* Code 24-25: 11 extra bits */
+  { 4097, 11 },
+  { 6145, 11 },
+  /* Code 26-27: 12 extra bits */
+  { 8193, 12 },
+  { 12289, 12 },
+  /* Code 28-29: 13 extra bits */
+  { 16385, 13 },
+  { 24577, 13 }
+};
 
 /*
  * Fixed Huffman Code Lengths for Literal/Length Alphabet (RFC 1951 Section
@@ -170,28 +169,297 @@ const SocketDeflate_CodeEntry deflate_distance_table[DEFLATE_DISTANCE_CODES]
  */
 const uint8_t deflate_fixed_litlen_lengths[DEFLATE_LITLEN_CODES] = {
   /* 0-143: 8 bits (144 entries) */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 0-15 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 16-31 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 32-47 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 48-63 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 64-79 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 80-95 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 96-111 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 112-127 */
-  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 128-143 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 0-15 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 16-31 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 32-47 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 48-63 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 64-79 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 80-95 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 96-111 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 112-127 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8, /* 128-143 */
   /* 144-255: 9 bits (112 entries) */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 144-159 */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 160-175 */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 176-191 */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 192-207 */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 208-223 */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 224-239 */
-  9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 240-255 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 144-159 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 160-175 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 176-191 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 192-207 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 208-223 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 224-239 */
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9, /* 240-255 */
   /* 256-279: 7 bits (24 entries) */
-  7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, /* 256-271 */
-  7, 7, 7, 7, 7, 7, 7, 7,                         /* 272-279 */
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7, /* 256-271 */
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7,
+  7, /* 272-279 */
   /* 280-287: 8 bits (8 entries) */
-  8, 8, 8, 8, 8, 8, 8, 8 /* 280-287 */
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8 /* 280-287 */
 };
 
 /*
@@ -200,10 +468,9 @@ const uint8_t deflate_fixed_litlen_lengths[DEFLATE_LITLEN_CODES] = {
  * All distance codes 0-31 are represented by 5-bit codes.
  * Note: Distance codes 30-31 will never actually occur in the data.
  */
-const uint8_t deflate_fixed_dist_lengths[DEFLATE_DIST_CODES] = {
-  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5
-};
+const uint8_t deflate_fixed_dist_lengths[DEFLATE_DIST_CODES]
+    = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
 
 /*
  * Code Length Alphabet Order (RFC 1951 Section 3.2.7)
@@ -216,9 +483,8 @@ const uint8_t deflate_fixed_dist_lengths[DEFLATE_DIST_CODES] = {
  * This ordering puts the most likely code lengths (shorter ones) first,
  * allowing the transmission to be truncated if the trailing values are 0.
  */
-const uint8_t deflate_codelen_order[DEFLATE_CODELEN_CODES] = {
-  16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15
-};
+const uint8_t deflate_codelen_order[DEFLATE_CODELEN_CODES]
+    = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
 /*
  * Validation Functions
@@ -289,7 +555,8 @@ SocketDeflate_get_distance_extra_bits (unsigned int code,
  */
 
 SocketDeflate_Result
-SocketDeflate_decode_length (unsigned int code, unsigned int extra,
+SocketDeflate_decode_length (unsigned int code,
+                             unsigned int extra,
                              unsigned int *length_out)
 {
   unsigned int index;
@@ -315,7 +582,8 @@ SocketDeflate_decode_length (unsigned int code, unsigned int extra,
 }
 
 SocketDeflate_Result
-SocketDeflate_decode_distance (unsigned int code, unsigned int extra,
+SocketDeflate_decode_distance (unsigned int code,
+                               unsigned int extra,
                                unsigned int *distance_out)
 {
   const SocketDeflate_CodeEntry *entry;

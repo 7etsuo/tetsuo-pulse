@@ -98,9 +98,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
       case OP_ENCODE_NAME_REF:
         {
-          res = SocketQPACK_encode_literal_name_ref (
-              output, sizeof (output), is_static, name_index, never_indexed,
-              value_data, value_len, use_huffman, &bytes_written);
+          res = SocketQPACK_encode_literal_name_ref (output,
+                                                     sizeof (output),
+                                                     is_static,
+                                                     name_index,
+                                                     never_indexed,
+                                                     value_data,
+                                                     value_len,
+                                                     use_huffman,
+                                                     &bytes_written);
           (void)res;
           (void)bytes_written;
         }
@@ -111,9 +117,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQPACK_LiteralNameRef result = { 0 };
-              res = SocketQPACK_decode_literal_name_ref (value_data, size - 17,
-                                                         &result,
-                                                         &bytes_consumed);
+              res = SocketQPACK_decode_literal_name_ref (
+                  value_data, size - 17, &result, &bytes_consumed);
               (void)res;
               (void)result.name_index;
               (void)result.is_static;
@@ -127,9 +132,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (size > 17)
             {
               SocketQPACK_LiteralNameRef result = { 0 };
-              res = SocketQPACK_decode_literal_name_ref_arena (
-                  value_data, size - 17, arena_instance, &result,
-                  &bytes_consumed);
+              res = SocketQPACK_decode_literal_name_ref_arena (value_data,
+                                                               size - 17,
+                                                               arena_instance,
+                                                               &result,
+                                                               &bytes_consumed);
               (void)res;
               if (res == QPACK_OK && result.value)
                 {
@@ -146,14 +153,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)res;
 
           /* Test with various index values */
-          res = SocketQPACK_validate_literal_name_ref_index (true, 0, base,
-                                                             dropped_count);
+          res = SocketQPACK_validate_literal_name_ref_index (
+              true, 0, base, dropped_count);
           (void)res;
-          res = SocketQPACK_validate_literal_name_ref_index (true, 98, base,
-                                                             dropped_count);
+          res = SocketQPACK_validate_literal_name_ref_index (
+              true, 98, base, dropped_count);
           (void)res;
-          res = SocketQPACK_validate_literal_name_ref_index (true, 99, base,
-                                                             dropped_count);
+          res = SocketQPACK_validate_literal_name_ref_index (
+              true, 99, base, dropped_count);
           (void)res;
         }
         break;
@@ -166,9 +173,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           const unsigned char *val = value_data + name_len;
           size_t val_len = value_len - name_len;
 
-          res = SocketQPACK_encode_literal_field_literal_name (
-              output, sizeof (output), name_data, name_len, use_huffman, val,
-              val_len, use_huffman, never_indexed, &bytes_written);
+          res = SocketQPACK_encode_literal_field_literal_name (output,
+                                                               sizeof (output),
+                                                               name_data,
+                                                               name_len,
+                                                               use_huffman,
+                                                               val,
+                                                               val_len,
+                                                               use_huffman,
+                                                               never_indexed,
+                                                               &bytes_written);
           (void)res;
         }
         break;
@@ -184,9 +198,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               bool never_idx_out = false;
 
               res = SocketQPACK_decode_literal_field_literal_name (
-                  value_data, size - 17, name_out, sizeof (name_out),
-                  &name_len_out, value_out, sizeof (value_out), &value_len_out,
-                  &never_idx_out, &bytes_consumed);
+                  value_data,
+                  size - 17,
+                  name_out,
+                  sizeof (name_out),
+                  &name_len_out,
+                  value_out,
+                  sizeof (value_out),
+                  &value_len_out,
+                  &never_idx_out,
+                  &bytes_consumed);
               (void)res;
               (void)name_len_out;
               (void)value_len_out;
@@ -199,8 +220,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Encode then decode */
           res = SocketQPACK_encode_literal_name_ref (
-              output, sizeof (output), is_static, name_index, never_indexed,
-              value_data, value_len % 64, false, /* No Huffman for roundtrip */
+              output,
+              sizeof (output),
+              is_static,
+              name_index,
+              never_indexed,
+              value_data,
+              value_len % 64,
+              false, /* No Huffman for roundtrip */
               &bytes_written);
 
           if (res == QPACK_OK && bytes_written > 0)
@@ -220,10 +247,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           size_t name_len = (value_len / 2) % 32;
           size_t val_len = (value_len / 2) % 32;
 
-          res = SocketQPACK_encode_literal_field_literal_name (
-              output, sizeof (output), value_data, name_len, false,
-              value_data + name_len, val_len, false, never_indexed,
-              &bytes_written);
+          res = SocketQPACK_encode_literal_field_literal_name (output,
+                                                               sizeof (output),
+                                                               value_data,
+                                                               name_len,
+                                                               false,
+                                                               value_data
+                                                                   + name_len,
+                                                               val_len,
+                                                               false,
+                                                               never_indexed,
+                                                               &bytes_written);
 
           if (res == QPACK_OK && bytes_written > 0)
             {
@@ -234,9 +268,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               bool never_idx_out = false;
 
               res = SocketQPACK_decode_literal_field_literal_name (
-                  output, bytes_written, name_out, sizeof (name_out),
-                  &name_len_out, value_out, sizeof (value_out), &value_len_out,
-                  &never_idx_out, &bytes_consumed);
+                  output,
+                  bytes_written,
+                  name_out,
+                  sizeof (name_out),
+                  &name_len_out,
+                  value_out,
+                  sizeof (value_out),
+                  &value_len_out,
+                  &never_idx_out,
+                  &bytes_consumed);
               (void)name_len_out;
               (void)value_len_out;
             }

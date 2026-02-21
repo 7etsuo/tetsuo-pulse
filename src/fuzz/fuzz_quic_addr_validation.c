@@ -53,7 +53,8 @@ read_u64 (const uint8_t *data)
 
 /* Helper to create sockaddr from fuzz data */
 static void
-make_sockaddr (const uint8_t *data, struct sockaddr_storage *addr,
+make_sockaddr (const uint8_t *data,
+               struct sockaddr_storage *addr,
                socklen_t *len)
 {
   int is_ipv6 = data[0] & 1;
@@ -103,9 +104,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         size_t token_len = sizeof (token);
 
         SocketQUICAddrValidation_Result result
-            = SocketQUICAddrValidation_generate_token ((struct sockaddr *)&addr,
-                                                       secret, token,
-                                                       &token_len);
+            = SocketQUICAddrValidation_generate_token (
+                (struct sockaddr *)&addr, secret, token, &token_len);
         (void)result;
 
         /* Test with small buffer */
@@ -116,14 +116,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Test with NULL inputs */
         token_len = sizeof (token);
-        SocketQUICAddrValidation_generate_token (NULL, secret, token,
-                                                 &token_len);
-        SocketQUICAddrValidation_generate_token ((struct sockaddr *)&addr, NULL,
-                                                 token, &token_len);
-        SocketQUICAddrValidation_generate_token ((struct sockaddr *)&addr,
-                                                 secret, NULL, &token_len);
-        SocketQUICAddrValidation_generate_token ((struct sockaddr *)&addr,
-                                                 secret, token, NULL);
+        SocketQUICAddrValidation_generate_token (
+            NULL, secret, token, &token_len);
+        SocketQUICAddrValidation_generate_token (
+            (struct sockaddr *)&addr, NULL, token, &token_len);
+        SocketQUICAddrValidation_generate_token (
+            (struct sockaddr *)&addr, secret, NULL, &token_len);
+        SocketQUICAddrValidation_generate_token (
+            (struct sockaddr *)&addr, secret, token, NULL);
         break;
       }
 
@@ -142,9 +142,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         size_t token_len = sizeof (token);
 
         SocketQUICAddrValidation_Result result
-            = SocketQUICAddrValidation_generate_token ((struct sockaddr *)&addr,
-                                                       secret, token,
-                                                       &token_len);
+            = SocketQUICAddrValidation_generate_token (
+                (struct sockaddr *)&addr, secret, token, &token_len);
 
         if (result == QUIC_ADDR_VALIDATION_OK)
           {
@@ -172,7 +171,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Test with fuzzed token directly */
         size_t fuzz_token_len = size - 52;
-        if (fuzz_token_len > 0 && fuzz_token_len <= QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE)
+        if (fuzz_token_len > 0
+            && fuzz_token_len <= QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE)
           {
             result = SocketQUICAddrValidation_validate_token (
                 data + 52, fuzz_token_len, (struct sockaddr *)&addr, secret);
@@ -180,22 +180,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         /* Test NULL inputs */
-        SocketQUICAddrValidation_validate_token (NULL, token_len,
-                                                 (struct sockaddr *)&addr,
-                                                 secret);
-        SocketQUICAddrValidation_validate_token (token, token_len, NULL,
-                                                 secret);
-        SocketQUICAddrValidation_validate_token (token, token_len,
-                                                 (struct sockaddr *)&addr,
-                                                 NULL);
+        SocketQUICAddrValidation_validate_token (
+            NULL, token_len, (struct sockaddr *)&addr, secret);
+        SocketQUICAddrValidation_validate_token (
+            token, token_len, NULL, secret);
+        SocketQUICAddrValidation_validate_token (
+            token, token_len, (struct sockaddr *)&addr, NULL);
 
         /* Test with wrong token length */
-        SocketQUICAddrValidation_validate_token (token, 0,
-                                                 (struct sockaddr *)&addr,
-                                                 secret);
         SocketQUICAddrValidation_validate_token (
-            token, QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE + 1,
-            (struct sockaddr *)&addr, secret);
+            token, 0, (struct sockaddr *)&addr, secret);
+        SocketQUICAddrValidation_validate_token (
+            token,
+            QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE + 1,
+            (struct sockaddr *)&addr,
+            secret);
         break;
       }
 
@@ -223,8 +222,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketQUICAddrValidation_update_counters (&state, 0, 1000);
 
         /* Check again after update */
-        can_send = SocketQUICAddrValidation_check_amplification_limit (&state,
-                                                                       1000);
+        can_send
+            = SocketQUICAddrValidation_check_amplification_limit (&state, 1000);
         (void)can_send;
 
         /* Mark as validated - should always allow send */
@@ -265,9 +264,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Generate a challenge */
         SocketQUICAddrValidation_Result result
-            = SocketQUICPathChallenge_generate (&challenge,
-                                                (struct sockaddr *)&addr,
-                                                timestamp);
+            = SocketQUICPathChallenge_generate (
+                &challenge, (struct sockaddr *)&addr, timestamp);
         (void)result;
 
         /* Check pending state */
@@ -275,15 +273,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         (void)pending;
 
         /* Generate another challenge (should overwrite) */
-        result = SocketQUICPathChallenge_generate (&challenge,
-                                                   (struct sockaddr *)&addr,
-                                                   timestamp + 1000);
+        result = SocketQUICPathChallenge_generate (
+            &challenge, (struct sockaddr *)&addr, timestamp + 1000);
         (void)result;
 
         /* Test NULL inputs */
         SocketQUICPathChallenge_init (NULL);
-        SocketQUICPathChallenge_generate (NULL, (struct sockaddr *)&addr,
-                                          timestamp);
+        SocketQUICPathChallenge_generate (
+            NULL, (struct sockaddr *)&addr, timestamp);
         SocketQUICPathChallenge_generate (&challenge, NULL, timestamp);
         SocketQUICPathChallenge_is_pending (NULL);
         break;
@@ -303,9 +300,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Generate a challenge first */
         SocketQUICAddrValidation_Result result
-            = SocketQUICPathChallenge_generate (&challenge,
-                                                (struct sockaddr *)&addr,
-                                                timestamp);
+            = SocketQUICPathChallenge_generate (
+                &challenge, (struct sockaddr *)&addr, timestamp);
 
         if (result == QUIC_ADDR_VALIDATION_OK)
           {
@@ -328,8 +324,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             valid = SocketQUICPathChallenge_verify_response (
                 &challenge, challenge.data, QUIC_PATH_CHALLENGE_SIZE + 1);
             (void)valid;
-            valid
-                = SocketQUICPathChallenge_verify_response (&challenge, challenge.data, 0);
+            valid = SocketQUICPathChallenge_verify_response (
+                &challenge, challenge.data, 0);
             (void)valid;
 
             /* Complete the challenge */
@@ -342,10 +338,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         /* Test NULL inputs */
-        SocketQUICPathChallenge_verify_response (NULL, data + 28,
-                                                 QUIC_PATH_CHALLENGE_SIZE);
-        SocketQUICPathChallenge_verify_response (&challenge, NULL,
-                                                 QUIC_PATH_CHALLENGE_SIZE);
+        SocketQUICPathChallenge_verify_response (
+            NULL, data + 28, QUIC_PATH_CHALLENGE_SIZE);
+        SocketQUICPathChallenge_verify_response (
+            &challenge, NULL, QUIC_PATH_CHALLENGE_SIZE);
         SocketQUICPathChallenge_complete (NULL);
         break;
       }

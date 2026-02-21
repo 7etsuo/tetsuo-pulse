@@ -72,8 +72,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICConnection_Role role
               = (data[1] & 1) ? QUIC_CONN_ROLE_SERVER : QUIC_CONN_ROLE_CLIENT;
 
-          SocketQUICConnection_T conn
-              = SocketQUICConnection_new (arena, role);
+          SocketQUICConnection_T conn = SocketQUICConnection_new (arena, role);
           if (!conn)
             break;
 
@@ -95,7 +94,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               = SocketQUICHandshake_get_peer_params (hs);
           (void)peer_params;
 
-          /* Try process (may fail without TLS setup, but exercises code paths) */
+          /* Try process (may fail without TLS setup, but exercises code paths)
+           */
           SocketQUICHandshake_Result result = SocketQUICHandshake_process (hs);
           (void)result;
 
@@ -117,8 +117,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICConnection_Role role
               = (data[1] & 1) ? QUIC_CONN_ROLE_SERVER : QUIC_CONN_ROLE_CLIENT;
 
-          SocketQUICConnection_T conn
-              = SocketQUICConnection_new (arena, role);
+          SocketQUICConnection_T conn = SocketQUICConnection_new (arena, role);
           if (!conn)
             break;
 
@@ -130,10 +129,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Check key availability for all levels */
           for (int level = 0; level < QUIC_CRYPTO_LEVEL_COUNT; level++)
             {
-              int has_keys
-                  = SocketQUICHandshake_has_keys (hs, (SocketQUICCryptoLevel)level);
-              void *keys
-                  = SocketQUICHandshake_get_keys (hs, (SocketQUICCryptoLevel)level);
+              int has_keys = SocketQUICHandshake_has_keys (
+                  hs, (SocketQUICCryptoLevel)level);
+              void *keys = SocketQUICHandshake_get_keys (
+                  hs, (SocketQUICCryptoLevel)level);
               (void)has_keys;
               (void)keys;
             }
@@ -155,7 +154,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Discard keys */
           for (int level = 0; level < QUIC_CRYPTO_LEVEL_COUNT; level++)
             {
-              SocketQUICHandshake_discard_keys (hs, (SocketQUICCryptoLevel)level);
+              SocketQUICHandshake_discard_keys (hs,
+                                                (SocketQUICCryptoLevel)level);
             }
 
           /* Test NULL inputs */
@@ -179,8 +179,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICConnection_Role role
               = (data[1] & 1) ? QUIC_CONN_ROLE_SERVER : QUIC_CONN_ROLE_CLIENT;
 
-          SocketQUICConnection_T conn
-              = SocketQUICConnection_new (arena, role);
+          SocketQUICConnection_T conn = SocketQUICConnection_new (arena, role);
           if (!conn)
             break;
 
@@ -285,9 +284,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               const char *alpn = "h3";
               SocketQUICHandshake_Result result
-                  = SocketQUICHandshake_0rtt_set_ticket (hs, data + 3,
+                  = SocketQUICHandshake_0rtt_set_ticket (hs,
+                                                         data + 3,
                                                          ticket_len,
-                                                         &saved_params, alpn,
+                                                         &saved_params,
+                                                         alpn,
                                                          strlen (alpn));
               (void)result;
 
@@ -329,8 +330,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICConnection_Role role
               = (data[1] & 1) ? QUIC_CONN_ROLE_SERVER : QUIC_CONN_ROLE_CLIENT;
 
-          SocketQUICConnection_T conn
-              = SocketQUICConnection_new (arena, role);
+          SocketQUICConnection_T conn = SocketQUICConnection_new (arena, role);
           if (!conn)
             break;
 
@@ -379,11 +379,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   (SocketQUICCryptoLevel)level);
               (void)str;
             }
-          SocketQUICHandshake_crypto_level_string ((SocketQUICCryptoLevel)data[1]);
+          SocketQUICHandshake_crypto_level_string (
+              (SocketQUICCryptoLevel)data[1]);
 
           /* Handshake states */
           SocketQUICHandshakeState states[]
-              = { QUIC_HANDSHAKE_STATE_IDLE,     QUIC_HANDSHAKE_STATE_INITIAL,
+              = { QUIC_HANDSHAKE_STATE_IDLE,      QUIC_HANDSHAKE_STATE_INITIAL,
                   QUIC_HANDSHAKE_STATE_HANDSHAKE, QUIC_HANDSHAKE_STATE_COMPLETE,
                   QUIC_HANDSHAKE_STATE_CONFIRMED, QUIC_HANDSHAKE_STATE_FAILED };
           for (size_t i = 0; i < sizeof (states) / sizeof (states[0]); i++)

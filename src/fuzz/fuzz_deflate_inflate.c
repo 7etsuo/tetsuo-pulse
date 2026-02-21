@@ -32,15 +32,15 @@
 /* Fuzz operation opcodes */
 enum FuzzOp
 {
-  OP_RANDOM = 0,     /* Raw fuzz input as DEFLATE stream */
-  OP_STORED,         /* Valid stored block prefix */
-  OP_FIXED,          /* Valid fixed Huffman prefix */
-  OP_DYNAMIC,        /* Valid dynamic Huffman prefix */
-  OP_INVALID_BTYPE,  /* BTYPE=11 injection */
-  OP_MULTI_BLOCK,    /* Multiple blocks */
-  OP_BOMB,           /* High expansion ratio test */
-  OP_STREAMING,      /* Small buffer streaming */
-  OP_RESET,          /* Test reset and reuse */
+  OP_RANDOM = 0,    /* Raw fuzz input as DEFLATE stream */
+  OP_STORED,        /* Valid stored block prefix */
+  OP_FIXED,         /* Valid fixed Huffman prefix */
+  OP_DYNAMIC,       /* Valid dynamic Huffman prefix */
+  OP_INVALID_BTYPE, /* BTYPE=11 injection */
+  OP_MULTI_BLOCK,   /* Multiple blocks */
+  OP_BOMB,          /* High expansion ratio test */
+  OP_STREAMING,     /* Small buffer streaming */
+  OP_RESET,         /* Test reset and reuse */
   OP_MAX
 };
 
@@ -287,9 +287,8 @@ build_multi_block (const uint8_t *fuzz_data,
         chunk = 256;
 
       int is_final = (i == block_count - 1);
-      size_t block_len
-          = build_stored_block (fuzz_data + offset, chunk, out_buf + pos,
-                                out_cap - pos, is_final);
+      size_t block_len = build_stored_block (
+          fuzz_data + offset, chunk, out_buf + pos, out_cap - pos, is_final);
       if (block_len == 0)
         break;
 
@@ -326,8 +325,8 @@ build_bomb_payload (const uint8_t *fuzz_data,
     {
       size_t chunk_size = (i < 3) ? 64 : pattern_len;
       int is_final = (i == 3);
-      size_t block_len = build_stored_block (pattern, chunk_size, out_buf + pos,
-                                             out_cap - pos, is_final);
+      size_t block_len = build_stored_block (
+          pattern, chunk_size, out_buf + pos, out_cap - pos, is_final);
       if (block_len == 0)
         break;
       pos += block_len;
@@ -383,9 +382,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         inf = SocketDeflate_Inflater_new (arena, 0);
         if (inf != NULL)
           {
-            result = SocketDeflate_Inflater_inflate (
-                inf, fuzz_data, fuzz_size, &consumed, output, output_size,
-                &written);
+            result = SocketDeflate_Inflater_inflate (inf,
+                                                     fuzz_data,
+                                                     fuzz_size,
+                                                     &consumed,
+                                                     output,
+                                                     output_size,
+                                                     &written);
             (void)result;
           }
       }
@@ -406,9 +409,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             inf = SocketDeflate_Inflater_new (arena, 0);
             if (inf != NULL)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
                 (void)(result == DEFLATE_OK);
               }
           }
@@ -430,9 +437,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             inf = SocketDeflate_Inflater_new (arena, 0);
             if (inf != NULL)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
                 (void)(result == DEFLATE_OK);
               }
           }
@@ -454,9 +465,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             inf = SocketDeflate_Inflater_new (arena, 0);
             if (inf != NULL)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
                 /* Dynamic blocks may fail parsing - any result is fine */
                 (void)result;
               }
@@ -477,9 +492,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         inf = SocketDeflate_Inflater_new (arena, 0);
         if (inf != NULL)
           {
-            result = SocketDeflate_Inflater_inflate (inf, input_buf, input_size,
-                                                     &consumed, output,
-                                                     output_size, &written);
+            result = SocketDeflate_Inflater_inflate (inf,
+                                                     input_buf,
+                                                     input_size,
+                                                     &consumed,
+                                                     output,
+                                                     output_size,
+                                                     &written);
             /* Should return DEFLATE_ERROR_INVALID_BTYPE */
             (void)(result == DEFLATE_ERROR_INVALID_BTYPE);
           }
@@ -490,8 +509,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Build multi-block stream */
         input_buf = Arena_alloc (arena, 8192, __FILE__, __LINE__);
-        input_size
-            = build_multi_block (fuzz_data, fuzz_size, input_buf, 8192);
+        input_size = build_multi_block (fuzz_data, fuzz_size, input_buf, 8192);
 
         if (input_size > 0)
           {
@@ -501,9 +519,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             inf = SocketDeflate_Inflater_new (arena, 0);
             if (inf != NULL)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
                 (void)(result == DEFLATE_OK);
               }
           }
@@ -514,8 +536,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Test bomb protection */
         input_buf = Arena_alloc (arena, 4096, __FILE__, __LINE__);
-        input_size
-            = build_bomb_payload (fuzz_data, fuzz_size, input_buf, 4096);
+        input_size = build_bomb_payload (fuzz_data, fuzz_size, input_buf, 4096);
 
         if (input_size > 0)
           {
@@ -526,9 +547,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             inf = SocketDeflate_Inflater_new (arena, 100);
             if (inf != NULL)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
                 /* May return DEFLATE_ERROR_BOMB */
                 (void)result;
               }
@@ -555,12 +580,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 size_t total_written = 0;
                 size_t offset = 0;
 
-                for (int i = 0; i < 10 && !SocketDeflate_Inflater_finished (inf);
+                for (int i = 0;
+                     i < 10 && !SocketDeflate_Inflater_finished (inf);
                      i++)
                   {
-                    result = SocketDeflate_Inflater_inflate (
-                        inf, input_buf + offset, input_size - offset, &consumed,
-                        output, output_size, &written);
+                    result
+                        = SocketDeflate_Inflater_inflate (inf,
+                                                          input_buf + offset,
+                                                          input_size - offset,
+                                                          &consumed,
+                                                          output,
+                                                          output_size,
+                                                          &written);
 
                     offset += consumed;
                     total_written += written;
@@ -586,13 +617,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (inf != NULL)
           {
             /* First decompression */
-            input_size = build_stored_block (fuzz_data, fuzz_size / 2,
-                                             input_buf, 4096, 1);
+            input_size = build_stored_block (
+                fuzz_data, fuzz_size / 2, input_buf, 4096, 1);
             if (input_size > 0)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
               }
 
             /* Reset */
@@ -601,12 +636,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             /* Second decompression */
             input_size = build_stored_block (fuzz_data + fuzz_size / 2,
                                              fuzz_size - fuzz_size / 2,
-                                             input_buf, 4096, 1);
+                                             input_buf,
+                                             4096,
+                                             1);
             if (input_size > 0)
               {
-                result = SocketDeflate_Inflater_inflate (
-                    inf, input_buf, input_size, &consumed, output, output_size,
-                    &written);
+                result = SocketDeflate_Inflater_inflate (inf,
+                                                         input_buf,
+                                                         input_size,
+                                                         &consumed,
+                                                         output,
+                                                         output_size,
+                                                         &written);
               }
 
             (void)result;

@@ -71,8 +71,7 @@ ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
   if (tokens_per_sec == 0)
     return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
 
-  if (!SocketSecurity_check_multiply (
-          needed, SOCKET_MS_PER_SECOND, &numerator))
+  if (!SocketSecurity_check_multiply (needed, SOCKET_MS_PER_SECOND, &numerator))
     return INT64_MAX; /* Overflow: treat as very long wait */
 
   wait_ms = numerator / tokens_per_sec;

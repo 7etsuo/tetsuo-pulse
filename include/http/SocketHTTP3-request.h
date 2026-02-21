@@ -241,10 +241,9 @@ int SocketHTTP3_Request_feed (SocketHTTP3_Request_T req,
  * @param push_id    Push ID for this push stream.
  * @return New request, or NULL on error.
  */
-SocketHTTP3_Request_T
-SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
-                               uint64_t stream_id,
-                               uint64_t push_id);
+SocketHTTP3_Request_T SocketHTTP3_Request_new_push (SocketHTTP3_Conn_T conn,
+                                                    uint64_t stream_id,
+                                                    uint64_t push_id);
 #endif /* SOCKET_HAS_H3_PUSH */
 
 #endif /* SOCKETHTTP3_REQUEST_INCLUDED */

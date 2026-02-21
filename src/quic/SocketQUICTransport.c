@@ -405,20 +405,14 @@ stream_process_buffered (SocketQUICTransport_T t,
 }
 
 static int
-handle_stream_frame (SocketQUICTransport_T t,
-                     const SocketQUICFrameStream_T *sf,
-                     uint64_t frame_type,
-                     int *events)
+stream_validate_limits (SocketQUICTransport_T t,
+                        uint64_t stream_id,
+                        uint64_t frame_type)
 {
-  if (!t || !sf)
-    return -1;
-
-  uint64_t stream_id = sf->stream_id;
-  int initiator = (int)(stream_id & 0x01); /* 0=client, 1=server */
+  int initiator = (int)(stream_id & 0x01);
   int is_uni = (stream_id & 0x02) != 0;
   uint64_t seq = stream_id >> 2;
 
-  /* Enforce stream limits for peer-initiated streams (RFC 9000 §4.6). */
   if (initiator == 1)
     {
       uint64_t max_streams = is_uni ? 3 : t->config.initial_max_streams_bidi;
@@ -432,7 +426,6 @@ handle_stream_frame (SocketQUICTransport_T t,
         }
     }
 
-  /* Receiving on locally-initiated unidirectional streams is a state error. */
   if (is_uni && initiator == 0)
     {
       transport_close_with_error (t,
@@ -442,24 +435,17 @@ handle_stream_frame (SocketQUICTransport_T t,
       return -1;
     }
 
-  QUICStreamState *s = find_or_create_stream (t, stream_id);
-  if (!s)
-    {
-      transport_close_with_error (
-          t, QUIC_STREAM_LIMIT_ERROR, frame_type, "Too many active streams");
-      return -1;
-    }
+  return 0;
+}
 
-  uint64_t end;
-  if (!socket_util_safe_add_u64 (sf->offset, sf->length, &end))
-    {
-      transport_close_with_error (
-          t, QUIC_FRAME_ENCODING_ERROR, frame_type, "STREAM offset overflow");
-      return -1;
-    }
-
-  /* Track final size via FIN (RFC 9000 §4.5). */
-  if (sf->has_fin)
+static int
+stream_track_final_size (SocketQUICTransport_T t,
+                         QUICStreamState *s,
+                         uint64_t end,
+                         int has_fin,
+                         uint64_t frame_type)
+{
+  if (has_fin)
     {
       if (s->fin_received && s->final_size != end)
         {
@@ -477,47 +463,61 @@ handle_stream_frame (SocketQUICTransport_T t,
       return -1;
     }
 
-  /* Flow control: consume increases in the highest received offset. */
-  if (end > s->recv_highest)
+  return 0;
+}
+
+static int
+stream_consume_flow_control (SocketQUICTransport_T t,
+                             QUICStreamState *s,
+                             uint64_t end,
+                             uint64_t frame_type)
+{
+  if (end <= s->recv_highest)
+    return 0;
+
+  uint64_t delta = end - s->recv_highest;
+  s->recv_highest = end;
+
+  if (delta > SIZE_MAX)
     {
-      uint64_t delta = end - s->recv_highest;
-      s->recv_highest = end;
-
-      if (delta > SIZE_MAX)
-        {
-          transport_close_with_error (
-              t, QUIC_FLOW_CONTROL_ERROR, frame_type, "Flow delta overflow");
-          return -1;
-        }
-
-      if (s->flow_stream
-          && SocketQUICFlowStream_consume_recv (s->flow_stream, (size_t)delta)
-                 != QUIC_FLOW_OK)
-        {
-          transport_close_with_error (t,
-                                      QUIC_FLOW_CONTROL_ERROR,
-                                      frame_type,
-                                      "Stream flow control exceeded");
-          return -1;
-        }
-
-      if (t->flow
-          && SocketQUICFlow_consume_recv (t->flow, (size_t)delta)
-                 != QUIC_FLOW_OK)
-        {
-          transport_close_with_error (t,
-                                      QUIC_FLOW_CONTROL_ERROR,
-                                      frame_type,
-                                      "Connection flow control exceeded");
-          return -1;
-        }
+      transport_close_with_error (
+          t, QUIC_FLOW_CONTROL_ERROR, frame_type, "Flow delta overflow");
+      return -1;
     }
 
-  uint64_t offset = sf->offset;
-  uint64_t length = sf->length;
-  const uint8_t *data = sf->data;
+  if (s->flow_stream
+      && SocketQUICFlowStream_consume_recv (s->flow_stream, (size_t)delta)
+             != QUIC_FLOW_OK)
+    {
+      transport_close_with_error (t,
+                                  QUIC_FLOW_CONTROL_ERROR,
+                                  frame_type,
+                                  "Stream flow control exceeded");
+      return -1;
+    }
 
-  /* Trim already-delivered bytes (duplicates/retransmits). */
+  if (t->flow
+      && SocketQUICFlow_consume_recv (t->flow, (size_t)delta) != QUIC_FLOW_OK)
+    {
+      transport_close_with_error (t,
+                                  QUIC_FLOW_CONTROL_ERROR,
+                                  frame_type,
+                                  "Connection flow control exceeded");
+      return -1;
+    }
+
+  return 0;
+}
+
+static int
+stream_trim_and_deliver (SocketQUICTransport_T t,
+                         QUICStreamState *s,
+                         uint64_t offset,
+                         uint64_t length,
+                         const uint8_t *data,
+                         uint64_t frame_type,
+                         int *events)
+{
   if (offset < s->recv_offset)
     {
       uint64_t overlap = s->recv_offset - offset;
@@ -531,7 +531,6 @@ handle_stream_frame (SocketQUICTransport_T t,
       length -= overlap;
     }
 
-  /* Deliver contiguous data immediately when possible. */
   if (offset == s->recv_offset && length > 0)
     {
       if (stream_deliver_chunk (t, s, data, length, events) < 0)
@@ -550,6 +549,44 @@ handle_stream_frame (SocketQUICTransport_T t,
     }
 
   return stream_process_buffered (t, s, events);
+}
+
+static int
+handle_stream_frame (SocketQUICTransport_T t,
+                     const SocketQUICFrameStream_T *sf,
+                     uint64_t frame_type,
+                     int *events)
+{
+  if (!t || !sf)
+    return -1;
+
+  if (stream_validate_limits (t, sf->stream_id, frame_type) < 0)
+    return -1;
+
+  QUICStreamState *s = find_or_create_stream (t, sf->stream_id);
+  if (!s)
+    {
+      transport_close_with_error (
+          t, QUIC_STREAM_LIMIT_ERROR, frame_type, "Too many active streams");
+      return -1;
+    }
+
+  uint64_t end;
+  if (!socket_util_safe_add_u64 (sf->offset, sf->length, &end))
+    {
+      transport_close_with_error (
+          t, QUIC_FRAME_ENCODING_ERROR, frame_type, "STREAM offset overflow");
+      return -1;
+    }
+
+  if (stream_track_final_size (t, s, end, sf->has_fin, frame_type) < 0)
+    return -1;
+
+  if (stream_consume_flow_control (t, s, end, frame_type) < 0)
+    return -1;
+
+  return stream_trim_and_deliver (
+      t, s, sf->offset, sf->length, sf->data, frame_type, events);
 }
 
 static uint64_t
@@ -657,34 +694,29 @@ typedef enum
   QUIC_APP_PKT_0RTT
 } QuicAppPacketType;
 
-static int
-build_and_send_app_packet (SocketQUICTransport_T t,
-                           QuicAppPacketType pkt_type,
-                           const uint8_t *payload,
-                           size_t payload_len,
-                           int ack_eliciting,
-                           int in_flight)
+static SocketQUICPacketKeys_T *
+app_packet_select_keys (SocketQUICTransport_T t, QuicAppPacketType pkt_type)
 {
-  SocketQUICPacketKeys_T *keys;
-
   if (pkt_type == QUIC_APP_PKT_1RTT)
     {
       if (!t->app_keys_valid)
-        return -1;
-      keys = &t->app_send_keys;
-    }
-  else
-    {
-      if (!t->zero_rtt_keys_valid)
-        return -1;
-      if (!t->handshake || !SocketQUICHandshake_can_send_0rtt (t->handshake))
-        return -1;
-      keys = &t->zero_rtt_send_keys;
+        return NULL;
+      return &t->app_send_keys;
     }
 
-  uint64_t pn = t->next_pn[QUIC_PN_SPACE_APPLICATION];
-  uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
+  if (!t->zero_rtt_keys_valid)
+    return NULL;
+  if (!t->handshake || !SocketQUICHandshake_can_send_0rtt (t->handshake))
+    return NULL;
+  return &t->zero_rtt_send_keys;
+}
 
+static int
+app_packet_build_header (SocketQUICTransport_T t,
+                         QuicAppPacketType pkt_type,
+                         uint32_t truncated_pn,
+                         size_t *hdr_len_out)
+{
   SocketQUICPacketHeader_T hdr;
   SocketQUICPacketHeader_init (&hdr);
 
@@ -716,6 +748,20 @@ build_and_send_app_packet (SocketQUICTransport_T t,
   if (hdr_len == 0)
     return -1;
 
+  *hdr_len_out = hdr_len;
+  return 0;
+}
+
+static int
+app_packet_encrypt_and_send (SocketQUICTransport_T t,
+                             SocketQUICPacketKeys_T *keys,
+                             uint64_t pn,
+                             size_t hdr_len,
+                             const uint8_t *payload,
+                             size_t payload_len,
+                             int ack_eliciting,
+                             int in_flight)
+{
   size_t pn_offset = hdr_len - TRANSPORT_PN_LEN;
 
   if (hdr_len + payload_len + 16 > TRANSPORT_SEND_BUF_SIZE)
@@ -769,6 +815,29 @@ build_and_send_app_packet (SocketQUICTransport_T t,
 
   t->next_pn[QUIC_PN_SPACE_APPLICATION]++;
   return 0;
+}
+
+static int
+build_and_send_app_packet (SocketQUICTransport_T t,
+                           QuicAppPacketType pkt_type,
+                           const uint8_t *payload,
+                           size_t payload_len,
+                           int ack_eliciting,
+                           int in_flight)
+{
+  SocketQUICPacketKeys_T *keys = app_packet_select_keys (t, pkt_type);
+  if (!keys)
+    return -1;
+
+  uint64_t pn = t->next_pn[QUIC_PN_SPACE_APPLICATION];
+  uint32_t truncated_pn = SocketQUICPacket_encode_pn (pn, TRANSPORT_PN_LEN);
+
+  size_t hdr_len;
+  if (app_packet_build_header (t, pkt_type, truncated_pn, &hdr_len) < 0)
+    return -1;
+
+  return app_packet_encrypt_and_send (
+      t, keys, pn, hdr_len, payload, payload_len, ack_eliciting, in_flight);
 }
 
 static int
@@ -863,6 +932,107 @@ transport_lost_cb (const SocketQUICLossSentPacket_T *pkt, void *ctx)
     c->latest_lost_sent_time = pkt->sent_time_us;
 }
 
+static void
+process_ack_frame (SocketQUICTransport_T t,
+                   const SocketQUICFrame_T *frame,
+                   SocketQUIC_PNSpace space,
+                   uint64_t now)
+{
+  if (!t->loss[space])
+    return;
+
+  SocketQUICCongestion_AckCtx actx = { 0 };
+  size_t acked_count = 0, lost_count = 0;
+
+  SocketQUICLoss_on_ack_received (t->loss[space],
+                                  &t->rtt,
+                                  &frame->data.ack,
+                                  now,
+                                  transport_acked_cb,
+                                  transport_lost_cb,
+                                  &actx,
+                                  &acked_count,
+                                  &lost_count);
+
+  if (space == QUIC_PN_SPACE_APPLICATION)
+    SocketQUICCongestion_process_ack (t->congestion,
+                                      &actx,
+                                      &t->rtt,
+                                      t->loss[space],
+                                      frame->data.ack.ecn_ce_count,
+                                      frame->type == QUIC_FRAME_ACK_ECN,
+                                      lost_count,
+                                      &t->prev_ecn_ce_count);
+}
+
+static void
+process_crypto_frame (SocketQUICTransport_T t,
+                      const SocketQUICFrame_T *frame,
+                      SocketQUIC_PNSpace space)
+{
+  SocketQUICCryptoLevel level;
+  if (space == QUIC_PN_SPACE_INITIAL)
+    level = QUIC_CRYPTO_LEVEL_INITIAL;
+  else if (space == QUIC_PN_SPACE_HANDSHAKE)
+    level = QUIC_CRYPTO_LEVEL_HANDSHAKE;
+  else
+    level = QUIC_CRYPTO_LEVEL_APPLICATION;
+
+  SocketQUICTLS_provide_data (t->handshake,
+                              level,
+                              frame->data.crypto.data,
+                              (size_t)frame->data.crypto.length);
+}
+
+static void
+process_connection_close_frame (SocketQUICTransport_T t,
+                                const SocketQUICFrame_T *frame)
+{
+  t->peer_close_error = frame->data.connection_close.error_code;
+  t->peer_close_is_app = frame->data.connection_close.is_app_error;
+  t->peer_close_received = 1;
+  t->closed = 1;
+  t->connected = 0;
+}
+
+static void
+process_flow_control_frame (SocketQUICTransport_T t,
+                            const SocketQUICFrame_T *frame)
+{
+  switch (frame->type)
+    {
+    case QUIC_FRAME_MAX_DATA:
+      if (t->flow)
+        SocketQUICFlow_update_send_max (t->flow, frame->data.max_data.max_data);
+      break;
+
+    case QUIC_FRAME_MAX_STREAM_DATA:
+      {
+        QUICStreamState *s
+            = find_or_create_stream (t, frame->data.max_stream_data.stream_id);
+        if (s && s->flow_stream)
+          SocketQUICFlowStream_update_send_max (
+              s->flow_stream, frame->data.max_stream_data.max_data);
+      }
+      break;
+
+    case QUIC_FRAME_MAX_STREAMS_BIDI:
+      if (t->flow)
+        SocketQUICFlow_update_max_streams_bidi (
+            t->flow, frame->data.max_streams.max_streams);
+      break;
+
+    case QUIC_FRAME_MAX_STREAMS_UNI:
+      if (t->flow)
+        SocketQUICFlow_update_max_streams_uni (
+            t->flow, frame->data.max_streams.max_streams);
+      break;
+
+    default:
+      break;
+    }
+}
+
 static int
 process_frames (SocketQUICTransport_T t,
                 const uint8_t *payload,
@@ -890,7 +1060,6 @@ process_frames (SocketQUICTransport_T t,
 
       offset += consumed;
 
-      /* Validate that the frame is permitted in this packet type. */
       if (SocketQUICFrame_validate (&frame, pkt_flags) != QUIC_FRAME_OK)
         {
           transport_close_with_error (t,
@@ -909,49 +1078,11 @@ process_frames (SocketQUICTransport_T t,
 
         case QUIC_FRAME_ACK:
         case QUIC_FRAME_ACK_ECN:
-          if (t->loss[space])
-            {
-              SocketQUICCongestion_AckCtx actx = { 0 };
-              size_t acked_count = 0, lost_count = 0;
-
-              SocketQUICLoss_on_ack_received (t->loss[space],
-                                              &t->rtt,
-                                              &frame.data.ack,
-                                              now,
-                                              transport_acked_cb,
-                                              transport_lost_cb,
-                                              &actx,
-                                              &acked_count,
-                                              &lost_count);
-
-              if (space == QUIC_PN_SPACE_APPLICATION)
-                SocketQUICCongestion_process_ack (t->congestion,
-                                                  &actx,
-                                                  &t->rtt,
-                                                  t->loss[space],
-                                                  frame.data.ack.ecn_ce_count,
-                                                  frame.type
-                                                      == QUIC_FRAME_ACK_ECN,
-                                                  lost_count,
-                                                  &t->prev_ecn_ce_count);
-            }
+          process_ack_frame (t, &frame, space, now);
           break;
 
         case QUIC_FRAME_CRYPTO:
-          {
-            SocketQUICCryptoLevel level;
-            if (space == QUIC_PN_SPACE_INITIAL)
-              level = QUIC_CRYPTO_LEVEL_INITIAL;
-            else if (space == QUIC_PN_SPACE_HANDSHAKE)
-              level = QUIC_CRYPTO_LEVEL_HANDSHAKE;
-            else
-              level = QUIC_CRYPTO_LEVEL_APPLICATION;
-
-            SocketQUICTLS_provide_data (t->handshake,
-                                        level,
-                                        frame.data.crypto.data,
-                                        (size_t)frame.data.crypto.length);
-          }
+          process_crypto_frame (t, &frame, space);
           break;
 
         case QUIC_FRAME_HANDSHAKE_DONE:
@@ -960,40 +1091,15 @@ process_frames (SocketQUICTransport_T t,
 
         case QUIC_FRAME_CONNECTION_CLOSE:
         case QUIC_FRAME_CONNECTION_CLOSE_APP:
-          t->peer_close_error = frame.data.connection_close.error_code;
-          t->peer_close_is_app = frame.data.connection_close.is_app_error;
-          t->peer_close_received = 1;
-          t->closed = 1;
-          t->connected = 0;
+          process_connection_close_frame (t, &frame);
           SocketQUICFrame_free (&frame);
           return -1;
 
         case QUIC_FRAME_MAX_DATA:
-          if (t->flow)
-            SocketQUICFlow_update_send_max (t->flow,
-                                            frame.data.max_data.max_data);
-          break;
-
         case QUIC_FRAME_MAX_STREAM_DATA:
-          {
-            QUICStreamState *s = find_or_create_stream (
-                t, frame.data.max_stream_data.stream_id);
-            if (s && s->flow_stream)
-              SocketQUICFlowStream_update_send_max (
-                  s->flow_stream, frame.data.max_stream_data.max_data);
-          }
-          break;
-
         case QUIC_FRAME_MAX_STREAMS_BIDI:
-          if (t->flow)
-            SocketQUICFlow_update_max_streams_bidi (
-                t->flow, frame.data.max_streams.max_streams);
-          break;
-
         case QUIC_FRAME_MAX_STREAMS_UNI:
-          if (t->flow)
-            SocketQUICFlow_update_max_streams_uni (
-                t->flow, frame.data.max_streams.max_streams);
+          process_flow_control_frame (t, &frame);
           break;
 
         default:
@@ -1010,7 +1116,6 @@ process_frames (SocketQUICTransport_T t,
           break;
         }
 
-      /* Free any heap-backed substructures (e.g., ACK ranges). */
       SocketQUICFrame_free (&frame);
     }
 
@@ -1635,13 +1740,11 @@ SocketQUICTransport_close (SocketQUICTransport_T t)
 }
 
 static int
-transport_send_stream_common (SocketQUICTransport_T t,
-                              uint64_t stream_id,
-                              const uint8_t *data,
-                              size_t len,
-                              int fin,
-                              int use_0rtt,
-                              int buffer_for_replay)
+validate_send_preconditions (SocketQUICTransport_T t,
+                             const uint8_t *data,
+                             size_t len,
+                             int use_0rtt,
+                             int buffer_for_replay)
 {
   if (!t || t->closed)
     return -1;
@@ -1664,11 +1767,97 @@ transport_send_stream_common (SocketQUICTransport_T t,
         return -1;
     }
 
+  return 0;
+}
+
+static EarlyStreamSend_T *
+alloc_early_stream_pending (uint64_t stream_id,
+                            uint64_t offset,
+                            const uint8_t *data,
+                            size_t len,
+                            int fin)
+{
+  EarlyStreamSend_T *pending = malloc (sizeof (*pending));
+  if (!pending)
+    return NULL;
+  memset (pending, 0, sizeof (*pending));
+  pending->stream_id = stream_id;
+  pending->offset = offset;
+  pending->len = len;
+  pending->fin = fin ? 1 : 0;
+  pending->next = NULL;
+
+  if (len > 0)
+    {
+      pending->data = malloc (len);
+      if (!pending->data)
+        {
+          free (pending);
+          return NULL;
+        }
+      memcpy (pending->data, data, len);
+    }
+
+  return pending;
+}
+
+static void
+free_early_stream_pending (EarlyStreamSend_T *pending)
+{
+  if (!pending)
+    return;
+  free (pending->data);
+  free (pending);
+}
+
+static void
+commit_early_stream_pending (SocketQUICTransport_T t,
+                             QUICStreamState *stream,
+                             EarlyStreamSend_T *pending,
+                             size_t len)
+{
+  if (!t->zero_rtt_flow_base_set && t->flow)
+    {
+      t->zero_rtt_flow_consumed_base = t->flow->send_consumed;
+      t->zero_rtt_flow_base_set = 1;
+    }
+
+  if (!stream->zero_rtt_sent)
+    {
+      stream->zero_rtt_send_offset_base = stream->send_offset;
+      if (stream->flow_stream)
+        stream->zero_rtt_flow_consumed_base
+            = stream->flow_stream->send_consumed;
+      stream->zero_rtt_sent = 1;
+    }
+
+  if (!t->zero_rtt_head)
+    t->zero_rtt_head = pending;
+  else
+    t->zero_rtt_tail->next = pending;
+  t->zero_rtt_tail = pending;
+
+  t->zero_rtt_bytes += len;
+  t->zero_rtt_count++;
+}
+
+static int
+transport_send_stream_common (SocketQUICTransport_T t,
+                              uint64_t stream_id,
+                              const uint8_t *data,
+                              size_t len,
+                              int fin,
+                              int use_0rtt,
+                              int buffer_for_replay)
+{
+  if (validate_send_preconditions (t, data, len, use_0rtt, buffer_for_replay)
+      < 0)
+    return -1;
+
   QUICStreamState *stream = find_or_create_stream (t, stream_id);
   if (!stream)
     return -1;
 
-  /* Enforce peer-advertised flow control before sending. */
   if (t->flow && !SocketQUICFlow_can_send (t->flow, len))
     return -1;
   if (stream->flow_stream
@@ -1680,26 +1869,9 @@ transport_send_stream_common (SocketQUICTransport_T t,
   EarlyStreamSend_T *pending = NULL;
   if (use_0rtt && buffer_for_replay)
     {
-      pending = malloc (sizeof (*pending));
+      pending = alloc_early_stream_pending (stream_id, offset, data, len, fin);
       if (!pending)
         return -1;
-      memset (pending, 0, sizeof (*pending));
-      pending->stream_id = stream_id;
-      pending->offset = offset;
-      pending->len = len;
-      pending->fin = fin ? 1 : 0;
-      pending->next = NULL;
-
-      if (len > 0)
-        {
-          pending->data = malloc (len);
-          if (!pending->data)
-            {
-              free (pending);
-              return -1;
-            }
-          memcpy (pending->data, data, len);
-        }
     }
 
   uint8_t frame_buf[TRANSPORT_SEND_BUF_SIZE];
@@ -1707,11 +1879,7 @@ transport_send_stream_common (SocketQUICTransport_T t,
       stream_id, offset, data, len, fin, frame_buf, sizeof (frame_buf));
   if (frame_len == 0)
     {
-      if (pending)
-        {
-          free (pending->data);
-          free (pending);
-        }
+      free_early_stream_pending (pending);
       return -1;
     }
 
@@ -1719,42 +1887,13 @@ transport_send_stream_common (SocketQUICTransport_T t,
                     : build_and_send_1rtt_packet (t, frame_buf, frame_len);
   if (rc < 0)
     {
-      if (pending)
-        {
-          free (pending->data);
-          free (pending);
-        }
+      free_early_stream_pending (pending);
       return -1;
     }
 
   if (pending)
-    {
-      if (!t->zero_rtt_flow_base_set && t->flow)
-        {
-          t->zero_rtt_flow_consumed_base = t->flow->send_consumed;
-          t->zero_rtt_flow_base_set = 1;
-        }
+    commit_early_stream_pending (t, stream, pending, len);
 
-      if (!stream->zero_rtt_sent)
-        {
-          stream->zero_rtt_send_offset_base = stream->send_offset;
-          if (stream->flow_stream)
-            stream->zero_rtt_flow_consumed_base
-                = stream->flow_stream->send_consumed;
-          stream->zero_rtt_sent = 1;
-        }
-
-      if (!t->zero_rtt_head)
-        t->zero_rtt_head = pending;
-      else
-        t->zero_rtt_tail->next = pending;
-      t->zero_rtt_tail = pending;
-
-      t->zero_rtt_bytes += len;
-      t->zero_rtt_count++;
-    }
-
-  /* Update offsets and consume flow control only after successful send. */
   stream->send_offset += len;
   if (t->flow)
     SocketQUICFlow_consume_send (t->flow, len);

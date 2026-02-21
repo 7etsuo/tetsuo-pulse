@@ -157,26 +157,22 @@ SocketProto_Schema_find_field (const SocketProto_Schema *schema,
 /**
  * @brief Encode/decode unsigned varints.
  */
-extern SocketProto_Result
-SocketProto_varint_encode_u64 (uint64_t value,
-                               uint8_t *out,
-                               size_t out_len,
-                               size_t *written);
-extern SocketProto_Result
-SocketProto_varint_decode_u64 (const uint8_t *in,
-                               size_t in_len,
-                               uint64_t *value,
-                               size_t *consumed);
-extern SocketProto_Result
-SocketProto_varint_encode_u32 (uint32_t value,
-                               uint8_t *out,
-                               size_t out_len,
-                               size_t *written);
-extern SocketProto_Result
-SocketProto_varint_decode_u32 (const uint8_t *in,
-                               size_t in_len,
-                               uint32_t *value,
-                               size_t *consumed);
+extern SocketProto_Result SocketProto_varint_encode_u64 (uint64_t value,
+                                                         uint8_t *out,
+                                                         size_t out_len,
+                                                         size_t *written);
+extern SocketProto_Result SocketProto_varint_decode_u64 (const uint8_t *in,
+                                                         size_t in_len,
+                                                         uint64_t *value,
+                                                         size_t *consumed);
+extern SocketProto_Result SocketProto_varint_encode_u32 (uint32_t value,
+                                                         uint8_t *out,
+                                                         size_t out_len,
+                                                         size_t *written);
+extern SocketProto_Result SocketProto_varint_decode_u32 (const uint8_t *in,
+                                                         size_t in_len,
+                                                         uint32_t *value,
+                                                         size_t *consumed);
 
 /**
  * @brief ZigZag conversions for signed protobuf integers.
@@ -201,14 +197,14 @@ SocketProto_fixed64_decode (const uint8_t *in, size_t in_len, uint64_t *value);
 /**
  * @brief Wire-level helpers.
  */
-extern SocketProto_Result
-SocketProto_wire_make_tag (uint32_t field_number, uint8_t wire_type, uint64_t *tag);
-extern SocketProto_Result
-SocketProto_wire_write_tag (uint32_t field_number,
-                            uint8_t wire_type,
-                            uint8_t *out,
-                            size_t out_len,
-                            size_t *written);
+extern SocketProto_Result SocketProto_wire_make_tag (uint32_t field_number,
+                                                     uint8_t wire_type,
+                                                     uint64_t *tag);
+extern SocketProto_Result SocketProto_wire_write_tag (uint32_t field_number,
+                                                      uint8_t wire_type,
+                                                      uint8_t *out,
+                                                      size_t out_len,
+                                                      size_t *written);
 extern SocketProto_Result
 SocketProto_wire_write_length_delimited (uint32_t field_number,
                                          const uint8_t *value,
@@ -216,11 +212,10 @@ SocketProto_wire_write_length_delimited (uint32_t field_number,
                                          uint8_t *out,
                                          size_t out_len,
                                          size_t *written);
-extern SocketProto_Result
-SocketProto_wire_read_field (const uint8_t *data,
-                             size_t len,
-                             SocketProto_Field *field,
-                             size_t *consumed);
+extern SocketProto_Result SocketProto_wire_read_field (const uint8_t *data,
+                                                       size_t len,
+                                                       SocketProto_Field *field,
+                                                       size_t *consumed);
 
 /**
  * @brief Create/destroy message handle.
@@ -259,13 +254,16 @@ SocketProto_Message_validate (const uint8_t *data,
 /**
  * @brief Field accessors.
  */
-extern size_t SocketProto_Message_field_count (const SocketProto_Message_T message);
+extern size_t
+SocketProto_Message_field_count (const SocketProto_Message_T message);
 extern const SocketProto_Field *
-SocketProto_Message_field_at (const SocketProto_Message_T message, size_t index);
+SocketProto_Message_field_at (const SocketProto_Message_T message,
+                              size_t index);
 extern size_t
 SocketProto_Message_unknown_count (const SocketProto_Message_T message);
 extern const SocketProto_Field *
-SocketProto_Message_unknown_at (const SocketProto_Message_T message, size_t index);
+SocketProto_Message_unknown_at (const SocketProto_Message_T message,
+                                size_t index);
 
 /**
  * @brief Message builders.

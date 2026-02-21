@@ -127,7 +127,8 @@ SocketProto_Message_clear (SocketProto_Message_T message)
 }
 
 static SocketProto_Result
-socketproto_message_reserve_fields (SocketProto_Message_T message, size_t needed)
+socketproto_message_reserve_fields (SocketProto_Message_T message,
+                                    size_t needed)
 {
   size_t new_capacity;
   size_t bytes;
@@ -157,7 +158,8 @@ socketproto_message_reserve_fields (SocketProto_Message_T message, size_t needed
     return SOCKET_PROTO_OVERFLOW;
 
   (void)bytes;
-  new_fields = CALLOC (message->arena, new_capacity, sizeof (SocketProto_Field));
+  new_fields
+      = CALLOC (message->arena, new_capacity, sizeof (SocketProto_Field));
   if (message->fields != NULL && message->field_count > 0)
     {
       memcpy (new_fields,
@@ -276,7 +278,8 @@ socketproto_message_store_encoded (SocketProto_Message_T message,
 
   for (size_t i = 0; i < message->field_count; i++)
     {
-      if (socketproto_size_add (total_size, message->fields[i].encoded_len, &total_size))
+      if (socketproto_size_add (
+              total_size, message->fields[i].encoded_len, &total_size))
         return SOCKET_PROTO_OVERFLOW;
     }
   if (socketproto_size_add (total_size, encoded_len, &total_size))
@@ -353,11 +356,8 @@ SocketProto_Message_parse (SocketProto_Message_T message,
       size_t consumed = 0;
       int known = 0;
       const SocketProto_SchemaField *decl = NULL;
-      SocketProto_Result rc
-          = SocketProto_wire_read_field (data + offset,
-                                         len - offset,
-                                         &field,
-                                         &consumed);
+      SocketProto_Result rc = SocketProto_wire_read_field (
+          data + offset, len - offset, &field, &consumed);
       if (rc != SOCKET_PROTO_OK)
         return rc;
       if (consumed == 0)
@@ -365,8 +365,8 @@ SocketProto_Message_parse (SocketProto_Message_T message,
 
       if (message->schema != NULL)
         {
-          decl = SocketProto_Schema_find_field (
-              message->schema, field.field_number);
+          decl = SocketProto_Schema_find_field (message->schema,
+                                                field.field_number);
           if (decl != NULL)
             {
               uint8_t expected_wire = socketproto_kind_wire_type (decl->kind);
@@ -379,12 +379,12 @@ SocketProto_Message_parse (SocketProto_Message_T message,
       if (decl != NULL && decl->kind == SOCKET_PROTO_KIND_MESSAGE
           && decl->message_schema != NULL)
         {
-          SocketProto_Result nested_rc = socketproto_validate_message_internal (
-              field.value,
-              field.value_len,
-              decl->message_schema,
-              &message->limits,
-              1);
+          SocketProto_Result nested_rc
+              = socketproto_validate_message_internal (field.value,
+                                                       field.value_len,
+                                                       decl->message_schema,
+                                                       &message->limits,
+                                                       1);
           if (nested_rc != SOCKET_PROTO_OK)
             return nested_rc;
         }
@@ -423,7 +423,9 @@ SocketProto_Message_encode (const SocketProto_Message_T message,
 
   for (size_t i = 0; i < message->field_count; i++)
     {
-      memcpy (out + pos, message->fields[i].encoded, message->fields[i].encoded_len);
+      memcpy (out + pos,
+              message->fields[i].encoded,
+              message->fields[i].encoded_len);
       pos += message->fields[i].encoded_len;
     }
 
@@ -452,7 +454,8 @@ SocketProto_Message_unknown_count (const SocketProto_Message_T message)
 }
 
 const SocketProto_Field *
-SocketProto_Message_unknown_at (const SocketProto_Message_T message, size_t index)
+SocketProto_Message_unknown_at (const SocketProto_Message_T message,
+                                size_t index)
 {
   size_t seen = 0;
 
@@ -525,12 +528,16 @@ SocketProto_Message_append_varint (SocketProto_Message_T message,
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
-  rc = SocketProto_wire_write_tag (
-      field_number, SOCKET_PROTO_WIRE_VARINT, tag_buf, sizeof (tag_buf), &tag_len);
+  rc = SocketProto_wire_write_tag (field_number,
+                                   SOCKET_PROTO_WIRE_VARINT,
+                                   tag_buf,
+                                   sizeof (tag_buf),
+                                   &tag_len);
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
-  rc = SocketProto_varint_encode_u64 (value, val_buf, sizeof (val_buf), &val_len);
+  rc = SocketProto_varint_encode_u64 (
+      value, val_buf, sizeof (val_buf), &val_len);
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
@@ -581,8 +588,11 @@ SocketProto_Message_append_fixed32 (SocketProto_Message_T message,
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
-  rc = SocketProto_wire_write_tag (
-      field_number, SOCKET_PROTO_WIRE_FIXED32, tag_buf, sizeof (tag_buf), &tag_len);
+  rc = SocketProto_wire_write_tag (field_number,
+                                   SOCKET_PROTO_WIRE_FIXED32,
+                                   tag_buf,
+                                   sizeof (tag_buf),
+                                   &tag_len);
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
@@ -628,8 +638,11 @@ SocketProto_Message_append_fixed64 (SocketProto_Message_T message,
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
-  rc = SocketProto_wire_write_tag (
-      field_number, SOCKET_PROTO_WIRE_FIXED64, tag_buf, sizeof (tag_buf), &tag_len);
+  rc = SocketProto_wire_write_tag (field_number,
+                                   SOCKET_PROTO_WIRE_FIXED64,
+                                   tag_buf,
+                                   sizeof (tag_buf),
+                                   &tag_len);
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
@@ -674,11 +687,8 @@ SocketProto_Message_append_bytes (SocketProto_Message_T message,
   if (message == NULL || (value_len > 0 && value == NULL))
     return SOCKET_PROTO_INVALID_ARGUMENT;
 
-  rc = socketproto_message_schema_classify (message,
-                                            field_number,
-                                            SOCKET_PROTO_WIRE_LENGTH_DELIMITED,
-                                            &known,
-                                            &decl);
+  rc = socketproto_message_schema_classify (
+      message, field_number, SOCKET_PROTO_WIRE_LENGTH_DELIMITED, &known, &decl);
   if (rc != SOCKET_PROTO_OK)
     return rc;
 
@@ -775,7 +785,8 @@ SocketProto_Field_decode_s64 (const SocketProto_Field *field, int64_t *value)
 }
 
 SocketProto_Result
-SocketProto_Field_decode_fixed32 (const SocketProto_Field *field, uint32_t *value)
+SocketProto_Field_decode_fixed32 (const SocketProto_Field *field,
+                                  uint32_t *value)
 {
   if (field == NULL || value == NULL)
     return SOCKET_PROTO_INVALID_ARGUMENT;
@@ -785,7 +796,8 @@ SocketProto_Field_decode_fixed32 (const SocketProto_Field *field, uint32_t *valu
 }
 
 SocketProto_Result
-SocketProto_Field_decode_fixed64 (const SocketProto_Field *field, uint64_t *value)
+SocketProto_Field_decode_fixed64 (const SocketProto_Field *field,
+                                  uint64_t *value)
 {
   if (field == NULL || value == NULL)
     return SOCKET_PROTO_INVALID_ARGUMENT;

@@ -148,7 +148,7 @@ create_socketpair (Socket_T *sock1_out, Socket_T *sock2_out, Arena_T arena)
   {
     close (fds[0]);
     close (fds[1]);
-    RETURN -1;
+    RETURN - 1;
   }
   END_TRY;
 

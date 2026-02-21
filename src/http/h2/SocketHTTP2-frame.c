@@ -173,7 +173,8 @@ SocketHTTP2_frame_header_parse (const unsigned char *data,
   header->flags = data[HTTP2_FRAME_OFFSET_FLAGS];
 
   /* Stream ID: 31-bit big-endian (R bit is reserved, must be masked) */
-  header->stream_id = http2_unpack_stream_id (data + HTTP2_FRAME_OFFSET_STREAM_ID);
+  header->stream_id
+      = http2_unpack_stream_id (data + HTTP2_FRAME_OFFSET_STREAM_ID);
 
   return 0;
 }

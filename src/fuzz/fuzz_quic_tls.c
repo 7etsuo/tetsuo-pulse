@@ -95,10 +95,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)calc_size;
 
           /* Test NULL inputs */
-          SocketQUICTransportParams_encode (NULL, QUIC_ROLE_CLIENT, encoded,
-                                            sizeof (encoded));
-          SocketQUICTransportParams_encode (&params, QUIC_ROLE_CLIENT, NULL,
-                                            sizeof (encoded));
+          SocketQUICTransportParams_encode (
+              NULL, QUIC_ROLE_CLIENT, encoded, sizeof (encoded));
+          SocketQUICTransportParams_encode (
+              &params, QUIC_ROLE_CLIENT, NULL, sizeof (encoded));
           SocketQUICTransportParams_encoded_size (NULL, QUIC_ROLE_CLIENT);
           break;
         }
@@ -112,9 +112,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           /* Try to decode fuzzed data as transport params from client */
           SocketQUICTransportParams_Result result
-              = SocketQUICTransportParams_decode (data + 1, size - 1,
-                                                  QUIC_ROLE_CLIENT, &decoded,
-                                                  &consumed);
+              = SocketQUICTransportParams_decode (
+                  data + 1, size - 1, QUIC_ROLE_CLIENT, &decoded, &consumed);
           (void)result;
 
           /* Also try from server role */
@@ -125,12 +124,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)result;
 
           /* Test NULL inputs */
-          SocketQUICTransportParams_decode (NULL, 0, QUIC_ROLE_CLIENT, &decoded,
-                                            &consumed);
-          SocketQUICTransportParams_decode (data, size, QUIC_ROLE_CLIENT, NULL,
-                                            &consumed);
-          SocketQUICTransportParams_decode (data, size, QUIC_ROLE_CLIENT,
-                                            &decoded, NULL);
+          SocketQUICTransportParams_decode (
+              NULL, 0, QUIC_ROLE_CLIENT, &decoded, &consumed);
+          SocketQUICTransportParams_decode (
+              data, size, QUIC_ROLE_CLIENT, NULL, &consumed);
+          SocketQUICTransportParams_decode (
+              data, size, QUIC_ROLE_CLIENT, &decoded, NULL);
           break;
         }
 
@@ -233,16 +232,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Test all TLS-related string functions */
 
           /* TLS Result codes */
-          SocketQUICTLS_Result tls_results[]
-              = { QUIC_TLS_OK,          QUIC_TLS_ERROR_NULL,
-                  QUIC_TLS_ERROR_INIT,  QUIC_TLS_ERROR_CERT,
-                  QUIC_TLS_ERROR_KEY,   QUIC_TLS_ERROR_ALPN,
-                  QUIC_TLS_ERROR_TRANSPORT, QUIC_TLS_ERROR_HANDSHAKE,
-                  QUIC_TLS_ERROR_SECRETS, QUIC_TLS_ERROR_ALERT,
-                  QUIC_TLS_ERROR_NO_TLS, QUIC_TLS_ERROR_WANT_READ,
-                  QUIC_TLS_ERROR_WANT_WRITE, QUIC_TLS_ERROR_LEVEL };
-          for (size_t i = 0;
-               i < sizeof (tls_results) / sizeof (tls_results[0]); i++)
+          SocketQUICTLS_Result tls_results[] = { QUIC_TLS_OK,
+                                                 QUIC_TLS_ERROR_NULL,
+                                                 QUIC_TLS_ERROR_INIT,
+                                                 QUIC_TLS_ERROR_CERT,
+                                                 QUIC_TLS_ERROR_KEY,
+                                                 QUIC_TLS_ERROR_ALPN,
+                                                 QUIC_TLS_ERROR_TRANSPORT,
+                                                 QUIC_TLS_ERROR_HANDSHAKE,
+                                                 QUIC_TLS_ERROR_SECRETS,
+                                                 QUIC_TLS_ERROR_ALERT,
+                                                 QUIC_TLS_ERROR_NO_TLS,
+                                                 QUIC_TLS_ERROR_WANT_READ,
+                                                 QUIC_TLS_ERROR_WANT_WRITE,
+                                                 QUIC_TLS_ERROR_LEVEL };
+          for (size_t i = 0; i < sizeof (tls_results) / sizeof (tls_results[0]);
+               i++)
             {
               const char *str = SocketQUICTLS_result_string (tls_results[i]);
               (void)str;
@@ -273,25 +278,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               (SocketQUICTransportParams_Result)data[2]);
 
           /* Test transport param ID strings */
-          SocketQUICTransportParamID ids[] = {
-            QUIC_TP_ORIGINAL_DCID,
-            QUIC_TP_MAX_IDLE_TIMEOUT,
-            QUIC_TP_STATELESS_RESET_TOKEN,
-            QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
-            QUIC_TP_INITIAL_MAX_DATA,
-            QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
-            QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
-            QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
-            QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
-            QUIC_TP_INITIAL_MAX_STREAMS_UNI,
-            QUIC_TP_ACK_DELAY_EXPONENT,
-            QUIC_TP_MAX_ACK_DELAY,
-            QUIC_TP_DISABLE_ACTIVE_MIGRATION,
-            QUIC_TP_PREFERRED_ADDRESS,
-            QUIC_TP_ACTIVE_CONNID_LIMIT,
-            QUIC_TP_INITIAL_SCID,
-            QUIC_TP_RETRY_SCID
-          };
+          SocketQUICTransportParamID ids[]
+              = { QUIC_TP_ORIGINAL_DCID,
+                  QUIC_TP_MAX_IDLE_TIMEOUT,
+                  QUIC_TP_STATELESS_RESET_TOKEN,
+                  QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
+                  QUIC_TP_INITIAL_MAX_DATA,
+                  QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
+                  QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
+                  QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
+                  QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
+                  QUIC_TP_INITIAL_MAX_STREAMS_UNI,
+                  QUIC_TP_ACK_DELAY_EXPONENT,
+                  QUIC_TP_MAX_ACK_DELAY,
+                  QUIC_TP_DISABLE_ACTIVE_MIGRATION,
+                  QUIC_TP_PREFERRED_ADDRESS,
+                  QUIC_TP_ACTIVE_CONNID_LIMIT,
+                  QUIC_TP_INITIAL_SCID,
+                  QUIC_TP_RETRY_SCID };
           for (size_t i = 0; i < sizeof (ids) / sizeof (ids[0]); i++)
             {
               const char *str = SocketQUICTransportParams_id_string (ids[i]);

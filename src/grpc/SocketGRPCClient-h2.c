@@ -2091,6 +2091,432 @@ SocketGRPC_Call_cancel (SocketGRPC_Call_T call)
 }
 
 static int
+grpc_unary_setup_compression (SocketGRPC_Call_T call,
+                              const uint8_t *request_payload,
+                              size_t request_payload_len,
+                              int request_frame_compressed,
+                              Arena_T *compression_arena_out,
+                              unsigned char **compressed_request_out,
+                              const uint8_t **wire_payload_out,
+                              size_t *wire_payload_len_out,
+                              SocketDeflate_Inflater_T *response_inflater_out)
+{
+  Arena_T compression_arena;
+  SocketDeflate_Deflater_T request_deflater;
+
+  *compression_arena_out = NULL;
+  *compressed_request_out = NULL;
+  *wire_payload_out = request_payload;
+  *wire_payload_len_out = request_payload_len;
+  *response_inflater_out = NULL;
+
+  if (!request_frame_compressed
+      && !call->channel->config.enable_response_decompression)
+    return 0;
+
+  compression_arena = Arena_new ();
+  if (compression_arena == NULL)
+    {
+      grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
+      return -1;
+    }
+  *compression_arena_out = compression_arena;
+
+  if (request_frame_compressed)
+    {
+      request_deflater = SocketDeflate_Deflater_new (compression_arena,
+                                                     DEFLATE_LEVEL_DEFAULT);
+      if (request_deflater == NULL
+          || grpc_gzip_compress_payload (request_deflater,
+                                         request_payload,
+                                         request_payload_len,
+                                         compressed_request_out,
+                                         wire_payload_len_out)
+                 != 0)
+        {
+          grpc_call_status_set (call,
+                                SOCKET_GRPC_STATUS_INTERNAL,
+                                "Failed to compress request payload");
+          return -1;
+        }
+      *wire_payload_out = *compressed_request_out;
+    }
+
+  if (call->channel->config.enable_response_decompression)
+    {
+      *response_inflater_out = SocketDeflate_Inflater_new (
+          compression_arena,
+          call->channel->config.max_decompressed_message_bytes);
+      if (*response_inflater_out == NULL)
+        {
+          grpc_call_status_set (
+              call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
+          return -1;
+        }
+    }
+
+  return 0;
+}
+
+static int
+grpc_unary_build_http_request (SocketGRPC_Call_T call,
+                               Arena_T arena,
+                               const uint8_t *wire_request_payload,
+                               size_t wire_request_payload_len,
+                               int request_frame_compressed,
+                               SocketHTTPClient_T *http_client_out,
+                               SocketHTTPClient_Request_T *req_out,
+                               unsigned char **framed_out)
+{
+  SocketHTTPClient_Config cfg;
+  SocketHTTPClient_T http_client;
+  SocketHTTPClient_Request_T req;
+  unsigned char *framed;
+  size_t framed_cap;
+  size_t framed_len = 0;
+  char *url;
+
+  *http_client_out = NULL;
+  *req_out = NULL;
+  *framed_out = NULL;
+
+  url = grpc_build_call_url (call, arena);
+  if (url == NULL)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INVALID_ARGUMENT, "Invalid channel target");
+      return -1;
+    }
+
+  SocketHTTPClient_config_defaults (&cfg);
+  cfg.max_version = HTTP_VERSION_2;
+  cfg.allow_http2_cleartext = call->channel->config.allow_http2_cleartext;
+  cfg.verify_ssl = call->channel->config.verify_peer;
+  cfg.tls_context = call->channel->config.tls_context;
+  cfg.request_timeout_ms = call->config.deadline_ms;
+  cfg.max_response_size = call->channel->config.max_cumulative_inflight_bytes;
+
+  http_client = SocketHTTPClient_new (&cfg);
+  if (http_client == NULL)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INTERNAL, "HTTP client allocation failed");
+      return -1;
+    }
+  *http_client_out = http_client;
+
+  req = SocketHTTPClient_Request_new (http_client, HTTP_METHOD_POST, url);
+  if (req == NULL)
+    {
+      grpc_call_status_set (
+          call,
+          grpc_map_httpclient_error (SocketHTTPClient_last_error (http_client)),
+          "Request initialization failed");
+      return -1;
+    }
+  *req_out = req;
+
+  SocketHTTPClient_Request_timeout (req, call->config.deadline_ms);
+  if (grpc_request_add_required_headers (call, req) != 0)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to set request headers");
+      return -1;
+    }
+
+  framed_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + wire_request_payload_len;
+  framed = (unsigned char *)malloc (framed_cap);
+  if (framed == NULL)
+    {
+      grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
+      return -1;
+    }
+  *framed_out = framed;
+
+  if (SocketGRPC_Frame_encode (request_frame_compressed,
+                               wire_request_payload,
+                               (uint32_t)wire_request_payload_len,
+                               framed,
+                               framed_cap,
+                               &framed_len)
+      != SOCKET_GRPC_WIRE_OK)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to frame request payload");
+      return -1;
+    }
+
+  if (SocketHTTPClient_Request_body (req, framed, framed_len) != 0)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to attach request body");
+      return -1;
+    }
+
+  return 0;
+}
+
+static int
+grpc_unary_open_h2_stream (SocketGRPC_Call_T call,
+                           SocketHTTPClient_T http_client,
+                           SocketHTTPClient_Request_T req,
+                           HTTPPoolEntry **conn_out,
+                           SocketHTTP2_Stream_T *stream_out)
+{
+  HTTPPoolEntry *conn;
+  SocketHTTP2_Conn_T h2conn;
+  SocketHTTP2_Stream_T stream;
+  SocketHTTP_Request http_req;
+
+  *conn_out = NULL;
+  *stream_out = NULL;
+
+  conn = httpclient_connect (http_client, &req->uri);
+  if (conn == NULL)
+    {
+      grpc_call_status_set (
+          call,
+          grpc_map_httpclient_error (SocketHTTPClient_last_error (http_client)),
+          "Connection failed");
+      return -1;
+    }
+  *conn_out = conn;
+
+  httpclient_headers_prepare_request (http_client, req);
+
+  if (conn->version != HTTP_VERSION_2 || conn->proto.h2.conn == NULL)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INTERNAL, "HTTP/2 transport not negotiated");
+      return -1;
+    }
+
+  h2conn = conn->proto.h2.conn;
+  stream = SocketHTTP2_Stream_new (h2conn);
+  if (stream == NULL)
+    {
+      grpc_call_status_set (
+          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to open HTTP/2 stream");
+      return -1;
+    }
+  *stream_out = stream;
+  conn->proto.h2.active_streams++;
+
+  httpclient_http2_build_request (req, &http_req);
+  if (httpclient_http2_send_request (
+          stream, h2conn, &http_req, req->body, req->body_len)
+      < 0)
+    {
+      grpc_call_status_set (call,
+                            SOCKET_GRPC_STATUS_UNAVAILABLE,
+                            "Failed to send HTTP/2 request");
+      return -1;
+    }
+
+  return 0;
+}
+
+static int
+grpc_unary_recv_response (SocketGRPC_Call_T call,
+                          SocketHTTP2_Stream_T stream,
+                          HTTPPoolEntry *conn,
+                          SocketHTTPClient_Response *response,
+                          SocketGRPC_Compression *response_compression_out,
+                          unsigned char **raw_response_out,
+                          size_t *raw_response_len_out,
+                          int *status_code_out)
+{
+  SocketHTTP2_Conn_T h2conn = conn->proto.h2.conn;
+  int end_stream = 0;
+  SocketGRPC_Compression response_compression;
+  SocketGRPC_StatusCode recv_error_status = SOCKET_GRPC_STATUS_UNAVAILABLE;
+  const char *recv_error_message = "Failed to receive response body";
+
+  *response_compression_out = GRPC_COMPRESSION_IDENTITY;
+  *raw_response_out = NULL;
+  *raw_response_len_out = 0;
+
+  if (httpclient_http2_recv_headers (stream, h2conn, response, &end_stream) < 0)
+    {
+      grpc_call_status_set (call,
+                            SOCKET_GRPC_STATUS_UNAVAILABLE,
+                            "Failed to receive response headers");
+      return -1;
+    }
+
+  if (grpc_ingest_response_headers (call, response->headers, end_stream) != 0)
+    {
+      grpc_call_status_set (call,
+                            SOCKET_GRPC_STATUS_INTERNAL,
+                            "Invalid response header metadata");
+      return -1;
+    }
+
+  response_compression
+      = grpc_response_compression_from_headers (response->headers);
+  if (response_compression == GRPC_COMPRESSION_UNSUPPORTED)
+    {
+      *status_code_out = SOCKET_GRPC_STATUS_INTERNAL;
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                            *status_code_out);
+      if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
+        {
+          (void)SocketGRPC_Trailers_set_message (
+              call->response_trailers,
+              "Unsupported response compression encoding");
+        }
+      grpc_call_status_set (call,
+                            SOCKET_GRPC_STATUS_INTERNAL,
+                            "Unsupported response compression encoding");
+      return -1;
+    }
+  if (response_compression == GRPC_COMPRESSION_GZIP
+      && !call->channel->config.enable_response_decompression)
+    {
+      *status_code_out = SOCKET_GRPC_STATUS_INTERNAL;
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                            *status_code_out);
+      if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
+        {
+          (void)SocketGRPC_Trailers_set_message (
+              call->response_trailers, "Response decompression is disabled");
+        }
+      grpc_call_status_set (call,
+                            SOCKET_GRPC_STATUS_INTERNAL,
+                            "Response decompression is disabled");
+      return -1;
+    }
+
+  *response_compression_out = response_compression;
+
+  if (!end_stream)
+    {
+      if (grpc_receive_body_and_trailers (call,
+                                          stream,
+                                          h2conn,
+                                          raw_response_out,
+                                          raw_response_len_out,
+                                          &recv_error_status,
+                                          &recv_error_message)
+          != 0)
+        {
+          *status_code_out = recv_error_status;
+          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                                recv_error_status);
+          if (recv_error_message != NULL
+              && SocketGRPC_Trailers_message (call->response_trailers) == NULL)
+            {
+              (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                                     recv_error_message);
+            }
+          grpc_call_status_set (call, recv_error_status, recv_error_message);
+          return -1;
+        }
+    }
+
+  return 0;
+}
+
+static void
+grpc_unary_finalize_status (SocketGRPC_Call_T call,
+                            int64_t call_deadline_ms,
+                            int response_status_code,
+                            int *status_code_out)
+{
+  if (SocketTimeout_expired (call_deadline_ms))
+    {
+      int existing_status
+          = SocketGRPC_Trailers_has_status (call->response_trailers)
+                ? SocketGRPC_Trailers_status (call->response_trailers)
+                : SOCKET_GRPC_STATUS_OK;
+      if (existing_status == SOCKET_GRPC_STATUS_OK)
+        {
+          (void)SocketGRPC_Trailers_set_status (
+              call->response_trailers, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED);
+          if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
+            {
+              (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                                     "Deadline exceeded");
+            }
+        }
+    }
+
+  if (!SocketGRPC_Trailers_has_status (call->response_trailers))
+    {
+      SocketGRPC_StatusCode mapped
+          = SocketGRPC_http_status_to_grpc (response_status_code);
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers, mapped);
+    }
+
+  *status_code_out = SocketGRPC_Trailers_status (call->response_trailers);
+  grpc_call_status_set (call,
+                        (SocketGRPC_StatusCode)*status_code_out,
+                        SocketGRPC_Trailers_message (call->response_trailers));
+}
+
+static int
+grpc_unary_decode_response (SocketGRPC_Call_T call,
+                            SocketGRPC_Compression response_compression,
+                            SocketDeflate_Inflater_T response_inflater,
+                            Arena_T arena,
+                            const unsigned char *raw_response,
+                            size_t raw_response_len,
+                            uint8_t **response_payload,
+                            size_t *response_payload_len)
+{
+  SocketGRPC_FrameView frame;
+  size_t consumed = 0;
+  size_t max_frame_payload
+      = call->channel->config.max_cumulative_inflight_bytes;
+  SocketGRPC_WireResult parse_rc;
+  SocketGRPC_StatusCode decode_status;
+  const char *decode_message = "Malformed gRPC response frame";
+
+  if (max_frame_payload == 0)
+    max_frame_payload = call->channel->config.max_inbound_message_bytes;
+
+  parse_rc = SocketGRPC_Frame_parse (
+      raw_response, raw_response_len, max_frame_payload, &frame, &consumed);
+  if (parse_rc != SOCKET_GRPC_WIRE_OK || consumed != raw_response_len)
+    {
+      decode_status = parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED
+                          ? SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED
+                          : SOCKET_GRPC_STATUS_INTERNAL;
+      if (parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED)
+        decode_message = "Response exceeds configured inflight limit";
+    }
+  else
+    {
+      decode_status = grpc_decode_frame_payload (call,
+                                                 response_compression,
+                                                 response_inflater,
+                                                 arena,
+                                                 &frame,
+                                                 response_payload,
+                                                 response_payload_len,
+                                                 &decode_message);
+    }
+
+  if (decode_status != SOCKET_GRPC_STATUS_OK)
+    {
+      (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                            decode_status);
+      if (decode_message != NULL
+          && SocketGRPC_Trailers_message (call->response_trailers) == NULL)
+        {
+          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
+                                                decode_status);
+          (void)SocketGRPC_Trailers_set_message (call->response_trailers,
+                                                 decode_message);
+        }
+      grpc_call_status_set (call, decode_status, decode_message);
+      return decode_status;
+    }
+
+  return SOCKET_GRPC_STATUS_OK;
+}
+
+static int
 grpc_call_unary_h2_single_attempt (SocketGRPC_Call_T call,
                                    const uint8_t *request_payload,
                                    size_t request_payload_len,
@@ -2098,32 +2524,23 @@ grpc_call_unary_h2_single_attempt (SocketGRPC_Call_T call,
                                    uint8_t **response_payload,
                                    size_t *response_payload_len)
 {
-  SocketHTTPClient_Config cfg;
   SocketHTTPClient_T http_client = NULL;
   SocketHTTPClient_Request_T req = NULL;
   SocketHTTPClient_Response response = { 0 };
   HTTPPoolEntry *conn = NULL;
-  SocketHTTP_Request http_req;
-  SocketHTTP2_Conn_T h2conn;
   SocketHTTP2_Stream_T stream = NULL;
   unsigned char *framed = NULL;
   unsigned char *compressed_request = NULL;
   const uint8_t *wire_request_payload = request_payload;
   size_t wire_request_payload_len = request_payload_len;
-  size_t framed_cap = 0;
-  size_t framed_len = 0;
   unsigned char *raw_response = NULL;
   size_t raw_response_len = 0;
-  char *url = NULL;
   int status_code = -1;
   int transport_success = 0;
   int64_t call_deadline_ms = 0;
   Arena_T compression_arena = NULL;
-  SocketDeflate_Deflater_T request_deflater = NULL;
   SocketDeflate_Inflater_T response_inflater = NULL;
   SocketGRPC_Compression response_compression = GRPC_COMPRESSION_IDENTITY;
-  SocketGRPC_StatusCode recv_error_status = SOCKET_GRPC_STATUS_UNAVAILABLE;
-  const char *recv_error_message = "Failed to receive response body";
   int request_frame_compressed = 0;
 
   if (call == NULL || request_payload == NULL || arena == NULL
@@ -2146,49 +2563,21 @@ grpc_call_unary_h2_single_attempt (SocketGRPC_Call_T call,
 
   request_frame_compressed
       = call->channel->config.enable_request_compression ? 1 : 0;
-  if (request_frame_compressed
-      || call->channel->config.enable_response_decompression)
+
+  if (grpc_unary_setup_compression (call,
+                                    request_payload,
+                                    request_payload_len,
+                                    request_frame_compressed,
+                                    &compression_arena,
+                                    &compressed_request,
+                                    &wire_request_payload,
+                                    &wire_request_payload_len,
+                                    &response_inflater)
+      != 0)
     {
-      compression_arena = Arena_new ();
       if (compression_arena == NULL)
-        {
-          grpc_call_status_set (
-              call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
-          return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
-        }
-
-      if (request_frame_compressed)
-        {
-          request_deflater = SocketDeflate_Deflater_new (compression_arena,
-                                                         DEFLATE_LEVEL_DEFAULT);
-          if (request_deflater == NULL
-              || grpc_gzip_compress_payload (request_deflater,
-                                             request_payload,
-                                             request_payload_len,
-                                             &compressed_request,
-                                             &wire_request_payload_len)
-                     != 0)
-            {
-              grpc_call_status_set (call,
-                                    SOCKET_GRPC_STATUS_INTERNAL,
-                                    "Failed to compress request payload");
-              goto cleanup;
-            }
-          wire_request_payload = compressed_request;
-        }
-
-      if (call->channel->config.enable_response_decompression)
-        {
-          response_inflater = SocketDeflate_Inflater_new (
-              compression_arena,
-              call->channel->config.max_decompressed_message_bytes);
-          if (response_inflater == NULL)
-            {
-              grpc_call_status_set (
-                  call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
-              goto cleanup;
-            }
-        }
+        return SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED;
+      goto cleanup;
     }
 
   if (wire_request_payload_len > (size_t)UINT32_MAX
@@ -2201,281 +2590,53 @@ grpc_call_unary_h2_single_attempt (SocketGRPC_Call_T call,
     }
 
   call_deadline_ms = SocketTimeout_deadline_ms (call->config.deadline_ms);
-  framed_cap = SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + wire_request_payload_len;
 
   *response_payload = NULL;
   *response_payload_len = 0;
   SocketGRPC_Trailers_clear (call->response_trailers);
 
-  url = grpc_build_call_url (call, arena);
-  if (url == NULL)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INVALID_ARGUMENT, "Invalid channel target");
-      goto cleanup;
-    }
+  if (grpc_unary_build_http_request (call,
+                                     arena,
+                                     wire_request_payload,
+                                     wire_request_payload_len,
+                                     request_frame_compressed,
+                                     &http_client,
+                                     &req,
+                                     &framed)
+      != 0)
+    goto cleanup;
 
-  SocketHTTPClient_config_defaults (&cfg);
-  cfg.max_version = HTTP_VERSION_2;
-  cfg.allow_http2_cleartext = call->channel->config.allow_http2_cleartext;
-  cfg.verify_ssl = call->channel->config.verify_peer;
-  cfg.tls_context = call->channel->config.tls_context;
-  cfg.request_timeout_ms = call->config.deadline_ms;
-  cfg.max_response_size = call->channel->config.max_cumulative_inflight_bytes;
+  if (grpc_unary_open_h2_stream (call, http_client, req, &conn, &stream) != 0)
+    goto cleanup;
 
-  http_client = SocketHTTPClient_new (&cfg);
-  if (http_client == NULL)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INTERNAL, "HTTP client allocation failed");
-      goto cleanup;
-    }
+  if (grpc_unary_recv_response (call,
+                                stream,
+                                conn,
+                                &response,
+                                &response_compression,
+                                &raw_response,
+                                &raw_response_len,
+                                &status_code)
+      != 0)
+    goto cleanup;
 
-  req = SocketHTTPClient_Request_new (http_client, HTTP_METHOD_POST, url);
-  if (req == NULL)
-    {
-      grpc_call_status_set (
-          call,
-          grpc_map_httpclient_error (SocketHTTPClient_last_error (http_client)),
-          "Request initialization failed");
-      goto cleanup;
-    }
-
-  SocketHTTPClient_Request_timeout (req, call->config.deadline_ms);
-  if (grpc_request_add_required_headers (call, req) != 0)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to set request headers");
-      goto cleanup;
-    }
-
-  framed = (unsigned char *)malloc (framed_cap);
-  if (framed == NULL)
-    {
-      grpc_call_status_set (call, SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED, NULL);
-      goto cleanup;
-    }
-  if (SocketGRPC_Frame_encode (request_frame_compressed,
-                               wire_request_payload,
-                               (uint32_t)wire_request_payload_len,
-                               framed,
-                               framed_cap,
-                               &framed_len)
-      != SOCKET_GRPC_WIRE_OK)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to frame request payload");
-      goto cleanup;
-    }
-
-  if (SocketHTTPClient_Request_body (req, framed, framed_len) != 0)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to attach request body");
-      goto cleanup;
-    }
-
-  conn = httpclient_connect (http_client, &req->uri);
-  if (conn == NULL)
-    {
-      grpc_call_status_set (
-          call,
-          grpc_map_httpclient_error (SocketHTTPClient_last_error (http_client)),
-          "Connection failed");
-      goto cleanup;
-    }
-
-  httpclient_headers_prepare_request (http_client, req);
-
-  if (conn->version != HTTP_VERSION_2 || conn->proto.h2.conn == NULL)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INTERNAL, "HTTP/2 transport not negotiated");
-      goto cleanup;
-    }
-
-  h2conn = conn->proto.h2.conn;
-  stream = SocketHTTP2_Stream_new (h2conn);
-  if (stream == NULL)
-    {
-      grpc_call_status_set (
-          call, SOCKET_GRPC_STATUS_INTERNAL, "Failed to open HTTP/2 stream");
-      goto cleanup;
-    }
-  conn->proto.h2.active_streams++;
-
-  httpclient_http2_build_request (req, &http_req);
-  if (httpclient_http2_send_request (
-          stream, h2conn, &http_req, req->body, req->body_len)
-      < 0)
-    {
-      grpc_call_status_set (call,
-                            SOCKET_GRPC_STATUS_UNAVAILABLE,
-                            "Failed to send HTTP/2 request");
-      goto cleanup;
-    }
-
-  {
-    int end_stream = 0;
-    if (httpclient_http2_recv_headers (stream, h2conn, &response, &end_stream)
-        < 0)
-      {
-        grpc_call_status_set (call,
-                              SOCKET_GRPC_STATUS_UNAVAILABLE,
-                              "Failed to receive response headers");
-        goto cleanup;
-      }
-
-    if (grpc_ingest_response_headers (call, response.headers, end_stream) != 0)
-      {
-        grpc_call_status_set (call,
-                              SOCKET_GRPC_STATUS_INTERNAL,
-                              "Invalid response header metadata");
-        goto cleanup;
-      }
-
-    response_compression
-        = grpc_response_compression_from_headers (response.headers);
-    if (response_compression == GRPC_COMPRESSION_UNSUPPORTED)
-      {
-        status_code = SOCKET_GRPC_STATUS_INTERNAL;
-        (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                              status_code);
-        if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
-          {
-            (void)SocketGRPC_Trailers_set_message (
-                call->response_trailers,
-                "Unsupported response compression encoding");
-          }
-        grpc_call_status_set (call,
-                              SOCKET_GRPC_STATUS_INTERNAL,
-                              "Unsupported response compression encoding");
-        goto cleanup;
-      }
-    if (response_compression == GRPC_COMPRESSION_GZIP
-        && !call->channel->config.enable_response_decompression)
-      {
-        status_code = SOCKET_GRPC_STATUS_INTERNAL;
-        (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                              status_code);
-        if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
-          {
-            (void)SocketGRPC_Trailers_set_message (
-                call->response_trailers, "Response decompression is disabled");
-          }
-        grpc_call_status_set (call,
-                              SOCKET_GRPC_STATUS_INTERNAL,
-                              "Response decompression is disabled");
-        goto cleanup;
-      }
-
-    if (!end_stream)
-      {
-        if (grpc_receive_body_and_trailers (call,
-                                            stream,
-                                            h2conn,
-                                            &raw_response,
-                                            &raw_response_len,
-                                            &recv_error_status,
-                                            &recv_error_message)
-            != 0)
-          {
-            status_code = recv_error_status;
-            (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                  recv_error_status);
-            if (recv_error_message != NULL
-                && SocketGRPC_Trailers_message (call->response_trailers)
-                       == NULL)
-              {
-                (void)SocketGRPC_Trailers_set_message (call->response_trailers,
-                                                       recv_error_message);
-              }
-            grpc_call_status_set (call, recv_error_status, recv_error_message);
-            goto cleanup;
-          }
-      }
-  }
-
-  if (SocketTimeout_expired (call_deadline_ms))
-    {
-      int existing_status
-          = SocketGRPC_Trailers_has_status (call->response_trailers)
-                ? SocketGRPC_Trailers_status (call->response_trailers)
-                : SOCKET_GRPC_STATUS_OK;
-      if (existing_status == SOCKET_GRPC_STATUS_OK)
-        {
-          (void)SocketGRPC_Trailers_set_status (
-              call->response_trailers, SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED);
-          if (SocketGRPC_Trailers_message (call->response_trailers) == NULL)
-            {
-              (void)SocketGRPC_Trailers_set_message (call->response_trailers,
-                                                     "Deadline exceeded");
-            }
-        }
-    }
-
-  if (!SocketGRPC_Trailers_has_status (call->response_trailers))
-    {
-      SocketGRPC_StatusCode mapped
-          = SocketGRPC_http_status_to_grpc (response.status_code);
-      (void)SocketGRPC_Trailers_set_status (call->response_trailers, mapped);
-    }
-
-  status_code = SocketGRPC_Trailers_status (call->response_trailers);
-  grpc_call_status_set (call,
-                        (SocketGRPC_StatusCode)status_code,
-                        SocketGRPC_Trailers_message (call->response_trailers));
+  grpc_unary_finalize_status (
+      call, call_deadline_ms, response.status_code, &status_code);
 
   if (status_code == SOCKET_GRPC_STATUS_OK && raw_response != NULL
       && raw_response_len > 0)
     {
-      SocketGRPC_FrameView frame;
-      size_t consumed = 0;
-      size_t max_frame_payload
-          = call->channel->config.max_cumulative_inflight_bytes;
-      SocketGRPC_WireResult parse_rc;
-      SocketGRPC_StatusCode decode_status;
-      const char *decode_message = "Malformed gRPC response frame";
-
-      if (max_frame_payload == 0)
-        max_frame_payload = call->channel->config.max_inbound_message_bytes;
-
-      parse_rc = SocketGRPC_Frame_parse (
-          raw_response, raw_response_len, max_frame_payload, &frame, &consumed);
-      if (parse_rc != SOCKET_GRPC_WIRE_OK || consumed != raw_response_len)
+      int decode_rc = grpc_unary_decode_response (call,
+                                                  response_compression,
+                                                  response_inflater,
+                                                  arena,
+                                                  raw_response,
+                                                  raw_response_len,
+                                                  response_payload,
+                                                  response_payload_len);
+      if (decode_rc != SOCKET_GRPC_STATUS_OK)
         {
-          decode_status = parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED
-                              ? SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED
-                              : SOCKET_GRPC_STATUS_INTERNAL;
-          if (parse_rc == SOCKET_GRPC_WIRE_LENGTH_EXCEEDED)
-            decode_message = "Response exceeds configured inflight limit";
-        }
-      else
-        {
-          decode_status = grpc_decode_frame_payload (call,
-                                                     response_compression,
-                                                     response_inflater,
-                                                     arena,
-                                                     &frame,
-                                                     response_payload,
-                                                     response_payload_len,
-                                                     &decode_message);
-        }
-
-      if (decode_status != SOCKET_GRPC_STATUS_OK)
-        {
-          (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                decode_status);
-          if (decode_message != NULL
-              && SocketGRPC_Trailers_message (call->response_trailers) == NULL)
-            {
-              (void)SocketGRPC_Trailers_set_status (call->response_trailers,
-                                                    decode_status);
-              (void)SocketGRPC_Trailers_set_message (call->response_trailers,
-                                                     decode_message);
-            }
-          grpc_call_status_set (call, decode_status, decode_message);
-          status_code = decode_status;
+          status_code = decode_rc;
           goto cleanup;
         }
     }

@@ -96,22 +96,22 @@ dns_cache_hash_tuple (const char *name,
  * @param tail_ptr  Pointer to tail pointer (e.g., cache->lru_tail).
  * @param entry     Entry to remove (must have lru_prev/lru_next fields).
  */
-#define DNS_LRU_REMOVE(head_ptr, tail_ptr, entry) \
-  do                                              \
-    {                                             \
-      if ((entry)->lru_prev)                      \
+#define DNS_LRU_REMOVE(head_ptr, tail_ptr, entry)        \
+  do                                                     \
+    {                                                    \
+      if ((entry)->lru_prev)                             \
         (entry)->lru_prev->lru_next = (entry)->lru_next; \
-      else                                        \
-        (head_ptr) = (entry)->lru_next;           \
-                                                  \
-      if ((entry)->lru_next)                      \
+      else                                               \
+        (head_ptr) = (entry)->lru_next;                  \
+                                                         \
+      if ((entry)->lru_next)                             \
         (entry)->lru_next->lru_prev = (entry)->lru_prev; \
-      else                                        \
-        (tail_ptr) = (entry)->lru_prev;           \
-                                                  \
-      (entry)->lru_prev = NULL;                   \
-      (entry)->lru_next = NULL;                   \
-    }                                             \
+      else                                               \
+        (tail_ptr) = (entry)->lru_prev;                  \
+                                                         \
+      (entry)->lru_prev = NULL;                          \
+      (entry)->lru_next = NULL;                          \
+    }                                                    \
   while (0)
 
 /**
@@ -143,15 +143,15 @@ dns_cache_hash_tuple (const char *name,
  * @param tail_ptr  Pointer to tail pointer.
  * @param entry     Entry to move to head.
  */
-#define DNS_LRU_TOUCH(head_ptr, tail_ptr, entry)           \
-  do                                                       \
-    {                                                      \
-      if ((entry) != (head_ptr))                           \
-        {                                                  \
-          DNS_LRU_REMOVE ((head_ptr), (tail_ptr), (entry));\
+#define DNS_LRU_TOUCH(head_ptr, tail_ptr, entry)                 \
+  do                                                             \
+    {                                                            \
+      if ((entry) != (head_ptr))                                 \
+        {                                                        \
+          DNS_LRU_REMOVE ((head_ptr), (tail_ptr), (entry));      \
           DNS_LRU_INSERT_HEAD ((head_ptr), (tail_ptr), (entry)); \
-        }                                                  \
-    }                                                      \
+        }                                                        \
+    }                                                            \
   while (0)
 
 #endif /* SOCKETDNSCACHE_PRIVATE_H */

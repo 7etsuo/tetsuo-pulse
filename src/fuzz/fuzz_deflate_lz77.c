@@ -139,8 +139,8 @@ fuzz_lz77_lazy (Arena_T arena, const uint8_t *data, size_t size)
   int chain_limit = (data[0] % 256) + 1;
   int good_length = (data[1] % 32) + 1;
   int nice_length = (data[2] % 258) + 3;
-  SocketDeflate_Matcher_set_limits (matcher, chain_limit, good_length,
-                                    nice_length);
+  SocketDeflate_Matcher_set_limits (
+      matcher, chain_limit, good_length, nice_length);
 
   /* Insert positions */
   for (size_t i = 0; i + DEFLATE_MIN_MATCH <= size; i++)
@@ -155,8 +155,8 @@ fuzz_lz77_lazy (Arena_T arena, const uint8_t *data, size_t size)
       if (SocketDeflate_Matcher_find (matcher, i, &match))
         {
           /* Should we defer this match? */
-          int defer = SocketDeflate_Matcher_should_defer (matcher, i,
-                                                          match.length);
+          int defer
+              = SocketDeflate_Matcher_should_defer (matcher, i, match.length);
           (void)defer; /* Result is valid either way */
         }
     }
@@ -172,7 +172,7 @@ fuzz_huffman_build (Arena_T arena, const uint8_t *data, size_t size)
     return;
 
   /* Use fuzz data to create frequency distribution */
-  unsigned int count = (data[0] % 64) + 1; /* 1-64 symbols */
+  unsigned int count = (data[0] % 64) + 1;    /* 1-64 symbols */
   unsigned int max_bits = (data[1] % 15) + 1; /* 1-15 bits */
 
   if (size < 4 + count * 4)
@@ -281,8 +281,8 @@ fuzz_rle_encode (Arena_T arena, const uint8_t *data, size_t size)
 
   /* Encode */
   uint8_t output[600]; /* Max: count * 2 for worst case */
-  size_t encoded = SocketDeflate_encode_code_lengths (lengths, count, output,
-                                                      sizeof (output));
+  size_t encoded = SocketDeflate_encode_code_lengths (
+      lengths, count, output, sizeof (output));
 
   /* Output should not exceed reasonable bounds */
   assert (encoded <= count * 2);
@@ -322,8 +322,8 @@ fuzz_length_roundtrip (Arena_T arena, const uint8_t *data, size_t size)
 
   /* Decode and verify roundtrip */
   unsigned int decoded;
-  SocketDeflate_Result result = SocketDeflate_decode_length (code, extra,
-                                                             &decoded);
+  SocketDeflate_Result result
+      = SocketDeflate_decode_length (code, extra, &decoded);
   assert (result == DEFLATE_OK);
   assert (decoded == length);
 }
@@ -356,8 +356,8 @@ fuzz_distance_roundtrip (Arena_T arena, const uint8_t *data, size_t size)
 
   /* Decode and verify roundtrip */
   unsigned int decoded;
-  SocketDeflate_Result result = SocketDeflate_decode_distance (code, extra,
-                                                               &decoded);
+  SocketDeflate_Result result
+      = SocketDeflate_decode_distance (code, extra, &decoded);
   assert (result == DEFLATE_OK);
   assert (decoded == distance);
 }
@@ -395,13 +395,14 @@ fuzz_combined (Arena_T arena, const uint8_t *data, size_t size)
         {
           /* Count length code frequency */
           unsigned int code, extra, extra_bits;
-          SocketDeflate_encode_length (match.length, &code, &extra, &extra_bits);
+          SocketDeflate_encode_length (
+              match.length, &code, &extra, &extra_bits);
           if (code < DEFLATE_LITLEN_CODES)
             litlen_freqs[code]++;
 
           /* Count distance code frequency */
-          SocketDeflate_encode_distance (match.distance, &code, &extra,
-                                         &extra_bits);
+          SocketDeflate_encode_distance (
+              match.distance, &code, &extra, &extra_bits);
           if (code < DEFLATE_DISTANCE_CODES)
             dist_freqs[code]++;
 
@@ -421,21 +422,25 @@ fuzz_combined (Arena_T arena, const uint8_t *data, size_t size)
   uint8_t litlen_lengths[DEFLATE_LITLEN_CODES];
   uint8_t dist_lengths[DEFLATE_DISTANCE_CODES];
 
-  SocketDeflate_build_code_lengths (litlen_freqs, litlen_lengths,
-                                    DEFLATE_LITLEN_CODES, DEFLATE_MAX_BITS,
+  SocketDeflate_build_code_lengths (litlen_freqs,
+                                    litlen_lengths,
+                                    DEFLATE_LITLEN_CODES,
+                                    DEFLATE_MAX_BITS,
                                     arena);
-  SocketDeflate_build_code_lengths (dist_freqs, dist_lengths,
-                                    DEFLATE_DISTANCE_CODES, DEFLATE_MAX_BITS,
+  SocketDeflate_build_code_lengths (dist_freqs,
+                                    dist_lengths,
+                                    DEFLATE_DISTANCE_CODES,
+                                    DEFLATE_MAX_BITS,
                                     arena);
 
   /* Generate canonical codes */
   SocketDeflate_HuffmanCode litlen_codes[DEFLATE_LITLEN_CODES];
   SocketDeflate_HuffmanCode dist_codes[DEFLATE_DISTANCE_CODES];
 
-  SocketDeflate_generate_codes (litlen_lengths, litlen_codes,
-                                DEFLATE_LITLEN_CODES);
-  SocketDeflate_generate_codes (dist_lengths, dist_codes,
-                                DEFLATE_DISTANCE_CODES);
+  SocketDeflate_generate_codes (
+      litlen_lengths, litlen_codes, DEFLATE_LITLEN_CODES);
+  SocketDeflate_generate_codes (
+      dist_lengths, dist_codes, DEFLATE_DISTANCE_CODES);
 
   /* Verify all generated codes */
   for (unsigned int i = 0; i < DEFLATE_LITLEN_CODES; i++)

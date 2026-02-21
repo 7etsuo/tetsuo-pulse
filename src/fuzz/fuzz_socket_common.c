@@ -62,8 +62,7 @@ parse_int32 (const uint8_t *data, size_t len)
   if (len >= 4)
     {
       return (int32_t)((uint32_t)data[0] | ((uint32_t)data[1] << 8)
-                       | ((uint32_t)data[2] << 16)
-                       | ((uint32_t)data[3] << 24));
+                       | ((uint32_t)data[2] << 16) | ((uint32_t)data[3] << 24));
     }
   if (len >= 2)
     {
@@ -98,10 +97,7 @@ parse_size_t (const uint8_t *data, size_t len)
  * Returns bytes consumed
  */
 static size_t
-extract_string (const uint8_t *data,
-                size_t len,
-                char *str_out,
-                size_t str_max)
+extract_string (const uint8_t *data, size_t len, char *str_out, size_t str_max)
 {
   size_t str_len = 0;
 
@@ -417,8 +413,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           const char *result = SocketCommon_normalize_wildcard_host (hostname);
 
           /* Should return NULL for "0.0.0.0", "::", or NULL input */
-          if (strcmp (hostname, "0.0.0.0") == 0
-              || strcmp (hostname, "::") == 0)
+          if (strcmp (hostname, "0.0.0.0") == 0 || strcmp (hostname, "::") == 0)
             {
               assert (result == NULL);
             }

@@ -19,7 +19,8 @@
  * - Preferred address parsing
  * - Roundtrip verification
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_quic_transport_params
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_quic_transport_params
  * ./fuzz_quic_transport_params -fork=16 -max_len=4096
  */
 
@@ -89,9 +90,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             SocketQUICTransportParams_T params;
             SocketQUICTransportParams_init (&params);
             size_t consumed = 0;
-            res = SocketQUICTransportParams_decode (data + 1, size - 1,
-                                                    QUIC_ROLE_CLIENT, &params,
-                                                    &consumed);
+            res = SocketQUICTransportParams_decode (
+                data + 1, size - 1, QUIC_ROLE_CLIENT, &params, &consumed);
             (void)res;
             (void)consumed;
 
@@ -112,9 +112,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             SocketQUICTransportParams_T params;
             SocketQUICTransportParams_init (&params);
             size_t consumed = 0;
-            res = SocketQUICTransportParams_decode (data + 1, size - 1,
-                                                    QUIC_ROLE_SERVER, &params,
-                                                    &consumed);
+            res = SocketQUICTransportParams_decode (
+                data + 1, size - 1, QUIC_ROLE_SERVER, &params, &consumed);
             (void)res;
 
             /* Check server-specific fields */
@@ -265,17 +264,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketQUICTransportParams_T params;
         SocketQUICTransportParams_init (&params);
 
-        size_t client_size
-            = SocketQUICTransportParams_encoded_size (&params, QUIC_ROLE_CLIENT);
-        size_t server_size
-            = SocketQUICTransportParams_encoded_size (&params, QUIC_ROLE_SERVER);
+        size_t client_size = SocketQUICTransportParams_encoded_size (
+            &params, QUIC_ROLE_CLIENT);
+        size_t server_size = SocketQUICTransportParams_encoded_size (
+            &params, QUIC_ROLE_SERVER);
         (void)client_size;
         (void)server_size;
 
         /* With defaults set */
         SocketQUICTransportParams_set_defaults (&params, QUIC_ROLE_CLIENT);
-        client_size
-            = SocketQUICTransportParams_encoded_size (&params, QUIC_ROLE_CLIENT);
+        client_size = SocketQUICTransportParams_encoded_size (&params,
+                                                              QUIC_ROLE_CLIENT);
         (void)client_size;
       }
       break;
@@ -332,9 +331,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             remote.max_idle_timeout = read_u64 (data + 9);
           }
 
-        uint64_t effective
-            = SocketQUICTransportParams_effective_idle_timeout (&local,
-                                                                &remote);
+        uint64_t effective = SocketQUICTransportParams_effective_idle_timeout (
+            &local, &remote);
         (void)effective;
       }
       break;
@@ -351,16 +349,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       size_t consumed = 0;
 
       /* Try both roles */
-      res = SocketQUICTransportParams_decode (data + 1, size - 1,
-                                              QUIC_ROLE_CLIENT, &params,
-                                              &consumed);
+      res = SocketQUICTransportParams_decode (
+          data + 1, size - 1, QUIC_ROLE_CLIENT, &params, &consumed);
       (void)res;
 
       SocketQUICTransportParams_init (&params);
       consumed = 0;
-      res = SocketQUICTransportParams_decode (data + 1, size - 1,
-                                              QUIC_ROLE_SERVER, &params,
-                                              &consumed);
+      res = SocketQUICTransportParams_decode (
+          data + 1, size - 1, QUIC_ROLE_SERVER, &params, &consumed);
       (void)res;
     }
 
@@ -369,8 +365,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     const char *s1 = SocketQUICTransportParams_result_string (QUIC_TP_OK);
     const char *s2
         = SocketQUICTransportParams_result_string (QUIC_TP_ERROR_INVALID_VALUE);
-    const char *s3 = SocketQUICTransportParams_id_string (QUIC_TP_MAX_IDLE_TIMEOUT);
-    const char *s4 = SocketQUICTransportParams_id_string ((SocketQUICTransportParamID)0xFFFF);
+    const char *s3
+        = SocketQUICTransportParams_id_string (QUIC_TP_MAX_IDLE_TIMEOUT);
+    const char *s4 = SocketQUICTransportParams_id_string (
+        (SocketQUICTransportParamID)0xFFFF);
     (void)s1;
     (void)s2;
     (void)s3;

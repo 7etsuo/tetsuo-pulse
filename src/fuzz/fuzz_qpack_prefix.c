@@ -73,8 +73,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   uint64_t max_table_capacity
       = (val1 % SOCKETQPACK_MAX_TABLE_SIZE) + 1; /* 1 to 64KB */
   uint64_t max_entries = SocketQPACK_compute_max_entries (max_table_capacity);
-  uint64_t total_insert_count = val2 % 100000;                       /* 0-99999 */
-  uint64_t required_insert_count = val3 % (total_insert_count + 1);  /* 0-TIC */
+  uint64_t total_insert_count = val2 % 100000; /* 0-99999 */
+  uint64_t required_insert_count = val3 % (total_insert_count + 1); /* 0-TIC */
   uint64_t base = (val1 % (required_insert_count + 10)); /* Allow some range */
 
   SocketQPACK_Result res;
@@ -86,8 +86,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
     case OP_ENCODE_PREFIX:
       {
-        res = SocketQPACK_encode_prefix (required_insert_count, base,
-                                         max_entries, output, sizeof (output),
+        res = SocketQPACK_encode_prefix (required_insert_count,
+                                         base,
+                                         max_entries,
+                                         output,
+                                         sizeof (output),
                                          &bytes_written);
         (void)res;
         (void)bytes_written;
@@ -100,8 +103,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (size > 25)
           {
             SocketQPACK_FieldSectionPrefix prefix = { 0 };
-            res = SocketQPACK_decode_prefix (data + 25, size - 25, max_entries,
-                                             total_insert_count, &prefix,
+            res = SocketQPACK_decode_prefix (data + 25,
+                                             size - 25,
+                                             max_entries,
+                                             total_insert_count,
+                                             &prefix,
                                              &bytes_consumed);
             (void)res;
             (void)prefix.required_insert_count;
@@ -127,9 +133,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     case OP_ENCODE_RIC:
       {
         uint64_t encoded_ric = 0;
-        res = SocketQPACK_encode_required_insert_count (required_insert_count,
-                                                        max_entries,
-                                                        &encoded_ric);
+        res = SocketQPACK_encode_required_insert_count (
+            required_insert_count, max_entries, &encoded_ric);
         (void)res;
         (void)encoded_ric;
       }
@@ -151,7 +156,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Test with various capacities */
         uint64_t cap1 = SocketQPACK_compute_max_entries (0);
         uint64_t cap2 = SocketQPACK_compute_max_entries (32);
-        uint64_t cap3 = SocketQPACK_compute_max_entries (SOCKETQPACK_MAX_TABLE_SIZE);
+        uint64_t cap3
+            = SocketQPACK_compute_max_entries (SOCKETQPACK_MAX_TABLE_SIZE);
         uint64_t cap4 = SocketQPACK_compute_max_entries (val1);
         uint64_t cap5 = SocketQPACK_max_entries (val2); /* Test alias */
         (void)cap1;
@@ -171,12 +177,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint64_t ric = required_insert_count;
         uint64_t b = (ric > 0) ? (ric - (val2 % ric) % ric) : 0;
 
-        res = SocketQPACK_encode_prefix (ric, b, max_entries, output,
-                                         sizeof (output), &bytes_written);
+        res = SocketQPACK_encode_prefix (
+            ric, b, max_entries, output, sizeof (output), &bytes_written);
         if (res == QPACK_OK && bytes_written > 0)
           {
-            res = SocketQPACK_decode_prefix (output, bytes_written, max_entries,
-                                             total_insert_count, &decoded,
+            res = SocketQPACK_decode_prefix (output,
+                                             bytes_written,
+                                             max_entries,
+                                             total_insert_count,
+                                             &decoded,
                                              &bytes_consumed);
             (void)decoded.required_insert_count;
             (void)decoded.base;
@@ -191,9 +200,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint64_t encoded_ric = 0;
         uint64_t decoded_ric = 0;
 
-        res = SocketQPACK_encode_required_insert_count (required_insert_count,
-                                                        max_entries,
-                                                        &encoded_ric);
+        res = SocketQPACK_encode_required_insert_count (
+            required_insert_count, max_entries, &encoded_ric);
         if (res == QPACK_OK)
           {
             res = SocketQPACK_decode_required_insert_count (
@@ -212,18 +220,27 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             SocketQPACK_FieldSectionPrefix prefix = { 0 };
             /* Try with different max_entries values */
-            res = SocketQPACK_decode_prefix (data + 25, size - 25, 1,
-                                             total_insert_count, &prefix,
+            res = SocketQPACK_decode_prefix (data + 25,
+                                             size - 25,
+                                             1,
+                                             total_insert_count,
+                                             &prefix,
                                              &bytes_consumed);
             (void)res;
 
-            res = SocketQPACK_decode_prefix (data + 25, size - 25, 128,
-                                             total_insert_count, &prefix,
+            res = SocketQPACK_decode_prefix (data + 25,
+                                             size - 25,
+                                             128,
+                                             total_insert_count,
+                                             &prefix,
                                              &bytes_consumed);
             (void)res;
 
-            res = SocketQPACK_decode_prefix (data + 25, size - 25, 2048,
-                                             total_insert_count, &prefix,
+            res = SocketQPACK_decode_prefix (data + 25,
+                                             size - 25,
+                                             2048,
+                                             total_insert_count,
+                                             &prefix,
                                              &bytes_consumed);
             (void)res;
           }
@@ -246,19 +263,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       (void)res;
 
       /* Test with zero max_entries */
-      res = SocketQPACK_encode_prefix (1, 1, 0, output, sizeof (output),
-                                       &bytes_written);
+      res = SocketQPACK_encode_prefix (
+          1, 1, 0, output, sizeof (output), &bytes_written);
       (void)res;
 
       /* Test NULL pointers (should not crash) */
       res = SocketQPACK_encode_prefix (1, 1, 128, NULL, 0, &bytes_written);
       (void)res;
 
-      res = SocketQPACK_encode_prefix (1, 1, 128, output, sizeof (output), NULL);
+      res = SocketQPACK_encode_prefix (
+          1, 1, 128, output, sizeof (output), NULL);
       (void)res;
 
-      res = SocketQPACK_decode_prefix (data + 25, size - 25, 128, 1000, NULL,
-                                       &bytes_consumed);
+      res = SocketQPACK_decode_prefix (
+          data + 25, size - 25, 128, 1000, NULL, &bytes_consumed);
       (void)res;
 
       res = SocketQPACK_validate_prefix (NULL, 1000);

@@ -309,11 +309,8 @@ socketlog_append_literal (char *buffer,
 }
 
 static int
-socketlog_append_escaped_value (char *buffer,
-                                size_t *pos,
-                                size_t bufsize,
-                                const char *src,
-                                int key_mode)
+socketlog_append_escaped_value (
+    char *buffer, size_t *pos, size_t bufsize, const char *src, int key_mode)
 {
   const unsigned char *p = (const unsigned char *)src;
 

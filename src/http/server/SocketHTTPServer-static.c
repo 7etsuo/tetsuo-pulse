@@ -572,6 +572,104 @@ static_file_set_headers (ServerConnection *conn,
   SocketHTTP_Headers_set (conn->response_headers, "Accept-Ranges", "bytes");
 }
 
+static int
+handle_unsatisfiable_range (ServerConnection *conn, off_t file_size)
+{
+  char content_range_buf[SOCKETHTTP_CONTENT_RANGE_BUFSIZE];
+
+  conn->response_status = 416;
+  snprintf (content_range_buf,
+            sizeof (content_range_buf),
+            "bytes */%ld",
+            (long)file_size);
+  SocketHTTP_Headers_set (
+      conn->response_headers, "Content-Range", content_range_buf);
+  conn->response_body = NULL;
+  conn->response_body_len = 0;
+  return 1;
+}
+
+static int
+open_and_verify_file (const char *resolved_path, struct stat *st)
+{
+  int fd;
+  struct stat st_verify;
+
+#ifdef O_NOFOLLOW
+  fd = open (resolved_path, O_RDONLY | O_NOFOLLOW);
+#else
+  fd = open (resolved_path, O_RDONLY);
+#endif
+  if (fd < 0)
+    return -1;
+
+  if (fstat (fd, &st_verify) < 0 || !S_ISREG (st_verify.st_mode))
+    {
+      close (fd);
+      return -1;
+    }
+
+  if (st_verify.st_dev != st->st_dev || st_verify.st_ino != st->st_ino)
+    {
+      close (fd);
+      return -1;
+    }
+
+  st->st_size = st_verify.st_size;
+  return fd;
+}
+
+static int
+send_response_headers (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  char header_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
+  SocketHTTP_Response response;
+
+  memset (&response, 0, sizeof (response));
+  response.version = HTTP_VERSION_1_1;
+  response.status_code = conn->response_status;
+  response.headers = conn->response_headers;
+
+  ssize_t header_len = SocketHTTP1_serialize_response (
+      &response, header_buf, sizeof (header_buf));
+  if (header_len < 0
+      || connection_send_data (server, conn, header_buf, (size_t)header_len)
+             < 0)
+    return -1;
+
+  conn->response_headers_sent = 1;
+  return 0;
+}
+
+static int
+sendfile_transfer (ServerConnection *conn, int fd, off_t start, off_t end)
+{
+  off_t offset = start;
+  size_t remaining = (size_t)(end - start + 1);
+
+  while (remaining > 0)
+    {
+      ssize_t sent
+          = sendfile (Socket_fd (conn->socket), fd, &offset, remaining);
+
+      if (sent < 0)
+        {
+          if (is_sendfile_retry_error (errno))
+            continue;
+          return -1;
+        }
+
+      if (sent == 0)
+        break;
+
+      remaining -= (size_t)sent;
+      SocketMetrics_counter_add (SOCKET_CTR_HTTP_SERVER_BYTES_SENT,
+                                 (uint64_t)sent);
+    }
+
+  return 0;
+}
+
 /**
  * serve_static_file - Serve a static file with full HTTP semantics
  * @server: HTTP server
@@ -597,7 +695,6 @@ server_serve_static_file (SocketHTTPServer_T server,
   char resolved_path[HTTPSERVER_STATIC_MAX_PATH];
   char date_buf[SOCKETHTTP_DATE_BUFSIZE];
   char last_modified_buf[SOCKETHTTP_DATE_BUFSIZE];
-  char content_range_buf[SOCKETHTTP_CONTENT_RANGE_BUFSIZE];
   struct stat st;
   const char *mime_type;
   const char *if_modified_since;
@@ -607,7 +704,6 @@ server_serve_static_file (SocketHTTPServer_T server,
   int use_range = 0;
   int fd = -1;
   int result = 0;
-  ssize_t sent;
 
   if (static_file_resolve_path (
           route, file_path, resolved_path, sizeof (resolved_path), &st)
@@ -616,7 +712,6 @@ server_serve_static_file (SocketHTTPServer_T server,
 
   mime_type = get_mime_type (resolved_path);
 
-  /* Check If-Modified-Since header */
   if_modified_since
       = SocketHTTP_Headers_get_n (conn->request->headers,
                                   "If-Modified-Since",
@@ -625,63 +720,19 @@ server_serve_static_file (SocketHTTPServer_T server,
           conn, if_modified_since, st.st_mtime, date_buf, last_modified_buf))
     return 1;
 
-  /* Check Range header for partial content */
   range_header = SocketHTTP_Headers_get_n (
       conn->request->headers, "Range", STRLEN_LIT ("Range"));
   if (range_header != NULL && conn->request->method == HTTP_METHOD_GET)
     {
       if (!parse_range_header (
               range_header, st.st_size, &range_start, &range_end))
-        {
-          conn->response_status = 416;
-          snprintf (content_range_buf,
-                    sizeof (content_range_buf),
-                    "bytes */%ld",
-                    (long)st.st_size);
-          SocketHTTP_Headers_set (
-              conn->response_headers, "Content-Range", content_range_buf);
-          conn->response_body = NULL;
-          conn->response_body_len = 0;
-          return 1;
-        }
+        return handle_unsatisfiable_range (conn, st.st_size);
       use_range = 1;
     }
 
-    /* Open with O_NOFOLLOW to prevent symlink attacks.
-     * Re-validate file type after open to prevent TOCTOU race. */
-#ifdef O_NOFOLLOW
-  fd = open (resolved_path, O_RDONLY | O_NOFOLLOW);
-#else
-  fd = open (resolved_path, O_RDONLY);
-#endif
+  fd = open_and_verify_file (resolved_path, &st);
   if (fd < 0)
     return 0;
-
-  /* Re-check file type with fstat() to prevent TOCTOU race between
-   * initial stat() and open() - file could have been replaced.
-   * Also verify it's the same file by comparing inode numbers, and
-   * use the verified size to prevent inconsistencies. */
-  {
-    struct stat st_verify;
-    if (fstat (fd, &st_verify) < 0 || !S_ISREG (st_verify.st_mode))
-      {
-        close (fd);
-        return 0;
-      }
-
-    /* Verify this is the same file (same device and inode) */
-    if (st_verify.st_dev != st.st_dev || st_verify.st_ino != st.st_ino)
-      {
-        close (fd);
-        return 0;
-      }
-
-    /* Use the verified size for subsequent operations to avoid
-     * inconsistencies if file size changed between stat() and open().
-     * Note: We don't update st_mtime because it was already used for
-     * conditional GET processing before the file was opened. */
-    st.st_size = st_verify.st_size;
-  }
 
   if (!use_range)
     {
@@ -691,7 +742,6 @@ server_serve_static_file (SocketHTTPServer_T server,
   static_file_set_headers (
       conn, &st, mime_type, use_range, range_start, range_end);
 
-  /* For HEAD requests, don't send body */
   if (conn->request->method == HTTP_METHOD_HEAD)
     {
       conn->response_body = NULL;
@@ -700,53 +750,17 @@ server_serve_static_file (SocketHTTPServer_T server,
       goto cleanup;
     }
 
-  /* Send response headers first */
-  {
-    char header_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
-    SocketHTTP_Response response;
-    memset (&response, 0, sizeof (response));
-    response.version = HTTP_VERSION_1_1;
-    response.status_code = conn->response_status;
-    response.headers = conn->response_headers;
+  if (send_response_headers (server, conn) < 0)
+    {
+      result = -1;
+      goto cleanup;
+    }
 
-    ssize_t header_len = SocketHTTP1_serialize_response (
-        &response, header_buf, sizeof (header_buf));
-    if (header_len < 0
-        || connection_send_data (server, conn, header_buf, (size_t)header_len)
-               < 0)
-      {
-        result = -1;
-        goto cleanup;
-      }
-  }
-
-  conn->response_headers_sent = 1;
-
-  /* Use sendfile() for zero-copy file transfer */
-  {
-    off_t offset = range_start;
-    size_t remaining = (size_t)(range_end - range_start + 1);
-
-    while (remaining > 0)
-      {
-        sent = sendfile (Socket_fd (conn->socket), fd, &offset, remaining);
-
-        if (sent < 0)
-          {
-            if (is_sendfile_retry_error (errno))
-              continue;
-            result = -1;
-            goto cleanup;
-          }
-
-        if (sent == 0)
-          break;
-
-        remaining -= (size_t)sent;
-        SocketMetrics_counter_add (SOCKET_CTR_HTTP_SERVER_BYTES_SENT,
-                                   (uint64_t)sent);
-      }
-  }
+  if (sendfile_transfer (conn, fd, range_start, range_end) < 0)
+    {
+      result = -1;
+      goto cleanup;
+    }
 
   conn->response_finished = 1;
   conn->response_body = NULL;

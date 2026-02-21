@@ -48,7 +48,8 @@ int server_handle_parsed_request (SocketHTTPServer_T server,
 int server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn);
 
 /**
- * server_header_has_token_ci - Check if header contains token (case-insensitive)
+ * server_header_has_token_ci - Check if header contains token
+ * (case-insensitive)
  * @value: Header value string (e.g., "Upgrade, HTTP2-Settings")
  * @token: Token to search for (e.g., "upgrade")
  *
@@ -76,7 +77,8 @@ int server_decode_http2_settings (Arena_T arena,
                                   size_t *out_len);
 
 /**
- * should_copy_header_to_h2 - Check if header should be copied during h2c upgrade
+ * should_copy_header_to_h2 - Check if header should be copied during h2c
+ * upgrade
  * @name: Header name
  * @value: Header value
  *
@@ -112,14 +114,15 @@ int server_process_streaming_body (SocketHTTPServer_T server,
  * Returns: Number of requests processed (0 or 1)
  *
  * Handles both streaming and buffering modes for HTTP/1.1 request bodies:
- * - Streaming mode: Invokes callback for each chunk via server_process_streaming_body
+ * - Streaming mode: Invokes callback for each chunk via
+ * server_process_streaming_body
  * - Chunked/until-close: Uses dynamic SocketBuf_T with size limit enforcement
  * - Content-Length: Uses fixed buffer with DoS prevention
  *
  * Enforces max_body_size limit and sends 413 Payload Too Large if exceeded.
  * Transitions to CONN_STATE_HANDLING when body is complete.
  */
-int server_process_body_reading (SocketHTTPServer_T server,
-                                 ServerConnection *conn);
+int
+server_process_body_reading (SocketHTTPServer_T server, ServerConnection *conn);
 
 #endif /* SOCKETHTTPSERVER_HTTP1_INCLUDED */

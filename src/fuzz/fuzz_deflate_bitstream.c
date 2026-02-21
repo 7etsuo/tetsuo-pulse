@@ -19,7 +19,8 @@
  * - Edge cases: empty input, partial bytes, boundary conditions
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON && make fuzz_deflate_bitstream
- * Run:   ./fuzz_deflate_bitstream corpus/deflate_bitstream/ -fork=16 -max_len=256
+ * Run:   ./fuzz_deflate_bitstream corpus/deflate_bitstream/ -fork=16
+ * -max_len=256
  */
 
 #include <stddef.h>
@@ -163,8 +164,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Verify reversing twice gives original (masked to nbits) */
         uint32_t mask = (1U << nbits) - 1;
-        uint32_t double_reversed
-            = SocketDeflate_reverse_bits (reversed, nbits);
+        uint32_t double_reversed = SocketDeflate_reverse_bits (reversed, nbits);
         (void)(double_reversed == (input_val & mask));
       }
       break;
@@ -245,9 +245,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       }
       break;
 
-    /*
-     * Writer Operations
-     */
+      /*
+       * Writer Operations
+       */
 
     case OP_WRITE_BITS:
       {

@@ -41,9 +41,8 @@
 /** Number of secrets to try (current + previous for rotation) */
 #define COOKIE_SECRET_COUNT 2
 
-_Static_assert (
-    SOCKET_DTLS_COOKIE_LEN > COOKIE_TIMESTAMP_LEN,
-    "DTLS cookie must be large enough to store timestamp + tag");
+_Static_assert (SOCKET_DTLS_COOKIE_LEN > COOKIE_TIMESTAMP_LEN,
+                "DTLS cookie must be large enough to store timestamp + tag");
 
 static uint32_t
 dtls_cookie_time_seconds (void)
@@ -183,9 +182,8 @@ try_verify_cookie (const unsigned char *cookie,
     return 0;
 
   size_t tag_len = SOCKET_DTLS_COOKIE_LEN - COOKIE_TIMESTAMP_LEN;
-  return SocketCrypto_secure_compare (cookie + COOKIE_TIMESTAMP_LEN,
-                                      expected,
-                                      tag_len)
+  return SocketCrypto_secure_compare (
+             cookie + COOKIE_TIMESTAMP_LEN, expected, tag_len)
          == 0;
 }
 
@@ -306,22 +304,13 @@ dtls_cookie_verify_cb (SSL *ssl,
 
   unsigned char expected[SOCKET_DTLS_COOKIE_LEN];
 
-  if (try_verify_cookie (cookie,
-                         secret,
-                         addr,
-                         peer_len,
-                         timestamp,
-                         expected))
+  if (try_verify_cookie (cookie, secret, addr, peer_len, timestamp, expected))
     {
       verified = 1;
     }
   else if (has_prev
-           && try_verify_cookie (cookie,
-                                 prev_secret,
-                                 addr,
-                                 peer_len,
-                                 timestamp,
-                                 expected))
+           && try_verify_cookie (
+               cookie, prev_secret, addr, peer_len, timestamp, expected))
     {
       verified = 1;
     }
