@@ -99,7 +99,8 @@ SocketDeflate_Matcher_new (Arena_T arena)
 
 void
 SocketDeflate_Matcher_init (SocketDeflate_Matcher_T matcher,
-                            const uint8_t *data, size_t size)
+                            const uint8_t *data,
+                            size_t size)
 {
   /* Clear hash table */
   memset (matcher->head, 0, sizeof (matcher->head));
@@ -112,7 +113,9 @@ SocketDeflate_Matcher_init (SocketDeflate_Matcher_T matcher,
 
 void
 SocketDeflate_Matcher_set_limits (SocketDeflate_Matcher_T matcher,
-                                  int chain_limit, int good_len, int nice_len)
+                                  int chain_limit,
+                                  int good_len,
+                                  int nice_len)
 {
   if (chain_limit > 0)
     matcher->chain_limit = chain_limit;
@@ -156,7 +159,9 @@ get_next_in_chain (SocketDeflate_Matcher_T matcher, size_t cur)
  * Returns 0 if quick-reject, else extends and returns match length.
  */
 static size_t
-try_match (const uint8_t *scan, const uint8_t *scan_end, const uint8_t *cmp,
+try_match (const uint8_t *scan,
+           const uint8_t *scan_end,
+           const uint8_t *cmp,
            size_t best_len)
 {
   /* Quick reject: byte at best_len doesn't match */
@@ -181,7 +186,8 @@ try_match (const uint8_t *scan, const uint8_t *scan_end, const uint8_t *cmp,
 }
 
 int
-SocketDeflate_Matcher_find (SocketDeflate_Matcher_T matcher, size_t pos,
+SocketDeflate_Matcher_find (SocketDeflate_Matcher_T matcher,
+                            size_t pos,
                             SocketDeflate_Match *match)
 {
   uint32_t hash;
@@ -249,7 +255,8 @@ SocketDeflate_Matcher_find (SocketDeflate_Matcher_T matcher, size_t pos,
 }
 
 int
-SocketDeflate_Matcher_should_defer (SocketDeflate_Matcher_T matcher, size_t pos,
+SocketDeflate_Matcher_should_defer (SocketDeflate_Matcher_T matcher,
+                                    size_t pos,
                                     unsigned int cur_len)
 {
   SocketDeflate_Match lookahead;

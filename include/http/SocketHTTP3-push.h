@@ -96,8 +96,8 @@ SocketHTTP3_Conn_open_push_stream (SocketHTTP3_Conn_T conn, uint64_t push_id);
  * @param userdata  User context passed to callback.
  */
 void SocketHTTP3_Conn_on_push (SocketHTTP3_Conn_T conn,
-                                SocketHTTP3_PushCallback cb,
-                                void *userdata);
+                               SocketHTTP3_PushCallback cb,
+                               void *userdata);
 
 /**
  * @brief Send MAX_PUSH_ID on the control stream (client only).

@@ -70,10 +70,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           int is_handshake = data[1] & 1;
           uint64_t max_ack_delay = read_u64 (data + 2);
 
-          SocketQUICAckState_T state
-              = SocketQUICAck_new (arena, is_handshake,
-                                   max_ack_delay % QUIC_ACK_DEFAULT_MAX_DELAY_US
-                                       + 1);
+          SocketQUICAckState_T state = SocketQUICAck_new (
+              arena,
+              is_handshake,
+              max_ack_delay % QUIC_ACK_DEFAULT_MAX_DELAY_US + 1);
           if (!state)
             break;
 
@@ -119,9 +119,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Test ACK frame encoding */
           int is_handshake = data[1] & 1;
 
-          SocketQUICAckState_T state
-              = SocketQUICAck_new (arena, is_handshake,
-                                   QUIC_ACK_DEFAULT_MAX_DELAY_US);
+          SocketQUICAckState_T state = SocketQUICAck_new (
+              arena, is_handshake, QUIC_ACK_DEFAULT_MAX_DELAY_US);
           if (!state)
             break;
 
@@ -134,8 +133,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               /* Limit packet numbers to avoid excessive range creation */
               pn = pn % 10000;
 
-              SocketQUICAck_record_packet (state, pn, 1000000 + count * 1000,
-                                           1);
+              SocketQUICAck_record_packet (
+                  state, pn, 1000000 + count * 1000, 1);
               offset += 9;
               count++;
             }
@@ -145,14 +144,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           size_t ack_len = 0;
           uint64_t current_time = read_u64 (data + 2);
 
-          SocketQUICAck_Result result
-              = SocketQUICAck_encode (state, current_time, ack_buf,
-                                      sizeof (ack_buf), &ack_len);
+          SocketQUICAck_Result result = SocketQUICAck_encode (
+              state, current_time, ack_buf, sizeof (ack_buf), &ack_len);
           (void)result;
 
           /* Encode with small buffer */
-          result = SocketQUICAck_encode (state, current_time, ack_buf, 10,
-                                         &ack_len);
+          result = SocketQUICAck_encode (
+              state, current_time, ack_buf, 10, &ack_len);
           (void)result;
 
           /* Mark as sent */
@@ -160,16 +158,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           /* Record more and encode again */
           SocketQUICAck_record_packet (state, 20000, current_time + 1000, 1);
-          result = SocketQUICAck_encode (state, current_time + 2000, ack_buf,
-                                         sizeof (ack_buf), &ack_len);
+          result = SocketQUICAck_encode (
+              state, current_time + 2000, ack_buf, sizeof (ack_buf), &ack_len);
           (void)result;
 
           /* Test NULL inputs */
-          SocketQUICAck_encode (NULL, current_time, ack_buf, sizeof (ack_buf),
-                                &ack_len);
+          SocketQUICAck_encode (
+              NULL, current_time, ack_buf, sizeof (ack_buf), &ack_len);
           SocketQUICAck_encode (state, current_time, NULL, 0, &ack_len);
-          SocketQUICAck_encode (state, current_time, ack_buf, sizeof (ack_buf),
-                                NULL);
+          SocketQUICAck_encode (
+              state, current_time, ack_buf, sizeof (ack_buf), NULL);
           break;
         }
 
@@ -242,8 +240,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (offset + 9 <= size)
                 {
                   uint64_t pn = read_u64 (data + offset + 1);
-                  SocketQUICAck_record_packet (state, pn % 10000,
-                                               1000000 + offset * 1000, 1);
+                  SocketQUICAck_record_packet (
+                      state, pn % 10000, 1000000 + offset * 1000, 1);
                 }
               offset += 9;
             }
@@ -251,8 +249,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Encode should include ECN if validated */
           uint8_t ack_buf[1024];
           size_t ack_len = 0;
-          SocketQUICAck_encode (state, 2000000, ack_buf, sizeof (ack_buf),
-                                &ack_len);
+          SocketQUICAck_encode (
+              state, 2000000, ack_buf, sizeof (ack_buf), &ack_len);
 
           /* Test all ECN types explicitly */
           SocketQUICAck_record_ecn (state, QUIC_ECN_NOT_ECT);

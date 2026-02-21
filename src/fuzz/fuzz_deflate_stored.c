@@ -30,12 +30,12 @@
 /* Fuzz operation opcodes */
 enum FuzzOp
 {
-  OP_VALID_BLOCK = 0,     /* Generate valid stored block */
-  OP_INVALID_NLEN,        /* Intentionally wrong NLEN */
-  OP_TRUNCATED_HEADER,    /* Truncate before NLEN complete */
-  OP_TRUNCATED_DATA,      /* Truncate during data section */
-  OP_RANDOM_BYTES,        /* Raw fuzz input as stored block */
-  OP_ALIGNMENT_TEST,      /* Test with pre-consumed bits */
+  OP_VALID_BLOCK = 0,  /* Generate valid stored block */
+  OP_INVALID_NLEN,     /* Intentionally wrong NLEN */
+  OP_TRUNCATED_HEADER, /* Truncate before NLEN complete */
+  OP_TRUNCATED_DATA,   /* Truncate during data section */
+  OP_RANDOM_BYTES,     /* Raw fuzz input as stored block */
+  OP_ALIGNMENT_TEST,   /* Test with pre-consumed bits */
   OP_MAX
 };
 
@@ -124,8 +124,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           memcpy (input_buf + 4, fuzz_data + 2, len);
 
         SocketDeflate_BitReader_init (reader, input_buf, input_size);
-        result = SocketDeflate_decode_stored_block (reader, output,
-                                                    MAX_OUTPUT_SIZE, &written);
+        result = SocketDeflate_decode_stored_block (
+            reader, output, MAX_OUTPUT_SIZE, &written);
         /* Should succeed for valid blocks */
         (void)(result == DEFLATE_OK);
       }
@@ -140,8 +140,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Use fuzz data directly as header (likely invalid NLEN) */
         input_size = fuzz_size;
         SocketDeflate_BitReader_init (reader, fuzz_data, input_size);
-        result = SocketDeflate_decode_stored_block (reader, output,
-                                                    MAX_OUTPUT_SIZE, &written);
+        result = SocketDeflate_decode_stored_block (
+            reader, output, MAX_OUTPUT_SIZE, &written);
         /* Should fail with DEFLATE_ERROR if NLEN invalid */
         (void)(result == DEFLATE_ERROR);
       }
@@ -158,8 +158,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           truncate_at = fuzz_size;
 
         SocketDeflate_BitReader_init (reader, fuzz_data, truncate_at);
-        result = SocketDeflate_decode_stored_block (reader, output,
-                                                    MAX_OUTPUT_SIZE, &written);
+        result = SocketDeflate_decode_stored_block (
+            reader, output, MAX_OUTPUT_SIZE, &written);
         /* Should fail with DEFLATE_INCOMPLETE */
         (void)(result == DEFLATE_INCOMPLETE);
       }
@@ -187,8 +187,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           memcpy (input_buf + 4, fuzz_data + 1, partial_data);
 
         SocketDeflate_BitReader_init (reader, input_buf, input_size);
-        result = SocketDeflate_decode_stored_block (reader, output,
-                                                    MAX_OUTPUT_SIZE, &written);
+        result = SocketDeflate_decode_stored_block (
+            reader, output, MAX_OUTPUT_SIZE, &written);
         /* Should fail with DEFLATE_INCOMPLETE */
         (void)(result == DEFLATE_INCOMPLETE);
       }
@@ -198,8 +198,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Use raw fuzz data directly as stored block input */
         SocketDeflate_BitReader_init (reader, fuzz_data, fuzz_size);
-        result = SocketDeflate_decode_stored_block (reader, output,
-                                                    MAX_OUTPUT_SIZE, &written);
+        result = SocketDeflate_decode_stored_block (
+            reader, output, MAX_OUTPUT_SIZE, &written);
         /* May succeed or fail depending on data */
         (void)result;
       }
@@ -237,8 +237,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         SocketDeflate_BitReader_read (reader, bits_to_consume, &dummy);
 
         /* Now decode stored block (should align first) */
-        result = SocketDeflate_decode_stored_block (reader, output,
-                                                    MAX_OUTPUT_SIZE, &written);
+        result = SocketDeflate_decode_stored_block (
+            reader, output, MAX_OUTPUT_SIZE, &written);
         (void)result;
       }
       break;

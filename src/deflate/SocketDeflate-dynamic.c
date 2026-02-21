@@ -36,8 +36,10 @@
  * @return DEFLATE_OK on success, error code on failure
  */
 static SocketDeflate_Result
-decode_block_header (SocketDeflate_BitReader_T reader, unsigned int *hlit_out,
-                     unsigned int *hdist_out, unsigned int *hclen_out)
+decode_block_header (SocketDeflate_BitReader_T reader,
+                     unsigned int *hlit_out,
+                     unsigned int *hdist_out,
+                     unsigned int *hclen_out)
 {
   uint32_t val;
   SocketDeflate_Result result;
@@ -80,7 +82,8 @@ decode_block_header (SocketDeflate_BitReader_T reader, unsigned int *hlit_out,
  * @return DEFLATE_OK on success, error code on failure
  */
 static SocketDeflate_Result
-build_codelen_table (SocketDeflate_BitReader_T reader, unsigned int hclen,
+build_codelen_table (SocketDeflate_BitReader_T reader,
+                     unsigned int hclen,
                      SocketDeflate_HuffmanTable_T codelen_table)
 {
   uint8_t codelen_lengths[DEFLATE_CODELEN_CODES] = { 0 };
@@ -99,8 +102,8 @@ build_codelen_table (SocketDeflate_BitReader_T reader, unsigned int hclen,
   /* Remaining slots (if hclen < 19) stay at 0 (unused) */
 
   /* Build Huffman table (max 7 bits for code length alphabet) */
-  return SocketDeflate_HuffmanTable_build (codelen_table, codelen_lengths,
-                                           DEFLATE_CODELEN_CODES, 7);
+  return SocketDeflate_HuffmanTable_build (
+      codelen_table, codelen_lengths, DEFLATE_CODELEN_CODES, 7);
 }
 
 /**
@@ -124,7 +127,8 @@ build_codelen_table (SocketDeflate_BitReader_T reader, unsigned int hclen,
 static SocketDeflate_Result
 decode_code_lengths (SocketDeflate_BitReader_T reader,
                      SocketDeflate_HuffmanTable_T codelen_table,
-                     uint8_t *lengths, unsigned int count)
+                     uint8_t *lengths,
+                     unsigned int count)
 {
   unsigned int i = 0;
   uint16_t symbol;
@@ -200,8 +204,10 @@ decode_code_lengths (SocketDeflate_BitReader_T reader,
 
 SocketDeflate_Result
 SocketDeflate_decode_dynamic_block (SocketDeflate_BitReader_T reader,
-                                    Arena_T arena, uint8_t *output,
-                                    size_t output_len, size_t *written)
+                                    Arena_T arena,
+                                    uint8_t *output,
+                                    size_t output_len,
+                                    size_t *written)
 {
   unsigned int hlit, hdist, hclen;
   /* Combined array for litlen + dist lengths (max 286 + 32 = 318) */
@@ -233,19 +239,19 @@ SocketDeflate_decode_dynamic_block (SocketDeflate_BitReader_T reader,
 
   /* Step 4: Build literal/length Huffman table */
   litlen_table = SocketDeflate_HuffmanTable_new (arena);
-  result = SocketDeflate_HuffmanTable_build (litlen_table, lengths, hlit,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      litlen_table, lengths, hlit, DEFLATE_MAX_BITS);
   if (result != DEFLATE_OK)
     return result;
 
   /* Step 5: Build distance Huffman table */
   dist_table = SocketDeflate_HuffmanTable_new (arena);
-  result = SocketDeflate_HuffmanTable_build (dist_table, lengths + hlit, hdist,
-                                             DEFLATE_MAX_BITS);
+  result = SocketDeflate_HuffmanTable_build (
+      dist_table, lengths + hlit, hdist, DEFLATE_MAX_BITS);
   if (result != DEFLATE_OK)
     return result;
 
   /* Step 6: Decode compressed data using shared LZ77 loop */
-  return inflate_lz77 (reader, litlen_table, dist_table, output, output_len,
-                       written);
+  return inflate_lz77 (
+      reader, litlen_table, dist_table, output, output_len, written);
 }

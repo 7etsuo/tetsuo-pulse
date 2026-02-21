@@ -90,8 +90,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
     case OP_ABS_TO_REL_ENCODER:
       {
-        res = SocketQPACK_abs_to_relative_encoder (insert_count, abs_index,
-                                                   &result_out);
+        res = SocketQPACK_abs_to_relative_encoder (
+            insert_count, abs_index, &result_out);
         (void)res;
         (void)result_out;
       }
@@ -99,8 +99,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     case OP_REL_TO_ABS_ENCODER:
       {
-        res = SocketQPACK_relative_to_abs_encoder (insert_count, rel_index,
-                                                   &result_out);
+        res = SocketQPACK_relative_to_abs_encoder (
+            insert_count, rel_index, &result_out);
         (void)res;
         (void)result_out;
       }
@@ -140,16 +140,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     case OP_VALIDATE_REL_ENCODER:
       {
-        res = SocketQPACK_is_valid_relative_encoder (insert_count,
-                                                     dropped_count, rel_index);
+        res = SocketQPACK_is_valid_relative_encoder (
+            insert_count, dropped_count, rel_index);
         (void)res;
       }
       break;
 
     case OP_VALIDATE_REL_FIELD:
       {
-        res = SocketQPACK_is_valid_relative_field (base, dropped_count,
-                                                   rel_index);
+        res = SocketQPACK_is_valid_relative_field (
+            base, dropped_count, rel_index);
         (void)res;
       }
       break;
@@ -163,8 +163,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     case OP_VALIDATE_ABSOLUTE:
       {
-        res = SocketQPACK_is_valid_absolute (insert_count, dropped_count,
-                                             abs_index);
+        res = SocketQPACK_is_valid_absolute (
+            insert_count, dropped_count, abs_index);
         (void)res;
       }
       break;
@@ -175,12 +175,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint64_t rel_out = 0;
         uint64_t abs_out = 0;
 
-        res = SocketQPACK_abs_to_relative_encoder (insert_count, abs_index,
-                                                   &rel_out);
+        res = SocketQPACK_abs_to_relative_encoder (
+            insert_count, abs_index, &rel_out);
         if (res == QPACK_OK)
           {
-            res = SocketQPACK_relative_to_abs_encoder (insert_count, rel_out,
-                                                       &abs_out);
+            res = SocketQPACK_relative_to_abs_encoder (
+                insert_count, rel_out, &abs_out);
             /* If both succeed, abs_out should equal abs_index */
             (void)abs_out;
           }
@@ -197,8 +197,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         res = SocketQPACK_abs_to_relative_field (base, abs_index, &rel_out);
         if (res == QPACK_OK)
           {
-            res
-                = SocketQPACK_relative_to_abs_field (base, rel_out, &abs_out);
+            res = SocketQPACK_relative_to_abs_field (base, rel_out, &abs_out);
             /* If both succeed, abs_out should equal abs_index */
             (void)abs_out;
           }
@@ -248,8 +247,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       (void)res;
 
       /* Test NULL output pointer (should not crash) */
-      res = SocketQPACK_abs_to_relative_encoder (insert_count, abs_index,
-                                                 NULL);
+      res = SocketQPACK_abs_to_relative_encoder (insert_count, abs_index, NULL);
       (void)res;
     }
 

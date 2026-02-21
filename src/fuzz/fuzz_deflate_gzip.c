@@ -34,12 +34,12 @@
  */
 enum FuzzOp
 {
-  OP_RAW_HEADER = 0,     /* Parse raw fuzz input as header */
-  OP_VALID_PREFIX,       /* Valid magic/method + fuzz flags/content */
-  OP_MUTATE_MAGIC,       /* Mutate magic bytes */
-  OP_MUTATE_METHOD,      /* Mutate compression method */
-  OP_ALL_FLAGS,          /* Exercise all flag combinations */
-  OP_TRAILER,            /* Fuzz trailer verification */
+  OP_RAW_HEADER = 0, /* Parse raw fuzz input as header */
+  OP_VALID_PREFIX,   /* Valid magic/method + fuzz flags/content */
+  OP_MUTATE_MAGIC,   /* Mutate magic bytes */
+  OP_MUTATE_METHOD,  /* Mutate compression method */
+  OP_ALL_FLAGS,      /* Exercise all flag combinations */
+  OP_TRAILER,        /* Fuzz trailer verification */
   OP_MAX
 };
 
@@ -47,7 +47,9 @@ enum FuzzOp
  * Build a gzip header with valid prefix and fuzz-derived content.
  */
 static size_t
-build_valid_header (const uint8_t *fuzz_data, size_t fuzz_size, uint8_t *out,
+build_valid_header (const uint8_t *fuzz_data,
+                    size_t fuzz_size,
+                    uint8_t *out,
                     size_t out_cap)
 {
   size_t pos = 0;
@@ -126,8 +128,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     case OP_VALID_PREFIX:
       {
         /* Build header with valid prefix + fuzz content */
-        size_t header_len
-            = build_valid_header (payload, payload_size, buffer, sizeof (buffer));
+        size_t header_len = build_valid_header (
+            payload, payload_size, buffer, sizeof (buffer));
         if (header_len > 0)
           {
             result
@@ -243,8 +245,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                             | ((uint32_t)payload[15] << 24);
           }
 
-        result
-            = SocketDeflate_gzip_verify_trailer (payload, computed_crc, computed_size);
+        result = SocketDeflate_gzip_verify_trailer (
+            payload, computed_crc, computed_size);
         (void)result;
       }
       break;

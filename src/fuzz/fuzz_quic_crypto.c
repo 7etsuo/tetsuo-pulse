@@ -95,19 +95,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             SocketQUICCryptoSecrets_T secrets;
 
             SocketQUICCrypto_Result result
-                = SocketQUICCrypto_derive_initial_keys (&dcid, versions[i],
-                                                        &keys);
+                = SocketQUICCrypto_derive_initial_keys (
+                    &dcid, versions[i], &keys);
             (void)result;
 
-            result = SocketQUICCrypto_derive_initial_secrets (&dcid,
-                                                              versions[i],
-                                                              &secrets, &keys);
+            result = SocketQUICCrypto_derive_initial_secrets (
+                &dcid, versions[i], &secrets, &keys);
             (void)result;
 
             /* Test with NULL secrets output */
-            result = SocketQUICCrypto_derive_initial_secrets (&dcid,
-                                                              versions[i], NULL,
-                                                              &keys);
+            result = SocketQUICCrypto_derive_initial_secrets (
+                &dcid, versions[i], NULL, &keys);
             (void)result;
 
             /* Clear secrets */
@@ -140,16 +138,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         (void)result;
 
         /* Test with 48-byte secret (SHA-384) */
-        result = SocketQUICCrypto_derive_traffic_keys (secret, 48, key, iv,
-                                                       hp_key);
+        result = SocketQUICCrypto_derive_traffic_keys (
+            secret, 48, key, iv, hp_key);
         (void)result;
 
         /* Test with wrong sizes */
-        result = SocketQUICCrypto_derive_traffic_keys (secret, 0, key, iv,
-                                                       hp_key);
+        result
+            = SocketQUICCrypto_derive_traffic_keys (secret, 0, key, iv, hp_key);
         (void)result;
-        result = SocketQUICCrypto_derive_traffic_keys (secret, 16, key, iv,
-                                                       hp_key);
+        result = SocketQUICCrypto_derive_traffic_keys (
+            secret, 16, key, iv, hp_key);
         (void)result;
 
         /* Test NULL inputs */
@@ -177,8 +175,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             SocketQUICCrypto_get_aead_secret_len ((SocketQUIC_AEAD)aead,
                                                   &secret_len);
 
-            SocketQUICCrypto_Result result = SocketQUICCrypto_derive_packet_keys (
-                secret, secret_len, (SocketQUIC_AEAD)aead, &keys);
+            SocketQUICCrypto_Result result
+                = SocketQUICCrypto_derive_packet_keys (
+                    secret, secret_len, (SocketQUIC_AEAD)aead, &keys);
             (void)result;
 
             /* Test with wrong secret length */
@@ -190,16 +189,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         /* Test invalid AEAD */
-        SocketQUICCrypto_derive_packet_keys (secret, 32,
-                                             (SocketQUIC_AEAD)aead_idx, &keys);
-        SocketQUICCrypto_derive_packet_keys (secret, 32, (SocketQUIC_AEAD)255,
-                                             &keys);
+        SocketQUICCrypto_derive_packet_keys (
+            secret, 32, (SocketQUIC_AEAD)aead_idx, &keys);
+        SocketQUICCrypto_derive_packet_keys (
+            secret, 32, (SocketQUIC_AEAD)255, &keys);
 
         /* Test NULL inputs */
-        SocketQUICCrypto_derive_packet_keys (NULL, 32, QUIC_AEAD_AES_128_GCM,
-                                             &keys);
-        SocketQUICCrypto_derive_packet_keys (secret, 32, QUIC_AEAD_AES_128_GCM,
-                                             NULL);
+        SocketQUICCrypto_derive_packet_keys (
+            NULL, 32, QUIC_AEAD_AES_128_GCM, &keys);
+        SocketQUICCrypto_derive_packet_keys (
+            secret, 32, QUIC_AEAD_AES_128_GCM, NULL);
         break;
       }
 
@@ -235,9 +234,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint8_t ciphertext[256];
         size_t ciphertext_len = sizeof (ciphertext);
 
-        SocketQUICCrypto_Result result = SocketQUICCrypto_encrypt_payload (
-            &keys, packet_number, header, header_len, plaintext, plaintext_len,
-            ciphertext, &ciphertext_len);
+        SocketQUICCrypto_Result result
+            = SocketQUICCrypto_encrypt_payload (&keys,
+                                                packet_number,
+                                                header,
+                                                header_len,
+                                                plaintext,
+                                                plaintext_len,
+                                                ciphertext,
+                                                &ciphertext_len);
 
         if (result == QUIC_CRYPTO_OK)
           {
@@ -245,10 +250,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t decrypted[256];
             size_t decrypted_len = sizeof (decrypted);
 
-            result = SocketQUICCrypto_decrypt_payload (&keys, packet_number,
-                                                       header, header_len,
-                                                       ciphertext, ciphertext_len,
-                                                       decrypted, &decrypted_len);
+            result = SocketQUICCrypto_decrypt_payload (&keys,
+                                                       packet_number,
+                                                       header,
+                                                       header_len,
+                                                       ciphertext,
+                                                       ciphertext_len,
+                                                       decrypted,
+                                                       &decrypted_len);
             (void)result;
           }
 
@@ -257,18 +266,33 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             uint8_t decrypted[256];
             size_t decrypted_len = sizeof (decrypted);
-            result = SocketQUICCrypto_decrypt_payload (
-                &keys, packet_number, header, header_len, data + 100,
-                size - 100, decrypted, &decrypted_len);
+            result = SocketQUICCrypto_decrypt_payload (&keys,
+                                                       packet_number,
+                                                       header,
+                                                       header_len,
+                                                       data + 100,
+                                                       size - 100,
+                                                       decrypted,
+                                                       &decrypted_len);
             (void)result;
           }
 
         /* Test NULL and edge cases */
-        SocketQUICCrypto_encrypt_payload (NULL, 0, header, header_len,
-                                          plaintext, plaintext_len, ciphertext,
+        SocketQUICCrypto_encrypt_payload (NULL,
+                                          0,
+                                          header,
+                                          header_len,
+                                          plaintext,
+                                          plaintext_len,
+                                          ciphertext,
                                           &ciphertext_len);
-        SocketQUICCrypto_encrypt_payload (&keys, 0, NULL, 0, plaintext,
-                                          plaintext_len, ciphertext,
+        SocketQUICCrypto_encrypt_payload (&keys,
+                                          0,
+                                          NULL,
+                                          0,
+                                          plaintext,
+                                          plaintext_len,
+                                          ciphertext,
                                           &ciphertext_len);
 
         SocketQUICPacketKeys_clear (&keys);
@@ -303,15 +327,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t test_packet[256];
             memcpy (test_packet, packet, packet_len);
 
-            SocketQUICCrypto_Result result = SocketQUICCrypto_protect_header (
-                hp_key, key_len, (SocketQUIC_AEAD)aead, test_packet, packet_len,
-                pn_offset);
+            SocketQUICCrypto_Result result
+                = SocketQUICCrypto_protect_header (hp_key,
+                                                   key_len,
+                                                   (SocketQUIC_AEAD)aead,
+                                                   test_packet,
+                                                   packet_len,
+                                                   pn_offset);
             (void)result;
 
             /* Unprotect should restore original */
-            result = SocketQUICCrypto_unprotect_header (
-                hp_key, key_len, (SocketQUIC_AEAD)aead, test_packet, packet_len,
-                pn_offset);
+            result = SocketQUICCrypto_unprotect_header (hp_key,
+                                                        key_len,
+                                                        (SocketQUIC_AEAD)aead,
+                                                        test_packet,
+                                                        packet_len,
+                                                        pn_offset);
             (void)result;
           }
 
@@ -324,18 +355,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         uint8_t test_packet2[256];
         memcpy (test_packet2, packet, packet_len);
-        SocketQUICCrypto_protect_header_ex (&keys, test_packet2, packet_len,
-                                            pn_offset);
-        SocketQUICCrypto_unprotect_header_ex (&keys, test_packet2, packet_len,
-                                              pn_offset);
+        SocketQUICCrypto_protect_header_ex (
+            &keys, test_packet2, packet_len, pn_offset);
+        SocketQUICCrypto_unprotect_header_ex (
+            &keys, test_packet2, packet_len, pn_offset);
 
         /* Test NULL and edge cases */
-        SocketQUICCrypto_protect_header (NULL, 16, QUIC_AEAD_AES_128_GCM,
-                                         test_packet2, packet_len, pn_offset);
-        SocketQUICCrypto_protect_header (hp_key, 16, QUIC_AEAD_AES_128_GCM,
-                                         NULL, 0, 0);
-        SocketQUICCrypto_protect_header_ex (NULL, test_packet2, packet_len,
-                                            pn_offset);
+        SocketQUICCrypto_protect_header (NULL,
+                                         16,
+                                         QUIC_AEAD_AES_128_GCM,
+                                         test_packet2,
+                                         packet_len,
+                                         pn_offset);
+        SocketQUICCrypto_protect_header (
+            hp_key, 16, QUIC_AEAD_AES_128_GCM, NULL, 0, 0);
+        SocketQUICCrypto_protect_header_ex (
+            NULL, test_packet2, packet_len, pn_offset);
         break;
       }
 
@@ -362,9 +397,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             SocketQUICKeyUpdate_init (&state);
             SocketQUICCrypto_Result result
-                = SocketQUICKeyUpdate_set_initial_keys (
-                    &state, write_secret, read_secret, secret_len,
-                    (SocketQUIC_AEAD)aead);
+                = SocketQUICKeyUpdate_set_initial_keys (&state,
+                                                        write_secret,
+                                                        read_secret,
+                                                        secret_len,
+                                                        (SocketQUIC_AEAD)aead);
             (void)result;
 
             /* Test can_initiate before any acks */
@@ -395,8 +432,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             /* Get read keys for decryption */
             const SocketQUICPacketKeys_T *read_keys = NULL;
-            result = SocketQUICKeyUpdate_get_read_keys (&state, received_phase,
-                                                        100, &read_keys);
+            result = SocketQUICKeyUpdate_get_read_keys (
+                &state, received_phase, 100, &read_keys);
             (void)result;
 
             /* Test encryption/decryption counting */
@@ -417,18 +454,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Test derive_next_secret */
         uint8_t next_secret[48];
-        SocketQUICCrypto_derive_next_secret (write_secret, 32,
-                                             QUIC_AEAD_AES_128_GCM,
-                                             next_secret);
-        SocketQUICCrypto_derive_next_secret (write_secret, 48,
-                                             QUIC_AEAD_AES_256_GCM,
-                                             next_secret);
+        SocketQUICCrypto_derive_next_secret (
+            write_secret, 32, QUIC_AEAD_AES_128_GCM, next_secret);
+        SocketQUICCrypto_derive_next_secret (
+            write_secret, 48, QUIC_AEAD_AES_256_GCM, next_secret);
 
         /* Test NULL inputs */
         SocketQUICKeyUpdate_init (NULL);
         SocketQUICKeyUpdate_clear (NULL);
-        SocketQUICKeyUpdate_set_initial_keys (NULL, write_secret, read_secret,
-                                              32, QUIC_AEAD_AES_128_GCM);
+        SocketQUICKeyUpdate_set_initial_keys (
+            NULL, write_secret, read_secret, 32, QUIC_AEAD_AES_128_GCM);
         SocketQUICKeyUpdate_can_initiate (NULL);
         break;
       }
@@ -440,14 +475,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             size_t key_len = 0, iv_len = 0, hp_len = 0, secret_len = 0;
 
-            SocketQUICCrypto_get_aead_key_sizes ((SocketQUIC_AEAD)aead,
-                                                 &key_len, &iv_len, &hp_len);
+            SocketQUICCrypto_get_aead_key_sizes (
+                (SocketQUIC_AEAD)aead, &key_len, &iv_len, &hp_len);
             SocketQUICCrypto_get_aead_secret_len ((SocketQUIC_AEAD)aead,
                                                   &secret_len);
 
             /* Test with NULL outputs */
-            SocketQUICCrypto_get_aead_key_sizes ((SocketQUIC_AEAD)aead, NULL,
-                                                 NULL, NULL);
+            SocketQUICCrypto_get_aead_key_sizes (
+                (SocketQUIC_AEAD)aead, NULL, NULL, NULL);
             SocketQUICCrypto_get_aead_secret_len ((SocketQUIC_AEAD)aead, NULL);
 
             /* Test AEAD name */
@@ -455,8 +490,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             (void)name;
 
             /* Test limits */
-            uint64_t conf_limit
-                = SocketQUICCrypto_get_confidentiality_limit ((SocketQUIC_AEAD)aead);
+            uint64_t conf_limit = SocketQUICCrypto_get_confidentiality_limit (
+                (SocketQUIC_AEAD)aead);
             uint64_t int_limit
                 = SocketQUICCrypto_get_integrity_limit ((SocketQUIC_AEAD)aead);
             (void)conf_limit;
@@ -476,12 +511,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     case OP_RESULT_STRINGS:
       {
         /* Test result string functions */
-        SocketQUICCrypto_Result results[]
-            = { QUIC_CRYPTO_OK,       QUIC_CRYPTO_ERROR_NULL,
-                QUIC_CRYPTO_ERROR_VERSION, QUIC_CRYPTO_ERROR_HKDF,
-                QUIC_CRYPTO_ERROR_NO_TLS,  QUIC_CRYPTO_ERROR_AEAD,
-                QUIC_CRYPTO_ERROR_SECRET_LEN, QUIC_CRYPTO_ERROR_BUFFER,
-                QUIC_CRYPTO_ERROR_TAG,     QUIC_CRYPTO_ERROR_INPUT };
+        SocketQUICCrypto_Result results[] = { QUIC_CRYPTO_OK,
+                                              QUIC_CRYPTO_ERROR_NULL,
+                                              QUIC_CRYPTO_ERROR_VERSION,
+                                              QUIC_CRYPTO_ERROR_HKDF,
+                                              QUIC_CRYPTO_ERROR_NO_TLS,
+                                              QUIC_CRYPTO_ERROR_AEAD,
+                                              QUIC_CRYPTO_ERROR_SECRET_LEN,
+                                              QUIC_CRYPTO_ERROR_BUFFER,
+                                              QUIC_CRYPTO_ERROR_TAG,
+                                              QUIC_CRYPTO_ERROR_INPUT };
 
         for (size_t i = 0; i < sizeof (results) / sizeof (results[0]); i++)
           {

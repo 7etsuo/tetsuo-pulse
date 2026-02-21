@@ -163,9 +163,10 @@ except_validate_not_null (const Except_T *e)
 
 EXCEPT_COLD
 EXCEPT_NORETURN
-    EXCEPT_NONNULL (1) static void except_abort_uncaught (const Except_T *e,
-                                                          const char *file,
-                                                          int line)
+EXCEPT_NONNULL (1)
+static void except_abort_uncaught (const Except_T *e,
+                                   const char *file,
+                                   int line)
 {
   fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
   except_emit_reason (e);

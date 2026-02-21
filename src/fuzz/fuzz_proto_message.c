@@ -59,9 +59,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
   if (size >= 4)
     {
-      uint32_t v
-          = ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16)
-            | ((uint32_t)data[2] << 8) | (uint32_t)data[3];
+      uint32_t v = ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16)
+                   | ((uint32_t)data[2] << 8) | (uint32_t)data[3];
       (void)SocketProto_Message_append_fixed32 (msg, 3, v);
     }
   (void)SocketProto_Message_append_bytes (msg, 2, data, size);

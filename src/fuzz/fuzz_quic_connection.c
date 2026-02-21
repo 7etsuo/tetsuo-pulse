@@ -83,9 +83,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           while (offset + 20 <= size && conn_count < 20)
             {
-              SocketQUICConnection_Role role
-                  = (data[offset] & 1) ? QUIC_CONN_ROLE_SERVER
-                                       : QUIC_CONN_ROLE_CLIENT;
+              SocketQUICConnection_Role role = (data[offset] & 1)
+                                                   ? QUIC_CONN_ROLE_SERVER
+                                                   : QUIC_CONN_ROLE_CLIENT;
 
               SocketQUICConnection_T conn
                   = SocketQUICConnection_new (arena, role);
@@ -120,9 +120,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (offset + 1 + cid_len > size)
                 break;
 
-              SocketQUICConnection_T found
-                  = SocketQUICConnTable_lookup (table, data + offset + 1,
-                                                cid_len);
+              SocketQUICConnection_T found = SocketQUICConnTable_lookup (
+                  table, data + offset + 1, cid_len);
               (void)found;
 
               offset += 1 + cid_len;
@@ -131,8 +130,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Get table stats */
           uint64_t chain_hits_cid = 0, chain_hits_addr = 0, max_chain = 0;
           size_t count = 0;
-          SocketQUICConnTable_get_stats (table, &chain_hits_cid,
-                                         &chain_hits_addr, &max_chain, &count);
+          SocketQUICConnTable_get_stats (
+              table, &chain_hits_cid, &chain_hits_addr, &max_chain, &count);
           (void)chain_hits_cid;
           (void)chain_hits_addr;
           (void)max_chain;
@@ -165,8 +164,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICConnection_Role role
               = (data[1] & 1) ? QUIC_CONN_ROLE_SERVER : QUIC_CONN_ROLE_CLIENT;
 
-          SocketQUICConnection_T conn
-              = SocketQUICConnection_new (arena, role);
+          SocketQUICConnection_T conn = SocketQUICConnection_new (arena, role);
           if (!conn)
             break;
 
@@ -182,9 +180,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           int is_ipv6 = data[38] & 1;
 
           SocketQUICConnection_Result result
-              = SocketQUICConnection_set_addresses (conn, local_addr, peer_addr,
-                                                    local_port, peer_port,
-                                                    is_ipv6);
+              = SocketQUICConnection_set_addresses (
+                  conn, local_addr, peer_addr, local_port, peer_port, is_ipv6);
           (void)result;
 
           /* Get CIDs */
@@ -272,8 +269,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (offset + 1 + cid_len > size)
                 break;
 
-              SocketQUICConnectionID_set (&peer_cid, data + offset + 1,
-                                          cid_len);
+              SocketQUICConnectionID_set (
+                  &peer_cid, data + offset + 1, cid_len);
 
               SocketQUICConnection_add_peer_cid (conn, &peer_cid);
               offset += 1 + cid_len;
@@ -312,14 +309,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t pto_ms = (read_u64 (data + 25) % 10000) + 100;
 
           /* Set idle timeout */
-          SocketQUICConnection_set_idle_timeout (conn, local_timeout,
-                                                 peer_timeout);
+          SocketQUICConnection_set_idle_timeout (
+              conn, local_timeout, peer_timeout);
 
           /* Reset idle timer */
           SocketQUICConnection_reset_idle_timer (conn, now_ms);
 
           /* Check idle timeout */
-          int timed_out = SocketQUICConnection_check_idle_timeout (conn, now_ms);
+          int timed_out
+              = SocketQUICConnection_check_idle_timeout (conn, now_ms);
           (void)timed_out;
 
           timed_out = SocketQUICConnection_check_idle_timeout (
@@ -379,7 +377,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (packet_len >= QUIC_STATELESS_RESET_TOKEN_LEN)
             {
               memcpy (packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN,
-                      token, QUIC_STATELESS_RESET_TOKEN_LEN);
+                      token,
+                      QUIC_STATELESS_RESET_TOKEN_LEN);
             }
 
           int valid = SocketQUICConnection_verify_stateless_reset (
@@ -394,8 +393,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)valid;
 
           /* Verify with fuzzed packet */
-          valid = SocketQUICConnection_verify_stateless_reset (data, size,
-                                                               token);
+          valid
+              = SocketQUICConnection_verify_stateless_reset (data, size, token);
           (void)valid;
 
           /* Test edge cases */
@@ -409,8 +408,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Test NULL inputs */
           SocketQUICConnection_set_stateless_reset_token (NULL, token);
           SocketQUICConnection_verify_stateless_reset (NULL, 0, token);
-          SocketQUICConnection_verify_stateless_reset (packet, packet_len,
-                                                       NULL);
+          SocketQUICConnection_verify_stateless_reset (
+              packet, packet_len, NULL);
           break;
         }
 
@@ -419,12 +418,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Test all string functions */
 
           /* Result codes */
-          SocketQUICConnection_Result results[]
-              = { QUIC_CONN_OK,           QUIC_CONN_ERROR_NULL,
-                  QUIC_CONN_ERROR_FULL,   QUIC_CONN_ERROR_EXISTS,
-                  QUIC_CONN_ERROR_NOT_FOUND, QUIC_CONN_ERROR_CID_LIMIT,
-                  QUIC_CONN_ERROR_CHAIN_LIMIT, QUIC_CONN_ERROR_ZERO_DCID,
-                  QUIC_CONN_ERROR_MEMORY };
+          SocketQUICConnection_Result results[] = { QUIC_CONN_OK,
+                                                    QUIC_CONN_ERROR_NULL,
+                                                    QUIC_CONN_ERROR_FULL,
+                                                    QUIC_CONN_ERROR_EXISTS,
+                                                    QUIC_CONN_ERROR_NOT_FOUND,
+                                                    QUIC_CONN_ERROR_CID_LIMIT,
+                                                    QUIC_CONN_ERROR_CHAIN_LIMIT,
+                                                    QUIC_CONN_ERROR_ZERO_DCID,
+                                                    QUIC_CONN_ERROR_MEMORY };
           for (size_t i = 0; i < sizeof (results) / sizeof (results[0]); i++)
             {
               const char *str = SocketQUICConnection_result_string (results[i]);
@@ -435,9 +437,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           /* States */
           SocketQUICConnection_State states[]
-              = { QUIC_CONN_STATE_IDLE,      QUIC_CONN_STATE_HANDSHAKE,
+              = { QUIC_CONN_STATE_IDLE,        QUIC_CONN_STATE_HANDSHAKE,
                   QUIC_CONN_STATE_ESTABLISHED, QUIC_CONN_STATE_CLOSING,
-                  QUIC_CONN_STATE_DRAINING,  QUIC_CONN_STATE_CLOSED };
+                  QUIC_CONN_STATE_DRAINING,    QUIC_CONN_STATE_CLOSED };
           for (size_t i = 0; i < sizeof (states) / sizeof (states[0]); i++)
             {
               const char *str = SocketQUICConnection_state_string (states[i]);
@@ -465,13 +467,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               memcpy (peer_addr, data + 20, 16);
 
               SocketQUICConnection_T found
-                  = SocketQUICConnTable_lookup_by_addr (table, local_addr,
-                                                        peer_addr, 443, 12345,
-                                                        data[36] & 1);
+                  = SocketQUICConnTable_lookup_by_addr (
+                      table, local_addr, peer_addr, 443, 12345, data[36] & 1);
               (void)found;
 
-              SocketQUICConnTable_lookup_by_addr (NULL, local_addr, peer_addr,
-                                                  0, 0, 0);
+              SocketQUICConnTable_lookup_by_addr (
+                  NULL, local_addr, peer_addr, 0, 0, 0);
               SocketQUICConnTable_free (&table);
             }
           break;

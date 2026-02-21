@@ -208,9 +208,9 @@ SocketProto_fixed64_decode (const uint8_t *in, size_t in_len, uint64_t *value)
   if (in_len < 8)
     return SOCKET_PROTO_INCOMPLETE;
 
-  *value = (uint64_t)in[0] | ((uint64_t)in[1] << 8)
-           | ((uint64_t)in[2] << 16) | ((uint64_t)in[3] << 24)
-           | ((uint64_t)in[4] << 32) | ((uint64_t)in[5] << 40)
-           | ((uint64_t)in[6] << 48) | ((uint64_t)in[7] << 56);
+  *value = (uint64_t)in[0] | ((uint64_t)in[1] << 8) | ((uint64_t)in[2] << 16)
+           | ((uint64_t)in[3] << 24) | ((uint64_t)in[4] << 32)
+           | ((uint64_t)in[5] << 40) | ((uint64_t)in[6] << 48)
+           | ((uint64_t)in[7] << 56);
   return SOCKET_PROTO_OK;
 }

@@ -24,7 +24,8 @@
 
 SocketDeflate_Result
 SocketDeflate_decode_stored_block (SocketDeflate_BitReader_T reader,
-                                   uint8_t *output, size_t output_len,
+                                   uint8_t *output,
+                                   size_t output_len,
                                    size_t *written)
 {
   uint32_t len_val;

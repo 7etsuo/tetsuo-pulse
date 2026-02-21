@@ -12,7 +12,9 @@
 #include "grpc/SocketProto-private.h"
 
 SocketProto_Result
-SocketProto_wire_make_tag (uint32_t field_number, uint8_t wire_type, uint64_t *tag)
+SocketProto_wire_make_tag (uint32_t field_number,
+                           uint8_t wire_type,
+                           uint64_t *tag)
 {
   if (tag == NULL)
     return SOCKET_PROTO_INVALID_ARGUMENT;
@@ -20,7 +22,8 @@ SocketProto_wire_make_tag (uint32_t field_number, uint8_t wire_type, uint64_t *t
   if (field_number == 0 || field_number > SOCKET_PROTO_MAX_FIELD_NUMBER)
     return SOCKET_PROTO_INVALID_TAG;
 
-  if (wire_type > SOCKET_PROTO_WIRE_FIXED32 || wire_type == SOCKET_PROTO_WIRE_START_GROUP
+  if (wire_type > SOCKET_PROTO_WIRE_FIXED32
+      || wire_type == SOCKET_PROTO_WIRE_START_GROUP
       || wire_type == SOCKET_PROTO_WIRE_END_GROUP)
     return SOCKET_PROTO_INVALID_WIRE_TYPE;
 
@@ -174,7 +177,8 @@ SocketProto_wire_read_field (const uint8_t *data,
 
         if (socketproto_size_add (offset, length_len, &payload_offset))
           return SOCKET_PROTO_OVERFLOW;
-        if (socketproto_size_add (payload_offset, (size_t)length_u64, &payload_end))
+        if (socketproto_size_add (
+                payload_offset, (size_t)length_u64, &payload_end))
           return SOCKET_PROTO_OVERFLOW;
 
         if (payload_end > len)

@@ -191,8 +191,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           uint64_t max_bidi = (read_u64 (data + 1) % 100) + 1;
           uint64_t max_uni = (read_u64 (data + 9) % 100) + 1;
 
-          SocketQUICFlow_init (fc, QUIC_FLOW_DEFAULT_CONN_WINDOW,
-                               QUIC_FLOW_DEFAULT_CONN_WINDOW, max_bidi,
+          SocketQUICFlow_init (fc,
+                               QUIC_FLOW_DEFAULT_CONN_WINDOW,
+                               QUIC_FLOW_DEFAULT_CONN_WINDOW,
+                               max_bidi,
                                max_uni);
 
           /* Check if we can open streams */
@@ -291,10 +293,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_RESULT_STRINGS:
         {
           /* Test result string function */
-          SocketQUICFlow_Result results[]
-              = { QUIC_FLOW_OK,        QUIC_FLOW_ERROR_NULL,
-                  QUIC_FLOW_ERROR_BLOCKED, QUIC_FLOW_ERROR_OVERFLOW,
-                  QUIC_FLOW_ERROR_INVALID };
+          SocketQUICFlow_Result results[] = { QUIC_FLOW_OK,
+                                              QUIC_FLOW_ERROR_NULL,
+                                              QUIC_FLOW_ERROR_BLOCKED,
+                                              QUIC_FLOW_ERROR_OVERFLOW,
+                                              QUIC_FLOW_ERROR_INVALID };
 
           for (size_t i = 0; i < sizeof (results) / sizeof (results[0]); i++)
             {

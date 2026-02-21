@@ -435,7 +435,8 @@ typedef enum
                                         * CMD=1,     DSTPORT, DSTIP (0.0.0.x for 4a
                                         * domain),     USERID="socket", null-term
                                         * domain     (4a).     Awaiting 8-byte reply
-                                        * (null VN,     CD=90     granted or error). */
+                                        * (null VN,     CD=90     granted or error).
+                                        */
   PROTO_STATE_SOCKS4_CONNECT_RECEIVED, /**< @brief SOCKS4 reply received and
                                         * checked. CD=90 success; 91-93 errors
                                         * mapped via

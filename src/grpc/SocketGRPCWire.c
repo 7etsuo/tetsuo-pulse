@@ -457,12 +457,8 @@ SocketGRPC_Metadata_add_ascii (SocketGRPC_Metadata_T metadata,
 {
   if (value == NULL)
     return SOCKET_GRPC_WIRE_INVALID_ARGUMENT;
-  return metadata_add_value (metadata,
-                             key,
-                             strlen (key),
-                             (const uint8_t *)value,
-                             strlen (value),
-                             0);
+  return metadata_add_value (
+      metadata, key, strlen (key), (const uint8_t *)value, strlen (value), 0);
 }
 
 SocketGRPC_WireResult
@@ -473,8 +469,7 @@ SocketGRPC_Metadata_add_binary (SocketGRPC_Metadata_T metadata,
 {
   if (value == NULL && value_len != 0)
     return SOCKET_GRPC_WIRE_INVALID_ARGUMENT;
-  return metadata_add_value (
-      metadata, key, strlen (key), value, value_len, 1);
+  return metadata_add_value (metadata, key, strlen (key), value, value_len, 1);
 }
 
 SocketGRPC_WireResult
@@ -496,8 +491,11 @@ SocketGRPC_Metadata_serialize (const SocketGRPC_Metadata_T metadata,
       const uint8_t crlf[] = { '\r', '\n' };
       SocketGRPC_WireResult rc;
 
-      rc = buffer_append (
-          out, out_len, &cursor, (const uint8_t *)entry->key, strlen (entry->key));
+      rc = buffer_append (out,
+                          out_len,
+                          &cursor,
+                          (const uint8_t *)entry->key,
+                          strlen (entry->key));
       if (rc != SOCKET_GRPC_WIRE_OK)
         return rc;
       rc = buffer_append (out, out_len, &cursor, sep, sizeof (sep));
@@ -543,9 +541,8 @@ SocketGRPC_Metadata_serialize (const SocketGRPC_Metadata_T metadata,
 
   {
     const uint8_t terminal_crlf[] = { '\r', '\n' };
-    SocketGRPC_WireResult rc
-        = buffer_append (
-            out, out_len, &cursor, terminal_crlf, sizeof (terminal_crlf));
+    SocketGRPC_WireResult rc = buffer_append (
+        out, out_len, &cursor, terminal_crlf, sizeof (terminal_crlf));
     if (rc != SOCKET_GRPC_WIRE_OK)
       return rc;
   }
@@ -607,8 +604,11 @@ metadata_parse_line (SocketGRPC_Metadata_T metadata,
           free (key_buf);
           return SOCKET_GRPC_WIRE_OUT_OF_MEMORY;
         }
-      decoded_len = SocketCrypto_base64_decode (
-          (const char *)value, value_len, decoded, decoded_cap > 0 ? decoded_cap : 1U);
+      decoded_len
+          = SocketCrypto_base64_decode ((const char *)value,
+                                        value_len,
+                                        decoded,
+                                        decoded_cap > 0 ? decoded_cap : 1U);
       if (decoded_len < 0)
         {
           free (decoded);
@@ -847,8 +847,8 @@ SocketGRPC_Trailers_serialize (const SocketGRPC_Trailers_T trailers,
   if (!trailers->has_status)
     return SOCKET_GRPC_WIRE_INVALID_TRAILER;
 
-  status_len = snprintf (
-      status_buf, sizeof (status_buf), "%d", trailers->grpc_status);
+  status_len
+      = snprintf (status_buf, sizeof (status_buf), "%d", trailers->grpc_status);
   if (status_len <= 0 || (size_t)status_len >= sizeof (status_buf))
     return SOCKET_GRPC_WIRE_INVALID_TRAILER;
 
@@ -870,8 +870,8 @@ SocketGRPC_Trailers_serialize (const SocketGRPC_Trailers_T trailers,
   if (trailers->grpc_message != NULL)
     {
       size_t message_len = strlen (trailers->grpc_message);
-      if (!metadata_ascii_value_valid (
-              (const uint8_t *)trailers->grpc_message, message_len))
+      if (!metadata_ascii_value_valid ((const uint8_t *)trailers->grpc_message,
+                                       message_len))
         return SOCKET_GRPC_WIRE_INVALID_TRAILER;
 
       rc = buffer_append (
@@ -896,18 +896,18 @@ SocketGRPC_Trailers_serialize (const SocketGRPC_Trailers_T trailers,
   if (trailers->grpc_status_details_bin != NULL
       && trailers->grpc_status_details_bin_len > 0)
     {
-      size_t encoded_cap
-          = SocketCrypto_base64_encoded_size (
-              trailers->grpc_status_details_bin_len);
+      size_t encoded_cap = SocketCrypto_base64_encoded_size (
+          trailers->grpc_status_details_bin_len);
       char *encoded = (char *)malloc (encoded_cap);
       ssize_t encoded_len;
       if (encoded == NULL)
         return SOCKET_GRPC_WIRE_OUT_OF_MEMORY;
 
-      encoded_len = SocketCrypto_base64_encode (trailers->grpc_status_details_bin,
-                                                trailers->grpc_status_details_bin_len,
-                                                encoded,
-                                                encoded_cap);
+      encoded_len
+          = SocketCrypto_base64_encode (trailers->grpc_status_details_bin,
+                                        trailers->grpc_status_details_bin_len,
+                                        encoded,
+                                        encoded_cap);
       if (encoded_len < 0)
         {
           free (encoded);
@@ -922,8 +922,11 @@ SocketGRPC_Trailers_serialize (const SocketGRPC_Trailers_T trailers,
       if (rc == SOCKET_GRPC_WIRE_OK)
         rc = buffer_append (out, out_len, &cursor, sep, sizeof (sep));
       if (rc == SOCKET_GRPC_WIRE_OK)
-        rc = buffer_append (
-            out, out_len, &cursor, (const uint8_t *)encoded, (size_t)encoded_len);
+        rc = buffer_append (out,
+                            out_len,
+                            &cursor,
+                            (const uint8_t *)encoded,
+                            (size_t)encoded_len);
       if (rc == SOCKET_GRPC_WIRE_OK)
         rc = buffer_append (out, out_len, &cursor, crlf, sizeof (crlf));
       free (encoded);
@@ -954,7 +957,8 @@ SocketGRPC_Trailers_serialize (const SocketGRPC_Trailers_T trailers,
 
       if (entry->is_binary)
         {
-          size_t encoded_cap = SocketCrypto_base64_encoded_size (entry->value_len);
+          size_t encoded_cap
+              = SocketCrypto_base64_encoded_size (entry->value_len);
           char *encoded = (char *)malloc (encoded_cap);
           ssize_t encoded_len;
           if (encoded == NULL)
@@ -1051,7 +1055,8 @@ SocketGRPC_Trailers_parse (SocketGRPC_Trailers_T trailers,
 
   for (i = 0; i < SocketGRPC_Metadata_count (parsed); i++)
     {
-      const SocketGRPC_MetadataEntry *entry = SocketGRPC_Metadata_at (parsed, i);
+      const SocketGRPC_MetadataEntry *entry
+          = SocketGRPC_Metadata_at (parsed, i);
       if (entry == NULL)
         continue;
 
@@ -1120,7 +1125,8 @@ SocketGRPC_Trailers_parse (SocketGRPC_Trailers_T trailers,
                 }
               memcpy (tmp, entry->value, entry->value_len);
               tmp[entry->value_len] = '\0';
-              rc = SocketGRPC_Metadata_add_ascii (trailers->metadata, entry->key, tmp);
+              rc = SocketGRPC_Metadata_add_ascii (
+                  trailers->metadata, entry->key, tmp);
               free (tmp);
             }
           if (rc != SOCKET_GRPC_WIRE_OK)

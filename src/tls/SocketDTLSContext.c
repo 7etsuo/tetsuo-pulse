@@ -96,13 +96,12 @@ set_security_options (SSL_CTX *ssl_ctx)
   SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_TICKET);
 
   /* Set explicitly secure options */
-  SSL_CTX_set_options (
-      ssl_ctx,
-      SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_COMPRESSION
-          | SSL_OP_SINGLE_ECDH_USE | SSL_OP_SINGLE_DH_USE
-          | SSL_OP_NO_RENEGOTIATION
+  SSL_CTX_set_options (ssl_ctx,
+                       SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_COMPRESSION
+                           | SSL_OP_SINGLE_ECDH_USE | SSL_OP_SINGLE_DH_USE
+                           | SSL_OP_NO_RENEGOTIATION
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-          | SSL_OP_PRIORITIZE_CHACHA
+                           | SSL_OP_PRIORITIZE_CHACHA
 #endif
   );
 
@@ -679,7 +678,8 @@ validate_ca_file_size (const char *ca_file, const struct stat *st, int fd)
  * @st: Stat structure determining file/dir
  */
 static void
-load_ca_certificates (SSL_CTX *ssl_ctx, const char *ca_file,
+load_ca_certificates (SSL_CTX *ssl_ctx,
+                      const char *ca_file,
                       const struct stat *st)
 {
   int result = S_ISDIR (st->st_mode)

@@ -76,13 +76,12 @@ typedef struct SocketGRPC_Trailers *SocketGRPC_Trailers_T;
 
 extern const char *SocketGRPC_Wire_result_string (SocketGRPC_WireResult result);
 
-extern SocketGRPC_WireResult
-SocketGRPC_Frame_encode (int compressed,
-                         const uint8_t *payload,
-                         uint32_t payload_len,
-                         uint8_t *out,
-                         size_t out_len,
-                         size_t *written);
+extern SocketGRPC_WireResult SocketGRPC_Frame_encode (int compressed,
+                                                      const uint8_t *payload,
+                                                      uint32_t payload_len,
+                                                      uint8_t *out,
+                                                      size_t out_len,
+                                                      size_t *written);
 
 extern SocketGRPC_WireResult
 SocketGRPC_Frame_parse (const uint8_t *data,
@@ -123,7 +122,8 @@ extern void SocketGRPC_Trailers_free (SocketGRPC_Trailers_T *trailers);
 extern void SocketGRPC_Trailers_clear (SocketGRPC_Trailers_T trailers);
 
 extern SocketGRPC_WireResult
-SocketGRPC_Trailers_set_status (SocketGRPC_Trailers_T trailers, int grpc_status);
+SocketGRPC_Trailers_set_status (SocketGRPC_Trailers_T trailers,
+                                int grpc_status);
 extern SocketGRPC_WireResult
 SocketGRPC_Trailers_set_message (SocketGRPC_Trailers_T trailers,
                                  const char *grpc_message);
@@ -132,7 +132,8 @@ SocketGRPC_Trailers_set_status_details_bin (SocketGRPC_Trailers_T trailers,
                                             const uint8_t *data,
                                             size_t len);
 
-extern int SocketGRPC_Trailers_has_status (const SocketGRPC_Trailers_T trailers);
+extern int
+SocketGRPC_Trailers_has_status (const SocketGRPC_Trailers_T trailers);
 extern int SocketGRPC_Trailers_status (const SocketGRPC_Trailers_T trailers);
 extern const char *
 SocketGRPC_Trailers_message (const SocketGRPC_Trailers_T trailers);

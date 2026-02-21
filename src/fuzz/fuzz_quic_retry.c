@@ -80,10 +80,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Compute integrity tag for fuzz data as retry packet */
         if (retry_len > QUIC_RETRY_INTEGRITY_TAG_LEN)
           {
-            size_t packet_without_tag = retry_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
-            res = SocketQUICPacket_compute_retry_tag (&odcid, retry_packet,
-                                                      packet_without_tag,
-                                                      computed_tag);
+            size_t packet_without_tag
+                = retry_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
+            res = SocketQUICPacket_compute_retry_tag (
+                &odcid, retry_packet, packet_without_tag, computed_tag);
             (void)res;
           }
       }
@@ -94,8 +94,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Verify integrity tag on fuzz data */
         if (retry_len >= QUIC_RETRY_INTEGRITY_TAG_LEN)
           {
-            res = SocketQUICPacket_verify_retry_tag (&odcid, retry_packet,
-                                                     retry_len);
+            res = SocketQUICPacket_verify_retry_tag (
+                &odcid, retry_packet, retry_len);
             (void)res;
           }
       }
@@ -109,16 +109,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t packet_with_tag[512 + QUIC_RETRY_INTEGRITY_TAG_LEN];
             memcpy (packet_with_tag, retry_packet, retry_len);
 
-            res = SocketQUICPacket_compute_retry_tag (&odcid, retry_packet,
-                                                      retry_len, computed_tag);
+            res = SocketQUICPacket_compute_retry_tag (
+                &odcid, retry_packet, retry_len, computed_tag);
             if (res == QUIC_PACKET_OK)
               {
-                memcpy (packet_with_tag + retry_len, computed_tag,
+                memcpy (packet_with_tag + retry_len,
+                        computed_tag,
                         QUIC_RETRY_INTEGRITY_TAG_LEN);
 
                 /* Now verify - should succeed */
                 res = SocketQUICPacket_verify_retry_tag (
-                    &odcid, packet_with_tag,
+                    &odcid,
+                    packet_with_tag,
                     retry_len + QUIC_RETRY_INTEGRITY_TAG_LEN);
                 (void)res;
               }
@@ -134,11 +136,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t packet_with_tag[512 + QUIC_RETRY_INTEGRITY_TAG_LEN];
             memcpy (packet_with_tag, retry_packet, retry_len);
 
-            res = SocketQUICPacket_compute_retry_tag (&odcid, retry_packet,
-                                                      retry_len, computed_tag);
+            res = SocketQUICPacket_compute_retry_tag (
+                &odcid, retry_packet, retry_len, computed_tag);
             if (res == QUIC_PACKET_OK)
               {
-                memcpy (packet_with_tag + retry_len, computed_tag,
+                memcpy (packet_with_tag + retry_len,
+                        computed_tag,
                         QUIC_RETRY_INTEGRITY_TAG_LEN);
 
                 /* Flip a bit in the packet */
@@ -146,7 +149,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                 /* Verify should fail */
                 res = SocketQUICPacket_verify_retry_tag (
-                    &odcid, packet_with_tag,
+                    &odcid,
+                    packet_with_tag,
                     retry_len + QUIC_RETRY_INTEGRITY_TAG_LEN);
                 (void)res;
               }
@@ -162,18 +166,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t packet_with_tag[512 + QUIC_RETRY_INTEGRITY_TAG_LEN];
             memcpy (packet_with_tag, retry_packet, retry_len);
 
-            res = SocketQUICPacket_compute_retry_tag (&odcid, retry_packet,
-                                                      retry_len, computed_tag);
+            res = SocketQUICPacket_compute_retry_tag (
+                &odcid, retry_packet, retry_len, computed_tag);
             if (res == QUIC_PACKET_OK)
               {
                 /* Corrupt the tag */
                 computed_tag[0] ^= 0xFF;
-                memcpy (packet_with_tag + retry_len, computed_tag,
+                memcpy (packet_with_tag + retry_len,
+                        computed_tag,
                         QUIC_RETRY_INTEGRITY_TAG_LEN);
 
                 /* Verify should fail */
                 res = SocketQUICPacket_verify_retry_tag (
-                    &odcid, packet_with_tag,
+                    &odcid,
+                    packet_with_tag,
                     retry_len + QUIC_RETRY_INTEGRITY_TAG_LEN);
                 (void)res;
               }
@@ -189,11 +195,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t packet_with_tag[512 + QUIC_RETRY_INTEGRITY_TAG_LEN];
             memcpy (packet_with_tag, retry_packet, retry_len);
 
-            res = SocketQUICPacket_compute_retry_tag (&odcid, retry_packet,
-                                                      retry_len, computed_tag);
+            res = SocketQUICPacket_compute_retry_tag (
+                &odcid, retry_packet, retry_len, computed_tag);
             if (res == QUIC_PACKET_OK)
               {
-                memcpy (packet_with_tag + retry_len, computed_tag,
+                memcpy (packet_with_tag + retry_len,
+                        computed_tag,
                         QUIC_RETRY_INTEGRITY_TAG_LEN);
 
                 /* Create different ODCID */
@@ -208,7 +215,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                 /* Verify should fail with different ODCID */
                 res = SocketQUICPacket_verify_retry_tag (
-                    &different_odcid, packet_with_tag,
+                    &different_odcid,
+                    packet_with_tag,
                     retry_len + QUIC_RETRY_INTEGRITY_TAG_LEN);
                 (void)res;
               }
@@ -254,8 +262,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* No retry token - go straight to computing tag */
         if (pos < sizeof (minimal_retry) - QUIC_RETRY_INTEGRITY_TAG_LEN)
           {
-            res = SocketQUICPacket_compute_retry_tag (&odcid, minimal_retry,
-                                                      pos, computed_tag);
+            res = SocketQUICPacket_compute_retry_tag (
+                &odcid, minimal_retry, pos, computed_tag);
             (void)res;
           }
       }
@@ -273,10 +281,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         if (retry_len > QUIC_RETRY_INTEGRITY_TAG_LEN)
           {
-            size_t packet_without_tag = retry_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
-            res = SocketQUICPacket_compute_retry_tag (&max_odcid, retry_packet,
-                                                      packet_without_tag,
-                                                      computed_tag);
+            size_t packet_without_tag
+                = retry_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
+            res = SocketQUICPacket_compute_retry_tag (
+                &max_odcid, retry_packet, packet_without_tag, computed_tag);
             (void)res;
           }
 
@@ -286,10 +294,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         if (retry_len > QUIC_RETRY_INTEGRITY_TAG_LEN)
           {
-            size_t packet_without_tag = retry_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
-            res = SocketQUICPacket_compute_retry_tag (&zero_odcid, retry_packet,
-                                                      packet_without_tag,
-                                                      computed_tag);
+            size_t packet_without_tag
+                = retry_len - QUIC_RETRY_INTEGRITY_TAG_LEN;
+            res = SocketQUICPacket_compute_retry_tag (
+                &zero_odcid, retry_packet, packet_without_tag, computed_tag);
             (void)res;
           }
       }
@@ -304,10 +312,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             SocketQUICPacketHeader_init (&header);
             size_t consumed = 0;
 
-            res = SocketQUICPacketHeader_parse (retry_packet, retry_len,
-                                                &header, &consumed);
-            if (res == QUIC_PACKET_OK
-                && header.type == QUIC_PACKET_TYPE_RETRY)
+            res = SocketQUICPacketHeader_parse (
+                retry_packet, retry_len, &header, &consumed);
+            if (res == QUIC_PACKET_OK && header.type == QUIC_PACKET_TYPE_RETRY)
               {
                 /* Check Retry-specific fields */
                 (void)header.retry_token;
@@ -316,9 +323,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 if (header.has_retry_integrity_tag)
                   {
                     /* Verify the tag if present */
-                    res = SocketQUICPacket_verify_retry_tag (&odcid,
-                                                             retry_packet,
-                                                             retry_len);
+                    res = SocketQUICPacket_verify_retry_tag (
+                        &odcid, retry_packet, retry_len);
                     (void)res;
                   }
               }
@@ -340,15 +346,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   /* NULL pointer tests */
   {
-    res = SocketQUICPacket_compute_retry_tag (NULL, retry_packet, retry_len,
-                                              computed_tag);
+    res = SocketQUICPacket_compute_retry_tag (
+        NULL, retry_packet, retry_len, computed_tag);
     (void)res;
 
     res = SocketQUICPacket_compute_retry_tag (&odcid, NULL, 0, computed_tag);
     (void)res;
 
-    res = SocketQUICPacket_compute_retry_tag (&odcid, retry_packet, retry_len,
-                                              NULL);
+    res = SocketQUICPacket_compute_retry_tag (
+        &odcid, retry_packet, retry_len, NULL);
     (void)res;
 
     res = SocketQUICPacket_verify_retry_tag (NULL, retry_packet, retry_len);
@@ -363,13 +369,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Packet exactly at minimum size for tag */
     uint8_t min_packet[QUIC_RETRY_INTEGRITY_TAG_LEN];
     memset (min_packet, 0x42, sizeof (min_packet));
-    res = SocketQUICPacket_verify_retry_tag (&odcid, min_packet,
-                                             sizeof (min_packet));
+    res = SocketQUICPacket_verify_retry_tag (
+        &odcid, min_packet, sizeof (min_packet));
     (void)res;
 
     /* Packet one byte short of having tag */
-    res = SocketQUICPacket_verify_retry_tag (&odcid, min_packet,
-                                             QUIC_RETRY_INTEGRITY_TAG_LEN - 1);
+    res = SocketQUICPacket_verify_retry_tag (
+        &odcid, min_packet, QUIC_RETRY_INTEGRITY_TAG_LEN - 1);
     (void)res;
   }
 

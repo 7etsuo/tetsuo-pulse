@@ -115,15 +115,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
       case OP_COMPRESS:
         /* Test compression with fuzzed input */
-        ret = ws_compress_message (ws, payload, payload_len, &output,
-                                   &output_len);
+        ret = ws_compress_message (
+            ws, payload, payload_len, &output, &output_len);
         (void)ret;
         break;
 
       case OP_DECOMPRESS:
         /* Test decompression with fuzzed (likely invalid) compressed data */
-        ret = ws_decompress_message (ws, payload, payload_len, &output,
-                                     &output_len);
+        ret = ws_decompress_message (
+            ws, payload, payload_len, &output, &output_len);
         (void)ret;
         break;
 
@@ -135,12 +135,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           unsigned char *decompressed = NULL;
           size_t decompressed_len = 0;
 
-          ret = ws_compress_message (ws, payload, payload_len, &compressed,
-                                     &compressed_len);
+          ret = ws_compress_message (
+              ws, payload, payload_len, &compressed, &compressed_len);
           if (ret == 0 && compressed != NULL && compressed_len > 0)
             {
-              ret = ws_decompress_message (ws, compressed, compressed_len,
-                                           &decompressed, &decompressed_len);
+              ret = ws_decompress_message (ws,
+                                           compressed,
+                                           compressed_len,
+                                           &decompressed,
+                                           &decompressed_len);
               /* Verify roundtrip if successful */
               if (ret == 0 && decompressed != NULL)
                 {
@@ -157,8 +160,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_DECOMPRESS_LARGE:
         /* Test with smaller max_message_size to trigger bomb protection */
         ws->config.max_message_size = 4096;
-        ret = ws_decompress_message (ws, payload, payload_len, &output,
-                                     &output_len);
+        ret = ws_decompress_message (
+            ws, payload, payload_len, &output, &output_len);
         (void)ret;
         break;
       }

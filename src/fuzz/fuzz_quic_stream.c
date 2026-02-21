@@ -155,11 +155,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)send_state;
 
           /* Try all send events */
-          SocketQUICStreamEvent send_events[] = { QUIC_STREAM_EVENT_SEND_DATA,
-                                                  QUIC_STREAM_EVENT_SEND_FIN,
-                                                  QUIC_STREAM_EVENT_ALL_DATA_ACKED,
-                                                  QUIC_STREAM_EVENT_SEND_RESET,
-                                                  QUIC_STREAM_EVENT_RESET_ACKED };
+          SocketQUICStreamEvent send_events[]
+              = { QUIC_STREAM_EVENT_SEND_DATA,
+                  QUIC_STREAM_EVENT_SEND_FIN,
+                  QUIC_STREAM_EVENT_ALL_DATA_ACKED,
+                  QUIC_STREAM_EVENT_SEND_RESET,
+                  QUIC_STREAM_EVENT_RESET_ACKED };
 
           for (size_t i = 0; i < sizeof (send_events) / sizeof (send_events[0]);
                i++)
@@ -307,14 +308,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketQUICStream_state_string ((SocketQUICStreamState)data[2]);
 
           /* Result codes */
-          SocketQUICStream_Result results[]
-              = { QUIC_STREAM_OK,
-                  QUIC_STREAM_ERROR_NULL,
-                  QUIC_STREAM_ERROR_INVALID_ID,
-                  QUIC_STREAM_ERROR_INVALID_TYPE,
-                  QUIC_STREAM_ERROR_WRONG_ROLE,
-                  QUIC_STREAM_ERROR_STATE,
-                  QUIC_STREAM_ERROR_LIMIT };
+          SocketQUICStream_Result results[] = { QUIC_STREAM_OK,
+                                                QUIC_STREAM_ERROR_NULL,
+                                                QUIC_STREAM_ERROR_INVALID_ID,
+                                                QUIC_STREAM_ERROR_INVALID_TYPE,
+                                                QUIC_STREAM_ERROR_WRONG_ROLE,
+                                                QUIC_STREAM_ERROR_STATE,
+                                                QUIC_STREAM_ERROR_LIMIT };
           for (size_t i = 0; i < sizeof (results) / sizeof (results[0]); i++)
             {
               const char *str = SocketQUICStream_result_string (results[i]);

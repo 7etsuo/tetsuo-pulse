@@ -9,17 +9,21 @@
 
 #define SOCKETGRPC_GEN_EMBEDDED_LIMIT 65536U
 
-#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) ((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))
-#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) ((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))
+#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) \
+  ((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))
+#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) \
+  ((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))
 
-void test_complex_Envelope_Meta_init (test_complex_Envelope_Meta *message)
+void
+test_complex_Envelope_Meta_init (test_complex_Envelope_Meta *message)
 {
   if (message == NULL)
     return;
   memset (message, 0, sizeof (*message));
 }
 
-void test_complex_Envelope_Meta_free (test_complex_Envelope_Meta *message)
+void
+test_complex_Envelope_Meta_free (test_complex_Envelope_Meta *message)
 {
   if (message == NULL)
     return;
@@ -27,7 +31,11 @@ void test_complex_Envelope_Meta_free (test_complex_Envelope_Meta *message)
   memset (message, 0, sizeof (*message));
 }
 
-int test_complex_Envelope_Meta_encode (const test_complex_Envelope_Meta *message, uint8_t *out, size_t out_len, size_t *written)
+int
+test_complex_Envelope_Meta_encode (const test_complex_Envelope_Meta *message,
+                                   uint8_t *out,
+                                   size_t out_len,
+                                   size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -38,22 +46,34 @@ int test_complex_Envelope_Meta_encode (const test_complex_Envelope_Meta *message
     return -1;
   if (message->timestamp != (uint64_t)0)
     {
-      rc = SocketProto_Message_append_varint (wire, 1, (uint64_t)message->timestamp);
+      rc = SocketProto_Message_append_varint (
+          wire, 1, (uint64_t)message->timestamp);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   if (message->source != NULL)
     {
-      rc = SocketProto_Message_append_bytes (wire, 2, (const uint8_t *)message->source, strlen (message->source));
+      rc = SocketProto_Message_append_bytes (
+          wire, 2, (const uint8_t *)message->source, strlen (message->source));
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   rc = SocketProto_Message_encode (wire, out, out_len, written);
   SocketProto_Message_free (&wire);
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int test_complex_Envelope_Meta_decode (test_complex_Envelope_Meta *message, const uint8_t *data, size_t len, Arena_T arena)
+int
+test_complex_Envelope_Meta_decode (test_complex_Envelope_Meta *message,
+                                   const uint8_t *data,
+                                   size_t len,
+                                   Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -83,7 +103,8 @@ int test_complex_Envelope_Meta_decode (test_complex_Envelope_Meta *message, cons
           break;
         case 2:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
@@ -100,10 +121,14 @@ int test_complex_Envelope_Meta_decode (test_complex_Envelope_Meta *message, cons
   return 0;
 }
 
-static int test_complex_Envelope_append_tags (test_complex_Envelope *message, char *value, Arena_T arena)
+static int
+test_complex_Envelope_append_tags (test_complex_Envelope *message,
+                                   char *value,
+                                   Arena_T arena)
 {
   size_t new_count = message->tags_count + 1U;
-  char **items = (char **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (char *));
+  char **items
+      = (char **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (char *));
   if (items == NULL)
     return -1;
   if (message->tags != NULL && message->tags_count > 0)
@@ -114,10 +139,14 @@ static int test_complex_Envelope_append_tags (test_complex_Envelope *message, ch
   return 0;
 }
 
-static int test_complex_Envelope_append_scores (test_complex_Envelope *message, uint32_t value, Arena_T arena)
+static int
+test_complex_Envelope_append_scores (test_complex_Envelope *message,
+                                     uint32_t value,
+                                     Arena_T arena)
 {
   size_t new_count = message->scores_count + 1U;
-  uint32_t *items = (uint32_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (uint32_t));
+  uint32_t *items
+      = (uint32_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (uint32_t));
   if (items == NULL)
     return -1;
   if (message->scores != NULL && message->scores_count > 0)
@@ -128,17 +157,27 @@ static int test_complex_Envelope_append_scores (test_complex_Envelope *message, 
   return 0;
 }
 
-static int test_complex_Envelope_append_attachments (test_complex_Envelope *message, uint8_t *value, size_t value_len, Arena_T arena)
+static int
+test_complex_Envelope_append_attachments (test_complex_Envelope *message,
+                                          uint8_t *value,
+                                          size_t value_len,
+                                          Arena_T arena)
 {
   size_t new_count = message->attachments_count + 1U;
-  uint8_t **items = (uint8_t **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (uint8_t *));
-  size_t *lens = (size_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (size_t));
+  uint8_t **items = (uint8_t **)SOCKETGRPC_GEN_ALLOC (
+      arena, new_count * sizeof (uint8_t *));
+  size_t *lens
+      = (size_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (size_t));
   if (items == NULL || lens == NULL)
     return -1;
   if (message->attachments != NULL && message->attachments_count > 0)
-    memcpy (items, message->attachments, message->attachments_count * sizeof (uint8_t *));
+    memcpy (items,
+            message->attachments,
+            message->attachments_count * sizeof (uint8_t *));
   if (message->attachments_len != NULL && message->attachments_count > 0)
-    memcpy (lens, message->attachments_len, message->attachments_count * sizeof (size_t));
+    memcpy (lens,
+            message->attachments_len,
+            message->attachments_count * sizeof (size_t));
   items[message->attachments_count] = value;
   lens[message->attachments_count] = value_len;
   message->attachments = items;
@@ -147,7 +186,8 @@ static int test_complex_Envelope_append_attachments (test_complex_Envelope *mess
   return 0;
 }
 
-void test_complex_Envelope_init (test_complex_Envelope *message)
+void
+test_complex_Envelope_init (test_complex_Envelope *message)
 {
   if (message == NULL)
     return;
@@ -156,7 +196,8 @@ void test_complex_Envelope_init (test_complex_Envelope *message)
   message->payload_case = TEST_COMPLEX_ENVELOPE_PAYLOADCASE_NOT_SET;
 }
 
-void test_complex_Envelope_free (test_complex_Envelope *message)
+void
+test_complex_Envelope_free (test_complex_Envelope *message)
 {
   if (message == NULL)
     return;
@@ -164,7 +205,11 @@ void test_complex_Envelope_free (test_complex_Envelope *message)
   memset (message, 0, sizeof (*message));
 }
 
-int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t *out, size_t out_len, size_t *written)
+int
+test_complex_Envelope_encode (const test_complex_Envelope *message,
+                              uint8_t *out,
+                              size_t out_len,
+                              size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -178,19 +223,37 @@ int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t 
       uint8_t *nested_buf = (uint8_t *)malloc (SOCKETGRPC_GEN_EMBEDDED_LIMIT);
       size_t nested_len = 0;
       if (nested_buf == NULL)
-        { SocketProto_Message_free (&wire); return -1; }
-      if (test_complex_Envelope_Meta_encode (&message->meta, nested_buf, SOCKETGRPC_GEN_EMBEDDED_LIMIT, &nested_len) != 0)
-        { free (nested_buf); SocketProto_Message_free (&wire); return -1; }
-      rc = SocketProto_Message_append_embedded (wire, 1, nested_buf, nested_len);
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
+      if (test_complex_Envelope_Meta_encode (&message->meta,
+                                             nested_buf,
+                                             SOCKETGRPC_GEN_EMBEDDED_LIMIT,
+                                             &nested_len)
+          != 0)
+        {
+          free (nested_buf);
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
+      rc = SocketProto_Message_append_embedded (
+          wire, 1, nested_buf, nested_len);
       free (nested_buf);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   for (size_t i = 0; i < message->tags_count; i++)
     {
       if (message->tags[i] == NULL)
         continue;
-      rc = SocketProto_Message_append_bytes (wire, 2, (const uint8_t *)message->tags[i], strlen (message->tags[i]));
+      rc = SocketProto_Message_append_bytes (wire,
+                                             2,
+                                             (const uint8_t *)message->tags[i],
+                                             strlen (message->tags[i]));
       if (rc != SOCKET_PROTO_OK)
         {
           SocketProto_Message_free (&wire);
@@ -199,7 +262,8 @@ int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t 
     }
   for (size_t i = 0; i < message->scores_count; i++)
     {
-      rc = SocketProto_Message_append_varint (wire, 3, (uint64_t)message->scores[i]);
+      rc = SocketProto_Message_append_varint (
+          wire, 3, (uint64_t)message->scores[i]);
       if (rc != SOCKET_PROTO_OK)
         {
           SocketProto_Message_free (&wire);
@@ -208,7 +272,11 @@ int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t 
     }
   for (size_t i = 0; i < message->attachments_count; i++)
     {
-      rc = SocketProto_Message_append_bytes (wire, 4, (const uint8_t *)message->attachments[i], message->attachments_len[i]);
+      rc = SocketProto_Message_append_bytes (
+          wire,
+          4,
+          (const uint8_t *)message->attachments[i],
+          message->attachments_len[i]);
       if (rc != SOCKET_PROTO_OK)
         {
           SocketProto_Message_free (&wire);
@@ -220,19 +288,37 @@ int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t 
     case TEST_COMPLEX_ENVELOPE_PAYLOADCASE_TEXT:
       if (message->payload.text == NULL)
         break;
-      rc = SocketProto_Message_append_bytes (wire, 5, (const uint8_t *)message->payload.text, strlen (message->payload.text));
+      rc = SocketProto_Message_append_bytes (
+          wire,
+          5,
+          (const uint8_t *)message->payload.text,
+          strlen (message->payload.text));
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
       break;
     case TEST_COMPLEX_ENVELOPE_PAYLOADCASE_BLOB:
-      rc = SocketProto_Message_append_bytes (wire, 6, (const uint8_t *)message->payload.blob.data, message->payload.blob.len);
+      rc = SocketProto_Message_append_bytes (
+          wire,
+          6,
+          (const uint8_t *)message->payload.blob.data,
+          message->payload.blob.len);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
       break;
     case TEST_COMPLEX_ENVELOPE_PAYLOADCASE_REF_ID:
-      rc = SocketProto_Message_append_varint (wire, 7, (uint64_t)message->payload.ref_id);
+      rc = SocketProto_Message_append_varint (
+          wire, 7, (uint64_t)message->payload.ref_id);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
       break;
     default:
       break;
@@ -242,7 +328,11 @@ int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t 
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t *data, size_t len, Arena_T arena)
+int
+test_complex_Envelope_decode (test_complex_Envelope *message,
+                              const uint8_t *data,
+                              size_t len,
+                              Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -264,12 +354,15 @@ int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t 
       switch (field->field_number)
         {
         case 1:
-          if (test_complex_Envelope_Meta_decode (&message->meta, field->value, field->value_len, arena) == 0)
+          if (test_complex_Envelope_Meta_decode (
+                  &message->meta, field->value, field->value_len, arena)
+              == 0)
             message->has_meta = 1;
           break;
         case 2:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
@@ -282,7 +375,8 @@ int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t 
           {
             uint64_t value = 0;
             if (SocketProto_Field_decode_u64 (field, &value) == SOCKET_PROTO_OK)
-              (void)test_complex_Envelope_append_scores (message, (uint32_t)value, arena);
+              (void)test_complex_Envelope_append_scores (
+                  message, (uint32_t)value, arena);
           }
           break;
         case 4:
@@ -290,16 +384,19 @@ int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t 
             uint8_t *copy = NULL;
             if (field->value_len > 0)
               {
-                copy = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);
+                copy
+                    = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);
                 if (copy != NULL)
                   memcpy (copy, field->value, field->value_len);
               }
-            (void)test_complex_Envelope_append_attachments (message, copy, field->value_len, arena);
+            (void)test_complex_Envelope_append_attachments (
+                message, copy, field->value_len, arena);
           }
           break;
         case 5:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
@@ -314,7 +411,8 @@ int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t 
             uint8_t *copy = NULL;
             if (field->value_len > 0)
               {
-                copy = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);
+                copy
+                    = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);
                 if (copy != NULL)
                   memcpy (copy, field->value, field->value_len);
               }
@@ -328,7 +426,8 @@ int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t 
             uint64_t value = 0;
             if (SocketProto_Field_decode_u64 (field, &value) == SOCKET_PROTO_OK)
               {
-                message->payload_case = TEST_COMPLEX_ENVELOPE_PAYLOADCASE_REF_ID;
+                message->payload_case
+                    = TEST_COMPLEX_ENVELOPE_PAYLOADCASE_REF_ID;
                 message->payload.ref_id = (uint64_t)value;
               }
           }
@@ -341,10 +440,14 @@ int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t 
   return 0;
 }
 
-static int test_complex_ComplexRequest_append_notes (test_complex_ComplexRequest *message, char *value, Arena_T arena)
+static int
+test_complex_ComplexRequest_append_notes (test_complex_ComplexRequest *message,
+                                          char *value,
+                                          Arena_T arena)
 {
   size_t new_count = message->notes_count + 1U;
-  char **items = (char **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (char *));
+  char **items
+      = (char **)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (char *));
   if (items == NULL)
     return -1;
   if (message->notes != NULL && message->notes_count > 0)
@@ -355,10 +458,14 @@ static int test_complex_ComplexRequest_append_notes (test_complex_ComplexRequest
   return 0;
 }
 
-static int test_complex_ComplexRequest_append_codes (test_complex_ComplexRequest *message, uint32_t value, Arena_T arena)
+static int
+test_complex_ComplexRequest_append_codes (test_complex_ComplexRequest *message,
+                                          uint32_t value,
+                                          Arena_T arena)
 {
   size_t new_count = message->codes_count + 1U;
-  uint32_t *items = (uint32_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (uint32_t));
+  uint32_t *items
+      = (uint32_t *)SOCKETGRPC_GEN_ALLOC (arena, new_count * sizeof (uint32_t));
   if (items == NULL)
     return -1;
   if (message->codes != NULL && message->codes_count > 0)
@@ -369,7 +476,8 @@ static int test_complex_ComplexRequest_append_codes (test_complex_ComplexRequest
   return 0;
 }
 
-void test_complex_ComplexRequest_init (test_complex_ComplexRequest *message)
+void
+test_complex_ComplexRequest_init (test_complex_ComplexRequest *message)
 {
   if (message == NULL)
     return;
@@ -377,7 +485,8 @@ void test_complex_ComplexRequest_init (test_complex_ComplexRequest *message)
   test_complex_Envelope_init (&message->envelope);
 }
 
-void test_complex_ComplexRequest_free (test_complex_ComplexRequest *message)
+void
+test_complex_ComplexRequest_free (test_complex_ComplexRequest *message)
 {
   if (message == NULL)
     return;
@@ -385,7 +494,11 @@ void test_complex_ComplexRequest_free (test_complex_ComplexRequest *message)
   memset (message, 0, sizeof (*message));
 }
 
-int test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *message, uint8_t *out, size_t out_len, size_t *written)
+int
+test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *message,
+                                    uint8_t *out,
+                                    size_t out_len,
+                                    size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -399,19 +512,37 @@ int test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *messa
       uint8_t *nested_buf = (uint8_t *)malloc (SOCKETGRPC_GEN_EMBEDDED_LIMIT);
       size_t nested_len = 0;
       if (nested_buf == NULL)
-        { SocketProto_Message_free (&wire); return -1; }
-      if (test_complex_Envelope_encode (&message->envelope, nested_buf, SOCKETGRPC_GEN_EMBEDDED_LIMIT, &nested_len) != 0)
-        { free (nested_buf); SocketProto_Message_free (&wire); return -1; }
-      rc = SocketProto_Message_append_embedded (wire, 1, nested_buf, nested_len);
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
+      if (test_complex_Envelope_encode (&message->envelope,
+                                        nested_buf,
+                                        SOCKETGRPC_GEN_EMBEDDED_LIMIT,
+                                        &nested_len)
+          != 0)
+        {
+          free (nested_buf);
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
+      rc = SocketProto_Message_append_embedded (
+          wire, 1, nested_buf, nested_len);
       free (nested_buf);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   for (size_t i = 0; i < message->notes_count; i++)
     {
       if (message->notes[i] == NULL)
         continue;
-      rc = SocketProto_Message_append_bytes (wire, 2, (const uint8_t *)message->notes[i], strlen (message->notes[i]));
+      rc = SocketProto_Message_append_bytes (wire,
+                                             2,
+                                             (const uint8_t *)message->notes[i],
+                                             strlen (message->notes[i]));
       if (rc != SOCKET_PROTO_OK)
         {
           SocketProto_Message_free (&wire);
@@ -420,7 +551,8 @@ int test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *messa
     }
   for (size_t i = 0; i < message->codes_count; i++)
     {
-      rc = SocketProto_Message_append_varint (wire, 3, (uint64_t)message->codes[i]);
+      rc = SocketProto_Message_append_varint (
+          wire, 3, (uint64_t)message->codes[i]);
       if (rc != SOCKET_PROTO_OK)
         {
           SocketProto_Message_free (&wire);
@@ -432,7 +564,11 @@ int test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *messa
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message, const uint8_t *data, size_t len, Arena_T arena)
+int
+test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message,
+                                    const uint8_t *data,
+                                    size_t len,
+                                    Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -454,17 +590,21 @@ int test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message, co
       switch (field->field_number)
         {
         case 1:
-          if (test_complex_Envelope_decode (&message->envelope, field->value, field->value_len, arena) == 0)
+          if (test_complex_Envelope_decode (
+                  &message->envelope, field->value, field->value_len, arena)
+              == 0)
             message->has_envelope = 1;
           break;
         case 2:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
                 copy[field->value_len] = '\0';
-                (void)test_complex_ComplexRequest_append_notes (message, copy, arena);
+                (void)test_complex_ComplexRequest_append_notes (
+                    message, copy, arena);
               }
           }
           break;
@@ -472,7 +612,8 @@ int test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message, co
           {
             uint64_t value = 0;
             if (SocketProto_Field_decode_u64 (field, &value) == SOCKET_PROTO_OK)
-              (void)test_complex_ComplexRequest_append_codes (message, (uint32_t)value, arena);
+              (void)test_complex_ComplexRequest_append_codes (
+                  message, (uint32_t)value, arena);
           }
           break;
         default:
@@ -483,14 +624,16 @@ int test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message, co
   return 0;
 }
 
-void test_complex_ComplexResponse_init (test_complex_ComplexResponse *message)
+void
+test_complex_ComplexResponse_init (test_complex_ComplexResponse *message)
 {
   if (message == NULL)
     return;
   memset (message, 0, sizeof (*message));
 }
 
-void test_complex_ComplexResponse_free (test_complex_ComplexResponse *message)
+void
+test_complex_ComplexResponse_free (test_complex_ComplexResponse *message)
 {
   if (message == NULL)
     return;
@@ -498,7 +641,12 @@ void test_complex_ComplexResponse_free (test_complex_ComplexResponse *message)
   memset (message, 0, sizeof (*message));
 }
 
-int test_complex_ComplexResponse_encode (const test_complex_ComplexResponse *message, uint8_t *out, size_t out_len, size_t *written)
+int
+test_complex_ComplexResponse_encode (
+    const test_complex_ComplexResponse *message,
+    uint8_t *out,
+    size_t out_len,
+    size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -509,22 +657,34 @@ int test_complex_ComplexResponse_encode (const test_complex_ComplexResponse *mes
     return -1;
   if (message->accepted != (int)0)
     {
-      rc = SocketProto_Message_append_varint (wire, 1, (uint64_t)message->accepted);
+      rc = SocketProto_Message_append_varint (
+          wire, 1, (uint64_t)message->accepted);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   if (message->reason != NULL)
     {
-      rc = SocketProto_Message_append_bytes (wire, 2, (const uint8_t *)message->reason, strlen (message->reason));
+      rc = SocketProto_Message_append_bytes (
+          wire, 2, (const uint8_t *)message->reason, strlen (message->reason));
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   rc = SocketProto_Message_encode (wire, out, out_len, written);
   SocketProto_Message_free (&wire);
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int test_complex_ComplexResponse_decode (test_complex_ComplexResponse *message, const uint8_t *data, size_t len, Arena_T arena)
+int
+test_complex_ComplexResponse_decode (test_complex_ComplexResponse *message,
+                                     const uint8_t *data,
+                                     size_t len,
+                                     Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -554,7 +714,8 @@ int test_complex_ComplexResponse_decode (test_complex_ComplexResponse *message, 
           break;
         case 2:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
@@ -571,7 +732,9 @@ int test_complex_ComplexResponse_decode (test_complex_ComplexResponse *message, 
   return 0;
 }
 
-void test_complex_ComplexService_Client_init (test_complex_ComplexService_Client *client, SocketGRPC_Channel_T channel)
+void
+test_complex_ComplexService_Client_init (
+    test_complex_ComplexService_Client *client, SocketGRPC_Channel_T channel)
 {
   if (client == NULL)
     return;
@@ -579,18 +742,27 @@ void test_complex_ComplexService_Client_init (test_complex_ComplexService_Client
   client->local_handlers = NULL;
 }
 
-void test_complex_ComplexService_Client_bind_local (test_complex_ComplexService_Client *client, const test_complex_ComplexService_ServerHandlers *handlers)
+void
+test_complex_ComplexService_Client_bind_local (
+    test_complex_ComplexService_Client *client,
+    const test_complex_ComplexService_ServerHandlers *handlers)
 {
   if (client == NULL)
     return;
   client->local_handlers = handlers;
 }
 
-int test_complex_ComplexService_Client_Process (test_complex_ComplexService_Client *client, const test_complex_ComplexRequest *request, test_complex_ComplexResponse *response, Arena_T arena)
+int
+test_complex_ComplexService_Client_Process (
+    test_complex_ComplexService_Client *client,
+    const test_complex_ComplexRequest *request,
+    test_complex_ComplexResponse *response,
+    Arena_T arena)
 {
   if (client == NULL || request == NULL || response == NULL || arena == NULL)
     return -1;
   if (client->local_handlers == NULL || client->local_handlers->Process == NULL)
     return SOCKET_GRPC_STATUS_UNIMPLEMENTED;
-  return client->local_handlers->Process (request, response, client->local_handlers->userdata, arena);
+  return client->local_handlers->Process (
+      request, response, client->local_handlers->userdata, arena);
 }

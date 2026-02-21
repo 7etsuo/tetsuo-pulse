@@ -9,17 +9,21 @@
 
 #define SOCKETGRPC_GEN_EMBEDDED_LIMIT 65536U
 
-#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) ((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))
-#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) ((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))
+#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) \
+  ((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))
+#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) \
+  ((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))
 
-void test_unary_HelloRequest_init (test_unary_HelloRequest *message)
+void
+test_unary_HelloRequest_init (test_unary_HelloRequest *message)
 {
   if (message == NULL)
     return;
   memset (message, 0, sizeof (*message));
 }
 
-void test_unary_HelloRequest_free (test_unary_HelloRequest *message)
+void
+test_unary_HelloRequest_free (test_unary_HelloRequest *message)
 {
   if (message == NULL)
     return;
@@ -27,7 +31,11 @@ void test_unary_HelloRequest_free (test_unary_HelloRequest *message)
   memset (message, 0, sizeof (*message));
 }
 
-int test_unary_HelloRequest_encode (const test_unary_HelloRequest *message, uint8_t *out, size_t out_len, size_t *written)
+int
+test_unary_HelloRequest_encode (const test_unary_HelloRequest *message,
+                                uint8_t *out,
+                                size_t out_len,
+                                size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -38,22 +46,33 @@ int test_unary_HelloRequest_encode (const test_unary_HelloRequest *message, uint
     return -1;
   if (message->name != NULL)
     {
-      rc = SocketProto_Message_append_bytes (wire, 1, (const uint8_t *)message->name, strlen (message->name));
+      rc = SocketProto_Message_append_bytes (
+          wire, 1, (const uint8_t *)message->name, strlen (message->name));
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   if (message->id != (uint32_t)0)
     {
       rc = SocketProto_Message_append_varint (wire, 2, (uint64_t)message->id);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   rc = SocketProto_Message_encode (wire, out, out_len, written);
   SocketProto_Message_free (&wire);
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int test_unary_HelloRequest_decode (test_unary_HelloRequest *message, const uint8_t *data, size_t len, Arena_T arena)
+int
+test_unary_HelloRequest_decode (test_unary_HelloRequest *message,
+                                const uint8_t *data,
+                                size_t len,
+                                Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -76,7 +95,8 @@ int test_unary_HelloRequest_decode (test_unary_HelloRequest *message, const uint
         {
         case 1:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
@@ -100,14 +120,16 @@ int test_unary_HelloRequest_decode (test_unary_HelloRequest *message, const uint
   return 0;
 }
 
-void test_unary_HelloResponse_init (test_unary_HelloResponse *message)
+void
+test_unary_HelloResponse_init (test_unary_HelloResponse *message)
 {
   if (message == NULL)
     return;
   memset (message, 0, sizeof (*message));
 }
 
-void test_unary_HelloResponse_free (test_unary_HelloResponse *message)
+void
+test_unary_HelloResponse_free (test_unary_HelloResponse *message)
 {
   if (message == NULL)
     return;
@@ -115,7 +137,11 @@ void test_unary_HelloResponse_free (test_unary_HelloResponse *message)
   memset (message, 0, sizeof (*message));
 }
 
-int test_unary_HelloResponse_encode (const test_unary_HelloResponse *message, uint8_t *out, size_t out_len, size_t *written)
+int
+test_unary_HelloResponse_encode (const test_unary_HelloResponse *message,
+                                 uint8_t *out,
+                                 size_t out_len,
+                                 size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -126,22 +152,35 @@ int test_unary_HelloResponse_encode (const test_unary_HelloResponse *message, ui
     return -1;
   if (message->greeting != NULL)
     {
-      rc = SocketProto_Message_append_bytes (wire, 1, (const uint8_t *)message->greeting, strlen (message->greeting));
+      rc = SocketProto_Message_append_bytes (wire,
+                                             1,
+                                             (const uint8_t *)message->greeting,
+                                             strlen (message->greeting));
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   if (message->code != (uint32_t)0)
     {
       rc = SocketProto_Message_append_varint (wire, 2, (uint64_t)message->code);
       if (rc != SOCKET_PROTO_OK)
-        { SocketProto_Message_free (&wire); return -1; }
+        {
+          SocketProto_Message_free (&wire);
+          return -1;
+        }
     }
   rc = SocketProto_Message_encode (wire, out, out_len, written);
   SocketProto_Message_free (&wire);
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int test_unary_HelloResponse_decode (test_unary_HelloResponse *message, const uint8_t *data, size_t len, Arena_T arena)
+int
+test_unary_HelloResponse_decode (test_unary_HelloResponse *message,
+                                 const uint8_t *data,
+                                 size_t len,
+                                 Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -164,7 +203,8 @@ int test_unary_HelloResponse_decode (test_unary_HelloResponse *message, const ui
         {
         case 1:
           {
-            char *copy = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
+            char *copy
+                = (char *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len + 1U);
             if (copy != NULL)
               {
                 memcpy (copy, field->value, field->value_len);
@@ -188,7 +228,9 @@ int test_unary_HelloResponse_decode (test_unary_HelloResponse *message, const ui
   return 0;
 }
 
-void test_unary_Greeter_Client_init (test_unary_Greeter_Client *client, SocketGRPC_Channel_T channel)
+void
+test_unary_Greeter_Client_init (test_unary_Greeter_Client *client,
+                                SocketGRPC_Channel_T channel)
 {
   if (client == NULL)
     return;
@@ -196,18 +238,27 @@ void test_unary_Greeter_Client_init (test_unary_Greeter_Client *client, SocketGR
   client->local_handlers = NULL;
 }
 
-void test_unary_Greeter_Client_bind_local (test_unary_Greeter_Client *client, const test_unary_Greeter_ServerHandlers *handlers)
+void
+test_unary_Greeter_Client_bind_local (
+    test_unary_Greeter_Client *client,
+    const test_unary_Greeter_ServerHandlers *handlers)
 {
   if (client == NULL)
     return;
   client->local_handlers = handlers;
 }
 
-int test_unary_Greeter_Client_SayHello (test_unary_Greeter_Client *client, const test_unary_HelloRequest *request, test_unary_HelloResponse *response, Arena_T arena)
+int
+test_unary_Greeter_Client_SayHello (test_unary_Greeter_Client *client,
+                                    const test_unary_HelloRequest *request,
+                                    test_unary_HelloResponse *response,
+                                    Arena_T arena)
 {
   if (client == NULL || request == NULL || response == NULL || arena == NULL)
     return -1;
-  if (client->local_handlers == NULL || client->local_handlers->SayHello == NULL)
+  if (client->local_handlers == NULL
+      || client->local_handlers->SayHello == NULL)
     return SOCKET_GRPC_STATUS_UNIMPLEMENTED;
-  return client->local_handlers->SayHello (request, response, client->local_handlers->userdata, arena);
+  return client->local_handlers->SayHello (
+      request, response, client->local_handlers->userdata, arena);
 }
