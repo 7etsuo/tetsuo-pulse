@@ -230,6 +230,71 @@ parse_userinfo (const char *userinfo_start,
 }
 
 /**
+ * @brief Parse an IPv6 address in bracket notation from a URL.
+ * @param host_start Points to the opening '['.
+ * @param config Config to populate with the parsed address.
+ * @param[out] port_start Set to the port string if present, else NULL.
+ * @return 0 on success, -1 on error.
+ */
+static int
+parse_ipv6_host (const char *host_start,
+                 SocketSimple_ProxyConfig *config,
+                 const char **port_start)
+{
+  const char *bracket = strchr (host_start, ']');
+  if (!bracket)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid IPv6 address in URL");
+      return -1;
+    }
+
+  size_t addr_len = bracket - host_start - 1;
+  if (addr_len >= sizeof (config->host))
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Hostname too long");
+      return -1;
+    }
+
+  memcpy (config->host, host_start + 1, addr_len);
+  config->host[addr_len] = '\0';
+
+  *port_start = (bracket[1] == ':') ? bracket + 2 : NULL;
+  return 0;
+}
+
+/**
+ * @brief Parse a regular hostname or IPv4 address from a URL.
+ * @param host_start Start of the hostname.
+ * @param config Config to populate with the parsed hostname.
+ * @param[out] port_start Set to the port string if present, else NULL.
+ * @return 0 on success, -1 on error.
+ */
+static int
+parse_ipv4_host (const char *host_start,
+                 SocketSimple_ProxyConfig *config,
+                 const char **port_start)
+{
+  const char *host_end = host_start;
+
+  while (*host_end && *host_end != ':' && *host_end != '/')
+    host_end++;
+
+  size_t host_len = host_end - host_start;
+  if (host_len >= sizeof (config->host))
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Hostname too long");
+      return -1;
+    }
+
+  memcpy (config->host, host_start, host_len);
+  config->host[host_len] = '\0';
+
+  *port_start = (*host_end == ':') ? host_end + 1 : NULL;
+  return 0;
+}
+
+/**
  * @brief Parse host and port from URL remainder.
  * @param host_start Start of host[:port] section.
  * @param config Config structure to populate with hostname.
@@ -239,56 +304,15 @@ parse_userinfo (const char *userinfo_start,
 static const char *
 parse_host_port (const char *host_start, SocketSimple_ProxyConfig *config)
 {
-  const char *host_end = host_start;
   const char *port_start = NULL;
+  int rc;
 
-  /* Handle IPv6 [address] notation */
   if (*host_start == '[')
-    {
-      const char *bracket = strchr (host_start, ']');
-      if (!bracket)
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Invalid IPv6 address in URL");
-          return (const char *)-1;
-        }
-
-      /* Copy IPv6 address without brackets */
-      size_t addr_len = bracket - host_start - 1;
-      if (addr_len >= sizeof (config->host))
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Hostname too long");
-          return (const char *)-1;
-        }
-
-      memcpy (config->host, host_start + 1, addr_len);
-      config->host[addr_len] = '\0';
-      host_end = bracket + 1;
-
-      if (*host_end == ':')
-        port_start = host_end + 1;
-    }
+    rc = parse_ipv6_host (host_start, config, &port_start);
   else
-    {
-      /* Regular hostname or IPv4 */
-      while (*host_end && *host_end != ':' && *host_end != '/')
-        host_end++;
+    rc = parse_ipv4_host (host_start, config, &port_start);
 
-      size_t host_len = host_end - host_start;
-      if (host_len >= sizeof (config->host))
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Hostname too long");
-          return (const char *)-1;
-        }
-
-      memcpy (config->host, host_start, host_len);
-      config->host[host_len] = '\0';
-
-      if (*host_end == ':')
-        port_start = host_end + 1;
-    }
-
-  return port_start;
+  return (rc < 0) ? (const char *)-1 : port_start;
 }
 
 /**

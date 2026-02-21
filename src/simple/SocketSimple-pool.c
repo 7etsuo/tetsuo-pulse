@@ -75,6 +75,28 @@ Socket_simple_pool_new (int max_connections)
   return Socket_simple_pool_new_ex (&opts);
 }
 
+/**
+ * @brief Apply optional rate limit, per-IP limit, and idle timeout settings
+ *        to a connection pool.
+ * @param pool The core pool to configure.
+ * @param opts User options containing optional settings.
+ */
+static void
+apply_pool_options (SocketPool_T pool, const SocketSimple_PoolOptions *opts)
+{
+  if (opts->conn_rate_limit > 0)
+    SocketPool_setconnrate (pool, opts->conn_rate_limit, opts->conn_rate_limit);
+
+  if (opts->max_per_ip > 0)
+    SocketPool_setmaxperip (pool, opts->max_per_ip);
+
+  if (opts->idle_timeout_ms > 0)
+    {
+      time_t timeout_sec = MS_TO_SEC_ROUND_UP (opts->idle_timeout_ms);
+      SocketPool_set_idle_timeout (pool, timeout_sec);
+    }
+}
+
 SocketSimple_Pool_T
 Socket_simple_pool_new_ex (const SocketSimple_PoolOptions *opts)
 {
@@ -118,21 +140,7 @@ Socket_simple_pool_new_ex (const SocketSimple_PoolOptions *opts)
   handle->arena = arena;
   handle->max_connections = opts->max_connections;
 
-  /* Apply optional settings */
-  if (opts->conn_rate_limit > 0)
-    {
-      SocketPool_setconnrate (
-          pool, opts->conn_rate_limit, opts->conn_rate_limit);
-    }
-  if (opts->max_per_ip > 0)
-    {
-      SocketPool_setmaxperip (pool, opts->max_per_ip);
-    }
-  if (opts->idle_timeout_ms > 0)
-    {
-      time_t timeout_sec = MS_TO_SEC_ROUND_UP (opts->idle_timeout_ms);
-      SocketPool_set_idle_timeout (pool, timeout_sec);
-    }
+  apply_pool_options (pool, opts);
 
   return handle;
 }
