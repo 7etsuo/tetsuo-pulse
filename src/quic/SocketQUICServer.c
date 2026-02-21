@@ -1035,69 +1035,86 @@ conn_flush_tls_output (QUICServerConn_T c)
 }
 
 static void
+derive_handshake_keys (QUICServerConn_T c,
+                       uint8_t *write_secret,
+                       uint8_t *read_secret,
+                       size_t *secret_len)
+{
+  if (c->handshake_keys_valid
+      || !SocketQUICHandshake_has_keys (c->handshake,
+                                        QUIC_CRYPTO_LEVEL_HANDSHAKE))
+    return;
+
+  if (SocketQUICTLS_get_traffic_secrets (c->handshake,
+                                         QUIC_CRYPTO_LEVEL_HANDSHAKE,
+                                         write_secret,
+                                         read_secret,
+                                         secret_len)
+      != QUIC_TLS_OK)
+    return;
+
+  SocketQUICPacketKeys_T hs_read_keys;
+  SocketQUICCrypto_derive_packet_keys (write_secret,
+                                       *secret_len,
+                                       QUIC_AEAD_AES_128_GCM,
+                                       &c->handshake_send_keys);
+  SocketQUICCrypto_derive_packet_keys (
+      read_secret, *secret_len, QUIC_AEAD_AES_128_GCM, &hs_read_keys);
+  SocketQUICReceive_set_handshake_keys (&c->recv_ctx, &hs_read_keys);
+  c->handshake_keys_valid = 1;
+}
+
+static void
+derive_application_keys (QUICServerConn_T c,
+                         uint8_t *write_secret,
+                         uint8_t *read_secret,
+                         size_t *secret_len)
+{
+  if (c->app_keys_valid
+      || !SocketQUICHandshake_has_keys (c->handshake,
+                                        QUIC_CRYPTO_LEVEL_APPLICATION))
+    return;
+
+  if (SocketQUICTLS_get_traffic_secrets (c->handshake,
+                                         QUIC_CRYPTO_LEVEL_APPLICATION,
+                                         write_secret,
+                                         read_secret,
+                                         secret_len)
+      != QUIC_TLS_OK)
+    return;
+
+  SocketQUICCrypto_derive_packet_keys (
+      write_secret, *secret_len, QUIC_AEAD_AES_128_GCM, &c->app_send_keys);
+  SocketQUICKeyUpdate_set_initial_keys (&c->key_update,
+                                        write_secret,
+                                        read_secret,
+                                        *secret_len,
+                                        QUIC_AEAD_AES_128_GCM);
+  SocketQUICReceive_set_1rtt_keys (&c->recv_ctx, &c->key_update);
+  c->app_keys_valid = 1;
+}
+
+static void
+clear_secret_buffers (uint8_t *write_secret, uint8_t *read_secret, size_t len)
+{
+  volatile uint8_t *vw = write_secret;
+  volatile uint8_t *vr = read_secret;
+  for (size_t i = 0; i < len; i++)
+    vw[i] = 0;
+  for (size_t i = 0; i < len; i++)
+    vr[i] = 0;
+}
+
+static void
 conn_check_and_derive_keys (QUICServerConn_T c)
 {
   uint8_t write_secret[SOCKET_CRYPTO_SHA256_SIZE];
   uint8_t read_secret[SOCKET_CRYPTO_SHA256_SIZE];
   size_t secret_len = 0;
 
-  /* Handshake keys */
-  if (!c->handshake_keys_valid
-      && SocketQUICHandshake_has_keys (c->handshake,
-                                       QUIC_CRYPTO_LEVEL_HANDSHAKE))
-    {
-      if (SocketQUICTLS_get_traffic_secrets (c->handshake,
-                                             QUIC_CRYPTO_LEVEL_HANDSHAKE,
-                                             write_secret,
-                                             read_secret,
-                                             &secret_len)
-          == QUIC_TLS_OK)
-        {
-          SocketQUICPacketKeys_T hs_read_keys;
-          SocketQUICCrypto_derive_packet_keys (write_secret,
-                                               secret_len,
-                                               QUIC_AEAD_AES_128_GCM,
-                                               &c->handshake_send_keys);
-          SocketQUICCrypto_derive_packet_keys (
-              read_secret, secret_len, QUIC_AEAD_AES_128_GCM, &hs_read_keys);
-          SocketQUICReceive_set_handshake_keys (&c->recv_ctx, &hs_read_keys);
-          c->handshake_keys_valid = 1;
-        }
-    }
-
-  /* Application (1-RTT) keys */
-  if (!c->app_keys_valid
-      && SocketQUICHandshake_has_keys (c->handshake,
-                                       QUIC_CRYPTO_LEVEL_APPLICATION))
-    {
-      if (SocketQUICTLS_get_traffic_secrets (c->handshake,
-                                             QUIC_CRYPTO_LEVEL_APPLICATION,
-                                             write_secret,
-                                             read_secret,
-                                             &secret_len)
-          == QUIC_TLS_OK)
-        {
-          SocketQUICCrypto_derive_packet_keys (write_secret,
-                                               secret_len,
-                                               QUIC_AEAD_AES_128_GCM,
-                                               &c->app_send_keys);
-          SocketQUICKeyUpdate_set_initial_keys (&c->key_update,
-                                                write_secret,
-                                                read_secret,
-                                                secret_len,
-                                                QUIC_AEAD_AES_128_GCM);
-          SocketQUICReceive_set_1rtt_keys (&c->recv_ctx, &c->key_update);
-          c->app_keys_valid = 1;
-        }
-    }
-
-  /* Clear secrets from stack */
-  volatile uint8_t *vw = write_secret;
-  volatile uint8_t *vr = read_secret;
-  for (size_t i = 0; i < sizeof (write_secret); i++)
-    vw[i] = 0;
-  for (size_t i = 0; i < sizeof (read_secret); i++)
-    vr[i] = 0;
+  derive_handshake_keys (c, write_secret, read_secret, &secret_len);
+  derive_application_keys (c, write_secret, read_secret, &secret_len);
+  clear_secret_buffers (write_secret, read_secret, sizeof (write_secret));
 }
 
 static QUICServerConn_T
@@ -1514,12 +1531,12 @@ SocketQUICServer_listen (SocketQUICServer_T server)
   return 0;
 }
 
-int
-SocketQUICServer_poll (SocketQUICServer_T server, int timeout_ms)
+static ssize_t
+server_poll_and_receive (SocketQUICServer_T server,
+                         int timeout_ms,
+                         struct sockaddr_storage *peer_addr,
+                         socklen_t *peer_addr_len)
 {
-  if (!server || !server->listening || server->closed)
-    return -1;
-
   struct pollfd pfd;
   pfd.fd = SocketDgram_fd (server->socket);
   pfd.events = POLLIN;
@@ -1529,82 +1546,105 @@ SocketQUICServer_poll (SocketQUICServer_T server, int timeout_ms)
   if (poll_rc <= 0)
     return 0;
 
-  struct sockaddr_storage peer_addr;
-  socklen_t peer_addr_len = sizeof (peer_addr);
-  ssize_t nbytes = server_recvfrom (server,
-                                    server->recv_buf,
-                                    SERVER_RECV_BUF_SIZE,
-                                    &peer_addr,
-                                    &peer_addr_len);
-  if (nbytes <= 0)
-    return 0;
+  return server_recvfrom (
+      server, server->recv_buf, SERVER_RECV_BUF_SIZE, peer_addr, peer_addr_len);
+}
 
-  size_t pkt_len = (size_t)nbytes;
-
-  /* Extract DCID from packet for routing */
+static int
+extract_dcid_from_packet (const uint8_t *buf,
+                          size_t pkt_len,
+                          const uint8_t **dcid_data,
+                          size_t *dcid_len,
+                          int *is_long_header)
+{
   if (pkt_len < 1)
-    return 0;
+    return -1;
 
-  uint8_t first_byte = server->recv_buf[0];
-  int is_long_header = (first_byte & 0x80) != 0;
+  *is_long_header = (buf[0] & 0x80) != 0;
 
-  const uint8_t *dcid_data = NULL;
-  size_t dcid_len = 0;
-
-  if (is_long_header)
+  if (*is_long_header)
     {
       /* Long header: flags(1) + version(4) + dcid_len(1) + dcid(...) */
       if (pkt_len < 6)
-        return 0;
-      dcid_len = server->recv_buf[5];
-      if (pkt_len < 6 + dcid_len)
-        return 0;
-      dcid_data = server->recv_buf + 6;
+        return -1;
+      *dcid_len = buf[5];
+      if (pkt_len < 6 + *dcid_len)
+        return -1;
+      *dcid_data = buf + 6;
     }
   else
     {
-      /* Short header: flags(1) + dcid (fixed length) */
-      /* For server, the DCID in short headers is our SCID, which is
-       * SERVER_SCID_LEN. But we need to search all connections. */
-      dcid_len = SERVER_SCID_LEN;
-      if (pkt_len < 1 + dcid_len)
-        return 0;
-      dcid_data = server->recv_buf + 1;
+      /* Short header: flags(1) + dcid (fixed length, SERVER_SCID_LEN) */
+      *dcid_len = SERVER_SCID_LEN;
+      if (pkt_len < 1 + *dcid_len)
+        return -1;
+      *dcid_data = buf + 1;
     }
 
-  /* Look up connection by DCID */
-  QUICServerConn_T c = find_conn_by_dcid (server, dcid_data, dcid_len);
+  return 0;
+}
 
-  if (c)
-    {
-      return handle_existing_conn_packet (c, server->recv_buf, pkt_len);
-    }
-
-  /* No existing connection — must be Initial packet */
+static int
+server_handle_new_connection (SocketQUICServer_T server,
+                              size_t pkt_len,
+                              int is_long_header,
+                              struct sockaddr_storage *peer_addr,
+                              socklen_t peer_addr_len)
+{
   if (!is_long_header)
-    return 0; /* Short header from unknown → drop */
+    return 0; /* Short header from unknown source — drop */
 
   /* Check version field for Initial packet type */
   uint32_t version = ((uint32_t)server->recv_buf[1] << 24)
                      | ((uint32_t)server->recv_buf[2] << 16)
                      | ((uint32_t)server->recv_buf[3] << 8)
                      | (uint32_t)server->recv_buf[4];
-
   if (version == 0)
     return 0; /* Version negotiation — ignore */
 
   /* Check packet type (bits 4-5 of first byte for long header) */
-  uint8_t pkt_type = (first_byte & 0x30) >> 4;
+  uint8_t pkt_type = (server->recv_buf[0] & 0x30) >> 4;
   if (pkt_type != QUIC_PACKET_TYPE_INITIAL)
-    return 0; /* Not Initial → drop */
+    return 0; /* Not Initial — drop */
 
   QUICServerConn_T new_conn = handle_initial_packet (
-      server, server->recv_buf, pkt_len, &peer_addr, peer_addr_len);
+      server, server->recv_buf, pkt_len, peer_addr, peer_addr_len);
 
   if (new_conn && new_conn->connected && server->conn_cb)
     server->conn_cb (new_conn, server->cb_userdata);
 
   return new_conn ? 1 : 0;
+}
+
+int
+SocketQUICServer_poll (SocketQUICServer_T server, int timeout_ms)
+{
+  if (!server || !server->listening || server->closed)
+    return -1;
+
+  struct sockaddr_storage peer_addr;
+  socklen_t peer_addr_len = sizeof (peer_addr);
+  ssize_t nbytes = server_poll_and_receive (
+      server, timeout_ms, &peer_addr, &peer_addr_len);
+  if (nbytes <= 0)
+    return 0;
+
+  size_t pkt_len = (size_t)nbytes;
+  const uint8_t *dcid_data = NULL;
+  size_t dcid_len = 0;
+  int is_long_header = 0;
+
+  if (extract_dcid_from_packet (
+          server->recv_buf, pkt_len, &dcid_data, &dcid_len, &is_long_header)
+      < 0)
+    return 0;
+
+  QUICServerConn_T c = find_conn_by_dcid (server, dcid_data, dcid_len);
+  if (c)
+    return handle_existing_conn_packet (c, server->recv_buf, pkt_len);
+
+  return server_handle_new_connection (
+      server, pkt_len, is_long_header, &peer_addr, peer_addr_len);
 }
 
 void
