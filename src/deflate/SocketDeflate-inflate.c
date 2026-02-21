@@ -415,12 +415,12 @@ decode_code_lengths (SocketDeflate_BitReader_T reader,
       if (result != DEFLATE_OK)
         return result;
 
-      if (symbol < 16)
+      if (symbol < DEFLATE_CODELEN_COPY_PREV)
         {
           /* Direct code length */
           code_lengths[code_idx++] = (uint8_t)symbol;
         }
-      else if (symbol == 16)
+      else if (symbol == DEFLATE_CODELEN_COPY_PREV)
         {
           /* Copy previous length 3-6 times */
           uint32_t count;
@@ -436,7 +436,7 @@ decode_code_lengths (SocketDeflate_BitReader_T reader,
           for (unsigned int i = 0; i < count && code_idx < total_codes; i++)
             code_lengths[code_idx++] = prev;
         }
-      else if (symbol == 17)
+      else if (symbol == DEFLATE_CODELEN_REPEAT_3)
         {
           /* Repeat 0 for 3-10 times */
           uint32_t count;
@@ -448,7 +448,7 @@ decode_code_lengths (SocketDeflate_BitReader_T reader,
           for (unsigned int i = 0; i < count && code_idx < total_codes; i++)
             code_lengths[code_idx++] = 0;
         }
-      else if (symbol == 18)
+      else if (symbol == DEFLATE_CODELEN_REPEAT_11)
         {
           /* Repeat 0 for 11-138 times */
           uint32_t count;

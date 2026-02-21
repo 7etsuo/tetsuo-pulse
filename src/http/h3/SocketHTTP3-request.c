@@ -733,7 +733,7 @@ parse_status_code (const char *value, size_t value_len)
         return -1;
       code = code * 10 + (value[i] - '0');
     }
-  if (code < 100 || code > 599)
+  if (code < HTTP_STATUS_CODE_MIN || code > HTTP_STATUS_CODE_MAX)
     return -1;
   return code;
 }

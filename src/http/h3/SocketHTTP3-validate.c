@@ -257,7 +257,7 @@ SocketHTTP3_validate_response_headers (const SocketHTTP_Headers_T headers)
     return -(int)H3_MESSAGE_ERROR;
 
   /* RFC 9114 §4.5: 101 Switching Protocols is forbidden in HTTP/3 */
-  if (status_code == 101)
+  if (status_code == HTTP_STATUS_SWITCHING_PROTOCOLS)
     return -(int)H3_MESSAGE_ERROR;
 
   return 0;

@@ -400,7 +400,7 @@ encode_zero_run (uint8_t *output,
   if (run >= 11)
     {
       /* Symbol 18: repeat 0 for 11-138 times */
-      output[(*out_pos)++] = 18;
+      output[(*out_pos)++] = DEFLATE_CODELEN_REPEAT_11;
       if (*out_pos < output_capacity)
         output[(*out_pos)++] = run - 11;
       *i += run;
@@ -408,7 +408,7 @@ encode_zero_run (uint8_t *output,
   else if (run >= 3)
     {
       /* Symbol 17: repeat 0 for 3-10 times */
-      output[(*out_pos)++] = 17;
+      output[(*out_pos)++] = DEFLATE_CODELEN_REPEAT_3;
       if (*out_pos < output_capacity)
         output[(*out_pos)++] = run - 3;
       *i += run;
@@ -439,7 +439,7 @@ encode_repeat_run (uint8_t *output,
   if (run >= 3)
     {
       /* Symbol 16: copy previous 3-6 times */
-      output[(*out_pos)++] = 16;
+      output[(*out_pos)++] = DEFLATE_CODELEN_COPY_PREV;
       if (*out_pos < output_capacity)
         output[(*out_pos)++] = run - 3;
       *i += run;
@@ -496,7 +496,7 @@ SocketDeflate_encode_code_lengths (const uint8_t *lengths,
               unsigned int run = count_repeat_run (lengths, count, i, len, 6);
               if (run >= 3)
                 {
-                  output[out_pos++] = 16;
+                  output[out_pos++] = DEFLATE_CODELEN_COPY_PREV;
                   if (out_pos < output_capacity)
                     output[out_pos++] = run - 3;
                   i += run;

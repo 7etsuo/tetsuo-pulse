@@ -831,21 +831,21 @@ write_encoded_lengths (SocketDeflate_BitWriter_T writer,
           writer, cl_codes[sym].code, cl_codes[sym].len);
 
       /* Write extra bits for special symbols */
-      if (sym == 16)
+      if (sym == DEFLATE_CODELEN_COPY_PREV)
         {
           /* Copy previous: 2 extra bits (3-6 copies) */
           i++;
           if (i < encoded_len)
             SocketDeflate_BitWriter_write (writer, encoded[i], 2);
         }
-      else if (sym == 17)
+      else if (sym == DEFLATE_CODELEN_REPEAT_3)
         {
           /* Repeat 0: 3 extra bits (3-10 zeros) */
           i++;
           if (i < encoded_len)
             SocketDeflate_BitWriter_write (writer, encoded[i], 3);
         }
-      else if (sym == 18)
+      else if (sym == DEFLATE_CODELEN_REPEAT_11)
         {
           /* Repeat 0: 7 extra bits (11-138 zeros) */
           i++;
@@ -889,11 +889,12 @@ count_codelen_frequencies (const uint8_t *encoded,
   for (size_t i = 0; i < encoded_len; i++)
     {
       uint8_t sym = encoded[i];
-      if (sym <= 18)
+      if (sym <= DEFLATE_CODELEN_REPEAT_11)
         cl_freq[sym]++;
 
       /* Skip extra bits for special symbols */
-      if (sym == 16 || sym == 17 || sym == 18)
+      if (sym == DEFLATE_CODELEN_COPY_PREV || sym == DEFLATE_CODELEN_REPEAT_3
+          || sym == DEFLATE_CODELEN_REPEAT_11)
         i++;
     }
 }
