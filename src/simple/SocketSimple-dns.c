@@ -242,33 +242,23 @@ Socket_simple_dns_lookup (const char *hostname, char *buf, size_t len)
 }
 
 /**
- * @brief Perform DNS lookup for a specific address family.
+ * @brief Resolve a hostname for a specific address family using TRY/EXCEPT.
+ * @param dns The DNS resolver instance.
  * @param hostname The hostname to resolve.
- * @param buf Buffer to store the resulting IP address string.
- * @param len Size of the buffer.
- * @param family Address family (AF_INET or AF_INET6).
- * @return 0 on success, -1 on error.
+ * @param hints The addrinfo hints (must have ai_family already set).
+ * @return addrinfo result or NULL on error.
  */
-/**
- * dns_resolve_hostname - Perform DNS resolution with exception handling
- * @dns: DNS resolver
- * @hostname: Hostname to resolve
- * @hints: Address hints (family, socktype)
- * @res_out: Output for addrinfo result
- *
- * Returns: 0 on success, -1 on failure (error already set)
- */
-static int
-dns_resolve_hostname (SocketDNS_T dns,
-                      const char *hostname,
-                      struct addrinfo *hints,
-                      volatile struct addrinfo **res_out)
+static struct addrinfo *
+dns_resolve_family_sync (SocketDNS_T dns,
+                         const char *hostname,
+                         struct addrinfo *hints)
 {
+  volatile struct addrinfo *res = NULL;
   volatile int exception_occurred = 0;
 
   TRY
   {
-    *res_out = SocketDNS_resolve_sync (
+    res = SocketDNS_resolve_sync (
         dns, hostname, 0, hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS);
   }
   EXCEPT (SocketDNS_Failed)
@@ -278,29 +268,29 @@ dns_resolve_hostname (SocketDNS_T dns,
   }
   FINALLY
   {
-    if (exception_occurred && *res_out)
+    if (exception_occurred && res)
       {
-        SocketCommon_free_addrinfo ((struct addrinfo *)*res_out);
-        *res_out = NULL;
+        SocketCommon_free_addrinfo ((struct addrinfo *)res);
+        res = NULL;
       }
   }
   END_TRY;
 
-  return exception_occurred ? -1 : 0;
+  return exception_occurred ? NULL : (struct addrinfo *)res;
 }
 
 /**
- * dns_extract_address - Extract numeric address string from addrinfo
- * @res: Resolved addrinfo
- * @buf: Output buffer for address string
- * @len: Size of output buffer
- *
- * Returns: 0 on success, -1 on failure (error already set)
+ * @brief Extract numeric address string from an addrinfo result.
+ * @param res The addrinfo to extract the address from.
+ * @param buf Buffer to store the resulting IP address string.
+ * @param len Size of the buffer.
+ * @return 0 on success, -1 on error.
  */
 static int
-dns_extract_address (struct addrinfo *res, char *buf, size_t len)
+dns_addrinfo_to_string (struct addrinfo *res, char *buf, size_t len)
 {
   char host[NI_MAXHOST];
+
   if (SocketCommon_reverse_lookup (res->ai_addr,
                                    res->ai_addrlen,
                                    host,
@@ -319,12 +309,20 @@ dns_extract_address (struct addrinfo *res, char *buf, size_t len)
   return -1;
 }
 
+/**
+ * @brief Perform DNS lookup for a specific address family.
+ * @param hostname The hostname to resolve.
+ * @param buf Buffer to store the resulting IP address string.
+ * @param len Size of the buffer.
+ * @param family Address family (AF_INET or AF_INET6).
+ * @return 0 on success, -1 on error.
+ */
 static int
 dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
 {
-  volatile struct addrinfo *res = NULL;
   struct addrinfo hints;
-  int ret = -1;
+  struct addrinfo *res;
+  int ret;
 
   Socket_simple_clear_error ();
 
@@ -344,19 +342,18 @@ dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
   hints.ai_family = family;
 
-  if (dns_resolve_hostname (dns, hostname, &hints, &res) != 0)
-    return -1;
-
+  res = dns_resolve_family_sync (dns, hostname, &hints);
   if (!res)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS,
-                        family == AF_INET ? "No IPv4 address found"
-                                          : "No IPv6 address found");
+      if (Socket_simple_error ()[0] == '\0')
+        simple_set_error (SOCKET_SIMPLE_ERR_DNS,
+                          family == AF_INET ? "No IPv4 address found"
+                                            : "No IPv6 address found");
       return -1;
     }
 
-  ret = dns_extract_address ((struct addrinfo *)res, buf, len);
-  SocketCommon_free_addrinfo ((struct addrinfo *)res);
+  ret = dns_addrinfo_to_string (res, buf, len);
+  SocketCommon_free_addrinfo (res);
   return ret;
 }
 
@@ -372,10 +369,39 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
   return dns_lookup_family (hostname, buf, len, AF_INET6);
 }
 
+/**
+ * @brief Resolve an IP address string to addrinfo using AI_NUMERICHOST.
+ * @param ip The IP address string to resolve.
+ * @param res Output parameter for the addrinfo result.
+ * @return 0 on success, -1 on error (error is set).
+ */
+static int
+dns_reverse_parse_ip (const char *ip, struct addrinfo **res)
+{
+  struct addrinfo hints;
+
+  if (!SocketCommon_parse_ip (ip, NULL))
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid IP address");
+      return -1;
+    }
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, AI_NUMERICHOST);
+
+  if (SocketCommon_resolve_address (
+          ip, 0, &hints, res, SocketCommon_Failed, AF_UNSPEC, 0)
+      != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Invalid IP address format");
+      return -1;
+    }
+
+  return 0;
+}
+
 int
 Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len)
 {
-  struct addrinfo hints;
   struct addrinfo *res = NULL;
   int ret = -1;
 
@@ -387,25 +413,9 @@ Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len)
       return -1;
     }
 
-  /* Validate IP address format using library utility */
-  if (!SocketCommon_parse_ip (ip, NULL))
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid IP address");
-      return -1;
-    }
+  if (dns_reverse_parse_ip (ip, &res) != 0)
+    return -1;
 
-  /* Use library's resolve for IP parsing */
-  SocketCommon_setup_hints (&hints, SOCK_STREAM, AI_NUMERICHOST);
-
-  if (SocketCommon_resolve_address (
-          ip, 0, &hints, &res, SocketCommon_Failed, AF_UNSPEC, 0)
-      != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Invalid IP address format");
-      return -1;
-    }
-
-  /* Use library's reverse lookup (without NI_NUMERICHOST to get hostname) */
   if (SocketCommon_reverse_lookup (res->ai_addr,
                                    res->ai_addrlen,
                                    hostname,
@@ -415,13 +425,9 @@ Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len)
                                    0,
                                    SocketCommon_Failed)
       == 0)
-    {
-      ret = 0;
-    }
+    ret = 0;
   else
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Reverse lookup failed");
-    }
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Reverse lookup failed");
 
   SocketCommon_free_addrinfo (res);
   return ret;
@@ -642,12 +648,43 @@ Socket_simple_dns_resolve_async (SocketSimple_DNS_T dns,
   return 0;
 }
 
+/**
+ * @brief Submit an async DNS resolution request with exception handling.
+ * @param dns The DNS resolver instance.
+ * @param hostname The hostname to resolve.
+ * @return The DNS request handle, or NULL on error (error is set).
+ */
+static SocketDNS_Request_T *
+dns_resolve_start_submit (SocketDNS_T dns, const char *hostname)
+{
+  SocketDNS_Request_T *volatile req = NULL;
+  volatile int exception_occurred = 0;
+
+  TRY
+  {
+    req = SocketDNS_resolve (dns, hostname, 0, NULL, NULL);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to start DNS resolution");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return NULL;
+
+  if (!req)
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to start DNS resolution");
+
+  return (SocketDNS_Request_T *)req;
+}
+
 SocketSimple_DNSRequest_T
 Socket_simple_dns_resolve_start (SocketSimple_DNS_T dns, const char *hostname)
 {
-  SocketDNS_Request_T *volatile req = NULL;
-  struct SocketSimple_DNSRequest *volatile handle = NULL;
-  volatile int exception_occurred = 0;
+  struct SocketSimple_DNSRequest *handle;
+  SocketDNS_Request_T *req;
 
   Socket_simple_clear_error ();
 
@@ -664,36 +701,15 @@ Socket_simple_dns_resolve_start (SocketSimple_DNS_T dns, const char *hostname)
       return NULL;
     }
 
-  TRY
-  {
-    req = SocketDNS_resolve (dns->dns, hostname, 0, NULL, NULL);
-  }
-  EXCEPT (SocketDNS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to start DNS resolution");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    {
-      free ((void *)handle);
-      return NULL;
-    }
-
+  req = dns_resolve_start_submit (dns->dns, hostname);
   if (!req)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS,
-                        "Failed to start DNS resolution");
-      free ((void *)handle);
+      free (handle);
       return NULL;
     }
 
-  handle->core_req = (SocketDNS_Request_T *)req;
+  handle->core_req = req;
   handle->dns = dns->dns;
-  handle->complete = 0;
-  handle->error = 0;
-  handle->result = NULL;
 
   return (SocketSimple_DNSRequest_T)handle;
 }
