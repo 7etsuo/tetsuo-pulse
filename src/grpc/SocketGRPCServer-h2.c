@@ -1768,43 +1768,29 @@ grpc_resolve_final_status (SocketGRPC_ServerContext_T ctx,
   return SOCKET_GRPC_STATUS_INTERNAL;
 }
 
-void
-SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
+static SocketGRPC_ServerMethod *
+grpc_h2_validate_request (SocketHTTPServer_Request_T req,
+                          SocketGRPC_Server_T server,
+                          const char **full_method_out)
 {
-  SocketGRPC_Server_T server = (SocketGRPC_Server_T)userdata;
   SocketHTTP_Headers_T headers;
   const char *full_method;
   const char *content_type;
   const char *te_header;
   SocketGRPC_ServerMethod *method;
-  struct SocketGRPC_ServerContext ctx;
-  const uint8_t *request_payload = NULL;
-  size_t request_payload_len = 0;
-  uint8_t *response_payload = NULL;
-  size_t response_payload_len = 0;
-  int compressed = 0;
-  int handler_rc;
-  SocketGRPC_StatusCode grpc_status;
-  const char *grpc_message = NULL;
-  int observability_started = 0;
-  int observability_finished = 0;
-  int64_t observability_started_ms = 0;
-
-  if (req == NULL)
-    return;
 
   if (server == NULL)
     {
       grpc_send_plain_http_error (
           req, HTTP_STATUS_INTERNAL_ERROR, "gRPC server context unavailable");
-      return;
+      return NULL;
     }
 
   if (!SocketHTTPServer_Request_is_http2 (req))
     {
       grpc_send_plain_http_error (
           req, HTTP_STATUS_VERSION_NOT_SUPPORTED, "Unary gRPC requires HTTP/2");
-      return;
+      return NULL;
     }
 
   if (server->shutting_down)
@@ -1816,7 +1802,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 SOCKET_GRPC_STATUS_UNAVAILABLE,
                                 "Server is shutting down",
                                 NULL);
-      return;
+      return NULL;
     }
 
   if (SocketHTTPServer_Request_method (req) != HTTP_METHOD_POST)
@@ -1828,7 +1814,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 SOCKET_GRPC_STATUS_UNIMPLEMENTED,
                                 "Unary gRPC requires POST",
                                 NULL);
-      return;
+      return NULL;
     }
 
   full_method = SocketHTTPServer_Request_path (req);
@@ -1841,7 +1827,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 SOCKET_GRPC_STATUS_UNIMPLEMENTED,
                                 "Invalid gRPC method path",
                                 NULL);
-      return;
+      return NULL;
     }
 
   headers = SocketHTTPServer_Request_headers (req);
@@ -1852,7 +1838,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
       grpc_send_plain_http_error (req,
                                   HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
                                   "Invalid content-type for gRPC");
-      return;
+      return NULL;
     }
 
   te_header = SocketHTTP_Headers_get_n (headers, "te", STRLEN_LIT ("te"));
@@ -1860,7 +1846,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
     {
       grpc_send_plain_http_error (
           req, HTTP_STATUS_BAD_REQUEST, "Invalid te header for gRPC request");
-      return;
+      return NULL;
     }
 
   method = grpc_server_find_method (server, full_method);
@@ -1873,8 +1859,22 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 SOCKET_GRPC_STATUS_UNIMPLEMENTED,
                                 "Unknown gRPC method",
                                 NULL);
-      return;
+      return NULL;
     }
+
+  if (full_method_out != NULL)
+    *full_method_out = full_method;
+  return method;
+}
+
+static int
+grpc_h2_parse_and_validate_payload (SocketHTTPServer_Request_T req,
+                                    const uint8_t **request_payload_out,
+                                    size_t *request_payload_len_out)
+{
+  const uint8_t *request_payload = NULL;
+  size_t request_payload_len = 0;
+  int compressed = 0;
 
   if (grpc_parse_unary_request_payload (
           req, &request_payload, &request_payload_len, &compressed)
@@ -1882,7 +1882,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
     {
       grpc_send_plain_http_error (
           req, HTTP_STATUS_BAD_REQUEST, "Malformed unary gRPC request frame");
-      return;
+      return -1;
     }
 
   if (compressed != 0)
@@ -1890,24 +1890,36 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
       grpc_send_plain_http_error (req,
                                   HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
                                   "Compressed gRPC requests unsupported");
-      return;
+      return -1;
     }
 
-  if (grpc_context_init (&ctx, server, req, full_method) != 0)
-    {
-      grpc_send_unary_response (req,
-                                HTTP_STATUS_OK,
-                                NULL,
-                                0,
-                                SOCKET_GRPC_STATUS_INTERNAL,
-                                "Failed to initialize unary server context",
-                                NULL);
-      return;
-    }
+  *request_payload_out = request_payload;
+  *request_payload_len_out = request_payload_len;
+  return 0;
+}
+
+static void
+grpc_h2_dispatch_unary (SocketHTTPServer_Request_T req,
+                        SocketGRPC_Server_T server,
+                        SocketGRPC_ServerMethod *method,
+                        struct SocketGRPC_ServerContext *ctx,
+                        const char *full_method,
+                        const uint8_t *request_payload,
+                        size_t request_payload_len)
+{
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int handler_rc;
+  SocketGRPC_StatusCode grpc_status;
+  const char *grpc_message = NULL;
+  int observability_started = 0;
+  int observability_finished = 0;
+  int64_t observability_started_ms = 0;
+
   observability_started = grpc_server_observability_call_started (
       server, req, full_method, request_payload_len, &observability_started_ms);
 
-  if (SocketGRPC_ServerContext_is_cancelled (&ctx))
+  if (SocketGRPC_ServerContext_is_cancelled (ctx))
     {
       grpc_server_observability_call_finished (
           server,
@@ -1925,15 +1937,12 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 0,
                                 SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
                                 "Deadline exceeded",
-                                ctx.trailers);
+                                ctx->trailers);
       return;
     }
 
-  response_payload = NULL;
-  response_payload_len = 0;
-
   if (grpc_run_server_unary_interceptors (server,
-                                          &ctx,
+                                          ctx,
                                           request_payload,
                                           request_payload_len,
                                           &grpc_status,
@@ -1955,7 +1964,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                                 0,
                                 grpc_status,
                                 grpc_message,
-                                ctx.trailers);
+                                ctx->trailers);
       return;
     }
 
@@ -1963,7 +1972,7 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
   if (grpc_server_observability_enabled (server))
     SocketMetrics_gauge_inc (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
   handler_rc = grpc_invoke_handler (method,
-                                    &ctx,
+                                    ctx,
                                     request_payload,
                                     request_payload_len,
                                     &response_payload,
@@ -1973,9 +1982,9 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
   if (grpc_server_observability_enabled (server))
     SocketMetrics_gauge_dec (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
 
-  grpc_status = grpc_resolve_final_status (&ctx, handler_rc, &grpc_message);
+  grpc_status = grpc_resolve_final_status (ctx, handler_rc, &grpc_message);
   if (grpc_status == SOCKET_GRPC_STATUS_OK
-      && SocketGRPC_ServerContext_is_cancelled (&ctx))
+      && SocketGRPC_ServerContext_is_cancelled (ctx))
     {
       grpc_status = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
       grpc_message = "Deadline exceeded";
@@ -2003,7 +2012,50 @@ SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
                             response_payload_len,
                             grpc_status,
                             grpc_message,
-                            ctx.trailers);
+                            ctx->trailers);
+}
+
+void
+SocketGRPC_Server_handle_http2 (SocketHTTPServer_Request_T req, void *userdata)
+{
+  SocketGRPC_Server_T server = (SocketGRPC_Server_T)userdata;
+  const char *full_method = NULL;
+  SocketGRPC_ServerMethod *method;
+  struct SocketGRPC_ServerContext ctx;
+  const uint8_t *request_payload = NULL;
+  size_t request_payload_len = 0;
+
+  if (req == NULL)
+    return;
+
+  method = grpc_h2_validate_request (req, server, &full_method);
+  if (method == NULL)
+    return;
+
+  if (grpc_h2_parse_and_validate_payload (
+          req, &request_payload, &request_payload_len)
+      != 0)
+    return;
+
+  if (grpc_context_init (&ctx, server, req, full_method) != 0)
+    {
+      grpc_send_unary_response (req,
+                                HTTP_STATUS_OK,
+                                NULL,
+                                0,
+                                SOCKET_GRPC_STATUS_INTERNAL,
+                                "Failed to initialize unary server context",
+                                NULL);
+      return;
+    }
+
+  grpc_h2_dispatch_unary (req,
+                          server,
+                          method,
+                          &ctx,
+                          full_method,
+                          request_payload,
+                          request_payload_len);
 }
 
 #if SOCKET_HAS_TLS
@@ -2111,64 +2163,23 @@ grpc_server_observability_call_finished_h3 (SocketGRPC_Server_T server,
   server->observability_hook (&event, server->observability_hook_userdata);
 }
 
-void
-SocketGRPC_Server_bind_http3 (SocketGRPC_Server_T server,
-                              SocketHTTP3_Server_T http3_server)
+static SocketGRPC_ServerMethod *
+grpc_h3_validate_request (SocketHTTP3_Request_T req,
+                          SocketGRPC_Server_T server,
+                          SocketHTTP_Headers_T request_headers,
+                          const char **full_method_out)
 {
-  if (server == NULL || http3_server == NULL)
-    return;
-
-  SocketHTTP3_Server_on_request (
-      http3_server, SocketGRPC_Server_handle_http3, server);
-}
-
-void
-SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
-                                const SocketHTTP_Headers_T headers,
-                                void *userdata)
-{
-  SocketGRPC_Server_T server = (SocketGRPC_Server_T)userdata;
-  SocketHTTP_Headers_T request_headers = (SocketHTTP_Headers_T)headers;
+  const char *method_header;
   const char *full_method;
   const char *content_type;
   const char *te_header;
-  const char *method_header;
   SocketGRPC_ServerMethod *method;
-  struct SocketGRPC_ServerContext ctx;
-  const uint8_t *request_payload = NULL;
-  size_t request_payload_len = 0;
-  uint8_t *response_payload = NULL;
-  size_t response_payload_len = 0;
-  int compressed = 0;
-  int handler_rc;
-  SocketGRPC_StatusCode grpc_status;
-  const char *grpc_message = NULL;
-  int observability_started = 0;
-  int observability_finished = 0;
-  int64_t observability_started_ms = 0;
-  unsigned char *raw_body = NULL;
-  size_t raw_body_len = 0;
-  size_t raw_body_cap = 0;
-  int ctx_initialized = 0;
-
-  memset (&ctx, 0, sizeof (ctx));
-
-  if (req == NULL)
-    return;
-
-  if (request_headers == NULL
-      && SocketHTTP3_Request_recv_headers (req, &request_headers, NULL) != 0)
-    {
-      grpc_send_plain_http_error_h3 (
-          req, HTTP_STATUS_BAD_REQUEST, "Malformed HTTP/3 request headers");
-      return;
-    }
 
   if (server == NULL)
     {
       grpc_send_plain_http_error_h3 (
           req, HTTP_STATUS_INTERNAL_ERROR, "gRPC server context unavailable");
-      return;
+      return NULL;
     }
 
   if (server->shutting_down)
@@ -2180,7 +2191,7 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                                    SOCKET_GRPC_STATUS_UNAVAILABLE,
                                    "Server is shutting down",
                                    NULL);
-      return;
+      return NULL;
     }
 
   method_header = SocketHTTP_Headers_get_n (
@@ -2194,7 +2205,7 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                                    SOCKET_GRPC_STATUS_UNIMPLEMENTED,
                                    "Unary gRPC requires POST",
                                    NULL);
-      return;
+      return NULL;
     }
 
   full_method = SocketHTTP_Headers_get_n (
@@ -2208,7 +2219,7 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                                    SOCKET_GRPC_STATUS_UNIMPLEMENTED,
                                    "Invalid gRPC method path",
                                    NULL);
-      return;
+      return NULL;
     }
 
   content_type = SocketHTTP_Headers_get_n (
@@ -2218,7 +2229,7 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
       grpc_send_plain_http_error_h3 (req,
                                      HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
                                      "Invalid content-type for gRPC");
-      return;
+      return NULL;
     }
 
   te_header
@@ -2227,7 +2238,7 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
     {
       grpc_send_plain_http_error_h3 (
           req, HTTP_STATUS_BAD_REQUEST, "Invalid te header for gRPC request");
-      return;
+      return NULL;
     }
 
   method = grpc_server_find_method (server, full_method);
@@ -2240,8 +2251,22 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                                    SOCKET_GRPC_STATUS_UNIMPLEMENTED,
                                    "Unknown gRPC method",
                                    NULL);
-      return;
+      return NULL;
     }
+
+  if (full_method_out != NULL)
+    *full_method_out = full_method;
+  return method;
+}
+
+static int
+grpc_h3_recv_body (SocketHTTP3_Request_T req,
+                   unsigned char **raw_body_out,
+                   size_t *raw_body_len_out)
+{
+  unsigned char *raw_body = NULL;
+  size_t raw_body_len = 0;
+  size_t raw_body_cap = 0;
 
   for (;;)
     {
@@ -2255,7 +2280,8 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
           grpc_send_plain_http_error_h3 (req,
                                          HTTP_STATUS_BAD_REQUEST,
                                          "Malformed unary gRPC request body");
-          goto cleanup;
+          free (raw_body);
+          return -1;
         }
 
       if (n > 0)
@@ -2272,7 +2298,8 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                   SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED,
                   "Unary request exceeds configured limit",
                   NULL);
-              goto cleanup;
+              free (raw_body);
+              return -1;
             }
           if (needed > raw_body_cap)
             {
@@ -2290,7 +2317,8 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                       SOCKET_GRPC_STATUS_RESOURCE_EXHAUSTED,
                       "Out of memory receiving request body",
                       NULL);
-                  goto cleanup;
+                  free (raw_body);
+                  return -1;
                 }
               raw_body = tmp;
               raw_body_cap = new_cap;
@@ -2310,9 +2338,26 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
                                        SOCKET_GRPC_STATUS_UNAVAILABLE,
                                        "Incomplete unary gRPC request body",
                                        NULL);
-          goto cleanup;
+          free (raw_body);
+          return -1;
         }
     }
+
+  *raw_body_out = raw_body;
+  *raw_body_len_out = raw_body_len;
+  return 0;
+}
+
+static int
+grpc_h3_parse_and_validate_payload (SocketHTTP3_Request_T req,
+                                    const unsigned char *raw_body,
+                                    size_t raw_body_len,
+                                    const uint8_t **request_payload_out,
+                                    size_t *request_payload_len_out)
+{
+  const uint8_t *request_payload = NULL;
+  size_t request_payload_len = 0;
+  int compressed = 0;
 
   if (grpc_parse_unary_request_payload_h3 (raw_body,
                                            raw_body_len,
@@ -2323,7 +2368,7 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
     {
       grpc_send_plain_http_error_h3 (
           req, HTTP_STATUS_BAD_REQUEST, "Malformed unary gRPC request frame");
-      goto cleanup;
+      return -1;
     }
 
   if (compressed != 0)
@@ -2331,8 +2376,191 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
       grpc_send_plain_http_error_h3 (req,
                                      HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
                                      "Compressed gRPC requests unsupported");
-      goto cleanup;
+      return -1;
     }
+
+  *request_payload_out = request_payload;
+  *request_payload_len_out = request_payload_len;
+  return 0;
+}
+
+static void
+grpc_h3_dispatch_unary (SocketHTTP3_Request_T req,
+                        SocketGRPC_Server_T server,
+                        SocketGRPC_ServerMethod *method,
+                        struct SocketGRPC_ServerContext *ctx,
+                        const char *full_method,
+                        const uint8_t *request_payload,
+                        size_t request_payload_len)
+{
+  uint8_t *response_payload = NULL;
+  size_t response_payload_len = 0;
+  int handler_rc;
+  SocketGRPC_StatusCode grpc_status;
+  const char *grpc_message = NULL;
+  int observability_started = 0;
+  int observability_finished = 0;
+  int64_t observability_started_ms = 0;
+
+  observability_started
+      = grpc_server_observability_call_started_h3 (server,
+                                                   ctx->peer,
+                                                   ctx->authority,
+                                                   full_method,
+                                                   request_payload_len,
+                                                   &observability_started_ms);
+
+  if (SocketGRPC_ServerContext_is_cancelled (ctx))
+    {
+      grpc_server_observability_call_finished_h3 (
+          server,
+          ctx->peer,
+          ctx->authority,
+          full_method,
+          observability_started,
+          &observability_finished,
+          observability_started_ms,
+          SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
+          "Deadline exceeded",
+          0);
+      grpc_send_unary_response_h3 (req,
+                                   HTTP_STATUS_OK,
+                                   NULL,
+                                   0,
+                                   SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
+                                   "Deadline exceeded",
+                                   ctx->trailers);
+      return;
+    }
+
+  if (grpc_run_server_unary_interceptors (server,
+                                          ctx,
+                                          request_payload,
+                                          request_payload_len,
+                                          &grpc_status,
+                                          &grpc_message)
+      != 0)
+    {
+      grpc_server_observability_call_finished_h3 (server,
+                                                  ctx->peer,
+                                                  ctx->authority,
+                                                  full_method,
+                                                  observability_started,
+                                                  &observability_finished,
+                                                  observability_started_ms,
+                                                  grpc_status,
+                                                  grpc_message,
+                                                  0);
+      grpc_send_unary_response_h3 (req,
+                                   HTTP_STATUS_OK,
+                                   NULL,
+                                   0,
+                                   grpc_status,
+                                   grpc_message,
+                                   ctx->trailers);
+      return;
+    }
+
+  server->inflight_calls++;
+  if (grpc_server_observability_enabled (server))
+    SocketMetrics_gauge_inc (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
+  handler_rc = grpc_invoke_handler (method,
+                                    ctx,
+                                    request_payload,
+                                    request_payload_len,
+                                    &response_payload,
+                                    &response_payload_len);
+  if (server->inflight_calls > 0)
+    server->inflight_calls--;
+  if (grpc_server_observability_enabled (server))
+    SocketMetrics_gauge_dec (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
+
+  grpc_status = grpc_resolve_final_status (ctx, handler_rc, &grpc_message);
+  if (grpc_status == SOCKET_GRPC_STATUS_OK
+      && SocketGRPC_ServerContext_is_cancelled (ctx))
+    {
+      grpc_status = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
+      grpc_message = "Deadline exceeded";
+    }
+
+  if (grpc_status != SOCKET_GRPC_STATUS_OK)
+    {
+      response_payload = NULL;
+      response_payload_len = 0;
+    }
+
+  grpc_server_observability_call_finished_h3 (server,
+                                              ctx->peer,
+                                              ctx->authority,
+                                              full_method,
+                                              observability_started,
+                                              &observability_finished,
+                                              observability_started_ms,
+                                              grpc_status,
+                                              grpc_message,
+                                              response_payload_len);
+
+  grpc_send_unary_response_h3 (req,
+                               HTTP_STATUS_OK,
+                               response_payload,
+                               response_payload_len,
+                               grpc_status,
+                               grpc_message,
+                               ctx->trailers);
+}
+
+void
+SocketGRPC_Server_bind_http3 (SocketGRPC_Server_T server,
+                              SocketHTTP3_Server_T http3_server)
+{
+  if (server == NULL || http3_server == NULL)
+    return;
+
+  SocketHTTP3_Server_on_request (
+      http3_server, SocketGRPC_Server_handle_http3, server);
+}
+
+void
+SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
+                                const SocketHTTP_Headers_T headers,
+                                void *userdata)
+{
+  SocketGRPC_Server_T server = (SocketGRPC_Server_T)userdata;
+  SocketHTTP_Headers_T request_headers = (SocketHTTP_Headers_T)headers;
+  const char *full_method = NULL;
+  SocketGRPC_ServerMethod *method;
+  struct SocketGRPC_ServerContext ctx;
+  const uint8_t *request_payload = NULL;
+  size_t request_payload_len = 0;
+  unsigned char *raw_body = NULL;
+  size_t raw_body_len = 0;
+  int ctx_initialized = 0;
+
+  memset (&ctx, 0, sizeof (ctx));
+
+  if (req == NULL)
+    return;
+
+  if (request_headers == NULL
+      && SocketHTTP3_Request_recv_headers (req, &request_headers, NULL) != 0)
+    {
+      grpc_send_plain_http_error_h3 (
+          req, HTTP_STATUS_BAD_REQUEST, "Malformed HTTP/3 request headers");
+      return;
+    }
+
+  method
+      = grpc_h3_validate_request (req, server, request_headers, &full_method);
+  if (method == NULL)
+    return;
+
+  if (grpc_h3_recv_body (req, &raw_body, &raw_body_len) != 0)
+    return;
+
+  if (grpc_h3_parse_and_validate_payload (
+          req, raw_body, raw_body_len, &request_payload, &request_payload_len)
+      != 0)
+    goto cleanup;
 
   if (grpc_context_init_h3 (&ctx, server, req, request_headers, full_method)
       != 0)
@@ -2348,114 +2576,13 @@ SocketGRPC_Server_handle_http3 (SocketHTTP3_Request_T req,
     }
   ctx_initialized = 1;
 
-  observability_started
-      = grpc_server_observability_call_started_h3 (server,
-                                                   ctx.peer,
-                                                   ctx.authority,
-                                                   full_method,
-                                                   request_payload_len,
-                                                   &observability_started_ms);
-
-  if (SocketGRPC_ServerContext_is_cancelled (&ctx))
-    {
-      grpc_server_observability_call_finished_h3 (
-          server,
-          ctx.peer,
-          ctx.authority,
-          full_method,
-          observability_started,
-          &observability_finished,
-          observability_started_ms,
-          SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
-          "Deadline exceeded",
-          0);
-      grpc_send_unary_response_h3 (req,
-                                   HTTP_STATUS_OK,
-                                   NULL,
-                                   0,
-                                   SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED,
-                                   "Deadline exceeded",
-                                   ctx.trailers);
-      goto cleanup;
-    }
-
-  response_payload = NULL;
-  response_payload_len = 0;
-
-  if (grpc_run_server_unary_interceptors (server,
-                                          &ctx,
-                                          request_payload,
-                                          request_payload_len,
-                                          &grpc_status,
-                                          &grpc_message)
-      != 0)
-    {
-      grpc_server_observability_call_finished_h3 (server,
-                                                  ctx.peer,
-                                                  ctx.authority,
-                                                  full_method,
-                                                  observability_started,
-                                                  &observability_finished,
-                                                  observability_started_ms,
-                                                  grpc_status,
-                                                  grpc_message,
-                                                  0);
-      grpc_send_unary_response_h3 (req,
-                                   HTTP_STATUS_OK,
-                                   NULL,
-                                   0,
-                                   grpc_status,
-                                   grpc_message,
-                                   ctx.trailers);
-      goto cleanup;
-    }
-
-  server->inflight_calls++;
-  if (grpc_server_observability_enabled (server))
-    SocketMetrics_gauge_inc (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
-  handler_rc = grpc_invoke_handler (method,
-                                    &ctx,
-                                    request_payload,
-                                    request_payload_len,
-                                    &response_payload,
-                                    &response_payload_len);
-  if (server->inflight_calls > 0)
-    server->inflight_calls--;
-  if (grpc_server_observability_enabled (server))
-    SocketMetrics_gauge_dec (SOCKET_GAU_GRPC_SERVER_ACTIVE_CALLS);
-
-  grpc_status = grpc_resolve_final_status (&ctx, handler_rc, &grpc_message);
-  if (grpc_status == SOCKET_GRPC_STATUS_OK
-      && SocketGRPC_ServerContext_is_cancelled (&ctx))
-    {
-      grpc_status = SOCKET_GRPC_STATUS_DEADLINE_EXCEEDED;
-      grpc_message = "Deadline exceeded";
-    }
-
-  if (grpc_status != SOCKET_GRPC_STATUS_OK)
-    {
-      response_payload = NULL;
-      response_payload_len = 0;
-    }
-
-  grpc_server_observability_call_finished_h3 (server,
-                                              ctx.peer,
-                                              ctx.authority,
-                                              full_method,
-                                              observability_started,
-                                              &observability_finished,
-                                              observability_started_ms,
-                                              grpc_status,
-                                              grpc_message,
-                                              response_payload_len);
-
-  grpc_send_unary_response_h3 (req,
-                               HTTP_STATUS_OK,
-                               response_payload,
-                               response_payload_len,
-                               grpc_status,
-                               grpc_message,
-                               ctx.trailers);
+  grpc_h3_dispatch_unary (req,
+                          server,
+                          method,
+                          &ctx,
+                          full_method,
+                          request_payload,
+                          request_payload_len);
 
 cleanup:
   free (raw_body);
