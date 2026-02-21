@@ -528,6 +528,8 @@ SocketQUICInitial_protect (uint8_t *packet,
     pn = (pn << 8) | packet[header_len - pn_length + i];
 
   /* Payload starts after header */
+  if (*packet_len < header_len)
+    return QUIC_INITIAL_ERROR_TRUNCATED;
   payload = packet + header_len;
   payload_len = *packet_len - header_len;
 
@@ -614,6 +616,11 @@ SocketQUICInitial_unprotect (uint8_t *packet,
 
   /* Calculate header length and payload bounds */
   header_len = pn_offset + *pn_length;
+  if (packet_len < header_len + QUIC_INITIAL_TAG_LEN)
+    {
+      SocketCrypto_secure_clear (mask, sizeof (mask));
+      return QUIC_INITIAL_ERROR_TRUNCATED;
+    }
   payload = packet + header_len;
   payload_len = packet_len - header_len - QUIC_INITIAL_TAG_LEN;
 
