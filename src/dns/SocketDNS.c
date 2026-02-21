@@ -84,7 +84,6 @@ allocate_dns_resolver (void)
 static void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
-  /* num_workers removed - no worker threads in new architecture */
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->pending_count = 0;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
@@ -242,7 +241,6 @@ cleanup_pipe (struct SocketDNS_T *dns)
 static void
 cleanup_mutex_cond (struct SocketDNS_T *dns)
 {
-  /* condition variables removed - only destroy mutex */
   pthread_mutex_destroy (&dns->mutex);
 }
 
@@ -283,7 +281,6 @@ reset_dns_state (T d)
   pthread_mutex_lock (&d->mutex);
   free_all_requests (d);
   cache_clear_locked (d); /* Free cache entries' malloc'd addrinfo results */
-  /* queue fields removed - no queue in new architecture */
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     {
       d->request_hash[i] = NULL;
@@ -580,7 +577,6 @@ void
 cancel_pending_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
 {
-  /* No queue_remove - queue removed */
   hash_table_remove (dns, req);
   req->state = REQ_CANCELLED;
 }
