@@ -31,51 +31,42 @@ Socket_simple_connect_tls (const char *host, int port)
   return Socket_simple_connect_tls_ex (host, port, NULL);
 }
 
-SocketSimple_Socket_T
-Socket_simple_connect_tls_ex (const char *host,
-                              int port,
-                              const SocketSimple_TLSOptions *opts_param)
+/**
+ * @brief Connect TCP socket and perform TLS handshake with exception handling.
+ *
+ * Creates a TCP connection, configures a TLS context, and completes the
+ * TLS handshake. On failure, cleans up both socket and context.
+ *
+ * @param host Hostname or IP address
+ * @param port Port number
+ * @param timeout_ms Connection timeout (0 for default)
+ * @param ca_file CA certificate file path (NULL for system defaults)
+ * @param client_cert Client certificate for mTLS (NULL if not used)
+ * @param client_key Client private key for mTLS (NULL if not used)
+ * @param verify_cert Whether to verify server certificate
+ * @param out_sock Output: connected socket (set on success)
+ * @param out_ctx Output: TLS context (set on success)
+ * @return 0 on success, -1 on failure (error set, resources cleaned up)
+ */
+static int
+tls_connect_and_handshake (const char *host,
+                           int port,
+                           int timeout_ms,
+                           const char *ca_file,
+                           const char *client_cert,
+                           const char *client_key,
+                           int verify_cert,
+                           Socket_T *out_sock,
+                           SocketTLSContext_T *out_ctx)
 {
   volatile Socket_T sock = NULL;
   volatile SocketTLSContext_T ctx = NULL;
   volatile int exception_occurred = 0;
-  struct SocketSimple_Socket *handle = NULL;
-  SocketSimple_TLSOptions opts_local;
-
-  /* Copy options to local before TRY block to avoid longjmp issues */
-  int timeout_ms;
-  const char *ca_file;
-  const char *client_cert;
-  const char *client_key;
-  int verify_cert;
-
-  Socket_simple_clear_error ();
-
-  if (!host || port <= 0 || port > SOCKET_MAX_PORT)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid host or port");
-      return NULL;
-    }
-
-  if (!opts_param)
-    {
-      Socket_simple_tls_options_init (&opts_local);
-      opts_param = &opts_local;
-    }
-
-  /* Copy values before TRY to avoid clobbering issues */
-  timeout_ms = opts_param->timeout_ms;
-  ca_file = opts_param->ca_file;
-  client_cert = opts_param->client_cert;
-  client_key = opts_param->client_key;
-  verify_cert = opts_param->verify_cert;
 
   TRY
   {
     if (timeout_ms > 0)
-      {
-        sock = Socket_connect_tcp (host, port, timeout_ms);
-      }
+      sock = Socket_connect_tcp (host, port, timeout_ms);
     else
       {
         sock = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -85,14 +76,10 @@ Socket_simple_connect_tls_ex (const char *host,
     ctx = SocketTLSContext_new_client (ca_file);
 
     if (client_cert && client_key)
-      {
-        SocketTLSContext_load_certificate (ctx, client_cert, client_key);
-      }
+      SocketTLSContext_load_certificate (ctx, client_cert, client_key);
 
     if (!verify_cert)
-      {
-        SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
-      }
+      SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
 
     SocketTLS_enable (sock, ctx);
     SocketTLS_set_hostname (sock, host);
@@ -130,14 +117,31 @@ Socket_simple_connect_tls_ex (const char *host,
   END_TRY;
 
   if (exception_occurred)
-    return NULL;
+    return -1;
 
-  handle = calloc (1, sizeof (*handle));
+  *out_sock = (Socket_T)sock;
+  *out_ctx = (SocketTLSContext_T)ctx;
+  return 0;
+}
+
+/**
+ * @brief Create Simple API handle from connected TLS socket.
+ *
+ * @param sock Connected TCP socket with TLS enabled
+ * @param ctx TLS context (ownership transferred to handle)
+ * @return Handle on success, NULL on failure (error set, resources cleaned up)
+ */
+static SocketSimple_Socket_T
+create_tls_client_handle (Socket_T sock, SocketTLSContext_T ctx)
+{
+  struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
+      volatile SocketTLSContext_T vctx = ctx;
+      volatile Socket_T vsock = sock;
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SIMPLE_CLEANUP_TLS_CTX (&ctx);
-      SIMPLE_CLEANUP_SOCKET (&sock);
+      SIMPLE_CLEANUP_TLS_CTX (&vctx);
+      SIMPLE_CLEANUP_SOCKET (&vsock);
       return NULL;
     }
 
@@ -146,6 +150,44 @@ Socket_simple_connect_tls_ex (const char *host,
   handle->is_tls = 1;
   handle->is_connected = 1;
   return handle;
+}
+
+SocketSimple_Socket_T
+Socket_simple_connect_tls_ex (const char *host,
+                              int port,
+                              const SocketSimple_TLSOptions *opts_param)
+{
+  Socket_T sock = NULL;
+  SocketTLSContext_T ctx = NULL;
+  SocketSimple_TLSOptions opts_local;
+
+  Socket_simple_clear_error ();
+
+  if (!host || port <= 0 || port > SOCKET_MAX_PORT)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid host or port");
+      return NULL;
+    }
+
+  if (!opts_param)
+    {
+      Socket_simple_tls_options_init (&opts_local);
+      opts_param = &opts_local;
+    }
+
+  if (tls_connect_and_handshake (host,
+                                 port,
+                                 opts_param->timeout_ms,
+                                 opts_param->ca_file,
+                                 opts_param->client_cert,
+                                 opts_param->client_key,
+                                 opts_param->verify_cert,
+                                 &sock,
+                                 &ctx)
+      != 0)
+    return NULL;
+
+  return create_tls_client_handle (sock, ctx);
 }
 
 int
