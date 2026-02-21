@@ -1397,7 +1397,7 @@ SocketQUICServerConfig_defaults (SocketQUICServerConfig *config)
   config->cert_file = NULL;
   config->key_file = NULL;
   config->alpn = "h3";
-  config->max_connections = 256;
+  config->max_connections = SOCKET_QUIC_DEFAULT_MAX_CONNECTIONS;
 }
 
 SocketQUICServer_T
@@ -1413,7 +1413,7 @@ SocketQUICServer_new (Arena_T arena, const SocketQUICServerConfig *config)
   server->config = *config;
 
   if (server->config.max_connections == 0)
-    server->config.max_connections = 256;
+    server->config.max_connections = SOCKET_QUIC_DEFAULT_MAX_CONNECTIONS;
 
   /* Allocate connection array */
   server->conn_capacity = server->config.max_connections;
