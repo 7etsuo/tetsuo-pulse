@@ -207,7 +207,7 @@ grpc_h3_stream_handler (SocketHTTP3_Request_T req,
                                    frame1,
                                    sizeof (frame1),
                                    &frame1_len)
-          != SOCKET_GRPC_WIRE_OK
+              != SOCKET_GRPC_WIRE_OK
           || SocketGRPC_Frame_encode (0,
                                       payload2,
                                       sizeof (payload2),
@@ -295,11 +295,10 @@ grpc_h3_fixture_start_bound_server (GRPCH3Fixture *fixture)
   if (SocketGRPC_Server_register_unary (
           fixture->grpc_server, "/test.Echo/Ping", grpc_echo_handler_h3, NULL)
           != 0
-      || SocketGRPC_Server_register_unary (
-             fixture->grpc_server,
-             "/test.Echo/Fail",
-             grpc_fail_handler_h3,
-             NULL)
+      || SocketGRPC_Server_register_unary (fixture->grpc_server,
+                                           "/test.Echo/Fail",
+                                           grpc_fail_handler_h3,
+                                           NULL)
              != 0)
     {
       SocketGRPC_Server_free (&fixture->grpc_server);
@@ -537,7 +536,7 @@ TEST (grpc_unary_h3_server_bind_integration)
         0, strcmp (SocketGRPC_Status_message (&status), "validation failed"));
     Arena_dispose (&arena);
     arena = NULL;
-unary_done:;
+  unary_done:;
   }
   FINALLY
   {
@@ -599,8 +598,8 @@ TEST (grpc_stream_h3_recv_and_trailers_only_error)
                   SocketGRPC_Status_message (&s));
           if (s.code == SOCKET_GRPC_STATUS_UNAVAILABLE)
             {
-              printf (
-                  "  [SKIP] HTTP/3 transport unavailable in this environment\n");
+              printf ("  [SKIP] HTTP/3 transport unavailable in this "
+                      "environment\n");
               goto stream_done;
             }
         }
@@ -644,7 +643,7 @@ TEST (grpc_stream_h3_recv_and_trailers_only_error)
     ASSERT_EQ (1, done);
     ASSERT_EQ (SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
                SocketGRPC_Call_status (call).code);
-stream_done:;
+  stream_done:;
   }
   FINALLY
   {

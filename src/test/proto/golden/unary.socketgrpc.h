@@ -19,8 +19,15 @@ struct test_unary_HelloRequest
 
 extern void test_unary_HelloRequest_init (test_unary_HelloRequest *message);
 extern void test_unary_HelloRequest_free (test_unary_HelloRequest *message);
-extern int test_unary_HelloRequest_encode (const test_unary_HelloRequest *message, uint8_t *out, size_t out_len, size_t *written);
-extern int test_unary_HelloRequest_decode (test_unary_HelloRequest *message, const uint8_t *data, size_t len, Arena_T arena);
+extern int
+test_unary_HelloRequest_encode (const test_unary_HelloRequest *message,
+                                uint8_t *out,
+                                size_t out_len,
+                                size_t *written);
+extern int test_unary_HelloRequest_decode (test_unary_HelloRequest *message,
+                                           const uint8_t *data,
+                                           size_t len,
+                                           Arena_T arena);
 
 struct test_unary_HelloResponse
 {
@@ -30,12 +37,22 @@ struct test_unary_HelloResponse
 
 extern void test_unary_HelloResponse_init (test_unary_HelloResponse *message);
 extern void test_unary_HelloResponse_free (test_unary_HelloResponse *message);
-extern int test_unary_HelloResponse_encode (const test_unary_HelloResponse *message, uint8_t *out, size_t out_len, size_t *written);
-extern int test_unary_HelloResponse_decode (test_unary_HelloResponse *message, const uint8_t *data, size_t len, Arena_T arena);
+extern int
+test_unary_HelloResponse_encode (const test_unary_HelloResponse *message,
+                                 uint8_t *out,
+                                 size_t out_len,
+                                 size_t *written);
+extern int test_unary_HelloResponse_decode (test_unary_HelloResponse *message,
+                                            const uint8_t *data,
+                                            size_t len,
+                                            Arena_T arena);
 
 typedef struct test_unary_Greeter_ServerHandlers
 {
-  int (*SayHello) (const test_unary_HelloRequest *request, test_unary_HelloResponse *response, void *userdata, Arena_T arena);
+  int (*SayHello) (const test_unary_HelloRequest *request,
+                   test_unary_HelloResponse *response,
+                   void *userdata,
+                   Arena_T arena);
   void *userdata;
 } test_unary_Greeter_ServerHandlers;
 
@@ -45,8 +62,15 @@ typedef struct test_unary_Greeter_Client
   const test_unary_Greeter_ServerHandlers *local_handlers;
 } test_unary_Greeter_Client;
 
-extern void test_unary_Greeter_Client_init (test_unary_Greeter_Client *client, SocketGRPC_Channel_T channel);
-extern void test_unary_Greeter_Client_bind_local (test_unary_Greeter_Client *client, const test_unary_Greeter_ServerHandlers *handlers);
-extern int test_unary_Greeter_Client_SayHello (test_unary_Greeter_Client *client, const test_unary_HelloRequest *request, test_unary_HelloResponse *response, Arena_T arena);
+extern void test_unary_Greeter_Client_init (test_unary_Greeter_Client *client,
+                                            SocketGRPC_Channel_T channel);
+extern void test_unary_Greeter_Client_bind_local (
+    test_unary_Greeter_Client *client,
+    const test_unary_Greeter_ServerHandlers *handlers);
+extern int
+test_unary_Greeter_Client_SayHello (test_unary_Greeter_Client *client,
+                                    const test_unary_HelloRequest *request,
+                                    test_unary_HelloResponse *response,
+                                    Arena_T arena);
 
 #endif /* UNARY_SOCKETGRPC_GENERATED_H */

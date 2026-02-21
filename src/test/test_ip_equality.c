@@ -7,14 +7,15 @@
 /**
  * test_ip_equality.c - Unit tests for ip_addresses_equal
  * Tests for the IP address equality comparison function.
- * Covers string equality, binary comparison, different families, and invalid inputs.
+ * Covers string equality, binary comparison, different families, and invalid
+ * inputs.
  */
 
 #include <assert.h>
 #include <string.h>
 
 #include "core/SocketSYNProtect-private.h"
-#undef T  /* Undefine SocketSYNProtect_T before including Test.h */
+#undef T /* Undefine SocketSYNProtect_T before including Test.h */
 #include "test/Test.h"
 
 /* Test 1: Identical strings - String equality fast path */
@@ -45,15 +46,14 @@ TEST (ip_equality_ipv6_case_insensitive)
 TEST (ip_equality_ipv4_leading_zeros_invalid)
 {
   int result = ip_addresses_equal ("192.168.1.1", "192.168.001.001");
-  ASSERT_EQ (0, result);  /* Leading zeros make it invalid */
+  ASSERT_EQ (0, result); /* Leading zeros make it invalid */
 }
 
 /* Test 5: IPv6 compressed vs full (bypass prevention) */
 TEST (ip_equality_ipv6_compressed_vs_full)
 {
-  int result
-      = ip_addresses_equal ("2001:db8::1",
-                            "2001:0db8:0000:0000:0000:0000:0000:0001");
+  int result = ip_addresses_equal ("2001:db8::1",
+                                   "2001:0db8:0000:0000:0000:0000:0000:0001");
   ASSERT_EQ (1, result);
 }
 
@@ -138,7 +138,7 @@ TEST (ip_equality_both_invalid)
 TEST (ip_equality_empty_strings)
 {
   int result = ip_addresses_equal ("", "");
-  ASSERT_EQ (1, result);  /* strcmp("", "") == 0, so fast path returns 1 */
+  ASSERT_EQ (1, result); /* strcmp("", "") == 0, so fast path returns 1 */
 }
 
 /* Test 18: IPv4 loopback addresses */
@@ -159,8 +159,7 @@ TEST (ip_equality_ipv6_loopback)
 TEST (ip_equality_ipv6_loopback_full_vs_compressed)
 {
   int result
-      = ip_addresses_equal ("::1",
-                            "0000:0000:0000:0000:0000:0000:0000:0001");
+      = ip_addresses_equal ("::1", "0000:0000:0000:0000:0000:0000:0000:0001");
   ASSERT_EQ (1, result);
 }
 
@@ -182,8 +181,7 @@ TEST (ip_equality_ipv6_zeros)
 TEST (ip_equality_ipv6_zeros_full_vs_compressed)
 {
   int result
-      = ip_addresses_equal ("::",
-                            "0000:0000:0000:0000:0000:0000:0000:0000");
+      = ip_addresses_equal ("::", "0000:0000:0000:0000:0000:0000:0000:0000");
   ASSERT_EQ (1, result);
 }
 

@@ -65,10 +65,12 @@ TEST (grpc_codegen_complex_message_roundtrip)
   request.codes = codes;
   request.codes_count = sizeof (codes) / sizeof (codes[0]);
 
-  ASSERT_EQ (0, test_complex_ComplexRequest_encode (
-                    &request, wire, sizeof (wire), &written));
+  ASSERT_EQ (0,
+             test_complex_ComplexRequest_encode (
+                 &request, wire, sizeof (wire), &written));
   ASSERT_NE (0U, written);
-  ASSERT_EQ (0, test_complex_ComplexRequest_decode (&decoded, wire, written, arena));
+  ASSERT_EQ (
+      0, test_complex_ComplexRequest_decode (&decoded, wire, written, arena));
 
   ASSERT (decoded.has_envelope);
   ASSERT (decoded.envelope.has_meta);
@@ -86,10 +88,12 @@ TEST (grpc_codegen_complex_message_roundtrip)
   ASSERT_EQ (sizeof (attachment_a), decoded.envelope.attachments_len[0]);
   ASSERT_EQ (sizeof (attachment_b), decoded.envelope.attachments_len[1]);
   ASSERT_EQ (0,
-             memcmp (decoded.envelope.attachments[0], attachment_a,
+             memcmp (decoded.envelope.attachments[0],
+                     attachment_a,
                      sizeof (attachment_a)));
   ASSERT_EQ (0,
-             memcmp (decoded.envelope.attachments[1], attachment_b,
+             memcmp (decoded.envelope.attachments[1],
+                     attachment_b,
                      sizeof (attachment_b)));
   ASSERT_EQ (TEST_COMPLEX_ENVELOPE_PAYLOADCASE_TEXT,
              decoded.envelope.payload_case);
@@ -121,8 +125,9 @@ TEST (grpc_codegen_complex_oneof_numeric_roundtrip)
   envelope.payload_case = TEST_COMPLEX_ENVELOPE_PAYLOADCASE_REF_ID;
   envelope.payload.ref_id = 987654321ULL;
 
-  ASSERT_EQ (0,
-             test_complex_Envelope_encode (&envelope, wire, sizeof (wire), &written));
+  ASSERT_EQ (
+      0,
+      test_complex_Envelope_encode (&envelope, wire, sizeof (wire), &written));
   ASSERT_NE (0U, written);
   ASSERT_EQ (0, test_complex_Envelope_decode (&decoded, wire, written, arena));
   ASSERT_EQ (TEST_COMPLEX_ENVELOPE_PAYLOADCASE_REF_ID, decoded.payload_case);

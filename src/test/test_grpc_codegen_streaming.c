@@ -73,8 +73,8 @@ TEST (grpc_codegen_streaming_message_roundtrip)
   chunk.data_len = sizeof (payload);
   chunk.sequence = 11;
 
-  ASSERT_EQ (0,
-             test_streaming_Chunk_encode (&chunk, wire, sizeof (wire), &written));
+  ASSERT_EQ (
+      0, test_streaming_Chunk_encode (&chunk, wire, sizeof (wire), &written));
   ASSERT_NE (0U, written);
   ASSERT_EQ (0, test_streaming_Chunk_decode (&decoded, wire, written, arena));
   ASSERT_EQ (11U, decoded.sequence);
@@ -109,9 +109,9 @@ TEST (grpc_codegen_streaming_local_handlers)
   ASSERT_EQ (SOCKET_GRPC_STATUS_CANCELLED,
              test_streaming_Streamer_Client_Subscribe_stream (
                  &client, &stream_id, arena));
-  ASSERT_EQ (SOCKET_GRPC_STATUS_OK,
-             test_streaming_Streamer_Client_Chat_stream (
-                 &client, &stream_id, arena));
+  ASSERT_EQ (
+      SOCKET_GRPC_STATUS_OK,
+      test_streaming_Streamer_Client_Chat_stream (&client, &stream_id, arena));
 
   ASSERT_EQ (1, stats.upload_calls);
   ASSERT_EQ (1, stats.subscribe_calls);
@@ -135,9 +135,9 @@ TEST (grpc_codegen_streaming_unbound_handlers_return_unimplemented)
   ASSERT_EQ (SOCKET_GRPC_STATUS_UNIMPLEMENTED,
              test_streaming_Streamer_Client_Subscribe_stream (
                  &client, &stream_id, arena));
-  ASSERT_EQ (SOCKET_GRPC_STATUS_UNIMPLEMENTED,
-             test_streaming_Streamer_Client_Chat_stream (
-                 &client, &stream_id, arena));
+  ASSERT_EQ (
+      SOCKET_GRPC_STATUS_UNIMPLEMENTED,
+      test_streaming_Streamer_Client_Chat_stream (&client, &stream_id, arena));
 
   Arena_dispose (&arena);
 }

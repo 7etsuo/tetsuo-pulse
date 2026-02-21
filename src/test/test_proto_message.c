@@ -26,8 +26,10 @@ static const SocketProto_Schema test_schema = {
 
 TEST (proto_message_roundtrip_and_unknown_preservation)
 {
-  SocketProto_Message_T builder = SocketProto_Message_new (NULL, NULL, &test_schema);
-  SocketProto_Message_T parsed = SocketProto_Message_new (NULL, NULL, &test_schema);
+  SocketProto_Message_T builder
+      = SocketProto_Message_new (NULL, NULL, &test_schema);
+  SocketProto_Message_T parsed
+      = SocketProto_Message_new (NULL, NULL, &test_schema);
   uint8_t encoded[128];
   uint8_t reencoded[128];
   size_t encoded_len = 0;
@@ -79,13 +81,15 @@ TEST (proto_message_roundtrip_and_unknown_preservation)
 
 TEST (proto_message_rejects_malformed_wire)
 {
-  SocketProto_Message_T msg = SocketProto_Message_new (NULL, NULL, &test_schema);
+  SocketProto_Message_T msg
+      = SocketProto_Message_new (NULL, NULL, &test_schema);
   uint8_t invalid_wire[] = { 0x13, 0x00 };
   uint8_t truncated[] = { 0x08, 0x80 };
 
   ASSERT_NOT_NULL (msg);
-  ASSERT_EQ (SOCKET_PROTO_INVALID_WIRE_TYPE,
-             SocketProto_Message_parse (msg, invalid_wire, sizeof (invalid_wire)));
+  ASSERT_EQ (
+      SOCKET_PROTO_INVALID_WIRE_TYPE,
+      SocketProto_Message_parse (msg, invalid_wire, sizeof (invalid_wire)));
   ASSERT_EQ (SOCKET_PROTO_INCOMPLETE,
              SocketProto_Message_parse (msg, truncated, sizeof (truncated)));
   SocketProto_Message_free (&msg);
@@ -110,9 +114,10 @@ TEST (proto_message_enforces_field_and_size_limits)
   ASSERT_EQ (SOCKET_PROTO_LIMIT_FIELD_COUNT,
              SocketProto_Message_parse (
                  limited_by_fields, three_fields, sizeof (three_fields)));
-  ASSERT_EQ (SOCKET_PROTO_LIMIT_MESSAGE_SIZE,
-             SocketProto_Message_validate (
-                 three_fields, sizeof (three_fields), &test_schema, &size_limits));
+  ASSERT_EQ (
+      SOCKET_PROTO_LIMIT_MESSAGE_SIZE,
+      SocketProto_Message_validate (
+          three_fields, sizeof (three_fields), &test_schema, &size_limits));
 
   SocketProto_Message_free (&limited_by_fields);
 }
@@ -161,9 +166,9 @@ TEST (proto_message_enforces_nesting_depth)
   ASSERT_EQ (SOCKET_PROTO_LIMIT_NESTING_DEPTH,
              SocketProto_Message_parse (
                  shallow_msg, nested_payload, sizeof (nested_payload)));
-  ASSERT_EQ (
-      SOCKET_PROTO_OK,
-      SocketProto_Message_parse (deep_msg, nested_payload, sizeof (nested_payload)));
+  ASSERT_EQ (SOCKET_PROTO_OK,
+             SocketProto_Message_parse (
+                 deep_msg, nested_payload, sizeof (nested_payload)));
 
   SocketProto_Message_free (&deep_msg);
   SocketProto_Message_free (&shallow_msg);
@@ -171,7 +176,8 @@ TEST (proto_message_enforces_nesting_depth)
 
 TEST (proto_message_append_type_mismatch_fails_closed)
 {
-  SocketProto_Message_T msg = SocketProto_Message_new (NULL, NULL, &test_schema);
+  SocketProto_Message_T msg
+      = SocketProto_Message_new (NULL, NULL, &test_schema);
   ASSERT_NOT_NULL (msg);
 
   ASSERT_EQ (SOCKET_PROTO_TYPE_MISMATCH,

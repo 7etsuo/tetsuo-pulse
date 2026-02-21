@@ -63,13 +63,13 @@ TEST (gzip_header_minimal)
 TEST (gzip_header_fname)
 {
   uint8_t header[] = {
-    0x1F, 0x8B,             /* Magic */
-    0x08,                   /* Method: deflate */
-    0x08,                   /* Flags: FNAME */
-    0x00, 0x00, 0x00, 0x00, /* Mtime */
-    0x00,                   /* XFL */
-    0x03,                   /* OS: Unix */
-    't', 'e', 's', 't', '.', 't', 'x', 't', 0x00 /* Filename + null */
+    0x1F, 0x8B,                                      /* Magic */
+    0x08,                                            /* Method: deflate */
+    0x08,                                            /* Flags: FNAME */
+    0x00, 0x00, 0x00, 0x00,                          /* Mtime */
+    0x00,                                            /* XFL */
+    0x03,                                            /* OS: Unix */
+    't',  'e',  's',  't',  '.', 't', 'x', 't', 0x00 /* Filename + null */
   };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
@@ -90,13 +90,13 @@ TEST (gzip_header_fname)
 TEST (gzip_header_fcomment)
 {
   uint8_t header[] = {
-    0x1F, 0x8B,             /* Magic */
-    0x08,                   /* Method: deflate */
-    0x10,                   /* Flags: FCOMMENT */
-    0x00, 0x00, 0x00, 0x00, /* Mtime */
-    0x00,                   /* XFL */
-    0x00,                   /* OS: FAT */
-    'H', 'e', 'l', 'l', 'o', 0x00 /* Comment + null */
+    0x1F, 0x8B,                       /* Magic */
+    0x08,                             /* Method: deflate */
+    0x10,                             /* Flags: FCOMMENT */
+    0x00, 0x00, 0x00, 0x00,           /* Mtime */
+    0x00,                             /* XFL */
+    0x00,                             /* OS: FAT */
+    'H',  'e',  'l',  'l',  'o', 0x00 /* Comment + null */
   };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
@@ -119,14 +119,14 @@ TEST (gzip_header_fcomment)
 TEST (gzip_header_fextra)
 {
   uint8_t header[] = {
-    0x1F, 0x8B,             /* Magic */
-    0x08,                   /* Method: deflate */
-    0x04,                   /* Flags: FEXTRA */
-    0x00, 0x00, 0x00, 0x00, /* Mtime */
-    0x00,                   /* XFL */
-    0xFF,                   /* OS: unknown */
-    0x05, 0x00,             /* XLEN = 5 (little-endian) */
-    'e', 'x', 't', 'r', 'a' /* Extra field data */
+    0x1F, 0x8B,                 /* Magic */
+    0x08,                       /* Method: deflate */
+    0x04,                       /* Flags: FEXTRA */
+    0x00, 0x00, 0x00, 0x00,     /* Mtime */
+    0x00,                       /* XFL */
+    0xFF,                       /* OS: unknown */
+    0x05, 0x00,                 /* XLEN = 5 (little-endian) */
+    'e',  'x',  't',  'r',  'a' /* Extra field data */
   };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
@@ -172,17 +172,17 @@ TEST (gzip_header_fhcrc)
 TEST (gzip_header_all_flags)
 {
   uint8_t header[] = {
-    0x1F, 0x8B,                             /* Magic */
-    0x08,                                   /* Method: deflate */
-    0x1F,                                   /* Flags: all (0x01|0x02|0x04|0x08|0x10) */
-    0x78, 0x56, 0x34, 0x12,                 /* Mtime: 0x12345678 */
-    0x02,                                   /* XFL: max compression */
-    0x03,                                   /* OS: Unix */
-    0x03, 0x00,                             /* XLEN = 3 */
-    'A', 'B', 'C',                          /* Extra field data */
-    'f', 'i', 'l', 'e', '.', 'g', 'z', 0x00, /* Filename */
-    'M', 'y', ' ', 'c', 'o', 'm', 'm', 'e', 'n', 't', 0x00, /* Comment */
-    0xAD, 0x5A                              /* CRC16 = 0x5AAD (little-endian) */
+    0x1F, 0x8B,             /* Magic */
+    0x08,                   /* Method: deflate */
+    0x1F,                   /* Flags: all (0x01|0x02|0x04|0x08|0x10) */
+    0x78, 0x56, 0x34, 0x12, /* Mtime: 0x12345678 */
+    0x02,                   /* XFL: max compression */
+    0x03,                   /* OS: Unix */
+    0x03, 0x00,             /* XLEN = 3 */
+    'A',  'B',  'C',        /* Extra field data */
+    'f',  'i',  'l',  'e',  '.', 'g', 'z', 0x00,                 /* Filename */
+    'M',  'y',  ' ',  'c',  'o', 'm', 'm', 'e',  'n', 't', 0x00, /* Comment */
+    0xAD, 0x5A /* CRC16 = 0x5AAD (little-endian) */
   };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
@@ -209,8 +209,8 @@ TEST (gzip_header_all_flags)
 TEST (gzip_magic_mismatch)
 {
   /* Wrong first magic byte */
-  uint8_t header1[] = { 0x1E, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                        0x00 };
+  uint8_t header1[]
+      = { 0x1E, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
 
@@ -218,8 +218,8 @@ TEST (gzip_magic_mismatch)
   ASSERT_EQ (result, DEFLATE_ERROR_GZIP_MAGIC);
 
   /* Wrong second magic byte */
-  uint8_t header2[] = { 0x1F, 0x8A, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                        0x00 };
+  uint8_t header2[]
+      = { 0x1F, 0x8A, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   result = SocketDeflate_gzip_parse_header (header2, sizeof (header2), &parsed);
   ASSERT_EQ (result, DEFLATE_ERROR_GZIP_MAGIC);
 }
@@ -230,8 +230,8 @@ TEST (gzip_magic_mismatch)
 TEST (gzip_method_invalid)
 {
   /* Method = 0 (reserved) */
-  uint8_t header[] = { 0x1F, 0x8B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00 };
+  uint8_t header[]
+      = { 0x1F, 0x8B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
 
@@ -259,8 +259,9 @@ TEST (gzip_header_truncated)
 TEST (gzip_header_truncated_fname)
 {
   /* FNAME flag set but no null terminator */
-  uint8_t header[] = { 0x1F, 0x8B, 0x08, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00, 'f',  'i',  'l',  'e' /* No null terminator */ };
+  uint8_t header[]
+      = { 0x1F, 0x8B, 0x08, 0x08, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 'f',  'i',  'l',  'e' /* No null terminator */ };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
 
@@ -274,8 +275,8 @@ TEST (gzip_header_truncated_fname)
 TEST (gzip_header_truncated_fextra)
 {
   /* FEXTRA but XLEN says 10 bytes, only have 3 */
-  uint8_t header[] = { 0x1F, 0x8B, 0x08, 0x04, 0x00, 0x00, 0x00,
-                       0x00, 0x00, 0x00, 0x0A, 0x00, /* XLEN = 10 */
+  uint8_t header[] = { 0x1F, 0x8B, 0x08, 0x04, 0x00, 0x00,
+                       0x00, 0x00, 0x00, 0x00, 0x0A, 0x00, /* XLEN = 10 */
                        'A',  'B',  'C' /* Only 3 bytes of extra */ };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
@@ -290,8 +291,9 @@ TEST (gzip_header_truncated_fextra)
 TEST (gzip_header_truncated_fcomment)
 {
   /* FCOMMENT flag set but no null terminator */
-  uint8_t header[] = { 0x1F, 0x8B, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00, 'H',  'e',  'l',  'l',  'o' /* No null terminator */ };
+  uint8_t header[]
+      = { 0x1F, 0x8B, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 'H',  'e',  'l',  'l',  'o' /* No null terminator */ };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
 
@@ -305,8 +307,9 @@ TEST (gzip_header_truncated_fcomment)
 TEST (gzip_header_truncated_fhcrc)
 {
   /* FHCRC flag set but only 1 byte of CRC16 present */
-  uint8_t header[] = { 0x1F, 0x8B, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00, 0x12 /* Only 1 byte, need 2 for CRC16 */ };
+  uint8_t header[]
+      = { 0x1F, 0x8B, 0x08, 0x02, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x12 /* Only 1 byte, need 2 for CRC16 */ };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
 
@@ -319,8 +322,8 @@ TEST (gzip_header_truncated_fhcrc)
  */
 TEST (gzip_header_null_safety)
 {
-  uint8_t header[] = { 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00 };
+  uint8_t header[]
+      = { 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   SocketDeflate_GzipHeader parsed;
   SocketDeflate_Result result;
 
@@ -342,8 +345,7 @@ TEST (gzip_trailer_valid)
   uint8_t trailer[] = { 0x26, 0x39, 0xF4, 0xCB, 0x09, 0x00, 0x00, 0x00 };
   SocketDeflate_Result result;
 
-  result
-      = SocketDeflate_gzip_verify_trailer (trailer, 0xCBF43926U, 9);
+  result = SocketDeflate_gzip_verify_trailer (trailer, 0xCBF43926U, 9);
   ASSERT_EQ (result, DEFLATE_OK);
 }
 
@@ -467,7 +469,7 @@ TEST (gzip_os_valid_codes)
   ASSERT (SocketDeflate_gzip_is_valid_os (GZIP_OS_UNKNOWN) == 1);
 
   /* Reserved values should be invalid */
-  ASSERT (SocketDeflate_gzip_is_valid_os (14) == 0);  /* First reserved */
+  ASSERT (SocketDeflate_gzip_is_valid_os (14) == 0); /* First reserved */
   ASSERT (SocketDeflate_gzip_is_valid_os (100) == 0);
   ASSERT (SocketDeflate_gzip_is_valid_os (254) == 0);
 }
@@ -506,23 +508,23 @@ TEST (gzip_integration_full_stream)
   /* gzip compressed "Hello, gzip!" */
   /* Original: 12 bytes, Compressed: 32 bytes */
   static const uint8_t gzip_hello[] = {
-    0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xFF, 0xF3, 0x48,
-    0xCD, 0xC9, 0xC9, 0xD7, 0x51, 0x48, 0xAF, 0xCA, 0x2C, 0x50, 0x04, 0x00,
-    0x3E, 0x3D, 0x0F, 0x10, 0x0C, 0x00, 0x00, 0x00,
+    0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xFF, 0xF3,
+    0x48, 0xCD, 0xC9, 0xC9, 0xD7, 0x51, 0x48, 0xAF, 0xCA, 0x2C, 0x50,
+    0x04, 0x00, 0x3E, 0x3D, 0x0F, 0x10, 0x0C, 0x00, 0x00, 0x00,
   };
 
   SocketDeflate_GzipHeader header;
   SocketDeflate_Result result;
 
   /* Parse header */
-  result = SocketDeflate_gzip_parse_header (gzip_hello, sizeof (gzip_hello),
-                                            &header);
+  result = SocketDeflate_gzip_parse_header (
+      gzip_hello, sizeof (gzip_hello), &header);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (header.method, GZIP_METHOD_DEFLATE);
   ASSERT_EQ (header.flags, 0x00); /* No optional fields */
   ASSERT_EQ (header.mtime, 0U);
-  ASSERT_EQ (header.xfl, 0x02);   /* Maximum compression */
-  ASSERT_EQ (header.os, 0xFF);    /* Unknown OS */
+  ASSERT_EQ (header.xfl, 0x02); /* Maximum compression */
+  ASSERT_EQ (header.os, 0xFF);  /* Unknown OS */
   ASSERT_EQ (header.header_size, 10);
 
   /* Verify trailer with known values */
@@ -537,7 +539,8 @@ TEST (gzip_integration_full_stream)
 
   /* Verify CRC of the original data matches */
   const char *original = "Hello, gzip!";
-  uint32_t computed_crc = SocketDeflate_crc32 (0, (const uint8_t *)original, 12);
+  uint32_t computed_crc
+      = SocketDeflate_crc32 (0, (const uint8_t *)original, 12);
   ASSERT_EQ (computed_crc, 0x100F3D3EU);
 }
 
@@ -563,9 +566,12 @@ TEST (gzip_integration_parallel_crc)
 
   /* Compute CRC of each chunk independently */
   uint32_t crc1 = SocketDeflate_crc32 (0, (const uint8_t *)data, c1_len);
-  uint32_t crc2 = SocketDeflate_crc32 (0, (const uint8_t *)data + c1_len, c2_len);
-  uint32_t crc3 = SocketDeflate_crc32 (0, (const uint8_t *)data + c1_len + c2_len, c3_len);
-  uint32_t crc4 = SocketDeflate_crc32 (0, (const uint8_t *)data + c1_len + c2_len + c3_len, c4_len);
+  uint32_t crc2
+      = SocketDeflate_crc32 (0, (const uint8_t *)data + c1_len, c2_len);
+  uint32_t crc3 = SocketDeflate_crc32 (
+      0, (const uint8_t *)data + c1_len + c2_len, c3_len);
+  uint32_t crc4 = SocketDeflate_crc32 (
+      0, (const uint8_t *)data + c1_len + c2_len + c3_len, c4_len);
 
   /* Combine all CRCs */
   uint32_t combined = crc1;

@@ -5,7 +5,8 @@
  */
 
 /**
- * test_metrics_percentile.c - SocketMetrics histogram percentile edge case tests
+ * test_metrics_percentile.c - SocketMetrics histogram percentile edge case
+ * tests
  *
  * Tests for histogram percentile calculation covering:
  * - Boundary percentiles (p0, p100)
@@ -29,26 +30,26 @@
 #include "test/Test.h"
 
 /* Helper macro for approximate floating point equality */
-#define ASSERT_NEAR(expected, actual, epsilon)                                 \
-  do                                                                           \
-    {                                                                          \
-      double _exp = (expected);                                                \
-      double _act = (actual);                                                  \
-      double _eps = (epsilon);                                                 \
-      if (fabs (_exp - _act) > _eps)                                           \
-        {                                                                      \
-          char _msg[1024];                                                     \
-          snprintf (_msg,                                                      \
-                    sizeof (_msg),                                             \
-                    "Expected %f ± %f, got %f (diff: %f)",                     \
-                    _exp,                                                      \
-                    _eps,                                                      \
-                    _act,                                                      \
-                    fabs (_exp - _act));                                       \
-          Test_fail (_msg, __FILE__, __LINE__);                                \
-          RAISE (Test_Failed);                                                 \
-        }                                                                      \
-    }                                                                          \
+#define ASSERT_NEAR(expected, actual, epsilon)             \
+  do                                                       \
+    {                                                      \
+      double _exp = (expected);                            \
+      double _act = (actual);                              \
+      double _eps = (epsilon);                             \
+      if (fabs (_exp - _act) > _eps)                       \
+        {                                                  \
+          char _msg[1024];                                 \
+          snprintf (_msg,                                  \
+                    sizeof (_msg),                         \
+                    "Expected %f ± %f, got %f (diff: %f)", \
+                    _exp,                                  \
+                    _eps,                                  \
+                    _act,                                  \
+                    fabs (_exp - _act));                   \
+          Test_fail (_msg, __FILE__, __LINE__);            \
+          RAISE (Test_Failed);                             \
+        }                                                  \
+    }                                                      \
   while (0)
 
 /* Test boundary percentiles: p0 (min) and p100 (max) */
@@ -61,7 +62,7 @@ TEST (metrics_percentile_boundary_p0_p100)
   for (int i = 1; i <= 5; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)(i * 10));
+                                       (double)(i * 10));
     }
 
   /* p0 should equal min (10.0) */
@@ -85,12 +86,11 @@ TEST (metrics_percentile_median_odd_count)
   for (int i = 1; i <= 5; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)i);
+                                       (double)i);
     }
 
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (3.0, p50, 0.001);
 }
 
@@ -104,7 +104,7 @@ TEST (metrics_percentile_clamping)
   for (int i = 1; i <= 3; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)(i * 10));
+                                       (double)(i * 10));
     }
 
   /* Negative percentile should be clamped to 0 (min) */
@@ -130,9 +130,8 @@ TEST (metrics_percentile_single_value)
   /* All percentiles should return 42.0 */
   double p0
       = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS, 0.0);
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   double p100 = SocketMetrics_histogram_percentile (
       SOCKET_HIST_DNS_QUERY_TIME_MS, 100.0);
 
@@ -152,9 +151,8 @@ TEST (metrics_percentile_two_values)
   SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS, 30.0);
 
   /* p50 should interpolate between 10 and 30 */
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (20.0, p50, 0.001);
 }
 
@@ -170,9 +168,8 @@ TEST (metrics_percentile_three_values)
   SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS, 3.0);
 
   /* p50 should be exactly 2.0 */
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (2.0, p50, 0.001);
 }
 
@@ -183,9 +180,8 @@ TEST (metrics_percentile_empty_histogram)
   SocketMetrics_reset_histograms ();
 
   /* No observations */
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (0.0, p50, 0.001);
 }
 
@@ -204,12 +200,10 @@ TEST (metrics_percentile_all_duplicates)
   /* All percentiles should be 42.0 */
   double p0
       = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS, 0.0);
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
-  double p95
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            95.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
+  double p95 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 95.0);
   double p100 = SocketMetrics_histogram_percentile (
       SOCKET_HIST_DNS_QUERY_TIME_MS, 100.0);
 
@@ -241,9 +235,8 @@ TEST (metrics_percentile_bimodal)
   ASSERT_NEAR (10.0, p0, 0.001);
 
   /* p50 should be between the two modes */
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   /* p50 should interpolate between 10 and 90 */
   ASSERT (p50 >= 10.0 && p50 <= 90.0);
 
@@ -272,15 +265,14 @@ TEST (metrics_percentile_skewed)
     }
 
   /* p50 should be 1.0 (median is in the low cluster) */
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (1.0, p50, 0.001);
 
-  /* p99 should be close to 100.0 (99th percentile should hit the high values) */
-  double p99
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            99.0);
+  /* p99 should be close to 100.0 (99th percentile should hit the high values)
+   */
+  double p99 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 99.0);
   /* Should be close to 100.0 */
   ASSERT (p99 > 90.0);
 }
@@ -296,29 +288,26 @@ TEST (metrics_percentile_interpolation)
   for (int i = 0; i < 5; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        values[i]);
+                                       values[i]);
     }
 
   /* p25 should interpolate
    * index = 0.25 * (5-1) = 1.0 → exact match at index 1, returns 20.0 */
-  double p25
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            25.0);
+  double p25 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 25.0);
   ASSERT_NEAR (20.0, p25, 0.001);
 
   /* p75 should interpolate
    * index = 0.75 * (5-1) = 3.0 → exact match at index 3, returns 40.0 */
-  double p75
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            75.0);
+  double p75 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 75.0);
   ASSERT_NEAR (40.0, p75, 0.001);
 
   /* p60 should interpolate: index = 0.60 * 4 = 2.4
    * lower=2 (30.0), upper=3 (40.0), frac=0.4
    * result = 30.0 * 0.6 + 40.0 * 0.4 = 18.0 + 16.0 = 34.0 */
-  double p60
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            60.0);
+  double p60 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 60.0);
   ASSERT_NEAR (34.0, p60, 0.001);
 }
 
@@ -333,12 +322,11 @@ TEST (metrics_percentile_extreme_large)
   for (int i = 0; i < 10; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        large_val);
+                                       large_val);
     }
 
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (large_val, p50, large_val * 0.001);
 }
 
@@ -353,12 +341,11 @@ TEST (metrics_percentile_extreme_small)
   for (int i = 0; i < 10; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        small_val);
+                                       small_val);
     }
 
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (small_val, p50, small_val * 0.1);
 }
 
@@ -372,13 +359,12 @@ TEST (metrics_percentile_negative_values)
   for (int i = -5; i <= 5; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)i);
+                                       (double)i);
     }
 
   /* p50 should be around 0 */
-  double p50
-      = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                            50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
   ASSERT_NEAR (0.0, p50, 0.5);
 
   /* p0 should be -5 */
@@ -426,7 +412,7 @@ TEST (metrics_percentile_wraparound_exact)
   for (int i = 0; i < 1024; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)i);
+                                       (double)i);
     }
 
   /* Verify count */
@@ -456,7 +442,7 @@ TEST (metrics_percentile_wraparound_overflow)
   for (int i = 0; i < 1025; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)i);
+                                       (double)i);
     }
 
   /* Count should still be capped at bucket size in percentile calculation */
@@ -485,7 +471,7 @@ TEST (metrics_percentile_full_rotation)
   for (int i = 0; i < 2048; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)i);
+                                       (double)i);
     }
 
   /* Should only have the last 1024 values (1024-2047) */
@@ -508,7 +494,7 @@ TEST (metrics_percentile_snapshot_order)
   for (int i = 0; i < 1000; i++)
     {
       SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
-                                        (double)((i * 7) % 1000));
+                                       (double)((i * 7) % 1000));
     }
 
   SocketMetrics_HistogramSnapshot snap;

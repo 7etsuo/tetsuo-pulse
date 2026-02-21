@@ -16,15 +16,9 @@
 
 TEST (proto_varint_u64_roundtrip_boundaries)
 {
-  const uint64_t values[] = { 0ULL,
-                              1ULL,
-                              127ULL,
-                              128ULL,
-                              255ULL,
-                              16384ULL,
-                              1048576ULL,
-                              UINT32_MAX,
-                              UINT64_MAX };
+  const uint64_t values[]
+      = { 0ULL,     1ULL,       127ULL,     128ULL,    255ULL,
+          16384ULL, 1048576ULL, UINT32_MAX, UINT64_MAX };
 
   for (size_t i = 0; i < sizeof (values) / sizeof (values[0]); i++)
     {
@@ -36,9 +30,9 @@ TEST (proto_varint_u64_roundtrip_boundaries)
       ASSERT_EQ (SOCKET_PROTO_OK,
                  SocketProto_varint_encode_u64 (
                      values[i], buf, sizeof (buf), &written));
-      ASSERT_EQ (SOCKET_PROTO_OK,
-                 SocketProto_varint_decode_u64 (
-                     buf, written, &decoded, &consumed));
+      ASSERT_EQ (
+          SOCKET_PROTO_OK,
+          SocketProto_varint_decode_u64 (buf, written, &decoded, &consumed));
       ASSERT_EQ (values[i], decoded);
       ASSERT_EQ (written, consumed);
     }
@@ -61,8 +55,8 @@ TEST (proto_varint_u32_rejects_overflow)
 TEST (proto_varint_decode_detects_truncated_and_overflow_encodings)
 {
   const uint8_t truncated[] = { 0x80 };
-  const uint8_t overflow[] = { 0x80, 0x80, 0x80, 0x80, 0x80,
-                               0x80, 0x80, 0x80, 0x80, 0x02 };
+  const uint8_t overflow[]
+      = { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02 };
   uint64_t value = 0;
   size_t consumed = 0;
 
@@ -79,9 +73,8 @@ TEST (proto_varint_encode_detects_small_buffer)
   uint8_t buf[1];
   size_t written = 0;
 
-  ASSERT_EQ (
-      SOCKET_PROTO_BUFFER_TOO_SMALL,
-      SocketProto_varint_encode_u64 (300, buf, sizeof (buf), &written));
+  ASSERT_EQ (SOCKET_PROTO_BUFFER_TOO_SMALL,
+             SocketProto_varint_encode_u64 (300, buf, sizeof (buf), &written));
 }
 
 TEST (proto_zigzag_roundtrip)
@@ -101,8 +94,8 @@ TEST (proto_fixed32_roundtrip_and_truncation)
   uint8_t buf[4];
   uint32_t decoded = 0;
 
-  ASSERT_EQ (
-      SOCKET_PROTO_OK, SocketProto_fixed32_encode (0xA1B2C3D4U, buf, sizeof (buf)));
+  ASSERT_EQ (SOCKET_PROTO_OK,
+             SocketProto_fixed32_encode (0xA1B2C3D4U, buf, sizeof (buf)));
   ASSERT_EQ (SOCKET_PROTO_OK,
              SocketProto_fixed32_decode (buf, sizeof (buf), &decoded));
   ASSERT_EQ (0xA1B2C3D4U, decoded);
@@ -115,9 +108,9 @@ TEST (proto_fixed64_roundtrip_and_truncation)
   uint8_t buf[8];
   uint64_t decoded = 0;
 
-  ASSERT_EQ (SOCKET_PROTO_OK,
-             SocketProto_fixed64_encode (
-                 0x1122334455667788ULL, buf, sizeof (buf)));
+  ASSERT_EQ (
+      SOCKET_PROTO_OK,
+      SocketProto_fixed64_encode (0x1122334455667788ULL, buf, sizeof (buf)));
   ASSERT_EQ (SOCKET_PROTO_OK,
              SocketProto_fixed64_decode (buf, sizeof (buf), &decoded));
   ASSERT_EQ (0x1122334455667788ULL, decoded);

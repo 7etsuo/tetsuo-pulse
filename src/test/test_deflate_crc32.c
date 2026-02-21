@@ -262,7 +262,8 @@ TEST (crc32_null_safety)
 /*
  * CRC32 Combine - Basic Test
  *
- * Verify that combining CRCs gives same result as computing over concatenated data.
+ * Verify that combining CRCs gives same result as computing over concatenated
+ * data.
  */
 TEST (crc32_combine_basic)
 {
