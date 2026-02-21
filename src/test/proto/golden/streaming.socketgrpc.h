@@ -20,14 +20,8 @@ struct test_streaming_Chunk
 
 extern void test_streaming_Chunk_init (test_streaming_Chunk *message);
 extern void test_streaming_Chunk_free (test_streaming_Chunk *message);
-extern int test_streaming_Chunk_encode (const test_streaming_Chunk *message,
-                                        uint8_t *out,
-                                        size_t out_len,
-                                        size_t *written);
-extern int test_streaming_Chunk_decode (test_streaming_Chunk *message,
-                                        const uint8_t *data,
-                                        size_t len,
-                                        Arena_T arena);
+extern int test_streaming_Chunk_encode (const test_streaming_Chunk *message, uint8_t *out, size_t out_len, size_t *written);
+extern int test_streaming_Chunk_decode (test_streaming_Chunk *message, const uint8_t *data, size_t len, Arena_T arena);
 
 struct test_streaming_Ack
 {
@@ -36,14 +30,8 @@ struct test_streaming_Ack
 
 extern void test_streaming_Ack_init (test_streaming_Ack *message);
 extern void test_streaming_Ack_free (test_streaming_Ack *message);
-extern int test_streaming_Ack_encode (const test_streaming_Ack *message,
-                                      uint8_t *out,
-                                      size_t out_len,
-                                      size_t *written);
-extern int test_streaming_Ack_decode (test_streaming_Ack *message,
-                                      const uint8_t *data,
-                                      size_t len,
-                                      Arena_T arena);
+extern int test_streaming_Ack_encode (const test_streaming_Ack *message, uint8_t *out, size_t out_len, size_t *written);
+extern int test_streaming_Ack_decode (test_streaming_Ack *message, const uint8_t *data, size_t len, Arena_T arena);
 
 typedef struct test_streaming_Streamer_ServerHandlers
 {
@@ -59,17 +47,10 @@ typedef struct test_streaming_Streamer_Client
   const test_streaming_Streamer_ServerHandlers *local_handlers;
 } test_streaming_Streamer_Client;
 
-extern void
-test_streaming_Streamer_Client_init (test_streaming_Streamer_Client *client,
-                                     SocketGRPC_Channel_T channel);
-extern void test_streaming_Streamer_Client_bind_local (
-    test_streaming_Streamer_Client *client,
-    const test_streaming_Streamer_ServerHandlers *handlers);
-extern int test_streaming_Streamer_Client_Upload_stream (
-    test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena);
-extern int test_streaming_Streamer_Client_Subscribe_stream (
-    test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena);
-extern int test_streaming_Streamer_Client_Chat_stream (
-    test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena);
+extern void test_streaming_Streamer_Client_init (test_streaming_Streamer_Client *client, SocketGRPC_Channel_T channel);
+extern void test_streaming_Streamer_Client_bind_local (test_streaming_Streamer_Client *client, const test_streaming_Streamer_ServerHandlers *handlers);
+extern int test_streaming_Streamer_Client_Upload_stream (test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena);
+extern int test_streaming_Streamer_Client_Subscribe_stream (test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena);
+extern int test_streaming_Streamer_Client_Chat_stream (test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena);
 
 #endif /* STREAMING_SOCKETGRPC_GENERATED_H */

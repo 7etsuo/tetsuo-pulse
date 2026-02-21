@@ -19,20 +19,10 @@ struct test_complex_Envelope_Meta
   char *source;
 };
 
-extern void
-test_complex_Envelope_Meta_init (test_complex_Envelope_Meta *message);
-extern void
-test_complex_Envelope_Meta_free (test_complex_Envelope_Meta *message);
-extern int
-test_complex_Envelope_Meta_encode (const test_complex_Envelope_Meta *message,
-                                   uint8_t *out,
-                                   size_t out_len,
-                                   size_t *written);
-extern int
-test_complex_Envelope_Meta_decode (test_complex_Envelope_Meta *message,
-                                   const uint8_t *data,
-                                   size_t len,
-                                   Arena_T arena);
+extern void test_complex_Envelope_Meta_init (test_complex_Envelope_Meta *message);
+extern void test_complex_Envelope_Meta_free (test_complex_Envelope_Meta *message);
+extern int test_complex_Envelope_Meta_encode (const test_complex_Envelope_Meta *message, uint8_t *out, size_t out_len, size_t *written);
+extern int test_complex_Envelope_Meta_decode (test_complex_Envelope_Meta *message, const uint8_t *data, size_t len, Arena_T arena);
 
 typedef enum test_complex_Envelope_payloadCase
 {
@@ -57,25 +47,15 @@ struct test_complex_Envelope
   union
   {
     char *text;
-    struct
-    {
-      uint8_t *data;
-      size_t len;
-    } blob;
+    struct { uint8_t *data; size_t len; } blob;
     uint64_t ref_id;
   } payload;
 };
 
 extern void test_complex_Envelope_init (test_complex_Envelope *message);
 extern void test_complex_Envelope_free (test_complex_Envelope *message);
-extern int test_complex_Envelope_encode (const test_complex_Envelope *message,
-                                         uint8_t *out,
-                                         size_t out_len,
-                                         size_t *written);
-extern int test_complex_Envelope_decode (test_complex_Envelope *message,
-                                         const uint8_t *data,
-                                         size_t len,
-                                         Arena_T arena);
+extern int test_complex_Envelope_encode (const test_complex_Envelope *message, uint8_t *out, size_t out_len, size_t *written);
+extern int test_complex_Envelope_decode (test_complex_Envelope *message, const uint8_t *data, size_t len, Arena_T arena);
 
 struct test_complex_ComplexRequest
 {
@@ -87,20 +67,10 @@ struct test_complex_ComplexRequest
   size_t codes_count;
 };
 
-extern void
-test_complex_ComplexRequest_init (test_complex_ComplexRequest *message);
-extern void
-test_complex_ComplexRequest_free (test_complex_ComplexRequest *message);
-extern int
-test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *message,
-                                    uint8_t *out,
-                                    size_t out_len,
-                                    size_t *written);
-extern int
-test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message,
-                                    const uint8_t *data,
-                                    size_t len,
-                                    Arena_T arena);
+extern void test_complex_ComplexRequest_init (test_complex_ComplexRequest *message);
+extern void test_complex_ComplexRequest_free (test_complex_ComplexRequest *message);
+extern int test_complex_ComplexRequest_encode (const test_complex_ComplexRequest *message, uint8_t *out, size_t out_len, size_t *written);
+extern int test_complex_ComplexRequest_decode (test_complex_ComplexRequest *message, const uint8_t *data, size_t len, Arena_T arena);
 
 struct test_complex_ComplexResponse
 {
@@ -108,27 +78,14 @@ struct test_complex_ComplexResponse
   char *reason;
 };
 
-extern void
-test_complex_ComplexResponse_init (test_complex_ComplexResponse *message);
-extern void
-test_complex_ComplexResponse_free (test_complex_ComplexResponse *message);
-extern int test_complex_ComplexResponse_encode (
-    const test_complex_ComplexResponse *message,
-    uint8_t *out,
-    size_t out_len,
-    size_t *written);
-extern int
-test_complex_ComplexResponse_decode (test_complex_ComplexResponse *message,
-                                     const uint8_t *data,
-                                     size_t len,
-                                     Arena_T arena);
+extern void test_complex_ComplexResponse_init (test_complex_ComplexResponse *message);
+extern void test_complex_ComplexResponse_free (test_complex_ComplexResponse *message);
+extern int test_complex_ComplexResponse_encode (const test_complex_ComplexResponse *message, uint8_t *out, size_t out_len, size_t *written);
+extern int test_complex_ComplexResponse_decode (test_complex_ComplexResponse *message, const uint8_t *data, size_t len, Arena_T arena);
 
 typedef struct test_complex_ComplexService_ServerHandlers
 {
-  int (*Process) (const test_complex_ComplexRequest *request,
-                  test_complex_ComplexResponse *response,
-                  void *userdata,
-                  Arena_T arena);
+  int (*Process) (const test_complex_ComplexRequest *request, test_complex_ComplexResponse *response, void *userdata, Arena_T arena);
   void *userdata;
 } test_complex_ComplexService_ServerHandlers;
 
@@ -138,15 +95,8 @@ typedef struct test_complex_ComplexService_Client
   const test_complex_ComplexService_ServerHandlers *local_handlers;
 } test_complex_ComplexService_Client;
 
-extern void test_complex_ComplexService_Client_init (
-    test_complex_ComplexService_Client *client, SocketGRPC_Channel_T channel);
-extern void test_complex_ComplexService_Client_bind_local (
-    test_complex_ComplexService_Client *client,
-    const test_complex_ComplexService_ServerHandlers *handlers);
-extern int test_complex_ComplexService_Client_Process (
-    test_complex_ComplexService_Client *client,
-    const test_complex_ComplexRequest *request,
-    test_complex_ComplexResponse *response,
-    Arena_T arena);
+extern void test_complex_ComplexService_Client_init (test_complex_ComplexService_Client *client, SocketGRPC_Channel_T channel);
+extern void test_complex_ComplexService_Client_bind_local (test_complex_ComplexService_Client *client, const test_complex_ComplexService_ServerHandlers *handlers);
+extern int test_complex_ComplexService_Client_Process (test_complex_ComplexService_Client *client, const test_complex_ComplexRequest *request, test_complex_ComplexResponse *response, Arena_T arena);
 
 #endif /* COMPLEX_SOCKETGRPC_GENERATED_H */
