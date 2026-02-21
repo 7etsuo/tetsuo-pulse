@@ -275,11 +275,52 @@ copy_ws_close_info (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
     }
 }
 
+/**
+ * @brief Receive a WebSocket message with exception handling.
+ * @param ws WebSocket connection.
+ * @param msg Message structure (pre-zeroed by caller).
+ * @param[out] lib_msg Raw library message (pre-zeroed by caller).
+ * @param[out] ret Set to the return value from SocketWS_recv_message.
+ * @return 0 to continue processing, -1 on error, 1 if msg already populated
+ *         (close event).
+ */
+static int
+ws_recv_try (SocketSimple_WS_T ws,
+             SocketSimple_WSMessage *msg,
+             SocketWS_Message *lib_msg,
+             volatile int *ret)
+{
+  volatile int exception_occurred = 0;
+
+  TRY
+  {
+    *ret = SocketWS_recv_message (ws->ws, lib_msg);
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_RECV, "WebSocket receive failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    copy_ws_close_info (ws, msg);
+    return 1; /* Close event, msg populated */
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                      "WebSocket protocol error");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  return exception_occurred ? -1 : 0;
+}
+
 int
 Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
 {
   volatile int ret = -1;
-  volatile int exception_occurred = 0;
   SocketWS_Message lib_msg;
 
   Socket_simple_clear_error ();
@@ -293,30 +334,9 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
   memset (msg, 0, sizeof (*msg));
   memset (&lib_msg, 0, sizeof (lib_msg));
 
-  TRY
-  {
-    ret = SocketWS_recv_message (ws->ws, &lib_msg);
-  }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_RECV, "WebSocket receive failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    copy_ws_close_info (ws, msg);
-    return 0; /* Not an error, just closed */
-  }
-  EXCEPT (SocketWS_ProtocolError)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                      "WebSocket protocol error");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
+  int rc = ws_recv_try (ws, msg, &lib_msg, &ret);
+  if (rc != 0)
+    return (rc == 1) ? 0 : -1;
 
   if (ret == 0)
     {

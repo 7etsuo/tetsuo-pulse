@@ -1563,6 +1563,56 @@ Socket_simple_http_new (void)
   return Socket_simple_http_new_ex (NULL);
 }
 
+/**
+ * @brief Apply user-provided options to an HTTP client configuration.
+ * @param config Client config to update.
+ * @param opts User options (may be NULL).
+ */
+static void
+apply_http_options (SocketHTTPClient_Config *config,
+                    const SocketSimple_HTTPOptions *opts)
+{
+  if (!opts)
+    return;
+
+  if (opts->connect_timeout_ms > 0)
+    config->connect_timeout_ms = opts->connect_timeout_ms;
+  if (opts->request_timeout_ms > 0)
+    config->request_timeout_ms = opts->request_timeout_ms;
+  if (opts->max_redirects >= 0)
+    config->follow_redirects = opts->max_redirects;
+  config->verify_ssl = opts->verify_ssl;
+  if (opts->user_agent)
+    config->user_agent = opts->user_agent;
+}
+
+/**
+ * @brief Configure authentication on an HTTP client from user options.
+ * @param client The HTTP client to configure.
+ * @param opts User options containing auth credentials.
+ */
+static void
+apply_http_auth (SocketHTTPClient_T client,
+                 const SocketSimple_HTTPOptions *opts)
+{
+  if (!opts || (!opts->auth_user && !opts->bearer_token))
+    return;
+
+  SocketHTTPClient_Auth auth = { 0 };
+  if (opts->bearer_token)
+    {
+      auth.type = HTTP_AUTH_BEARER;
+      auth.token = opts->bearer_token;
+    }
+  else if (opts->auth_user)
+    {
+      auth.type = HTTP_AUTH_BASIC;
+      auth.username = opts->auth_user;
+      auth.password = opts->auth_pass;
+    }
+  SocketHTTPClient_set_auth (client, &auth);
+}
+
 SocketSimple_HTTP_T
 Socket_simple_http_new_ex (const SocketSimple_HTTPOptions *opts)
 {
@@ -1580,20 +1630,7 @@ Socket_simple_http_new_ex (const SocketSimple_HTTPOptions *opts)
     }
 
   SocketHTTPClient_config_defaults (&config);
-
-  /* Apply options if provided */
-  if (opts)
-    {
-      if (opts->connect_timeout_ms > 0)
-        config.connect_timeout_ms = opts->connect_timeout_ms;
-      if (opts->request_timeout_ms > 0)
-        config.request_timeout_ms = opts->request_timeout_ms;
-      if (opts->max_redirects >= 0)
-        config.follow_redirects = opts->max_redirects;
-      config.verify_ssl = opts->verify_ssl;
-      if (opts->user_agent)
-        config.user_agent = opts->user_agent;
-    }
+  apply_http_options (&config, opts);
 
   TRY
   {
@@ -1616,23 +1653,7 @@ Socket_simple_http_new_ex (const SocketSimple_HTTPOptions *opts)
       return NULL;
     }
 
-  /* Set authentication if provided */
-  if (opts && (opts->auth_user || opts->bearer_token))
-    {
-      SocketHTTPClient_Auth auth = { 0 };
-      if (opts->bearer_token)
-        {
-          auth.type = HTTP_AUTH_BEARER;
-          auth.token = opts->bearer_token;
-        }
-      else if (opts->auth_user)
-        {
-          auth.type = HTTP_AUTH_BASIC;
-          auth.username = opts->auth_user;
-          auth.password = opts->auth_pass;
-        }
-      SocketHTTPClient_set_auth (handle->client, &auth);
-    }
+  apply_http_auth (handle->client, opts);
 
   return handle;
 }
