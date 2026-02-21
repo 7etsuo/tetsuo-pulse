@@ -41,10 +41,12 @@ TEST (grpc_codegen_unary_message_roundtrip)
   request.name = "Ada";
   request.id = 42;
 
-  ASSERT_EQ (0, test_unary_HelloRequest_encode (
-                    &request, wire, sizeof (wire), &written));
+  ASSERT_EQ (
+      0,
+      test_unary_HelloRequest_encode (&request, wire, sizeof (wire), &written));
   ASSERT_NE (0U, written);
-  ASSERT_EQ (0, test_unary_HelloRequest_decode (&decoded, wire, written, arena));
+  ASSERT_EQ (0,
+             test_unary_HelloRequest_decode (&decoded, wire, written, arena));
   ASSERT_NOT_NULL (decoded.name);
   ASSERT_EQ (0, strcmp (decoded.name, "Ada"));
   ASSERT_EQ (42U, decoded.id);
@@ -79,9 +81,9 @@ TEST (grpc_codegen_unary_local_handler_invocation)
   request.name = "Grace";
   request.id = 7;
 
-  ASSERT_EQ (SOCKET_GRPC_STATUS_OK,
-             test_unary_Greeter_Client_SayHello (
-                 &client, &request, &response, arena));
+  ASSERT_EQ (
+      SOCKET_GRPC_STATUS_OK,
+      test_unary_Greeter_Client_SayHello (&client, &request, &response, arena));
   ASSERT_NOT_NULL (response.greeting);
   ASSERT_EQ (0, strcmp (response.greeting, "Grace"));
   ASSERT_EQ (1007U, response.code);
@@ -106,9 +108,9 @@ TEST (grpc_codegen_unary_unbound_handler_returns_unimplemented)
   request.name = "NoHandler";
   request.id = 1;
 
-  ASSERT_EQ (SOCKET_GRPC_STATUS_UNIMPLEMENTED,
-             test_unary_Greeter_Client_SayHello (
-                 &client, &request, &response, arena));
+  ASSERT_EQ (
+      SOCKET_GRPC_STATUS_UNIMPLEMENTED,
+      test_unary_Greeter_Client_SayHello (&client, &request, &response, arena));
 
   test_unary_HelloResponse_free (&response);
   test_unary_HelloRequest_free (&request);

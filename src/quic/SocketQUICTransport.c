@@ -2060,6 +2060,51 @@ drive_client_handshake (SocketQUICTransport_T t,
   return flush_tls_output (t);
 }
 
+static int
+process_coalesced_packets (SocketQUICTransport_T t,
+                           uint8_t *pkt_ptr,
+                           size_t remaining,
+                           int *total_events)
+{
+  while (remaining > 0)
+    {
+      SocketQUICReceiveResult_T result;
+      memset (&result, 0, sizeof (result));
+      SocketQUICReceive_Result recv_rc = SocketQUICReceive_packet (
+          &t->recv_ctx, pkt_ptr, remaining, t->scid.len, 0, &result);
+
+      if (recv_rc != QUIC_RECEIVE_OK)
+        break;
+
+      uint64_t current = Socket_get_monotonic_us ();
+
+      if (t->ack[result.pn_space])
+        SocketQUICAck_record_packet (
+            t->ack[result.pn_space], result.packet_number, current, 1);
+
+      int events = process_frames (t,
+                                   result.payload,
+                                   result.payload_len,
+                                   result.type,
+                                   result.pn_space,
+                                   current);
+      if (events < 0)
+        return -1;
+      *total_events += events;
+
+      if (t->closed)
+        return -1;
+      if (drive_client_handshake (t, &result) < 0)
+        return -1;
+
+      size_t consumed = result.consumed > 0 ? result.consumed : remaining;
+      pkt_ptr += consumed;
+      remaining -= consumed;
+    }
+
+  return 0;
+}
+
 int
 SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
 {
@@ -2082,56 +2127,14 @@ SocketQUICTransport_poll (SocketQUICTransport_T t, int timeout_ms)
   if (nbytes <= 0)
     return 0;
 
-  /* Process potentially coalesced packets (RFC 9000 §12.2) */
-  uint8_t *pkt_ptr = t->recv_buf;
-  size_t remaining = (size_t)nbytes;
   int total_events = 0;
+  if (process_coalesced_packets (t, t->recv_buf, (size_t)nbytes, &total_events)
+      < 0)
+    return -1;
 
-  while (remaining > 0)
-    {
-      SocketQUICReceiveResult_T result;
-      memset (&result, 0, sizeof (result));
-      SocketQUICReceive_Result recv_rc = SocketQUICReceive_packet (
-          &t->recv_ctx, pkt_ptr, remaining, t->scid.len, 0, &result);
-
-      if (recv_rc != QUIC_RECEIVE_OK)
-        break;
-
-      uint64_t current = Socket_get_monotonic_us ();
-
-      /* Record received PN */
-      if (t->ack[result.pn_space])
-        SocketQUICAck_record_packet (
-            t->ack[result.pn_space], result.packet_number, current, 1);
-
-      /* Process frames */
-      int events = process_frames (t,
-                                   result.payload,
-                                   result.payload_len,
-                                   result.type,
-                                   result.pn_space,
-                                   current);
-      if (events < 0)
-        return -1;
-      total_events += events;
-
-      if (t->closed)
-        return -1;
-
-      if (drive_client_handshake (t, &result) < 0)
-        return -1;
-
-      /* Advance past this packet in the datagram */
-      size_t consumed = result.consumed > 0 ? result.consumed : remaining;
-      pkt_ptr += consumed;
-      remaining -= consumed;
-    }
-
-  /* Check for handshake completion after processing all coalesced packets */
   if (complete_handshake_if_ready (t) < 0)
     return -1;
 
-  /* Send ACK if needed */
   uint64_t current = Socket_get_monotonic_us ();
   for (int space = 0; space < QUIC_PN_SPACE_COUNT; space++)
     send_ack_if_needed (t, (SocketQUIC_PNSpace)space, current);

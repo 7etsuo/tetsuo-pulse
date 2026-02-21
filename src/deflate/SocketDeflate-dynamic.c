@@ -63,7 +63,7 @@ decode_block_header (SocketDeflate_BitReader_T reader,
   *hclen_out = val + 4;
 
   /* Validate ranges per RFC 1951 */
-  if (*hlit_out > 286 || *hdist_out > 32)
+  if (*hlit_out > DEFLATE_LITLEN_MAX_HLIT || *hdist_out > DEFLATE_DIST_CODES)
     return DEFLATE_ERROR;
 
   return DEFLATE_OK;

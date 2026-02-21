@@ -575,6 +575,33 @@ socketproxy_do_send (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
+static size_t
+socketproxy_recv_space (const struct SocketProxy_Conn_T *conn)
+{
+  if (conn->recvbuf != NULL)
+    return SocketBuf_space (conn->recvbuf);
+  return sizeof (conn->recv_buf) - conn->recv_len;
+}
+
+static ssize_t
+socketproxy_recv_into_buffer (struct SocketProxy_Conn_T *conn, size_t space)
+{
+  if (conn->recvbuf != NULL)
+    {
+      size_t wlen;
+      void *ptr = SocketBuf_writeptr (conn->recvbuf, &wlen);
+      if (ptr == NULL || wlen == 0)
+        return 0;
+      wlen = (wlen < space) ? wlen : space;
+      ssize_t n = Socket_recv (conn->socket, ptr, wlen);
+      if (n > 0)
+        SocketBuf_written (conn->recvbuf, (size_t)n);
+      return n;
+    }
+
+  return Socket_recv (conn->socket, conn->recv_buf + conn->recv_len, space);
+}
+
 int
 socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
 {
@@ -582,36 +609,13 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
   volatile int caught_closed = 0;
   size_t space;
 
-  if (conn->recvbuf != NULL)
-    {
-      space = SocketBuf_space (conn->recvbuf);
-    }
-  else
-    {
-      space = sizeof (conn->recv_buf) - conn->recv_len;
-    }
+  space = socketproxy_recv_space (conn);
   if (space == 0)
-    {
-      return -1;
-    }
+    return -1;
 
   TRY
   {
-    if (conn->recvbuf != NULL)
-      {
-        size_t wlen;
-        void *ptr = SocketBuf_writeptr (conn->recvbuf, &wlen);
-        if (ptr == NULL || wlen == 0)
-          break;
-        wlen = (wlen < space) ? wlen : space;
-        n = Socket_recv (conn->socket, ptr, wlen);
-        if (n > 0)
-          SocketBuf_written (conn->recvbuf, (size_t)n);
-      }
-    else
-      {
-        n = Socket_recv (conn->socket, conn->recv_buf + conn->recv_len, space);
-      }
+    n = socketproxy_recv_into_buffer (conn, space);
   }
   EXCEPT (Socket_Closed)
   caught_closed = 1;
@@ -627,13 +631,10 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
       return -1;
     }
   if (n == 0)
-    {
-      return 0;
-    }
+    return 0;
+
   if (conn->recvbuf == NULL)
-    {
-      conn->recv_len += (size_t)n;
-    }
+    conn->recv_len += (size_t)n;
 
   return (int)n;
 }
@@ -929,6 +930,52 @@ proxy_setup_tls_to_proxy (struct SocketProxy_Conn_T *conn)
 #endif
 }
 
+#if SOCKET_HAS_TLS
+/**
+ * proxy_poll_for_tls_handshake - Poll socket for TLS handshake I/O readiness
+ *
+ * Returns: 1 if ready, 0 on EINTR (caller should retry), -1 on error/timeout
+ */
+static int
+proxy_poll_for_tls_handshake (struct SocketProxy_Conn_T *conn,
+                              TLSHandshakeState hs,
+                              int64_t deadline_ms)
+{
+  unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
+  short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
+  struct pollfd pfd;
+  SOCKET_INIT_POLLFD (pfd, Socket_fd (conn->socket), poll_events);
+
+  int64_t now_ms = socketproxy_get_time_ms ();
+  int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
+
+  int ret = poll (&pfd, 1, poll_to);
+
+  if (ret < 0 && errno == EINTR)
+    return 0;
+
+  if (ret < 0)
+    {
+      socketproxy_set_error (conn,
+                             PROXY_ERROR,
+                             "poll failed during TLS handshake to proxy: %s",
+                             strerror (errno));
+      return -1;
+    }
+
+  if (ret == 0)
+    {
+      socketproxy_set_error (conn,
+                             PROXY_ERROR_TIMEOUT,
+                             "TLS handshake to proxy timeout (%d ms)",
+                             conn->handshake_timeout_ms);
+      return -1;
+    }
+
+  return 1;
+}
+#endif
+
 static int
 proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
 {
@@ -938,7 +985,6 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
 
   while (1)
     {
-      /* Check timeout before each attempt */
       if (proxy_check_timeout (conn) < 0)
         return -1;
 
@@ -959,44 +1005,10 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
           return -1;
         }
 
-      /* Handshake wants I/O - prepare to poll */
-      unsigned events
-          = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
-      short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
-      struct pollfd pfd;
-      SOCKET_INIT_POLLFD (pfd, Socket_fd (conn->socket), poll_events);
-
-      int64_t now_ms = socketproxy_get_time_ms ();
-      int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
-
-      int ret = poll (&pfd, 1, poll_to);
-
-      /* Early continue for EINTR - reduces nesting */
-      if (ret < 0 && errno == EINTR)
-        continue;
-
-      /* Handle poll errors */
-      if (ret < 0)
-        {
-          socketproxy_set_error (
-              conn,
-              PROXY_ERROR,
-              "poll failed during TLS handshake to proxy: %s",
-              strerror (errno));
-          return -1;
-        }
-
-      /* Handle poll timeout */
-      if (ret == 0)
-        {
-          socketproxy_set_error (conn,
-                                 PROXY_ERROR_TIMEOUT,
-                                 "TLS handshake to proxy timeout (%d ms)",
-                                 conn->handshake_timeout_ms);
-          return -1;
-        }
-
-      /* Socket ready, loop to retry handshake */
+      int poll_ret = proxy_poll_for_tls_handshake (conn, hs, deadline_ms);
+      if (poll_ret < 0)
+        return -1;
+      /* poll_ret == 0 means EINTR, continue to retry */
     }
 #else
   return -1;
@@ -1614,6 +1626,45 @@ proxy_dispatch_protocol_recv (struct SocketProxy_Conn_T *conn)
     }
 }
 
+/**
+ * proxy_copy_recvbuf_to_recv_buf - Copy data from SocketBuf to flat recv_buf
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+proxy_copy_recvbuf_to_recv_buf (struct SocketProxy_Conn_T *conn, size_t avail)
+{
+  size_t read_avail = avail;
+  const void *ptr = SocketBuf_readptr (conn->recvbuf, &read_avail);
+  if (ptr == NULL)
+    return -1;
+  avail = (read_avail > sizeof (conn->recv_buf)) ? sizeof (conn->recv_buf)
+                                                 : read_avail;
+  memcpy (conn->recv_buf, ptr, avail);
+  conn->recv_len = avail;
+  conn->recv_offset = 0;
+  return 0;
+}
+
+static void
+proxy_consume_processed_data (struct SocketProxy_Conn_T *conn)
+{
+  size_t consumed = conn->recv_offset;
+  if (consumed == 0)
+    return;
+
+  if (conn->recvbuf != NULL)
+    {
+      SocketBuf_consume (conn->recvbuf, consumed);
+    }
+  else
+    {
+      conn->recv_len -= consumed;
+      memmove (conn->recv_buf, conn->recv_buf + consumed, conn->recv_len);
+    }
+  conn->recv_offset = 0;
+}
+
 static int
 proxy_process_recv (struct SocketProxy_Conn_T *conn)
 {
@@ -1640,33 +1691,12 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
 
   if (conn->recvbuf != NULL && avail > 0)
     {
-      size_t read_avail = avail;
-      const void *ptr = SocketBuf_readptr (conn->recvbuf, &read_avail);
-      if (ptr == NULL)
+      if (proxy_copy_recvbuf_to_recv_buf (conn, avail) < 0)
         return -1;
-      avail = (read_avail > sizeof (conn->recv_buf)) ? sizeof (conn->recv_buf)
-                                                     : read_avail;
-      memcpy (conn->recv_buf, ptr, avail);
-      conn->recv_len = avail;
-      conn->recv_offset = 0;
     }
 
   res = proxy_dispatch_protocol_recv (conn);
-
-  size_t consumed = conn->recv_offset;
-  if (consumed > 0)
-    {
-      if (conn->recvbuf != NULL)
-        {
-          SocketBuf_consume (conn->recvbuf, consumed);
-        }
-      else
-        {
-          conn->recv_len -= consumed;
-          memmove (conn->recv_buf, conn->recv_buf + consumed, conn->recv_len);
-        }
-      conn->recv_offset = 0;
-    }
+  proxy_consume_processed_data (conn);
 
   if (res == PROXY_OK)
     {

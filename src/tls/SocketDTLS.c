@@ -654,22 +654,17 @@ dtls_check_cookie_exchange_state (SSL *ssl)
   return 0;
 }
 
-DTLSHandshakeState
-SocketDTLS_handshake (SocketDgram_T socket)
+/**
+ * dtls_handle_retransmit_timeout - Process DTLS retransmission timer
+ * @socket: DTLS socket
+ * @ssl: SSL connection
+ *
+ * Returns: 0 on success/no-op, DTLS_HANDSHAKE_ERROR on timeout failure.
+ * Raises SocketDTLS_HandshakeFailed if retransmit limit exceeded.
+ */
+static DTLSHandshakeState
+dtls_handle_retransmit_timeout (SocketDgram_T socket, SSL *ssl)
 {
-  assert (socket);
-
-  REQUIRE_DTLS_ENABLED (socket, SocketDTLS_HandshakeFailed);
-
-  if (socket->dtls_handshake_done)
-    return DTLS_HANDSHAKE_COMPLETE;
-
-  SSL *ssl = dtls_socket_get_ssl (socket);
-  if (!ssl)
-    RAISE_DTLS_ERROR_MSG (SocketDTLS_HandshakeFailed,
-                          "SSL object not available");
-
-  /* Handle DTLS timer - OpenSSL handles retransmission internally */
   int timeout_result = DTLSv1_handle_timeout (ssl);
   if (timeout_result < 0)
     {
@@ -690,19 +685,22 @@ SocketDTLS_handshake (SocketDgram_T socket)
         }
     }
 
-  int result = SSL_do_handshake (ssl);
-  if (result == 1)
-    {
-      socket->dtls_handshake_done = 1;
-      socket->dtls_retransmit_count = 0;
-      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COMPLETE;
-      SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE);
-      return DTLS_HANDSHAKE_COMPLETE;
-    }
+  return DTLS_HANDSHAKE_IN_PROGRESS;
+}
 
-  DTLSHandshakeState state = dtls_handle_ssl_error (socket, ssl, result);
-
-  /* Check for cookie exchange state on server side */
+/**
+ * dtls_classify_handshake_state - Check for cookie exchange or error states
+ * @socket: DTLS socket
+ * @ssl: SSL connection
+ * @state: Current handshake state from SSL error handling
+ *
+ * Returns: Final handshake state. Raises on error.
+ */
+static DTLSHandshakeState
+dtls_classify_handshake_state (SocketDgram_T socket,
+                               SSL *ssl,
+                               DTLSHandshakeState state)
+{
   if (state == DTLS_HANDSHAKE_WANT_READ || state == DTLS_HANDSHAKE_IN_PROGRESS)
     {
       if (dtls_check_cookie_exchange_state (ssl))
@@ -721,6 +719,40 @@ SocketDTLS_handshake (SocketDgram_T socket)
 
   socket->dtls_last_handshake_state = state;
   return state;
+}
+
+DTLSHandshakeState
+SocketDTLS_handshake (SocketDgram_T socket)
+{
+  assert (socket);
+
+  REQUIRE_DTLS_ENABLED (socket, SocketDTLS_HandshakeFailed);
+
+  if (socket->dtls_handshake_done)
+    return DTLS_HANDSHAKE_COMPLETE;
+
+  SSL *ssl = dtls_socket_get_ssl (socket);
+  if (!ssl)
+    RAISE_DTLS_ERROR_MSG (SocketDTLS_HandshakeFailed,
+                          "SSL object not available");
+
+  DTLSHandshakeState timeout_state
+      = dtls_handle_retransmit_timeout (socket, ssl);
+  if (timeout_state == DTLS_HANDSHAKE_ERROR)
+    return DTLS_HANDSHAKE_ERROR;
+
+  int result = SSL_do_handshake (ssl);
+  if (result == 1)
+    {
+      socket->dtls_handshake_done = 1;
+      socket->dtls_retransmit_count = 0;
+      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COMPLETE;
+      SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE);
+      return DTLS_HANDSHAKE_COMPLETE;
+    }
+
+  DTLSHandshakeState state = dtls_handle_ssl_error (socket, ssl, result);
+  return dtls_classify_handshake_state (socket, ssl, state);
 }
 
 /**

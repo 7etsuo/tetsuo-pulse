@@ -287,19 +287,48 @@ SocketTLS_is_ktls_rx_active (Socket_T socket)
  *
  * @return Bytes sent on success, -1 on error
  */
+/**
+ * tls_ssl_write_chunk - Send a buffer chunk via SSL_write with partial handling
+ * @ssl: SSL connection
+ * @buf: Data buffer to send
+ * @len: Number of bytes to send
+ * @bytes_sent: Output - total bytes sent from this chunk
+ *
+ * Returns: 0 on success, 1 on would-block (partial chunk sent)
+ */
+static int
+tls_ssl_write_chunk (SSL *ssl,
+                     const unsigned char *buf,
+                     size_t len,
+                     size_t *bytes_sent)
+{
+  *bytes_sent = 0;
+  while (*bytes_sent < len)
+    {
+      ssize_t remaining = (ssize_t)(len - *bytes_sent);
+      int to_send = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+
+      int ret_raw = SSL_write (ssl, buf + *bytes_sent, to_send);
+      ssize_t ret = tls_handle_ssl_write_result (
+          ssl, ret_raw, "SSL_write in sendfile fallback");
+      TLS_CHECK_WRITE_ERROR (ret);
+      *bytes_sent += (size_t)ret;
+      if (ret == 0)
+        return 1; /* Would block */
+    }
+  return 0;
+}
+
 static ssize_t
 tls_sendfile_fallback (SSL *ssl, int file_fd, off_t offset, size_t size)
 {
   unsigned char buf[SOCKET_TLS_KTLS_SENDFILE_BUFSIZE];
   ssize_t total_sent = 0;
 
-  /* Seek to offset if non-zero */
   if (offset != 0)
     {
       if (lseek (file_fd, offset, SEEK_SET) == (off_t)-1)
-        {
-          return -1;
-        }
+        return -1;
     }
 
   while ((size_t)total_sent < size)
@@ -318,30 +347,10 @@ tls_sendfile_fallback (SSL *ssl, int file_fd, off_t offset, size_t size)
       if (nread == 0)
         break; /* EOF */
 
-      /* Send via SSL_write with partial handling */
       size_t sent_chunk = 0;
-      while (sent_chunk < (size_t)nread)
-        {
-          ssize_t remaining = nread - sent_chunk;
-          int to_send;
-          if (remaining > INT_MAX)
-            to_send = INT_MAX;
-          else
-            to_send = (int)remaining;
+      if (tls_ssl_write_chunk (ssl, buf, (size_t)nread, &sent_chunk) != 0)
+        return total_sent + (ssize_t)sent_chunk; /* Would block */
 
-          int ret_raw = SSL_write (ssl, buf + sent_chunk, to_send);
-          ssize_t ret = tls_handle_ssl_write_result (
-              ssl, ret_raw, "SSL_write in sendfile fallback");
-          TLS_CHECK_WRITE_ERROR (ret);
-          sent_chunk += (size_t)ret;
-          if (ret == 0)
-            {
-              /* Would block - return partial progress including this chunk's
-               * sent */
-              return total_sent + (ssize_t)sent_chunk;
-            }
-        }
-      /* Full chunk sent */
       total_sent += nread;
     }
 

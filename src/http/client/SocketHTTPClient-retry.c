@@ -167,7 +167,7 @@ httpclient_should_follow_redirect (SocketHTTPClient_T client,
   if (req->method == HTTP_METHOD_POST && !client->config.redirect_on_post)
     {
       /* 303 See Other always changes to GET */
-      if (status_code != 303)
+      if (status_code != HTTP_STATUS_SEE_OTHER)
         return 0;
     }
 

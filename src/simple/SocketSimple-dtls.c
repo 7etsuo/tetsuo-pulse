@@ -529,82 +529,110 @@ Socket_simple_dtls_listen (const char *host,
   return handle;
 }
 
-SocketSimple_Socket_T
-Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
+/**
+ * simple_dtls_validate_server - Validate server socket preconditions
+ * @server_sock: Socket to validate
+ *
+ * Returns: 0 if valid, -1 with error set
+ */
+static int
+simple_dtls_validate_server (SocketSimple_Socket_T server_sock)
 {
-  Socket_simple_clear_error ();
-
   if (!server_sock)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server socket");
-      return NULL;
+      return -1;
     }
 
   if (!server_sock->dgram)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Server socket is not UDP");
-      return NULL;
+      return -1;
     }
 
   if (!server_sock->is_server)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Socket is not a server socket");
-      return NULL;
+      return -1;
     }
+
+  return 0;
+}
+
+/**
+ * simple_dtls_do_handshake - Listen for ClientHello and complete handshake
+ * @server_sock: DTLS server socket
+ * @timeout_ms: Handshake timeout in milliseconds
+ *
+ * Returns: 0 on success, -1 on failure (error already set)
+ */
+static int
+simple_dtls_do_handshake (SocketSimple_Socket_T server_sock, int timeout_ms)
+{
+  volatile int failed = 0;
 
   TRY
   {
-    /* Wait for client hello */
     DTLSHandshakeState state = SocketDTLS_listen (server_sock->dgram);
-
     if (state == DTLS_HANDSHAKE_ERROR)
       {
         simple_set_error (SOCKET_SIMPLE_ERR_TLS,
                           "Failed to receive ClientHello");
-        return NULL;
+        failed = 1;
       }
-
-    /* Complete handshake */
-    state = SocketDTLS_handshake_loop (
-        server_sock->dgram,
-        timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
-
-    if (state != DTLS_HANDSHAKE_COMPLETE)
+    else
       {
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
-                          "DTLS handshake with client failed");
-        return NULL;
+        state = SocketDTLS_handshake_loop (
+            server_sock->dgram,
+            timeout_ms > 0 ? timeout_ms
+                           : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
+        if (state != DTLS_HANDSHAKE_COMPLETE)
+          {
+            simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
+                              "DTLS handshake with client failed");
+            failed = 1;
+          }
       }
   }
   EXCEPT (SocketDTLS_TimeoutExpired)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "DTLS accept timed out");
-    return NULL;
+    failed = 1;
   }
   EXCEPT (SocketDTLS_CookieFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS cookie verification failed");
-    return NULL;
+    failed = 1;
   }
   EXCEPT (SocketDTLS_HandshakeFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
                       "DTLS handshake with client failed");
-    return NULL;
+    failed = 1;
   }
   EXCEPT (SocketDTLS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS accept failed");
-    return NULL;
+    failed = 1;
   }
   END_TRY;
 
-  /* Create a new client session handle that shares the dgram but doesn't own
-   * it. This prevents use-after-free when the caller closes the "client"
-   * connection: closing the client handle will NOT close the underlying server
-   * socket. */
+  return failed ? -1 : 0;
+}
+
+SocketSimple_Socket_T
+Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
+{
+  Socket_simple_clear_error ();
+
+  if (simple_dtls_validate_server (server_sock) != 0)
+    return NULL;
+
+  if (simple_dtls_do_handshake (server_sock, timeout_ms) != 0)
+    return NULL;
+
   SocketSimple_Socket_T client_handle = calloc (1, sizeof (*client_handle));
   if (!client_handle)
     {
@@ -613,12 +641,12 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
       return NULL;
     }
 
-  client_handle->dgram = server_sock->dgram; /* Share the dgram */
+  client_handle->dgram = server_sock->dgram;
   client_handle->is_tls = 1;
   client_handle->is_connected = 1;
-  client_handle->is_server = 0; /* This is a client session, not a server */
+  client_handle->is_server = 0;
   client_handle->is_udp = 1;
-  client_handle->owns_dgram = 0; /* Does NOT own the dgram - server does */
+  client_handle->owns_dgram = 0;
 
   return client_handle;
 }

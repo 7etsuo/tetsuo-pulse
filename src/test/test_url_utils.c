@@ -56,28 +56,28 @@ TEST (url_decode_basic)
   ASSERT_EQ (5, len);
 
   /* Space encoded as %20 */
-  ASSERT_EQ (0,
-             socket_util_url_decode (
-                 "hello%20world", 13, buf, sizeof (buf), &len));
+  ASSERT_EQ (
+      0, socket_util_url_decode ("hello%20world", 13, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "hello world") == 0);
   ASSERT_EQ (11, len);
 
   /* Multiple percent sequences */
-  ASSERT_EQ (0,
-             socket_util_url_decode (
-                 "hello%20world%21", 16, buf, sizeof (buf), &len));
+  ASSERT_EQ (
+      0,
+      socket_util_url_decode ("hello%20world%21", 16, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "hello world!") == 0);
   ASSERT_EQ (12, len);
 
   /* Mixed case hex digits */
-  ASSERT_EQ (0,
-             socket_util_url_decode (
-                 "test%2Fpath%3D", 14, buf, sizeof (buf), &len));
+  ASSERT_EQ (
+      0,
+      socket_util_url_decode ("test%2Fpath%3D", 14, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "test/path=") == 0);
   ASSERT_EQ (10, len);
 
   /* Upper case hex */
-  ASSERT_EQ (0, socket_util_url_decode ("%41%42%43", 9, buf, sizeof (buf), &len));
+  ASSERT_EQ (0,
+             socket_util_url_decode ("%41%42%43", 9, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "ABC") == 0);
   ASSERT_EQ (3, len);
 }
@@ -133,14 +133,12 @@ TEST (url_decode_truncation)
 
   /* Truncation with encoded chars - fits exactly */
   ASSERT_EQ (0,
-             socket_util_url_decode (
-                 "123456%20", 9, buf, sizeof (buf), &len));
+             socket_util_url_decode ("123456%20", 9, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "123456 ") == 0);
 
   /* Actual truncation with encoded chars */
-  ASSERT_EQ (-1,
-             socket_util_url_decode (
-                 "1234567%20", 10, buf, sizeof (buf), &len));
+  ASSERT_EQ (
+      -1, socket_util_url_decode ("1234567%20", 10, buf, sizeof (buf), &len));
 
   /* Zero-size buffer */
   ASSERT_EQ (-1, socket_util_url_decode ("test", 4, buf, 0, &len));
@@ -152,8 +150,8 @@ TEST (url_decode_special_chars)
   size_t len;
 
   /* Username:password encoding (colon) */
-  ASSERT_EQ (0,
-             socket_util_url_decode ("user%3Apass", 11, buf, sizeof (buf), &len));
+  ASSERT_EQ (
+      0, socket_util_url_decode ("user%3Apass", 11, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "user:pass") == 0);
 
   /* Path with slashes */
@@ -169,8 +167,8 @@ TEST (url_decode_special_chars)
   ASSERT (strcmp (buf, "key=value&foo=bar") == 0);
 
   /* Plus is not decoded to space (not application/x-www-form-urlencoded). */
-  ASSERT_EQ (0,
-             socket_util_url_decode ("hello+world", 11, buf, sizeof (buf), &len));
+  ASSERT_EQ (
+      0, socket_util_url_decode ("hello+world", 11, buf, sizeof (buf), &len));
   ASSERT (strcmp (buf, "hello+world") == 0);
 }
 
@@ -181,7 +179,8 @@ TEST (url_decode_proxy_credentials)
 
   /* Simple username */
   ASSERT_EQ (
-      0, socket_util_url_decode ("admin", 5, username, sizeof (username), NULL));
+      0,
+      socket_util_url_decode ("admin", 5, username, sizeof (username), NULL));
   ASSERT (strcmp (username, "admin") == 0);
 
   /* Username with special chars */
@@ -212,4 +211,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

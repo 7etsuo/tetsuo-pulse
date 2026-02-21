@@ -123,8 +123,8 @@ write_dynamic_header (BitWriter *bw,
 /**
  * Write code length code lengths in RFC 1951 permuted order.
  *
- * The order is: 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15
- * Each code length is 3 bits.
+ * The order is: 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1,
+ * 15 Each code length is 3 bits.
  *
  * @param bw             Bit writer
  * @param codelen_lens   Array of 19 code lengths (indexed by symbol)
@@ -157,11 +157,11 @@ write_codelen_lengths (BitWriter *bw,
  *   Symbol 17: 110 -> reversed 011 = 0x3
  *   Symbol 18: 111 -> reversed 111 = 0x7
  */
-#define CODELEN_SYM_0  0x0  /* code length 0 */
-#define CODELEN_SYM_1  0x4  /* code length 1 */
-#define CODELEN_SYM_8  0x5  /* code length 8 */
-#define CODELEN_SYM_17 0x3  /* zeros 3-10 (3 extra bits) */
-#define CODELEN_SYM_18 0x7  /* zeros 11-138 (7 extra bits) */
+#define CODELEN_SYM_0 0x0  /* code length 0 */
+#define CODELEN_SYM_1 0x4  /* code length 1 */
+#define CODELEN_SYM_8 0x5  /* code length 8 */
+#define CODELEN_SYM_17 0x3 /* zeros 3-10 (3 extra bits) */
+#define CODELEN_SYM_18 0x7 /* zeros 11-138 (7 extra bits) */
 
 /*
  * Header Parsing Tests
@@ -369,7 +369,8 @@ TEST (dynamic_single_literal)
 {
   /* Decode a dynamic block containing single literal 'A' */
   uint8_t encoded[256];
-  size_t encoded_size = build_simple_dynamic_block (encoded, sizeof (encoded), 'A');
+  size_t encoded_size
+      = build_simple_dynamic_block (encoded, sizeof (encoded), 'A');
 
   uint8_t output[64];
   size_t written;
@@ -516,7 +517,8 @@ TEST (dynamic_codelen_repeat_16)
   bitwriter_write (&bw, 0x5, 3); /* Symbol 16 reversed (101) = copy prev */
   bitwriter_write (&bw, 3, 2);   /* extra=3 -> 6 copies */
 
-  /* Now codes 0-6 have length 8. Need 250 more zeros + code 256 = 8, dist = something */
+  /* Now codes 0-6 have length 8. Need 250 more zeros + code 256 = 8, dist =
+   * something */
   /* Codes 7-255 (249 codes): symbol 18 + symbol 18 again */
   bitwriter_write (&bw, 0x7, 3); /* Symbol 18 */
   bitwriter_write (&bw, 127, 7); /* 138 zeros: codes 7-144 */
@@ -538,7 +540,8 @@ TEST (dynamic_codelen_repeat_16)
    * Code 256 -> 00000111 reversed = 11100000 = 0xE0
    */
   bitwriter_write (&bw, 0x00, 8); /* Literal 0: code 0 reversed = 00000000 */
-  bitwriter_write (&bw, 0xE0, 8); /* EOB (code 256): 00000111 reversed = 11100000 */
+  bitwriter_write (
+      &bw, 0xE0, 8); /* EOB (code 256): 00000111 reversed = 11100000 */
 
   bitwriter_flush (&bw);
 
@@ -601,7 +604,8 @@ TEST (dynamic_invalid_hdist)
    * with the bit encoding. The RFC specifies max HDIST is 32.
    *
    * Actually HDIST stored as 31 -> HDIST = 32 which is valid.
-   * The implementation validates HDIST <= 32, which passes for all 5-bit values.
+   * The implementation validates HDIST <= 32, which passes for all 5-bit
+   * values.
    *
    * This test passes since we can't encode invalid HDIST.
    */
@@ -847,9 +851,11 @@ TEST (dynamic_output_buffer_full)
 
   Arena_T block_arena = Arena_new ();
   SocketDeflate_BitReader_T reader = make_reader (encoded, encoded_size);
-  result = SocketDeflate_decode_dynamic_block (
-      reader, block_arena, output, 0, /* Zero-size buffer */
-      &written);
+  result = SocketDeflate_decode_dynamic_block (reader,
+                                               block_arena,
+                                               output,
+                                               0, /* Zero-size buffer */
+                                               &written);
   Arena_dispose (&block_arena);
 
   /* Should fail - output buffer full */
@@ -883,7 +889,7 @@ TEST (dynamic_with_backreference)
   /* Encode code lengths for HLIT=258 + HDIST=1 = 259 total */
   /* Code 65 ('A'): length 8 */
   bitwriter_write (&bw, CODELEN_SYM_18, 3);
-  bitwriter_write (&bw, 54, 7); /* 65 zeros (codes 0-64) */
+  bitwriter_write (&bw, 54, 7);            /* 65 zeros (codes 0-64) */
   bitwriter_write (&bw, CODELEN_SYM_8, 3); /* Code 65: length 8 */
 
   /* Codes 66-255: zeros */
@@ -900,7 +906,8 @@ TEST (dynamic_with_backreference)
 
   /* Distance code 0 (distance=1): length 5 */
   bitwriter_write (&bw, CODELEN_SYM_1, 3); /* Symbol 1 = code length 1 */
-  /* Actually we need distance code with proper bits - use length 1 for single code */
+  /* Actually we need distance code with proper bits - use length 1 for single
+   * code */
 
   /* Compressed data:
    * Litlen codes: 65, 256, 257 all have length 8
@@ -909,7 +916,7 @@ TEST (dynamic_with_backreference)
    */
   bitwriter_write (&bw, 0x00, 8); /* Literal 'A' (65) */
   bitwriter_write (&bw, 0x40, 8); /* Length code 257 = length 3 */
-  bitwriter_write (&bw, 0, 1);    /* Distance code 0 = distance 1 (1-bit code) */
+  bitwriter_write (&bw, 0, 1); /* Distance code 0 = distance 1 (1-bit code) */
   bitwriter_write (&bw, 0x80, 8); /* EOB (256) */
 
   bitwriter_flush (&bw);
@@ -992,7 +999,8 @@ TEST (dynamic_max_repeat_138)
 TEST (dynamic_rle_crosses_boundary)
 {
   /* Test run-length code that crosses from literal/length to distance alphabet.
-   * Per RFC 1951: "all code lengths form a single sequence of HLIT + HDIST + 258"
+   * Per RFC 1951: "all code lengths form a single sequence of HLIT + HDIST +
+   * 258"
    */
   uint8_t encoded[512];
   BitWriter bw;

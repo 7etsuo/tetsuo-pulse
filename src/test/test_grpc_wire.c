@@ -17,9 +17,10 @@ TEST (grpc_wire_frame_roundtrip)
   size_t consumed = 0;
   SocketGRPC_FrameView view;
 
-  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
-             SocketGRPC_Frame_encode (
-                 1, payload, sizeof (payload), frame, sizeof (frame), &written));
+  ASSERT_EQ (
+      SOCKET_GRPC_WIRE_OK,
+      SocketGRPC_Frame_encode (
+          1, payload, sizeof (payload), frame, sizeof (frame), &written));
   ASSERT_EQ (SOCKET_GRPC_WIRE_FRAME_PREFIX_SIZE + sizeof (payload), written);
   ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
              SocketGRPC_Frame_parse (
@@ -40,13 +41,10 @@ TEST (grpc_wire_frame_rejects_invalid_prefixes_and_lengths)
   size_t consumed = 0;
   SocketGRPC_FrameView view;
 
-  ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_FRAME,
-             SocketGRPC_Frame_encode (2,
-                                      payload,
-                                      sizeof (payload),
-                                      frame,
-                                      sizeof (frame),
-                                      &written));
+  ASSERT_EQ (
+      SOCKET_GRPC_WIRE_INVALID_FRAME,
+      SocketGRPC_Frame_encode (
+          2, payload, sizeof (payload), frame, sizeof (frame), &written));
   ASSERT_EQ (SOCKET_GRPC_WIRE_BUFFER_TOO_SMALL,
              SocketGRPC_Frame_encode (
                  0, payload, sizeof (payload), frame, 4, &written));
@@ -54,12 +52,12 @@ TEST (grpc_wire_frame_rejects_invalid_prefixes_and_lengths)
   ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_FRAME,
              SocketGRPC_Frame_parse (
                  invalid_flag, sizeof (invalid_flag), 32, &view, &consumed));
-  ASSERT_EQ (
-      SOCKET_GRPC_WIRE_INCOMPLETE,
-      SocketGRPC_Frame_parse (truncated, sizeof (truncated), 64, &view, &consumed));
-  ASSERT_EQ (
-      SOCKET_GRPC_WIRE_LENGTH_EXCEEDED,
-      SocketGRPC_Frame_parse (truncated, sizeof (truncated), 4, &view, &consumed));
+  ASSERT_EQ (SOCKET_GRPC_WIRE_INCOMPLETE,
+             SocketGRPC_Frame_parse (
+                 truncated, sizeof (truncated), 64, &view, &consumed));
+  ASSERT_EQ (SOCKET_GRPC_WIRE_LENGTH_EXCEEDED,
+             SocketGRPC_Frame_parse (
+                 truncated, sizeof (truncated), 4, &view, &consumed));
 }
 
 TEST (grpc_wire_http_status_mapping)
@@ -74,8 +72,7 @@ TEST (grpc_wire_http_status_mapping)
              SocketGRPC_http_status_to_grpc (404));
   ASSERT_EQ (SOCKET_GRPC_STATUS_UNAVAILABLE,
              SocketGRPC_http_status_to_grpc (503));
-  ASSERT_EQ (SOCKET_GRPC_STATUS_UNKNOWN,
-             SocketGRPC_http_status_to_grpc (418));
+  ASSERT_EQ (SOCKET_GRPC_STATUS_UNKNOWN, SocketGRPC_http_status_to_grpc (418));
 }
 
 int

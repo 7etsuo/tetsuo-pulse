@@ -304,8 +304,6 @@ socket_get_ssl (T socket)
   return (SSL *)socket->tls_ssl;
 }
 
-/* socket_is_recoverable_io_error removed - use socketio_is_wouldblock() */
-
 typedef struct
 {
   int ssl_error;        /**< SSL_ERROR_* constant */

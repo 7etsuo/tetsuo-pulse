@@ -773,10 +773,12 @@ set_single_timeout_opt (int fd,
     }
 }
 
-int
-SocketCommon_create_fd (int domain, int type, int protocol, Except_T exc_type)
+static void
+create_fd_validate_params (int domain,
+                           int type,
+                           int protocol,
+                           Except_T exc_type)
 {
-  /* Validate supported domain, type, protocol for security (Section 4) */
   if (domain != AF_INET && domain != AF_INET6 && domain != AF_UNIX)
     {
       SOCKET_RAISE_FMT (
@@ -800,8 +802,14 @@ SocketCommon_create_fd (int domain, int type, int protocol, Except_T exc_type)
                         "Unsupported protocol: %d (only 0/TCP/UDP)",
                         protocol);
     }
+}
 
+int
+SocketCommon_create_fd (int domain, int type, int protocol, Except_T exc_type)
+{
   int fd;
+
+  create_fd_validate_params (domain, type, protocol, exc_type);
 
 #if SOCKET_HAS_SOCK_CLOEXEC
   fd = socket (domain, type | SOCK_CLOEXEC, protocol);
@@ -2443,6 +2451,57 @@ SocketCommon_free_resolver_addrinfo (struct addrinfo *ai)
  * Note: Must be freed with SocketCommon_free_resolver_addrinfo(), NOT
  * freeaddrinfo()
  */
+static void
+resolver_fill_sockaddr (struct addrinfo *ai,
+                        const SocketDNSResolver_Address *addr,
+                        int port)
+{
+  if (addr->family == AF_INET)
+    {
+      struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
+      sin->sin_family = AF_INET;
+      sin->sin_port = htons ((uint16_t)port);
+      memcpy (&sin->sin_addr, &addr->addr.v4, sizeof (struct in_addr));
+    }
+  else
+    {
+      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
+      sin6->sin6_family = AF_INET6;
+      sin6->sin6_port = htons ((uint16_t)port);
+      memcpy (&sin6->sin6_addr, &addr->addr.v6, sizeof (struct in6_addr));
+    }
+}
+
+static struct addrinfo *
+resolver_alloc_addrinfo (const SocketDNSResolver_Address *addr, int port)
+{
+  size_t addrlen;
+  struct addrinfo *ai;
+
+  if (addr->family == AF_INET)
+    addrlen = sizeof (struct sockaddr_in);
+  else if (addr->family == AF_INET6)
+    addrlen = sizeof (struct sockaddr_in6);
+  else
+    return NULL;
+
+  if (addrlen > SIZE_MAX - sizeof (struct addrinfo))
+    return NULL;
+
+  ai = calloc (1, sizeof (struct addrinfo) + addrlen);
+  if (!ai)
+    return NULL;
+
+  ai->ai_family = addr->family;
+  ai->ai_socktype = SOCK_STREAM;
+  ai->ai_protocol = IPPROTO_TCP;
+  ai->ai_addrlen = addrlen;
+  ai->ai_addr = (struct sockaddr *)(ai + 1);
+
+  resolver_fill_sockaddr (ai, addr, port);
+  return ai;
+}
+
 struct addrinfo *
 SocketCommon_resolver_to_addrinfo (const void *result_ptr, int port)
 {
@@ -2457,53 +2516,21 @@ SocketCommon_resolver_to_addrinfo (const void *result_ptr, int port)
 
   for (i = 0; i < result->count; i++)
     {
-      const SocketDNSResolver_Address *addr = &result->addresses[i];
-      struct addrinfo *ai;
-      size_t addrlen;
-
-      /* Allocate addrinfo structure */
-      if (addr->family == AF_INET)
-        addrlen = sizeof (struct sockaddr_in);
-      else if (addr->family == AF_INET6)
-        addrlen = sizeof (struct sockaddr_in6);
-      else
-        continue; /* Skip unsupported families */
-
-      /* Defensive overflow check - should never happen with AF_INET/AF_INET6
-       */
-      if (addrlen > SIZE_MAX - sizeof (struct addrinfo))
-        continue; /* Skip this address if allocation would overflow */
-
-      ai = calloc (1, sizeof (struct addrinfo) + addrlen);
+      struct addrinfo *ai
+          = resolver_alloc_addrinfo (&result->addresses[i], port);
       if (!ai)
         {
-          /* Free already allocated entries on failure */
-          SocketCommon_free_resolver_addrinfo (head);
-          return NULL;
+          /* calloc failed or unsupported family - skip unsupported, fail on
+           * OOM */
+          if (result->addresses[i].family == AF_INET
+              || result->addresses[i].family == AF_INET6)
+            {
+              SocketCommon_free_resolver_addrinfo (head);
+              return NULL;
+            }
+          continue;
         }
 
-      ai->ai_family = addr->family;
-      ai->ai_socktype = SOCK_STREAM;
-      ai->ai_protocol = IPPROTO_TCP;
-      ai->ai_addrlen = addrlen;
-      ai->ai_addr = (struct sockaddr *)(ai + 1);
-
-      if (addr->family == AF_INET)
-        {
-          struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
-          sin->sin_family = AF_INET;
-          sin->sin_port = htons ((uint16_t)port);
-          memcpy (&sin->sin_addr, &addr->addr.v4, sizeof (struct in_addr));
-        }
-      else
-        {
-          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
-          sin6->sin6_family = AF_INET6;
-          sin6->sin6_port = htons ((uint16_t)port);
-          memcpy (&sin6->sin6_addr, &addr->addr.v6, sizeof (struct in6_addr));
-        }
-
-      /* Append to list */
       *tail = ai;
       tail = &ai->ai_next;
     }

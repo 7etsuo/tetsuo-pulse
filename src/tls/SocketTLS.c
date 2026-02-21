@@ -1371,6 +1371,30 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
  *         SocketTLS_Failed on protocol or syscall errors
  * Thread-safe: Yes - operates on per-connection SSL state
  */
+/**
+ * handle_ssl_read_syscall_error - Handle SSL_ERROR_SYSCALL during read
+ * @result: Return value from SSL_read
+ *
+ * Distinguishes between abrupt EOF (peer closed without close_notify)
+ * and other syscall errors. Always raises - never returns.
+ */
+static void
+handle_ssl_read_syscall_error (int result)
+{
+  if (result == 0 && errno == 0)
+    {
+      /* Abrupt close: peer disconnected without close_notify.
+       * Set ECONNRESET to distinguish from clean shutdown. */
+      errno = ECONNRESET;
+      RAISE (Socket_Closed);
+      __builtin_unreachable ();
+    }
+  /* Other syscall error - errno is already set appropriately */
+  tls_format_openssl_error ("TLS recv failed (syscall)");
+  RAISE_TLS_ERROR (SocketTLS_Failed);
+  __builtin_unreachable ();
+}
+
 static ssize_t
 handle_ssl_read_error (SSL *ssl, int result, int ssl_error)
 {
@@ -1379,59 +1403,31 @@ handle_ssl_read_error (SSL *ssl, int result, int ssl_error)
   switch (ssl_error)
     {
     case SSL_ERROR_ZERO_RETURN:
-      /* Clean shutdown: peer sent close_notify alert.
-       * This is a graceful connection termination - no data lost.
-       * Set errno to 0 to indicate clean shutdown, then raise. */
       errno = 0;
       RAISE (Socket_Closed);
-      __builtin_unreachable (); /* RAISE never returns */
+      __builtin_unreachable ();
 
     case SSL_ERROR_WANT_READ:
     case SSL_ERROR_WANT_WRITE:
-      /* Non-blocking: would block, set errno and return 0.
-       * Note: WANT_WRITE can occur during renegotiation even on recv.
-       * Caller should poll for appropriate events and retry. */
       errno = EAGAIN;
       return 0;
 
     case SSL_ERROR_SYSCALL:
-      /* System call error - check errno for details.
-       * errno = 0 with result = 0: Unexpected EOF (peer closed abruptly).
-       * This differs from SSL_ERROR_ZERO_RETURN which is a clean shutdown.
-       *
-       * Per OpenSSL docs: "Some I/O error occurred. The retrying may be
-       * possible but the caller must ensure that the error wasn't fatal."
-       * With errno = 0 and result = 0, it means unexpected EOF. */
-      if (result == 0 && errno == 0)
-        {
-          /* Abrupt close: peer disconnected without close_notify.
-           * This could indicate a truncation attack or network failure.
-           * Set ECONNRESET to distinguish from clean shutdown. */
-          errno = ECONNRESET;
-          RAISE (Socket_Closed);
-          __builtin_unreachable (); /* RAISE never returns */
-        }
-      /* Other syscall error - errno is already set appropriately */
-      tls_format_openssl_error ("TLS recv failed (syscall)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
+      handle_ssl_read_syscall_error (result);
+      __builtin_unreachable ();
 
     case SSL_ERROR_SSL:
-      /* Protocol error - fatal TLS failure (e.g., bad record MAC,
-       * decompression failure, handshake failure during renegotiation). */
       errno = EPROTO;
       tls_format_openssl_error ("TLS recv failed (protocol)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
+      __builtin_unreachable ();
 
     default:
-      /* Unknown error type - should not happen with current OpenSSL */
       errno = EIO;
       tls_format_openssl_error ("TLS recv failed (unknown)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
 
-  /* Unreachable - all cases either return or raise */
   return -1;
 }
 
@@ -1674,48 +1670,44 @@ SocketTLS_get_alpn_selected (Socket_T socket)
  * @note Session data is sensitive - store securely (encrypted at rest)
  * @warning For TLS 1.3, call after some I/O to ensure ticket receipt
  */
-int
-SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
+/**
+ * session_get_if_valid - Get SSL session if still within its expiry window
+ * @ssl: SSL connection
+ *
+ * Returns: Valid SSL_SESSION with incremented refcount, or NULL.
+ * Caller must call SSL_SESSION_free() on non-NULL return.
+ */
+static SSL_SESSION *
+session_get_if_valid (SSL *ssl)
 {
-  assert (socket);
-  assert (len);
-
-  /* Validate preconditions */
-  if (!socket->tls_enabled)
-    return -1;
-
-  if (!socket->tls_handshake_done)
-    return -1; /* Must complete handshake first */
-
-  SSL *ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    return -1;
-
-  /* Get session - for TLS 1.3, this returns the most recent ticket.
-   * SSL_get1_session() increments reference count, we must free it. */
   SSL_SESSION *session = SSL_get1_session (ssl);
   if (!session)
-    {
-      /* No session available. For TLS 1.3, this might mean:
-       * - Server hasn't sent NewSessionTicket yet (call later)
-       * - Server disabled session tickets
-       * - Session already expired */
-      return -1;
-    }
+    return NULL;
 
-  /* Check if session is still valid (TLS 1.3 sessions can expire quickly) */
   time_t session_timeout = SSL_SESSION_get_timeout (session);
   time_t session_time = SSL_SESSION_get_time (session);
   time_t now = time (NULL);
 
   if (session_time + session_timeout < now)
     {
-      /* Session already expired */
       SSL_SESSION_free (session);
-      return -1;
+      return NULL;
     }
 
-  /* Get required length first */
+  return session;
+}
+
+/**
+ * session_serialize - Serialize SSL session into buffer
+ * @session: Valid SSL session (freed by this function)
+ * @buffer: Output buffer, or NULL for size query
+ * @len: In/out parameter for buffer size / bytes written
+ *
+ * Returns: 1 on success, 0 if buffer too small (len updated), -1 on error
+ */
+static int
+session_serialize (SSL_SESSION *session, unsigned char *buffer, size_t *len)
+{
   int session_len = i2d_SSL_SESSION (session, NULL);
   if (session_len <= 0)
     {
@@ -1723,15 +1715,13 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
       return -1;
     }
 
-  /* Check if just querying size or if buffer is too small */
   if (buffer == NULL || (size_t)session_len > *len)
     {
       *len = (size_t)session_len;
       SSL_SESSION_free (session);
-      return 0; /* Buffer too small or size query */
+      return 0;
     }
 
-  /* Serialize session to buffer */
   unsigned char *p = buffer;
   int written = i2d_SSL_SESSION (session, &p);
   SSL_SESSION_free (session);
@@ -1741,6 +1731,29 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
 
   *len = (size_t)written;
   return 1;
+}
+
+int
+SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
+{
+  assert (socket);
+  assert (len);
+
+  if (!socket->tls_enabled)
+    return -1;
+
+  if (!socket->tls_handshake_done)
+    return -1;
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  SSL_SESSION *session = session_get_if_valid (ssl);
+  if (!session)
+    return -1;
+
+  return session_serialize (session, buffer, len);
 }
 
 /**
@@ -1870,6 +1883,66 @@ SocketTLS_session_restore (Socket_T socket,
 /* SOCKET_TLS_MAX_RENEGOTIATIONS is now defined in SocketTLSConfig.h
  * with comprehensive documentation about DoS protection rationale. */
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+/**
+ * validate_renegotiation_allowed - Check DoS limits and secure renegotiation
+ * @socket: Socket to check renegotiation limits on
+ * @ssl: SSL connection
+ *
+ * Returns: 0 if allowed, -1 if rejected (limit exceeded or insecure)
+ */
+static int
+validate_renegotiation_allowed (Socket_T socket, SSL *ssl)
+{
+  if (socket->tls_renegotiation_count >= SOCKET_TLS_MAX_RENEGOTIATIONS)
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+      TLS_ERROR_FMT ("Renegotiation limit exceeded (%d max)",
+                     SOCKET_TLS_MAX_RENEGOTIATIONS);
+      return -1;
+    }
+
+  if (!SSL_get_secure_renegotiation_support (ssl))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+      TLS_ERROR_MSG ("Insecure renegotiation not supported");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * perform_renegotiation_handshake - Execute pending renegotiation handshake
+ * @socket: Socket being renegotiated
+ * @ssl: SSL connection
+ *
+ * Returns: 1 on success, 0 on EAGAIN (non-blocking), raises on failure
+ */
+static int
+perform_renegotiation_handshake (Socket_T socket, SSL *ssl)
+{
+  int ret = SSL_do_handshake (ssl);
+  if (ret == 1)
+    {
+      socket->tls_renegotiation_count++;
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+      return 1;
+    }
+
+  int ssl_error = SSL_get_error (ssl, ret);
+  if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
+    {
+      errno = EAGAIN;
+      return 0;
+    }
+
+  tls_format_openssl_error ("Renegotiation handshake failed");
+  RAISE_TLS_ERROR (SocketTLS_ProtocolError);
+  __builtin_unreachable ();
+}
+#endif /* OPENSSL_VERSION_NUMBER >= 0x10101000L */
+
 int
 SocketTLS_check_renegotiation (Socket_T socket)
 {
@@ -1882,59 +1955,22 @@ SocketTLS_check_renegotiation (Socket_T socket)
   if (!ssl)
     return -1;
 
-  /* TLS 1.3 doesn't support renegotiation - uses KeyUpdate instead.
-   * Return 0 to indicate no renegotiation is pending (correct behavior). */
+  /* TLS 1.3 doesn't support renegotiation - uses KeyUpdate instead. */
   if (SSL_version (ssl) >= TLS1_3_VERSION)
     return 0;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-  /* Check if renegotiation is pending */
   if (SSL_renegotiate_pending (ssl))
     {
-      /* DoS protection: Enforce renegotiation limit */
-      if (socket->tls_renegotiation_count >= SOCKET_TLS_MAX_RENEGOTIATIONS)
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
-          TLS_ERROR_FMT ("Renegotiation limit exceeded (%d max)",
-                         SOCKET_TLS_MAX_RENEGOTIATIONS);
-          return -1; /* Reject: limit exceeded */
-        }
-
-      /* Check if secure renegotiation is supported (RFC 5746) */
-      if (!SSL_get_secure_renegotiation_support (ssl))
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
-          TLS_ERROR_MSG ("Insecure renegotiation not supported");
-          return -1; /* Reject: insecure renegotiation */
-        }
-
-      /* Process the renegotiation */
-      int ret = SSL_do_handshake (ssl);
-      if (ret == 1)
-        {
-          socket->tls_renegotiation_count++;
-          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
-          return 1; /* Renegotiation completed successfully */
-        }
-
-      /* Check for WANT_READ/WANT_WRITE (non-blocking) */
-      int ssl_error = SSL_get_error (ssl, ret);
-      if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
-        {
-          errno = EAGAIN;
-          return 0; /* In progress, retry later */
-        }
-
-      /* Renegotiation failed */
-      tls_format_openssl_error ("Renegotiation handshake failed");
-      RAISE_TLS_ERROR (SocketTLS_ProtocolError);
+      if (validate_renegotiation_allowed (socket, ssl) != 0)
+        return -1;
+      return perform_renegotiation_handshake (socket, ssl);
     }
 #else
-  /* Older OpenSSL - renegotiation not fully controllable */
-  (void)socket; /* Suppress unused warning */
+  (void)socket;
 #endif
 
-  return 0; /* No renegotiation pending */
+  return 0;
 }
 
 int
@@ -1995,6 +2031,53 @@ asn1_time_to_time_t (const ASN1_TIME *asn1)
   return timegm (&tm_time);
 }
 
+/**
+ * extract_cert_serial - Extract serial number from X509 certificate as hex
+ * @cert: Certificate to extract serial from
+ * @buf: Output buffer for hex string
+ * @buf_size: Size of output buffer
+ */
+static void
+extract_cert_serial (X509 *cert, char *buf, size_t buf_size)
+{
+  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
+  if (!serial)
+    return;
+
+  BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
+  if (!bn)
+    return;
+
+  char *hex = BN_bn2hex (bn);
+  if (hex)
+    {
+      (void)socket_util_safe_strncpy (buf, hex, buf_size);
+      OPENSSL_free (hex);
+    }
+  BN_free (bn);
+}
+
+/**
+ * extract_cert_fingerprint - Compute SHA256 fingerprint of certificate
+ * @cert: Certificate to fingerprint
+ * @buf: Output buffer for hex-encoded fingerprint
+ * @buf_size: Size of output buffer
+ */
+static void
+extract_cert_fingerprint (X509 *cert, char *buf, size_t buf_size)
+{
+  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned int md_len = 0;
+
+  if (!X509_digest (cert, EVP_sha256 (), md, &md_len))
+    return;
+
+  int expected_size = EVP_MD_size (EVP_sha256 ());
+  size_t hash_len
+      = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
+  SocketCrypto_hex_encode (md, hash_len, buf, buf_size);
+}
+
 int
 SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
 {
@@ -2028,36 +2111,9 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
   /* Version (0-indexed in X509, add 1 for standard numbering) */
   info->version = (int)X509_get_version (cert) + 1;
 
-  /* Serial number */
-  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
-  if (serial)
-    {
-      BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
-      if (bn)
-        {
-          char *hex = BN_bn2hex (bn);
-          if (hex)
-            {
-              (void)socket_util_safe_strncpy (
-                  info->serial, hex, sizeof (info->serial));
-              OPENSSL_free (hex);
-            }
-          BN_free (bn);
-        }
-    }
-
-  /* SHA256 fingerprint using SocketCrypto_hex_encode for safety */
-  unsigned char md[EVP_MAX_MD_SIZE];
-  unsigned int md_len = 0;
-  if (X509_digest (cert, EVP_sha256 (), md, &md_len))
-    {
-      /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
-      int expected_size = EVP_MD_size (EVP_sha256 ());
-      size_t hash_len
-          = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
-      SocketCrypto_hex_encode (
-          md, hash_len, info->fingerprint, sizeof (info->fingerprint));
-    }
+  extract_cert_serial (cert, info->serial, sizeof (info->serial));
+  extract_cert_fingerprint (
+      cert, info->fingerprint, sizeof (info->fingerprint));
 
   X509_free (cert);
   return 1;
@@ -2367,6 +2423,43 @@ SocketTLS_get_ocsp_response_status (Socket_T socket)
 #endif
 }
 
+#if !defined(OPENSSL_NO_OCSP)
+/**
+ * ocsp_find_next_update - Scan OCSP basic response for next update time
+ * @basic: Parsed OCSP basic response
+ * @next_update: Output parameter for next update time
+ *
+ * Returns: 1 if found, -1 if not found
+ */
+static int
+ocsp_find_next_update (OCSP_BASICRESP *basic, time_t *next_update)
+{
+  int resp_count = OCSP_resp_count (basic);
+
+  for (int i = 0; i < resp_count; i++)
+    {
+      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
+      if (!single)
+        continue;
+
+      ASN1_GENERALIZEDTIME *nextupd = NULL;
+      (void)OCSP_single_get0_status (single, NULL, NULL, NULL, &nextupd);
+
+      if (nextupd)
+        {
+          struct tm tm_time = { 0 };
+          if (ASN1_TIME_to_tm (nextupd, &tm_time) == 1)
+            {
+              *next_update = timegm (&tm_time);
+              return 1;
+            }
+        }
+    }
+
+  return -1;
+}
+#endif /* !defined(OPENSSL_NO_OCSP) */
+
 int
 SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
 {
@@ -2403,29 +2496,7 @@ SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
       return -1;
     }
 
-  int result = -1;
-  int resp_count = OCSP_resp_count (basic);
-
-  for (int i = 0; i < resp_count; i++)
-    {
-      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
-      if (!single)
-        continue;
-
-      ASN1_GENERALIZEDTIME *nextupd = NULL;
-      (void)OCSP_single_get0_status (single, NULL, NULL, NULL, &nextupd);
-
-      if (nextupd)
-        {
-          struct tm tm_time = { 0 };
-          if (ASN1_TIME_to_tm (nextupd, &tm_time) == 1)
-            {
-              *next_update = timegm (&tm_time);
-              result = 1;
-              break;
-            }
-        }
-    }
+  int result = ocsp_find_next_update (basic, next_update);
 
   OCSP_BASICRESP_free (basic);
   OCSP_RESPONSE_free (resp);

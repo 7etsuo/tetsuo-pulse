@@ -194,6 +194,53 @@ proxy_socks5_send_greeting (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
+static void
+socks5_accept_method (struct SocketProxy_Conn_T *conn, int need_auth)
+{
+  conn->socks5_need_auth = need_auth;
+  conn->proto_state = PROTO_STATE_SOCKS5_METHOD_RECEIVED;
+  conn->recv_len = 0;
+  conn->recv_offset = 0;
+}
+
+static SocketProxy_Result
+socks5_dispatch_auth_method (struct SocketProxy_Conn_T *conn)
+{
+  if (conn->socks5_auth_method == SOCKS5_AUTH_NO_ACCEPTABLE)
+    {
+      socketproxy_set_error (conn,
+                             PROXY_ERROR_AUTH_REQUIRED,
+                             "No acceptable authentication method");
+      return PROXY_ERROR_AUTH_REQUIRED;
+    }
+
+  if (conn->socks5_auth_method == SOCKS5_AUTH_NONE)
+    {
+      socks5_accept_method (conn, 0);
+      return PROXY_OK;
+    }
+
+  if (conn->socks5_auth_method == SOCKS5_AUTH_PASSWORD)
+    {
+      if (conn->username == NULL || conn->password == NULL)
+        {
+          socketproxy_set_error (
+              conn,
+              PROXY_ERROR_AUTH_REQUIRED,
+              "Server requires authentication but no credentials provided");
+          return PROXY_ERROR_AUTH_REQUIRED;
+        }
+      socks5_accept_method (conn, 1);
+      return PROXY_OK;
+    }
+
+  socketproxy_set_error (conn,
+                         PROXY_ERROR_UNSUPPORTED,
+                         "Unsupported authentication method: 0x%02X",
+                         conn->socks5_auth_method);
+  return PROXY_ERROR_UNSUPPORTED;
+}
+
 SocketProxy_Result
 proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
 {
@@ -215,51 +262,8 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
       return res;
   }
 
-  /* Check selected method */
   conn->socks5_auth_method = buf[1];
-
-  if (conn->socks5_auth_method == SOCKS5_AUTH_NO_ACCEPTABLE)
-    {
-      socketproxy_set_error (conn,
-                             PROXY_ERROR_AUTH_REQUIRED,
-                             "No acceptable authentication method");
-      return PROXY_ERROR_AUTH_REQUIRED;
-    }
-
-  if (conn->socks5_auth_method == SOCKS5_AUTH_NONE)
-    {
-      /* No authentication required */
-      conn->socks5_need_auth = 0;
-      conn->proto_state = PROTO_STATE_SOCKS5_METHOD_RECEIVED;
-      conn->recv_len = 0;
-      conn->recv_offset = 0;
-      return PROXY_OK;
-    }
-
-  if (conn->socks5_auth_method == SOCKS5_AUTH_PASSWORD)
-    {
-      /* Username/password authentication required */
-      if (conn->username == NULL || conn->password == NULL)
-        {
-          socketproxy_set_error (
-              conn,
-              PROXY_ERROR_AUTH_REQUIRED,
-              "Server requires authentication but no credentials provided");
-          return PROXY_ERROR_AUTH_REQUIRED;
-        }
-      conn->socks5_need_auth = 1;
-      conn->proto_state = PROTO_STATE_SOCKS5_METHOD_RECEIVED;
-      conn->recv_len = 0;
-      conn->recv_offset = 0;
-      return PROXY_OK;
-    }
-
-  /* Unsupported method */
-  socketproxy_set_error (conn,
-                         PROXY_ERROR_UNSUPPORTED,
-                         "Unsupported authentication method: 0x%02X",
-                         buf[1]);
-  return PROXY_ERROR_UNSUPPORTED;
+  return socks5_dispatch_auth_method (conn);
 }
 
 /**

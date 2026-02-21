@@ -453,49 +453,40 @@ ws_requires_masking (SocketWS_T ws)
 }
 
 static ssize_t
-ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
+ws_send_via_transport (SocketWS_T ws, const void *ptr, size_t available)
+{
+  ssize_t sent = SocketWS_Transport_send (ws->transport, ptr, available);
+
+  if (sent >= 0)
+    return sent;
+
+  if (errno == EAGAIN || errno == EWOULDBLOCK)
+    return 0;
+
+  if (errno == EPIPE)
+    {
+      ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+      ws->state = WS_STATE_CLOSED;
+      ws->close_code = WS_CLOSE_ABNORMAL;
+      return -1;
+    }
+
+  ws_set_error (ws, WS_ERROR, "Transport send failed");
+  return -1;
+}
+
+static ssize_t
+ws_send_via_socket (SocketWS_T ws, const void *ptr, size_t available)
 {
   volatile ssize_t sent = 0;
   volatile int failed = 0;
 
-  /* Use transport abstraction if available */
-  if (ws->transport)
-    {
-      sent = SocketWS_Transport_send (ws->transport, ptr, available);
-
-      /* Guard clause: handle success case */
-      if (sent >= 0)
-        goto check_sent_bytes;
-
-      /* Handle would-block (non-error case) */
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        {
-          sent = 0;
-          goto check_sent_bytes;
-        }
-
-      /* Handle EPIPE (connection broken) */
-      if (errno == EPIPE)
-        {
-          ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-          ws->state = WS_STATE_CLOSED;
-          ws->close_code = WS_CLOSE_ABNORMAL;
-          return -1;
-        }
-
-      /* Handle all other errors */
-      ws_set_error (ws, WS_ERROR, "Transport send failed");
-      return -1;
-    }
-
-  /* Fallback to direct socket I/O for backward compatibility */
   TRY
   {
     sent = Socket_send (ws->socket, ptr, available);
   }
   EXCEPT (Socket_Closed)
   {
-    /* Normal/expected close path: don't spam error logs. */
     ws_set_error (ws, WS_ERROR_CLOSED, NULL);
     ws->state = WS_STATE_CLOSED;
     ws->close_code = WS_CLOSE_ABNORMAL;
@@ -508,12 +499,23 @@ ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
   }
   END_TRY;
 
-  if (failed)
-    return -1;
+  return failed ? -1 : sent;
+}
 
-check_sent_bytes:
-  if (sent <= 0)
-    return 0; /* Would block / no progress */
+static ssize_t
+ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
+{
+  ssize_t sent;
+
+  if (ws->transport)
+    sent = ws_send_via_transport (ws, ptr, available);
+  else
+    sent = ws_send_via_socket (ws, ptr, available);
+
+  if (sent < 0)
+    return -1;
+  if (sent == 0)
+    return 0;
 
   SocketBuf_consume (ws->send_buf, (size_t)sent);
   return sent;
@@ -832,6 +834,37 @@ ws_validate_and_store_close_reason (SocketWS_T ws,
 }
 
 static int
+ws_close_with_error (SocketWS_T ws,
+                     SocketWS_CloseCode response_code,
+                     const char *response_reason)
+{
+  ws_send_close (ws, response_code, response_reason);
+  ws->state = WS_STATE_CLOSED;
+  return -1;
+}
+
+static int
+ws_accept_close (SocketWS_T ws,
+                 SocketWS_CloseCode code,
+                 const char *reason,
+                 size_t reason_len)
+{
+  ws->close_received = 1;
+  if (code != WS_CLOSE_NO_STATUS)
+    ws->close_code = code;
+
+  if (ws_validate_and_store_close_reason (ws, reason, reason_len) < 0)
+    return ws_close_with_error (
+        ws, WS_CLOSE_INVALID_PAYLOAD, "Invalid UTF-8 in close reason");
+
+  if (!ws->close_sent)
+    ws_send_close (ws, code, NULL);
+
+  ws->state = WS_STATE_CLOSED;
+  return 0;
+}
+
+static int
 ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
 {
   SocketWS_CloseCode code;
@@ -839,64 +872,34 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
   size_t reason_len;
   int parsed;
 
-  /* RFC 6455 Section 5.5.1: If body exists, MUST be >= 2 bytes.
-   * 0 bytes = no status, 1 byte = INVALID, 2+ bytes = status code + reason */
+  /* RFC 6455 Section 5.5.1: 0 bytes = no status, 1 byte = INVALID */
   if (len == 1)
     {
       ws_set_error (ws,
                     WS_ERROR_PROTOCOL,
                     "Invalid CLOSE payload length: 1 byte (must be 0 or >= 2)");
-      ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Malformed close frame");
-      ws->state = WS_STATE_CLOSED;
-      return -1;
+      return ws_close_with_error (
+          ws, WS_CLOSE_PROTOCOL_ERROR, "Malformed close frame");
     }
 
   parsed = ws_parse_close_payload (payload, len, &code, &reason, &reason_len);
   if (!parsed)
     {
-      /* Invalid payload, but per RFC treat as no status */
       code = WS_CLOSE_NO_STATUS;
       reason = NULL;
       reason_len = 0;
     }
 
-  /* RFC 6455 Section 7.4.1: Validate received close code.
-   * If code is present but invalid (1004-1006, 1015, <1000, >=5000),
-   * we MUST fail the WebSocket connection with a protocol error.
-   * Note: Use 'parsed' to check if code was actually sent, not value
-   * comparison. This catches 1005/1006 explicitly sent on wire (which is always
-   * invalid). */
+  /* RFC 6455 Section 7.4.1: Validate received close code */
   if (parsed && !ws_is_valid_close_code (code))
     {
       ws_set_error (
           ws, WS_ERROR_PROTOCOL, "Received invalid close code: %d", (int)code);
-      ws_send_close (
+      return ws_close_with_error (
           ws, WS_CLOSE_PROTOCOL_ERROR, "Invalid close code received");
-      ws->state = WS_STATE_CLOSED;
-      return -1;
     }
 
-  /* Store peer's close info */
-  ws->close_received = 1;
-  if (code != WS_CLOSE_NO_STATUS)
-    ws->close_code = code;
-
-  if (ws_validate_and_store_close_reason (ws, reason, reason_len) < 0)
-    {
-      /* Send protocol error close */
-      ws_send_close (
-          ws, WS_CLOSE_INVALID_PAYLOAD, "Invalid UTF-8 in close reason");
-      ws->state = WS_STATE_CLOSED;
-      return -1;
-    }
-
-  /* Respond with close if we haven't sent one (echo code) */
-  if (!ws->close_sent)
-    ws_send_close (ws, code, NULL);
-
-  /* Transition to closed */
-  ws->state = WS_STATE_CLOSED;
-  return 0;
+  return ws_accept_close (ws, code, reason, reason_len);
 }
 
 int

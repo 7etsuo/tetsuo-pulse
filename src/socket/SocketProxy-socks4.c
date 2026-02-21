@@ -227,6 +227,38 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
 }
 
 
+static int
+socks4_write_header_and_ip (struct SocketProxy_Conn_T *conn,
+                            unsigned char *buf,
+                            size_t *len,
+                            const struct in_addr *ipv4)
+{
+  /* Write header: version + command + port */
+  if (socks4_ensure_buffer_space (conn, *len, 4) < 0)
+    return -1;
+  if (*len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
+      return -1;
+    }
+  *len += socks4_write_header (buf + *len, conn->target_port);
+
+  /* Write destination IP (network byte order) */
+  if (socks4_ensure_buffer_space (conn, *len, 4) < 0)
+    return -1;
+  if (*len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
+      return -1;
+    }
+  memcpy (buf + *len, ipv4, 4);
+  *len += 4;
+
+  return 0;
+}
+
 int
 proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
 {
@@ -237,11 +269,9 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
 
   assert (conn != NULL);
 
-  /* Validate inputs using common helper (don't need length for SOCKS4) */
   if (socks4_validate_inputs (conn, NULL) < 0)
     return -1;
 
-  /* Parse target as IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) != 1)
     {
       socketproxy_set_error (
@@ -251,34 +281,9 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Validate buffer space for header (4 bytes) */
-  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
+  if (socks4_write_header_and_ip (conn, buf, &len, &ipv4) < 0)
     return -1;
 
-  /* Write header: version + command + port */
-  if (len + 4 > sizeof (conn->send_buf))
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
-      return -1;
-    }
-  len += socks4_write_header (buf + len, conn->target_port);
-
-  /* Validate buffer space for IPv4 address (4 bytes) */
-  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
-    return -1;
-
-  /* Write destination IP (network byte order) */
-  if (len + 4 > sizeof (conn->send_buf))
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
-      return -1;
-    }
-  memcpy (buf + len, &ipv4, 4);
-  len += 4;
-
-  /* Write userid with null terminator */
   if (socks4_write_userid (buf + len,
                            sizeof (conn->send_buf) - len,
                            conn->username,

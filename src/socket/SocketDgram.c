@@ -96,16 +96,10 @@ SocketDgram_new (int domain, int protocol)
   return sock;
 }
 
-void
-SocketDgram_free (T *socket)
-{
-  T s = *socket;
-  if (!s)
-    return;
-
-  *socket = NULL;
-
 #if SOCKET_HAS_TLS
+static void
+dgram_free_dtls_ssl_and_context (T s)
+{
   if (s->dtls_ssl)
     {
       SSL_set_app_data ((SSL *)s->dtls_ssl, NULL);
@@ -118,6 +112,11 @@ SocketDgram_free (T *socket)
       SocketDTLSContext_free ((SocketDTLSContext_T *)&s->dtls_ctx);
       s->dtls_ctx = NULL;
     }
+}
+
+static void
+dgram_free_dtls_buffers_and_state (T s)
+{
   if (s->dtls_read_buf)
     {
       SocketCrypto_secure_clear (s->dtls_read_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
@@ -131,7 +130,6 @@ SocketDgram_free (T *socket)
       s->dtls_write_buf = NULL;
       s->dtls_write_buf_len = 0;
     }
-  /* Clear SNI hostname */
   if (s->dtls_sni_hostname)
     {
       size_t hostname_len = strlen (s->dtls_sni_hostname) + 1;
@@ -139,8 +137,6 @@ SocketDgram_free (T *socket)
       s->dtls_sni_hostname = NULL;
     }
 
-  /* Invalidate DTLS peer cache - use SocketCommon_free_addrinfo for copied
-   * addrinfo */
   if (s->dtls_peer_res)
     {
       SocketCommon_free_addrinfo (s->dtls_peer_res);
@@ -150,13 +146,27 @@ SocketDgram_free (T *socket)
   s->dtls_peer_port = 0;
   s->dtls_peer_cache_ts = 0;
 
-  /* Reset DTLS state flags */
   s->dtls_enabled = 0;
   s->dtls_handshake_done = 0;
   s->dtls_shutdown_done = 0;
   s->dtls_mtu = 0;
   s->dtls_last_handshake_state = DTLS_HANDSHAKE_NOT_STARTED;
   s->dtls_retransmit_count = 0;
+}
+#endif
+
+void
+SocketDgram_free (T *socket)
+{
+  T s = *socket;
+  if (!s)
+    return;
+
+  *socket = NULL;
+
+#if SOCKET_HAS_TLS
+  dgram_free_dtls_ssl_and_context (s);
+  dgram_free_dtls_buffers_and_state (s);
 #endif
 
   /* Common base cleanup: closes fd, disposes arena (frees s too) */

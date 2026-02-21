@@ -22,19 +22,19 @@ TEST (grpc_metadata_ascii_and_binary_roundtrip)
   ASSERT_NOT_NULL (metadata);
   ASSERT_NOT_NULL (parsed);
 
-  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
-             SocketGRPC_Metadata_add_ascii (
-                 metadata, "X-Request-Id", "request-123"));
+  ASSERT_EQ (
+      SOCKET_GRPC_WIRE_OK,
+      SocketGRPC_Metadata_add_ascii (metadata, "X-Request-Id", "request-123"));
   ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
              SocketGRPC_Metadata_add_binary (
                  metadata, "trace-bin", trace_id, sizeof (trace_id)));
 
-  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
-             SocketGRPC_Metadata_serialize (
-                 metadata, wire, sizeof (wire), &written));
-  ASSERT_NE (0U, written);
   ASSERT_EQ (
-      SOCKET_GRPC_WIRE_OK, SocketGRPC_Metadata_parse (parsed, wire, written));
+      SOCKET_GRPC_WIRE_OK,
+      SocketGRPC_Metadata_serialize (metadata, wire, sizeof (wire), &written));
+  ASSERT_NE (0U, written);
+  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
+             SocketGRPC_Metadata_parse (parsed, wire, written));
   ASSERT_EQ (2U, SocketGRPC_Metadata_count (parsed));
 
   entry0 = SocketGRPC_Metadata_at (parsed, 0);
@@ -69,14 +69,15 @@ TEST (grpc_metadata_rejects_injection_and_invalid_keys)
   ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_METADATA_VALUE,
              SocketGRPC_Metadata_add_ascii (metadata, "x-ok", "line\nbreak"));
   ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_METADATA_KEY,
-             SocketGRPC_Metadata_add_binary (metadata, "trace", (const uint8_t *)"x", 1));
+             SocketGRPC_Metadata_add_binary (
+                 metadata, "trace", (const uint8_t *)"x", 1));
 
-  ASSERT_EQ (
-      SOCKET_GRPC_WIRE_INVALID_METADATA_VALUE,
-      SocketGRPC_Metadata_parse (metadata, wire_no_colon, sizeof (wire_no_colon) - 1U));
-  ASSERT_EQ (
-      SOCKET_GRPC_WIRE_INVALID_METADATA_VALUE,
-      SocketGRPC_Metadata_parse (metadata, wire_bad_bin, sizeof (wire_bad_bin) - 1U));
+  ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_METADATA_VALUE,
+             SocketGRPC_Metadata_parse (
+                 metadata, wire_no_colon, sizeof (wire_no_colon) - 1U));
+  ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_METADATA_VALUE,
+             SocketGRPC_Metadata_parse (
+                 metadata, wire_bad_bin, sizeof (wire_bad_bin) - 1U));
 
   SocketGRPC_Metadata_free (&metadata);
 }
@@ -97,9 +98,9 @@ TEST (grpc_trailers_roundtrip_and_extra_metadata)
   ASSERT_NOT_NULL (trailers);
   ASSERT_NOT_NULL (parsed);
 
-  ASSERT_EQ (
-      SOCKET_GRPC_WIRE_OK,
-      SocketGRPC_Trailers_set_status (trailers, SOCKET_GRPC_STATUS_INVALID_ARGUMENT));
+  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
+             SocketGRPC_Trailers_set_status (
+                 trailers, SOCKET_GRPC_STATUS_INVALID_ARGUMENT));
   ASSERT_EQ (
       SOCKET_GRPC_WIRE_OK,
       SocketGRPC_Trailers_set_message (trailers, "invalid request payload"));
@@ -113,31 +114,32 @@ TEST (grpc_trailers_roundtrip_and_extra_metadata)
           SocketGRPC_Trailers_metadata (trailers), "x-trace-id", "abc-42"));
   ASSERT_EQ (
       SOCKET_GRPC_WIRE_OK,
-      SocketGRPC_Metadata_add_binary (
-          SocketGRPC_Trailers_metadata (trailers),
-          "debug-bin",
-          binary_meta,
-          sizeof (binary_meta)));
-
-  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
-             SocketGRPC_Trailers_serialize (
-                 trailers, wire, sizeof (wire), &written));
-  ASSERT_NE (0U, written);
+      SocketGRPC_Metadata_add_binary (SocketGRPC_Trailers_metadata (trailers),
+                                      "debug-bin",
+                                      binary_meta,
+                                      sizeof (binary_meta)));
 
   ASSERT_EQ (
-      SOCKET_GRPC_WIRE_OK, SocketGRPC_Trailers_parse (parsed, wire, written));
+      SOCKET_GRPC_WIRE_OK,
+      SocketGRPC_Trailers_serialize (trailers, wire, sizeof (wire), &written));
+  ASSERT_NE (0U, written);
+
+  ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
+             SocketGRPC_Trailers_parse (parsed, wire, written));
   ASSERT (SocketGRPC_Trailers_has_status (parsed));
   ASSERT_EQ (SOCKET_GRPC_STATUS_INVALID_ARGUMENT,
              SocketGRPC_Trailers_status (parsed));
-  ASSERT_EQ (0,
-             strcmp (SocketGRPC_Trailers_message (parsed),
-                     "invalid request payload"));
+  ASSERT_EQ (
+      0,
+      strcmp (SocketGRPC_Trailers_message (parsed), "invalid request payload"));
 
-  parsed_details = SocketGRPC_Trailers_status_details_bin (parsed, &details_len);
+  parsed_details
+      = SocketGRPC_Trailers_status_details_bin (parsed, &details_len);
   ASSERT_EQ (sizeof (details), details_len);
   ASSERT_EQ (0, memcmp (parsed_details, details, sizeof (details)));
 
-  ASSERT_EQ (2U, SocketGRPC_Metadata_count (SocketGRPC_Trailers_metadata (parsed)));
+  ASSERT_EQ (2U,
+             SocketGRPC_Metadata_count (SocketGRPC_Trailers_metadata (parsed)));
   m0 = SocketGRPC_Metadata_at (SocketGRPC_Trailers_metadata (parsed), 0);
   m1 = SocketGRPC_Metadata_at (SocketGRPC_Trailers_metadata (parsed), 1);
   ASSERT_NOT_NULL (m0);
@@ -173,9 +175,8 @@ TEST (grpc_trailers_malformed_corpus_fails_deterministically)
     {
       const uint8_t *wire = (const uint8_t *)corpus[i];
       size_t wire_len = strlen (corpus[i]);
-      ASSERT_EQ (
-          SOCKET_GRPC_WIRE_INVALID_TRAILER,
-          SocketGRPC_Trailers_parse (trailers, wire, wire_len));
+      ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_TRAILER,
+                 SocketGRPC_Trailers_parse (trailers, wire, wire_len));
       ASSERT_EQ (0, SocketGRPC_Trailers_has_status (trailers));
     }
 
@@ -194,9 +195,9 @@ TEST (grpc_trailers_reject_reserved_metadata_keys_on_serialize)
   ASSERT_EQ (SOCKET_GRPC_WIRE_OK,
              SocketGRPC_Metadata_add_ascii (
                  SocketGRPC_Trailers_metadata (trailers), "grpc-status", "7"));
-  ASSERT_EQ (SOCKET_GRPC_WIRE_INVALID_TRAILER,
-             SocketGRPC_Trailers_serialize (
-                 trailers, wire, sizeof (wire), &written));
+  ASSERT_EQ (
+      SOCKET_GRPC_WIRE_INVALID_TRAILER,
+      SocketGRPC_Trailers_serialize (trailers, wire, sizeof (wire), &written));
 
   SocketGRPC_Trailers_free (&trailers);
 }

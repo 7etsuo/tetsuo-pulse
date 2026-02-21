@@ -106,8 +106,8 @@ build_fixed_block_single_literal (uint8_t *buf,
     return 0;
 
   /* BFINAL + BTYPE=01 */
-  bits |= (final ? 1 : 0);       /* BFINAL */
-  bits |= 1 << 1;                /* BTYPE = 01 (fixed) */
+  bits |= (final ? 1 : 0); /* BFINAL */
+  bits |= 1 << 1;          /* BTYPE = 01 (fixed) */
   bits_avail = 3;
 
   /* Literal byte (0-143 uses 8-bit codes) */
@@ -180,8 +180,8 @@ TEST (inflate_single_stored_block)
   inf = SocketDeflate_Inflater_new (test_arena, 0);
   ASSERT (inf != NULL);
 
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 5);
@@ -201,13 +201,12 @@ TEST (inflate_single_fixed_block)
   ensure_tables ();
 
   /* Build fixed block with single literal 'A' (65) */
-  input_len
-      = build_fixed_block_single_literal (input, sizeof (input), 'A', 1);
+  input_len = build_fixed_block_single_literal (input, sizeof (input), 'A', 1);
   ASSERT (input_len > 0);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 1);
@@ -231,16 +230,16 @@ TEST (inflate_multi_stored_blocks)
   ensure_tables ();
 
   /* Block 1: BFINAL=0 */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"Hello", 5, 0);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"Hello", 5, 0);
 
   /* Block 2: BFINAL=1 */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"World", 5, 1);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"World", 5, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 10);
@@ -260,16 +259,16 @@ TEST (inflate_three_blocks)
   ensure_tables ();
 
   /* Three blocks */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"AAA", 3, 0);
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"BBB", 3, 0);
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"CCC", 3, 1);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"AAA", 3, 0);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"BBB", 3, 0);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"CCC", 3, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 9);
@@ -292,9 +291,8 @@ TEST (inflate_btype_reserved_error)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   /* RFC 1951 §3.2.3: BTYPE=11 is reserved and MUST error */
   ASSERT_EQ (result, DEFLATE_ERROR_INVALID_BTYPE);
@@ -312,9 +310,8 @@ TEST (inflate_btype_reserved_with_bfinal)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR_INVALID_BTYPE);
 }
@@ -322,12 +319,10 @@ TEST (inflate_btype_reserved_with_bfinal)
 TEST (inflate_stored_invalid_nlen)
 {
   /* Build stored block with wrong NLEN */
-  uint8_t input[] = {
-    0x01,       /* BFINAL=1, BTYPE=00 */
-    0x05, 0x00, /* LEN = 5 */
-    0x00, 0x00, /* NLEN = 0 (should be ~5 = 0xFFFA) */
-    'H', 'e', 'l', 'l', 'o'
-  };
+  uint8_t input[] = { 0x01,       /* BFINAL=1, BTYPE=00 */
+                      0x05, 0x00, /* LEN = 5 */
+                      0x00, 0x00, /* NLEN = 0 (should be ~5 = 0xFFFA) */
+                      'H',  'e',  'l', 'l', 'o' };
   uint8_t output[64];
   size_t consumed, written;
   SocketDeflate_Result result;
@@ -336,9 +331,8 @@ TEST (inflate_stored_invalid_nlen)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
@@ -361,8 +355,10 @@ TEST (inflate_bomb_detection_absolute)
   /* Create multiple stored blocks totaling > 100 bytes */
   for (int i = 0; i < 10; i++)
     {
-      pos += build_stored_block (input + pos, sizeof (input) - pos,
-                                 (const uint8_t *)"0123456789ABCDEF", 16,
+      pos += build_stored_block (input + pos,
+                                 sizeof (input) - pos,
+                                 (const uint8_t *)"0123456789ABCDEF",
+                                 16,
                                  (i == 9) ? 1 : 0);
     }
 
@@ -372,8 +368,8 @@ TEST (inflate_bomb_detection_absolute)
 
   /* Create inflater with max_output = 50 */
   inf = SocketDeflate_Inflater_new (test_arena, 50);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           4096, &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, 4096, &written);
 
   /* Should hit bomb limit */
   ASSERT_EQ (result, DEFLATE_ERROR_BOMB);
@@ -399,8 +395,8 @@ TEST (inflate_within_max_output)
 
   /* Create inflater with max_output = 100 (larger than output) */
   inf = SocketDeflate_Inflater_new (test_arena, 100);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   /* Should succeed - within limit */
   ASSERT_EQ (result, DEFLATE_OK);
@@ -421,8 +417,8 @@ TEST (inflate_empty_input)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, NULL, 0, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, NULL, 0, &consumed, output, sizeof (output), &written);
 
   /* Empty input should return incomplete */
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
@@ -443,12 +439,12 @@ TEST (inflate_small_output_buffer)
   ensure_tables ();
 
   /* Build stored block with 11 bytes */
-  input_len = build_stored_block (input, sizeof (input), (const uint8_t *)data,
-                                  11, 1);
+  input_len = build_stored_block (
+      input, sizeof (input), (const uint8_t *)data, 11, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   /* Should return output full (got 3 bytes but need more) */
   ASSERT (result == DEFLATE_OUTPUT_FULL || result == DEFLATE_INCOMPLETE);
@@ -475,10 +471,10 @@ TEST (inflate_reset_reuse)
   inf = SocketDeflate_Inflater_new (test_arena, 0);
 
   /* First stream */
-  input_len = build_stored_block (input, sizeof (input), (const uint8_t *)data1,
-                                  5, 1);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  input_len = build_stored_block (
+      input, sizeof (input), (const uint8_t *)data1, 5, 1);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 5);
   ASSERT (memcmp (output, "First", 5) == 0);
@@ -488,10 +484,10 @@ TEST (inflate_reset_reuse)
   ASSERT_EQ (SocketDeflate_Inflater_finished (inf), 0);
   ASSERT_EQ (SocketDeflate_Inflater_total_out (inf), 0);
 
-  input_len = build_stored_block (input, sizeof (input), (const uint8_t *)data2,
-                                  6, 1);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  input_len = build_stored_block (
+      input, sizeof (input), (const uint8_t *)data2, 6, 1);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 6);
   ASSERT (memcmp (output, "Second", 6) == 0);
@@ -513,9 +509,8 @@ TEST (inflate_empty_stream)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -564,9 +559,8 @@ TEST (inflate_btype_00_stored)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input),
-                                           &consumed, output, sizeof (output),
-                                           &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 3);
@@ -588,8 +582,8 @@ TEST (inflate_btype_01_fixed)
   input_len = build_fixed_block_single_literal (input, sizeof (input), 'X', 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 1);
@@ -616,8 +610,8 @@ TEST (inflate_totals_tracking)
       = build_stored_block (input, sizeof (input), (const uint8_t *)data, 8, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (SocketDeflate_Inflater_total_out (inf), 8);
@@ -686,8 +680,8 @@ TEST (inflate_distance_exceeds_output)
     }
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   /* Should fail: distance 5 but only 1 byte in output history */
   ASSERT_EQ (result, DEFLATE_ERROR_DISTANCE_TOO_FAR);
@@ -718,9 +712,8 @@ TEST (inflate_bomb_detection_ratio)
    */
   static const uint8_t input[] = {
     /* Dynamic DEFLATE: 4096 zero bytes compressed to 20 bytes (~205:1 ratio) */
-    0xED, 0xC1, 0x01, 0x0D, 0x00, 0x00, 0x00, 0xC2,
-    0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00,
-    0x00, 0x00, 0xF0, 0x6E,
+    0xED, 0xC1, 0x01, 0x0D, 0x00, 0x00, 0x00, 0xC2, 0xA0, 0xF7,
+    0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00, 0x00, 0x00, 0xF0, 0x6E,
   };
   const size_t expected_len = 4096;
 
@@ -735,8 +728,8 @@ TEST (inflate_bomb_detection_ratio)
   inf = SocketDeflate_Inflater_new (test_arena, 0);
   ASSERT (inf != NULL);
 
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input), &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   /* Should succeed - ratio ~205:1 is well under the 1000:1 limit */
   ASSERT_EQ (result, DEFLATE_OK);
@@ -751,7 +744,8 @@ TEST (inflate_bomb_detection_ratio)
   ASSERT (total_out >= expected_len);
   ASSERT (total_out < total_in * 1000); /* Would fail if ratio > 1000:1 */
 
-  /* Verify actual ratio is high (> 100:1) proving we're testing a real bomb-like scenario */
+  /* Verify actual ratio is high (> 100:1) proving we're testing a real
+   * bomb-like scenario */
   size_t ratio = total_out / total_in;
   ASSERT (ratio >= 100);
 }
@@ -784,20 +778,20 @@ TEST (inflate_cross_block_backref)
   ensure_tables ();
 
   /* Block 1: BFINAL=0 */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"ABCD", 4, 0);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"ABCD", 4, 0);
 
   /* Block 2: BFINAL=0 */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"EFGH", 4, 0);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"EFGH", 4, 0);
 
   /* Block 3: BFINAL=1 */
-  pos += build_stored_block (input + pos, sizeof (input) - pos,
-                             (const uint8_t *)"IJKL", 4, 1);
+  pos += build_stored_block (
+      input + pos, sizeof (input) - pos, (const uint8_t *)"IJKL", 4, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, pos, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 12);
@@ -831,8 +825,8 @@ TEST (inflate_streaming_continuation)
   ensure_tables ();
 
   /* Build stored block with 20 bytes */
-  input_len
-      = build_stored_block (input, sizeof (input), (const uint8_t *)data, 20, 1);
+  input_len = build_stored_block (
+      input, sizeof (input), (const uint8_t *)data, 20, 1);
   ASSERT (input_len > 0);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
@@ -845,9 +839,13 @@ TEST (inflate_streaming_continuation)
   /* Call inflate multiple times until complete */
   while (!SocketDeflate_Inflater_finished (inf) && iterations < 10)
     {
-      result = SocketDeflate_Inflater_inflate (
-          inf, input + total_consumed, input_len - total_consumed, &consumed,
-          output, sizeof (output), &written);
+      result = SocketDeflate_Inflater_inflate (inf,
+                                               input + total_consumed,
+                                               input_len - total_consumed,
+                                               &consumed,
+                                               output,
+                                               sizeof (output),
+                                               &written);
 
       /* Copy to full output buffer */
       if (written > 0 && total_written + written <= sizeof (full_output))
@@ -862,7 +860,8 @@ TEST (inflate_streaming_continuation)
       /* Should get OUTPUT_FULL until last iteration */
       if (!SocketDeflate_Inflater_finished (inf))
         {
-          ASSERT (result == DEFLATE_OUTPUT_FULL || result == DEFLATE_INCOMPLETE);
+          ASSERT (result == DEFLATE_OUTPUT_FULL
+                  || result == DEFLATE_INCOMPLETE);
         }
     }
 
@@ -907,9 +906,8 @@ TEST (inflate_dynamic_block)
    *   - Bits 1-2: BTYPE = 10 (dynamic)
    */
   static const uint8_t input[] = {
-    0xED, 0xC1, 0x01, 0x0D, 0x00, 0x00, 0x00, 0xC2,
-    0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00,
-    0x00, 0x00, 0xF0, 0x6E,
+    0xED, 0xC1, 0x01, 0x0D, 0x00, 0x00, 0x00, 0xC2, 0xA0, 0xF7,
+    0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00, 0x00, 0x00, 0xF0, 0x6E,
   };
   const size_t expected_len = 4096;
 
@@ -923,8 +921,8 @@ TEST (inflate_dynamic_block)
   inf = SocketDeflate_Inflater_new (test_arena, 0);
   ASSERT (inf != NULL);
 
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input), &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   /* Must succeed - no fallback allowed */
   ASSERT_EQ (result, DEFLATE_OK);
@@ -964,8 +962,8 @@ TEST (inflate_dynamic_invalid_header)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input), &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   /* Should fail - incomplete dynamic header */
   ASSERT (result != DEFLATE_OK);
@@ -990,11 +988,25 @@ TEST (inflate_mixed_block_types)
    */
   static const uint8_t input[] = {
     /* Block 1: stored "ABC" (BFINAL=0) */
-    0x00, 0x03, 0x00, 0xFC, 0xFF, 0x41, 0x42, 0x43,
+    0x00,
+    0x03,
+    0x00,
+    0xFC,
+    0xFF,
+    0x41,
+    0x42,
+    0x43,
     /* Block 2: fixed 'D' (BFINAL=0) - 3+8+7=18 bits */
-    0x72, 0x01,
+    0x72,
+    0x01,
     /* Block 3: stored "EF" (BFINAL=1) - starts at bit 2 of next byte */
-    0x04, 0x02, 0x00, 0xFD, 0xFF, 0x45, 0x46,
+    0x04,
+    0x02,
+    0x00,
+    0xFD,
+    0xFF,
+    0x45,
+    0x46,
   };
   uint8_t output[256];
   size_t consumed, written;
@@ -1004,8 +1016,8 @@ TEST (inflate_mixed_block_types)
   ensure_tables ();
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, sizeof (input), &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, sizeof (input), &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 6);
@@ -1075,8 +1087,8 @@ TEST (inflate_fixed_with_backref)
     }
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 4);
@@ -1109,16 +1121,20 @@ TEST (inflate_already_finished)
       = build_stored_block (input, sizeof (input), (const uint8_t *)data, 4, 1);
 
   inf = SocketDeflate_Inflater_new (test_arena, 0);
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (SocketDeflate_Inflater_finished (inf), 1);
 
   /* Now call inflate again - should return OK immediately */
   uint8_t more_input[] = { 0x01, 0x02, 0x03 };
-  result = SocketDeflate_Inflater_inflate (inf, more_input, sizeof (more_input),
-                                           &consumed, output, sizeof (output),
+  result = SocketDeflate_Inflater_inflate (inf,
+                                           more_input,
+                                           sizeof (more_input),
+                                           &consumed,
+                                           output,
+                                           sizeof (output),
                                            &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
@@ -1151,8 +1167,8 @@ TEST (inflate_null_output_buffer)
   inf = SocketDeflate_Inflater_new (test_arena, 0);
 
   /* NULL output with 0 length should be allowed */
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           NULL, 0, &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, NULL, 0, &written);
 
   /* Should return OUTPUT_FULL since we can't write anything */
   ASSERT (result == DEFLATE_OUTPUT_FULL || result == DEFLATE_INCOMPLETE);
@@ -1204,9 +1220,13 @@ TEST (inflate_max_distance_32768)
     {
       pos = build_stored_block (input, sizeof (input), chunk, 512, 0);
 
-      result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed,
+      result = SocketDeflate_Inflater_inflate (inf,
+                                               input,
+                                               pos,
+                                               &consumed,
                                                large_output + total_written,
-                                               40000 - total_written, &written);
+                                               40000 - total_written,
+                                               &written);
       total_written += written;
       ASSERT (result == DEFLATE_OK || result == DEFLATE_INCOMPLETE);
     }
@@ -1247,7 +1267,7 @@ TEST (inflate_window_wraparound)
   uint8_t pattern2[256];
   for (int i = 0; i < 256; i++)
     {
-      pattern1[i] = (uint8_t)i;        /* 0x00-0xFF */
+      pattern1[i] = (uint8_t)i;         /* 0x00-0xFF */
       pattern2[i] = (uint8_t)(255 - i); /* 0xFF-0x00 */
     }
 
@@ -1265,9 +1285,13 @@ TEST (inflate_window_wraparound)
       int is_final = (i == 131);
       pos = build_stored_block (input, sizeof (input), pattern, 256, is_final);
 
-      result = SocketDeflate_Inflater_inflate (inf, input, pos, &consumed,
+      result = SocketDeflate_Inflater_inflate (inf,
+                                               input,
+                                               pos,
+                                               &consumed,
                                                large_output + total_written,
-                                               70000 - total_written, &written);
+                                               70000 - total_written,
+                                               &written);
       ASSERT (result == DEFLATE_OK || result == DEFLATE_INCOMPLETE);
       total_written += written;
     }
@@ -1311,13 +1335,13 @@ TEST (inflate_null_pointers_error)
   inf = SocketDeflate_Inflater_new (test_arena, 0);
 
   /* NULL consumed pointer should error */
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, NULL, output,
-                                           sizeof (output), &written);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, NULL, output, sizeof (output), &written);
   ASSERT_EQ (result, DEFLATE_ERROR);
 
   /* NULL written pointer should error */
-  result = SocketDeflate_Inflater_inflate (inf, input, input_len, &consumed,
-                                           output, sizeof (output), NULL);
+  result = SocketDeflate_Inflater_inflate (
+      inf, input, input_len, &consumed, output, sizeof (output), NULL);
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
 

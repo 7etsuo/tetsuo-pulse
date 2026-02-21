@@ -484,39 +484,24 @@ Socket_simple_listen_tls (const char *host,
   return handle;
 }
 
-SocketSimple_Socket_T
-Socket_simple_accept_tls (SocketSimple_Socket_T server)
+/**
+ * simple_tls_accept_handshake - Accept and complete TLS handshake
+ * @server: TLS server socket
+ * @client_out: Output for accepted client socket
+ *
+ * Returns: 0 on success, -1 on failure (error already set, client cleaned up)
+ */
+static int
+simple_tls_accept_handshake (SocketSimple_Socket_T server,
+                             volatile Socket_T *client_out)
 {
-  volatile Socket_T client = NULL;
   volatile int exception_occurred = 0;
-  struct SocketSimple_Socket *handle = NULL;
-
-  Socket_simple_clear_error ();
-
-  if (!server || !server->socket || !server->tls_ctx)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid TLS server socket");
-      return NULL;
-    }
-
-  if (!server->is_server || !server->is_tls)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Socket is not a TLS server");
-      return NULL;
-    }
 
   TRY
   {
-    /* Accept the connection */
-    client = Socket_accept (server->socket);
-
-    /* Enable TLS on the accepted socket using server's context */
-    SocketTLS_enable (client, server->tls_ctx);
-
-    /* Perform TLS handshake */
-    SocketTLS_handshake_auto (client);
+    *client_out = Socket_accept (server->socket);
+    SocketTLS_enable (*client_out, server->tls_ctx);
+    SocketTLS_handshake_auto (*client_out);
   }
   EXCEPT (SocketTLS_Failed)
   {
@@ -543,16 +528,38 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
   FINALLY
   {
     if (exception_occurred)
-      {
-        SIMPLE_CLEANUP_TLS_CLIENT (&client);
-      }
+      SIMPLE_CLEANUP_TLS_CLIENT (client_out);
   }
   END_TRY;
 
-  if (exception_occurred)
+  return exception_occurred ? -1 : 0;
+}
+
+SocketSimple_Socket_T
+Socket_simple_accept_tls (SocketSimple_Socket_T server)
+{
+  volatile Socket_T client = NULL;
+
+  Socket_simple_clear_error ();
+
+  if (!server || !server->socket || !server->tls_ctx)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid TLS server socket");
+      return NULL;
+    }
+
+  if (!server->is_server || !server->is_tls)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Socket is not a TLS server");
+      return NULL;
+    }
+
+  if (simple_tls_accept_handshake (server, &client) != 0)
     return NULL;
 
-  handle = calloc (1, sizeof (*handle));
+  struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
@@ -561,7 +568,7 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
     }
 
   handle->socket = client;
-  handle->tls_ctx = NULL; /* Client doesn't own the context, server does */
+  handle->tls_ctx = NULL;
   handle->is_tls = 1;
   handle->is_server = 0;
   handle->is_connected = 1;

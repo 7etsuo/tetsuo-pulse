@@ -8,7 +8,8 @@
  * test_deflate_stored.c - RFC 1951 stored block decoder unit tests
  *
  * Tests for the DEFLATE stored block (BTYPE=00) decoder module,
- * verifying correct handling of non-compressed blocks per RFC 1951 Section 3.2.4.
+ * verifying correct handling of non-compressed blocks per RFC 1951
+ * Section 3.2.4.
  *
  * Test coverage:
  * - Basic decoding (empty, small, medium, max blocks)
@@ -57,8 +58,8 @@ TEST (stored_decode_empty_block)
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -71,15 +72,14 @@ TEST (stored_decode_small_block)
    * NLEN = ~5 = 0xFFFA (0xFA, 0xFF)
    * DATA = "Hello"
    */
-  uint8_t input[]
-      = { 0x05, 0x00, 0xFA, 0xFF, 'H', 'e', 'l', 'l', 'o' };
+  uint8_t input[] = { 0x05, 0x00, 0xFA, 0xFF, 'H', 'e', 'l', 'l', 'o' };
   uint8_t output[64];
   size_t written;
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 5);
@@ -175,15 +175,14 @@ TEST (stored_decode_max_block)
 TEST (stored_invalid_nlen_zero)
 {
   /* Invalid: LEN=5, NLEN=0 (should be 0xFFFA) */
-  uint8_t input[]
-      = { 0x05, 0x00, 0x00, 0x00, 'H', 'e', 'l', 'l', 'o' };
+  uint8_t input[] = { 0x05, 0x00, 0x00, 0x00, 'H', 'e', 'l', 'l', 'o' };
   uint8_t output[64];
   size_t written;
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
@@ -197,8 +196,8 @@ TEST (stored_invalid_nlen_random)
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
@@ -216,8 +215,7 @@ TEST (stored_nlen_boundary_max_len)
   ASSERT (output != NULL);
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result
-      = SocketDeflate_decode_stored_block (reader, output, 65535, &written);
+  result = SocketDeflate_decode_stored_block (reader, output, 65535, &written);
 
   /* Validation passes but data read fails */
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
@@ -234,8 +232,8 @@ TEST (stored_nlen_boundary_zero_len)
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 0);
@@ -254,10 +252,10 @@ TEST (stored_alignment_after_bits)
    * Then stored block header follows in byte 1 onward.
    */
   uint8_t input[] = {
-    0x07,              /* First byte: read 3 bits, discard 5 */
-    0x03, 0x00,        /* LEN = 3 */
-    0xFC, 0xFF,        /* NLEN = ~3 = 0xFFFC */
-    'A',  'B',   'C'   /* DATA */
+    0x07,           /* First byte: read 3 bits, discard 5 */
+    0x03, 0x00,     /* LEN = 3 */
+    0xFC, 0xFF,     /* NLEN = ~3 = 0xFFFC */
+    'A',  'B',  'C' /* DATA */
   };
   uint8_t output[64];
   size_t written;
@@ -272,8 +270,8 @@ TEST (stored_alignment_after_bits)
   ASSERT_EQ (bits, 0x07);
 
   /* Now decode stored block (should align first) */
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 3);
@@ -284,10 +282,10 @@ TEST (stored_alignment_after_byte)
 {
   /* If exactly 8 bits consumed, align is a no-op */
   uint8_t input[] = {
-    0xAB,              /* First byte: will be fully consumed */
-    0x02, 0x00,        /* LEN = 2 */
-    0xFD, 0xFF,        /* NLEN = ~2 = 0xFFFD */
-    'X',  'Y'          /* DATA */
+    0xAB,       /* First byte: will be fully consumed */
+    0x02, 0x00, /* LEN = 2 */
+    0xFD, 0xFF, /* NLEN = ~2 = 0xFFFD */
+    'X',  'Y'   /* DATA */
   };
   uint8_t output[64];
   size_t written;
@@ -302,8 +300,8 @@ TEST (stored_alignment_after_byte)
   ASSERT_EQ (bits, 0xAB);
 
   /* Decode stored block */
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 2);
@@ -313,12 +311,10 @@ TEST (stored_alignment_after_byte)
 TEST (stored_alignment_after_partial)
 {
   /* 11 bits consumed: align discards 5 bits to reach byte 2 */
-  uint8_t input[] = {
-    0xFF, 0x07,        /* First 2 bytes: read 11 bits */
-    0x04, 0x00,        /* LEN = 4 */
-    0xFB, 0xFF,        /* NLEN = ~4 = 0xFFFB */
-    'T',  'E',   'S', 'T'
-  };
+  uint8_t input[] = { 0xFF, 0x07, /* First 2 bytes: read 11 bits */
+                      0x04, 0x00, /* LEN = 4 */
+                      0xFB, 0xFF, /* NLEN = ~4 = 0xFFFB */
+                      'T',  'E',  'S', 'T' };
   uint8_t output[64];
   size_t written;
   uint32_t bits;
@@ -332,8 +328,8 @@ TEST (stored_alignment_after_partial)
   ASSERT_EQ (bits, 0x7FF); /* All 1s */
 
   /* Decode stored block */
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 4);
@@ -353,8 +349,8 @@ TEST (stored_incomplete_len)
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
 }
@@ -368,8 +364,8 @@ TEST (stored_incomplete_nlen)
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
 }
@@ -377,15 +373,14 @@ TEST (stored_incomplete_nlen)
 TEST (stored_incomplete_data)
 {
   /* LEN=5 but only 3 bytes of data provided */
-  uint8_t input[]
-      = { 0x05, 0x00, 0xFA, 0xFF, 'H', 'e', 'l' };
+  uint8_t input[] = { 0x05, 0x00, 0xFA, 0xFF, 'H', 'e', 'l' };
   uint8_t output[64];
   size_t written;
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
 }
@@ -393,15 +388,14 @@ TEST (stored_incomplete_data)
 TEST (stored_output_too_small)
 {
   /* Valid block but output buffer too small */
-  uint8_t input[]
-      = { 0x05, 0x00, 0xFA, 0xFF, 'H', 'e', 'l', 'l', 'o' };
+  uint8_t input[] = { 0x05, 0x00, 0xFA, 0xFF, 'H', 'e', 'l', 'l', 'o' };
   uint8_t output[3]; /* Only 3 bytes, need 5 */
   size_t written;
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (input, sizeof (input));
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_ERROR);
 }
@@ -414,8 +408,8 @@ TEST (stored_empty_input)
   SocketDeflate_Result result;
 
   SocketDeflate_BitReader_T reader = make_reader (NULL, 0);
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
 }
@@ -430,18 +424,20 @@ TEST (stored_written_zero_on_error)
   /* Test 1: NLEN validation error */
   uint8_t invalid_nlen[] = { 0x05, 0x00, 0x00, 0x00, 'H', 'e', 'l', 'l', 'o' };
   written = 9999; /* Set to non-zero to verify it gets cleared */
-  SocketDeflate_BitReader_T reader1 = make_reader (invalid_nlen, sizeof (invalid_nlen));
-  result = SocketDeflate_decode_stored_block (reader1, output, sizeof (output),
-                                              &written);
+  SocketDeflate_BitReader_T reader1
+      = make_reader (invalid_nlen, sizeof (invalid_nlen));
+  result = SocketDeflate_decode_stored_block (
+      reader1, output, sizeof (output), &written);
   ASSERT_EQ (result, DEFLATE_ERROR);
   ASSERT_EQ (written, 0);
 
   /* Test 2: Incomplete input error */
   uint8_t incomplete[] = { 0x05 };
   written = 9999;
-  SocketDeflate_BitReader_T reader2 = make_reader (incomplete, sizeof (incomplete));
-  result = SocketDeflate_decode_stored_block (reader2, output, sizeof (output),
-                                              &written);
+  SocketDeflate_BitReader_T reader2
+      = make_reader (incomplete, sizeof (incomplete));
+  result = SocketDeflate_decode_stored_block (
+      reader2, output, sizeof (output), &written);
   ASSERT_EQ (result, DEFLATE_INCOMPLETE);
   ASSERT_EQ (written, 0);
 
@@ -467,12 +463,10 @@ TEST (stored_after_block_header)
    *   BTYPE  = bits 1-2
    * So byte 0x00 = BFINAL=0, BTYPE=00, then 5 padding bits
    */
-  uint8_t input[] = {
-    0x00,              /* BFINAL=0, BTYPE=00, 5 padding bits */
-    0x04, 0x00,        /* LEN = 4 */
-    0xFB, 0xFF,        /* NLEN = ~4 */
-    'D',  'A',   'T', 'A'
-  };
+  uint8_t input[] = { 0x00,       /* BFINAL=0, BTYPE=00, 5 padding bits */
+                      0x04, 0x00, /* LEN = 4 */
+                      0xFB, 0xFF, /* NLEN = ~4 */
+                      'D',  'A',  'T', 'A' };
   uint8_t output[64];
   size_t written;
   uint32_t header;
@@ -491,8 +485,8 @@ TEST (stored_after_block_header)
   ASSERT_EQ (header, 0); /* BTYPE = 00 (stored) */
 
   /* Decode stored block */
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 4);
@@ -502,12 +496,10 @@ TEST (stored_after_block_header)
 TEST (stored_final_block)
 {
   /* BFINAL=1 stored block */
-  uint8_t input[] = {
-    0x01,              /* BFINAL=1, BTYPE=00, 5 padding bits */
-    0x03, 0x00,        /* LEN = 3 */
-    0xFC, 0xFF,        /* NLEN = ~3 */
-    'E',  'N',   'D'
-  };
+  uint8_t input[] = { 0x01,       /* BFINAL=1, BTYPE=00, 5 padding bits */
+                      0x03, 0x00, /* LEN = 3 */
+                      0xFC, 0xFF, /* NLEN = ~3 */
+                      'E',  'N',  'D' };
   uint8_t output[64];
   size_t written;
   uint32_t header;
@@ -528,8 +520,8 @@ TEST (stored_final_block)
   ASSERT_EQ (header, 0); /* BTYPE = 00 (stored) */
 
   /* Decode stored block */
-  result = SocketDeflate_decode_stored_block (reader, output, sizeof (output),
-                                              &written);
+  result = SocketDeflate_decode_stored_block (
+      reader, output, sizeof (output), &written);
 
   ASSERT_EQ (result, DEFLATE_OK);
   ASSERT_EQ (written, 3);

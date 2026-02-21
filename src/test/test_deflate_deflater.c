@@ -15,7 +15,8 @@
  * - Roundtrip compression/decompression
  * - Streaming with various buffer sizes
  * - Edge cases and boundary conditions
- * - zlib interoperability (compress with us, decompress with zlib and vice versa)
+ * - zlib interoperability (compress with us, decompress with zlib and vice
+ * versa)
  *
  * Fixes #3418
  */
@@ -527,8 +528,11 @@ TEST (lazy_matching_benefit)
   uint8_t compressed_lazy[256];
   size_t len_no_lazy, len_lazy;
 
-  len_no_lazy = compress_data (
-      3, input, sizeof (input) - 1, compressed_no_lazy, sizeof (compressed_no_lazy));
+  len_no_lazy = compress_data (3,
+                               input,
+                               sizeof (input) - 1,
+                               compressed_no_lazy,
+                               sizeof (compressed_no_lazy));
   ASSERT (len_no_lazy > 0);
 
   len_lazy = compress_data (
@@ -574,9 +578,13 @@ TEST (streaming_multiple_chunks)
   def1 = SocketDeflate_Deflater_new (test_arena, 6);
   ASSERT (def1 != NULL);
 
-  res = SocketDeflate_Deflater_deflate (
-      def1, input, input_size, &consumed, compressed1, sizeof (compressed1),
-      &written);
+  res = SocketDeflate_Deflater_deflate (def1,
+                                        input,
+                                        input_size,
+                                        &consumed,
+                                        compressed1,
+                                        sizeof (compressed1),
+                                        &written);
   ASSERT_EQ (res, DEFLATE_OK);
   ASSERT_EQ (consumed, input_size);
   len1 = written;
@@ -629,7 +637,8 @@ TEST (streaming_multiple_chunks)
 #ifdef HAS_ZLIB
 
 /*
- * Helper: Compress with zlib and return compressed size (raw deflate, no header)
+ * Helper: Compress with zlib and return compressed size (raw deflate, no
+ * header)
  */
 static size_t
 zlib_compress_raw (const uint8_t *input,
@@ -707,10 +716,9 @@ zlib_decompress_raw (const uint8_t *input,
  */
 TEST (deflate_zlib_inflate_compat)
 {
-  const uint8_t input[]
-      = "The quick brown fox jumps over the lazy dog. "
-        "Pack my box with five dozen liquor jugs. "
-        "How vexingly quick daft zebras jump!";
+  const uint8_t input[] = "The quick brown fox jumps over the lazy dog. "
+                          "Pack my box with five dozen liquor jugs. "
+                          "How vexingly quick daft zebras jump!";
   uint8_t compressed[1024];
   uint8_t decompressed[1024];
   size_t compressed_len, decompressed_len;
@@ -788,8 +796,8 @@ TEST (zlib_interop_data_patterns)
       input[i] = "ABCD"[i % 4];
 
     /* Our compress -> zlib decompress */
-    compressed_len
-        = compress_data (6, input, sizeof (input), compressed, sizeof (compressed));
+    compressed_len = compress_data (
+        6, input, sizeof (input), compressed, sizeof (compressed));
     ASSERT (compressed_len > 0);
     decompressed_len = zlib_decompress_raw (
         compressed, compressed_len, decompressed, sizeof (decompressed));
@@ -813,8 +821,8 @@ TEST (zlib_interop_data_patterns)
       input[i] = (uint8_t)(i % 256);
 
     /* Our compress -> zlib decompress */
-    compressed_len
-        = compress_data (6, input, sizeof (input), compressed, sizeof (compressed));
+    compressed_len = compress_data (
+        6, input, sizeof (input), compressed, sizeof (compressed));
     ASSERT (compressed_len > 0);
     decompressed_len = zlib_decompress_raw (
         compressed, compressed_len, decompressed, sizeof (decompressed));
@@ -842,8 +850,8 @@ TEST (zlib_interop_data_patterns)
       }
 
     /* Our compress -> zlib decompress */
-    compressed_len
-        = compress_data (6, input, sizeof (input), compressed, sizeof (compressed));
+    compressed_len = compress_data (
+        6, input, sizeof (input), compressed, sizeof (compressed));
     ASSERT (compressed_len > 0);
     decompressed_len = zlib_decompress_raw (
         compressed, compressed_len, decompressed, sizeof (decompressed));
@@ -871,7 +879,8 @@ TEST (zlib_interop_all_levels)
 {
   const uint8_t input[]
       = "This test verifies zlib interoperability at all compression levels. "
-        "Compression levels 0-9 should all produce valid, interoperable output.";
+        "Compression levels 0-9 should all produce valid, interoperable "
+        "output.";
   uint8_t compressed[1024];
   uint8_t decompressed[1024];
   size_t compressed_len, decompressed_len;

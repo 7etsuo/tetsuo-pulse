@@ -498,6 +498,50 @@ find_next_alive_ns (T transport, int start_ns)
   return start_ns;
 }
 
+/* Retry a timed-out query with exponential backoff and nameserver rotation.
+ * Returns 1 if the query was completed (failed send or max retries). */
+static int
+handle_timed_out_query (T transport, struct SocketDNSQuery *query)
+{
+  /* Mark this nameserver as having failed (RFC 2308 Section 7.2) */
+  if (transport->dead_server_tracker != NULL)
+    {
+      SocketDNS_Nameserver *ns = &transport->nameservers[query->current_ns];
+      SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
+                                        ns->address);
+    }
+
+  /* Max retries exhausted */
+  if (query->retry_count >= transport->max_retries)
+    {
+      complete_query (transport, query, NULL, 0, DNS_ERROR_TIMEOUT);
+      return 1;
+    }
+
+  query->retry_count++;
+
+  /* Exponential backoff */
+  query->timeout_ms *= 2;
+  if (query->timeout_ms > transport->max_timeout_ms)
+    query->timeout_ms = transport->max_timeout_ms;
+
+  /* Rotate nameserver if enabled, skipping dead servers */
+  if (transport->rotate_nameservers && transport->nameserver_count > 1)
+    {
+      int next_ns = (query->current_ns + 1) % transport->nameserver_count;
+      query->current_ns = find_next_alive_ns (transport, next_ns);
+    }
+
+  /* Resend */
+  if (send_query (transport, query) != 0)
+    {
+      complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
+      return 1;
+    }
+
+  return 0;
+}
+
 /* Check for timed out queries */
 static int
 check_timeouts (T transport)
@@ -514,51 +558,8 @@ check_timeouts (T transport)
       if (query->completed || query->cancelled || query->is_tcp)
         continue;
 
-      /* Check if timed out */
       if (now_ms - query->sent_time_ms >= query->timeout_ms)
-        {
-          /* Mark this nameserver as having failed (RFC 2308 Section 7.2) */
-          if (transport->dead_server_tracker != NULL)
-            {
-              SocketDNS_Nameserver *ns
-                  = &transport->nameservers[query->current_ns];
-              SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
-                                                ns->address);
-            }
-
-          /* Check if we should retry */
-          if (query->retry_count < transport->max_retries)
-            {
-              query->retry_count++;
-
-              /* Exponential backoff */
-              query->timeout_ms *= 2;
-              if (query->timeout_ms > transport->max_timeout_ms)
-                query->timeout_ms = transport->max_timeout_ms;
-
-              /* Rotate nameserver if enabled, skipping dead servers */
-              if (transport->rotate_nameservers
-                  && transport->nameserver_count > 1)
-                {
-                  int next_ns
-                      = (query->current_ns + 1) % transport->nameserver_count;
-                  query->current_ns = find_next_alive_ns (transport, next_ns);
-                }
-
-              /* Resend */
-              if (send_query (transport, query) != 0)
-                {
-                  complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
-                  processed++;
-                }
-            }
-          else
-            {
-              /* Max retries exhausted */
-              complete_query (transport, query, NULL, 0, DNS_ERROR_TIMEOUT);
-              processed++;
-            }
-        }
+        processed += handle_timed_out_query (transport, query);
     }
 
   return processed;
@@ -585,6 +586,50 @@ process_cancelled (T transport)
   return processed;
 }
 
+/* Try to create a non-blocking UDP socket for the given address family.
+ * On success, sets *sock and *fd. On failure (or exception), sets both to
+ * NULL/-1 without propagating the error. */
+static void
+transport_try_create_udp_socket (int family, SocketDgram_T *sock, int *fd)
+{
+  TRY
+  {
+    *sock = SocketDgram_new (family, 0);
+    if (*sock)
+      {
+        SocketDgram_setnonblocking (*sock);
+        *fd = SocketDgram_fd (*sock);
+      }
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+    *sock = NULL;
+    *fd = -1;
+  }
+  END_TRY;
+}
+
+/* Set default configuration and initialize TCP connections */
+static void
+transport_init_defaults (T transport, Arena_T arena, SocketPoll_T poll)
+{
+  transport->arena = arena;
+  transport->poll = poll;
+
+  transport->initial_timeout_ms = DNS_RETRY_INITIAL_MS;
+  transport->max_timeout_ms = DNS_RETRY_MAX_MS;
+  transport->max_retries = DNS_RETRY_MAX_ATTEMPTS;
+  transport->rotate_nameservers = 1;
+  transport->tcp_connect_timeout_ms = DNS_TCP_CONNECT_TIMEOUT_MS;
+  transport->tcp_idle_timeout_ms = DNS_TCP_IDLE_TIMEOUT_MS;
+
+  for (int i = 0; i < DNS_MAX_NAMESERVERS; i++)
+    {
+      transport->tcp_conns[i].fd = -1;
+      transport->tcp_conns[i].connecting = 0;
+    }
+}
+
 /* Public API implementation */
 
 T
@@ -597,57 +642,12 @@ SocketDNSTransport_new (Arena_T arena, SocketPoll_T poll)
   transport = Arena_alloc (arena, sizeof (*transport), __FILE__, __LINE__);
   memset (transport, 0, sizeof (*transport));
 
-  transport->arena = arena;
-  transport->poll = poll;
+  transport_init_defaults (transport, arena, poll);
 
-  /* Default configuration */
-  transport->initial_timeout_ms = DNS_RETRY_INITIAL_MS;
-  transport->max_timeout_ms = DNS_RETRY_MAX_MS;
-  transport->max_retries = DNS_RETRY_MAX_ATTEMPTS;
-  transport->rotate_nameservers = 1;
-  transport->tcp_connect_timeout_ms = DNS_TCP_CONNECT_TIMEOUT_MS;
-  transport->tcp_idle_timeout_ms = DNS_TCP_IDLE_TIMEOUT_MS;
-
-  /* Initialize TCP connections to disconnected state */
-  for (int i = 0; i < DNS_MAX_NAMESERVERS; i++)
-    {
-      transport->tcp_conns[i].fd = -1;
-      transport->tcp_conns[i].connecting = 0;
-    }
-
-  /* Create IPv4 socket */
-  TRY
-  {
-    transport->socket_v4 = SocketDgram_new (AF_INET, 0);
-    if (transport->socket_v4)
-      {
-        SocketDgram_setnonblocking (transport->socket_v4);
-        transport->fd_v4 = SocketDgram_fd (transport->socket_v4);
-      }
-  }
-  EXCEPT (SocketDgram_Failed)
-  {
-    transport->socket_v4 = NULL;
-    transport->fd_v4 = -1;
-  }
-  END_TRY;
-
-  /* Create IPv6 socket */
-  TRY
-  {
-    transport->socket_v6 = SocketDgram_new (AF_INET6, 0);
-    if (transport->socket_v6)
-      {
-        SocketDgram_setnonblocking (transport->socket_v6);
-        transport->fd_v6 = SocketDgram_fd (transport->socket_v6);
-      }
-  }
-  EXCEPT (SocketDgram_Failed)
-  {
-    transport->socket_v6 = NULL;
-    transport->fd_v6 = -1;
-  }
-  END_TRY;
+  transport_try_create_udp_socket (
+      AF_INET, &transport->socket_v4, &transport->fd_v4);
+  transport_try_create_udp_socket (
+      AF_INET6, &transport->socket_v6, &transport->fd_v6);
 
   /* At least one socket must be available */
   if (!transport->socket_v4 && !transport->socket_v6)
@@ -1043,6 +1043,37 @@ tcp_socket_create (int family)
   return fd;
 }
 
+/* Build a sockaddr from nameserver address and port.
+ * Returns 0 on success, -1 on invalid address. */
+static int
+tcp_build_sockaddr (const SocketDNS_Nameserver *ns,
+                    struct sockaddr_storage *ss,
+                    socklen_t *sslen)
+{
+  memset (ss, 0, sizeof (*ss));
+
+  if (ns->family == AF_INET)
+    {
+      struct sockaddr_in *sa4 = (struct sockaddr_in *)ss;
+      sa4->sin_family = AF_INET;
+      sa4->sin_port = htons ((uint16_t)ns->port);
+      if (inet_pton (AF_INET, ns->address, &sa4->sin_addr) != 1)
+        return -1;
+      *sslen = sizeof (*sa4);
+    }
+  else
+    {
+      struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ss;
+      sa6->sin6_family = AF_INET6;
+      sa6->sin6_port = htons ((uint16_t)ns->port);
+      if (inet_pton (AF_INET6, ns->address, &sa6->sin6_addr) != 1)
+        return -1;
+      *sslen = sizeof (*sa6);
+    }
+
+  return 0;
+}
+
 /* Start non-blocking connect to nameserver */
 static int
 tcp_conn_start (T transport, int ns_idx)
@@ -1065,30 +1096,10 @@ tcp_conn_start (T transport, int ns_idx)
   conn->family = ns->family;
 
   /* Build sockaddr */
-  memset (&ss, 0, sizeof (ss));
-  if (ns->family == AF_INET)
+  if (tcp_build_sockaddr (ns, &ss, &sslen) < 0)
     {
-      struct sockaddr_in *sa4 = (struct sockaddr_in *)&ss;
-      sa4->sin_family = AF_INET;
-      sa4->sin_port = htons ((uint16_t)ns->port);
-      if (inet_pton (AF_INET, ns->address, &sa4->sin_addr) != 1)
-        {
-          tcp_conn_close (conn);
-          return -1;
-        }
-      sslen = sizeof (*sa4);
-    }
-  else
-    {
-      struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&ss;
-      sa6->sin6_family = AF_INET6;
-      sa6->sin6_port = htons ((uint16_t)ns->port);
-      if (inet_pton (AF_INET6, ns->address, &sa6->sin6_addr) != 1)
-        {
-          tcp_conn_close (conn);
-          return -1;
-        }
-      sslen = sizeof (*sa6);
+      tcp_conn_close (conn);
+      return -1;
     }
 
   /* Non-blocking connect */

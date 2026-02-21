@@ -24,8 +24,9 @@ TEST (proto_wire_make_tag_validation)
 
   ASSERT_EQ (SOCKET_PROTO_INVALID_TAG,
              SocketProto_wire_make_tag (0, SOCKET_PROTO_WIRE_VARINT, &tag));
-  ASSERT_EQ (SOCKET_PROTO_INVALID_WIRE_TYPE,
-             SocketProto_wire_make_tag (1, SOCKET_PROTO_WIRE_START_GROUP, &tag));
+  ASSERT_EQ (
+      SOCKET_PROTO_INVALID_WIRE_TYPE,
+      SocketProto_wire_make_tag (1, SOCKET_PROTO_WIRE_START_GROUP, &tag));
 }
 
 TEST (proto_wire_write_and_read_varint_field)
@@ -39,9 +40,10 @@ TEST (proto_wire_write_and_read_varint_field)
   size_t consumed = 0;
   uint64_t decoded = 0;
 
-  ASSERT_EQ (SOCKET_PROTO_OK,
-             SocketProto_wire_write_tag (
-                 5, SOCKET_PROTO_WIRE_VARINT, tag_buf, sizeof (tag_buf), &tag_len));
+  ASSERT_EQ (
+      SOCKET_PROTO_OK,
+      SocketProto_wire_write_tag (
+          5, SOCKET_PROTO_WIRE_VARINT, tag_buf, sizeof (tag_buf), &tag_len));
   ASSERT_EQ (SOCKET_PROTO_OK,
              SocketProto_varint_encode_u64 (
                  1500, val_buf, sizeof (val_buf), &val_len));
@@ -67,13 +69,10 @@ TEST (proto_wire_write_and_read_length_delimited_field)
   SocketProto_Field field;
   size_t consumed = 0;
 
-  ASSERT_EQ (SOCKET_PROTO_OK,
-             SocketProto_wire_write_length_delimited (7,
-                                                     payload,
-                                                     sizeof (payload),
-                                                     encoded,
-                                                     sizeof (encoded),
-                                                     &written));
+  ASSERT_EQ (
+      SOCKET_PROTO_OK,
+      SocketProto_wire_write_length_delimited (
+          7, payload, sizeof (payload), encoded, sizeof (encoded), &written));
   ASSERT_EQ (SOCKET_PROTO_OK,
              SocketProto_wire_read_field (encoded, written, &field, &consumed));
   ASSERT_EQ (7U, field.field_number);
@@ -86,8 +85,8 @@ TEST (proto_wire_write_and_read_length_delimited_field)
 TEST (proto_wire_read_fixed_fields)
 {
   uint8_t fixed32_field[] = { 0x0D, 0x44, 0x33, 0x22, 0x11 };
-  uint8_t fixed64_field[] = { 0x11, 0x88, 0x77, 0x66, 0x55,
-                              0x44, 0x33, 0x22, 0x11 };
+  uint8_t fixed64_field[]
+      = { 0x11, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 };
   SocketProto_Field field;
   size_t consumed = 0;
   uint32_t v32 = 0;
@@ -131,9 +130,10 @@ TEST (proto_wire_detects_truncated_payloads)
                                           sizeof (truncated_len_delim),
                                           &field,
                                           &consumed));
-  ASSERT_EQ (SOCKET_PROTO_INCOMPLETE,
-             SocketProto_wire_read_field (
-                 truncated_fixed64, sizeof (truncated_fixed64), &field, &consumed));
+  ASSERT_EQ (
+      SOCKET_PROTO_INCOMPLETE,
+      SocketProto_wire_read_field (
+          truncated_fixed64, sizeof (truncated_fixed64), &field, &consumed));
 }
 
 int

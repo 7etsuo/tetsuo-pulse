@@ -95,57 +95,51 @@ SocketHTTP3_Conn_new (Arena_T arena,
   return conn;
 }
 
-int
-SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
+/**
+ * h3_assign_local_stream_ids - Assign stream IDs per RFC 9000 Section 2.1
+ * @conn: HTTP/3 connection
+ *
+ * Client-initiated unidi: 2, 6, 10
+ * Server-initiated unidi: 3, 7, 11
+ */
+static void
+h3_assign_local_stream_ids (SocketHTTP3_Conn_T conn)
 {
-  if (conn == NULL)
-    return -1;
-
-  if (conn->state != H3_CONN_STATE_IDLE)
-    return -(int)H3_GENERAL_PROTOCOL_ERROR;
-
-  /*
-   * Assign local stream IDs per QUIC conventions (RFC 9000 §2.1):
-   *   Client-initiated unidi: 2, 6, 10
-   *   Server-initiated unidi: 3, 7, 11
-   */
   uint64_t base = (conn->role == H3_ROLE_CLIENT) ? 2 : 3;
-  conn->local_control_id = base;     /* +0 */
-  conn->local_encoder_id = base + 4; /* +4 */
-  conn->local_decoder_id = base + 8; /* +8 */
+  conn->local_control_id = base;
+  conn->local_encoder_id = base + 4;
+  conn->local_decoder_id = base + 8;
 
 #ifdef SOCKET_HAS_H3_PUSH
-  /* Push streams start after control(+0), encoder(+4), decoder(+8) → base+12 */
   conn->next_server_unidi_id = base + 12;
 #endif
 
-  /* Register in stream map */
   SocketHTTP3_StreamMap_set_local_control (conn->stream_map,
                                            conn->local_control_id);
   SocketHTTP3_StreamMap_set_local_qpack_encoder (conn->stream_map,
                                                  conn->local_encoder_id);
   SocketHTTP3_StreamMap_set_local_qpack_decoder (conn->stream_map,
                                                  conn->local_decoder_id);
+}
 
-  /* Initialize per-stream output buffers */
-  stream_buf_init (&conn->control_out, conn->arena, conn->local_control_id);
-  stream_buf_init (&conn->encoder_out, conn->arena, conn->local_encoder_id);
-  stream_buf_init (&conn->decoder_out, conn->arena, conn->local_decoder_id);
-
-  /*
-   * Build control stream output: type byte (0x00) + SETTINGS frame.
-   */
+/**
+ * h3_build_control_stream - Build control stream: type byte + SETTINGS frame
+ * @conn: HTTP/3 connection
+ *
+ * Returns: 0 on success, -1 on serialization failure
+ */
+static int
+h3_build_control_stream (SocketHTTP3_Conn_T conn)
+{
   uint8_t type_byte = (uint8_t)H3_STREAM_TYPE_CONTROL;
   stream_buf_append (&conn->control_out, conn->arena, &type_byte, 1);
 
-  /* Serialize SETTINGS payload */
   uint8_t settings_payload[HTTP3_SETTINGS_MAX_WRITE_SIZE];
   int settings_len = SocketHTTP3_Settings_write (
       &conn->local_settings, settings_payload, sizeof (settings_payload));
   if (settings_len < 0)
     return -1;
 
-  /* Write frame header for SETTINGS */
   uint8_t frame_hdr[16];
   int hdr_len = SocketHTTP3_Frame_write_header (HTTP3_FRAME_SETTINGS,
                                                 (uint64_t)settings_len,
@@ -161,9 +155,30 @@ SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
                        conn->arena,
                        settings_payload,
                        (size_t)settings_len);
+  return 0;
+}
+
+int
+SocketHTTP3_Conn_init (SocketHTTP3_Conn_T conn)
+{
+  if (conn == NULL)
+    return -1;
+
+  if (conn->state != H3_CONN_STATE_IDLE)
+    return -(int)H3_GENERAL_PROTOCOL_ERROR;
+
+  h3_assign_local_stream_ids (conn);
+
+  /* Initialize per-stream output buffers */
+  stream_buf_init (&conn->control_out, conn->arena, conn->local_control_id);
+  stream_buf_init (&conn->encoder_out, conn->arena, conn->local_encoder_id);
+  stream_buf_init (&conn->decoder_out, conn->arena, conn->local_decoder_id);
+
+  if (h3_build_control_stream (conn) != 0)
+    return -1;
 
   /* Write stream type bytes for QPACK encoder and decoder streams */
-  type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_ENCODER;
+  uint8_t type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_ENCODER;
   stream_buf_append (&conn->encoder_out, conn->arena, &type_byte, 1);
   type_byte = (uint8_t)H3_STREAM_TYPE_QPACK_DECODER;
   stream_buf_append (&conn->decoder_out, conn->arena, &type_byte, 1);

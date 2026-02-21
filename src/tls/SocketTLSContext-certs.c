@@ -198,6 +198,64 @@ sni_callback (SSL *ssl, int *ad, void *arg)
       ssl, ctx->sni_certs.chains[idx], ctx->sni_certs.pkeys[idx]);
 }
 
+/**
+ * sni_alloc_arrays - Allocate 5 parallel arrays for SNI certificate storage
+ * @alloc_size: Size in bytes for each array
+ * @out: Array of 5 void* pointers to receive allocated memory
+ *
+ * Returns: 0 on success, -1 on failure (all allocations freed)
+ */
+static int
+sni_alloc_arrays (size_t alloc_size, void *out[5])
+{
+  out[0] = malloc (alloc_size);
+  out[1] = malloc (alloc_size);
+  out[2] = malloc (alloc_size);
+  out[3] = malloc (alloc_size);
+  out[4] = malloc (alloc_size);
+
+  if (!out[0] || !out[1] || !out[2] || !out[3] || !out[4])
+    {
+      for (int i = 0; i < 5; i++)
+        free (out[i]);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * sni_commit_arrays - Replace old SNI arrays with new ones, freeing old
+ * @ctx: TLS context
+ * @new_arrays: Array of 5 new pointer arrays
+ * @new_cap: New capacity value
+ */
+static void
+sni_commit_arrays (T ctx, void *new_arrays[5], size_t new_cap)
+{
+  if (ctx->sni_certs.capacity > 0)
+    {
+      size_t old_size = ctx->sni_certs.capacity * sizeof (void *);
+      memcpy (new_arrays[0], ctx->sni_certs.hostnames, old_size);
+      memcpy (new_arrays[1], ctx->sni_certs.cert_files, old_size);
+      memcpy (new_arrays[2], ctx->sni_certs.key_files, old_size);
+      memcpy (new_arrays[3], ctx->sni_certs.chains, old_size);
+      memcpy (new_arrays[4], ctx->sni_certs.pkeys, old_size);
+    }
+
+  free (ctx->sni_certs.hostnames);
+  free (ctx->sni_certs.cert_files);
+  free (ctx->sni_certs.key_files);
+  free (ctx->sni_certs.chains);
+  free (ctx->sni_certs.pkeys);
+
+  ctx->sni_certs.hostnames = new_arrays[0];
+  ctx->sni_certs.cert_files = new_arrays[1];
+  ctx->sni_certs.key_files = new_arrays[2];
+  ctx->sni_certs.chains = new_arrays[3];
+  ctx->sni_certs.pkeys = new_arrays[4];
+  ctx->sni_certs.capacity = new_cap;
+}
+
 static void
 expand_sni_capacity (T ctx)
 {
@@ -210,53 +268,11 @@ expand_sni_capacity (T ctx)
       || !SocketSecurity_check_size (alloc_size))
     ctx_raise_openssl_error ("SNI capacity overflow");
 
-  /* Phase 1: Allocate new arrays independently (don't modify originals).
-   * Using malloc instead of realloc prevents the critical flaw where
-   * successful reallocs free old pointers, then rollback frees new ones,
-   * leaving dangling pointers in ctx->sni_certs. */
-  void *new_hostnames = malloc (alloc_size);
-  void *new_cert_files = malloc (alloc_size);
-  void *new_key_files = malloc (alloc_size);
-  void *new_chains = malloc (alloc_size);
-  void *new_pkeys = malloc (alloc_size);
+  void *new_arrays[5];
+  if (sni_alloc_arrays (alloc_size, new_arrays) != 0)
+    ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
 
-  /* Verify all allocations succeeded before proceeding */
-  if (!new_hostnames || !new_cert_files || !new_key_files || !new_chains
-      || !new_pkeys)
-    {
-      /* Simple cleanup - all are independent mallocs, old arrays untouched */
-      free (new_hostnames);
-      free (new_cert_files);
-      free (new_key_files);
-      free (new_chains);
-      free (new_pkeys);
-      ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
-    }
-
-  /* Phase 2: Copy old data to new arrays if capacity was previously non-zero */
-  if (ctx->sni_certs.capacity > 0)
-    {
-      size_t old_size = ctx->sni_certs.capacity * sizeof (void *);
-      memcpy (new_hostnames, ctx->sni_certs.hostnames, old_size);
-      memcpy (new_cert_files, ctx->sni_certs.cert_files, old_size);
-      memcpy (new_key_files, ctx->sni_certs.key_files, old_size);
-      memcpy (new_chains, ctx->sni_certs.chains, old_size);
-      memcpy (new_pkeys, ctx->sni_certs.pkeys, old_size);
-    }
-
-  /* Phase 3: Free old arrays and commit new state atomically */
-  free (ctx->sni_certs.hostnames);
-  free (ctx->sni_certs.cert_files);
-  free (ctx->sni_certs.key_files);
-  free (ctx->sni_certs.chains);
-  free (ctx->sni_certs.pkeys);
-
-  ctx->sni_certs.hostnames = new_hostnames;
-  ctx->sni_certs.cert_files = new_cert_files;
-  ctx->sni_certs.key_files = new_key_files;
-  ctx->sni_certs.chains = new_chains;
-  ctx->sni_certs.pkeys = new_pkeys;
-  ctx->sni_certs.capacity = new_cap;
+  sni_commit_arrays (ctx, new_arrays, new_cap);
 }
 
 static char *

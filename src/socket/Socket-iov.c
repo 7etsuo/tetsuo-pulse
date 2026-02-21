@@ -1054,23 +1054,9 @@ handle_splice_error (int saved_errno, const char *direction)
  * Returns: Bytes transferred, 0 if would block, -1 if not supported
  * Raises: Socket_Closed, Socket_Failed
  */
-ssize_t
-Socket_splice (T socket_in, T socket_out, size_t len)
+static void
+splice_create_pipe (int pipe_fds[2])
 {
-  int fd_in, fd_out;
-  int pipe_fds[2];
-  ssize_t spliced_in, spliced_out;
-  size_t chunk_size;
-
-  assert (socket_in);
-  assert (socket_out);
-
-  fd_in = SocketBase_fd (socket_in->base);
-  fd_out = SocketBase_fd (socket_out->base);
-
-  chunk_size = (len > 0) ? len : SOCKET_SPLICE_CHUNK_SIZE;
-
-  /* Create pipe for intermediate buffer */
   if (pipe (pipe_fds) < 0)
     {
       int saved_errno = errno;
@@ -1084,6 +1070,24 @@ Socket_splice (T socket_in, T socket_out, size_t len)
       errno = saved_errno;
       RAISE_MODULE_ERROR (Socket_Failed);
     }
+}
+
+ssize_t
+Socket_splice (T socket_in, T socket_out, size_t len)
+{
+  int fd_in, fd_out;
+  int pipe_fds[2];
+  ssize_t spliced_in, spliced_out;
+  size_t chunk_size;
+
+  assert (socket_in);
+  assert (socket_out);
+
+  fd_in = SocketBase_fd (socket_in->base);
+  fd_out = SocketBase_fd (socket_out->base);
+  chunk_size = (len > 0) ? len : SOCKET_SPLICE_CHUNK_SIZE;
+
+  splice_create_pipe (pipe_fds);
 
   /* Splice from socket to pipe */
   spliced_in = splice (fd_in,

@@ -59,7 +59,8 @@ TEST (deflate_length_table_all_values)
 
   /* Test each code 257-285 */
   for (unsigned int code = DEFLATE_LENGTH_CODE_MIN;
-       code <= DEFLATE_LENGTH_CODE_MAX; code++)
+       code <= DEFLATE_LENGTH_CODE_MAX;
+       code++)
     {
       unsigned int index = code - DEFLATE_LENGTH_CODE_MIN;
       const SocketDeflate_CodeEntry *entry = &deflate_length_table[index];
@@ -132,9 +133,9 @@ TEST (deflate_distance_table_boundaries)
 /* Test that distance table has exactly 30 entries (codes 0-29) */
 TEST (deflate_distance_table_size)
 {
-  ASSERT_EQ (
-      sizeof (deflate_distance_table) / sizeof (deflate_distance_table[0]),
-      DEFLATE_DISTANCE_CODES);
+  ASSERT_EQ (sizeof (deflate_distance_table)
+                 / sizeof (deflate_distance_table[0]),
+             DEFLATE_DISTANCE_CODES);
   ASSERT_EQ (DEFLATE_DISTANCE_CODES, 30);
 }
 
@@ -158,7 +159,8 @@ TEST (deflate_distance_table_all_values)
 
   /* Test each code 0-29 */
   for (unsigned int code = DEFLATE_DISTANCE_CODE_MIN;
-       code <= DEFLATE_DISTANCE_CODE_MAX; code++)
+       code <= DEFLATE_DISTANCE_CODE_MAX;
+       code++)
     {
       const SocketDeflate_CodeEntry *entry = &deflate_distance_table[code];
       unsigned int max_extra = (1U << entry->extra_bits) - 1;
@@ -288,9 +290,9 @@ TEST (deflate_fixed_dist_lengths_all_five_bits)
 /* Test fixed dist lengths table size */
 TEST (deflate_fixed_dist_lengths_size)
 {
-  ASSERT_EQ (
-      sizeof (deflate_fixed_dist_lengths) / sizeof (deflate_fixed_dist_lengths[0]),
-      DEFLATE_DIST_CODES);
+  ASSERT_EQ (sizeof (deflate_fixed_dist_lengths)
+                 / sizeof (deflate_fixed_dist_lengths[0]),
+             DEFLATE_DIST_CODES);
   ASSERT_EQ (DEFLATE_DIST_CODES, 32);
 }
 
@@ -458,7 +460,8 @@ TEST (deflate_get_length_extra_bits_all_codes)
     }
 
   /* Code 285: 0 extra bits (special case) */
-  ASSERT_EQ (SocketDeflate_get_length_extra_bits (285, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_get_length_extra_bits (285, &extra_bits),
+             DEFLATE_OK);
   ASSERT_EQ (extra_bits, 0);
 }
 
@@ -502,13 +505,16 @@ TEST (deflate_get_distance_extra_bits_all_codes)
     }
 
   /* Spot check higher codes */
-  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (10, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (10, &extra_bits),
+             DEFLATE_OK);
   ASSERT_EQ (extra_bits, 4);
 
-  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (20, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (20, &extra_bits),
+             DEFLATE_OK);
   ASSERT_EQ (extra_bits, 9);
 
-  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (29, &extra_bits), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_get_distance_extra_bits (29, &extra_bits),
+             DEFLATE_OK);
   ASSERT_EQ (extra_bits, 13);
 }
 
@@ -556,7 +562,8 @@ TEST (deflate_decode_length_extra_overflow_masked)
   ASSERT_EQ (length, 162); /* base=131, extra masked to 31 */
 
   /* Code 285 has 0 extra bits - any extra value should be masked to 0 */
-  ASSERT_EQ (SocketDeflate_decode_length (285, 0xFFFFFFFF, &length), DEFLATE_OK);
+  ASSERT_EQ (SocketDeflate_decode_length (285, 0xFFFFFFFF, &length),
+             DEFLATE_OK);
   ASSERT_EQ (length, 258); /* base=258, extra masked to 0 */
 }
 
@@ -589,7 +596,8 @@ TEST (deflate_decode_masked_values_in_range)
 
   /* Test all length codes with overflow extra - all should be <= MAX_MATCH */
   for (unsigned int code = DEFLATE_LENGTH_CODE_MIN;
-       code <= DEFLATE_LENGTH_CODE_MAX; code++)
+       code <= DEFLATE_LENGTH_CODE_MAX;
+       code++)
     {
       ASSERT_EQ (SocketDeflate_decode_length (code, 0xFFFFFFFF, &length),
                  DEFLATE_OK);
@@ -597,9 +605,11 @@ TEST (deflate_decode_masked_values_in_range)
       ASSERT (length <= DEFLATE_MAX_MATCH);
     }
 
-  /* Test all distance codes with overflow extra - all should be <= WINDOW_SIZE */
+  /* Test all distance codes with overflow extra - all should be <= WINDOW_SIZE
+   */
   for (unsigned int code = DEFLATE_DISTANCE_CODE_MIN;
-       code <= DEFLATE_DISTANCE_CODE_MAX; code++)
+       code <= DEFLATE_DISTANCE_CODE_MAX;
+       code++)
     {
       ASSERT_EQ (SocketDeflate_decode_distance (code, 0xFFFFFFFF, &distance),
                  DEFLATE_OK);

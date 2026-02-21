@@ -46,7 +46,8 @@ reset_callback_count (void)
 static struct SocketTimer_T *
 create_timer_with_expiry (Arena_T arena, int64_t expiry_ms)
 {
-  struct SocketTimer_T *timer = CALLOC (arena, 1, sizeof (struct SocketTimer_T));
+  struct SocketTimer_T *timer
+      = CALLOC (arena, 1, sizeof (struct SocketTimer_T));
   if (!timer)
     return NULL;
 
@@ -171,9 +172,12 @@ TEST (timer_heap_push_multiple_timers)
   ASSERT_NOT_NULL (heap);
 
   int64_t base_time = Socket_get_monotonic_ms ();
-  struct SocketTimer_T *timer1 = create_timer_with_expiry (arena, base_time + 5000);
-  struct SocketTimer_T *timer2 = create_timer_with_expiry (arena, base_time + 1000);
-  struct SocketTimer_T *timer3 = create_timer_with_expiry (arena, base_time + 3000);
+  struct SocketTimer_T *timer1
+      = create_timer_with_expiry (arena, base_time + 5000);
+  struct SocketTimer_T *timer2
+      = create_timer_with_expiry (arena, base_time + 1000);
+  struct SocketTimer_T *timer3
+      = create_timer_with_expiry (arena, base_time + 3000);
 
   ASSERT_NOT_NULL (timer1);
   ASSERT_NOT_NULL (timer2);
@@ -223,7 +227,8 @@ TEST (timer_heap_maintains_min_heap_property)
   {
     for (size_t i = 0; i < count; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + expiries[i]);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + expiries[i]);
         ASSERT_NOT_NULL (timer);
         SocketTimer_heap_push (heap, timer);
         ASSERT (verify_heap_property (heap));
@@ -310,7 +315,8 @@ TEST (timer_heap_pop_multiple_in_order)
     /* Push all timers */
     for (size_t i = 0; i < count; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + expiries[i]);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + expiries[i]);
         ASSERT_NOT_NULL (timer);
         SocketTimer_heap_push (heap, timer);
       }
@@ -346,8 +352,10 @@ TEST (timer_heap_peek_without_removal)
   ASSERT_NOT_NULL (heap);
 
   int64_t base_time = Socket_get_monotonic_ms ();
-  struct SocketTimer_T *timer1 = create_timer_with_expiry (arena, base_time + 5000);
-  struct SocketTimer_T *timer2 = create_timer_with_expiry (arena, base_time + 1000);
+  struct SocketTimer_T *timer1
+      = create_timer_with_expiry (arena, base_time + 5000);
+  struct SocketTimer_T *timer2
+      = create_timer_with_expiry (arena, base_time + 1000);
 
   TRY
   {
@@ -357,7 +365,7 @@ TEST (timer_heap_peek_without_removal)
     struct SocketTimer_T *peeked = SocketTimer_heap_peek (heap);
     ASSERT_NOT_NULL (peeked);
     ASSERT_EQ (peeked, timer2); /* Earliest timer */
-    ASSERT_EQ (heap->count, 2);  /* Count unchanged */
+    ASSERT_EQ (heap->count, 2); /* Count unchanged */
 
     /* Peek again - should return same timer */
     peeked = SocketTimer_heap_peek (heap);
@@ -406,7 +414,8 @@ TEST (timer_heap_peek_delay_future_timer)
     SocketTimer_heap_push (heap, timer);
 
     int64_t peek_delay = SocketTimer_heap_peek_delay (heap);
-    /* Delay should be approximately 5000ms, with some tolerance for execution time */
+    /* Delay should be approximately 5000ms, with some tolerance for execution
+     * time */
     ASSERT (peek_delay > 4900 && peek_delay <= 5000);
   }
   FINALLY
@@ -479,13 +488,15 @@ TEST (timer_heap_capacity_growth)
     /* Push timers until capacity needs to grow */
     for (size_t i = 0; i < initial_capacity + 1; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + i);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + i);
         ASSERT_NOT_NULL (timer);
         SocketTimer_heap_push (heap, timer);
       }
 
     /* Capacity should have doubled */
-    ASSERT_EQ (heap->capacity, initial_capacity * SOCKET_TIMER_HEAP_GROWTH_FACTOR);
+    ASSERT_EQ (heap->capacity,
+               initial_capacity * SOCKET_TIMER_HEAP_GROWTH_FACTOR);
     ASSERT_EQ (heap->count, initial_capacity + 1);
     ASSERT (verify_heap_property (heap));
   }
@@ -513,7 +524,8 @@ TEST (timer_heap_max_size_enforcement)
     /* Fill heap to maximum capacity */
     for (size_t i = 0; i < SOCKET_MAX_TIMERS_PER_HEAP; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + i);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + i);
         if (!timer)
           break; /* Out of memory, acceptable for this test */
         SocketTimer_heap_push (heap, timer);
@@ -555,9 +567,12 @@ TEST (timer_heap_pop_skips_cancelled)
   ASSERT_NOT_NULL (heap);
 
   int64_t base_time = Socket_get_monotonic_ms ();
-  struct SocketTimer_T *timer1 = create_timer_with_expiry (arena, base_time + 1000);
-  struct SocketTimer_T *timer2 = create_timer_with_expiry (arena, base_time + 2000);
-  struct SocketTimer_T *timer3 = create_timer_with_expiry (arena, base_time + 3000);
+  struct SocketTimer_T *timer1
+      = create_timer_with_expiry (arena, base_time + 1000);
+  struct SocketTimer_T *timer2
+      = create_timer_with_expiry (arena, base_time + 2000);
+  struct SocketTimer_T *timer3
+      = create_timer_with_expiry (arena, base_time + 3000);
 
   TRY
   {
@@ -597,18 +612,21 @@ TEST (timer_heap_id_assignment)
 
   TRY
   {
-    struct SocketTimer_T *timer1 = create_timer_with_expiry (arena, base_time + 1000);
+    struct SocketTimer_T *timer1
+        = create_timer_with_expiry (arena, base_time + 1000);
     SocketTimer_heap_push (heap, timer1);
     ASSERT_EQ (timer1->id, SOCKET_TIMER_INITIAL_ID);
     ASSERT_EQ (heap->next_id, SOCKET_TIMER_INITIAL_ID + 1);
 
-    struct SocketTimer_T *timer2 = create_timer_with_expiry (arena, base_time + 2000);
+    struct SocketTimer_T *timer2
+        = create_timer_with_expiry (arena, base_time + 2000);
     SocketTimer_heap_push (heap, timer2);
     ASSERT_EQ (timer2->id, SOCKET_TIMER_INITIAL_ID + 1);
 
     /* Test ID wraparound */
     heap->next_id = UINT64_MAX;
-    struct SocketTimer_T *timer3 = create_timer_with_expiry (arena, base_time + 3000);
+    struct SocketTimer_T *timer3
+        = create_timer_with_expiry (arena, base_time + 3000);
     SocketTimer_heap_push (heap, timer3);
     ASSERT_EQ (timer3->id, UINT64_MAX);
     ASSERT_EQ (heap->next_id, SOCKET_TIMER_INITIAL_ID); /* Wrapped */
@@ -642,7 +660,8 @@ thread_push_timers (void *arg)
     {
       TRY
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (data->arena, base_time + i + data->thread_id * 1000);
+        struct SocketTimer_T *timer = create_timer_with_expiry (
+            data->arena, base_time + i + data->thread_id * 1000);
         if (timer)
           {
             SocketTimer_heap_push (data->heap, timer);
@@ -683,7 +702,8 @@ TEST (timer_heap_concurrent_push)
       thread_data[i].push_count = pushes_per_thread;
       thread_data[i].error_flag = &error_flag;
 
-      int rc = pthread_create (&threads[i], NULL, thread_push_timers, &thread_data[i]);
+      int rc = pthread_create (
+          &threads[i], NULL, thread_push_timers, &thread_data[i]);
       ASSERT_EQ (rc, 0);
     }
 
@@ -739,7 +759,8 @@ TEST (timer_heap_concurrent_pop)
   {
     for (int i = 0; i < total_timers; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + i);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + i);
         ASSERT_NOT_NULL (timer);
         SocketTimer_heap_push (heap, timer);
       }
@@ -754,7 +775,8 @@ TEST (timer_heap_concurrent_pop)
       {
         thread_data[i].heap = heap;
         thread_data[i].push_count = total_timers / num_threads;
-        int rc = pthread_create (&threads[i], NULL, thread_pop_timers, &thread_data[i]);
+        int rc = pthread_create (
+            &threads[i], NULL, thread_pop_timers, &thread_data[i]);
         ASSERT_EQ (rc, 0);
       }
 
@@ -791,7 +813,8 @@ TEST (timer_heap_mixed_operations)
     /* Push some timers */
     for (int i = 0; i < 5; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + (i + 1) * 1000);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + (i + 1) * 1000);
         SocketTimer_heap_push (heap, timer);
       }
     ASSERT (verify_heap_property (heap));
@@ -804,7 +827,8 @@ TEST (timer_heap_mixed_operations)
     /* Push more */
     for (int i = 0; i < 3; i++)
       {
-        struct SocketTimer_T *timer = create_timer_with_expiry (arena, base_time + (i + 10) * 1000);
+        struct SocketTimer_T *timer
+            = create_timer_with_expiry (arena, base_time + (i + 10) * 1000);
         SocketTimer_heap_push (heap, timer);
       }
     ASSERT (verify_heap_property (heap));

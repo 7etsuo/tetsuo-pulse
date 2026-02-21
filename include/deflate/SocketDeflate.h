@@ -33,9 +33,10 @@
 #define DEFLATE_MAX_MATCH 258     /* Maximum match length */
 
 /* Alphabet sizes */
-#define DEFLATE_LITLEN_CODES 288 /* 0-287 (286-287 reserved) */
-#define DEFLATE_DIST_CODES 32    /* 0-31 (30-31 reserved) */
-#define DEFLATE_CODELEN_CODES 19 /* 0-18 for code lengths */
+#define DEFLATE_LITLEN_CODES 288    /* 0-287 (286-287 reserved) */
+#define DEFLATE_LITLEN_MAX_HLIT 286 /* Max HLIT value (RFC 1951 §3.2.7) */
+#define DEFLATE_DIST_CODES 32       /* 0-31 (30-31 reserved) */
+#define DEFLATE_CODELEN_CODES 19    /* 0-18 for code lengths */
 
 /* Length code range */
 #define DEFLATE_LENGTH_CODE_MIN 257 /* First length code */
@@ -53,6 +54,11 @@
 
 /* Special symbols */
 #define DEFLATE_END_OF_BLOCK 256 /* End-of-block symbol */
+
+/* Code length alphabet symbols (RFC 1951 §3.2.7) */
+#define DEFLATE_CODELEN_COPY_PREV 16 /* Copy previous length 3-6 times */
+#define DEFLATE_CODELEN_REPEAT_3 17  /* Repeat 0 for 3-10 times */
+#define DEFLATE_CODELEN_REPEAT_11 18 /* Repeat 0 for 11-138 times */
 
 /**
  * Block types (RFC 1951 Section 3.2.3).
