@@ -447,6 +447,76 @@ state_to_poll_events (TLSHandshakeState state)
 }
 
 /**
+ * handshake_poll_create - Create a temporary poll instance (exception-safe)
+ * @error_out: Output for error message on failure
+ *
+ * Returns: SocketPoll_T on success, NULL on failure
+ * Thread-safe: No
+ */
+static SocketPoll_T
+handshake_poll_create (const char **error_out)
+{
+  SocketPoll_T poll = NULL;
+  volatile int alloc_failed = 0;
+
+  TRY
+  {
+    poll = SocketPoll_new (TLS_HANDSHAKE_POLL_CAPACITY);
+  }
+  ELSE
+  {
+    alloc_failed = 1;
+  }
+  END_TRY;
+
+  if (alloc_failed || !poll)
+    {
+      *error_out = "Failed to create temporary poll instance";
+      return NULL;
+    }
+
+  return poll;
+}
+
+/**
+ * handshake_poll_add_socket - Add socket to poll (exception-safe)
+ * @poll: Poll instance (freed on failure)
+ * @socket: Socket to add
+ * @events: Poll events to wait for
+ * @error_out: Output for error message on failure
+ *
+ * Returns: 0 on success, -1 on failure (frees poll)
+ * Thread-safe: No
+ */
+static int
+handshake_poll_add_socket (SocketPoll_T poll,
+                           Socket_T socket,
+                           unsigned events,
+                           const char **error_out)
+{
+  volatile int add_failed = 0;
+
+  TRY
+  {
+    SocketPoll_add (poll, socket, events, NULL);
+  }
+  ELSE
+  {
+    add_failed = 1;
+  }
+  END_TRY;
+
+  if (add_failed)
+    {
+      SocketPoll_free (&poll);
+      *error_out = "Failed to add socket to poll";
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * do_handshake_poll_safe - Perform poll wait without raising exceptions
  * @socket: Socket instance
  * @events: Poll events to wait for (SocketPoll_Events bitmask)
@@ -465,68 +535,31 @@ do_handshake_poll_safe (Socket_T socket,
                         int timeout_ms,
                         const char **error_out)
 {
-  SocketPoll_T poll = NULL;
-  int result = 1;
-  int saved_errno;
-
   *error_out = NULL;
 
-  /* Try to create poll without exceptions - use TRY but catch and convert */
-  volatile int alloc_failed = 0;
-  TRY
-  {
-    poll = SocketPoll_new (TLS_HANDSHAKE_POLL_CAPACITY);
-  }
-  ELSE
-  {
-    alloc_failed = 1;
-  }
-  END_TRY;
+  SocketPoll_T poll = handshake_poll_create (error_out);
+  if (!poll)
+    return -1;
 
-  if (alloc_failed || !poll)
-    {
-      *error_out = "Failed to create temporary poll instance";
-      return -1;
-    }
+  if (handshake_poll_add_socket (poll, socket, events, error_out) < 0)
+    return -1;
 
-  /* Try to add socket to poll */
-  volatile int add_failed = 0;
-  TRY
-  {
-    SocketPoll_add (poll, socket, events, NULL);
-  }
-  ELSE
-  {
-    add_failed = 1;
-  }
-  END_TRY;
-
-  if (add_failed)
-    {
-      SocketPoll_free (&poll);
-      *error_out = "Failed to add socket to poll";
-      return -1;
-    }
-
-  /* Perform poll wait */
   SocketEvent_T evs[TLS_HANDSHAKE_POLL_CAPACITY];
   SocketEvent_T *events_out = evs;
   int rc = SocketPoll_wait (poll, &events_out, timeout_ms);
-  saved_errno = errno;
+  int saved_errno = errno;
 
-  /* Clean up poll before returning */
   SocketPoll_free (&poll);
 
   if (rc < 0)
     {
       if (saved_errno == EINTR)
-        return 0; /* Caller should retry */
+        return 0;
       *error_out = strerror (saved_errno);
       return -1;
     }
 
-  /* rc >= 0: success (0=timeout, >0=ready) */
-  return result;
+  return 1;
 }
 
 /**
@@ -1217,6 +1250,45 @@ SocketTLS_shutdown (Socket_T socket)
  *
  * @see SocketTLS_shutdown() for bidirectional shutdown
  */
+/**
+ * shutdown_send_handle_error - Handle SSL_shutdown error for send-only shutdown
+ * @socket: Socket instance
+ * @ssl: SSL connection object
+ * @result: SSL_shutdown return value (must be < 0)
+ *
+ * Returns: 0 if would-block (EAGAIN), 1 if done (partial or unknown),
+ *          raises SocketTLS_ShutdownFailed on protocol error
+ * Thread-safe: No
+ */
+static int
+shutdown_send_handle_error (Socket_T socket, SSL *ssl, int result)
+{
+  int ssl_error = SSL_get_error (ssl, result);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      errno = EAGAIN;
+      return 0;
+
+    case SSL_ERROR_SYSCALL:
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      socket->tls_shutdown_done = 0;
+      return 1;
+
+    case SSL_ERROR_SSL:
+      tls_format_openssl_error ("TLS shutdown_send protocol error");
+      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+      __builtin_unreachable ();
+
+    default:
+      socket->tls_shutdown_done = 1;
+      return 1;
+    }
+}
+
 int
 SocketTLS_shutdown_send (Socket_T socket)
 {
@@ -1226,54 +1298,23 @@ SocketTLS_shutdown_send (Socket_T socket)
     return -1;
 
   if (socket->tls_shutdown_done)
-    return 1; /* Already done */
+    return 1;
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
-  /* Set quiet shutdown mode to skip waiting for peer's close_notify */
   SSL_set_quiet_shutdown (ssl, 1);
 
   int result = SSL_shutdown (ssl);
 
   if (result >= 0)
     {
-      /* result == 0: close_notify sent (unidirectional shutdown complete)
-       * result == 1: full shutdown (shouldn't happen with quiet mode, but ok)
-       */
       socket->tls_shutdown_done = 1;
       return 1;
     }
 
-  /* result < 0: check error */
-  int ssl_error = SSL_get_error (ssl, result);
-
-  switch (ssl_error)
-    {
-    case SSL_ERROR_WANT_READ:
-    case SSL_ERROR_WANT_WRITE:
-      errno = EAGAIN;
-      return 0; /* Would block - caller should retry */
-
-    case SSL_ERROR_SYSCALL:
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0; /* Would block */
-      /* Connection error - treat as partial success (we tried) */
-      socket->tls_shutdown_done = 0;
-      return 1;
-
-    case SSL_ERROR_SSL:
-      /* Protocol error */
-      tls_format_openssl_error ("TLS shutdown_send protocol error");
-      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    default:
-      /* Unknown or zero return - treat as success */
-      socket->tls_shutdown_done = 1;
-      return 1;
-    }
+  return shutdown_send_handle_error (socket, ssl, result);
 }
 
 /**
@@ -1674,73 +1715,91 @@ SocketTLS_get_alpn_selected (Socket_T socket)
  * @note Session data is sensitive - store securely (encrypted at rest)
  * @warning For TLS 1.3, call after some I/O to ensure ticket receipt
  */
-int
-SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
+/**
+ * session_get_valid - Get a non-expired SSL session
+ * @ssl: SSL connection object
+ *
+ * Retrieves the current session and validates it has not expired.
+ * Caller must free the returned session with SSL_SESSION_free().
+ *
+ * Returns: Valid SSL_SESSION on success, NULL if unavailable or expired
+ * Thread-safe: No
+ */
+static SSL_SESSION *
+session_get_valid (SSL *ssl)
 {
-  assert (socket);
-  assert (len);
-
-  /* Validate preconditions */
-  if (!socket->tls_enabled)
-    return -1;
-
-  if (!socket->tls_handshake_done)
-    return -1; /* Must complete handshake first */
-
-  SSL *ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    return -1;
-
-  /* Get session - for TLS 1.3, this returns the most recent ticket.
-   * SSL_get1_session() increments reference count, we must free it. */
   SSL_SESSION *session = SSL_get1_session (ssl);
   if (!session)
-    {
-      /* No session available. For TLS 1.3, this might mean:
-       * - Server hasn't sent NewSessionTicket yet (call later)
-       * - Server disabled session tickets
-       * - Session already expired */
-      return -1;
-    }
+    return NULL;
 
-  /* Check if session is still valid (TLS 1.3 sessions can expire quickly) */
   time_t session_timeout = SSL_SESSION_get_timeout (session);
   time_t session_time = SSL_SESSION_get_time (session);
   time_t now = time (NULL);
 
   if (session_time + session_timeout < now)
     {
-      /* Session already expired */
       SSL_SESSION_free (session);
-      return -1;
+      return NULL;
     }
 
-  /* Get required length first */
+  return session;
+}
+
+/**
+ * session_serialize - Serialize an SSL session to DER format
+ * @session: Valid SSL session (caller retains ownership)
+ * @buffer: Output buffer (NULL for size query)
+ * @len: In/out buffer size / required size
+ *
+ * Returns: 1 on success, 0 if buffer too small (*len set to required size),
+ *          -1 on serialization error
+ * Thread-safe: No
+ */
+static int
+session_serialize (SSL_SESSION *session, unsigned char *buffer, size_t *len)
+{
   int session_len = i2d_SSL_SESSION (session, NULL);
   if (session_len <= 0)
-    {
-      SSL_SESSION_free (session);
-      return -1;
-    }
+    return -1;
 
-  /* Check if just querying size or if buffer is too small */
   if (buffer == NULL || (size_t)session_len > *len)
     {
       *len = (size_t)session_len;
-      SSL_SESSION_free (session);
-      return 0; /* Buffer too small or size query */
+      return 0;
     }
 
-  /* Serialize session to buffer */
   unsigned char *p = buffer;
   int written = i2d_SSL_SESSION (session, &p);
-  SSL_SESSION_free (session);
-
   if (written <= 0)
     return -1;
 
   *len = (size_t)written;
   return 1;
+}
+
+int
+SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
+{
+  assert (socket);
+  assert (len);
+
+  if (!socket->tls_enabled)
+    return -1;
+
+  if (!socket->tls_handshake_done)
+    return -1;
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  SSL_SESSION *session = session_get_valid (ssl);
+  if (!session)
+    return -1;
+
+  int result = session_serialize (session, buffer, len);
+  SSL_SESSION_free (session);
+  return result;
 }
 
 /**
@@ -1779,6 +1838,41 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
  *
  * @note Server may still reject resumption; always check is_session_reused()
  */
+/**
+ * session_deserialize_valid - Deserialize and validate a session
+ * @buffer: DER-encoded session data
+ * @len: Length of session data
+ *
+ * Deserializes a session from DER format and checks if it has expired.
+ * Caller must free the returned session with SSL_SESSION_free().
+ *
+ * Returns: Valid SSL_SESSION on success, NULL if invalid/expired
+ * Thread-safe: No
+ */
+static SSL_SESSION *
+session_deserialize_valid (const unsigned char *buffer, size_t len)
+{
+  if (len == 0 || len > (size_t)LONG_MAX)
+    return NULL;
+
+  const unsigned char *p = buffer;
+  SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
+  if (!session)
+    return NULL;
+
+  time_t session_timeout = SSL_SESSION_get_timeout (session);
+  time_t session_time = SSL_SESSION_get_time (session);
+  time_t now = time (NULL);
+
+  if (session_time + session_timeout < now)
+    {
+      SSL_SESSION_free (session);
+      return NULL;
+    }
+
+  return session;
+}
+
 int
 SocketTLS_session_restore (Socket_T socket,
                            const unsigned char *buffer,
@@ -1787,63 +1881,24 @@ SocketTLS_session_restore (Socket_T socket,
   assert (socket);
   assert (buffer);
 
-  /* Validate preconditions */
   if (!socket->tls_enabled)
     return -1;
 
-  /* Must be called BEFORE handshake - check state */
   if (socket->tls_handshake_done)
-    {
-      /* Already handshaked - too late to restore session.
-       * This is a programming error, but we return gracefully. */
-      return -1;
-    }
+    return -1;
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
-  /* Validate length to prevent integer overflow in d2i_SSL_SESSION */
-  if (len == 0 || len > (size_t)LONG_MAX)
-    return 0; /* Invalid data */
-
-  /* Deserialize session from DER format */
-  const unsigned char *p = buffer;
-  SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
+  SSL_SESSION *session = session_deserialize_valid (buffer, len);
   if (!session)
-    {
-      /* Invalid or corrupted session data.
-       * This is not an error - handshake will proceed without resumption. */
-      return 0;
-    }
+    return 0;
 
-  /* Check if session has expired */
-  time_t session_timeout = SSL_SESSION_get_timeout (session);
-  time_t session_time = SSL_SESSION_get_time (session);
-  time_t now = time (NULL);
-
-  if (session_time + session_timeout < now)
-    {
-      /* Session expired - free and return gracefully.
-       * Handshake will proceed with full negotiation. */
-      SSL_SESSION_free (session);
-      return 0;
-    }
-
-  /* Set session for resumption attempt.
-   * SSL_set_session() does NOT take ownership - it copies/refs the session.
-   * We still need to free our reference. */
   int ret = SSL_set_session (ssl, session);
   SSL_SESSION_free (session);
 
-  if (!ret)
-    {
-      /* OpenSSL rejected the session - rare but possible.
-       * Handshake will proceed with full negotiation. */
-      return 0;
-    }
-
-  return 1; /* Session set successfully - resumption will be attempted */
+  return ret ? 1 : 0;
 }
 
 /**
@@ -1870,6 +1925,68 @@ SocketTLS_session_restore (Socket_T socket,
 /* SOCKET_TLS_MAX_RENEGOTIATIONS is now defined in SocketTLSConfig.h
  * with comprehensive documentation about DoS protection rationale. */
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+/**
+ * renegotiation_validate_security - Check DoS limit and RFC 5746 support
+ * @socket: Socket instance (for renegotiation counter)
+ * @ssl: SSL connection object
+ *
+ * Returns: 0 if security checks pass, -1 if renegotiation should be rejected
+ * Thread-safe: No
+ */
+static int
+renegotiation_validate_security (Socket_T socket, SSL *ssl)
+{
+  if (socket->tls_renegotiation_count >= SOCKET_TLS_MAX_RENEGOTIATIONS)
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+      TLS_ERROR_FMT ("Renegotiation limit exceeded (%d max)",
+                     SOCKET_TLS_MAX_RENEGOTIATIONS);
+      return -1;
+    }
+
+  if (!SSL_get_secure_renegotiation_support (ssl))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+      TLS_ERROR_MSG ("Insecure renegotiation not supported");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * renegotiation_perform_handshake - Execute renegotiation handshake
+ * @socket: Socket instance (for renegotiation counter)
+ * @ssl: SSL connection object
+ *
+ * Returns: 1 if completed, 0 if in-progress (EAGAIN), raises on failure
+ * Thread-safe: No
+ */
+static int
+renegotiation_perform_handshake (Socket_T socket, SSL *ssl)
+{
+  int ret = SSL_do_handshake (ssl);
+  if (ret == 1)
+    {
+      socket->tls_renegotiation_count++;
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+      return 1;
+    }
+
+  int ssl_error = SSL_get_error (ssl, ret);
+  if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
+    {
+      errno = EAGAIN;
+      return 0;
+    }
+
+  tls_format_openssl_error ("Renegotiation handshake failed");
+  RAISE_TLS_ERROR (SocketTLS_ProtocolError);
+  __builtin_unreachable ();
+}
+#endif
+
 int
 SocketTLS_check_renegotiation (Socket_T socket)
 {
@@ -1882,59 +1999,22 @@ SocketTLS_check_renegotiation (Socket_T socket)
   if (!ssl)
     return -1;
 
-  /* TLS 1.3 doesn't support renegotiation - uses KeyUpdate instead.
-   * Return 0 to indicate no renegotiation is pending (correct behavior). */
   if (SSL_version (ssl) >= TLS1_3_VERSION)
     return 0;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-  /* Check if renegotiation is pending */
   if (SSL_renegotiate_pending (ssl))
     {
-      /* DoS protection: Enforce renegotiation limit */
-      if (socket->tls_renegotiation_count >= SOCKET_TLS_MAX_RENEGOTIATIONS)
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
-          TLS_ERROR_FMT ("Renegotiation limit exceeded (%d max)",
-                         SOCKET_TLS_MAX_RENEGOTIATIONS);
-          return -1; /* Reject: limit exceeded */
-        }
+      if (renegotiation_validate_security (socket, ssl) < 0)
+        return -1;
 
-      /* Check if secure renegotiation is supported (RFC 5746) */
-      if (!SSL_get_secure_renegotiation_support (ssl))
-        {
-          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
-          TLS_ERROR_MSG ("Insecure renegotiation not supported");
-          return -1; /* Reject: insecure renegotiation */
-        }
-
-      /* Process the renegotiation */
-      int ret = SSL_do_handshake (ssl);
-      if (ret == 1)
-        {
-          socket->tls_renegotiation_count++;
-          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
-          return 1; /* Renegotiation completed successfully */
-        }
-
-      /* Check for WANT_READ/WANT_WRITE (non-blocking) */
-      int ssl_error = SSL_get_error (ssl, ret);
-      if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
-        {
-          errno = EAGAIN;
-          return 0; /* In progress, retry later */
-        }
-
-      /* Renegotiation failed */
-      tls_format_openssl_error ("Renegotiation handshake failed");
-      RAISE_TLS_ERROR (SocketTLS_ProtocolError);
+      return renegotiation_perform_handshake (socket, ssl);
     }
 #else
-  /* Older OpenSSL - renegotiation not fully controllable */
-  (void)socket; /* Suppress unused warning */
+  (void)socket;
 #endif
 
-  return 0; /* No renegotiation pending */
+  return 0;
 }
 
 int
