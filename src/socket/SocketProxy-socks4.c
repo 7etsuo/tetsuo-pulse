@@ -227,26 +227,35 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
 }
 
 
-/**
- * socks4_write_ipv4_address - Write IPv4 destination address to SOCKS4 request
- * @conn: Proxy connection for error reporting and buffer access
- * @buf: Output buffer
- * @len: Current offset (updated on success)
- * @ipv4: Parsed IPv4 address
- *
- * Returns: 0 on success, -1 on buffer overflow
- */
 static int
-socks4_write_ipv4_address (struct SocketProxy_Conn_T *conn,
-                           unsigned char *buf,
-                           size_t *len,
-                           const struct in_addr *ipv4)
+socks4_write_header_and_ip (struct SocketProxy_Conn_T *conn,
+                            unsigned char *buf,
+                            size_t *len,
+                            const struct in_addr *ipv4)
 {
+  /* Write header: version + command + port */
   if (socks4_ensure_buffer_space (conn, *len, 4) < 0)
     return -1;
+  if (*len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
+      return -1;
+    }
+  *len += socks4_write_header (buf + *len, conn->target_port);
 
+  /* Write destination IP (network byte order) */
+  if (socks4_ensure_buffer_space (conn, *len, 4) < 0)
+    return -1;
+  if (*len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL, "SOCKS4 request too large");
+      return -1;
+    }
   memcpy (buf + *len, ipv4, 4);
   *len += 4;
+
   return 0;
 }
 
@@ -263,7 +272,6 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
   if (socks4_validate_inputs (conn, NULL) < 0)
     return -1;
 
-  /* Parse target as IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) != 1)
     {
       socketproxy_set_error (
@@ -273,16 +281,9 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Write header */
-  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
-    return -1;
-  len += socks4_write_header (buf + len, conn->target_port);
-
-  /* Write destination IP */
-  if (socks4_write_ipv4_address (conn, buf, &len, &ipv4) < 0)
+  if (socks4_write_header_and_ip (conn, buf, &len, &ipv4) < 0)
     return -1;
 
-  /* Write userid */
   if (socks4_write_userid (buf + len,
                            sizeof (conn->send_buf) - len,
                            conn->username,

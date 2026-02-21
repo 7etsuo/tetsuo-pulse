@@ -129,6 +129,74 @@ Socket_simple_http_server_new (const char *host, int port)
   return Socket_simple_http_server_new_ex (&config);
 }
 
+/**
+ * simple_http_server_apply_config - Copy simple config to core config
+ * @core_config: Output core config (must be initialized to defaults)
+ * @config: Input simple config
+ */
+static void
+simple_http_server_apply_config (SocketHTTPServer_Config *core_config,
+                                 const SocketSimple_HTTPServerConfig *config)
+{
+  core_config->port = config->port;
+  core_config->bind_address = config->bind_address;
+  core_config->backlog = config->backlog;
+  core_config->max_header_size = config->max_header_size;
+  core_config->max_body_size = config->max_body_size;
+  core_config->request_timeout_ms = config->request_timeout_ms;
+  core_config->keepalive_timeout_ms = config->keepalive_timeout_ms;
+  core_config->max_connections = config->max_connections;
+  core_config->max_connections_per_client = config->max_connections_per_client;
+}
+
+/**
+ * simple_http_server_setup_tls - Create TLS context for server config
+ * @core_config: Core config to attach TLS context to
+ * @config: Simple config with TLS settings
+ *
+ * Returns: 0 on success, -1 on failure (error already set)
+ */
+static int
+simple_http_server_setup_tls (SocketHTTPServer_Config *core_config,
+                              const SocketSimple_HTTPServerConfig *config)
+{
+#ifdef SOCKET_HAS_TLS
+  if (!config->enable_tls)
+    return 0;
+
+  if (!config->tls_cert_file || !config->tls_key_file)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "TLS enabled but cert/key files not provided");
+      return -1;
+    }
+
+  volatile SocketTLSContext_T tls_ctx = NULL;
+  TRY
+  {
+    tls_ctx = SocketTLSContext_new_server (
+        config->tls_cert_file, config->tls_key_file, NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Failed to create TLS context");
+    return -1;
+  }
+  END_TRY;
+
+  core_config->tls_context = tls_ctx;
+  return 0;
+#else
+  if (config->enable_tls)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
+                        "TLS not supported in this build");
+      return -1;
+    }
+  return 0;
+#endif
+}
+
 SocketSimple_HTTPServer_T
 Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
 {
@@ -142,7 +210,6 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
       return NULL;
     }
 
-  /* Allocate wrapper */
   struct SocketSimple_HTTPServer *server = calloc (1, sizeof (*server));
   if (!server)
     {
@@ -150,60 +217,16 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
       return NULL;
     }
 
-  /* Build core config */
   SocketHTTPServer_Config core_config;
   SocketHTTPServer_config_defaults (&core_config);
+  simple_http_server_apply_config (&core_config, config);
 
-  core_config.port = config->port;
-  core_config.bind_address = config->bind_address;
-  core_config.backlog = config->backlog;
-  core_config.max_header_size = config->max_header_size;
-  core_config.max_body_size = config->max_body_size;
-  core_config.request_timeout_ms = config->request_timeout_ms;
-  core_config.keepalive_timeout_ms = config->keepalive_timeout_ms;
-  core_config.max_connections = config->max_connections;
-  core_config.max_connections_per_client = config->max_connections_per_client;
-
-  /* TLS configuration */
-#ifdef SOCKET_HAS_TLS
-  if (config->enable_tls)
-    {
-      if (!config->tls_cert_file || !config->tls_key_file)
-        {
-          free (server);
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "TLS enabled but cert/key files not provided");
-          return NULL;
-        }
-
-      volatile SocketTLSContext_T tls_ctx = NULL;
-      TRY
-      {
-        tls_ctx = SocketTLSContext_new_server (
-            config->tls_cert_file, config->tls_key_file, NULL);
-      }
-      EXCEPT (SocketTLS_Failed)
-      {
-        free (server);
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS,
-                          "Failed to create TLS context");
-        return NULL;
-      }
-      END_TRY;
-
-      core_config.tls_context = tls_ctx;
-    }
-#else
-  if (config->enable_tls)
+  if (simple_http_server_setup_tls (&core_config, config) != 0)
     {
       free (server);
-      simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                        "TLS not supported in this build");
       return NULL;
     }
-#endif
 
-  /* Create core server */
   TRY
   {
     core_server = SocketHTTPServer_new (&core_config);
@@ -223,14 +246,7 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
   END_TRY;
 
   server->server = core_server;
-  server->user_handler = NULL;
-  server->user_handler_data = NULL;
-  server->user_validator = NULL;
-  server->user_validator_data = NULL;
-  server->user_drain_callback = NULL;
-  server->user_drain_data = NULL;
 
-  /* Set internal handler wrapper */
   SocketHTTPServer_set_handler (
       server->server, internal_handler_wrapper, server);
 

@@ -194,14 +194,17 @@ proxy_socks5_send_greeting (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * socks5_process_selected_method - Handle the server's selected auth method
- *
- * Processes the method byte from the SOCKS5 server response. Sets up
- * auth state accordingly or returns an error for unsupported/rejected methods.
- */
+static void
+socks5_accept_method (struct SocketProxy_Conn_T *conn, int need_auth)
+{
+  conn->socks5_need_auth = need_auth;
+  conn->proto_state = PROTO_STATE_SOCKS5_METHOD_RECEIVED;
+  conn->recv_len = 0;
+  conn->recv_offset = 0;
+}
+
 static SocketProxy_Result
-socks5_process_selected_method (struct SocketProxy_Conn_T *conn)
+socks5_dispatch_auth_method (struct SocketProxy_Conn_T *conn)
 {
   if (conn->socks5_auth_method == SOCKS5_AUTH_NO_ACCEPTABLE)
     {
@@ -213,10 +216,7 @@ socks5_process_selected_method (struct SocketProxy_Conn_T *conn)
 
   if (conn->socks5_auth_method == SOCKS5_AUTH_NONE)
     {
-      conn->socks5_need_auth = 0;
-      conn->proto_state = PROTO_STATE_SOCKS5_METHOD_RECEIVED;
-      conn->recv_len = 0;
-      conn->recv_offset = 0;
+      socks5_accept_method (conn, 0);
       return PROXY_OK;
     }
 
@@ -230,10 +230,7 @@ socks5_process_selected_method (struct SocketProxy_Conn_T *conn)
               "Server requires authentication but no credentials provided");
           return PROXY_ERROR_AUTH_REQUIRED;
         }
-      conn->socks5_need_auth = 1;
-      conn->proto_state = PROTO_STATE_SOCKS5_METHOD_RECEIVED;
-      conn->recv_len = 0;
-      conn->recv_offset = 0;
+      socks5_accept_method (conn, 1);
       return PROXY_OK;
     }
 
@@ -266,7 +263,7 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
   }
 
   conn->socks5_auth_method = buf[1];
-  return socks5_process_selected_method (conn);
+  return socks5_dispatch_auth_method (conn);
 }
 
 /**

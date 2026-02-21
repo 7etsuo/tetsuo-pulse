@@ -293,6 +293,22 @@ Socket_connect_tcp (const char *host, int port, int timeout_ms)
   return client;
 }
 
+static int
+accept_poll_for_connection (int fd, int timeout_ms)
+{
+  struct pollfd pfd;
+  int poll_result;
+
+  SOCKET_INIT_POLLFD (pfd, fd, POLLIN);
+  poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
+  if (poll_result < 0)
+    {
+      SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return poll_result;
+}
+
 T
 Socket_accept_timeout (T socket, int timeout_ms)
 {
@@ -321,29 +337,12 @@ Socket_accept_timeout (T socket, int timeout_ms)
   TRY
   {
     int do_accept = 1;
-    struct pollfd pfd;
-    SOCKET_INIT_POLLFD (pfd, fd, POLLIN);
-    int poll_result;
 
-    if (timeout_ms > 0)
-      {
-        poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
-        if (poll_result < 0)
-          {
-            SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
-            RAISE_MODULE_ERROR (Socket_Failed);
-          }
-        if (poll_result == 0)
-          {
-            client = NULL;
-            do_accept = 0;
-          }
-      }
+    if (timeout_ms > 0 && accept_poll_for_connection (fd, timeout_ms) == 0)
+      do_accept = 0;
 
     if (do_accept)
-      {
-        client = Socket_accept (socket);
-      }
+      client = Socket_accept (socket);
   }
   FINALLY
   {

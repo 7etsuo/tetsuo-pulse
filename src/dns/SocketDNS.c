@@ -84,6 +84,7 @@ allocate_dns_resolver (void)
 static void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
+  /* num_workers removed - no worker threads in new architecture */
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->pending_count = 0;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
@@ -241,6 +242,7 @@ cleanup_pipe (struct SocketDNS_T *dns)
 static void
 cleanup_mutex_cond (struct SocketDNS_T *dns)
 {
+  /* condition variables removed - only destroy mutex */
   pthread_mutex_destroy (&dns->mutex);
 }
 
@@ -281,6 +283,7 @@ reset_dns_state (T d)
   pthread_mutex_lock (&d->mutex);
   free_all_requests (d);
   cache_clear_locked (d); /* Free cache entries' malloc'd addrinfo results */
+  /* queue fields removed - no queue in new architecture */
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     {
       d->request_hash[i] = NULL;
@@ -577,6 +580,7 @@ void
 cancel_pending_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
 {
+  /* No queue_remove - queue removed */
   hash_table_remove (dns, req);
   req->state = REQ_CANCELLED;
 }
@@ -872,6 +876,71 @@ struct SocketDNS_ResolverContext
 };
 
 /**
+ * @brief Create a single addrinfo node from a resolver address.
+ * @ingroup dns
+ * @param[out] ai_out Set to the new addrinfo on success, NULL otherwise.
+ * @return 0 on success, -1 on allocation failure, 1 if address family
+ *         is unsupported (skip this entry).
+ */
+static int
+create_addrinfo_entry (const SocketDNSResolver_Address *addr,
+                       int port,
+                       struct addrinfo **ai_out)
+{
+  struct addrinfo *ai = calloc (1, sizeof (*ai));
+  if (!ai)
+    {
+      *ai_out = NULL;
+      return -1;
+    }
+
+  ai->ai_family = addr->family;
+  ai->ai_socktype = SOCK_STREAM;
+  ai->ai_protocol = IPPROTO_TCP;
+
+  if (addr->family == AF_INET)
+    {
+      struct sockaddr_in *sin = calloc (1, sizeof (*sin));
+      if (!sin)
+        {
+          free (ai);
+          *ai_out = NULL;
+          return -1;
+        }
+      sin->sin_family = AF_INET;
+      sin->sin_port = htons (port);
+      sin->sin_addr = addr->addr.v4;
+      ai->ai_addr = (struct sockaddr *)sin;
+      ai->ai_addrlen = sizeof (*sin);
+    }
+  else if (addr->family == AF_INET6)
+    {
+      struct sockaddr_in6 *sin6 = calloc (1, sizeof (*sin6));
+      if (!sin6)
+        {
+          free (ai);
+          *ai_out = NULL;
+          return -1;
+        }
+      sin6->sin6_family = AF_INET6;
+      sin6->sin6_port = htons (port);
+      sin6->sin6_addr = addr->addr.v6;
+      ai->ai_addr = (struct sockaddr *)sin6;
+      ai->ai_addrlen = sizeof (*sin6);
+    }
+  else
+    {
+      free (ai);
+      *ai_out = NULL;
+      return 1; /* Unsupported family, skip */
+    }
+
+  ai->ai_next = NULL;
+  *ai_out = ai;
+  return 0;
+}
+
+/**
  * @brief Convert SocketDNSResolver_Result to addrinfo.
  * @ingroup dns
  */
@@ -887,59 +956,23 @@ resolver_result_to_addrinfo (const SocketDNSResolver_Result *result, int port)
 
   for (i = 0; i < result->count; i++)
     {
-      struct addrinfo *ai = calloc (1, sizeof (*ai));
-      if (!ai)
+      struct addrinfo *ai;
+      int rc = create_addrinfo_entry (&result->addresses[i], port, &ai);
+
+      if (rc < 0)
         {
+          /* Allocation failure */
           SocketCommon_free_addrinfo (head);
           return NULL;
         }
-
-      ai->ai_family = result->addresses[i].family;
-      ai->ai_socktype = SOCK_STREAM;
-      ai->ai_protocol = IPPROTO_TCP;
-
-      if (ai->ai_family == AF_INET)
-        {
-          struct sockaddr_in *sin = calloc (1, sizeof (*sin));
-          if (!sin)
-            {
-              free (ai);
-              SocketCommon_free_addrinfo (head);
-              return NULL;
-            }
-          sin->sin_family = AF_INET;
-          sin->sin_port = htons (port);
-          sin->sin_addr = result->addresses[i].addr.v4;
-          ai->ai_addr = (struct sockaddr *)sin;
-          ai->ai_addrlen = sizeof (*sin);
-        }
-      else if (ai->ai_family == AF_INET6)
-        {
-          struct sockaddr_in6 *sin6 = calloc (1, sizeof (*sin6));
-          if (!sin6)
-            {
-              free (ai);
-              SocketCommon_free_addrinfo (head);
-              return NULL;
-            }
-          sin6->sin6_family = AF_INET6;
-          sin6->sin6_port = htons (port);
-          sin6->sin6_addr = result->addresses[i].addr.v6;
-          ai->ai_addr = (struct sockaddr *)sin6;
-          ai->ai_addrlen = sizeof (*sin6);
-        }
-      else
-        {
-          free (ai);
-          continue;
-        }
+      if (rc > 0)
+        continue; /* Unsupported family, skip */
 
       if (!head)
         head = ai;
       else
         tail->ai_next = ai;
       tail = ai;
-      ai->ai_next = NULL;
     }
 
   return head;
@@ -1089,6 +1122,48 @@ check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
 }
 
 /**
+ * @brief Complete a request with an error under the dns mutex.
+ * @ingroup dns
+ */
+static void
+complete_request_with_error (struct SocketDNS_T *dns, Request_T req, int error)
+{
+  pthread_mutex_lock (&dns->mutex);
+  req->error = error;
+  req->state = REQ_COMPLETE;
+  hash_table_insert (dns, req);
+  SIGNAL_DNS_COMPLETION (dns);
+
+  if (req->callback)
+    {
+      invoke_user_callback (dns, req, NULL, error);
+    }
+  else
+    {
+      pthread_mutex_unlock (&dns->mutex);
+    }
+}
+
+/**
+ * @brief Get resolver flags based on IPv4/IPv6 preference.
+ * @ingroup dns
+ */
+static int
+get_resolver_flags (struct SocketDNS_T *dns)
+{
+  int flags;
+
+  pthread_mutex_lock (&dns->mutex);
+  if (dns->prefer_ipv6)
+    flags = RESOLVER_FLAG_IPV6 | RESOLVER_FLAG_IPV4;
+  else
+    flags = RESOLVER_FLAG_IPV4 | RESOLVER_FLAG_IPV6;
+  pthread_mutex_unlock (&dns->mutex);
+
+  return flags;
+}
+
+/**
  * @brief Submit request to SocketDNSResolver backend.
  * @ingroup dns
  */
@@ -1096,31 +1171,20 @@ static void
 submit_to_resolver (struct SocketDNS_T *dns, Request_T req)
 {
   struct SocketDNS_ResolverContext *ctx;
-  int flags = RESOLVER_FLAG_BOTH;
+  int flags;
 
   /* Allocate callback context on dns arena */
   ctx = ALLOC (dns->arena, sizeof (*ctx));
   if (!ctx)
     {
-      pthread_mutex_lock (&dns->mutex);
-      req->error = EAI_MEMORY;
-      req->state = REQ_COMPLETE;
-      hash_table_insert (dns, req);
-      SIGNAL_DNS_COMPLETION (dns);
-      pthread_mutex_unlock (&dns->mutex);
+      complete_request_with_error (dns, req, EAI_MEMORY);
       return;
     }
 
   ctx->dns = dns;
   ctx->req = req;
 
-  /* Set IPv4/IPv6 preference */
-  pthread_mutex_lock (&dns->mutex);
-  if (dns->prefer_ipv6)
-    flags = RESOLVER_FLAG_IPV6 | RESOLVER_FLAG_IPV4;
-  else
-    flags = RESOLVER_FLAG_IPV4 | RESOLVER_FLAG_IPV6;
-  pthread_mutex_unlock (&dns->mutex);
+  flags = get_resolver_flags (dns);
 
   /* Insert request into hash table before async resolution */
   pthread_mutex_lock (&dns->mutex);

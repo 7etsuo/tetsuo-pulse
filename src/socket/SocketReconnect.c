@@ -542,13 +542,11 @@ start_tls_handshake (T conn)
 }
 
 static int
-perform_tls_handshake_step (T conn)
+tls_handshake_call_with_exceptions (T conn, volatile TLSHandshakeState *state)
 {
-  volatile TLSHandshakeState state = TLS_HANDSHAKE_NOT_STARTED;
-
   TRY
   {
-    state = SocketTLS_handshake (conn->socket);
+    *state = SocketTLS_handshake (conn->socket);
   }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
@@ -570,8 +568,12 @@ perform_tls_handshake_step (T conn)
   }
   END_TRY;
 
-  conn->tls_handshake_state = state;
+  return 0;
+}
 
+static int
+tls_handshake_dispatch_state (T conn, TLSHandshakeState state)
+{
   switch (state)
     {
     case TLS_HANDSHAKE_COMPLETE:
@@ -581,27 +583,34 @@ perform_tls_handshake_step (T conn)
                        conn->host,
                        conn->port,
                        SocketTLS_get_cipher (conn->socket));
-
-      /* Save session for future resumption */
       save_tls_session (conn);
       return 1;
 
     case TLS_HANDSHAKE_WANT_READ:
     case TLS_HANDSHAKE_WANT_WRITE:
     case TLS_HANDSHAKE_IN_PROGRESS:
-      /* Continue handshake on next event */
       return 0;
 
     case TLS_HANDSHAKE_ERROR:
       if (conn->error_buf[0] == '\0')
-        {
-          reconnect_set_tls_error (conn, "TLS handshake error");
-        }
+        reconnect_set_tls_error (conn, "TLS handshake error");
       return -1;
 
     default:
       return 0;
     }
+}
+
+static int
+perform_tls_handshake_step (T conn)
+{
+  volatile TLSHandshakeState state = TLS_HANDSHAKE_NOT_STARTED;
+
+  if (tls_handshake_call_with_exceptions (conn, &state) < 0)
+    return -1;
+
+  conn->tls_handshake_state = state;
+  return tls_handshake_dispatch_state (conn, state);
 }
 
 static void
@@ -1287,6 +1296,13 @@ SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check)
   conn->health_check = check;
 }
 
+static void
+reconnect_trigger_failover (T conn)
+{
+  close_socket (conn);
+  handle_connect_failure (conn);
+}
+
 ssize_t
 SocketReconnect_send (T conn, const void *buf, size_t len)
 {
@@ -1307,38 +1323,30 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
   }
   EXCEPT (Socket_Failed)
   {
-    /* Connection error - trigger reconnect */
     int err = Socket_geterrno ();
     reconnect_set_socket_error (conn, "Send failed", err);
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     errno = ENOTCONN;
     return -1;
   }
   EXCEPT (Socket_Closed)
   {
-    /* Connection closed by peer */
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     errno = ENOTCONN;
     return -1;
   }
 #if SOCKET_HAS_TLS
   EXCEPT (SocketTLS_Failed)
   {
-    /* TLS error - trigger reconnect */
     reconnect_set_tls_error (conn, "TLS send failed");
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     errno = ENOTCONN;
     return -1;
   }
   EXCEPT (SocketTLS_ProtocolError)
   {
-    /* TLS protocol error - trigger reconnect */
     reconnect_set_tls_error (conn, "TLS protocol error");
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     errno = ENOTCONN;
     return -1;
   }
@@ -1368,35 +1376,27 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
   }
   EXCEPT (Socket_Failed)
   {
-    /* Connection error - trigger reconnect */
     int err = Socket_geterrno ();
     reconnect_set_socket_error (conn, "Recv failed", err);
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     return 0;
   }
   EXCEPT (Socket_Closed)
   {
-    /* Connection closed by peer */
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     return 0;
   }
 #if SOCKET_HAS_TLS
   EXCEPT (SocketTLS_Failed)
   {
-    /* TLS error - trigger reconnect */
     reconnect_set_tls_error (conn, "TLS recv failed");
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     return 0;
   }
   EXCEPT (SocketTLS_ProtocolError)
   {
-    /* TLS protocol error - trigger reconnect */
     reconnect_set_tls_error (conn, "TLS protocol error");
-    close_socket (conn);
-    handle_connect_failure (conn);
+    reconnect_trigger_failover (conn);
     return 0;
   }
 #endif /* SOCKET_HAS_TLS */
@@ -1405,8 +1405,7 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
   if (result == 0)
     {
       /* EOF - connection closed */
-      close_socket (conn);
-      handle_connect_failure (conn);
+      reconnect_trigger_failover (conn);
     }
 
   return result;

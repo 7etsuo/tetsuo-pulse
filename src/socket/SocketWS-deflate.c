@@ -192,28 +192,21 @@ should_reset_context (const SocketWS_T ws, int is_deflate)
     return is_deflate ? server_no : client_no;
 }
 
-int
-ws_compression_init (SocketWS_T ws)
+static int
+ws_compression_store_settings (SocketWS_T ws,
+                               int *out_deflate_bits,
+                               int *out_inflate_bits)
 {
-  int deflate_bits;
-  int inflate_bits;
-
-  assert (ws);
-
-  memset (&ws->compression, 0, sizeof (ws->compression));
-
-  /* Validate window bits from negotiation */
-  deflate_bits = validate_and_store_window_bits (
+  int deflate_bits = validate_and_store_window_bits (
       ws, ws->handshake.client_max_window_bits, "client_max_window_bits");
   if (deflate_bits < 0)
     return -1;
 
-  inflate_bits = validate_and_store_window_bits (
+  int inflate_bits = validate_and_store_window_bits (
       ws, ws->handshake.server_max_window_bits, "server_max_window_bits");
   if (inflate_bits < 0)
     return -1;
 
-  /* Store settings */
   ws->compression.server_no_context_takeover
       = ws->handshake.server_no_context_takeover;
   ws->compression.client_no_context_takeover
@@ -221,8 +214,6 @@ ws_compression_init (SocketWS_T ws)
   ws->compression.server_max_window_bits = inflate_bits;
   ws->compression.client_max_window_bits = deflate_bits;
 
-  /* Note: Native DEFLATE uses 15-bit window. Log warning if smaller requested.
-   */
   if (deflate_bits < WS_DEFLATE_MAX_WINDOW_BITS
       || inflate_bits < WS_DEFLATE_MAX_WINDOW_BITS)
     {
@@ -234,7 +225,14 @@ ws_compression_init (SocketWS_T ws)
                        inflate_bits);
     }
 
-  /* Create deflater with default compression level (6) */
+  *out_deflate_bits = deflate_bits;
+  *out_inflate_bits = inflate_bits;
+  return 0;
+}
+
+static int
+ws_compression_create_streams (SocketWS_T ws)
+{
   ws->compression.deflater
       = SocketDeflate_Deflater_new (ws->arena, DEFLATE_LEVEL_DEFAULT);
   if (!ws->compression.deflater)
@@ -244,7 +242,6 @@ ws_compression_init (SocketWS_T ws)
     }
   ws->compression.deflate_initialized = 1;
 
-  /* Create inflater with max_output = max_message_size for bomb protection */
   ws->compression.inflater
       = SocketDeflate_Inflater_new (ws->arena, ws->config.max_message_size);
   if (!ws->compression.inflater)
@@ -254,6 +251,25 @@ ws_compression_init (SocketWS_T ws)
       return -1;
     }
   ws->compression.inflate_initialized = 1;
+
+  return 0;
+}
+
+int
+ws_compression_init (SocketWS_T ws)
+{
+  int deflate_bits;
+  int inflate_bits;
+
+  assert (ws);
+
+  memset (&ws->compression, 0, sizeof (ws->compression));
+
+  if (ws_compression_store_settings (ws, &deflate_bits, &inflate_bits) < 0)
+    return -1;
+
+  if (ws_compression_create_streams (ws) < 0)
+    return -1;
 
   SocketLog_emitf (SOCKET_LOG_DEBUG,
                    SOCKET_LOG_COMPONENT,

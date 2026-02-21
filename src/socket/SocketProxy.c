@@ -158,49 +158,59 @@ proxy_alloc_string (const char *src, size_t len, Arena_T arena)
   return dst;
 }
 
-/**
- * Scheme lookup table for proxy URL parsing.
- * Sorted by prefix length descending so longer matches are tried first
- * (e.g., "socks5h://" before "socks5://").
- */
-typedef struct
-{
-  const char *prefix;
-  size_t prefix_len;
-  SocketProxyType type;
-  int default_port;
-} ProxySchemeEntry;
-
-static const ProxySchemeEntry proxy_scheme_table[] = {
-  { "socks4a://", 10, SOCKET_PROXY_SOCKS4A, SOCKET_PROXY_DEFAULT_SOCKS_PORT },
-  { "socks5h://", 10, SOCKET_PROXY_SOCKS5H, SOCKET_PROXY_DEFAULT_SOCKS_PORT },
-  { "socks4://", 9, SOCKET_PROXY_SOCKS4, SOCKET_PROXY_DEFAULT_SOCKS_PORT },
-  { "socks5://", 9, SOCKET_PROXY_SOCKS5, SOCKET_PROXY_DEFAULT_SOCKS_PORT },
-  { "https://", 8, SOCKET_PROXY_HTTPS, SOCKET_PROXY_DEFAULT_HTTPS_PORT },
-  { "socks://", 8, SOCKET_PROXY_SOCKS5, SOCKET_PROXY_DEFAULT_SOCKS_PORT },
-  { "http://", 7, SOCKET_PROXY_HTTP, SOCKET_PROXY_DEFAULT_HTTP_PORT },
-};
-
-#define PROXY_SCHEME_TABLE_SIZE \
-  (sizeof (proxy_scheme_table) / sizeof (proxy_scheme_table[0]))
-
 int
 socketproxy_parse_scheme (const char *url,
                           SocketProxy_Config *config,
                           const char **end)
 {
-  for (size_t i = 0; i < PROXY_SCHEME_TABLE_SIZE; i++)
+  if (strncasecmp (url, "http://", 7) == 0)
     {
-      if (strncasecmp (url,
-                       proxy_scheme_table[i].prefix,
-                       proxy_scheme_table[i].prefix_len)
-          == 0)
-        {
-          config->type = proxy_scheme_table[i].type;
-          config->port = proxy_scheme_table[i].default_port;
-          *end = url + proxy_scheme_table[i].prefix_len;
-          return 0;
-        }
+      config->type = SOCKET_PROXY_HTTP;
+      config->port = SOCKET_PROXY_DEFAULT_HTTP_PORT;
+      *end = url + 7;
+      return 0;
+    }
+  if (strncasecmp (url, "https://", 8) == 0)
+    {
+      config->type = SOCKET_PROXY_HTTPS;
+      config->port = SOCKET_PROXY_DEFAULT_HTTPS_PORT;
+      *end = url + 8;
+      return 0;
+    }
+  if (strncasecmp (url, "socks4://", 9) == 0)
+    {
+      config->type = SOCKET_PROXY_SOCKS4;
+      config->port = SOCKET_PROXY_DEFAULT_SOCKS_PORT;
+      *end = url + 9;
+      return 0;
+    }
+  if (strncasecmp (url, "socks4a://", 10) == 0)
+    {
+      config->type = SOCKET_PROXY_SOCKS4A;
+      config->port = SOCKET_PROXY_DEFAULT_SOCKS_PORT;
+      *end = url + 10;
+      return 0;
+    }
+  if (strncasecmp (url, "socks5://", 9) == 0)
+    {
+      config->type = SOCKET_PROXY_SOCKS5;
+      config->port = SOCKET_PROXY_DEFAULT_SOCKS_PORT;
+      *end = url + 9;
+      return 0;
+    }
+  if (strncasecmp (url, "socks5h://", 10) == 0)
+    {
+      config->type = SOCKET_PROXY_SOCKS5H;
+      config->port = SOCKET_PROXY_DEFAULT_SOCKS_PORT;
+      *end = url + 10;
+      return 0;
+    }
+  if (strncasecmp (url, "socks://", 8) == 0)
+    {
+      config->type = SOCKET_PROXY_SOCKS5;
+      config->port = SOCKET_PROXY_DEFAULT_SOCKS_PORT;
+      *end = url + 8;
+      return 0;
     }
 
   return -1;
@@ -565,28 +575,17 @@ socketproxy_do_send (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * socketproxy_recv_available_space - Get available receive buffer space
- */
 static size_t
-socketproxy_recv_available_space (struct SocketProxy_Conn_T *conn)
+socketproxy_recv_space (const struct SocketProxy_Conn_T *conn)
 {
   if (conn->recvbuf != NULL)
     return SocketBuf_space (conn->recvbuf);
   return sizeof (conn->recv_buf) - conn->recv_len;
 }
 
-/**
- * socketproxy_recv_into_buffers - Receive data into the appropriate buffer
- *
- * Receives into either SocketBuf or raw recv_buf. Must be called inside
- * a TRY block since Socket_recv may raise Socket_Closed.
- */
 static ssize_t
-socketproxy_recv_into_buffers (struct SocketProxy_Conn_T *conn, size_t space)
+socketproxy_recv_into_buffer (struct SocketProxy_Conn_T *conn, size_t space)
 {
-  ssize_t n;
-
   if (conn->recvbuf != NULL)
     {
       size_t wlen;
@@ -594,16 +593,13 @@ socketproxy_recv_into_buffers (struct SocketProxy_Conn_T *conn, size_t space)
       if (ptr == NULL || wlen == 0)
         return 0;
       wlen = (wlen < space) ? wlen : space;
-      n = Socket_recv (conn->socket, ptr, wlen);
+      ssize_t n = Socket_recv (conn->socket, ptr, wlen);
       if (n > 0)
         SocketBuf_written (conn->recvbuf, (size_t)n);
-    }
-  else
-    {
-      n = Socket_recv (conn->socket, conn->recv_buf + conn->recv_len, space);
+      return n;
     }
 
-  return n;
+  return Socket_recv (conn->socket, conn->recv_buf + conn->recv_len, space);
 }
 
 int
@@ -613,17 +609,21 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
   volatile int caught_closed = 0;
   size_t space;
 
-  space = socketproxy_recv_available_space (conn);
+  space = socketproxy_recv_space (conn);
   if (space == 0)
     return -1;
 
-  TRY n = socketproxy_recv_into_buffers (conn, space);
+  TRY
+  {
+    n = socketproxy_recv_into_buffer (conn, space);
+  }
   EXCEPT (Socket_Closed)
   caught_closed = 1;
   END_TRY;
 
   if (caught_closed)
     return 0;
+
   if (n < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -632,6 +632,7 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
     }
   if (n == 0)
     return 0;
+
   if (conn->recvbuf == NULL)
     conn->recv_len += (size_t)n;
 
@@ -931,22 +932,23 @@ proxy_setup_tls_to_proxy (struct SocketProxy_Conn_T *conn)
 
 #if SOCKET_HAS_TLS
 /**
- * proxy_poll_for_tls_io - Wait for TLS handshake I/O readiness
+ * proxy_poll_for_tls_handshake - Poll socket for TLS handshake I/O readiness
  *
- * Polls the socket for the direction requested by the TLS handshake.
- * Returns 1 if ready, 0 if interrupted (EINTR), -1 on error or timeout.
+ * Returns: 1 if ready, 0 on EINTR (caller should retry), -1 on error/timeout
  */
 static int
-proxy_poll_for_tls_io (struct SocketProxy_Conn_T *conn,
-                       TLSHandshakeState hs,
-                       int64_t deadline_ms)
+proxy_poll_for_tls_handshake (struct SocketProxy_Conn_T *conn,
+                              TLSHandshakeState hs,
+                              int64_t deadline_ms)
 {
-  short poll_events = (hs == TLS_HANDSHAKE_WANT_READ ? POLLIN : POLLOUT);
+  unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
+  short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
   struct pollfd pfd;
   SOCKET_INIT_POLLFD (pfd, Socket_fd (conn->socket), poll_events);
 
   int64_t now_ms = socketproxy_get_time_ms ();
   int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
+
   int ret = poll (&pfd, 1, poll_to);
 
   if (ret < 0 && errno == EINTR)
@@ -1003,11 +1005,10 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
           return -1;
         }
 
-      int poll_ret = proxy_poll_for_tls_io (conn, hs, deadline_ms);
-      if (poll_ret == 0)
-        continue;
+      int poll_ret = proxy_poll_for_tls_handshake (conn, hs, deadline_ms);
       if (poll_ret < 0)
         return -1;
+      /* poll_ret == 0 means EINTR, continue to retry */
     }
 #else
   return -1;
@@ -1626,19 +1627,17 @@ proxy_dispatch_protocol_recv (struct SocketProxy_Conn_T *conn)
 }
 
 /**
- * proxy_copy_recvbuf_to_recv - Copy data from SocketBuf to raw recv buffer
+ * proxy_copy_recvbuf_to_recv_buf - Copy data from SocketBuf to flat recv_buf
  *
- * Copies available data from the SocketBuf into conn->recv_buf for protocol
- * parsing. Returns 0 on success, -1 if the read pointer is NULL.
+ * Returns: 0 on success, -1 on failure
  */
 static int
-proxy_copy_recvbuf_to_recv (struct SocketProxy_Conn_T *conn, size_t avail)
+proxy_copy_recvbuf_to_recv_buf (struct SocketProxy_Conn_T *conn, size_t avail)
 {
   size_t read_avail = avail;
   const void *ptr = SocketBuf_readptr (conn->recvbuf, &read_avail);
   if (ptr == NULL)
     return -1;
-
   avail = (read_avail > sizeof (conn->recv_buf)) ? sizeof (conn->recv_buf)
                                                  : read_avail;
   memcpy (conn->recv_buf, ptr, avail);
@@ -1647,15 +1646,10 @@ proxy_copy_recvbuf_to_recv (struct SocketProxy_Conn_T *conn, size_t avail)
   return 0;
 }
 
-/**
- * proxy_consume_recv_bytes - Consume processed bytes from receive buffer
- *
- * After protocol parsing, advances past the consumed bytes in either the
- * SocketBuf or raw recv_buf.
- */
 static void
-proxy_consume_recv_bytes (struct SocketProxy_Conn_T *conn, size_t consumed)
+proxy_consume_processed_data (struct SocketProxy_Conn_T *conn)
 {
+  size_t consumed = conn->recv_offset;
   if (consumed == 0)
     return;
 
@@ -1697,12 +1691,12 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
 
   if (conn->recvbuf != NULL && avail > 0)
     {
-      if (proxy_copy_recvbuf_to_recv (conn, avail) < 0)
+      if (proxy_copy_recvbuf_to_recv_buf (conn, avail) < 0)
         return -1;
     }
 
   res = proxy_dispatch_protocol_recv (conn);
-  proxy_consume_recv_bytes (conn, conn->recv_offset);
+  proxy_consume_processed_data (conn);
 
   if (res == PROXY_OK)
     {
@@ -2025,30 +2019,6 @@ proxy_tunnel_tls_handshake (SocketProxy_Conn_T conn, int fd)
 }
 #endif
 
-/**
- * proxy_tunnel_validate_inputs - Validate tunnel inputs before handshake
- *
- * Returns PROXY_OK if valid, or an appropriate error code.
- */
-static SocketProxy_Result
-proxy_tunnel_validate_inputs (const SocketProxy_Config *proxy,
-                              const char *target_host,
-                              int target_port)
-{
-  if (proxy->type == SOCKET_PROXY_NONE)
-    return PROXY_ERROR_UNSUPPORTED;
-
-  size_t host_len = strlen (target_host);
-  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
-    return PROXY_ERROR_PROTOCOL;
-  if (strpbrk (target_host, "\r\n") != NULL)
-    return PROXY_ERROR_PROTOCOL;
-  if (target_port < 1 || target_port > SOCKET_MAX_PORT)
-    return PROXY_ERROR_PROTOCOL;
-
-  return PROXY_OK;
-}
-
 SocketProxy_Result
 SocketProxy_tunnel (Socket_T socket,
                     const SocketProxy_Config *proxy,
@@ -2061,16 +2031,24 @@ SocketProxy_tunnel (Socket_T socket,
   int fd;
   int was_nonblocking;
   int flags;
-  SocketProxy_Result result;
+  SocketProxy_Result result = PROXY_OK;
 
   assert (socket != NULL);
   assert (proxy != NULL);
   assert (target_host != NULL);
   assert (target_port > 0 && target_port <= SOCKET_MAX_PORT);
 
-  result = proxy_tunnel_validate_inputs (proxy, target_host, target_port);
-  if (result != PROXY_OK)
-    return result;
+  /* Early validation guards */
+  if (proxy->type == SOCKET_PROXY_NONE)
+    return PROXY_ERROR_UNSUPPORTED;
+
+  size_t host_len = strlen (target_host);
+  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+    return PROXY_ERROR_PROTOCOL;
+  if (strpbrk (target_host, "\r\n") != NULL)
+    return PROXY_ERROR_PROTOCOL;
+  if (target_port < 1 || target_port > SOCKET_MAX_PORT)
+    return PROXY_ERROR_PROTOCOL;
 
   proxy_tunnel_init_context (
       conn, socket, proxy, target_host, target_port, arena);
@@ -2104,6 +2082,7 @@ SocketProxy_tunnel (Socket_T socket,
   result = conn->result;
 
 cleanup:
+  /* Single cleanup point - restore blocking state */
   if (!was_nonblocking)
     socket_clear_nonblock (fd);
 

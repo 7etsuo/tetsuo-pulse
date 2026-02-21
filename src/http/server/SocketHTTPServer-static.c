@@ -118,26 +118,20 @@ static const struct
  *
  * Returns: 1 if safe, 0 if potentially malicious
  */
+/**
+ * path_has_traversal - Check for ".." path traversal sequences
+ * @path: Path string to scan
+ *
+ * Returns: 1 if traversal found, 0 if safe
+ */
 static int
-validate_static_path (const char *path)
+path_has_traversal (const char *path)
 {
-  const char *p;
-
-  if (path == NULL || path[0] == '\0')
-    return 0;
-
-  /* Reject absolute paths */
-  if (path[0] == '/')
-    return 0;
-
-  /* Check for path traversal sequences */
-  p = path;
+  const char *p = path;
   while (*p != '\0')
     {
-      /* Not a dot - skip to next component */
       if (p[0] != '.')
         {
-          /* Skip to next '/' or end of string */
           while (*p != '\0' && *p != '/')
             p++;
           if (*p == '/')
@@ -145,12 +139,11 @@ validate_static_path (const char *path)
           continue;
         }
 
-      /* Handle ".." (path traversal attack) */
+      /* ".." traversal */
       if (p[1] == '.' && (p[2] == '/' || p[2] == '\0'))
-        return 0;
+        return 1;
 
-      /* Handle "." (valid, skip it) - flatten nesting with direct calculation
-       */
+      /* "." current dir - skip */
       if (p[1] == '/')
         {
           p += 2;
@@ -162,25 +155,48 @@ validate_static_path (const char *path)
           continue;
         }
 
-      /* Dot followed by other characters (e.g., ".gitignore") */
-      /* Skip to next '/' or end of string */
+      /* Dot followed by other chars (e.g., ".gitignore") */
       while (*p != '\0' && *p != '/')
         p++;
       if (*p == '/')
         p++;
     }
+  return 0;
+}
 
-  /* Reject hidden files (dotfiles) */
-  p = path;
+/**
+ * path_has_dotfile - Check for hidden files/directories (dotfiles)
+ * @path: Path string to scan
+ *
+ * Returns: 1 if dotfile found, 0 if safe
+ */
+static int
+path_has_dotfile (const char *path)
+{
+  const char *p = path;
   while (*p != '\0')
     {
       if (*p == '.' && (p == path || *(p - 1) == '/'))
-        {
-          /* Hidden file/directory found */
-          return 0;
-        }
+        return 1;
       p++;
     }
+  return 0;
+}
+
+static int
+validate_static_path (const char *path)
+{
+  if (path == NULL || path[0] == '\0')
+    return 0;
+
+  if (path[0] == '/')
+    return 0;
+
+  if (path_has_traversal (path))
+    return 0;
+
+  if (path_has_dotfile (path))
+    return 0;
 
   return 1;
 }

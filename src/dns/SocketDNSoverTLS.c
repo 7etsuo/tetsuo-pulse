@@ -370,38 +370,20 @@ setup_server_address (const struct ServerConfig *server,
   return 0;
 }
 
-/* Start TLS connection to server */
+/* Initiate non-blocking TCP connect to server.
+ * On success, sets conn->state to CONN_STATE_CONNECTING.
+ * Returns 0 on success, -1 on failure (conn is closed on error). */
 static int
-start_connection (T transport, int server_index)
+start_tcp_connect (T transport,
+                   struct Connection *conn,
+                   struct ServerConfig *server,
+                   int server_index)
 {
-  struct ServerConfig *server;
-  struct Connection *conn;
-  int fd;
-
-  if (server_index < 0 || server_index >= transport->server_count)
-    return -1;
-
-  server = &transport->servers[server_index];
-  conn = &transport->conn;
-
-  /* Close existing connection */
-  if (conn->state != CONN_STATE_DISCONNECTED)
-    {
-      close_connection (transport, conn);
-    }
-
-  /* Create TLS context */
-  conn->tls_ctx = create_tls_context (transport, server);
-  if (!conn->tls_ctx)
-    {
-      transport->stats.handshake_failures++;
-      return -1;
-    }
-
   TRY
   {
     struct sockaddr_storage addr;
     socklen_t addrlen;
+    int fd;
 
     /* Create socket */
     conn->socket = Socket_new (server->family, SOCK_STREAM, 0);
@@ -433,6 +415,34 @@ start_connection (T transport, int server_index)
   END_TRY;
 
   return 0;
+}
+
+/* Start TLS connection to server */
+static int
+start_connection (T transport, int server_index)
+{
+  struct ServerConfig *server;
+  struct Connection *conn;
+
+  if (server_index < 0 || server_index >= transport->server_count)
+    return -1;
+
+  server = &transport->servers[server_index];
+  conn = &transport->conn;
+
+  /* Close existing connection */
+  if (conn->state != CONN_STATE_DISCONNECTED)
+    close_connection (transport, conn);
+
+  /* Create TLS context */
+  conn->tls_ctx = create_tls_context (transport, server);
+  if (!conn->tls_ctx)
+    {
+      transport->stats.handshake_failures++;
+      return -1;
+    }
+
+  return start_tcp_connect (transport, conn, server, server_index);
 }
 
 /* Check if TCP connection has completed */
@@ -740,41 +750,21 @@ append_to_recv_buffer (struct Connection *conn,
   conn->recv_len += len;
 }
 
-/* Receive data from connection */
+/* Reassemble DNS message from received chunks using 2-byte length framing.
+ * Returns 1 if a complete message is assembled, 0 if more data needed,
+ * -1 on error (connection is closed on error). */
 static int
-receive_data (T transport)
+reassemble_dns_message (T transport,
+                        struct Connection *conn,
+                        const unsigned char *buf,
+                        size_t buf_len)
 {
-  struct Connection *conn = &transport->conn;
-  unsigned char buf[DOT_RECV_BUFFER_SIZE];
-  ssize_t n;
-  size_t processed;
+  size_t processed = 0;
 
-  if (conn->state != CONN_STATE_CONNECTED)
-    return 0;
-
-  /* Read from TLS socket */
-  if (read_tls_data (transport, buf, sizeof (buf), &n) < 0)
-    return -1;
-
-  if (n <= 0)
-    {
-      if (n == 0)
-        {
-          /* Connection closed */
-          close_connection (transport, conn);
-        }
-      return (int)n;
-    }
-
-  transport->stats.bytes_received += (uint64_t)n;
-  conn->last_activity_ms = get_monotonic_ms ();
-
-  /* Process received data in chunks */
-  processed = 0;
-  while (processed < (size_t)n)
+  while (processed < buf_len)
     {
       /* Parse length prefix */
-      if (parse_length_prefix (conn, buf, (size_t)n, &processed) < 0)
+      if (parse_length_prefix (conn, buf, buf_len, &processed) < 0)
         {
           close_connection (transport, conn);
           return -1;
@@ -795,7 +785,7 @@ receive_data (T transport)
 
       /* Copy message body */
       size_t need = conn->msg_len - conn->recv_len;
-      size_t avail = (size_t)n - processed;
+      size_t avail = buf_len - processed;
       size_t copy = (need < avail) ? need : avail;
 
       append_to_recv_buffer (conn, buf + processed, copy);
@@ -803,13 +793,38 @@ receive_data (T transport)
 
       /* Check if complete message */
       if (conn->recv_len == conn->msg_len)
-        {
-          /* Got complete message, return it */
-          return 1;
-        }
+        return 1;
     }
 
   return 0;
+}
+
+/* Receive data from connection */
+static int
+receive_data (T transport)
+{
+  struct Connection *conn = &transport->conn;
+  unsigned char buf[DOT_RECV_BUFFER_SIZE];
+  ssize_t n;
+
+  if (conn->state != CONN_STATE_CONNECTED)
+    return 0;
+
+  /* Read from TLS socket */
+  if (read_tls_data (transport, buf, sizeof (buf), &n) < 0)
+    return -1;
+
+  if (n <= 0)
+    {
+      if (n == 0)
+        close_connection (transport, conn);
+      return (int)n;
+    }
+
+  transport->stats.bytes_received += (uint64_t)n;
+  conn->last_activity_ms = get_monotonic_ms ();
+
+  return reassemble_dns_message (transport, conn, buf, (size_t)n);
 }
 
 /* Find query by ID */

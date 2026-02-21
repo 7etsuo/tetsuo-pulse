@@ -447,76 +447,6 @@ state_to_poll_events (TLSHandshakeState state)
 }
 
 /**
- * handshake_poll_create - Create a temporary poll instance (exception-safe)
- * @error_out: Output for error message on failure
- *
- * Returns: SocketPoll_T on success, NULL on failure
- * Thread-safe: No
- */
-static SocketPoll_T
-handshake_poll_create (const char **error_out)
-{
-  SocketPoll_T poll = NULL;
-  volatile int alloc_failed = 0;
-
-  TRY
-  {
-    poll = SocketPoll_new (TLS_HANDSHAKE_POLL_CAPACITY);
-  }
-  ELSE
-  {
-    alloc_failed = 1;
-  }
-  END_TRY;
-
-  if (alloc_failed || !poll)
-    {
-      *error_out = "Failed to create temporary poll instance";
-      return NULL;
-    }
-
-  return poll;
-}
-
-/**
- * handshake_poll_add_socket - Add socket to poll (exception-safe)
- * @poll: Poll instance (freed on failure)
- * @socket: Socket to add
- * @events: Poll events to wait for
- * @error_out: Output for error message on failure
- *
- * Returns: 0 on success, -1 on failure (frees poll)
- * Thread-safe: No
- */
-static int
-handshake_poll_add_socket (SocketPoll_T poll,
-                           Socket_T socket,
-                           unsigned events,
-                           const char **error_out)
-{
-  volatile int add_failed = 0;
-
-  TRY
-  {
-    SocketPoll_add (poll, socket, events, NULL);
-  }
-  ELSE
-  {
-    add_failed = 1;
-  }
-  END_TRY;
-
-  if (add_failed)
-    {
-      SocketPoll_free (&poll);
-      *error_out = "Failed to add socket to poll";
-      return -1;
-    }
-
-  return 0;
-}
-
-/**
  * do_handshake_poll_safe - Perform poll wait without raising exceptions
  * @socket: Socket instance
  * @events: Poll events to wait for (SocketPoll_Events bitmask)
@@ -535,31 +465,68 @@ do_handshake_poll_safe (Socket_T socket,
                         int timeout_ms,
                         const char **error_out)
 {
+  SocketPoll_T poll = NULL;
+  int result = 1;
+  int saved_errno;
+
   *error_out = NULL;
 
-  SocketPoll_T poll = handshake_poll_create (error_out);
-  if (!poll)
-    return -1;
+  /* Try to create poll without exceptions - use TRY but catch and convert */
+  volatile int alloc_failed = 0;
+  TRY
+  {
+    poll = SocketPoll_new (TLS_HANDSHAKE_POLL_CAPACITY);
+  }
+  ELSE
+  {
+    alloc_failed = 1;
+  }
+  END_TRY;
 
-  if (handshake_poll_add_socket (poll, socket, events, error_out) < 0)
-    return -1;
+  if (alloc_failed || !poll)
+    {
+      *error_out = "Failed to create temporary poll instance";
+      return -1;
+    }
 
+  /* Try to add socket to poll */
+  volatile int add_failed = 0;
+  TRY
+  {
+    SocketPoll_add (poll, socket, events, NULL);
+  }
+  ELSE
+  {
+    add_failed = 1;
+  }
+  END_TRY;
+
+  if (add_failed)
+    {
+      SocketPoll_free (&poll);
+      *error_out = "Failed to add socket to poll";
+      return -1;
+    }
+
+  /* Perform poll wait */
   SocketEvent_T evs[TLS_HANDSHAKE_POLL_CAPACITY];
   SocketEvent_T *events_out = evs;
   int rc = SocketPoll_wait (poll, &events_out, timeout_ms);
-  int saved_errno = errno;
+  saved_errno = errno;
 
+  /* Clean up poll before returning */
   SocketPoll_free (&poll);
 
   if (rc < 0)
     {
       if (saved_errno == EINTR)
-        return 0;
+        return 0; /* Caller should retry */
       *error_out = strerror (saved_errno);
       return -1;
     }
 
-  return 1;
+  /* rc >= 0: success (0=timeout, >0=ready) */
+  return result;
 }
 
 /**
@@ -1250,45 +1217,6 @@ SocketTLS_shutdown (Socket_T socket)
  *
  * @see SocketTLS_shutdown() for bidirectional shutdown
  */
-/**
- * shutdown_send_handle_error - Handle SSL_shutdown error for send-only shutdown
- * @socket: Socket instance
- * @ssl: SSL connection object
- * @result: SSL_shutdown return value (must be < 0)
- *
- * Returns: 0 if would-block (EAGAIN), 1 if done (partial or unknown),
- *          raises SocketTLS_ShutdownFailed on protocol error
- * Thread-safe: No
- */
-static int
-shutdown_send_handle_error (Socket_T socket, SSL *ssl, int result)
-{
-  int ssl_error = SSL_get_error (ssl, result);
-
-  switch (ssl_error)
-    {
-    case SSL_ERROR_WANT_READ:
-    case SSL_ERROR_WANT_WRITE:
-      errno = EAGAIN;
-      return 0;
-
-    case SSL_ERROR_SYSCALL:
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      socket->tls_shutdown_done = 0;
-      return 1;
-
-    case SSL_ERROR_SSL:
-      tls_format_openssl_error ("TLS shutdown_send protocol error");
-      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-      __builtin_unreachable ();
-
-    default:
-      socket->tls_shutdown_done = 1;
-      return 1;
-    }
-}
-
 int
 SocketTLS_shutdown_send (Socket_T socket)
 {
@@ -1298,23 +1226,54 @@ SocketTLS_shutdown_send (Socket_T socket)
     return -1;
 
   if (socket->tls_shutdown_done)
-    return 1;
+    return 1; /* Already done */
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
+  /* Set quiet shutdown mode to skip waiting for peer's close_notify */
   SSL_set_quiet_shutdown (ssl, 1);
 
   int result = SSL_shutdown (ssl);
 
   if (result >= 0)
     {
+      /* result == 0: close_notify sent (unidirectional shutdown complete)
+       * result == 1: full shutdown (shouldn't happen with quiet mode, but ok)
+       */
       socket->tls_shutdown_done = 1;
       return 1;
     }
 
-  return shutdown_send_handle_error (socket, ssl, result);
+  /* result < 0: check error */
+  int ssl_error = SSL_get_error (ssl, result);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      errno = EAGAIN;
+      return 0; /* Would block - caller should retry */
+
+    case SSL_ERROR_SYSCALL:
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0; /* Would block */
+      /* Connection error - treat as partial success (we tried) */
+      socket->tls_shutdown_done = 0;
+      return 1;
+
+    case SSL_ERROR_SSL:
+      /* Protocol error */
+      tls_format_openssl_error ("TLS shutdown_send protocol error");
+      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+      __builtin_unreachable (); /* RAISE never returns */
+
+    default:
+      /* Unknown or zero return - treat as success */
+      socket->tls_shutdown_done = 1;
+      return 1;
+    }
 }
 
 /**
@@ -1412,6 +1371,30 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
  *         SocketTLS_Failed on protocol or syscall errors
  * Thread-safe: Yes - operates on per-connection SSL state
  */
+/**
+ * handle_ssl_read_syscall_error - Handle SSL_ERROR_SYSCALL during read
+ * @result: Return value from SSL_read
+ *
+ * Distinguishes between abrupt EOF (peer closed without close_notify)
+ * and other syscall errors. Always raises - never returns.
+ */
+static void
+handle_ssl_read_syscall_error (int result)
+{
+  if (result == 0 && errno == 0)
+    {
+      /* Abrupt close: peer disconnected without close_notify.
+       * Set ECONNRESET to distinguish from clean shutdown. */
+      errno = ECONNRESET;
+      RAISE (Socket_Closed);
+      __builtin_unreachable ();
+    }
+  /* Other syscall error - errno is already set appropriately */
+  tls_format_openssl_error ("TLS recv failed (syscall)");
+  RAISE_TLS_ERROR (SocketTLS_Failed);
+  __builtin_unreachable ();
+}
+
 static ssize_t
 handle_ssl_read_error (SSL *ssl, int result, int ssl_error)
 {
@@ -1420,59 +1403,31 @@ handle_ssl_read_error (SSL *ssl, int result, int ssl_error)
   switch (ssl_error)
     {
     case SSL_ERROR_ZERO_RETURN:
-      /* Clean shutdown: peer sent close_notify alert.
-       * This is a graceful connection termination - no data lost.
-       * Set errno to 0 to indicate clean shutdown, then raise. */
       errno = 0;
       RAISE (Socket_Closed);
-      __builtin_unreachable (); /* RAISE never returns */
+      __builtin_unreachable ();
 
     case SSL_ERROR_WANT_READ:
     case SSL_ERROR_WANT_WRITE:
-      /* Non-blocking: would block, set errno and return 0.
-       * Note: WANT_WRITE can occur during renegotiation even on recv.
-       * Caller should poll for appropriate events and retry. */
       errno = EAGAIN;
       return 0;
 
     case SSL_ERROR_SYSCALL:
-      /* System call error - check errno for details.
-       * errno = 0 with result = 0: Unexpected EOF (peer closed abruptly).
-       * This differs from SSL_ERROR_ZERO_RETURN which is a clean shutdown.
-       *
-       * Per OpenSSL docs: "Some I/O error occurred. The retrying may be
-       * possible but the caller must ensure that the error wasn't fatal."
-       * With errno = 0 and result = 0, it means unexpected EOF. */
-      if (result == 0 && errno == 0)
-        {
-          /* Abrupt close: peer disconnected without close_notify.
-           * This could indicate a truncation attack or network failure.
-           * Set ECONNRESET to distinguish from clean shutdown. */
-          errno = ECONNRESET;
-          RAISE (Socket_Closed);
-          __builtin_unreachable (); /* RAISE never returns */
-        }
-      /* Other syscall error - errno is already set appropriately */
-      tls_format_openssl_error ("TLS recv failed (syscall)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
+      handle_ssl_read_syscall_error (result);
+      __builtin_unreachable ();
 
     case SSL_ERROR_SSL:
-      /* Protocol error - fatal TLS failure (e.g., bad record MAC,
-       * decompression failure, handshake failure during renegotiation). */
       errno = EPROTO;
       tls_format_openssl_error ("TLS recv failed (protocol)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
+      __builtin_unreachable ();
 
     default:
-      /* Unknown error type - should not happen with current OpenSSL */
       errno = EIO;
       tls_format_openssl_error ("TLS recv failed (unknown)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
 
-  /* Unreachable - all cases either return or raise */
   return -1;
 }
 
@@ -1716,17 +1671,14 @@ SocketTLS_get_alpn_selected (Socket_T socket)
  * @warning For TLS 1.3, call after some I/O to ensure ticket receipt
  */
 /**
- * session_get_valid - Get a non-expired SSL session
- * @ssl: SSL connection object
+ * session_get_if_valid - Get SSL session if still within its expiry window
+ * @ssl: SSL connection
  *
- * Retrieves the current session and validates it has not expired.
- * Caller must free the returned session with SSL_SESSION_free().
- *
- * Returns: Valid SSL_SESSION on success, NULL if unavailable or expired
- * Thread-safe: No
+ * Returns: Valid SSL_SESSION with incremented refcount, or NULL.
+ * Caller must call SSL_SESSION_free() on non-NULL return.
  */
 static SSL_SESSION *
-session_get_valid (SSL *ssl)
+session_get_if_valid (SSL *ssl)
 {
   SSL_SESSION *session = SSL_get1_session (ssl);
   if (!session)
@@ -1746,30 +1698,34 @@ session_get_valid (SSL *ssl)
 }
 
 /**
- * session_serialize - Serialize an SSL session to DER format
- * @session: Valid SSL session (caller retains ownership)
- * @buffer: Output buffer (NULL for size query)
- * @len: In/out buffer size / required size
+ * session_serialize - Serialize SSL session into buffer
+ * @session: Valid SSL session (freed by this function)
+ * @buffer: Output buffer, or NULL for size query
+ * @len: In/out parameter for buffer size / bytes written
  *
- * Returns: 1 on success, 0 if buffer too small (*len set to required size),
- *          -1 on serialization error
- * Thread-safe: No
+ * Returns: 1 on success, 0 if buffer too small (len updated), -1 on error
  */
 static int
 session_serialize (SSL_SESSION *session, unsigned char *buffer, size_t *len)
 {
   int session_len = i2d_SSL_SESSION (session, NULL);
   if (session_len <= 0)
-    return -1;
+    {
+      SSL_SESSION_free (session);
+      return -1;
+    }
 
   if (buffer == NULL || (size_t)session_len > *len)
     {
       *len = (size_t)session_len;
+      SSL_SESSION_free (session);
       return 0;
     }
 
   unsigned char *p = buffer;
   int written = i2d_SSL_SESSION (session, &p);
+  SSL_SESSION_free (session);
+
   if (written <= 0)
     return -1;
 
@@ -1793,13 +1749,11 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
   if (!ssl)
     return -1;
 
-  SSL_SESSION *session = session_get_valid (ssl);
+  SSL_SESSION *session = session_get_if_valid (ssl);
   if (!session)
     return -1;
 
-  int result = session_serialize (session, buffer, len);
-  SSL_SESSION_free (session);
-  return result;
+  return session_serialize (session, buffer, len);
 }
 
 /**
@@ -1838,41 +1792,6 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
  *
  * @note Server may still reject resumption; always check is_session_reused()
  */
-/**
- * session_deserialize_valid - Deserialize and validate a session
- * @buffer: DER-encoded session data
- * @len: Length of session data
- *
- * Deserializes a session from DER format and checks if it has expired.
- * Caller must free the returned session with SSL_SESSION_free().
- *
- * Returns: Valid SSL_SESSION on success, NULL if invalid/expired
- * Thread-safe: No
- */
-static SSL_SESSION *
-session_deserialize_valid (const unsigned char *buffer, size_t len)
-{
-  if (len == 0 || len > (size_t)LONG_MAX)
-    return NULL;
-
-  const unsigned char *p = buffer;
-  SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
-  if (!session)
-    return NULL;
-
-  time_t session_timeout = SSL_SESSION_get_timeout (session);
-  time_t session_time = SSL_SESSION_get_time (session);
-  time_t now = time (NULL);
-
-  if (session_time + session_timeout < now)
-    {
-      SSL_SESSION_free (session);
-      return NULL;
-    }
-
-  return session;
-}
-
 int
 SocketTLS_session_restore (Socket_T socket,
                            const unsigned char *buffer,
@@ -1881,24 +1800,63 @@ SocketTLS_session_restore (Socket_T socket,
   assert (socket);
   assert (buffer);
 
+  /* Validate preconditions */
   if (!socket->tls_enabled)
     return -1;
 
+  /* Must be called BEFORE handshake - check state */
   if (socket->tls_handshake_done)
-    return -1;
+    {
+      /* Already handshaked - too late to restore session.
+       * This is a programming error, but we return gracefully. */
+      return -1;
+    }
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
-  SSL_SESSION *session = session_deserialize_valid (buffer, len);
-  if (!session)
-    return 0;
+  /* Validate length to prevent integer overflow in d2i_SSL_SESSION */
+  if (len == 0 || len > (size_t)LONG_MAX)
+    return 0; /* Invalid data */
 
+  /* Deserialize session from DER format */
+  const unsigned char *p = buffer;
+  SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
+  if (!session)
+    {
+      /* Invalid or corrupted session data.
+       * This is not an error - handshake will proceed without resumption. */
+      return 0;
+    }
+
+  /* Check if session has expired */
+  time_t session_timeout = SSL_SESSION_get_timeout (session);
+  time_t session_time = SSL_SESSION_get_time (session);
+  time_t now = time (NULL);
+
+  if (session_time + session_timeout < now)
+    {
+      /* Session expired - free and return gracefully.
+       * Handshake will proceed with full negotiation. */
+      SSL_SESSION_free (session);
+      return 0;
+    }
+
+  /* Set session for resumption attempt.
+   * SSL_set_session() does NOT take ownership - it copies/refs the session.
+   * We still need to free our reference. */
   int ret = SSL_set_session (ssl, session);
   SSL_SESSION_free (session);
 
-  return ret ? 1 : 0;
+  if (!ret)
+    {
+      /* OpenSSL rejected the session - rare but possible.
+       * Handshake will proceed with full negotiation. */
+      return 0;
+    }
+
+  return 1; /* Session set successfully - resumption will be attempted */
 }
 
 /**
@@ -1927,15 +1885,14 @@ SocketTLS_session_restore (Socket_T socket,
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
 /**
- * renegotiation_validate_security - Check DoS limit and RFC 5746 support
- * @socket: Socket instance (for renegotiation counter)
- * @ssl: SSL connection object
+ * validate_renegotiation_allowed - Check DoS limits and secure renegotiation
+ * @socket: Socket to check renegotiation limits on
+ * @ssl: SSL connection
  *
- * Returns: 0 if security checks pass, -1 if renegotiation should be rejected
- * Thread-safe: No
+ * Returns: 0 if allowed, -1 if rejected (limit exceeded or insecure)
  */
 static int
-renegotiation_validate_security (Socket_T socket, SSL *ssl)
+validate_renegotiation_allowed (Socket_T socket, SSL *ssl)
 {
   if (socket->tls_renegotiation_count >= SOCKET_TLS_MAX_RENEGOTIATIONS)
     {
@@ -1956,15 +1913,14 @@ renegotiation_validate_security (Socket_T socket, SSL *ssl)
 }
 
 /**
- * renegotiation_perform_handshake - Execute renegotiation handshake
- * @socket: Socket instance (for renegotiation counter)
- * @ssl: SSL connection object
+ * perform_renegotiation_handshake - Execute pending renegotiation handshake
+ * @socket: Socket being renegotiated
+ * @ssl: SSL connection
  *
- * Returns: 1 if completed, 0 if in-progress (EAGAIN), raises on failure
- * Thread-safe: No
+ * Returns: 1 on success, 0 on EAGAIN (non-blocking), raises on failure
  */
 static int
-renegotiation_perform_handshake (Socket_T socket, SSL *ssl)
+perform_renegotiation_handshake (Socket_T socket, SSL *ssl)
 {
   int ret = SSL_do_handshake (ssl);
   if (ret == 1)
@@ -1985,7 +1941,7 @@ renegotiation_perform_handshake (Socket_T socket, SSL *ssl)
   RAISE_TLS_ERROR (SocketTLS_ProtocolError);
   __builtin_unreachable ();
 }
-#endif
+#endif /* OPENSSL_VERSION_NUMBER >= 0x10101000L */
 
 int
 SocketTLS_check_renegotiation (Socket_T socket)
@@ -1999,16 +1955,16 @@ SocketTLS_check_renegotiation (Socket_T socket)
   if (!ssl)
     return -1;
 
+  /* TLS 1.3 doesn't support renegotiation - uses KeyUpdate instead. */
   if (SSL_version (ssl) >= TLS1_3_VERSION)
     return 0;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
   if (SSL_renegotiate_pending (ssl))
     {
-      if (renegotiation_validate_security (socket, ssl) < 0)
+      if (validate_renegotiation_allowed (socket, ssl) != 0)
         return -1;
-
-      return renegotiation_perform_handshake (socket, ssl);
+      return perform_renegotiation_handshake (socket, ssl);
     }
 #else
   (void)socket;
@@ -2075,6 +2031,53 @@ asn1_time_to_time_t (const ASN1_TIME *asn1)
   return timegm (&tm_time);
 }
 
+/**
+ * extract_cert_serial - Extract serial number from X509 certificate as hex
+ * @cert: Certificate to extract serial from
+ * @buf: Output buffer for hex string
+ * @buf_size: Size of output buffer
+ */
+static void
+extract_cert_serial (X509 *cert, char *buf, size_t buf_size)
+{
+  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
+  if (!serial)
+    return;
+
+  BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
+  if (!bn)
+    return;
+
+  char *hex = BN_bn2hex (bn);
+  if (hex)
+    {
+      (void)socket_util_safe_strncpy (buf, hex, buf_size);
+      OPENSSL_free (hex);
+    }
+  BN_free (bn);
+}
+
+/**
+ * extract_cert_fingerprint - Compute SHA256 fingerprint of certificate
+ * @cert: Certificate to fingerprint
+ * @buf: Output buffer for hex-encoded fingerprint
+ * @buf_size: Size of output buffer
+ */
+static void
+extract_cert_fingerprint (X509 *cert, char *buf, size_t buf_size)
+{
+  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned int md_len = 0;
+
+  if (!X509_digest (cert, EVP_sha256 (), md, &md_len))
+    return;
+
+  int expected_size = EVP_MD_size (EVP_sha256 ());
+  size_t hash_len
+      = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
+  SocketCrypto_hex_encode (md, hash_len, buf, buf_size);
+}
+
 int
 SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
 {
@@ -2108,36 +2111,9 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
   /* Version (0-indexed in X509, add 1 for standard numbering) */
   info->version = (int)X509_get_version (cert) + 1;
 
-  /* Serial number */
-  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
-  if (serial)
-    {
-      BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
-      if (bn)
-        {
-          char *hex = BN_bn2hex (bn);
-          if (hex)
-            {
-              (void)socket_util_safe_strncpy (
-                  info->serial, hex, sizeof (info->serial));
-              OPENSSL_free (hex);
-            }
-          BN_free (bn);
-        }
-    }
-
-  /* SHA256 fingerprint using SocketCrypto_hex_encode for safety */
-  unsigned char md[EVP_MAX_MD_SIZE];
-  unsigned int md_len = 0;
-  if (X509_digest (cert, EVP_sha256 (), md, &md_len))
-    {
-      /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
-      int expected_size = EVP_MD_size (EVP_sha256 ());
-      size_t hash_len
-          = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
-      SocketCrypto_hex_encode (
-          md, hash_len, info->fingerprint, sizeof (info->fingerprint));
-    }
+  extract_cert_serial (cert, info->serial, sizeof (info->serial));
+  extract_cert_fingerprint (
+      cert, info->fingerprint, sizeof (info->fingerprint));
 
   X509_free (cert);
   return 1;
@@ -2447,6 +2423,43 @@ SocketTLS_get_ocsp_response_status (Socket_T socket)
 #endif
 }
 
+#if !defined(OPENSSL_NO_OCSP)
+/**
+ * ocsp_find_next_update - Scan OCSP basic response for next update time
+ * @basic: Parsed OCSP basic response
+ * @next_update: Output parameter for next update time
+ *
+ * Returns: 1 if found, -1 if not found
+ */
+static int
+ocsp_find_next_update (OCSP_BASICRESP *basic, time_t *next_update)
+{
+  int resp_count = OCSP_resp_count (basic);
+
+  for (int i = 0; i < resp_count; i++)
+    {
+      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
+      if (!single)
+        continue;
+
+      ASN1_GENERALIZEDTIME *nextupd = NULL;
+      (void)OCSP_single_get0_status (single, NULL, NULL, NULL, &nextupd);
+
+      if (nextupd)
+        {
+          struct tm tm_time = { 0 };
+          if (ASN1_TIME_to_tm (nextupd, &tm_time) == 1)
+            {
+              *next_update = timegm (&tm_time);
+              return 1;
+            }
+        }
+    }
+
+  return -1;
+}
+#endif /* !defined(OPENSSL_NO_OCSP) */
+
 int
 SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
 {
@@ -2483,29 +2496,7 @@ SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
       return -1;
     }
 
-  int result = -1;
-  int resp_count = OCSP_resp_count (basic);
-
-  for (int i = 0; i < resp_count; i++)
-    {
-      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
-      if (!single)
-        continue;
-
-      ASN1_GENERALIZEDTIME *nextupd = NULL;
-      (void)OCSP_single_get0_status (single, NULL, NULL, NULL, &nextupd);
-
-      if (nextupd)
-        {
-          struct tm tm_time = { 0 };
-          if (ASN1_TIME_to_tm (nextupd, &tm_time) == 1)
-            {
-              *next_update = timegm (&tm_time);
-              result = 1;
-              break;
-            }
-        }
-    }
+  int result = ocsp_find_next_update (basic, next_update);
 
   OCSP_BASICRESP_free (basic);
   OCSP_RESPONSE_free (resp);

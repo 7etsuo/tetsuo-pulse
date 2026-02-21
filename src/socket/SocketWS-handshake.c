@@ -925,11 +925,45 @@ ws_write_negotiated_compression (char *buf,
 #endif
 
 static int
+ws_write_response_headers (SocketWS_T ws,
+                           char *buf,
+                           size_t *offset,
+                           const char *accept_value)
+{
+  if (ws_write_101_status_line (
+          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, offset, accept_value)
+      < 0)
+    return -1;
+
+  if (ws_write_negotiated_subprotocol (buf,
+                                       SOCKETWS_HANDSHAKE_RESPONSE_SIZE,
+                                       offset,
+                                       ws->handshake.selected_subprotocol)
+      < 0)
+    return -1;
+
+#ifdef SOCKETWS_HAS_DEFLATE
+  if (ws_write_negotiated_compression (
+          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, offset, &ws->handshake)
+      < 0)
+    return -1;
+#endif
+
+  if (ws_snprintf_checked (
+          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, offset, "\r\n")
+      < 0)
+    return -1;
+
+  return 0;
+}
+
+static int
 ws_build_server_response (SocketWS_T ws, const char *client_key)
 {
   char accept_value[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE];
   char *buf;
   size_t offset = 0;
+  int result;
 
   assert (ws && client_key);
 
@@ -948,47 +982,16 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
       return -1;
     }
 
-  if (ws_write_101_status_line (
-          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset, accept_value)
-      < 0)
-    {
-      SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
-      return -1;
-    }
+  result = ws_write_response_headers (ws, buf, &offset, accept_value);
+  SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
 
-  if (ws_write_negotiated_subprotocol (buf,
-                                       SOCKETWS_HANDSHAKE_RESPONSE_SIZE,
-                                       &offset,
-                                       ws->handshake.selected_subprotocol)
-      < 0)
-    {
-      SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
-      return -1;
-    }
-
-#ifdef SOCKETWS_HAS_DEFLATE
-  if (ws_write_negotiated_compression (
-          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset, &ws->handshake)
-      < 0)
-    {
-      SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
-      return -1;
-    }
-#endif
-
-  if (ws_snprintf_checked (
-          buf, SOCKETWS_HANDSHAKE_RESPONSE_SIZE, &offset, "\r\n")
-      < 0)
-    {
-      SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
-      return -1;
-    }
+  if (result < 0)
+    return -1;
 
   ws->handshake.request_buf = buf;
   ws->handshake.request_len = offset;
   ws->handshake.request_sent = 0;
 
-  SocketCrypto_secure_clear (accept_value, sizeof (accept_value));
   return 0;
 }
 

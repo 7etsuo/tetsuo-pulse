@@ -1564,13 +1564,13 @@ Socket_simple_http_new (void)
 }
 
 /**
- * @brief Apply user-provided options to an HTTP client configuration.
- * @param config Client config to update.
- * @param opts User options (may be NULL).
+ * simple_http_apply_options - Apply simple HTTP options to client config
+ * @config: Client config (must be initialized to defaults)
+ * @opts: Options to apply (may be NULL)
  */
 static void
-apply_http_options (SocketHTTPClient_Config *config,
-                    const SocketSimple_HTTPOptions *opts)
+simple_http_apply_options (SocketHTTPClient_Config *config,
+                           const SocketSimple_HTTPOptions *opts)
 {
   if (!opts)
     return;
@@ -1587,13 +1587,13 @@ apply_http_options (SocketHTTPClient_Config *config,
 }
 
 /**
- * @brief Configure authentication on an HTTP client from user options.
- * @param client The HTTP client to configure.
- * @param opts User options containing auth credentials.
+ * simple_http_apply_auth - Configure authentication on HTTP client
+ * @client: HTTP client handle
+ * @opts: Options containing auth credentials (may be NULL)
  */
 static void
-apply_http_auth (SocketHTTPClient_T client,
-                 const SocketSimple_HTTPOptions *opts)
+simple_http_apply_auth (SocketHTTPClient_T client,
+                        const SocketSimple_HTTPOptions *opts)
 {
   if (!opts || (!opts->auth_user && !opts->bearer_token))
     return;
@@ -1630,7 +1630,7 @@ Socket_simple_http_new_ex (const SocketSimple_HTTPOptions *opts)
     }
 
   SocketHTTPClient_config_defaults (&config);
-  apply_http_options (&config, opts);
+  simple_http_apply_options (&config, opts);
 
   TRY
   {
@@ -1643,7 +1643,6 @@ Socket_simple_http_new_ex (const SocketSimple_HTTPOptions *opts)
   }
   END_TRY;
 
-  /* Clean up if exception occurred or client creation failed */
   if (exception_occurred || !handle->client)
     {
       free (handle);
@@ -1653,7 +1652,7 @@ Socket_simple_http_new_ex (const SocketSimple_HTTPOptions *opts)
       return NULL;
     }
 
-  apply_http_auth (handle->client, opts);
+  simple_http_apply_auth (handle->client, opts);
 
   return handle;
 }

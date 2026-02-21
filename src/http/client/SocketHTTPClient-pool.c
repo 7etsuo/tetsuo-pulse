@@ -1243,6 +1243,38 @@ setup_tls_connection (SocketHTTPClient_T client,
 }
 #endif /* SOCKET_HAS_TLS */
 
+/**
+ * temp_entry_copy_host - Validate and copy hostname into arena
+ * @arena: Thread-local arena for allocation
+ * @entry: Entry to populate host field
+ * @host: Hostname to copy
+ *
+ * Returns: 0 on success, -1 on invalid host. Raises on allocation failure.
+ */
+static int
+temp_entry_copy_host (Arena_T arena, HTTPPoolEntry *entry, const char *host)
+{
+  if (host == NULL || *host == '\0')
+    return -1;
+
+  size_t host_len = strlen (host);
+  size_t alloc_size = host_len + 1;
+  if (!SocketSecurity_check_size (alloc_size))
+    {
+      SOCKET_RAISE_MSG (SocketHTTPClient,
+                        SocketHTTPClient_Failed,
+                        "Hostname too long for temporary entry: %zu bytes",
+                        host_len);
+    }
+
+  entry->host = ALLOC (arena, alloc_size);
+  if (entry->host == NULL)
+    RAISE (Arena_Failed);
+
+  memcpy (entry->host, host, alloc_size);
+  return 0;
+}
+
 /* Create temporary thread-local entry for non-pooled connections */
 static HTTPPoolEntry *
 create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
@@ -1250,7 +1282,6 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
   static __thread HTTPPoolEntry temp_entry;
   static __thread Arena_T temp_arena = NULL;
 
-  /* Clean up previous temp arena if it exists */
   if (temp_arena != NULL)
     {
       Arena_dispose (&temp_arena);
@@ -1259,37 +1290,15 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
 
   memset (&temp_entry, 0, sizeof (temp_entry));
 
-  /* Create thread-local arena first for host copy and parser.
-   * Use unlocked arena since temp entries are thread-local. */
   temp_arena = Arena_new_unlocked ();
   if (temp_arena == NULL)
-    {
-      return NULL; /* Allocation failed */
-    }
+    return NULL;
 
-  /* Copy host with validation */
-  if (host == NULL || *host == '\0')
+  if (temp_entry_copy_host (temp_arena, &temp_entry, host) != 0)
     {
       Arena_dispose (&temp_arena);
-      return NULL; /* Invalid host */
+      return NULL;
     }
-  size_t host_len = strlen (host);
-  size_t alloc_size = host_len + 1;
-  if (!SocketSecurity_check_size (alloc_size))
-    {
-      Arena_dispose (&temp_arena);
-      SOCKET_RAISE_MSG (SocketHTTPClient,
-                        SocketHTTPClient_Failed,
-                        "Hostname too long for temporary entry: %zu bytes",
-                        host_len);
-    }
-  temp_entry.host = ALLOC (temp_arena, alloc_size);
-  if (temp_entry.host == NULL)
-    {
-      Arena_dispose (&temp_arena);
-      RAISE (Arena_Failed);
-    }
-  memcpy (temp_entry.host, host, alloc_size);
 
   temp_entry.port = port;
   temp_entry.is_secure = is_secure;

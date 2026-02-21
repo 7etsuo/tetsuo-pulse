@@ -820,6 +820,46 @@ connection_setup_tls (ServerConnection *conn, SocketTLSContext_T tls_context)
 #endif
 }
 
+/**
+ * connection_init_resources - Initialize connection arena, buffers, and parser
+ * @conn: Pre-allocated connection structure (zeroed)
+ * @server: Server owning this connection
+ * @socket: Accepted client socket
+ *
+ * Sets up arena, I/O buffers, parser, and caches client address.
+ * May raise exceptions on allocation failure.
+ */
+static void
+connection_init_resources (ServerConnection *conn,
+                           SocketHTTPServer_T server,
+                           Socket_T socket)
+{
+  Arena_T arena = Arena_new ();
+  conn->arena = arena;
+  conn->socket = socket;
+
+  conn->state = CONN_STATE_READING_REQUEST;
+  conn->created_at_ms = Socket_get_monotonic_ms ();
+  conn->last_activity_ms = conn->created_at_ms;
+
+  const char *addr = Socket_getpeeraddr (conn->socket);
+  if (addr != NULL)
+    {
+      (void)socket_util_safe_strncpy (
+          conn->client_addr, addr, sizeof (conn->client_addr));
+    }
+
+  conn->parser = connection_create_parser (arena, &server->config);
+  conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
+  conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
+  conn->response_headers = SocketHTTP_Headers_new (arena);
+
+  conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
+
+  if (server->config.tls_context != NULL)
+    connection_setup_tls (conn, server->config.tls_context);
+}
+
 /* Allocate and initialize new connection. On failure, cleans up and closes
  * socket */
 ServerConnection *
@@ -837,35 +877,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 
   TRY
   {
-    /* Initialize connection resources: arena, buffers, parser. Enables TLS if
-     * configured */
-    Arena_T arena = Arena_new ();
-    conn->arena = arena;
-    conn->socket = socket;
-
-    conn->state = CONN_STATE_READING_REQUEST;
-    conn->created_at_ms = Socket_get_monotonic_ms ();
-    conn->last_activity_ms = conn->created_at_ms;
-
-    /* Cache client IP address from socket peer address */
-    const char *addr = Socket_getpeeraddr (conn->socket);
-    if (addr != NULL)
-      {
-        (void)socket_util_safe_strncpy (
-            conn->client_addr, addr, sizeof (conn->client_addr));
-      }
-
-    conn->parser = connection_create_parser (arena, &server->config);
-    conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-    conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-    conn->response_headers = SocketHTTP_Headers_new (arena);
-
-    conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
-
-    /* Optional TLS enable: handshake is driven by server event loop. */
-    if (server->config.tls_context != NULL)
-      connection_setup_tls (conn, server->config.tls_context);
-
+    connection_init_resources (conn, server, socket);
     resources_ok = 1;
 
     if (connection_add_to_server (server, conn) < 0)
@@ -879,7 +891,6 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   }
   FINALLY
   {
-    /* On exception, clean up if not successfully added to server */
     if (!added_to_server)
       connection_cleanup_partial (conn, resources_ok);
   }

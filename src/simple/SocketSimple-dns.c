@@ -249,13 +249,81 @@ Socket_simple_dns_lookup (const char *hostname, char *buf, size_t len)
  * @param family Address family (AF_INET or AF_INET6).
  * @return 0 on success, -1 on error.
  */
+/**
+ * dns_resolve_hostname - Perform DNS resolution with exception handling
+ * @dns: DNS resolver
+ * @hostname: Hostname to resolve
+ * @hints: Address hints (family, socktype)
+ * @res_out: Output for addrinfo result
+ *
+ * Returns: 0 on success, -1 on failure (error already set)
+ */
+static int
+dns_resolve_hostname (SocketDNS_T dns,
+                      const char *hostname,
+                      struct addrinfo *hints,
+                      volatile struct addrinfo **res_out)
+{
+  volatile int exception_occurred = 0;
+
+  TRY
+  {
+    *res_out = SocketDNS_resolve_sync (
+        dns, hostname, 0, hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && *res_out)
+      {
+        SocketCommon_free_addrinfo ((struct addrinfo *)*res_out);
+        *res_out = NULL;
+      }
+  }
+  END_TRY;
+
+  return exception_occurred ? -1 : 0;
+}
+
+/**
+ * dns_extract_address - Extract numeric address string from addrinfo
+ * @res: Resolved addrinfo
+ * @buf: Output buffer for address string
+ * @len: Size of output buffer
+ *
+ * Returns: 0 on success, -1 on failure (error already set)
+ */
+static int
+dns_extract_address (struct addrinfo *res, char *buf, size_t len)
+{
+  char host[NI_MAXHOST];
+  if (SocketCommon_reverse_lookup (res->ai_addr,
+                                   res->ai_addrlen,
+                                   host,
+                                   sizeof (host),
+                                   NULL,
+                                   0,
+                                   NI_NUMERICHOST,
+                                   SocketCommon_Failed)
+      == 0)
+    {
+      snprintf (buf, len, "%s", host);
+      return 0;
+    }
+
+  simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
+  return -1;
+}
+
 static int
 dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
 {
-  SocketDNS_T dns = SocketCommon_get_dns_resolver ();
   volatile struct addrinfo *res = NULL;
   struct addrinfo hints;
-  volatile int exception_occurred = 0;
   int ret = -1;
 
   Socket_simple_clear_error ();
@@ -266,6 +334,7 @@ dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
       return -1;
     }
 
+  SocketDNS_T dns = SocketCommon_get_dns_resolver ();
   if (!dns)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolver not available");
@@ -275,27 +344,7 @@ dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
   hints.ai_family = family;
 
-  TRY
-  {
-    res = SocketDNS_resolve_sync (
-        dns, hostname, 0, &hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS);
-  }
-  EXCEPT (SocketDNS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (exception_occurred && res)
-      {
-        SocketCommon_free_addrinfo ((struct addrinfo *)res);
-        res = NULL;
-      }
-  }
-  END_TRY;
-
-  if (exception_occurred)
+  if (dns_resolve_hostname (dns, hostname, &hints, &res) != 0)
     return -1;
 
   if (!res)
@@ -306,25 +355,7 @@ dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
       return -1;
     }
 
-  char host[NI_MAXHOST];
-  if (SocketCommon_reverse_lookup (((struct addrinfo *)res)->ai_addr,
-                                   ((struct addrinfo *)res)->ai_addrlen,
-                                   host,
-                                   sizeof (host),
-                                   NULL,
-                                   0,
-                                   NI_NUMERICHOST,
-                                   SocketCommon_Failed)
-      == 0)
-    {
-      snprintf (buf, len, "%s", host);
-      ret = 0;
-    }
-  else
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
-    }
-
+  ret = dns_extract_address ((struct addrinfo *)res, buf, len);
   SocketCommon_free_addrinfo ((struct addrinfo *)res);
   return ret;
 }

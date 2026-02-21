@@ -530,13 +530,13 @@ Socket_simple_dtls_listen (const char *host,
 }
 
 /**
- * @brief Validate server socket for DTLS accept.
+ * simple_dtls_validate_server - Validate server socket preconditions
+ * @server_sock: Socket to validate
  *
- * @param server_sock Server socket handle
- * @return 0 on success, -1 on validation failure (error set)
+ * Returns: 0 if valid, -1 with error set
  */
 static int
-validate_dtls_accept_params (SocketSimple_Socket_T server_sock)
+simple_dtls_validate_server (SocketSimple_Socket_T server_sock)
 {
   if (!server_sock)
     {
@@ -562,75 +562,77 @@ validate_dtls_accept_params (SocketSimple_Socket_T server_sock)
 }
 
 /**
- * @brief Listen for ClientHello and complete DTLS accept handshake.
+ * simple_dtls_do_handshake - Listen for ClientHello and complete handshake
+ * @server_sock: DTLS server socket
+ * @timeout_ms: Handshake timeout in milliseconds
  *
- * @param dgram Server datagram socket with DTLS enabled
- * @param timeout_ms Handshake timeout in milliseconds
- * @return 0 on success, -1 on failure (error set)
+ * Returns: 0 on success, -1 on failure (error already set)
  */
 static int
-dtls_accept_handshake (SocketDgram_T dgram, int timeout_ms)
+simple_dtls_do_handshake (SocketSimple_Socket_T server_sock, int timeout_ms)
 {
+  volatile int failed = 0;
+
   TRY
   {
-    DTLSHandshakeState state = SocketDTLS_listen (dgram);
-
+    DTLSHandshakeState state = SocketDTLS_listen (server_sock->dgram);
     if (state == DTLS_HANDSHAKE_ERROR)
       {
         simple_set_error (SOCKET_SIMPLE_ERR_TLS,
                           "Failed to receive ClientHello");
-        return -1;
+        failed = 1;
       }
-
-    state = SocketDTLS_handshake_loop (
-        dgram,
-        timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
-
-    if (state != DTLS_HANDSHAKE_COMPLETE)
+    else
       {
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
-                          "DTLS handshake with client failed");
-        return -1;
+        state = SocketDTLS_handshake_loop (
+            server_sock->dgram,
+            timeout_ms > 0 ? timeout_ms
+                           : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
+        if (state != DTLS_HANDSHAKE_COMPLETE)
+          {
+            simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
+                              "DTLS handshake with client failed");
+            failed = 1;
+          }
       }
   }
   EXCEPT (SocketDTLS_TimeoutExpired)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "DTLS accept timed out");
-    return -1;
+    failed = 1;
   }
   EXCEPT (SocketDTLS_CookieFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS cookie verification failed");
-    return -1;
+    failed = 1;
   }
   EXCEPT (SocketDTLS_HandshakeFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
                       "DTLS handshake with client failed");
-    return -1;
+    failed = 1;
   }
   EXCEPT (SocketDTLS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS accept failed");
-    return -1;
+    failed = 1;
   }
   END_TRY;
 
-  return 0;
+  return failed ? -1 : 0;
 }
 
-/**
- * @brief Create a client session handle that shares the server's dgram.
- *
- * The returned handle does NOT own the underlying dgram socket, preventing
- * use-after-free when the caller closes the client connection.
- *
- * @param server_sock Server socket whose dgram to share
- * @return Handle on success, NULL on failure (error set)
- */
-static SocketSimple_Socket_T
-create_dtls_accept_handle (SocketSimple_Socket_T server_sock)
+SocketSimple_Socket_T
+Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
 {
+  Socket_simple_clear_error ();
+
+  if (simple_dtls_validate_server (server_sock) != 0)
+    return NULL;
+
+  if (simple_dtls_do_handshake (server_sock, timeout_ms) != 0)
+    return NULL;
+
   SocketSimple_Socket_T client_handle = calloc (1, sizeof (*client_handle));
   if (!client_handle)
     {
@@ -647,20 +649,6 @@ create_dtls_accept_handle (SocketSimple_Socket_T server_sock)
   client_handle->owns_dgram = 0;
 
   return client_handle;
-}
-
-SocketSimple_Socket_T
-Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
-{
-  Socket_simple_clear_error ();
-
-  if (validate_dtls_accept_params (server_sock) != 0)
-    return NULL;
-
-  if (dtls_accept_handshake (server_sock->dgram, timeout_ms) != 0)
-    return NULL;
-
-  return create_dtls_accept_handle (server_sock);
 }
 
 ssize_t
@@ -823,23 +811,26 @@ Socket_simple_dtls_recvfrom (SocketSimple_Socket_T sock,
   return received;
 }
 
-/**
- * @brief Execute DTLS handshake loop with exception handling.
- *
- * Performs the handshake and translates all DTLS exceptions into
- * Simple API error codes.
- *
- * @param dgram Datagram socket with DTLS enabled
- * @param timeout_ms Handshake timeout in milliseconds
- * @return 0 on success, -1 on failure (error set)
- */
-static int
-dtls_handshake_with_exceptions (SocketDgram_T dgram, int timeout_ms)
+int
+Socket_simple_dtls_handshake (SocketSimple_Socket_T sock, int timeout_ms)
 {
+  Socket_simple_clear_error ();
+
+  if (!sock || !sock->dgram || !sock->is_tls)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
+      return -1;
+    }
+
+  if (SocketDTLS_is_handshake_done (sock->dgram))
+    {
+      return 0; /* Already done */
+    }
+
   TRY
   {
     DTLSHandshakeState state = SocketDTLS_handshake_loop (
-        dgram,
+        sock->dgram,
         timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
 
     if (state != DTLS_HANDSHAKE_COMPLETE)
@@ -871,26 +862,6 @@ dtls_handshake_with_exceptions (SocketDgram_T dgram, int timeout_ms)
     return -1;
   }
   END_TRY;
-
-  return 0;
-}
-
-int
-Socket_simple_dtls_handshake (SocketSimple_Socket_T sock, int timeout_ms)
-{
-  Socket_simple_clear_error ();
-
-  if (!sock || !sock->dgram || !sock->is_tls)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid DTLS socket");
-      return -1;
-    }
-
-  if (SocketDTLS_is_handshake_done (sock->dgram))
-    return 0;
-
-  if (dtls_handshake_with_exceptions (sock->dgram, timeout_ms) != 0)
-    return -1;
 
   sock->is_connected = 1;
   return 0;

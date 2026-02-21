@@ -1147,6 +1147,22 @@ SocketAsync_process_completions (T async, int timeout_ms)
 }
 
 
+static unsigned
+async_submit_single_op (T async, SocketAsync_Op *op, int use_deferred)
+{
+  SocketAsync_Flags flags = op->flags;
+
+  if (use_deferred)
+    flags |= ASYNC_FLAG_NOSYNC;
+
+  if (op->is_send)
+    return SocketAsync_send (
+        async, op->socket, op->send_buf, op->len, op->cb, op->user_data, flags);
+
+  return SocketAsync_recv (
+      async, op->socket, op->recv_buf, op->len, op->cb, op->user_data, flags);
+}
+
 int
 SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
 {
@@ -1158,7 +1174,6 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
     return 0;
 
 #if SOCKET_HAS_IO_URING
-  /* Use deferred submission for io_uring to batch all SQEs */
   use_deferred = (async->ring != NULL && async->available);
 #endif
 
@@ -1166,35 +1181,8 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
   {
     for (i = 0; i < count; i++)
       {
-        SocketAsync_Op *op = &ops[i];
-        SocketAsync_Flags flags = op->flags;
-        unsigned req_id;
-
-        /* Add NOSYNC flag for deferred submission on io_uring */
-        if (use_deferred)
-          flags |= ASYNC_FLAG_NOSYNC;
-
-        if (op->is_send)
-          {
-            req_id = SocketAsync_send (async,
-                                       op->socket,
-                                       op->send_buf,
-                                       op->len,
-                                       op->cb,
-                                       op->user_data,
-                                       flags);
-          }
-        else
-          {
-            req_id = SocketAsync_recv (async,
-                                       op->socket,
-                                       op->recv_buf,
-                                       op->len,
-                                       op->cb,
-                                       op->user_data,
-                                       flags);
-          }
-        op->request_id = req_id;
+        ops[i].request_id
+            = async_submit_single_op (async, &ops[i], use_deferred);
         submitted++;
       }
   }
@@ -1204,7 +1192,6 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
   }
   END_TRY;
 
-  /* Flush all pending SQEs in one syscall */
   if (use_deferred && submitted > 0)
     SocketAsync_flush (async);
 
