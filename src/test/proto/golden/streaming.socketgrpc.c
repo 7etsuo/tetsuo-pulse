@@ -9,21 +9,17 @@
 
 #define SOCKETGRPC_GEN_EMBEDDED_LIMIT 65536U
 
-#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) \
-  ((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))
-#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) \
-  ((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))
+#define SOCKETGRPC_GEN_ALLOC(arena, nbytes) ((arena) ? ALLOC ((arena), (nbytes)) : malloc ((nbytes)))
+#define SOCKETGRPC_GEN_CALLOC(arena, count, nbytes) ((arena) ? CALLOC ((arena), (count), (nbytes)) : calloc ((count), (nbytes)))
 
-void
-test_streaming_Chunk_init (test_streaming_Chunk *message)
+void test_streaming_Chunk_init (test_streaming_Chunk *message)
 {
   if (message == NULL)
     return;
   memset (message, 0, sizeof (*message));
 }
 
-void
-test_streaming_Chunk_free (test_streaming_Chunk *message)
+void test_streaming_Chunk_free (test_streaming_Chunk *message)
 {
   if (message == NULL)
     return;
@@ -31,11 +27,7 @@ test_streaming_Chunk_free (test_streaming_Chunk *message)
   memset (message, 0, sizeof (*message));
 }
 
-int
-test_streaming_Chunk_encode (const test_streaming_Chunk *message,
-                             uint8_t *out,
-                             size_t out_len,
-                             size_t *written)
+int test_streaming_Chunk_encode (const test_streaming_Chunk *message, uint8_t *out, size_t out_len, size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -46,34 +38,22 @@ test_streaming_Chunk_encode (const test_streaming_Chunk *message,
     return -1;
   if (message->data != NULL && message->data_len > 0)
     {
-      rc = SocketProto_Message_append_bytes (
-          wire, 1, (const uint8_t *)message->data, message->data_len);
+      rc = SocketProto_Message_append_bytes (wire, 1, (const uint8_t *)message->data, message->data_len);
       if (rc != SOCKET_PROTO_OK)
-        {
-          SocketProto_Message_free (&wire);
-          return -1;
-        }
+        { SocketProto_Message_free (&wire); return -1; }
     }
   if (message->sequence != (uint32_t)0)
     {
-      rc = SocketProto_Message_append_varint (
-          wire, 2, (uint64_t)message->sequence);
+      rc = SocketProto_Message_append_varint (wire, 2, (uint64_t)message->sequence);
       if (rc != SOCKET_PROTO_OK)
-        {
-          SocketProto_Message_free (&wire);
-          return -1;
-        }
+        { SocketProto_Message_free (&wire); return -1; }
     }
   rc = SocketProto_Message_encode (wire, out, out_len, written);
   SocketProto_Message_free (&wire);
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int
-test_streaming_Chunk_decode (test_streaming_Chunk *message,
-                             const uint8_t *data,
-                             size_t len,
-                             Arena_T arena)
+int test_streaming_Chunk_decode (test_streaming_Chunk *message, const uint8_t *data, size_t len, Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -99,8 +79,7 @@ test_streaming_Chunk_decode (test_streaming_Chunk *message,
             uint8_t *copy = NULL;
             if (field->value_len > 0)
               {
-                copy
-                    = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);
+                copy = (uint8_t *)SOCKETGRPC_GEN_ALLOC (arena, field->value_len);
                 if (copy != NULL)
                   memcpy (copy, field->value, field->value_len);
               }
@@ -123,16 +102,14 @@ test_streaming_Chunk_decode (test_streaming_Chunk *message,
   return 0;
 }
 
-void
-test_streaming_Ack_init (test_streaming_Ack *message)
+void test_streaming_Ack_init (test_streaming_Ack *message)
 {
   if (message == NULL)
     return;
   memset (message, 0, sizeof (*message));
 }
 
-void
-test_streaming_Ack_free (test_streaming_Ack *message)
+void test_streaming_Ack_free (test_streaming_Ack *message)
 {
   if (message == NULL)
     return;
@@ -140,11 +117,7 @@ test_streaming_Ack_free (test_streaming_Ack *message)
   memset (message, 0, sizeof (*message));
 }
 
-int
-test_streaming_Ack_encode (const test_streaming_Ack *message,
-                           uint8_t *out,
-                           size_t out_len,
-                           size_t *written)
+int test_streaming_Ack_encode (const test_streaming_Ack *message, uint8_t *out, size_t out_len, size_t *written)
 {
   SocketProto_Message_T wire;
   SocketProto_Result rc;
@@ -155,24 +128,16 @@ test_streaming_Ack_encode (const test_streaming_Ack *message,
     return -1;
   if (message->received != (uint32_t)0)
     {
-      rc = SocketProto_Message_append_varint (
-          wire, 1, (uint64_t)message->received);
+      rc = SocketProto_Message_append_varint (wire, 1, (uint64_t)message->received);
       if (rc != SOCKET_PROTO_OK)
-        {
-          SocketProto_Message_free (&wire);
-          return -1;
-        }
+        { SocketProto_Message_free (&wire); return -1; }
     }
   rc = SocketProto_Message_encode (wire, out, out_len, written);
   SocketProto_Message_free (&wire);
   return (rc == SOCKET_PROTO_OK) ? 0 : -1;
 }
 
-int
-test_streaming_Ack_decode (test_streaming_Ack *message,
-                           const uint8_t *data,
-                           size_t len,
-                           Arena_T arena)
+int test_streaming_Ack_decode (test_streaming_Ack *message, const uint8_t *data, size_t len, Arena_T arena)
 {
   SocketProto_Message_T parsed;
   if (message == NULL || (data == NULL && len != 0) || arena == NULL)
@@ -208,9 +173,7 @@ test_streaming_Ack_decode (test_streaming_Ack *message,
   return 0;
 }
 
-void
-test_streaming_Streamer_Client_init (test_streaming_Streamer_Client *client,
-                                     SocketGRPC_Channel_T channel)
+void test_streaming_Streamer_Client_init (test_streaming_Streamer_Client *client, SocketGRPC_Channel_T channel)
 {
   if (client == NULL)
     return;
@@ -218,54 +181,39 @@ test_streaming_Streamer_Client_init (test_streaming_Streamer_Client *client,
   client->local_handlers = NULL;
 }
 
-void
-test_streaming_Streamer_Client_bind_local (
-    test_streaming_Streamer_Client *client,
-    const test_streaming_Streamer_ServerHandlers *handlers)
+void test_streaming_Streamer_Client_bind_local (test_streaming_Streamer_Client *client, const test_streaming_Streamer_ServerHandlers *handlers)
 {
   if (client == NULL)
     return;
   client->local_handlers = handlers;
 }
 
-int
-test_streaming_Streamer_Client_Upload_stream (
-    test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena)
+int test_streaming_Streamer_Client_Upload_stream (test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena)
 {
   (void)arena;
   if (client == NULL)
     return -1;
-  if (client->local_handlers == NULL
-      || client->local_handlers->Upload_stream == NULL)
+  if (client->local_handlers == NULL || client->local_handlers->Upload_stream == NULL)
     return SOCKET_GRPC_STATUS_UNIMPLEMENTED;
-  return client->local_handlers->Upload_stream (
-      stream_ctx, client->local_handlers->userdata, arena);
+  return client->local_handlers->Upload_stream (stream_ctx, client->local_handlers->userdata, arena);
 }
 
-int
-test_streaming_Streamer_Client_Subscribe_stream (
-    test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena)
+int test_streaming_Streamer_Client_Subscribe_stream (test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena)
 {
   (void)arena;
   if (client == NULL)
     return -1;
-  if (client->local_handlers == NULL
-      || client->local_handlers->Subscribe_stream == NULL)
+  if (client->local_handlers == NULL || client->local_handlers->Subscribe_stream == NULL)
     return SOCKET_GRPC_STATUS_UNIMPLEMENTED;
-  return client->local_handlers->Subscribe_stream (
-      stream_ctx, client->local_handlers->userdata, arena);
+  return client->local_handlers->Subscribe_stream (stream_ctx, client->local_handlers->userdata, arena);
 }
 
-int
-test_streaming_Streamer_Client_Chat_stream (
-    test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena)
+int test_streaming_Streamer_Client_Chat_stream (test_streaming_Streamer_Client *client, void *stream_ctx, Arena_T arena)
 {
   (void)arena;
   if (client == NULL)
     return -1;
-  if (client->local_handlers == NULL
-      || client->local_handlers->Chat_stream == NULL)
+  if (client->local_handlers == NULL || client->local_handlers->Chat_stream == NULL)
     return SOCKET_GRPC_STATUS_UNIMPLEMENTED;
-  return client->local_handlers->Chat_stream (
-      stream_ctx, client->local_handlers->userdata, arena);
+  return client->local_handlers->Chat_stream (stream_ctx, client->local_handlers->userdata, arena);
 }
